@@ -1,0 +1,42 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment (plaintext only; .env.enc is committed)
+.env
+.env.local
+.env.*.local
+
+# Holder indexer artifacts
+holders.sqlite
+
+# rebuild-history-from-logs.js's raw transfer cache (--resume). Local/session
+# resumability only — real chain volume routinely exceeds GitHub's 100MB
+# single-file push limit (Ethereum alone: 172MB), so this can never be
+# committed. See .github/workflows/rebuild-holders-history.yml's comment.
+data/rebuild-transfers-*.ndjson
+# Per-window transfer fetches made by fill-history-gaps.js on a runner that has
+# no local cache — scratch, regenerable, and never servable.
+data/asof-window-*.ndjson
+data/rebuild-transfers-*.json

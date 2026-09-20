@@ -1,0 +1,221 @@
+name: Refresh TEL holders snapshot
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh TEL staker balances
+        # NON-FATAL, deliberately. This step is the pipeline's heaviest RPC
+        # consumer (a stakedBy() eth_call per candidate address, ~6,700 of
+        # them), so it is the first thing to die when the Alchemy account hits
+        # its monthly capacity limit — which is exactly what happened every day
+        # from 2026-09-08 to 09-12: runs 281-285 all failed HERE, and because
+        # the step was fatal, the ENTIRE holders feed stopped with it. Every
+        # artifact below was still perfectly producible; none of them got
+        # written, and the daily row was lost each time.
+        #
+        # On failure the pipeline continues against the last committed
+        # funding-wallets.json — staking attribution one day stale, which is
+        # precisely what a retry-tomorrow would have given anyway, and strictly
+        # better than no snapshot at all. The staleness is not silent: the file
+        # is a tracked feed in pipeline-health.js, so it surfaces in the
+        # watchdog report and in the "Daily coverage" line rather than being
+        # quietly assumed fresh.
+        continue-on-error: true
+        env:
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          # Lets pull-staker-balances.js's stakedBy() calls go through Alchemy
+          # Polygon RPC instead of Etherscan's 3/sec-capped proxy module —
+          # same decrypted .env.enc keys the next step already uses.
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: node scripts/pull-staker-balances.js
+
+      - name: Refresh TEL holders snapshot
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: node scripts/pull-holders-rpc.js
+
+      - name: Refresh CEX wallets and flows
+        run: node scripts/pull-cex-wallets.js
+
+      - name: Generate holders lite snapshot
+        run: node scripts/generate-holders-lite.js
+
+      - name: Update holders history snapshot
+        run: node scripts/generate-holders-history.js
+
+      - name: Generate holder tier transitions
+        run: node scripts/generate-holder-transitions.js
+
+      - name: Reconcile supply breakdown
+        run: node scripts/reconcile-supply.js
+
+      - name: Append today's treasury balances
+        # Must run AFTER reconcile-supply.js — it reads that script's category
+        # totals rather than recomputing them, so there is only one definition
+        # of what counts as treasury/council/holdings/escrow. The historical
+        # series itself comes from scripts/backfill-treasury-history.js (a
+        # one-off Transfer-log replay); this only keeps the tail current.
+        run: node scripts/append-treasury-history.js
+
+      - name: Sync the served classification changelog
+        # The app fetches public/data/classification-changelog.json, a COPY of
+        # the hand-curated config/ file. Editing config/ alone leaves the UI
+        # showing no reclassification marker — silently, with no error. Syncing
+        # every run means the served copy can never drift.
+        run: node scripts/sync-classification-changelog.js
+
+      - name: Verify generated files
+        run: |
+          REQUIRED_FILES=(
+            "public/data/funding-wallets.json"
+            "public/data/tel-holders.json"
+            "public/data/holders-summary.json"
+            "public/data/holders-history.json"
+            "public/data/cex-wallets.json"
+            "public/data/cex-flows.json"
+            "public/data/cex-balance-history.json"
+            "public/data/holders-lite.json"
+            "public/data/holders-checkpoint.json"
+            "public/data/holder-transitions.json"
+            "public/data/holders-ever-checkpoint.json"
+            "public/data/supply-reconciliation.json"
+            # Was committed (FILES_TO_CHECK below) but never verified here, so a
+            # failed append-treasury-history.js left the workflow green while the
+            # treasury series silently stopped advancing — see lessons.md,
+            # "A Crashed Script Can Log a Convincing 'Complete' and Write Nothing".
+            # Keep this list and FILES_TO_CHECK in sync; they drifted once already.
+            "public/data/treasury-history.json"
+            "public/data/classification-changelog.json"
+          )
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "Error: Required file $file was not generated"
+              exit 1
+            fi
+          done
+          echo "All required files generated successfully"
+
+      - name: Check cross-feed consistency
+        # Shape validation (validate-outputs.js) passes when every file is
+        # individually well-formed but they disagree with each other — which is
+        # exactly what happened on 2026-08-29, when two feeds reported
+        # 67,843,742,873 retail and three reported 66,093,742,873. This gate
+        # compares every quantity carried by more than one artifact and FAILS
+        # the run before the commit step, so a self-contradicting dataset is
+        # never published.
+        run: |
+          node scripts/validate-outputs.js
+          node scripts/check-feed-consistency.js
+
+      - name: Configure git user
+        run: |
+          # THE daily publish. This is the one scheduled commit that carries
+          # no [skip netlify] marker, so it is the build that takes every
+          # data commit made since live — exactly one production deploy per
+          # day instead of the 3-5 the separate feeds used to each trigger.
+          # If this stops committing, nothing publishes: the watchdog below
+          # is the backstop, and pipeline-health.js reports the staleness.
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Commit snapshot changes
+        id: commit
+        run: |
+          FILES_TO_CHECK="public/data/funding-wallets.json public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/cex-wallets.json public/data/cex-flows.json public/data/cex-balance-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json"
+
+          git add $FILES_TO_CHECK
+          # staker-balances-checkpoint.json only exists if pull-staker-balances.js
+          # got interrupted mid-run; -A handles add/update/delete, || true
+          # swallows the "no match" case when it's neither tracked nor present.
+          git add -A -- public/data/staker-balances-checkpoint.json 2>/dev/null || true
+
+          # git diff on the unstaged tree misses new untracked files — check
+          # the staged index instead.
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            # Commit locally BEFORE rebasing onto origin/main (matching every
+            # other data-pipeline workflow's commit step) — rebasing staged
+            # changes first via --autostash does not reliably restore staged
+            # status once origin/main has moved (a real rebase, not just a
+            # fast-forward), so the final `git commit` found nothing staged
+            # and failed for 4 straight days (see issue #187).
+            git commit -m "Refresh TEL holders snapshot, summary, and CEX wallets"
+
+            # pull-holders-rpc.js also writes public/data/tel-holders-previous.json
+            # as a same-run scratch file (the "before this run" snapshot, used by
+            # later steps to diff against) — it's deliberately not in
+            # FILES_TO_CHECK and has never been committed by this workflow.
+            # A plain `git rebase` refuses to run with that file still dirty, so
+            # discard any leftover unstaged changes (nothing outside
+            # FILES_TO_CHECK is meant to survive this run) before rebasing.
+            git checkout -- .
+
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # No explicit deploy step: the push to main above is itself the deploy
+      # trigger. netlify.toml has no build.ignore rule, so Netlify's native git
+      # auto-deploy publishes every commit that lands on main. See netlify.toml
+      # and lessons.md → "Netlify Deployment" before adding a hook back.
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Data pipeline failure: Refresh TEL holders snapshot";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "pipeline-failure",
+            });
+            const match = existing.find((issue) => issue.title === title);
+            const body = `Run failed: ${runUrl}\nTriggered: ${new Date().toISOString()}`;
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ["pipeline-failure"],
+              });
+            }

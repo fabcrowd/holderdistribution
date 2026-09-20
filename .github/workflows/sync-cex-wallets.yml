@@ -1,0 +1,104 @@
+name: Sync CEX wallets from Dune
+
+on:
+  schedule:
+    # 1st and 15th of each month at 01:00 UTC (~biweekly)
+    - cron: '0 1 1,15 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync CEX wallets from Dune
+        env:
+          DUNE_API_KEY: zXvw7zC4MllZlMMdrU6N3t3n8Oz4iaaN
+        run: node scripts/sync-cex-wallets-dune.js
+
+      - name: Copy CEX wallets to public data
+        run: node scripts/pull-cex-wallets.js
+
+      - name: Re-apply the new classification to every derived feed
+        # A Dune sync changes config/cex-wallets.json, which IS the non-retail
+        # set — so every retail-derived feed is wrong the moment it lands.
+        # Previously this workflow committed the new CEX list and stopped,
+        # leaving the site serving retail computed against the OLD set until
+        # the next daily run up to 23 hours later. resync-chain-holders.js is
+        # the documented tool for "exclusions changed, a rescan is not
+        # practical"; the rest is the standard derived chain in dependency
+        # order (reconcile-supply BEFORE append-treasury-history, which reads
+        # its categories).
+        run: |
+          node scripts/resync-chain-holders.js
+          node scripts/generate-holders-lite.js
+          node scripts/generate-holders-history.js
+          node scripts/generate-holder-transitions.js
+          node scripts/reconcile-supply.js
+          node scripts/append-treasury-history.js
+          node scripts/sync-classification-changelog.js
+
+      - name: Check cross-feed consistency
+        # Same gate the daily workflow runs: fail before committing rather than
+        # publish feeds that disagree with each other.
+        run: |
+          node scripts/validate-outputs.js
+          node scripts/check-feed-consistency.js
+
+      - name: Configure git user
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Commit updated CEX wallet list
+        id: commit
+        run: |
+          if git diff --quiet -- config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json; then
+            echo "No new CEX wallets found."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            ADDED=$(git diff -- config/cex-wallets.json | grep '^+' | grep -c '"address"' || true)
+            git fetch origin main
+            git rebase --autostash origin/main
+            git add config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json \
+              public/data/tel-holders.json public/data/holders-summary.json public/data/holders-lite.json \
+              public/data/holders-history.json public/data/holder-transitions.json \
+              public/data/supply-reconciliation.json public/data/treasury-history.json \
+              public/data/classification-changelog.json public/data/cex-balance-history.json
+            # "[skip netlify]" — this commit lands the data but does NOT
+            # publish. Netlify honours [skip ci] and [skip netlify] in the head
+            # commit of a push; [skip ci] is avoided deliberately because
+            # GitHub Actions honours that one too and would break the
+            # workflow_run chains. The daily holders refresh publishes
+            # everything committed since, so this data goes live within 24h.
+            # See CLAUDE.md -> "Netlify note".
+            git commit -m "chore: sync CEX wallet list from Dune (+${ADDED} addresses) [skip netlify]"
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Deliberately not dispatching refresh-tel-holders.yml here: it already
+      # runs daily and re-reads config/cex-wallets.json fresh on every run, so
+      # the newly-synced list is picked up within 24h regardless. Firing it
+      # immediately would run pull-staker-balances.js a second time same-day
+      # against the same free-tier Etherscan key as the 00:00 UTC cron —
+      # plausible root cause of the ~400/6144 stakedBy rate-limit hit noted in
+      # tasks/handoff.md. See lessons.md for the incident.

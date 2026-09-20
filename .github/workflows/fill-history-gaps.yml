@@ -1,0 +1,143 @@
+name: Fill holders-history gaps
+
+# The daily refresh only ever writes TODAY's row. When one of its runs fails —
+# a transient RPC error, a rate limit, an Actions outage — that day is absent
+# and nothing goes back for it: the next run lands, every staleness check reads
+# green, and the hole is permanent. 2026-08-22..09-09 lost 16 days exactly that
+# way, with all four feeds reporting healthy throughout, and closing it took a
+# manual reconstruction.
+#
+# This is the scheduled version of that reconstruction. It runs the ordinary
+# pipeline scripts per missing date (pull-holders-rpc.js --as-of, then the lite
+# and history generators), so a filled row is produced by the same code that
+# produces a live one — see scripts/fill-history-gaps.js for what it will NOT
+# fill (cumulativeHolders/newHolders) and why.
+on:
+  # CHAINED to the daily snapshot rather than clocked, for the same reason
+  # scan-exchange-flows.yml is: a gap is defined relative to the latest row, so
+  # this should look right after that row has landed, not at a guessed offset.
+  workflow_run:
+    workflows: ["Refresh TEL holders snapshot"]
+    types: [completed]
+  # Safety net: if the chain upstream breaks (the holders workflow disabled,
+  # or its run skipped) this still advances rather than silently freezing.
+  # Removing it was tried on 2026-09-13 to cut deploys and was WRONG —
+  # scripts/lib/workflowChain.test.js asserts this cron exists precisely so a
+  # broken chain cannot freeze a feed forever. The deploy cost it used to
+  # carry is gone for a different reason: this workflow's commit now carries
+  # [skip netlify], so a second run in a day costs a second commit but NOT a
+  # second build.
+  schedule:
+    - cron: '40 8 * * *'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'How many days back to look for gaps'
+        required: false
+        default: '14'
+
+permissions:
+  contents: write
+  issues: write
+
+# One at a time: two runs filling the same date would each rewrite
+# holders-history.json from a different starting point.
+concurrency:
+  group: fill-history-gaps
+  cancel-in-progress: false
+
+jobs:
+  fill:
+    # Unlike the flow scan, this runs even when the upstream run FAILED — a
+    # failed daily refresh is the single most likely way a gap appears, so
+    # skipping on failure would disable this exactly when it is needed. It is
+    # safe because it never touches the live snapshot artifacts: it restores
+    # them afterwards, including on error.
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          # Reconstruction anchors on the holders-checkpoint.json and
+          # funding-wallets.json committed before the gap, read via git show —
+          # a shallow checkout has neither.
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fill missing dates
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+        run: node scripts/fill-history-gaps.js --days=${{ github.event.inputs.days || '14' }}
+
+      - name: Verify feed consistency
+        run: |
+          node scripts/validate-outputs.js
+          node scripts/check-feed-consistency.js
+
+      - name: Commit results
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+          FILES="public/data/holders-history.json data/holders-asof-blocks.json"
+          git add $FILES
+          if git diff --cached --quiet -- $FILES; then
+            echo "No gaps to fill"
+          else
+            # "[skip netlify]" — this commit lands the data but does NOT
+            # publish. Netlify honours [skip ci] and [skip netlify] in the head
+            # commit of a push; [skip ci] is avoided deliberately because
+            # GitHub Actions honours that one too and would break the
+            # workflow_run chains. The daily holders refresh publishes
+            # everything committed since, so this data goes live within 24h.
+            # See CLAUDE.md -> "Netlify note".
+            git commit -m "Fill missing holders-history dates [skip netlify]"
+            git fetch origin ${GITHUB_REF_NAME}
+            git rebase origin/${GITHUB_REF_NAME}
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
+
+      # No explicit deploy step: the push to main above is itself the deploy
+      # trigger. See netlify.toml and lessons.md → "Netlify Deployment".
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Data pipeline failure: Fill holders-history gaps";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "pipeline-failure",
+            });
+            const match = existing.find((issue) => issue.title === title);
+            const body = `Run failed: ${runUrl}\nTriggered: ${new Date().toISOString()}`;
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ["pipeline-failure"],
+              });
+            }

@@ -1,0 +1,100 @@
+#!/usr/bin/env node
+import fs from "node:fs/promises";
+import path from "node:path";
+import process from "node:process";
+import {
+  buildSnapshotData,
+  buildViewData,
+  buildOverlapStats,
+} from "./lib/holdersView.js";
+import { loadNonRetailSet, createNonRetailChecker } from "./lib/nonRetailSet.js";
+
+const INPUT_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
+const PREVIOUS_PATH = path.resolve(process.cwd(), "public/data/tel-holders-previous.json");
+const FUNDING_WALLETS_PATH = path.resolve(process.cwd(), "public/data/funding-wallets.json");
+const CEX_FLOWS_PATH = path.resolve(process.cwd(), "public/data/cex-flows.json");
+const OUTPUT_PATH = path.resolve(process.cwd(), "public/data/holders-lite.json");
+
+const readJson = async (absolutePath, fallback = null) => {
+  try {
+    const content = await fs.readFile(absolutePath, "utf8");
+    return JSON.parse(content);
+  } catch (error) {
+    if (error.code === "ENOENT") return fallback;
+    throw error;
+  }
+};
+
+const main = async () => {
+  const snapshot = await readJson(INPUT_PATH);
+  if (!snapshot) {
+    console.error("tel-holders.json not found. Unable to generate lite snapshot.");
+    process.exit(1);
+  }
+
+  const previousSnapshot = await readJson(PREVIOUS_PATH);
+
+  // Suppress deltas when the minimum balance threshold changed between runs.
+  // This prevents misleading +/- badges when methodology (MIN_TEL_RAW) changes.
+  const methodologyChanged =
+    snapshot.thresholds?.minTelRaw !== previousSnapshot?.thresholds?.minTelRaw;
+  if (methodologyChanged) {
+    console.log(
+      `Methodology changed (minTelRaw: ${previousSnapshot?.thresholds?.minTelRaw} → ` +
+        `${snapshot.thresholds?.minTelRaw}); previous snapshot suppressed — no deltas this run.`,
+    );
+  }
+  const effectivePrevious = methodologyChanged ? null : previousSnapshot;
+
+  const fundingWallets = await readJson(FUNDING_WALLETS_PATH);
+  const cexFlows = await readJson(CEX_FLOWS_PATH);
+  const { set: nonRetailSet, sizes } = await loadNonRetailSet();
+  console.log(
+    `Non-retail set: ${sizes.total} addresses ` +
+      `(exclusions ${sizes.exclusions}, CEX config ${sizes.cex}, DEX config ${sizes.dex}).`,
+  );
+
+  const isNonRetailAddress = createNonRetailChecker(nonRetailSet);
+
+  const current = buildSnapshotData(snapshot, fundingWallets, isNonRetailAddress);
+  const previous = buildSnapshotData(effectivePrevious, fundingWallets, isNonRetailAddress);
+
+  // Views are derived from the snapshot's own chainOrder — never a hardcoded
+  // ethereum/polygon/base literal, which would silently ignore a chain added to
+  // config/chains.json (CLAUDE.md: dynamic chain keys).
+  const views = {
+    combined: {
+      key: "combined",
+      label: "Combined",
+      ...buildViewData("combined", current, previous),
+    },
+  };
+  for (const chainKey of current?.chainOrder ?? Object.keys(current?.chains ?? {})) {
+    if (chainKey === "combined") continue;
+    views[chainKey] = {
+      key: chainKey,
+      label: current?.chains?.[chainKey]?.name ?? chainKey,
+      ...buildViewData(chainKey, current, previous),
+    };
+  }
+
+  const liteSnapshot = {
+    generatedAt: current?.generatedAt ?? null,
+    thresholds: current?.thresholds ?? { retail: 0, megaHolder: 0 },
+    totals: current?.totals ?? { totalSupply: 0 },
+    source: current?.source ?? null,
+    chainOrder: current?.chainOrder ?? [],
+    views,
+    overlap: buildOverlapStats(current?.chains ?? {}, current?.chainOrder ?? []),
+    cex: cexFlows ?? null,
+  };
+
+  await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
+  await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(liteSnapshot, null, 2)}\n`, "utf8");
+  console.log(`Wrote ${OUTPUT_PATH}`);
+};
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

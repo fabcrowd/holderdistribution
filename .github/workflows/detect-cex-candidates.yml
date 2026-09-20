@@ -1,0 +1,100 @@
+name: Detect CEX wallet candidates
+
+# Advisory only: scans TEL's own transfer graph for wallets with the
+# custodial fan-in/fan-out signature of an exchange hot wallet (see
+# scripts/detect-cex-candidates.js), so newly-rotated CEX wallets don't sit
+# misclassified as retail for weeks waiting on a Dune label to catch up.
+# Never writes config/cex-wallets.json — writes data/cex-candidates.json as a
+# review queue for a human to confirm and promote.
+on:
+  schedule:
+    # Weekly, Sunday 02:00 UTC — after the daily holders snapshot so
+    # tel-holders.json is fresh.
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Detect CEX wallet candidates
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: node scripts/detect-cex-candidates.js
+
+      - name: Configure git user
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Commit candidate list
+        run: |
+          if git diff --quiet -- data/cex-candidates.json; then
+            echo "No changes to commit"
+          else
+            git add data/cex-candidates.json
+            # "[skip netlify]" — this commit lands the data but does NOT
+            # publish. Netlify honours [skip ci] and [skip netlify] in the head
+            # commit of a push; [skip ci] is avoided deliberately because
+            # GitHub Actions honours that one too and would break the
+            # workflow_run chains. The daily holders refresh publishes
+            # everything committed since, so this data goes live within 24h.
+            # See CLAUDE.md -> "Netlify note".
+            git commit -m "Update CEX wallet candidate review queue [skip netlify]"
+            git fetch origin main
+            git rebase --autostash origin/main
+            git push origin HEAD:main
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Data pipeline failure: Detect CEX wallet candidates";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "pipeline-failure",
+            });
+            const match = existing.find((issue) => issue.title === title);
+            const body = `Run failed: ${runUrl}\nTriggered: ${new Date().toISOString()}`;
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ["pipeline-failure"],
+              });
+            }

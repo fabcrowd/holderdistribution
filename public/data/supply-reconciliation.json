@@ -1,0 +1,769 @@
+{
+  "totalSupply": 100000000000,
+  "derivedOriginTotal": 99999999999.99274,
+  "bridgeLocked": 39226680120.00001,
+  "mirrored": 38638362868.62069,
+  "mirrorResidual": -588317251.3793182,
+  "residual": 588317251.3766327,
+  "residualParts": {
+    "bridgeInFlight": 588317251.3793182,
+    "originDrift": -0.00726318359375
+  },
+  "categories": {
+    "escrow": 8084241801,
+    "cex": 21101275632.350002,
+    "treasury": 1329085758.02,
+    "retail": 66161127362.223366,
+    "dex": 996843107.3000001,
+    "holdings": 1229190076.24,
+    "council": 397713262.66999996,
+    "whale-unattributed": 100109164.84,
+    "dormant-whale": 12021453.74,
+    "excluded-unlabelled": 66371.59,
+    "burn": 8758.650000000001
+  },
+  "counted": 99411682748.62337,
+  "circulating": 92684882727.93336,
+  "circulatingExclusions": {
+    "total": 5000001000,
+    "items": [
+      {
+        "address": "0xbd02c51150a4ab6ce97b9de2025644594f3e75b8",
+        "name": "BitGo Custody",
+        "amount": 2500000000
+      },
+      {
+        "address": "0xaa9ae53fc7a69fde1baaf6aa03796e6ccc764271",
+        "name": "Anchorage Digital Vault",
+        "amount": 2500001000
+      }
+    ]
+  },
+  "warnings": [],
+  "coingeckoCirculating": 95077236367,
+  "items": [
+    {
+      "address": "0x40ec5b33f54e0e8a33a975908c5ba1c14e5bbbdf",
+      "category": "bridge-lock",
+      "name": "Polygon ERC20 Bridge (RootChain predicate)",
+      "balance": 38324145001.98,
+      "counted": false
+    },
+    {
+      "address": "0xbd02c51150a4ab6ce97b9de2025644594f3e75b8",
+      "category": "escrow",
+      "name": "BitGo Custody",
+      "balance": 3834240801,
+      "counted": true,
+      "nonCirculatingOverride": 2500000000
+    },
+    {
+      "address": "0xaa9ae53fc7a69fde1baaf6aa03796e6ccc764271",
+      "category": "escrow",
+      "name": "Anchorage Digital Vault",
+      "balance": 2500001000,
+      "counted": true,
+      "nonCirculatingOverride": 2500001000
+    },
+    {
+      "address": "0xe8c15aad9d4cd3f59c9dfa18828b91a8b2c49596",
+      "category": "cex",
+      "name": "KuCoin",
+      "balance": 1618592021.78,
+      "counted": true
+    },
+    {
+      "address": "0xf35a6bd6e0459a4b53a27862c51a2a7292b383d1",
+      "category": "cex",
+      "name": "CoinSpot 1",
+      "balance": 1381086989.1,
+      "counted": true
+    },
+    {
+      "address": "0xaa10db8804d076601999c7cd769e02e44a99d5b2",
+      "category": "cex",
+      "name": "KuCoin (vault)",
+      "balance": 1344077200,
+      "counted": true
+    },
+    {
+      "address": "0x2580ccb2be946ad98effa7f4b76148bed319011c",
+      "category": "treasury",
+      "name": "TEL Treasury (Ethereum)",
+      "balance": 1329085758.02,
+      "counted": true
+    },
+    {
+      "address": "0x175ce6204bfda2a509c7e9c786b74407f569c9cc",
+      "category": "cex",
+      "name": "KuCoin 51",
+      "balance": 1200000000,
+      "counted": true
+    },
+    {
+      "address": "0x6d6cc65e2060d0a280fcd47b6c22ec5636797fec",
+      "category": "cex",
+      "name": "KuCoin 45",
+      "balance": 1200000000,
+      "counted": true
+    },
+    {
+      "address": "0x8dac80ce96f69f9762bc450faa4d7fbd5891ae18",
+      "category": "cex",
+      "name": "KuCoin 47",
+      "balance": 1200000000,
+      "counted": true
+    },
+    {
+      "address": "0x69be413d648ae00f0fbd9856f1355e22b36ee5e0",
+      "category": "cex",
+      "name": "KuCoin 48",
+      "balance": 1200000000,
+      "counted": true
+    },
+    {
+      "address": "0x2677c4c8757da1857cc7cc4071e0e0dd32ccb975",
+      "category": "cex",
+      "name": "KuCoin 49",
+      "balance": 1200000000,
+      "counted": true
+    },
+    {
+      "address": "0xd2dd7b597fd2435b6db61ddf48544fd931e6869f",
+      "category": "cex",
+      "name": null,
+      "balance": 1097716865.07,
+      "counted": true
+    },
+    {
+      "address": "0xb8e6d31e7b212b2b7250ee9c26c56cebbfbe6b23",
+      "category": "cex",
+      "name": "KuCoin",
+      "balance": 1085153041.68,
+      "counted": true
+    },
+    {
+      "address": "0xdd276dc5223d0120f9bf1776f38957cc8da23cb0",
+      "category": "cex",
+      "name": "KuCoin",
+      "balance": 1018592021.78,
+      "counted": true
+    },
+    {
+      "address": "0x7dafba1d69f6c01ae7567ffd7b046ca03b706f83",
+      "category": "cex",
+      "name": null,
+      "balance": 980804078.09,
+      "counted": true
+    },
+    {
+      "address": "0x446b86a33e2a438f569b15855189e3da28d027ba",
+      "category": "cex",
+      "name": "KuCoin",
+      "balance": 927841841.57,
+      "counted": true
+    },
+    {
+      "address": "0x3154cf16ccdb4c6d922629664174b904d80f2c35",
+      "category": "bridge-lock",
+      "name": "Base L1 Standard Bridge",
+      "balance": 902517498.33,
+      "counted": false
+    },
+    {
+      "address": "0x4456dd6643c973a7a63d6b85b6f58aeeabaf7259",
+      "category": "cex",
+      "name": "KuCoin",
+      "balance": 817202059,
+      "counted": true
+    },
+    {
+      "address": "0x6cc8dcbca746a6e4fdefb98e1d0df903b107fd21",
+      "category": "cex",
+      "name": "Bitrue",
+      "balance": 700833825.43,
+      "counted": true
+    },
+    {
+      "address": "0x6522b7f9d481eceb96557f44753a4b893f837e90",
+      "category": "cex",
+      "name": "Bybit cold",
+      "balance": 700549613.74,
+      "counted": true
+    },
+    {
+      "address": "0x377b8ce04761754e8ac153b47805a9cf6b190873",
+      "category": "cex",
+      "name": "Upbit",
+      "balance": 654427101.91,
+      "counted": true
+    },
+    {
+      "address": "0x19184ab45c40c2920b0e0e31413b9434abd243ed",
+      "category": "cex",
+      "name": "Binance",
+      "balance": 605000010,
+      "counted": true
+    },
+    {
+      "address": "0xba12222222228d8ba445958a75a0704d566bf2c8",
+      "category": "dex",
+      "name": "Balancer Vault",
+      "balance": 562054706.71,
+      "counted": true
+    },
+    {
+      "address": "0x60b1f621736fa7091bad2dc20c0467083f010f57",
+      "category": "escrow",
+      "name": "Escrow vault 1 (assumed)",
+      "balance": 480356042,
+      "counted": true
+    },
+    {
+      "address": "0x1b14376ee2d46ae5c27a43d902d96d4f3f264b83",
+      "category": "cex",
+      "name": "KuCoin (vault)",
+      "balance": 466116180.79,
+      "counted": true
+    },
+    {
+      "address": "0xd6040319acdc191e485b2e103b9b4405ea8a30b0",
+      "category": "escrow",
+      "name": "Escrow vault 2 (assumed)",
+      "balance": 369034642,
+      "counted": true
+    },
+    {
+      "address": "0x222d9b3875d7c37d5037896d9b8b0fb3a19180bf",
+      "category": "escrow",
+      "name": "Escrow vault 3 (assumed)",
+      "balance": 364564981,
+      "counted": true
+    },
+    {
+      "address": "0x576b81f0c21edbc920ad63feeeb2b0736b018a58",
+      "category": "cex",
+      "name": "MEXC",
+      "balance": 312124763.81,
+      "counted": true
+    },
+    {
+      "address": "0x9f45bccdb42871a955e34d9d5ca33be9ccaef1fd",
+      "category": "holdings",
+      "name": "Telcoin Holdings reserve (Ethereum)",
+      "balance": 299000000,
+      "counted": true
+    },
+    {
+      "address": "0x043a163912c680dd2b490b409e8d4ad399e97bf8",
+      "category": "escrow",
+      "name": "Escrow vault 4 (assumed)",
+      "balance": 284051631,
+      "counted": true
+    },
+    {
+      "address": "0x84b94024463f01d5cbb3086f14f574d7ed83b794",
+      "category": "holdings",
+      "name": "Telcoin Holdings shared Safe (Polygon)",
+      "balance": 275000000,
+      "counted": true
+    },
+    {
+      "address": "0x9184aae0983e5ffbe06e41ca13c24033857b56cb",
+      "category": "escrow",
+      "name": "Escrow vault 5 (assumed)",
+      "balance": 251992704,
+      "counted": true
+    },
+    {
+      "address": "0xeed86b90448c371eab47b7f16e294297c27e4f51",
+      "category": "cex",
+      "name": "CoinSpot 11",
+      "balance": 240641913.66,
+      "counted": true
+    },
+    {
+      "address": "0xc44784b1ace0830a82ceac529cc98d1b38640413",
+      "category": "holdings",
+      "name": "Telcoin Holdings controller (Polygon)",
+      "balance": 239427397.24,
+      "counted": true
+    },
+    {
+      "address": "0x51e3d44172868acc60d68ca99591ce4230bc75e0",
+      "category": "cex",
+      "name": "MEXC",
+      "balance": 239035424.68,
+      "counted": true
+    },
+    {
+      "address": "0x20daacb0864ff9a5e07d05ea16fa56cd00fdc16d",
+      "category": "dex",
+      "name": "DEX market maker (Balancer-linked)",
+      "balance": 222530920.93999997,
+      "counted": true
+    },
+    {
+      "address": "0x3cc936b795a188f0e246cbb2d74c5bd190aecf18",
+      "category": "cex",
+      "name": null,
+      "balance": 215530603.49,
+      "counted": true
+    },
+    {
+      "address": "0xcf6994abe437e67b331cd2513f47773cd91244d2",
+      "category": "holdings",
+      "name": "Telcoin Holdings ops Safe (Base)",
+      "balance": 199888223.34,
+      "counted": true
+    },
+    {
+      "address": "0x9ac5637d295fea4f51e086c329d791cc157b1c84",
+      "category": "cex",
+      "name": null,
+      "balance": 198143689.31,
+      "counted": true
+    },
+    {
+      "address": "0x8dcf8d134f22ac625a7afb39514695801cd705b5",
+      "category": "council",
+      "name": "TAN Council",
+      "balance": 161564467.83,
+      "counted": true
+    },
+    {
+      "address": "0x58edf78281334335effa23101bbe3371b6a36a51",
+      "category": "cex",
+      "name": "KuCoin",
+      "balance": 141206596.1,
+      "counted": true
+    },
+    {
+      "address": "0x6e130c92e6f4d71b081c4d5b664cb210e55dbacf",
+      "category": "council",
+      "name": "Platform Council",
+      "balance": 102662861.44,
+      "counted": true
+    },
+    {
+      "address": "0xf359492d26764481002ed88bd2acae83ca50b5c9",
+      "category": "dex",
+      "name": "Uniswap V3 TEL/WETH",
+      "balance": 100742063.47,
+      "counted": true
+    },
+    {
+      "address": "0x5dad2cd9195c4954ec13af1f39f9725643d85a05",
+      "category": "whale-unattributed",
+      "name": "Independent large wallet (active trader)",
+      "balance": 100109164.84,
+      "counted": true
+    },
+    {
+      "address": "0xa9781d19e5611f65908dd6818fc1c276e2c6ac44",
+      "category": "holdings",
+      "name": "Telcoin Holdings cold Safe (Base)",
+      "balance": 98142782,
+      "counted": true
+    },
+    {
+      "address": "0x9756686f71e9a90558c7cfbad89e9fd8007f97e7",
+      "category": "holdings",
+      "name": "Telcoin Holdings cold Safe (Base)",
+      "balance": 95874029.66,
+      "counted": true
+    },
+    {
+      "address": "0xe58c8d45477d894bb9a1501bb0d0a32af8419eda",
+      "category": "cex",
+      "name": null,
+      "balance": 89129492.87,
+      "counted": true
+    },
+    {
+      "address": "0x9642b23ed1e01df1092b92641051881a322f5d4e",
+      "category": "cex",
+      "name": null,
+      "balance": 78949405.94,
+      "counted": true
+    },
+    {
+      "address": "0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208",
+      "category": "dex",
+      "name": "IDEX v1 (defunct)",
+      "balance": 63242023.67,
+      "counted": true
+    },
+    {
+      "address": "0xffa8db7b38579e6a2d14f9b347a9ace4d044cd54",
+      "category": "cex",
+      "name": "Bitget",
+      "balance": 63182629.87,
+      "counted": true
+    },
+    {
+      "address": "0x583d596b0a79c0e83c87851ea9fb1a91e80290b2",
+      "category": "council",
+      "name": "TELx Council",
+      "balance": 61055782.5,
+      "counted": true
+    },
+    {
+      "address": "0xa9d1e08c7793af67e9d92fe308d5697fb81d3e43",
+      "category": "cex",
+      "name": "Coinbase",
+      "balance": 56735076.69,
+      "counted": true
+    },
+    {
+      "address": "0x8d12a197cb00d4747a1fe03395095ce2a5cc6819",
+      "category": "dex",
+      "name": "EtherDelta 2 (defunct)",
+      "balance": 41979464.2,
+      "counted": true
+    },
+    {
+      "address": "0x1c727a55ea3c11b0ab7d3a361fe0f3c47ce6de5d",
+      "category": "cex",
+      "name": null,
+      "balance": 29126992.04,
+      "counted": true
+    },
+    {
+      "address": "0x99ef9f86c41d2a5b1c609e910b06c20ca45a984c",
+      "category": "council",
+      "name": "TAO Distribution Safe",
+      "balance": 26068547.37,
+      "counted": true
+    },
+    {
+      "address": "0x067173cf1a20e1f7a952d3abd15537d86a239924",
+      "category": "holdings",
+      "name": "Telcoin Holdings bridge-hub Safe",
+      "balance": 21857644,
+      "counted": true
+    },
+    {
+      "address": "0x7feb8febddb66189417f732b4221a52e23b926c4",
+      "category": "council",
+      "name": "TELx TEL/WETH reward contract (Polygon)",
+      "balance": 14839672.83,
+      "counted": true
+    },
+    {
+      "address": "0x0b07f64abc342b68aec57c0936e4b6fd4452967e",
+      "category": "cex",
+      "name": "BingX 21",
+      "balance": 13425427.3,
+      "counted": true
+    },
+    {
+      "address": "0xe482aed4c5faec57084762b22a09ac0156c582b6",
+      "category": "dormant-whale",
+      "name": "Independent large wallet (cold storage)",
+      "balance": 12021453.74,
+      "counted": true
+    },
+    {
+      "address": "0x79e5a6ffe2e6ba053a80e1b199c4f328938f40ca",
+      "category": "council",
+      "name": "TELx TEL/WBTC reward contract (Polygon)",
+      "balance": 11364804.85,
+      "counted": true
+    },
+    {
+      "address": "0xcc282e2004428939ee5149a9e7872f0b4d5d5ec7",
+      "category": "cex",
+      "name": null,
+      "balance": 9643648.58,
+      "counted": true
+    },
+    {
+      "address": "0x8f702676830ddca2801a4a7cdb971cde4df697ae",
+      "category": "council",
+      "name": "TELx TEL/USDC reward contract (Polygon)",
+      "balance": 9471996.07,
+      "counted": true
+    },
+    {
+      "address": "0x5bdf85216ec1e38d6458c870992a69e38e03f7ef",
+      "category": "cex",
+      "name": null,
+      "balance": 9085384.06,
+      "counted": true
+    },
+    {
+      "address": "0x90f18755cad5fc696a6dd7418d05c5f5e022774a",
+      "category": "council",
+      "name": "TELx Council Operational Safe",
+      "balance": 6976393.25,
+      "counted": true
+    },
+    {
+      "address": "0xd91efec7e42f80156d1d9f660a69847188950747",
+      "category": "cex",
+      "name": null,
+      "balance": 4870458.43,
+      "counted": true
+    },
+    {
+      "address": "0xf4bc288d616c4f57071a57f5a4050b5e516fe7e5",
+      "category": "council",
+      "name": "TAO Safe",
+      "balance": 3411423.77,
+      "counted": true
+    },
+    {
+      "address": "0xa5cabfc725dfa129f618d527e93702d10412f039",
+      "category": "dex",
+      "name": "QuickSwap TEL/USDC",
+      "balance": 3051565.49,
+      "counted": true
+    },
+    {
+      "address": "0x92e0862c60f98db9c7656212baa4d1173826ad6d",
+      "category": "cex",
+      "name": null,
+      "balance": 2000000,
+      "counted": true
+    },
+    {
+      "address": "0xfc2fc983a411c4b1e238f7eb949308cf0218c750",
+      "category": "dex",
+      "name": "Uniswap TEL/WETH LP (Polygon)",
+      "balance": 1492710.91,
+      "counted": true
+    },
+    {
+      "address": "0x4917bc6b8e705ad462ef525937e7eb7c6c87c356",
+      "category": "dex",
+      "name": "QuickSwap TEL/AAVE",
+      "balance": 886524.19,
+      "counted": true
+    },
+    {
+      "address": "0xe88e24f49338f974b528ace10350ac4576c5c8a1",
+      "category": "dex",
+      "name": "QuickSwap TEL/QUICK",
+      "balance": 630313.72,
+      "counted": true
+    },
+    {
+      "address": "0xe4ccf475a8ca5c96edbcdcf77a13ef29253d0878",
+      "category": "council",
+      "name": "TAO Implementation Wallet",
+      "balance": 297312.76,
+      "counted": true
+    },
+    {
+      "address": "0x9b5c71936670e9f1f36e63f03384de7e06e60d2a",
+      "category": "dex",
+      "name": "QuickSwap TEL/WPOL",
+      "balance": 232814,
+      "counted": true
+    },
+    {
+      "address": "0x22b84d5ffea8b801c0422afe752377a64aa738c2",
+      "category": "cex",
+      "name": null,
+      "balance": 83810.44,
+      "counted": true
+    },
+    {
+      "address": "0x141fef8cd8397a390afe94846c8bd6f4ab981c48",
+      "category": "cex",
+      "name": null,
+      "balance": 59856.52,
+      "counted": true
+    },
+    {
+      "address": "0xb5d85cbf7cb3ee0d56b3bb207d5fc4b82f43f511",
+      "category": "cex",
+      "name": "Coinbase",
+      "balance": 56087.59,
+      "counted": true
+    },
+    {
+      "address": "0xf30ba13e4b04ce5dc4d254ae5fa95477800f0eb0",
+      "category": "cex",
+      "name": null,
+      "balance": 55160.22,
+      "counted": true
+    },
+    {
+      "address": "0x7830c87c02e56aff27fa8ab1241711331fa86f43",
+      "category": "cex",
+      "name": null,
+      "balance": 52326.46,
+      "counted": true
+    },
+    {
+      "address": "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0",
+      "category": "excluded-unlabelled",
+      "name": null,
+      "balance": 50000,
+      "counted": true
+    },
+    {
+      "address": "0xeb2629a2734e272bcc07bda959863f316f4bd4cf",
+      "category": "cex",
+      "name": "Coinbase",
+      "balance": 40648.71,
+      "counted": true
+    },
+    {
+      "address": "0xb5873e333161e5b45adac57379ec2b15d861178d",
+      "category": "cex",
+      "name": null,
+      "balance": 27306,
+      "counted": true
+    },
+    {
+      "address": "0xa3a7b6f88361f48403514059f1f16c8e78d60eec",
+      "category": "bridge-lock",
+      "name": "Arbitrum One: L1 ERC20 Gateway",
+      "balance": 17619.69,
+      "counted": false
+    },
+    {
+      "address": "0x082489a616ab4d46d1947ee3f912e080815b08da",
+      "category": "cex",
+      "name": null,
+      "balance": 13316.81,
+      "counted": true
+    },
+    {
+      "address": "0xe4b5b2667e049ac8c79ae6c5a7e3300815aa32be",
+      "category": "cex",
+      "name": null,
+      "balance": 13145.11,
+      "counted": true
+    },
+    {
+      "address": "0x00000047bb99ea4d791bb749d970de71ee0b1a34",
+      "category": "excluded-unlabelled",
+      "name": null,
+      "balance": 12742.13,
+      "counted": true
+    },
+    {
+      "address": "0x0051ef9259c7ec0644a80e866ab748a2f30841b3",
+      "category": "cex",
+      "name": null,
+      "balance": 11205.12,
+      "counted": true
+    },
+    {
+      "address": "0x1522900b6dafac587d499a862861c0869be6e428",
+      "category": "cex",
+      "name": null,
+      "balance": 9976,
+      "counted": true
+    },
+    {
+      "address": "0x2b3bf74b29f59fb8dda41cf3d6a8da28cf8e7921",
+      "category": "cex",
+      "name": null,
+      "balance": 9082.86,
+      "counted": true
+    },
+    {
+      "address": "0x000000000000000000000000000000000000dead",
+      "category": "burn",
+      "name": "Burn address",
+      "balance": 8758.650000000001,
+      "counted": true
+    },
+    {
+      "address": "0xd38cf87f114f2a0582c329fb9df4f7044ce71330",
+      "category": "cex",
+      "name": null,
+      "balance": 5557.55,
+      "counted": true
+    },
+    {
+      "address": "0x001866ae5b3de6caa5a51543fd9fb64f524f5478",
+      "category": "cex",
+      "name": "Binance",
+      "balance": 5000,
+      "counted": true
+    },
+    {
+      "address": "0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be",
+      "category": "cex",
+      "name": "Binance",
+      "balance": 3850,
+      "counted": true
+    },
+    {
+      "address": "0xb34ed85bc0b9da2fa3c5e5d2f4b24f8ee96ce4e9",
+      "category": "excluded-unlabelled",
+      "name": null,
+      "balance": 2753.05,
+      "counted": true
+    },
+    {
+      "address": "0x72e93123e8b5d168246739cdc45360ea11209364",
+      "category": "cex",
+      "name": null,
+      "balance": 2133.19,
+      "counted": true
+    },
+    {
+      "address": "0x46340b20830761efd32832a74d7169b29feb9758",
+      "category": "cex",
+      "name": null,
+      "balance": 1531.32,
+      "counted": true
+    },
+    {
+      "address": "0xf16e9b0d03470827a95cdfd0cb8a8a3b46969b91",
+      "category": "cex",
+      "name": "KuCoin",
+      "balance": 1000,
+      "counted": true
+    },
+    {
+      "address": "0xb45a2dda996c32e93b8c47098e90ed0e7ab18e39",
+      "category": "excluded-unlabelled",
+      "name": null,
+      "balance": 474.48,
+      "counted": true
+    },
+    {
+      "address": "0xb099ed146fad4d0daa31e3810591fc0554af62bb",
+      "category": "excluded-unlabelled",
+      "name": null,
+      "balance": 401.93,
+      "counted": true
+    },
+    {
+      "address": "0x382ffce2287252f930e1c8dc9328dac5bf282ba1",
+      "category": "cex",
+      "name": null,
+      "balance": 163.41,
+      "counted": true
+    },
+    {
+      "address": "0x4ce053dfe58541e08f149c1050eb3df09d7a40bc",
+      "category": "cex",
+      "name": null,
+      "balance": 116,
+      "counted": true
+    },
+    {
+      "address": "0x0799ddbf6f14db566ca4df4ff0575c4cc1e7749c",
+      "category": "cex",
+      "name": null,
+      "balance": 1.71,
+      "counted": true
+    },
+    {
+      "address": "0x1c3944173abee256456b1498299fc501ad5bbd6f",
+      "category": "cex",
+      "name": null,
+      "balance": 0.56,
+      "counted": true
+    }
+  ]
+}

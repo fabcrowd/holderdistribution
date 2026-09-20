@@ -1,0 +1,237 @@
+name: Pipeline watchdog (self-heal stale feeds)
+
+# Durable, independent-of-any-Claude-session redundancy for the daily chain
+# (refresh-tel-holders -> scan-exchange-flows -> generate-tier-outflows).
+# Runs on its OWN schedule rather than workflow_run off any of them, so a
+# failure anywhere in that chain — a transient RPC error, a rate limit, a
+# script bug — does not also take this out. Reuses only already-proven paths:
+# the exact daily pipeline commands for holders, and the ENV_PASSPHRASE-only
+# cached-transfer replay (scripts/pipeline-health.js's own fallback recipe,
+# verified this session: 44 requests instead of the capped scanner's ~96,000)
+# for exchange flows.
+#
+# HARD LIMIT, STATED ONCE: if GitHub Actions itself is blocked at the account
+# level (the failure this repo actually hit on 2026-08-29 — every workflow
+# failing in 3-5s with no logs, including ones touching no chain data), this
+# workflow does not run either. Nothing hosted by Actions can substitute for
+# Actions being down; only re-enabling it (a billing/spending-limit fix) closes
+# that case. What this workflow DOES guarantee, durably, independent of any
+# session: if Actions is working at all, a feed going stale for any other
+# reason gets a second, independent chance to self-heal every 6 hours, and if
+# it still can't (tier-outflows, cex-wallets — no credential-free/session-free
+# fallback exists for either), a GitHub issue records exactly that.
+
+on:
+  schedule:
+    # Daily, not 6-hourly (changed 2026-09-13). At */6 this could publish four
+    # times in a day on its own, which defeats "one deploy a day" whenever a
+    # feed goes stale — exactly the situation where builds are most likely to
+    # be failing anyway. Daily still bounds a failed nightly refresh to ~24h,
+    # and this workflow only commits when it actually heals something.
+    - cron: '23 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check pipeline health
+        id: health_before
+        # `|| true`: a stale feed makes this exit 1, which must not fail the
+        # job — the whole point is to act on that, not stop at it.
+        run: node scripts/pipeline-health.js --json > /tmp/health-before.json || true
+
+      - name: Decide what needs self-healing
+        id: decide
+        run: |
+          node -e '
+            const r = require("/tmp/health-before.json");
+            const stale = (f) => r.results.find((x) => x.file === f)?.status !== "healthy";
+            const out = process.env.GITHUB_OUTPUT;
+            const fs = require("node:fs");
+            fs.appendFileSync(out, `holders=${stale("holders-lite.json")}\n`);
+            fs.appendFileSync(out, `flows=${stale("exchange-flow-history.json")}\n`);
+            fs.appendFileSync(out, `unfixable=${stale("tier-outflows.json") || stale("cex-wallets.json")}\n`);
+            // Freshness is not completeness: a day the pipeline never ran for
+            // leaves a permanent hole while every feed still reads healthy.
+            fs.appendFileSync(out, `gaps=${(r.gaps?.missing?.length ?? 0) > 0}\n`);
+            console.log(JSON.stringify(r.results.map((x) => [x.file, x.status])));
+          '
+
+      # --- Holders chain: identical to refresh-tel-holders.yml's own steps.
+      # This is deliberately NOT a different recipe — if the primary workflow
+      # failed on a transient error, running the exact same trusted commands a
+      # second time is the safest possible self-heal.
+      - name: Self-heal holder snapshot (if stale)
+        if: steps.decide.outputs.holders == 'true'
+        env:
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: |
+          # Non-fatal for the same reason refresh-tel-holders.yml makes it
+          # non-fatal: it is the heaviest RPC consumer here and the first
+          # casualty of an Alchemy monthly-capacity limit, and losing it should
+          # cost one day of staking freshness, not the entire self-heal.
+          node scripts/pull-staker-balances.js || echo "staker balances failed — continuing with the last committed funding-wallets.json"
+          node scripts/pull-holders-rpc.js
+          node scripts/pull-cex-wallets.js
+          node scripts/generate-holders-lite.js
+          node scripts/generate-holders-history.js
+          node scripts/generate-holder-transitions.js
+          node scripts/reconcile-supply.js
+          node scripts/append-treasury-history.js
+
+      # --- Exchange flows: the ENV_PASSPHRASE-only cached-replay path, not the
+      # 10-block-capped eth_getLogs scanner (scan-exchange-flows.js) — see
+      # extend-transfer-caches.js's header for why that path is ~2,000x more
+      # requests for the same result.
+      - name: Self-heal exchange flow history (if stale)
+        if: steps.decide.outputs.flows == 'true'
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: |
+          node scripts/extend-transfer-caches.js
+          node scripts/append-exchange-flows-from-cache.js
+
+      # --- Missing dates: the same driver the dedicated "Fill holders-history
+      # gaps" workflow runs. Redundancy on the same 6-hourly cadence as every
+      # other self-heal here, for the same reason — if that workflow failed on a
+      # transient error, running its exact command again is the safest retry.
+      # It restores the live snapshot artifacts itself, including on error.
+      - name: Self-heal missing history dates (if any)
+        if: steps.decide.outputs.gaps == 'true'
+        env:
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: node scripts/fill-history-gaps.js
+
+      - name: Re-sync served classification changelog
+        if: steps.decide.outputs.holders == 'true' || steps.decide.outputs.flows == 'true' || steps.decide.outputs.gaps == 'true'
+        run: node scripts/sync-classification-changelog.js
+
+      - name: Check cross-feed consistency
+        if: steps.decide.outputs.holders == 'true' || steps.decide.outputs.flows == 'true' || steps.decide.outputs.gaps == 'true'
+        # Refuses to commit a self-heal that left feeds disagreeing with each
+        # other — same gate the primary workflow runs, same reasoning: shape
+        # validation alone would pass a self-contradicting dataset.
+        run: |
+          node scripts/validate-outputs.js
+          node scripts/check-feed-consistency.js
+
+      - name: Configure git user
+        if: steps.decide.outputs.holders == 'true' || steps.decide.outputs.flows == 'true' || steps.decide.outputs.gaps == 'true'
+        run: |
+          # Publishes (no [skip netlify]). This commit only happens when a
+          # feed was actually stale, which is precisely the case where the
+          # daily publish did not run or did not fix things — so this is the
+          # backstop that keeps a failed daily refresh from freezing
+          # production for more than six hours.
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Commit self-heal changes
+        if: steps.decide.outputs.holders == 'true' || steps.decide.outputs.flows == 'true' || steps.decide.outputs.gaps == 'true'
+        run: |
+          FILES_TO_CHECK="public/data/funding-wallets.json public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/cex-wallets.json public/data/cex-flows.json public/data/cex-balance-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/date-blocks.json"
+
+          git add $FILES_TO_CHECK
+          git add -A -- data/holders-asof-blocks.json 2>/dev/null || true
+          git add -A -- public/data/staker-balances-checkpoint.json 2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Pipeline watchdog: self-heal stale feed(s)"
+            git checkout -- .
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Re-check pipeline health after self-heal
+        id: health_after
+        run: node scripts/pipeline-health.js --json > /tmp/health-after.json || true
+
+      - name: File or update an issue for anything still stale
+        # Fires whenever health_after still shows a problem — including the
+        # "unfixable" case (tier-outflows, cex-wallets) where no self-heal was
+        # even attempted above. This is the durable version of "trigger a note
+        # to run it in this environment": a GitHub issue, filed by a workflow
+        # independent of any Claude session, visible to whoever looks next.
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const report = JSON.parse(fs.readFileSync("/tmp/health-after.json", "utf8"));
+            if (report.healthy) return;
+
+            const stale = report.results.filter((r) => r.status !== "healthy");
+            const title = "Pipeline feeds stale after watchdog self-heal";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              `Watchdog run: ${runUrl}`,
+              `Checked: ${report.generatedAt}`,
+              "",
+              "Still stale after this run's self-heal attempt:",
+              ...stale.map((r) => `- **${r.label}** (${r.file}): ${r.status}` + (r.ageMs != null ? `, ${(r.ageMs / 3600000).toFixed(1)}h old` : "")),
+              "",
+              "If this repeats across runs, check Actions → recent runs across ALL workflows: " +
+                "if unrelated workflows are also failing in a few seconds with no logs, this is an " +
+                "account-level Actions block (billing/spending limit), not a data problem — nothing " +
+                "hosted by Actions, including this watchdog, can self-heal that. It needs a human to " +
+                "clear the block.",
+            ].join("\n");
+
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "pipeline-stale",
+            });
+            const match = existing.find((issue) => issue.title === title);
+            if (match) {
+              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: match.number, body });
+            } else {
+              await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body, labels: ["pipeline-stale"] });
+            }
+
+      - name: Notify on job failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Data pipeline failure: Pipeline watchdog";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "pipeline-failure",
+            });
+            const match = existing.find((issue) => issue.title === title);
+            const body = `Run failed: ${runUrl}\nTriggered: ${new Date().toISOString()}`;
+            if (match) {
+              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: match.number, body });
+            } else {
+              await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body, labels: ["pipeline-failure"] });
+            }

@@ -1,0 +1,433 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+
+Palette follows the Telcoin Association style guide:
+- Slate 100  #FCFCFD  (page background)
+- Navy 900   #23295E  (headings / body text)
+- Purple 700 #3554E8  (Electric Blue — primary actions)
+- Telcoin Blue 500 #14C9FF (bright accent)
+- Slate 600  #595D7B  (muted text)
+- Green 600 #1FA44A / Green 700 #007A52, Amber 600 #DC8A09, Red 600 #E0362C (status)
+*/
+
+@layer base {
+  :root {
+    --background: 220 45% 94%;
+    --foreground: 235 45% 25%;
+
+    --nav-background: 215 88% 89%;
+    --gradient-start: 226 100% 94%;
+    --gradient-end: 190 100% 92%;
+    --card: 233 60% 98%;
+    --card-foreground: 235 45% 25%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 235 45% 25%;
+
+    --primary: 233 79% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 233 100% 97%;
+    --secondary-foreground: 233 79% 36%;
+
+    --muted: 232 33% 96%;
+    --muted-foreground: 233 16% 42%;
+
+    --accent: 193 100% 96%;
+    --accent-foreground: 194 100% 28%;
+
+    --destructive: 4 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 233 38% 82%;
+    --input: 233 25% 82%;
+    --ring: 233 79% 56%;
+
+    --radius: 0.75rem;
+
+    --status-review: 37 92% 45%;
+    --status-passed: 139 68% 38%;
+    --status-implemented: 160 100% 24%;
+    --status-rejected: 4 72% 51%;
+
+    --action-blue: 233 79% 56%;
+
+    /* Telcoin Blue 500 #14C9FF — bright accent for gradients and tile art */
+    --telcoin-blue: 193 100% 50%;
+
+    /* Fluid Typography - Scales smoothly from 320px to 1920px */
+    --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+    --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+    --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    --text-lg: clamp(1.125rem, 1.05rem + 0.375vw, 1.25rem);
+    --text-xl: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);
+    --text-2xl: clamp(1.5rem, 1.3rem + 1vw, 2rem);
+    --text-3xl: clamp(1.875rem, 1.5rem + 1.875vw, 2.5rem);
+    --text-4xl: clamp(2.25rem, 1.8rem + 2.25vw, 3rem);
+
+    /* Responsive spacing */
+    --spacing-section: clamp(2rem, 4vw, 4rem);
+    --spacing-card: clamp(1rem, 2vw, 1.5rem);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply text-foreground;
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(ellipse at 8% 0%, hsl(var(--primary) / 0.28) 0%, transparent 48%),
+      radial-gradient(ellipse at 92% 8%, hsl(var(--telcoin-blue) / 0.32) 0%, transparent 46%),
+      linear-gradient(145deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-size: 16px; /* Prevent iOS zoom on focus */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 4rem; /* Account for sticky nav */
+  }
+  
+  /* Better touch behavior on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  .premium-surface-card {
+    border: 1px solid hsl(var(--border));
+    border-radius: 1.25rem;
+    background: linear-gradient(180deg, hsl(233 70% 99%), hsl(var(--card)));
+    box-shadow:
+      0 1px 3px hsl(235 45% 25% / 0.08),
+      0 12px 30px -14px hsl(235 45% 25% / 0.22);
+  }
+
+  .premium-surface-card:hover {
+    border-color: hsl(var(--primary) / 0.45);
+    box-shadow:
+      0 2px 5px hsl(235 45% 25% / 0.10),
+      0 18px 38px -14px hsl(var(--primary) / 0.32);
+  }
+
+  .premium-surface-featured {
+    box-shadow:
+      0 2px 6px hsl(235 45% 25% / 0.06),
+      0 12px 32px -12px hsl(var(--primary) / 0.18);
+  }
+
+  .premium-stat-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid hsl(var(--border));
+    background: linear-gradient(180deg, hsl(233 80% 98.5%), hsl(233 75% 95%));
+    box-shadow:
+      0 1px 3px hsl(235 45% 25% / 0.08),
+      0 12px 30px -14px hsl(235 45% 25% / 0.22);
+  }
+
+  .premium-stat-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .premium-event-card {
+    background: linear-gradient(90deg, hsl(233 100% 97%), hsl(193 100% 96%));
+  }
+
+  .premium-section-card {
+    border: 1px solid hsl(var(--border));
+    border-radius: 1.5rem;
+    background: linear-gradient(135deg, hsl(233 100% 97.5%), hsl(193 100% 97%));
+    box-shadow: 0 1px 2px hsl(235 45% 25% / 0.03);
+  }
+
+  .premium-nav {
+    background:
+      radial-gradient(circle at 12% 0%, hsl(var(--primary) / 0.22), transparent 42%),
+      linear-gradient(105deg, hsl(var(--nav-background)), hsl(193 100% 85%));
+    border-bottom: 1px solid hsl(var(--primary) / 0.28);
+    box-shadow:
+      0 2px 4px hsl(235 45% 25% / 0.10),
+      0 14px 32px -14px hsl(var(--primary) / 0.32);
+  }
+
+
+  .tile-art {
+    background-blend-mode: normal;
+    background-size: 100% 100%;
+    background-color: hsl(var(--card));
+  }
+
+  .tile-art-market {
+    background-image:
+      radial-gradient(circle at 84% 16%, hsl(233 79% 56% / 0.12), transparent 45%),
+      linear-gradient(150deg, hsl(233 100% 98%), hsl(233 85% 96%));
+  }
+
+  .tile-art-wallet {
+    background-image:
+      radial-gradient(circle at 82% 22%, hsl(193 100% 45% / 0.12), transparent 45%),
+      linear-gradient(150deg, hsl(193 100% 98%), hsl(193 80% 96%));
+  }
+
+  .tile-art-news {
+    background-image:
+      radial-gradient(circle at 78% 14%, hsl(218 96% 62% / 0.10), transparent 45%),
+      linear-gradient(150deg, hsl(220 100% 98%), hsl(220 70% 96%));
+  }
+
+  .tile-art-governance {
+    background-image:
+      radial-gradient(circle at 84% 22%, hsl(262 83% 58% / 0.10), transparent 45%),
+      linear-gradient(150deg, hsl(262 100% 98%), hsl(262 70% 96%));
+  }
+
+  .tile-art-network {
+    background-image:
+      radial-gradient(circle at 74% 24%, hsl(194 100% 38% / 0.12), transparent 45%),
+      linear-gradient(150deg, hsl(194 100% 98%), hsl(194 75% 96%));
+  }
+
+  .tile-art-pets {
+    background-image:
+      radial-gradient(circle at 78% 18%, hsl(37 92% 50% / 0.12), transparent 45%),
+      linear-gradient(150deg, hsl(37 100% 98%), hsl(37 80% 95%));
+  }
+
+  .tile-art-support {
+    background-image:
+      radial-gradient(circle at 82% 22%, hsl(139 68% 38% / 0.12), transparent 45%),
+      linear-gradient(150deg, hsl(139 60% 97%), hsl(139 45% 95%));
+  }
+
+  .tile-art-community {
+    background-image:
+      radial-gradient(circle at 78% 22%, hsl(193 100% 45% / 0.12), transparent 45%),
+      linear-gradient(150deg, hsl(200 100% 98%), hsl(200 75% 96%));
+  }
+
+  /* /holders section headers — three fixed, always-present sections (unlike
+     tile-art's open-ended category list above), so each gets its own named
+     class rather than a lookup table. Same restrained technique as tile-art
+     (a soft radial wash blended into the card surface, no loud borders or
+     blocks of solid color per lessons.md's "Apple-like" guidance) but each
+     tuned to a distinct accent so the three collapsed headers read as
+     different sections at a glance, not just different label text. Replaces
+     the identical bg-muted/40 all three previously shared. */
+  .holders-header-snapshot {
+    background-image:
+      radial-gradient(circle at 92% 12%, hsl(var(--primary) / 0.14), transparent 46%),
+      linear-gradient(145deg, hsl(var(--muted) / 0.6), hsl(var(--card)));
+  }
+
+  .holders-header-growth {
+    background-image:
+      radial-gradient(circle at 92% 12%, hsl(142 71% 45% / 0.14), transparent 46%),
+      linear-gradient(145deg, hsl(var(--muted) / 0.6), hsl(var(--card)));
+  }
+
+  .holders-header-distribution {
+    background-image:
+      radial-gradient(circle at 92% 12%, hsl(262 83% 58% / 0.14), transparent 46%),
+      linear-gradient(145deg, hsl(var(--muted) / 0.6), hsl(var(--card)));
+  }
+
+  /* Custom fade-in animation */
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Generic collapse-to-intrinsic-height utility (grid-rows 0fr<->1fr trick):
+     the usual max-height approach needs a hardcoded pixel guess and either
+     clips content or leaves dead space; animating grid-template-rows on a
+     single-row grid animates smoothly to and from the row's true intrinsic
+     height with no guess needed. The inner div needs overflow-hidden so its
+     content doesn't render past the animating 0fr row during the transition.
+     Used for the Ecosystem Headline tiles' header/subtitle rows collapsing
+     on scroll (HolderKpiHero.tsx). After the first collapse, Holders.tsx
+     latches the compact state so scrolling back up does not replay this
+     animation — click reopens it. Reusable anywhere a region needs to
+     animate open/closed without a pixel guess. */
+  .headline-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 220ms ease;
+  }
+  .headline-collapse.is-open {
+    grid-template-rows: 1fr;
+  }
+  .headline-collapse > div {
+    overflow: hidden;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .headline-collapse {
+      transition: none;
+    }
+  }
+
+  /* Terminal density — applied to the whole /holders page, not just the focus
+     view it was written for. Measured across all ten tab/panel combinations,
+     density was reaching NONE of them when navigating by the tab bar: charts
+     began 921-1751px down a 900px viewport and pages ran 1626-2780px, while
+     the same data arrived by a headline tile was compact. One page, two
+     densities, decided by which control you happened to use.
+
+     Scoped to one class rather than threaded as a `compact` prop through
+     renderBalanceInsights, renderStakingInsights, HolderGrowthWidget and
+     ExchangeFlowWidget: the four destinations are built by four different
+     renderers that share a vocabulary of surfaces and type scales but no
+     common component, so a prop would mean the same edit four times and four
+     more places to keep in sync. Everything here only ever applies inside
+     .terminal-dense, so the ordinary scrolling view is untouched.
+
+     Measured on a 1440x900 desktop viewport before this existed: the Retail
+     Held chart began 1013px down a 900px viewport — the chart the click asked
+     for was, precisely, off screen. Padding, gaps and type in the framing are
+     what paid for that, not the data.
+
+     Deliberately NOT touched: chart bodies, axis labels, tick text and
+     tooltips, which are the content. Density is taken out of the chrome. */
+  .terminal-dense .premium-surface-card {
+    padding: 0.5rem 0.625rem;
+  }
+  .terminal-dense .grid {
+    gap: 0.5rem;
+  }
+  /* The stat readouts: value stays prominent, the frame around it does not. */
+  .terminal-dense .text-xl {
+    font-size: 1rem;
+    line-height: 1.35rem;
+  }
+  .terminal-dense .text-2xl {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+  }
+  /* Section prose is hidden only in FOCUS mode (.terminal-focus), not by
+     density alone. Arriving via a headline tile, the strip names the metric
+     and the section heading repeats it, so the sentence below both is the
+     third restatement. Arriving by the tab bar there is no strip, so that
+     sentence is the only thing saying what the panel measures — dropping it
+     everywhere would be trading comprehension for pixels. Headings always
+     stay. */
+  /* Card titles that restate the tab. "Distribution Analysis" sits under a tab
+     labelled Distribution, above a section headed "Retail distribution";
+     "Supply Breakdown" sits under Supply. The same reasoning already removed
+     the Holder Snapshot block (compactHeader in WalletHoldingsWidget) — this
+     is the CSS equivalent for the two widgets that take no such prop, so all
+     three tabs behave the same instead of one being compact for reasons of
+     implementation history.
+
+     Only the title and its description go. Distribution's qualifier chips
+     ("Retail only — excludes exchange & hot wallets", "Sub-1-TEL dust wallets
+     counted in lowest tier") live in the same header and STAY: they change how
+     the numbers below should be read, which is content, not a label. */
+  .terminal-dense .holders-header-distribution > :first-child,
+  .terminal-dense .holders-header-supply > h3,
+  .terminal-dense .holders-header-supply > p {
+    display: none;
+  }
+  .terminal-dense .holders-header-distribution,
+  .terminal-dense .holders-header-supply {
+    padding: 0.75rem 0.75rem 0.5rem;
+  }
+
+  .terminal-focus [data-panel-desc] {
+    display: none;
+  }
+  /* Stat readouts as lines, not cards. Five centred tiles stack label over
+     value over sub-label — 84px each to say "Average Balance 665.24K", and on
+     the Balances view five of them sat directly between the section heading
+     and the chart. One line each says the same thing in ~32px. A status line
+     is the right shape for this: it is exactly what these are. */
+  @media (min-width: 1024px) {
+    .terminal-dense .premium-surface-card.text-center {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem;
+      text-align: left;
+    }
+    .terminal-dense .premium-surface-card.text-center > div {
+      margin: 0;
+    }
+  }
+
+  .terminal-dense > * + * {
+    margin-top: 0.5rem;
+  }
+
+  /* Flow-line "draw in" — a stroke appears to trace itself from source to
+     destination rather than popping in fully-formed. Pure CSS: an oversized
+     stroke-dasharray (safely larger than any path in the tier-flow canvas)
+     with the offset animated to 0. Compositor/paint-only work, no layout —
+     cheap even with ~20 lines animating at once. Respects the global
+     prefers-reduced-motion rule above it (zeroes animation-duration). */
+  .flow-line-draw {
+    stroke-dasharray: 1000;
+    animation: flowDraw 0.5s ease-out forwards;
+  }
+
+  @keyframes flowDraw {
+    from {
+      stroke-dashoffset: 1000;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Glassmorphism utility */
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  /* Gradient text utility — Electric Blue → Telcoin Blue */
+  .gradient-text {
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--telcoin-blue)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Respect user motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

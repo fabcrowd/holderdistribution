@@ -1,0 +1,278 @@
+{
+  "generatedAt": "2026-08-08T20:28:27.751Z",
+  "snapshotGeneratedAt": "2026-08-07T02:42:22.877Z",
+  "scope": "Residual non-retail pool from the exclusion/CEX investigation (Vaults + curated gaps + remaining unlabeled exclusions >=1M TEL). Not whole-supply.",
+  "methodology": {
+    "vaults": "Reclassified as cex (KuCoin). See vault-unattributed-evidence.md reversal record.",
+    "inferenceThreshold": ">=70% counterparty volume for cexSet",
+    "safeCluster": "Safe + signers excluded together",
+    "cexBalanceNote": "UI CEX Balance sums cexSet only; the seven former vault-unattributed wallets are now in cexSet",
+    "otherIdentityRescan": "2026-08-08 independent RPC/Blockscout/Etherscan — see data/other-address-identity.md"
+  },
+  "totals": {
+    "poolTel": 13961225792.97,
+    "byCategory": {
+      "cex": 11847150350.88,
+      "dex": 337099819.84999996,
+      "whale-unattributed": 100109164.84,
+      "retail-whale": 15654927.42,
+      "dormant-whale": 12021453.74,
+      "holdings": 1649190076.24
+    },
+    "unresolvedTel": 0,
+    "unresolvedCount": 0
+  },
+  "unresolved": [],
+  "entries": [
+    {
+      "address": "0xf35a6bd6e0459a4b53a27862c51a2a7292b383d1",
+      "balance": 1381086989.1,
+      "category": "cex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "Etherscan CoinSpot 1",
+      "inCexSet": true,
+      "name": "CoinSpot 1"
+    },
+    {
+      "address": "0x1b14376ee2d46ae5c27a43d902d96d4f3f264b83",
+      "balance": 1345969471.8,
+      "category": "cex",
+      "evidenceTier": "ownership-scrutiny",
+      "confidence": "high",
+      "note": "Group A vault: multi-asset book indistinguishable from tagged KuCoin vaults; controller wallets also move funds with KuCoin. See reversal record.",
+      "inCexSet": true,
+      "name": "KuCoin (vault)"
+    },
+    {
+      "address": "0xaa10db8804d076601999c7cd769e02e44a99d5b2",
+      "balance": 1344077200,
+      "category": "cex",
+      "evidenceTier": "ownership-scrutiny",
+      "confidence": "high",
+      "note": "Group A vault: multi-asset book indistinguishable from tagged KuCoin vaults; controller wallets also move funds with KuCoin. See reversal record.",
+      "inCexSet": true,
+      "name": "KuCoin (vault)"
+    },
+    {
+      "address": "0x175ce6204bfda2a509c7e9c786b74407f569c9cc",
+      "balance": 1200000000,
+      "category": "cex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "Etherscan: KuCoin 51. Reclassified from vault-unattributed — see vault-unattributed-evidence.md reversal.",
+      "inCexSet": true,
+      "name": "KuCoin 51"
+    },
+    {
+      "address": "0x6d6cc65e2060d0a280fcd47b6c22ec5636797fec",
+      "balance": 1200000000,
+      "category": "cex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "Etherscan: KuCoin 45. Reclassified from vault-unattributed — see vault-unattributed-evidence.md reversal.",
+      "inCexSet": true,
+      "name": "KuCoin 45"
+    },
+    {
+      "address": "0x8dac80ce96f69f9762bc450faa4d7fbd5891ae18",
+      "balance": 1200000000,
+      "category": "cex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "BscScan: KuCoin 47. Reclassified from vault-unattributed — see vault-unattributed-evidence.md reversal.",
+      "inCexSet": true,
+      "name": "KuCoin 47"
+    },
+    {
+      "address": "0x69be413d648ae00f0fbd9856f1355e22b36ee5e0",
+      "balance": 1200000000,
+      "category": "cex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "BscScan: KuCoin 48. Reclassified from vault-unattributed — see vault-unattributed-evidence.md reversal.",
+      "inCexSet": true,
+      "name": "KuCoin 48"
+    },
+    {
+      "address": "0x2677c4c8757da1857cc7cc4071e0e0dd32ccb975",
+      "balance": 1200000000,
+      "category": "cex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "Etherscan: KuCoin 49. Reclassified from vault-unattributed — see vault-unattributed-evidence.md reversal.",
+      "inCexSet": true,
+      "name": "KuCoin 49"
+    },
+    {
+      "address": "0x4456dd6643c973a7a63d6b85b6f58aeeabaf7259",
+      "balance": 817202059,
+      "category": "cex",
+      "evidenceTier": "counterparty-inference",
+      "confidence": "high",
+      "note": "~75% counterparty volume with KuCoin (>=70% threshold)",
+      "inCexSet": true,
+      "name": "KuCoin"
+    },
+    {
+      "address": "0x6522b7f9d481eceb96557f44753a4b893f837e90",
+      "balance": 726591360.23,
+      "category": "cex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "Bybit; funded by tagged Bybit wallet",
+      "inCexSet": true,
+      "name": "Bybit cold"
+    },
+    {
+      "address": "0x9f45bccdb42871a955e34d9d5ca33be9ccaef1fd",
+      "balance": 599000000,
+      "category": "holdings",
+      "evidenceTier": "signer-graph",
+      "confidence": "confirmed",
+      "note": "Telcoin Holdings cold reserve. Entire 599M TEL came from sibling Holdings controller 0xc44784b1 (2025-02-27). Co-controls shared Safe 0x84b94024 (2 of 3). Confirmed Holdings 2026-08-08.",
+      "inCexSet": false,
+      "name": "Telcoin Holdings reserve (Ethereum)"
+    },
+    {
+      "address": "0x84b94024463f01d5cbb3086f14f574d7ed83b794",
+      "balance": 275000000,
+      "category": "holdings",
+      "evidenceTier": "signer-graph",
+      "confidence": "confirmed",
+      "note": "Telcoin Holdings Safe on Polygon (275M TEL). Controlled by three wallets including 0xc44784b1 and 0x9f45bccd (needs 2 of 3). Confirmed Holdings 2026-08-08.",
+      "inCexSet": false,
+      "name": "Telcoin Holdings shared Safe (Polygon)"
+    },
+    {
+      "address": "0xc44784b1ace0830a82ceac529cc98d1b38640413",
+      "balance": 259427397.24,
+      "category": "holdings",
+      "evidenceTier": "signer-graph",
+      "confidence": "confirmed",
+      "note": "Telcoin Holdings controller for shared Safe 0x84b94024. Sent 599M to reserve wallet 0x9f45bccd; still holds ~259M on Polygon (bridge mint). Confirmed Holdings 2026-08-08.",
+      "inCexSet": false,
+      "name": "Telcoin Holdings controller (Polygon)"
+    },
+    {
+      "address": "0x20daacb0864ff9a5e07d05ea16fa56cd00fdc16d",
+      "balance": 229454505.83999997,
+      "category": "dex",
+      "evidenceTier": "counterparty-inference",
+      "confidence": "high",
+      "note": "~82% volume with Balancer Vault + burn — DEX MM, not retail",
+      "inCexSet": false,
+      "name": "DEX market maker (Balancer-linked)"
+    },
+    {
+      "address": "0xeed86b90448c371eab47b7f16e294297c27e4f51",
+      "balance": 218797843.45,
+      "category": "cex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "Etherscan/Blockscout: CoinSpot 11 (Australian CEX hot wallet)",
+      "inCexSet": true,
+      "name": "CoinSpot 11"
+    },
+    {
+      "address": "0xcf6994abe437e67b331cd2513f47773cd91244d2",
+      "balance": 199888223.34,
+      "category": "holdings",
+      "evidenceTier": "signer-graph",
+      "confidence": "high",
+      "note": "Telcoin Holdings operational Safe on Base (~200M). Funded by controller network; linked to cross-chain ops. Confirmed Holdings 2026-08-08.",
+      "inCexSet": false,
+      "name": "Telcoin Holdings ops Safe (Base)"
+    },
+    {
+      "address": "0x067173cf1a20e1f7a952d3abd15537d86a239924",
+      "balance": 121857644,
+      "category": "holdings",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "Telcoin Holdings bridge-hub Safe on Ethereum. Funded ~576M from Telcoin: Liquidity Wallet (0x0ae09ef6). Moves TEL via Polygon/Base/Arbitrum bridges. Confirmed Holdings 2026-08-08.",
+      "inCexSet": false,
+      "name": "Telcoin Holdings bridge-hub Safe"
+    },
+    {
+      "address": "0x5dad2cd9195c4954ec13af1f39f9725643d85a05",
+      "balance": 100109164.84,
+      "category": "whale-unattributed",
+      "evidenceTier": "on-chain-pattern",
+      "confidence": "high",
+      "note": "Independent holder (~100M on Polygon+Base). Heavy DEX trading; no Telcoin Association or Holdings funding links. Confirmed independent 2026-08-08.",
+      "inCexSet": false,
+      "name": "Independent large wallet (active trader)"
+    },
+    {
+      "address": "0xa9781d19e5611f65908dd6818fc1c276e2c6ac44",
+      "balance": 98142782,
+      "category": "holdings",
+      "evidenceTier": "signer-graph",
+      "confidence": "high",
+      "note": "Telcoin Holdings cold Safe on Base. Single ~98.1M deposit then quiet since Apr 2025. Confirmed Holdings 2026-08-08.",
+      "inCexSet": false,
+      "name": "Telcoin Holdings cold Safe (Base)"
+    },
+    {
+      "address": "0x9756686f71e9a90558c7cfbad89e9fd8007f97e7",
+      "balance": 95874029.66,
+      "category": "holdings",
+      "evidenceTier": "signer-graph",
+      "confidence": "high",
+      "note": "Telcoin Holdings cold Safe on Base. Single ~95.9M deposit then quiet since Apr 2025. Confirmed Holdings 2026-08-08.",
+      "inCexSet": false,
+      "name": "Telcoin Holdings cold Safe (Base)"
+    },
+    {
+      "address": "0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208",
+      "balance": 63242023.67,
+      "category": "dex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "IDEX v1 defunct DEX contract (deployed 2017); TEL effectively locked",
+      "inCexSet": false,
+      "name": "IDEX v1 (defunct)"
+    },
+    {
+      "address": "0x8d12a197cb00d4747a1fe03395095ce2a5cc6819",
+      "balance": 41979464.2,
+      "category": "dex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "EtherDelta 2 defunct DEX contract (deployed 2017); TEL effectively locked",
+      "inCexSet": false,
+      "name": "EtherDelta 2 (defunct)"
+    },
+    {
+      "address": "0x0b07f64abc342b68aec57c0936e4b6fd4452967e",
+      "balance": 13425427.3,
+      "category": "cex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "Etherscan: BingX 21 (CEX hot wallet,  portfolio)",
+      "inCexSet": true,
+      "name": "BingX 21"
+    },
+    {
+      "address": "0xe482aed4c5faec57084762b22a09ac0156c582b6",
+      "balance": 12021453.74,
+      "category": "dormant-whale",
+      "evidenceTier": "on-chain-pattern",
+      "confidence": "high",
+      "note": "Independent cold storage (~12M on Polygon). Test-then-deposit from unlabeled sender; no Telcoin Association or Holdings links. Confirmed independent 2026-08-08.",
+      "inCexSet": false,
+      "name": "Independent large wallet (cold storage)"
+    },
+    {
+      "address": "0xfc2fc983a411c4b1e238f7eb949308cf0218c750",
+      "balance": 2423826.14,
+      "category": "dex",
+      "evidenceTier": "explorer-label",
+      "confidence": "confirmed",
+      "note": "Uniswap V3 TEL/WETH LP (Polygon); 50/50 pool",
+      "inCexSet": false,
+      "name": "Uniswap TEL/WETH LP (Polygon)"
+    }
+  ]
+}

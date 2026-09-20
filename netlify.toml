@@ -1,0 +1,32 @@
+# Adapted from the main Telcoin Hub repo's netlify.toml — see that repo's
+# lessons.md -> "Netlify Deployment" before changing the ignore/cache rules
+# below; the reasoning (why there's no build.ignore rule, why /data/* caching
+# lives ONLY here and not in public/_headers) carries over unchanged, this
+# repo just has one page instead of many.
+#
+# Production deploys are driven entirely by Netlify's native git auto-deploy
+# on `main`. Recurring data-refresh workflow commits are tagged
+# `[skip netlify]` so they land without triggering a build; only the daily
+# refresh (and the watchdog, when it heals a stale feed) publish. See
+# scripts/lib/deployTriggers.js / scripts/lib/deployTriggers.test.js, which
+# enforce this at CI time.
+
+[context.deploy-preview]
+  ignore = "exit 0"
+
+[context.branch-deploy]
+  ignore = "exit 0"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=300, stale-while-revalidate=600"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

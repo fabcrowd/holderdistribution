@@ -1,0 +1,2296 @@
+{
+  "generatedAt": "2026-09-17T15:20:01.046Z",
+  "source": {
+    "method": "transfer-log replay over data/rebuild-transfers-<chain>.ndjson, anchored to supply-reconciliation.json",
+    "categories": [
+      "treasury",
+      "council",
+      "holdings",
+      "escrow"
+    ],
+    "addressCount": 27,
+    "excludes": "staking-contract (attributed to individual stakers elsewhere; counting it here would double-count)",
+    "anchorDate": "2026-08-21"
+  },
+  "latestByAddress": {
+    "0x0454d03c2010862277262cb306749e829ee97591": {
+      "category": "council",
+      "balance": 0
+    },
+    "0x067173cf1a20e1f7a952d3abd15537d86a239924": {
+      "category": "holdings",
+      "balance": 21857644
+    },
+    "0x2580ccb2be946ad98effa7f4b76148bed319011c": {
+      "category": "treasury",
+      "balance": 1425752425
+    },
+    "0x583d596b0a79c0e83c87851ea9fb1a91e80290b2": {
+      "category": "council",
+      "balance": 74221708
+    },
+    "0x6e130c92e6f4d71b081c4d5b664cb210e55dbacf": {
+      "category": "council",
+      "balance": 102662861
+    },
+    "0x7307a12f34fe797dfe11d7f295a3a3770c822396": {
+      "category": "council",
+      "balance": 0
+    },
+    "0x741551aa517ac439237119d39084ab9ac0ab3e68": {
+      "category": "council",
+      "balance": 0
+    },
+    "0x79e5a6ffe2e6ba053a80e1b199c4f328938f40ca": {
+      "category": "council",
+      "balance": 12118224
+    },
+    "0x7feb8febddb66189417f732b4221a52e23b926c4": {
+      "category": "council",
+      "balance": 12843367
+    },
+    "0x84b94024463f01d5cbb3086f14f574d7ed83b794": {
+      "category": "holdings",
+      "balance": 275000000
+    },
+    "0x8dcf8d134f22ac625a7afb39514695801cd705b5": {
+      "category": "council",
+      "balance": 162109597
+    },
+    "0x8f702676830ddca2801a4a7cdb971cde4df697ae": {
+      "category": "council",
+      "balance": 9573413
+    },
+    "0x90f18755cad5fc696a6dd7418d05c5f5e022774a": {
+      "category": "council",
+      "balance": 7767851
+    },
+    "0x9756686f71e9a90558c7cfbad89e9fd8007f97e7": {
+      "category": "holdings",
+      "balance": 95874030
+    },
+    "0x99ef9f86c41d2a5b1c609e910b06c20ca45a984c": {
+      "category": "council",
+      "balance": 83311891
+    },
+    "0x9f45bccdb42871a955e34d9d5ca33be9ccaef1fd": {
+      "category": "holdings",
+      "balance": 599000000
+    },
+    "0xa9781d19e5611f65908dd6818fc1c276e2c6ac44": {
+      "category": "holdings",
+      "balance": 98142782
+    },
+    "0xa9d6f0ebe64a931492d23f6782d110a9f25d4a51": {
+      "category": "council",
+      "balance": 0
+    },
+    "0xaa976f484cfa09852c94828e3570f4b0ec5f758e": {
+      "category": "council",
+      "balance": 0
+    },
+    "0xaa9ae53fc7a69fde1baaf6aa03796e6ccc764271": {
+      "category": "escrow",
+      "balance": 2500001000
+    },
+    "0xada13ef9e48e14ee43840e8049f7e0953dfff373": {
+      "category": "council",
+      "balance": 0
+    },
+    "0xbd02c51150a4ab6ce97b9de2025644594f3e75b8": {
+      "category": "escrow",
+      "balance": 3834240801
+    },
+    "0xc44784b1ace0830a82ceac529cc98d1b38640413": {
+      "category": "holdings",
+      "balance": 259427397
+    },
+    "0xc4fbeeda84f39ea26f21d50d88590a1f7a03d386": {
+      "category": "council",
+      "balance": 0
+    },
+    "0xcf6994abe437e67b331cd2513f47773cd91244d2": {
+      "category": "holdings",
+      "balance": 299888223
+    },
+    "0xe4ccf475a8ca5c96edbcdcf77a13ef29253d0878": {
+      "category": "council",
+      "balance": 297313
+    },
+    "0xf4bc288d616c4f57071a57f5a4050b5e516fe7e5": {
+      "category": "council",
+      "balance": 5298994
+    }
+  },
+  "entries": [
+    {
+      "date": "2026-01-01",
+      "categories": {
+        "treasury": 2325752425,
+        "council": 648228163,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-02",
+      "categories": {
+        "treasury": 2325752425,
+        "council": 648203167,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-03",
+      "categories": {
+        "treasury": 2325752425,
+        "council": 648099435,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-04",
+      "categories": {
+        "treasury": 2325752425,
+        "council": 646884930,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-05",
+      "categories": {
+        "treasury": 2325752425,
+        "council": 646767885,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-06",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 655084990,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-07",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 655084642,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-08",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 643413265,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-09",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 643403148,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-10",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 643403148,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-11",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 643323400,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-12",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 643315750,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-13",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 643224203,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-14",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 643164257,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-15",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 643121384,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-16",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 641688906,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-17",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 641623343,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-18",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 641609425,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-19",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 641462970,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-20",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 641145104,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-21",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 641131608,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-22",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 641123829,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-23",
+      "categories": {
+        "treasury": 2317419091,
+        "council": 639869432,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-24",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 654762197,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-25",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 654645832,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-26",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 654627010,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-27",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 654618667,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-28",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 654607686,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-29",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 625411945,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-30",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 624191642,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-01-31",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 624060988,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-01",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 624030137,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-02",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 623993084,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-03",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 623895685,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-04",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 623882655,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-05",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 623882386,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-06",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 623678012,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-07",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 623028589,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-08",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 622831451,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-09",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 622831451,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-10",
+      "categories": {
+        "treasury": 2301307982,
+        "council": 622824245,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-11",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1471580109,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-12",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1469153455,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-13",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1469141923,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-14",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1469088502,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-15",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1468967070,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-16",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1468886258,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-17",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1468798439,
+        "holdings": 2050332432,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-18",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1468528279,
+        "holdings": 2244397315,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-19",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1468482734,
+        "holdings": 2244397315,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-20",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1462067470,
+        "holdings": 2244397315,
+        "escrow": 7990176918
+      }
+    },
+    {
+      "date": "2026-02-21",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1294320963,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-02-22",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1294320963,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-02-23",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1294236320,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-02-24",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1294215240,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-02-25",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1291305686,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-02-26",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1289784246,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-02-27",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1285338634,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-02-28",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1285280783,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-01",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1285273636,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-02",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1285273106,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-03",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1276160346,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-04",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1276147434,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-05",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1275899748,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-06",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1274682822,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-07",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1274151396,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-08",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1274151396,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-09",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1274143019,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-10",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1274124719,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-11",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1236043211,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-12",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1201714432,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-13",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1201705446,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-14",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1176201871,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-15",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1176163902,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-16",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1176019996,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-17",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1173774554,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-18",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1173774231,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-19",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1173742689,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-20",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1172526590,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-21",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1172526255,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-22",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1172510296,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-23",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1172466918,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-24",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1172428817,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-25",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1172376872,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-26",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1171594964,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-27",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1096194981,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-28",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1096186691,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-29",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1096179210,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-30",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1095172729,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-03-31",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1093999592,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-01",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1093898845,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-02",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1085404065,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-03",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1085326285,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-04",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1032399020,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-05",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1032398724,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-06",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1032371849,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-07",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1031963124,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-08",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1031953433,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-09",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1030999953,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-10",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1030439953,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-11",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1030412211,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-12",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1030378952,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-13",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1029816053,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-14",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1029804795,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-15",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1029260702,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-16",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1029209766,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-17",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1024299741,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-18",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1022923463,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-19",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1022896840,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-20",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1022867828,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-21",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1022839252,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-22",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1022692393,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-23",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1022532714,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-24",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1022479856,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-25",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1021261847,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-26",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1021247761,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-27",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1021240052,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-28",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1021149146,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-29",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1020810278,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-04-30",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1020803189,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-01",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1009285702,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-02",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1009037066,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-03",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1009037066,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-04",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1009006096,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-05",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1007174191,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-06",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1007174191,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-07",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1007076658,
+        "holdings": 2050332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-08",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1005738456,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-09",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1005616813,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-10",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1005477585,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-11",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1005405340,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-12",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1005046484,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-13",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 1004919526,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-14",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 998215631,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-15",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 998072951,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-16",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 998062970,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-17",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 997873605,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-18",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 997800458,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-19",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 987403969,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-20",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 946855172,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-21",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 946850223,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-22",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 945608710,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-23",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 910463910,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-24",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 910284442,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-25",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 910277118,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-26",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 910268975,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-27",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 910267750,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-28",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 876753312,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-29",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 876736517,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-30",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 876520722,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-05-31",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 876463703,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-01",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 876456204,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-02",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 876268278,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-03",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 876259434,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-04",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 876061680,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-05",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 868442758,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-06",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 868442565,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-07",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 868368969,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-08",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 868319927,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-09",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 867900354,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-10",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 867880592,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-11",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 867878300,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-12",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 867846282,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-13",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 866630204,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-14",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 866609228,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-15",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 866551527,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-16",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 866480745,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-17",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 866215982,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-18",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 846215982,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-19",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 846190922,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-20",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 834739359,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-21",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 834434501,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-22",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 834425873,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-23",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 779797000,
+        "holdings": 1950332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-24",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 775688584,
+        "holdings": 1850332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-25",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 770957863,
+        "holdings": 1850332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-26",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 770922474,
+        "holdings": 1850332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-27",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 767327719,
+        "holdings": 1850332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-28",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 767294579,
+        "holdings": 1850332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-29",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 767264874,
+        "holdings": 1850332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-06-30",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 767019327,
+        "holdings": 1850332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-01",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 764491660,
+        "holdings": 1850332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-02",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 764317002,
+        "holdings": 1850332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-03",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 763654052,
+        "holdings": 1550332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-04",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 762297754,
+        "holdings": 1550332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-05",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 762282298,
+        "holdings": 1550332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-06",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 762053411,
+        "holdings": 1550332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-07",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 760230755,
+        "holdings": 1550332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-08",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 760220854,
+        "holdings": 1549332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-09",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 746609351,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-10",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 745181708,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-11",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 745174628,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 745113646,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-13",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 745105731,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-14",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 745064820,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-15",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 745021823,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-16",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 744928545,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-17",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 734432854,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-18",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 733611052,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-19",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 733594657,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-20",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 733586603,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-21",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 733586603,
+        "holdings": 1548332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-22",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 733577349,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-23",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 733325531,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-24",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 648878436,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-25",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 647938048,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-26",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 647930573,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-27",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 647929607,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-28",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 646976350,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-29",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 601373762,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-30",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 601435709,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-07-31",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 599986561,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-01",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 599971450,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-02",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 599971450,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-03",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 599939965,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-04",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 599862116,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-05",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 481557237,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-06",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 481248882,
+        "holdings": 1528332432,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-07",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 481215882,
+        "holdings": 1649190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-08",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 479826940,
+        "holdings": 1649190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-09",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 479803228,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-10",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 479711294,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-11",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 479689800,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-12",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 479630055,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-13",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 479630055,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-14",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 479622506,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-15",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 479293002,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-16",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 478046173,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-17",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 477844510,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-18",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 477834369,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-19",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 477541776,
+        "holdings": 1749190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-20",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 477530991,
+        "holdings": 1649190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-21",
+      "categories": {
+        "treasury": 1425752425,
+        "council": 468630114,
+        "holdings": 1649190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-28",
+      "categories": {
+        "treasury": 1329085758,
+        "council": 439535687,
+        "holdings": 1629190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-08-29",
+      "categories": {
+        "treasury": 1329085758,
+        "council": 433926937,
+        "holdings": 1629190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-09-02",
+      "categories": {
+        "treasury": 1329085758,
+        "council": 433541837,
+        "holdings": 1529190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-09-10",
+      "categories": {
+        "treasury": 1329085758,
+        "council": 431749995,
+        "holdings": 1229190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-09-11",
+      "categories": {
+        "treasury": 1329085758,
+        "council": 430197905,
+        "holdings": 1229190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-09-13",
+      "categories": {
+        "treasury": 1329085758,
+        "council": 430048793,
+        "holdings": 1229190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-09-14",
+      "categories": {
+        "treasury": 1329085758,
+        "council": 429998756,
+        "holdings": 1229190076,
+        "escrow": 8084241801
+      }
+    },
+    {
+      "date": "2026-09-17",
+      "categories": {
+        "treasury": 1329085758,
+        "council": 397713263,
+        "holdings": 1229190076,
+        "escrow": 8084241801
+      }
+    }
+  ]
+}

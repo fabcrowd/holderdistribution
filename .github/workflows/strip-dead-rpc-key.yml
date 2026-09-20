@@ -1,0 +1,49 @@
+name: Strip dead RPC key
+
+# One-shot: remove ETH_RPC_0 from .env.enc and commit. Uses ENV_PASSPHRASE.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/strip-env-keys.js"
+      - ".github/workflows/strip-dead-rpc-key.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  strip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Remove ETH_RPC_0 from .env.enc
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: node scripts/strip-env-keys.js ETH_RPC_0
+
+      - name: Verify remaining keys
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: node scripts/test-rpc-keys.js
+
+      - name: Commit updated .env.enc
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+          if git diff --quiet -- .env.enc; then
+            echo "No .env.enc change"
+            exit 0
+          fi
+          git add .env.enc
+          git commit -m "chore: remove dead ETH_RPC_0 from .env.enc"
+          git push

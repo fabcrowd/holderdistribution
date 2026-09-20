@@ -1,0 +1,136 @@
+name: Scan exchange flows
+
+# Detects true TEL deposits to / withdrawals from exchange wallets by scanning
+# ERC-20 Transfer logs. Resumable: each run advances the per-chain checkpoint by
+# up to MAX_BLOCKS_PER_RUN blocks, so a full backfill completes over several runs.
+# Trigger manually; re-run until "up to date" appears for every chain.
+on:
+  # CHAINED, not clocked. This used to fire on its own 00:30 cron, 30 minutes
+  # after the holders snapshot started — a guess at how long that run takes, so
+  # a slow or failed holders run left this one scanning against a classification
+  # that had not been updated, and committing a second time regardless. Running
+  # on workflow_run means it starts when the upstream job actually finished, and
+  # not at all if that job failed.
+  workflow_run:
+    workflows: ["Refresh TEL holders snapshot"]
+    types: [completed]
+  # Safety net: if the chain upstream breaks (the holders workflow disabled,
+  # or its run skipped) this still advances rather than silently freezing.
+  # Removing it was tried on 2026-09-13 to cut deploys and was WRONG —
+  # scripts/lib/workflowChain.test.js asserts this cron exists precisely so a
+  # broken chain cannot freeze a feed forever. The deploy cost it used to
+  # carry is gone for a different reason: this workflow's commit now carries
+  # [skip netlify], so a second run in a day costs a second commit but NOT a
+  # second build.
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      max_blocks_per_run:
+        description: 'Max blocks to scan per chain this run'
+        required: false
+        default: '3000000'
+
+permissions:
+  contents: write
+  issues: write
+
+# Prevent overlapping runs from clobbering the checkpoint.
+concurrency:
+  group: scan-exchange-flows
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    # Skip when the upstream run failed or was cancelled: publishing flows
+    # derived from a half-updated classification is worse than not publishing.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          # workflow_run checks out the commit that TRIGGERED the upstream run,
+          # which predates the data commit that run just made. Pin to main so
+          # this job sees the freshly committed classification and artifacts.
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Scan exchange flows
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          MAX_BLOCKS_PER_RUN: ${{ github.event.inputs.max_blocks_per_run }}
+        run: node scripts/scan-exchange-flows.js
+
+      - name: Commit results
+        id: commit
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+          FILES="public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json"
+          git add $FILES
+          # git diff misses new untracked files — check the staged index instead.
+          if git diff --cached --quiet -- $FILES; then
+            echo "No changes to commit"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            # "[skip netlify]" — this commit lands the data but does NOT
+            # publish. Netlify honours [skip ci] and [skip netlify] in the head
+            # commit of a push; [skip ci] is avoided deliberately because
+            # GitHub Actions honours that one too and would break the
+            # workflow_run chains. The daily holders refresh publishes
+            # everything committed since, so this data goes live within 24h.
+            # See CLAUDE.md -> "Netlify note".
+            git commit -m "Update exchange-flow scan (resumable backfill) [skip netlify]"
+            git fetch origin ${GITHUB_REF_NAME}
+            git rebase origin/${GITHUB_REF_NAME}
+            git push origin HEAD:${GITHUB_REF_NAME}
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # No explicit deploy step: the push to main above is itself the deploy
+      # trigger. netlify.toml has no build.ignore rule, so Netlify's native git
+      # auto-deploy publishes every commit that lands on main. See netlify.toml
+      # and lessons.md → "Netlify Deployment" before adding a hook back.
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Data pipeline failure: Scan exchange flows";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "pipeline-failure",
+            });
+            const match = existing.find((issue) => issue.title === title);
+            const body = `Run failed: ${runUrl}\nTriggered: ${new Date().toISOString()}`;
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ["pipeline-failure"],
+              });
+            }

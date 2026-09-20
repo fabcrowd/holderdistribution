@@ -1,0 +1,25 @@
+name: Test RPC keys
+
+on:
+  pull_request:
+    paths:
+      - "scripts/test-rpc-keys.js"
+      - ".github/workflows/test-rpc-keys.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Probe each RPC key in .env.enc
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: node scripts/test-rpc-keys.js

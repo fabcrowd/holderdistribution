@@ -1,0 +1,139 @@
+name: Rebuild holders history from Transfer logs
+
+# Full historical rebuild of public/data/holders-history.json by replaying every
+# TEL Transfer log from each chain's genesis block, snapshotting at each date
+# boundary. Unlike recompute-holders-history.yml (which re-derives past dates
+# from committed tel-holders.json snapshots and is therefore capped by what each
+# original scan recorded), this reconstructs true per-date balances and so can
+# recover wallets no snapshot ever contained — notably the sub-1.01 TEL wallets
+# missed before the 2026-02-28 MIN_TEL_RAW change.
+#
+# Needs ENV_PASSPHRASE: the replay reads historical logs, which public RPC
+# endpoints refuse ("Archive requests require a personal token"). The passphrase
+# decrypts .env.enc into the Alchemy URLs scripts/lib/rpc.js reads.
+#
+# Token transfers are fetched via alchemy_getAssetTransfers (no per-call block
+# range cap, unlike eth_getLogs), sharded across every configured RPC key for
+# that chain and cached to data/rebuild-transfers-<chain>.json. StakeChanged
+# (Polygon staking) has no equivalent decoded endpoint and still replays via
+# chunked eth_getLogs. Run one chain at a time — Polygon is still the longest,
+# since it has the fewest keys — and --resume skips re-fetching entirely by
+# reading the cached transfers file instead of hitting Alchemy again.
+
+on:
+  workflow_dispatch:
+    inputs:
+      chain:
+        description: "Chain to rebuild (ethereum, polygon, base). Leave blank for all — only safe if you expect it to finish inside 6h."
+        required: false
+        type: string
+      start:
+        description: "First date to emit (YYYY-MM-DD). Defaults to 2026-01-01."
+        required: false
+        type: string
+      resume:
+        description: "Reuse data/rebuild-transfers-<chain>.json instead of re-fetching from Alchemy."
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: "Compute and log without writing or committing."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    # Below GitHub's 6h ceiling so a stall fails visibly rather than being killed
+    # at the platform limit with no checkpoint flush.
+    timeout-minutes: 330
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rebuild history from Transfer logs
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.chain }}" ]; then ARGS="$ARGS --chain=${{ inputs.chain }}"; fi
+          if [ -n "${{ inputs.start }}" ]; then ARGS="$ARGS --start=${{ inputs.start }}"; fi
+          if [ "${{ inputs.resume }}" = "true" ]; then ARGS="$ARGS --resume"; fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          echo "Running: node scripts/rebuild-history-from-logs.js $ARGS"
+          node --max-old-space-size=6144 scripts/rebuild-history-from-logs.js $ARGS
+
+      - name: Configure git user
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Commit rebuilt history
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git add public/data/holders-history.json \
+                  public/data/holders-ever-checkpoint.json \
+                  public/data/date-blocks.json
+          # data/rebuild-transfers-<chain>.json is DELIBERATELY not added here.
+          # It's the raw per-chain transfer cache --resume reads, and real
+          # chain volume routinely exceeds GitHub's 100MB single-file push
+          # limit (Ethereum alone: 172MB) — see .gitignore. --resume is only
+          # useful within the SAME runner's disk across retries of one job,
+          # not across separate workflow runs (each gets a fresh checkout).
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "data: rebuild holders-history.json from Transfer-log replay"
+            # refresh-tel-holders.yml pushes to main several times a day and
+            # touches the same directory, so rebase rather than clobbering it.
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # No explicit deploy step: the push to main above is itself the deploy
+      # trigger. netlify.toml has no build.ignore rule, so Netlify's native git
+      # auto-deploy publishes every commit that lands on main. See netlify.toml
+      # and lessons.md → "Netlify Deployment" before adding a hook back.
+
+      - name: Cross-check a sample against Etherscan (independent, never merged)
+        # Runs AFTER the commit above rather than gating it — an Etherscan
+        # fetch per sampled address adds real latency, and the alternative
+        # (block publishing on this) trades a fast, disclosed rebuild for a
+        # slow, silent one. A failure here still fails the job (visible in
+        # Actions), it just doesn't hold up data that's already useful.
+        # Skipped entirely if no Etherscan keys are configured yet.
+        if: ${{ inputs.dry_run != true }}
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          ETHERSCAN_API_KEY_1: ${{ secrets.ETHERSCAN_API_KEY_1 }}
+          ETHERSCAN_API_KEY_2: ${{ secrets.ETHERSCAN_API_KEY_2 }}
+          ETHERSCAN_API_KEY_3: ${{ secrets.ETHERSCAN_API_KEY_3 }}
+        run: |
+          if [ -z "$ETHERSCAN_API_KEY" ]; then
+            echo "No ETHERSCAN_API_KEY secret configured yet — skipping cross-check."
+            exit 0
+          fi
+          CHAIN="${{ inputs.chain }}"
+          if [ -z "$CHAIN" ]; then CHAIN="polygon"; fi
+          if [ ! -f "data/rebuild-transfers-$CHAIN.json" ]; then
+            echo "No cached transfers for $CHAIN — nothing to cross-check."
+            exit 0
+          fi
+          node scripts/cross-check-rebuild-etherscan.js --chain="$CHAIN"

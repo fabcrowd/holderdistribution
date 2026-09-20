@@ -1,0 +1,319 @@
+{
+  "schemaVersion": 1,
+  "events": [
+    {
+      "id": "2026-06-04-dune-sync-4985",
+      "date": "2026-06-04",
+      "type": "dune-sync",
+      "summary": "CEX wallet list synced from Dune: +4,985 addresses added to cexSet",
+      "affects": {
+        "artifacts": [
+          "cex-balance-history",
+          "exchange-flow-history",
+          "tier-outflows",
+          "holder-transitions",
+          "holders-history"
+        ],
+        "metrics": [
+          "cexBalance",
+          "retail.count",
+          "cumulativeHolders"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "cexBalance/retail.count backfilled via scripts/recompute-history-from-git.js (walks the git history of public/data/tel-holders.json, no RPC needed). Flow-classification artifacts (exchange-flow-history/tier-outflows/holder-transitions) still reflect the old classification for transfers predating this event \u2014 not covered by this backfill, no distinct metric name for that gap yet."
+    },
+    {
+      "id": "2026-06-15-dune-sync-4983",
+      "date": "2026-06-15",
+      "type": "dune-sync",
+      "summary": "CEX wallet list synced from Dune: +4,983 addresses added to cexSet",
+      "affects": {
+        "artifacts": [
+          "cex-balance-history",
+          "exchange-flow-history",
+          "tier-outflows",
+          "holder-transitions",
+          "holders-history"
+        ],
+        "metrics": [
+          "cexBalance",
+          "retail.count",
+          "cumulativeHolders"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "cexBalance/retail.count backfilled via scripts/recompute-history-from-git.js. Flow-classification artifacts not covered \u2014 see the 2026-06-04 event's note."
+    },
+    {
+      "id": "2026-07-01-dune-sync-4983",
+      "date": "2026-07-01",
+      "type": "dune-sync",
+      "summary": "CEX wallet list synced from Dune: +4,983 addresses added to cexSet",
+      "affects": {
+        "artifacts": [
+          "cex-balance-history",
+          "exchange-flow-history",
+          "tier-outflows",
+          "holder-transitions",
+          "holders-history"
+        ],
+        "metrics": [
+          "cexBalance",
+          "retail.count",
+          "cumulativeHolders"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "cexBalance/retail.count backfilled via scripts/recompute-history-from-git.js. Flow-classification artifacts not covered \u2014 see the 2026-06-04 event's note."
+    },
+    {
+      "id": "2026-07-15-dune-sync-4986",
+      "date": "2026-07-15",
+      "type": "dune-sync",
+      "summary": "CEX wallet list synced from Dune: +4,986 addresses added to cexSet",
+      "affects": {
+        "artifacts": [
+          "cex-balance-history",
+          "exchange-flow-history",
+          "tier-outflows",
+          "holder-transitions",
+          "holders-history"
+        ],
+        "metrics": [
+          "cexBalance",
+          "retail.count",
+          "cumulativeHolders"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "cexBalance/retail.count backfilled via scripts/recompute-history-from-git.js. Flow-classification artifacts not covered \u2014 see the 2026-06-04 event's note."
+    },
+    {
+      "id": "2026-07-22-cex-hot-wallets-add-22",
+      "date": "2026-07-22",
+      "type": "exclusion-add",
+      "summary": "Added 22 missing CEX hot wallets to cexSet (Kraken 1.47B TEL, Uphold 17.3M TEL)",
+      "affects": {
+        "artifacts": [
+          "cex-balance-history",
+          "exchange-flow-history",
+          "tier-outflows",
+          "holder-transitions",
+          "holders-history"
+        ],
+        "metrics": [
+          "cexBalance",
+          "retail.count",
+          "cumulativeHolders"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "cexBalance/retail.count backfilled via scripts/recompute-history-from-git.js. Flow-classification artifacts not covered \u2014 see the 2026-06-04 event's note."
+    },
+    {
+      "id": "2026-08-07-retail-count-threshold-fix",
+      "date": "2026-08-07",
+      "type": "threshold-change",
+      "summary": "retail.count metric definition repaired via shared holderMetrics.js \u2014 previously miscomputed, now consistently thresholded and no longer double-counted across chains/summary",
+      "affects": {
+        "artifacts": [
+          "holders-history"
+        ],
+        "metrics": [
+          "retail.count",
+          "retail.balance",
+          "cumulativeHolders"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "Backfilled via scripts/recompute-history-from-git.js \u2014 every historical date recomputed against the current (corrected) threshold by walking the git history of public/data/tel-holders.json, no RPC/rescan needed. Verified: the latest recomputed date matches the live holders-summary.json's combined.retailHolderCount exactly."
+    },
+    {
+      "id": "2026-08-08-kucoin-vault-relabel",
+      "date": "2026-08-08",
+      "type": "cex-relabel",
+      "summary": "Seven KuCoin vault-unattributed addresses reclassified into cexSet (~8.69B TEL) \u2014 explorer name-tags (KuCoin 45/47/48/49/51) and token-diversity evidence overturned the earlier funder-based OTC-vehicle reading",
+      "affects": {
+        "artifacts": [
+          "cex-balance-history",
+          "exchange-flow-history",
+          "tier-outflows",
+          "holder-transitions",
+          "holders-history"
+        ],
+        "metrics": [
+          "cexBalance",
+          "vault-unattributed",
+          "totalHeld",
+          "distribution",
+          "concentration"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "cexBalance and combined.totalHeld (feeds the Total TEL Balance chart on /holders) are now fully backfilled across the entire archive (2026-01-18 onward), not just 2026-08-06 onward as previously noted here \u2014 that claimed limit was wrong: public/data/tel-holders.json's git history actually reaches back to 2025-10-12, well past the archive start. The real blocker was that scripts/recompute-history-from-git.js cached every distinct date's ~30MB+ tel-holders.json blob simultaneously (never releasing one before loading the next), which reliably OOM-crashed the process before it reached fs.writeFile \u2014 so every earlier run that logged 'complete' console output for this and the four dune-sync/exclusion-add events above never actually persisted anything, and the archive silently kept stale values despite the changelog saying otherwise. Fixed 2026-08-15: the script now does a single pass over the union of dates, processing and discarding one snapshot at a time (peak memory = one snapshot, not the whole archive). Re-run confirmed idempotent (a second --dry-run pass reports zero further changes) and the latest recomputed date's totalHeld (88,374,479,689) matches live totalBalance + live CEX total exactly. Exchange-flow/tier-outflow history was NOT rescanned by this fix \u2014 past day buckets still show the old vault-unattributed/moved classification for transfers predating this event, until a deliberate checkpoint reset + full rescan. See tasks/handoff.md Deferred section \u2014 this is the Phase 5 task. Follow-up fixed 2026-08-17: distribution/concentration (per-tier wallet-count breakdown) are now also rebuilt by the same recompute pass, from the same wallets[]-derived holder lists as cexBalance/totalHeld \u2014 see the 2026-08-07-telcoinwallet-reinclusion event's note for the fix details."
+    },
+    {
+      "id": "2026-08-07-telcoinwallet-reinclusion",
+      "date": "2026-08-07",
+      "type": "exclusion-add",
+      "summary": "Un-excluded five ordinary TelcoinWallet contracts wrongly placed on the exclusion list (2,194,488,609 TEL total) \u2014 predates classification-changelog.json by 4 days, added here retroactively",
+      "affects": {
+        "artifacts": [
+          "holders-history"
+        ],
+        "metrics": [
+          "holderCount",
+          "retail.count",
+          "totalHeld",
+          "distribution",
+          "concentration",
+          "cumulativeHolders"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "Discovered while investigating a still-unexplained 2026-08-06\u21922026-08-07 totalHeld jump (+2.87%) that survived the recompute described in the 2026-08-08 event above. Root cause: scripts/recompute-history-from-git.js sourced its per-date holder list from each snapshot's chain.holders arrays, but those arrays were already exclusion-filtered by pull-holders-rpc.js AT ORIGINAL SCAN TIME \u2014 a wallet excluded back then was never written into that date's chain.holders at all, so reclassifying chain.holders against the current config could only ever further-exclude wallets, never recover ones an earlier, since-corrected exclusion list wrongly dropped. Fixed 2026-08-17: the script now derives holders from each snapshot's top-level wallets[] array (complete, scan-time-unfiltered, with per-chain {chain}_balance fields) instead of chain.holders \u2014 the same source exchangeBalancesForSnapshot() already used correctly, which is why the CEX-balance half of this script never had this bug. This makes the historical reclassification fully bidirectional. Re-run confirmed: the 2026-08-06\u219207 jump is gone, and a full-series scan of holders-history.json (every consecutive date pair, >2% threshold) found zero remaining unexplained jumps except the 2026-02-16\u219203-01 MIN_TEL_RAW threshold change (see that event, which is a distinct, non-recoverable data-coverage gap, not a reclassification). Follow-up fixed 2026-08-17 (same day): entry.distribution/entry.concentration (per-tier wallet-count breakdown behind DistributionAnalysisWidget/TierFlowDiagram) were still wrong even after the holderCount fix above \u2014 they were frozen at the old classification, and reconcileHistoryEntry() was papering over the resulting gap by dumping the ENTIRE holderCount delta into the smallest tier bucket ('1-250K'), so these five wallets (individually in the 100M-500M tiers) showed up as a fake spike in the smallest-holder count instead of their real tier. Fixed by rebuilding distribution/concentration directly from the same wallets[]-derived holder lists, bucketed by DISTRIBUTION_RANGES/CONCENTRATION_BUCKETS (scripts/lib/holdersView.js) \u2014 reconcileHistoryEntry() now only absorbs the small, genuine sub-1-TEL dust-wallet gap it was originally designed for. Full-series scan of every tier bucket across the whole archive confirms zero remaining spikes. Follow-up fixed 2026-08-18: the hero \u201cRetail Holders\u201d +/- tile on /holders was reported showing an implausibly small YTD delta (+95, when real growth is far larger). Root cause: entry.newHolders/entry.cumulativeHolders (\u201cwallets that have ever held TEL\u201d, the correct metric for genuine adoption \u2014 net holderCount nets out churn and cancels most apparent growth once CEX reclassification is applied uniformly) were built from raw chain.holders, scan-time-filtered and monotonic-only-add \u2014 the same bug class as holderCount/distribution above, so a wallet later identified as CEX stayed counted as \u201cnew retail\u201d forever, and a wrongly-excluded wallet never entered the set on the day it should have. Fixed by rebuilding newHolders/cumulativeHolders chronologically from every dated snapshot (including pre-archive dates back to 2025-10-12, to correctly seed the running set before the archive's 2026-01-18 start) against the CURRENT non-retail set, and regenerating public/data/holders-ever-checkpoint.json from the corrected result. Also fixed scripts/generate-holders-history.js's daily incremental block to filter through the current non-retail set going forward, so this doesn't drift out of sync again after the next reclassification. Corrected YTD cumulativeHolders delta: 105,870 (2026-01-18) \u2192 115,833 (2026-08-17) = +9,963, replacing the misleading net-holderCount-based +95 the hero tile previously showed."
+    },
+    {
+      "id": "2026-08-07-staking-attribution-method",
+      "date": "2026-08-07",
+      "type": "threshold-change",
+      "summary": "Staking attribution switched from Etherscan transfer-log netting to direct stakedBy() reads (commits 2049c06, f60e6fb) \u2014 the old method over-attributed, and every over-attributed wallet was merged into the Polygon balance map as a phantom holder",
+      "affects": {
+        "artifacts": [
+          "holders-history",
+          "tel-holders",
+          "funding-wallets"
+        ],
+        "metrics": [
+          "holderCount",
+          "retail.count",
+          "totalBalance",
+          "totalHeld",
+          "stakingBalance",
+          "distribution",
+          "concentration",
+          "cumulativeHolders"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "Cause of the near-vertical cliff on the /holders 'Wallets with >0 TEL' chart: combined.holderCount fell 100,616 \u2192 99,279 between 2026-08-07 and 2026-08-08, a -1,337 step against a 7-64/day churn baseline that had held since 2026-03-01 (verified across all 190 archived snapshots, with per-chain fromBlock constant throughout). The 2026-08-08 snapshot (generatedAt 03:02Z) is the first pipeline run after the attribution fix landed. Measured across the boundary: funding-wallets.json entries 2,834 \u2192 1,532, attributed stakedAmount 4.672B \u2192 3.828B, polygon holders 36,299 \u2192 34,953. Of the 1,399 Polygon wallets that vanished, 1,384 (98.9%) were entries in the 2026-08-07 funding-wallets.json whose Polygon balance was EXACTLY their attributed stakedAmount \u2014 the balance WAS the attribution, not an observed holding, because pull-holders-rpc.js merges each attributed staker into chainBalancesRaw.polygon. Verified on-chain: live Polygon balanceOf for the five largest (0xf478a217\u2026 100,000,000; 0xfc3fa4f1\u2026 100,000,000; 0xdd758cfb\u2026 77,754,190.23; 0x8e36ce07\u2026 69,696,969.69; 0xec7ddeaa\u2026 50,000,000 TEL in the snapshot) returns 0 for all five. The current data is correct; the pre-2026-08-08 history was inflated, so it has been corrected DOWNWARD rather than the snapshot being repaired. IMPORTANT \u2014 this is NOT a classification event despite living in this file: 0 of the 1,399 are in the non-retail set (they are fabricated rows, not exchanges or pools), so the pre-existing recompute pass reproduced them exactly and was a strict no-op. Backfilled 2026-08-19 by extending scripts/recompute-history-from-git.js with scripts/lib/phantomStakers.js, which compares each date's funding-wallets.json blob against the current stakedBy()-derived one and drops wallets that are (a) absent from today's attribution and (b) carrying a Polygon balance equal to their attributed stake. KNOWN LIMITATION: a wallet that genuinely staked before 2026-08-07, held nothing else on Polygon, and genuinely unstaked before the backfill ran satisfies both conditions and is removed from the historical count. Condition (b) keeps this narrow \u2014 a real holder who also staked has holdings on top of the stake, so their balance does not land exactly on it \u2014 and the script reports the count of such de-attributed-but-kept wallets on every run. Distinguishing the two cases properly needs stakedBy() reads at archived block heights, which requires archive-node access this pipeline does not have. SUPERSEDED 2026-08-21 for holders-history.json specifically: scripts/rebuild-history-from-logs.js replaces this heuristic entirely with an exact per-date replay of StakeChanged(address,uint256,uint256) logs via Etherscan (no stakedBy()-at-a-past-block needed \u2014 the event's own newStake field is absolute, so replaying it in block order gives the exact stake at any past date), so the known limitation above no longer applies to that file. scripts/lib/phantomStakers.js is NOT deleted \u2014 scripts/recompute-history-from-git.js still uses it for its own, cheaper incremental reclassification passes, which don't do a full log replay. SCOPE: the phantom regime began on 2026-03-01, not at some indefinite earlier point \u2014 that is the date funding-wallets.json's schema flipped from 331 top-level fundingWallet entries with real stakers nested underneath (0 wallets whose Polygon balance equalled their stake) to 2,810 per-staker fundingWallet entries (2,152 such wallets). Every archive date from 2026-03-01 to 2026-08-07 was inflated by ~1,390-1,452 wallets and is corrected; the six entries before it (2026-01-18 through 2026-02-16) predate the regime, were never inflated, and are correctly left alone. SIDE EFFECT worth knowing before someone re-investigates it: the 2026-02-16 -> 2026-03-01 step widened from -528 to -2,007 as a result. That is not a new defect \u2014 the phantom inflation on the 03-01 side was partly masking a discontinuity that was already there, and both sides are now individually correct. The step lands on the 2026-02-28 MIN_TEL_RAW boundary (see that event, backfillStatus not-possible) and additionally spans a 13-day sampling gap, so it is expected to remain visible and unexplained-looking; the pre-2026-03-01 archive is a different measurement regime in several respects (see tasks/todo.md)."
+    },
+    {
+      "id": "2026-08-15-dune-sync-4992",
+      "date": "2026-08-15",
+      "type": "dune-sync",
+      "summary": "CEX wallet list synced from Dune: +4,992 addresses added to cexSet (commit 8a09c32)",
+      "affects": {
+        "artifacts": [
+          "cex-balance-history",
+          "exchange-flow-history",
+          "tier-outflows",
+          "holder-transitions",
+          "holders-history"
+        ],
+        "metrics": [
+          "cexBalance",
+          "retail.count",
+          "cumulativeHolders"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "Added retroactively on 2026-08-19 \u2014 this sync shipped without a changelog entry, which CLAUDE.md's reclassification rule requires. cexBalance/retail.count backfilled via scripts/recompute-history-from-git.js. Flow-classification artifacts not covered \u2014 see the 2026-06-04 event's note. Note for future syncs: because pull-holders-rpc.js excludes the CEX/DEX sets at RPC scan time (commit 348b47e), an address that is in the config during one run and removed from it later becomes invisible to the recompute from both ends \u2014 stripped from every snapshot taken after that run, and unmatched by the current set in every snapshot before it. Such a removal cannot be backfilled and needs its own entry here."
+    },
+    {
+      "id": "2026-02-28-min-tel-raw-threshold-change",
+      "date": "2026-02-28",
+      "type": "threshold-change",
+      "summary": "MIN_TEL_RAW scan threshold lowered from 101 to 1 raw unit (PR #74) \u2014 wallets holding 1-100 raw TEL were never scanned by pull-holders-rpc.js before this date",
+      "affects": {
+        "artifacts": [
+          "holders-history"
+        ],
+        "metrics": [
+          "holderCount",
+          "retail.count",
+          "totalHeld",
+          "cumulativeHolders"
+        ]
+      },
+      "backfillStatus": "complete",
+      "backfillNote": "REVISED 2026-08-21 \u2014 the 'not-possible' verdict below was wrong, and the fix supersedes it rather than amending it, so both are kept for the record. Original reasoning (2026-08-19): pre-2026-02-28 tel-holders.json snapshots never scanned wallets under 101 raw units (~1.01 TEL), so recomputing against the current threshold could only reclassify already-recorded wallets, not discover balances the original RPC scan never queried \u2014 concluded this was a permanent, RPC-replay-only limitation. That reasoning assumed recovery required archived STATE (eth_call at a historical block), which public nodes gate behind a paid tier. It does not: a token balance is fully determined by the Transfer logs preceding it, and logs are ordinary historical data, not state. scripts/rebuild-history-from-logs.js replays every TEL Transfer log from each chain's genesis via alchemy_getAssetTransfers and applies today's MIN_TEL_RAW=1 threshold uniformly across the whole range \u2014 recovering exactly the sub-1.01-TEL wallets the pre-2026-02-28 scans never wrote to any blob, no archived state needed. Verified: the 2026-02-16 \u2192 03-01 step collapsed from -2,007 (with 2026-08-19's phantom-staker backfill layered on top \u2014 see the 2026-08-07 event) to +14, in line with ordinary day-to-day churn. holders-history.json has been fully rebuilt via this replay, 2026-01-01 onward; commit c5f6cd3's live holders-lite.json delta suppression is unaffected and still applies to that separate comparison.",
+      "supersededVerdict": {
+        "backfillStatus": "not-possible",
+        "backfillNote": "Produces a real +5.42% totalHeld / holder-count jump between the 2026-02-16 and 2026-03-01 holders-history.json entries (the nearest snapshots either side of the change \u2014 there was no snapshot taken on 2026-02-28 itself). Unlike the two exclusion-list events above, this CANNOT be backfilled by scripts/recompute-history-from-git.js or any other git-history replay: pre-2026-02-28 tel-holders.json snapshots simply never scanned or recorded wallets with a raw balance under 101 units (~1.01 TEL) \u2014 that data was never written to any historical git blob, so there is nothing to recover it from. Recomputing against the current (lower) threshold can only change which already-recorded wallets count as retail vs. excluded; it cannot retroactively discover chain balances the original RPC scan never queried for. This is the one archive-wide discontinuity that is a genuine, permanent data-coverage boundary rather than a fixable classification bug \u2014 commit c5f6cd3 (2026-03-01, 'fix(pipeline): suppress deltas when MIN_TEL_RAW methodology changes') already suppresses the misleading +/- delta badge on the live holders-lite.json comparison for this reason; this entry documents the same boundary for the holders-history.json line chart, which has no equivalent suppression and will show a single unavoidable step at this date."
+      }
+    },
+    {
+      "id": "2026-08-29-assumed-escrow-vaults",
+      "date": "2026-08-28",
+      "type": "reclassification",
+      "summary": "Five previously-unlabelled addresses holding exactly 1,750,000,000 TEL relabelled from retail to category:escrow with confidence:medium ('assumed'). All are Telcoin Holdings-funded, have never sent a transaction, and were funded inside the same 2025-10-02..12-02 window as the confirmed Anchorage/BitGo escrow.",
+      "addresses": [
+        "0x60b1f621736fa7091bad2dc20c0467083f010f57",
+        "0xd6040319acdc191e485b2e103b9b4405ea8a30b0",
+        "0x222d9b3875d7c37d5037896d9b8b0fb3a19180bf",
+        "0x043a163912c680dd2b490b409e8d4ad399e97bf8",
+        "0x9184aae0983e5ffbe06e41ca13c24033857b56cb"
+      ],
+      "affects": {
+        "artifacts": [
+          "supply-reconciliation",
+          "holders-history",
+          "holders-lite",
+          "tel-holders"
+        ],
+        "metrics": [
+          "retail.count",
+          "retail.balance",
+          "totalHeld",
+          "totalBalance",
+          "holderCount",
+          "escrow"
+        ]
+      },
+      "evidence": "Origin: 100% traced to Telcoin Holdings ops / cold / bridge-hub Safes, no other funder. Behaviour: zero outflows ever; zero normal transactions (never even funded with ETH for gas), the same profile as Anchorage. Signature: each preceded by a 1,000 TEL test transfer then the bulk, as Anchorage (1,000 on 2025-09-24, then 2.5B on 10-01) and BitGo. Timing: funded 2025-10-24..12-01, interleaved with confirmed escrow legs, and 0x043a1639 shares 2025-11-27 with two BitGo Holdings legs. Arithmetic: 1,750,000,000 exactly, and combined with BitGo's Holdings-sourced 1,334,240,801 gives 3,084,240,801 \u2014 within 2.8% of the reported 3B Holdings escrow commitment.",
+      "limitation": "Custodian identity is NOT established. These addresses have never sent a transaction, so nothing on-chain reveals who holds the keys; Blockscout returns no public tag. Note the same is true of Anchorage, whose name is owner-supplied and which carries no public tag either. confidence:medium records this and must not be promoted without a Telcoin disclosure naming the custodian.",
+      "circulatingImpact": "None by design. No nonCirculatingOverride is set, because Holdings-sourced escrow stays circulating under existing policy (BitGo's Holdings portion is treated the same way). Only the retail/escrow bucket split moves.",
+      "backfillStatus": "complete",
+      "backfillNote": "Backfilled 2026-08-29 via scripts/backfill-escrow-vault-reclassification.js. All five vaults are fully funded and static (funded 2025-10-21..12-01, zero outflows since), so their combined 1,750,000,000 TEL balance is a KNOWN CONSTANT on every archived date -- a targeted delta, not a replay, and exact rather than approximate. Corrected in holders-history.json (233 of 235 entries, dates < 2026-08-28): combined + chains.ethereum totalBalance/retailHolderCount/holderCount/holderCountWithStakers/totalHeld; the 250M-500M distribution tier (both levels); combined concentration N in {50,100,250,500,1000} and ethereum concentration N in {25,50,100,250,500,1000}; cumulativeHolders. Also corrected: holders-ever-checkpoint.json (5 addresses removed from the ever-held set) and treasury-history.json (escrow category, 233 entries). ONE KNOWN, DELIBERATE GAP: combined concentration N=10 and N=25 could NOT be corrected exactly -- concentration is a strict top-N ranking, not a tier aggregate, and the combined 500M+/250M-500M population exceeds 25 on 101 of the 233 dates (peaks at 28, in 2026-05), so a flat subtraction there could silently be wrong by up to 1.75B on those specific dates. Left uncorrected rather than guessed; would need a full per-date wallet ranking (not stored in the archive) to close.",
+      "uiNote": "Metric names must match the exact strings passed to getEventsAffecting: 'retail.count' (HolderGrowthWidget, DistributionAnalysisWidget, useHeadlineTiles), 'retail.balance' (DistributionAnalysisWidget, useHeadlineTiles) and 'totalHeld' (HolderGrowthWidget's balance chart). 'totalBalance'/'holderCount'/'escrow' are kept as documentation but are matched by no call site \u2014 adding a metric here that nothing queries silently produces no marker.",
+      "dateNote": "The config edit was made 2026-08-29, but `date` must be the first DATA POINT that carries the new classification \u2014 the 2026-08-28 holders-history entry. getEventsAffecting requires eventMs <= toMs, and every chart's range ends at the archive's last entry, so an event dated after that entry sits outside every range and silently renders no marker at all."
+    },
+    {
+      "id": "2026-09-10-base-token-address-correction",
+      "date": "2026-09-10",
+      "type": "reclassification",
+      "summary": "scan-exchange-flows.js, generate-tier-outflows.js and extend-transfer-caches.js hardcoded the Base token as 0xc2106ca72996e49bbadcb836eec52b765977fd20, which is NFTEarthOFT (NFTE), not TEL. config/chains.json always had the correct Base TEL address (0x09be1692ca16e06f536f0038ff11d1da8524adb1). All three now read the address from config. Base was rescanned from TEL's first Base transfer (block 25,614,028) to head.",
+      "addresses": [
+        "0x09be1692ca16e06f536f0038ff11d1da8524adb1",
+        "0xc2106ca72996e49bbadcb836eec52b765977fd20"
+      ],
+      "affects": {
+        "artifacts": [
+          "exchange-flow-history",
+          "tier-outflows"
+        ],
+        "metrics": [
+          "chains.base.in",
+          "chains.base.out",
+          "chains.base.dexIn",
+          "chains.base.dexOut",
+          "in",
+          "out",
+          "net",
+          "dexIn",
+          "dexOut",
+          "dexNet"
+        ]
+      },
+      "evidence": "Blockscout identifies 0xc2106ca7 on Base as NFTEarthOFT, 18 decimals, 1,310 holders; 0x09be1692 as TEL/Telcoin, 2 decimals, 4,432 holders, supply 856,740,738.75 TEL. Six consecutive 2,000-block windows against the hardcoded address returned 0 TEL Transfer logs; the config address returned 13, 5 and 23 logs over the same ranges. TEL's first Base transfer is block 25,614,028 (Blockscout getLogs from block 0).",
+      "limitation": "NFTE transfers never matched the TEL CEX/DEX address sets, so no wrong Base numbers were ever written \u2014 every one of the 427 pre-existing entries had no 'base' key at all. This event therefore ADDS a chain that was previously absent rather than correcting wrong values. Ethereum and Polygon were unaffected and were not rescanned, so their series are continuous across this change.",
+      "circulatingImpact": "none \u2014 these are flow/attribution feeds, not supply or holder classification. No address changed category and no balance was reclassified.",
+      "backfillStatus": "complete",
+      "backfillNote": "COMPLETE for both artifacts. exchange-flow-history.json: Base rebuilt across its full history (25,614,028 -> head), 167 days added spanning 2025-02-20..2025-09-26, ~508,985 TEL in and out; entries 427 -> 559. tier-outflows.json: Base rebuilt over the same range, 42 byChain.base entries across all tiers and ranges, latestDate 2026-08-21 -> 2026-09-10 and complete false -> true; YTD Base shows 2,821,913,648 TEL moved with cex=0 and dex=0, i.e. Base TEL movement is wallet-to-wallet and never touched a known exchange or DEX address in that window, which matches the flow scan finding that Base exchange activity stopped in September 2025. In both cases only the Base checkpoint was reset; Ethereum and Polygon kept theirs, so no day bucket or tier was double-counted.",
+      "uiNote": "Base appears in exchange-flow history from 2025-02-20 where it was previously absent entirely. This is new coverage, not a restatement \u2014 no previously-published Base figure changed, because none existed.",
+      "dateNote": "Dated the day the correction shipped. The underlying data spans 2025-02-20 onward."
+    }
+  ]
+}

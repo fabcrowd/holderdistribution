@@ -1,0 +1,70 @@
+name: Refresh TEL staker balances
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    # No explicit timeout-minutes — 30min proved too tight for a full cold
+    # run (~6,144 sequential stakedBy calls, 25+min baseline) under any
+    # Etherscan free-tier throttling, and even 90min is still a guess at
+    # worst-case backoff. Falls back to GitHub's default 360min cap. See
+    # scripts/pull-staker-balances.js's checkpoint comment.
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Refresh TEL staker balances snapshot
+        env:
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          # Lets stakedBy() calls go through Alchemy Polygon RPC instead of
+          # Etherscan's 3/sec-capped proxy module — see pull-staker-balances.js.
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: node scripts/pull-staker-balances.js
+      - name: Configure git user
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+      - name: Commit staker balance snapshot
+        id: commit
+        run: |
+          git add public/data/funding-wallets.json
+          # Commit the resumability checkpoint too, same as holders-checkpoint.json
+          # / exchange-flow-checkpoint.json / tier-outflows-checkpoint.json — it
+          # may be an update (interrupted this run), a deletion (completed and
+          # self-cleaned), or absent entirely (never existed); -A handles all
+          # three, and the || true swallows the "no match" case.
+          git add -A -- public/data/staker-balances-checkpoint.json 2>/dev/null || true
+          # git diff on the unstaged tree misses new untracked files — check
+          # the staged index instead.
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Refresh TEL staker balances"
+            # This job can run 25min-6h (see the timeout-minutes comment above),
+            # during which other scheduled workflows push to main several times
+            # a day — rebase rather than risk a rejected non-fast-forward push
+            # after the whole run. Same pattern as refresh-tel-holders.yml /
+            # recompute-holders-history.yml / rebuild-holders-history.yml.
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # No explicit deploy step: the push to main above is itself the deploy
+      # trigger. netlify.toml has no build.ignore rule, so Netlify's native git
+      # auto-deploy publishes every commit that lands on main. See netlify.toml
+      # and lessons.md → "Netlify Deployment" before adding a hook back.

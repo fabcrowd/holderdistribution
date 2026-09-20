@@ -1,0 +1,28 @@
+{
+  "description": "Known DEX liquidity-pool / pair contracts and routers that touch TEL. A TEL Transfer whose `to` is a pool is a SELL into the pool; a Transfer whose `from` is a pool is a BUY. Routers pass TEL through to the pair — they rarely hold inventory long-term, but must still be classified as DEX (not generic 'moved') in tier-outflow attribution. Expand this list as new pools gain liquidity.",
+  "source": "GeckoTerminal / QuickSwap / Uniswap pool listings, confirmed to hold TEL; routers from config/exclusions.json category:dex",
+  "pools": [
+    { "address": "0xa5cabfc725dfa129f618d527e93702d10412f039", "chain": "polygon", "dex": "QuickSwap", "pair": "TEL/USDC" },
+    { "address": "0x4917bc6b8e705ad462ef525937e7eb7c6c87c356", "chain": "polygon", "dex": "QuickSwap", "pair": "TEL/AAVE" },
+    { "address": "0xe88e24f49338f974b528ace10350ac4576c5c8a1", "chain": "polygon", "dex": "QuickSwap", "pair": "TEL/QUICK" },
+    { "address": "0x9b5c71936670e9f1f36e63f03384de7e06e60d2a", "chain": "polygon", "dex": "QuickSwap", "pair": "TEL/WPOL" },
+    { "address": "0xf359492d26764481002ed88bd2acae83ca50b5c9", "chain": "ethereum", "dex": "Uniswap V3", "pair": "TEL/WETH" },
+    { "address": "0xfc2fc983a411c4b1e238f7eb949308cf0218c750", "chain": "polygon", "dex": "Uniswap V3", "pair": "TEL/WETH" },
+    { "address": "0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208", "chain": "ethereum", "dex": "IDEX v1", "pair": "defunct exchange contract" },
+    { "address": "0x8d12a197cb00d4747a1fe03395095ce2a5cc6819", "chain": "ethereum", "dex": "EtherDelta", "pair": "defunct exchange contract" },
+    { "address": "0x3bd8a254163f8328efcc4f8c36da566753462433", "chain": "polygon", "dex": "TELx Balancer", "pair": "TEL/USDC 80/20" },
+    { "address": "0xca6efa5704f1ae445e0ee24d9c3ddde34c5be1c2", "chain": "polygon", "dex": "TELx Balancer", "pair": "TEL/WETH 80/20" },
+    { "address": "0xe1e09ce7aac2740846d9b6d9d56f588c65314ecb", "chain": "polygon", "dex": "TELx Balancer", "pair": "TEL/WBTC 80/20" }
+  ],
+  "routers": [
+    { "address": "0x11111112542d85b3ef69ae05771c2dccff4faa26", "name": "1inch v3 Router" },
+    { "address": "0x1111111254fb6c44bac0bed2854e76f90643097d", "name": "1inch v4 Router" },
+    { "address": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f", "name": "Uniswap V2 Factory" },
+    { "address": "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45", "name": "Uniswap V3 Router 2" },
+    { "address": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", "name": "Uniswap V2 Router" },
+    { "address": "0xba12222222228d8ba445958a75a0704d566bf2c8", "name": "Balancer Vault" },
+    { "address": "0xc2edad668740f1aa35e4d8f227fb8e17dca888cd", "name": "SushiSwap MasterChef" },
+    { "address": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f", "name": "SushiSwap Router" },
+    { "address": "0xe592427a0aece92de3edee1f18e0157c05861564", "name": "Uniswap V3 Router" }
+  ]
+}
