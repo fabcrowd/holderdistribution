@@ -11,6 +11,10 @@
 # scripts/lib/deployTriggers.js / scripts/lib/deployTriggers.test.js, which
 # enforce this at CI time.
 
+[build]
+  command = "npm run build"
+  publish = "dist"
+
 [context.deploy-preview]
   ignore = "exit 0"
 
