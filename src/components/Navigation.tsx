@@ -96,7 +96,8 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
             )}
           </div>
 
-          {/* Mobile Hamburger Menu */}
+          {/* Mobile Hamburger Menu — hidden when there is nothing to show */}
+          {(navItems.length > 0 || isAuthenticated) && (
           <div className="md:hidden flex items-center gap-1">
             <Sheet>
               <SheetTrigger asChild>
@@ -159,6 +160,7 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
               </SheetContent>
             </Sheet>
           </div>
+          )}
         </div>
       </div>
     </nav>
