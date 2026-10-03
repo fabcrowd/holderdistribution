@@ -1,0 +1,230 @@
+{
+  "timestamp": "2026-09-28T19:57:25.395Z",
+  "base": "http://localhost:7777",
+  "endpoints": [
+    {
+      "url": "http://localhost:7777/data/holders.json",
+      "status": 404,
+      "keys": null,
+      "parseError": null,
+      "sizeKb": "0.4",
+      "bodySnippet": "<!DOCTYPE HTML>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <style type=\"text/css\">\n            :root {\n                color-scheme: light dark;\n            }\n        </style>\n        <title>Error response</title>\n    </head>\n    <body>\n        <h1>Error response</h1>\n       "
+    },
+    {
+      "url": "http://localhost:7777/data/tokenomics.json",
+      "status": 404,
+      "keys": null,
+      "parseError": null,
+      "sizeKb": "0.4",
+      "bodySnippet": "<!DOCTYPE HTML>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <style type=\"text/css\">\n            :root {\n                color-scheme: light dark;\n            }\n        </style>\n        <title>Error response</title>\n    </head>\n    <body>\n        <h1>Error response</h1>\n       "
+    },
+    {
+      "url": "http://localhost:7777/data/history.json",
+      "status": 404,
+      "keys": null,
+      "parseError": null,
+      "sizeKb": "0.4",
+      "bodySnippet": "<!DOCTYPE HTML>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <style type=\"text/css\">\n            :root {\n                color-scheme: light dark;\n            }\n        </style>\n        <title>Error response</title>\n    </head>\n    <body>\n        <h1>Error response</h1>\n       "
+    },
+    {
+      "url": "http://localhost:7777/data/holders-lite.json",
+      "status": 200,
+      "keys": "generatedAt, thresholds, totals, source, chainOrder, views, overlap, cex",
+      "parseError": null,
+      "sizeKb": "44.3",
+      "bodySnippet": "{\r\n  \"generatedAt\": \"2026-09-17T15:18:27.849Z\",\r\n  \"thresholds\": {\r\n    \"retail\": 1000,\r\n    \"megaHolder\": 20000000000,\r\n    \"minTelRaw\": 1\r\n  },\r\n  \"totals\": {\r\n    \"totalSupply\": 99999999999.99274,\r\n    \"originChain\": \"ethereum\",\r\n    \"byChain\": {\r\n      \"ethereum\": 61361637131.3715,\r\n      \"polyg"
+    },
+    {
+      "url": "http://localhost:7777/data/holders-history.json",
+      "status": 200,
+      "keys": "generatedAt, entries",
+      "parseError": null,
+      "sizeKb": "1741.9",
+      "bodySnippet": "{\r\n  \"generatedAt\": \"2026-09-17T15:31:27.683Z\",\r\n  \"entries\": [\r\n    {\r\n      \"date\": \"2026-01-01\",\r\n      \"generatedAt\": \"2026-01-01T00:00:00.000Z\",\r\n      \"combined\": {\r\n        \"holderCount\": 97417,\r\n        \"retailHolderCount\": 73401,\r\n        \"totalBalance\": 64005834724.528946,\r\n        \"stakin"
+    },
+    {
+      "url": "http://localhost:7777/data/holders-summary.json",
+      "status": 200,
+      "keys": "generatedAt, snapshotDate, combined, chains, cex",
+      "parseError": null,
+      "sizeKb": "0.9",
+      "bodySnippet": "{\r\n  \"generatedAt\": \"2026-09-17T15:18:27.849Z\",\r\n  \"snapshotDate\": \"2026-09-17\",\r\n  \"combined\": {\r\n    \"holderCount\": 99545,\r\n    \"retailHolderCount\": 73491,\r\n    \"totalBalance\": 66161127362.21687,\r\n    \"holderCountWithStakers\": 99545\r\n  },\r\n  \"chains\": {\r\n    \"ethereum\": {\r\n      \"holderCount\": 594"
+    },
+    {
+      "url": "http://localhost:7777/data/treasury-history.json",
+      "status": 200,
+      "keys": "generatedAt, source, latestByAddress, entries",
+      "parseError": null,
+      "sizeKb": "51.5",
+      "bodySnippet": "{\r\n  \"generatedAt\": \"2026-09-17T15:20:01.046Z\",\r\n  \"source\": {\r\n    \"method\": \"transfer-log replay over data/rebuild-transfers-<chain>.ndjson, anchored to supply-reconciliation.json\",\r\n    \"categories\": [\r\n      \"treasury\",\r\n      \"council\",\r\n      \"holdings\",\r\n      \"escrow\"\r\n    ],\r\n    \"addressCo"
+    },
+    {
+      "url": "http://localhost:7777/data/cex-balance-history.json",
+      "status": 200,
+      "keys": "generatedAt, entries, backfills",
+      "parseError": null,
+      "sizeKb": "108.5",
+      "bodySnippet": "{\r\n  \"generatedAt\": \"2026-09-17T15:18:36.574Z\",\r\n  \"entries\": [\r\n    {\r\n      \"date\": \"2026-01-18\",\r\n      \"exchanges\": {\r\n        \"Binance\": 605081861.63,\r\n        \"BingX\": 11752842.03,\r\n        \"Bitget\": 149891547.39000002,\r\n        \"Bithumb\": 83810.44,\r\n        \"Bitstamp\": 9976,\r\n        \"Bybit\":"
+    },
+    {
+      "url": "http://localhost:7777/data/exchange-flow-history.json",
+      "status": 200,
+      "keys": "schema, generatedAt, entries",
+      "parseError": null,
+      "sizeKb": "290.9",
+      "bodySnippet": "{\r\n  \"schema\": 3,\r\n  \"generatedAt\": \"2026-09-17T18:09:59.874Z\",\r\n  \"entries\": [\r\n    {\r\n      \"date\": \"2025-02-20\",\r\n      \"chains\": {\r\n        \"base\": {\r\n          \"in\": 1011.3800000000001,\r\n          \"out\": 0,\r\n          \"dexIn\": 0,\r\n          \"dexOut\": 0\r\n        }\r\n      },\r\n      \"in\": 1011,\r\n "
+    },
+    {
+      "url": "http://localhost:7777/data/tier-outflows.json",
+      "status": 200,
+      "keys": "schema, generatedAt, latestDate, complete, sourceTierSince, ranges",
+      "parseError": null,
+      "sizeKb": "131.2",
+      "bodySnippet": "{\r\n  \"schema\": 9,\r\n  \"generatedAt\": \"2026-09-20T02:55:17.932Z\",\r\n  \"latestDate\": \"2026-09-20\",\r\n  \"complete\": true,\r\n  \"sourceTierSince\": \"2025-09-14\",\r\n  \"ranges\": {\r\n    \"1\": {\r\n      \"from\": \"2026-09-20\",\r\n      \"to\": \"2026-09-20\",\r\n      \"tiers\": {\r\n        \"1M-5M\": {\r\n          \"dex\": 0,\r\n     "
+    },
+    {
+      "url": "http://localhost:7777/data/supply-reconciliation.json",
+      "status": 200,
+      "keys": "totalSupply, derivedOriginTotal, bridgeLocked, mirrored, mirrorResidual, residual, residualParts, categories",
+      "parseError": null,
+      "sizeKb": "20.6",
+      "bodySnippet": "{\r\n  \"totalSupply\": 100000000000,\r\n  \"derivedOriginTotal\": 99999999999.99274,\r\n  \"bridgeLocked\": 39226680120.00001,\r\n  \"mirrored\": 38638362868.62069,\r\n  \"mirrorResidual\": -588317251.3793182,\r\n  \"residual\": 588317251.3766327,\r\n  \"residualParts\": {\r\n    \"bridgeInFlight\": 588317251.3793182,\r\n    \"origi"
+    }
+  ],
+  "viewports": [
+    {
+      "name": "desktop",
+      "consoleMessages": [],
+      "networkErrors": [],
+      "jsErrors": [],
+      "networkRequests": [
+        {
+          "url": "/data/holders-lite.json",
+          "status": 200
+        },
+        {
+          "url": "/data/holders-history.json",
+          "status": 200
+        },
+        {
+          "url": "/data/cex-balance-history.json",
+          "status": 200
+        },
+        {
+          "url": "/data/holders-checkpoint.json",
+          "status": 200
+        },
+        {
+          "url": "/data/classification-changelog.json",
+          "status": 200
+        }
+      ],
+      "loadError": null,
+      "badResponses": [],
+      "banners": [
+        {
+          "selector": "[role=\"alert\"]",
+          "text": "Feed error — node offlineThe data pipeline has not updated in over 48 hours. Charts may be stale. Last update: 9/17/2026, 11:31:27 AM."
+        }
+      ],
+      "errorTextMatches": [
+        "Feed error — node offline"
+      ],
+      "charts": {
+        "canvasCount": 0,
+        "canvasDimensions": [],
+        "svgCount": 32,
+        "svgWithChildren": 8,
+        "chartContainerCount": 60,
+        "rechartWrappersCount": 1,
+        "echartsCount": 0,
+        "svgPaths": 30
+      },
+      "tables": {
+        "tableCount": 0,
+        "rowCounts": [],
+        "emptyTables": 0,
+        "tableHeaders": []
+      },
+      "contentCheck": {
+        "bodyTextLength": 1879,
+        "hasHolderCountNumbers": true,
+        "hasPercentages": true,
+        "hasTokenAmounts": false,
+        "hasDates": true,
+        "hasLoadingSpinner": false,
+        "visibleText": "Holders\nDistribution\nSupply\nYTD\nECOSYSTEM HEADLINE\nAll chains — Ethereum + Polygon + Base\nSHOWING YTD\nRETAIL HOLDERS\n99,545\n+2,128\nWallets >0 TEL, excl. exchanges\nRETAIL HELD\n66.16B\n+2.16B\nExcl. exchanges, treasury & DEX\nSTAKED TEL\n4.17B\n+195.18M\n4.17% of supply\nCEX BALANCE\n21.10B\n+1.52B\n21.10% of supply\nOverview\nConcentration\nBalances\nStaking\nMomentum\nTrends\nFlows\nExchanges\nCombined\nEthereum\nPolygon\nBase\nHolder Growth\nSHOWING YTD\n\nHolder history based on the scheduled snapshot archive.\n\nWallets\nBalance\nStaked\nCombined\nWallets: 99,545\n+2,128 (2.18%)\nFeed error — node offline\nThe data pipeline has not updated in over 48 hours. Charts may be stale. Last update: 9/17/2026, 11:31:27 AM.\nDec 2025\nJan 2026\nFeb 2026\nMar 2026\nApr 2026\nMay 2026\nJun 2026\nJul 2026\nAug 2026\nSep 2026\n97,295\n97,995\n98,695\n99,979\nUpdated 9/17/2026, 11:31:27 AM\nSnapshot generated Sep 17, 2026, 11:18 AM\nSource: Rpc • rpc\nUpdated 268h ago\n·\nEthereum RPC\nPolygon RPC\nBase RPC\nSHOWING YTD\nOfficial Sites\nTelcoin Holdings\nTe"
+      },
+      "title": "TEL Tokenomics - Telcoin Hub",
+      "h1s": [],
+      "h2s": []
+    },
+    {
+      "name": "mobile",
+      "consoleMessages": [],
+      "networkErrors": [],
+      "jsErrors": [],
+      "networkRequests": [
+        {
+          "url": "/data/holders-lite.json",
+          "status": 200
+        },
+        {
+          "url": "/data/holders-history.json",
+          "status": 200
+        },
+        {
+          "url": "/data/cex-balance-history.json",
+          "status": 200
+        },
+        {
+          "url": "/data/classification-changelog.json",
+          "status": 200
+        },
+        {
+          "url": "/data/holders-checkpoint.json",
+          "status": 200
+        }
+      ],
+      "loadError": null,
+      "badResponses": [],
+      "banners": [
+        {
+          "selector": "[role=\"alert\"]",
+          "text": "Feed error — node offlineThe data pipeline has not updated in over 48 hours. Charts may be stale. Last update: 9/17/2026, 11:31:27 AM."
+        }
+      ],
+      "errorTextMatches": [
+        "Feed error — node offline"
+      ],
+      "charts": {
+        "canvasCount": 0,
+        "canvasDimensions": [],
+        "svgCount": 32,
+        "svgWithChildren": 8,
+        "chartContainerCount": 39,
+        "rechartWrappersCount": 1,
+        "echartsCount": 0,
+        "svgPaths": 30
+      },
+      "tables": {
+        "tableCount": 0,
+        "rowCounts": [],
+        "emptyTables": 0,
+        "tableHeaders": []
+      },
+      "contentCheck": {
+        "bodyTextLength": 1804,
+        "hasHolderCountNumbers": true,
+        "hasPercentages": true,
+        "hasTokenAmounts": false,
+        "hasDates": true,
+        "hasLoadingSpinner": false,
+        "visibleText": "Tokenomics\nHolders\nDistribution\nSupply\nYTD\nECOSYSTEM HEADLINE\nAll chains — Ethereum + Polygon + Base\nSHOWING YTD\nRETAIL HOLDERS\n99,545\n+2,128\nWallets >0 TEL, excl. exchanges\nRETAIL HELD\n66.16B\n+2.16B\nExcl. exchanges, treasury & DEX\nSTAKED TEL\n4.17B\n+195.18M\n4.17% of supply\nCEX BALANCE\n21.10B\n+1.52B\n21.10% of supply\nCombined\nEthereum\nPolygon\nBase\nOverview\nConcentration\nBalances\nStaking\nMomentum\nTrends\nFlows\nExchanges\nHolder Growth\nSHOWING YTD\n\nHolder history based on the scheduled snapshot archive.\n\nWallets\nBalance\nStaked\nCombined\nWallets: 99,545\n+2,128 (2.18%)\nFeed error — node offline\nThe data pipeline has not updated in over 48 hours. Charts may be stale. Last update: 9/17/2026, 11:31:27 AM.\nFeb 2026\nMay 2026\nSep 2026\n97,295\n97,995\n98,695\n99,979\nUpdated 9/17/2026, 11:31:27 AM\nSnapshot generated Sep 17, 2026, 11:18 AM\nSource: Rpc • rpc\nUpdated 268h ago\nEthereum RPC\nPolygon RPC\nBase RPC\nSHOWING YTD\nOfficial Sites\nTelcoin Holdings\nTelcoin Association\nTelcoin Network\nTELx\nSocial Media\nTe"
+      },
+      "title": "TEL Tokenomics - Telcoin Hub",
+      "h1s": [],
+      "h2s": []
+    }
+  ]
+}

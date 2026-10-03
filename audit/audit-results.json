@@ -1,0 +1,100 @@
+{
+  "timestamp": "2026-09-28T19:53:15.614Z",
+  "endpoints": [
+    {
+      "url": "https://holderdistribution.com/data/holders.json",
+      "status": "ERROR",
+      "error": "page.goto: net::ERR_CONNECTION_RESET at https://holderdistribution.com/data/holders.json\nCall log:\n\u001b[2m  - navigating to \"https://holderdistribution.com/data/holders.json\", waiting until \"load\"\u001b[22m\n"
+    },
+    {
+      "url": "https://holderdistribution.com/data/tokenomics.json",
+      "status": "ERROR",
+      "error": "page.goto: net::ERR_CONNECTION_RESET at https://holderdistribution.com/data/tokenomics.json\nCall log:\n\u001b[2m  - navigating to \"https://holderdistribution.com/data/tokenomics.json\", waiting until \"load\"\u001b[22m\n"
+    },
+    {
+      "url": "https://holderdistribution.com/data/history.json",
+      "status": "ERROR",
+      "error": "page.goto: net::ERR_CONNECTION_RESET at https://holderdistribution.com/data/history.json\nCall log:\n\u001b[2m  - navigating to \"https://holderdistribution.com/data/history.json\", waiting until \"load\"\u001b[22m\n"
+    }
+  ],
+  "viewports": [
+    {
+      "name": "desktop",
+      "consoleMessages": [],
+      "networkErrors": [
+        {
+          "url": "https://holderdistribution.com/",
+          "method": "GET",
+          "failure": "net::ERR_CONNECTION_RESET"
+        }
+      ],
+      "jsErrors": [],
+      "loadError": "page.goto: net::ERR_CONNECTION_RESET at https://holderdistribution.com/\nCall log:\n\u001b[2m  - navigating to \"https://holderdistribution.com/\", waiting until \"networkidle\"\u001b[22m\n",
+      "badResponses": [],
+      "banners": [],
+      "feedErrorMatches": [],
+      "charts": {
+        "canvasCount": 0,
+        "canvasDimensions": [],
+        "svgCount": 0,
+        "svgWithData": 0,
+        "chartContainerCount": 0,
+        "chartContainerTexts": []
+      },
+      "tables": {
+        "tableCount": 0,
+        "rowCounts": [],
+        "emptyTables": 0
+      },
+      "dataPresence": {
+        "hasNumbers": false,
+        "hasPercentages": false,
+        "hasDollarAmounts": false,
+        "bodyTextLength": 0,
+        "firstChars": ""
+      },
+      "title": "",
+      "h1": "N/A",
+      "domSnippet": "<head></head><body></body>"
+    },
+    {
+      "name": "mobile",
+      "consoleMessages": [],
+      "networkErrors": [
+        {
+          "url": "https://holderdistribution.com/",
+          "method": "GET",
+          "failure": "net::ERR_CONNECTION_RESET"
+        }
+      ],
+      "jsErrors": [],
+      "loadError": "page.goto: net::ERR_CONNECTION_RESET at https://holderdistribution.com/\nCall log:\n\u001b[2m  - navigating to \"https://holderdistribution.com/\", waiting until \"networkidle\"\u001b[22m\n",
+      "badResponses": [],
+      "banners": [],
+      "feedErrorMatches": [],
+      "charts": {
+        "canvasCount": 0,
+        "canvasDimensions": [],
+        "svgCount": 0,
+        "svgWithData": 0,
+        "chartContainerCount": 0,
+        "chartContainerTexts": []
+      },
+      "tables": {
+        "tableCount": 0,
+        "rowCounts": [],
+        "emptyTables": 0
+      },
+      "dataPresence": {
+        "hasNumbers": false,
+        "hasPercentages": false,
+        "hasDollarAmounts": false,
+        "bodyTextLength": 0,
+        "firstChars": ""
+      },
+      "title": "",
+      "h1": "N/A",
+      "domSnippet": "<head></head><body></body>"
+    }
+  ]
+}

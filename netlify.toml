@@ -1,19 +1,14 @@
-# Adapted from the main Telcoin Hub repo's netlify.toml — see that repo's
-# lessons.md -> "Netlify Deployment" before changing the ignore/cache rules
-# below; the reasoning (why there's no build.ignore rule, why /data/* caching
-# lives ONLY here and not in public/_headers) carries over unchanged, this
-# repo just has one page instead of many.
-#
-# Production deploys are driven entirely by Netlify's native git auto-deploy
-# on `main`. Recurring data-refresh workflow commits are tagged
-# `[skip netlify]` so they land without triggering a build; only the daily
-# refresh (and the watchdog, when it heals a stale feed) publish. See
-# scripts/lib/deployTriggers.js / scripts/lib/deployTriggers.test.js, which
-# enforce this at CI time.
+# Deploys are manual-only — trigger from the Netlify dashboard.
+# All git-triggered builds (production, preview, branch) are suppressed via
+# ignore = "exit 0". The /data/* cache and /assets/* immutable headers below
+# are the only netlify.toml rules that affect the live site at runtime.
 
 [build]
   command = "npm run build"
   publish = "dist"
+
+[context.production]
+  ignore = "exit 0"
 
 [context.deploy-preview]
   ignore = "exit 0"
@@ -24,6 +19,15 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
 [[headers]]
   for = "/data/*"
