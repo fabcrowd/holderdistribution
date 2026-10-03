@@ -179,12 +179,12 @@ const Holders = () => {
         <Navigation
           actions={<TimeRangeDropdown value={rangeDays} onChange={setRangeDays} options={visibleRangeOptions} className="shrink-0" />}
         >
-          <TabsList className="inline-flex w-auto h-auto shrink-0 gap-0.5 sm:gap-1 bg-card/80 border border-border/60 p-1 rounded-full">
+          <TabsList className="inline-flex w-auto h-auto shrink-0 gap-0 sm:gap-1 bg-card/80 border border-border/60 p-0.5 sm:p-1 rounded-full">
             {TABS.map((t) => (
               <TabsTrigger
                 key={t.id}
                 value={t.id}
-                className={`min-h-[36px] text-[11px] sm:text-sm font-semibold rounded-full px-2.5 sm:px-3.5 py-1.5 whitespace-nowrap text-muted-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm ${t.accent}`}
+                className={`min-h-[36px] text-[11px] sm:text-sm font-semibold rounded-full px-1.5 sm:px-3.5 py-1.5 whitespace-nowrap text-muted-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm ${t.accent}`}
               >
                 {t.label}
               </TabsTrigger>

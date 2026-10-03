@@ -16,10 +16,10 @@ type NavigationProps = {
    *  name — so a page that wants an identity marker on a phone has to put it
    *  here. Pages that don't pass it render exactly as before. */
   pageTitle?: string;
-  /** Rendered in the header bar beside the logo, left-aligned (the page's
-   *  section tabs). */
+  /** Right-aligned in the header bar (the page's section tabs). */
   children?: ReactNode;
-  /** Rendered at the right end of the header bar (the page's range picker). */
+  /** Right end of the header bar, set off from `children` by a divider (the
+   *  page's range picker). */
   actions?: ReactNode;
 };
 
@@ -43,9 +43,9 @@ export const Navigation = ({ pageTitle, children, actions }: NavigationProps = {
       <div className="mx-auto px-4 max-w-7xl">
         <div className="flex h-16 md:h-20 items-center justify-between">
           {/* Logo (+ optional page title) */}
-          <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
             <Link to="/" className="flex items-center gap-2 group shrink-0">
-              <img src={telcoinLogo} alt="Telcoin Hub" width={48} height={48} fetchPriority="high" decoding="async" className="h-9 md:h-12 w-auto transition-opacity group-hover:opacity-80" />
+              <img src={telcoinLogo} alt="Telcoin Hub" width={48} height={48} fetchPriority="high" decoding="async" className="h-7 sm:h-9 md:h-12 w-auto transition-opacity group-hover:opacity-80" />
             </Link>
             {/* Hidden from lg up, where the nav's own links start rendering
                 their text labels (`hidden lg:inline` below) and the active
@@ -57,11 +57,14 @@ export const Navigation = ({ pageTitle, children, actions }: NavigationProps = {
                 {pageTitle}
               </span>
             )}
-            {children && (
-              <div className="min-w-0 overflow-x-auto [-webkit-overflow-scrolling:touch]">{children}</div>
-            )}
           </div>
-          {actions && <div className="shrink-0 ml-2">{actions}</div>}
+          {(children || actions) && (
+            <div className="flex items-center gap-2 md:gap-4 min-w-0 ml-auto pl-0 sm:pl-2">
+              {children && <div className="min-w-0 overflow-x-auto [-webkit-overflow-scrolling:touch]">{children}</div>}
+              {children && actions && <span aria-hidden className="hidden sm:block h-6 w-px shrink-0 bg-border" />}
+              {actions && <div className="shrink-0">{actions}</div>}
+            </div>
+          )}
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-1 lg:gap-2">
