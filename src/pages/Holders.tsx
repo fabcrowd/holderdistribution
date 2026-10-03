@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useReducer } from "react";
 import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import WalletHoldingsWidget from "@/components/WalletHoldingsWidget";
 import HolderGrowthWidget from "@/components/HolderGrowthWidget";
@@ -322,7 +321,6 @@ const Holders = () => {
       </main>
       </Tabs>
 
-      <Footer />
     </div>
   );
 };
