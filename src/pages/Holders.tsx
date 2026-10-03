@@ -169,41 +169,16 @@ const Holders = () => {
 
   return (
     <div className="min-h-screen bg-gradient-telcoin">
-      {/* Page identity lives in the main nav, not the selector bar below:
-          the mobile nav shows no active state or page name at all, and the
-          ~42px a title unit cost in the selector bar was what forced that
-          bar to wrap to two rows on a phone. */}
-      <Navigation pageTitle="Tokenomics" />
-      {/* Tabs spans the sticky selector bar AND the panels below it, so the
-          trigger row can live in the fixed header while its content renders
-          in <main>. */}
       <Tabs value={activeTab} onValueChange={selectTab}>
-
-      {/* Section + timeframe selectors — locked directly under the main nav so
-          they form one continuous fixed header instead of floating further
-          down the page. Sticky at the nav's own height (top-16/md:top-20)
-          means the two bars sit flush together with no gap, on every
-          scroll position, not just once the user scrolls past the hero.
-          Shares the nav's background gradient but skips its own shadow so
-          the two rows read as one header with a single hairline divider,
-          not two stacked cards. */}
-      <div
-        ref={stickyBarRef}
-        className="sticky top-16 md:top-20 z-40 w-full backdrop-blur-xl border-b border-border/40 shadow-[0_1px_2px_hsl(235_45%_25%/0.05)]"
-        style={{ background: "linear-gradient(90deg, hsl(233 100% 97%), hsl(193 100% 96%))" }}
-      >
-        {/* Scrolls rather than wraps below sm: a wrapped selector bar costs a
-            whole second row of chrome (~40px) on the screen that can least
-            afford it — the same mistake the page tab bar's original
-            grid-cols-2 made, and the reason SubPanelTabs and the balance
-            chart's toggle row both use this pattern. */}
-        <div className="mx-auto px-4 py-2 sm:py-2.5 max-w-7xl flex items-center justify-between gap-2 overflow-x-auto [-webkit-overflow-scrolling:touch] sm:flex-wrap sm:overflow-visible">
-          {/* Each tab keeps the accent its section header already uses, so a
-              reader can map "Distribution = violet" before opening anything. */}
-          {/* One row, sized to content. A 2-up grid forced every tab to half
-              the viewport (192px each), wrapping the bar to two rows and
-              pushing the range picker onto a third — ~94px of chrome above the
-              data on a phone. Four short labels total ~300px, so they fit. */}
+      {/* Section tabs and the range picker live in the main header bar (tabs
+          left beside the logo, picker right) so the page has one fixed header
+          instead of two stacked bars. stickyBarRef wraps the nav so the hero's
+          scrolled-past measurement still has a sticky element to read; the
+          wrapper adds no height of its own. */}
+      <div ref={stickyBarRef} className="sticky top-0 z-50 w-full">
+        <Navigation
+          actions={<TimeRangeDropdown value={rangeDays} onChange={setRangeDays} options={visibleRangeOptions} className="shrink-0" />}
+        >
           <TabsList className="inline-flex w-auto h-auto shrink-0 gap-0.5 sm:gap-1 bg-card/80 border border-border/60 p-1 rounded-full">
             {TABS.map((t) => (
               <TabsTrigger
@@ -215,8 +190,7 @@ const Holders = () => {
               </TabsTrigger>
             ))}
           </TabsList>
-          <TimeRangeDropdown value={rangeDays} onChange={setRangeDays} options={visibleRangeOptions} className="shrink-0" />
-        </div>
+        </Navigation>
       </div>
 
       {/* terminal-dense is page-wide: density should be a property of this page,

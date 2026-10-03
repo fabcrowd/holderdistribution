@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LogOut, PieChart, Shield, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,9 +16,14 @@ type NavigationProps = {
    *  name — so a page that wants an identity marker on a phone has to put it
    *  here. Pages that don't pass it render exactly as before. */
   pageTitle?: string;
+  /** Rendered in the header bar beside the logo, left-aligned (the page's
+   *  section tabs). */
+  children?: ReactNode;
+  /** Rendered at the right end of the header bar (the page's range picker). */
+  actions?: ReactNode;
 };
 
-export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
+export const Navigation = ({ pageTitle, children, actions }: NavigationProps = {}) => {
   const location = useLocation();
   const { isAuthenticated, signOut } = useAuth();
   const { isAdmin } = useUserRole();
@@ -37,7 +43,7 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
       <div className="mx-auto px-4 max-w-7xl">
         <div className="flex h-16 md:h-20 items-center justify-between">
           {/* Logo (+ optional page title) */}
-          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
             <Link to="/" className="flex items-center gap-2 group shrink-0">
               <img src={telcoinLogo} alt="Telcoin Hub" width={48} height={48} fetchPriority="high" decoding="async" className="h-9 md:h-12 w-auto transition-opacity group-hover:opacity-80" />
             </Link>
@@ -51,7 +57,11 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
                 {pageTitle}
               </span>
             )}
+            {children && (
+              <div className="min-w-0 overflow-x-auto [-webkit-overflow-scrolling:touch]">{children}</div>
+            )}
           </div>
+          {actions && <div className="shrink-0 ml-2">{actions}</div>}
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-1 lg:gap-2">
