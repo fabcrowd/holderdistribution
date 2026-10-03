@@ -29,21 +29,24 @@ const TileShell = ({
   active,
   label,
   className,
+  rule,
   children,
 }: {
   onSelect?: () => void;
   active: boolean;
   label: string;
   className: string;
+  rule: ReactNode;
   children: ReactNode;
 }) => {
-  if (!onSelect) return <div className={className}>{children}</div>;
+  if (!onSelect) return <div className={className}>{rule}{children}</div>;
   return (
     <div
       className={`${className} ${
         active ? "ring-1 ring-primary/40" : "hover:bg-foreground/[0.03]"
       } focus-within:outline-none focus-within:ring-2 focus-within:ring-ring`}
     >
+      {rule}
       <button
         type="button"
         onClick={onSelect}
@@ -158,13 +161,18 @@ export const HolderKpiHero = ({
               onSelect={onTileSelect ? () => onTileSelect(t.id) : undefined}
               active={activeTileId === t.id}
               label={t.label}
+              /* The top rule doubles as the selected-state marker: full-width
+                 and solid on the active tile, the usual fading gradient
+                 otherwise. One element carrying both states means the active
+                 tile never grows or shifts relative to its neighbours. It is
+                 passed to TileShell so it sits on the tile itself — inside
+                 the content wrapper it was positioned against that wrapper
+                 and overlapped the label row. */
+              rule={
+                <span className={`absolute inset-x-0 top-0 h-[3px] ${activeTileId === t.id ? "bg-primary" : "bg-gradient-to-r from-primary to-primary/40"} ${collapsed ? "hidden sm:block" : ""}`} />
+              }
               className={`relative overflow-hidden transition-[padding] duration-200 ${collapsed ? "p-0 sm:p-2.5 sm:premium-surface-card" : "premium-surface-card p-2.5 sm:p-6"}`}
             >
-              {/* The top rule doubles as the selected-state marker: full-width
-                  and solid on the active tile, the usual fading gradient
-                  otherwise. One element carrying both states means the active
-                  tile never grows or shifts relative to its neighbours. */}
-              <span className={`absolute inset-x-0 top-0 h-[3px] ${activeTileId === t.id ? "bg-primary" : "bg-gradient-to-r from-primary to-primary/40"} ${collapsed ? "hidden sm:block" : ""}`} />
               <div className={`headline-collapse ${collapsed ? "" : "is-open"}`}>
                 <div>
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-3">
