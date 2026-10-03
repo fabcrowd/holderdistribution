@@ -476,7 +476,7 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                       {getDetail(openBucketKey)}
                     </div>
                   )}
-                  <p className="mt-3 text-[11px] text-muted-foreground text-center">
+                  <p className="mt-5 text-[11px] text-muted-foreground text-center">
                     Segments sum to {formatCompactTEL(partitionSum)} (
                     {Math.abs(partitionSum - totalSupply) < 1
                       ? "exact 100B identity"

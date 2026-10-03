@@ -356,7 +356,13 @@ Palette follows the Telcoin Association style guide:
   }
   .terminal-dense .holders-header-distribution,
   .terminal-dense .holders-header-supply {
-    padding: 0.75rem 0.75rem 0.5rem;
+    padding: 0.75rem 1rem 0.5rem;
+  }
+  @media (min-width: 640px) {
+    .terminal-dense .holders-header-distribution,
+    .terminal-dense .holders-header-supply {
+      padding-inline: 1.5rem;
+    }
   }
 
   .terminal-focus [data-panel-desc] {

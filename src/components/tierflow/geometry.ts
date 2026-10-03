@@ -71,10 +71,11 @@ export const rowTop = (i: number): number => TOP_PAD + PITCH * i;
 export const rowCenterY = (i: number): number => rowTop(i) + TIER_H / 2;
 
 // Bar width in px from a 0-100 log-scaled percentage (see useFlowField's
-// barPct, lifted verbatim from the pre-redesign component). Floor of 104px
-// keeps even a 3%-scaled tier (500M+, 2 wallets) wide enough for its label
-// and printed count; ceiling of 300px matches TIER_COL_W's nominal width.
-export const tileW = (pct: number): number => 104 + (196 * Math.max(0, Math.min(100, pct))) / 100;
+// barPct, lifted verbatim from the pre-redesign component). Floor of 170px
+// keeps even a 3%-scaled tier (500M+, 2 wallets) wide enough for its full
+// label, printed count and net change (104px truncated labels to "50…");
+// ceiling of 300px matches TIER_COL_W's nominal width.
+export const tileW = (pct: number): number => 170 + (130 * Math.max(0, Math.min(100, pct))) / 100;
 
 export const tierLeftX = TIER_COL_X;
 // Tier bars are CENTER-aligned, not left-aligned: every tier's bar shares the
