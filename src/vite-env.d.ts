@@ -1,14 +1,16 @@
 /// <reference types="vite/client" />
 
+// Only public, non-secret values may be exposed to the browser via VITE_*.
+// Anything declared here is inlined into the client bundle at build time —
+// never add API keys or tokens (see docs/DEPLOYMENT.md).
 interface ImportMetaEnv {
-  readonly VITE_TEL_ETHEREUM_CONTRACT?: string;
-  readonly VITE_TEL_POLYGON_CONTRACT?: string;
-  readonly VITE_ETHERSCAN_API_KEY?: string;
-  readonly VITE_POLYGONSCAN_API_KEY?: string;
-  readonly VITE_HOLDER_SNAPSHOT_URL?: string;
-  readonly VITE_HOLDER_SNAPSHOT_API_KEY?: string;
-  readonly VITE_HOLDER_SNAPSHOT_AUTH_TOKEN?: string;
+  /** Canonical site origin used for canonical/OG URLs. Default https://holderdistribution.com */
+  readonly VITE_SITE_URL?: string;
+  /** Supabase project URL / anon (publishable) key. Defaults to the production project. */
+  readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;
+  /** Optional override for the holders-history JSON feed. */
+  readonly VITE_HOLDER_HISTORY_URL?: string;
 }
 
 interface ImportMeta {

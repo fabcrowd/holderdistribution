@@ -2,62 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
+All colors MUST be HSL (space-separated triplets, consumed as hsl(var(--token))).
 
-Palette follows the Telcoin Association style guide:
-- Slate 100  #FCFCFD  (page background)
-- Navy 900   #23295E  (headings / body text)
-- Purple 700 #3554E8  (Electric Blue — primary actions)
-- Telcoin Blue 500 #14C9FF (bright accent)
-- Slate 600  #595D7B  (muted text)
-- Green 600 #1FA44A / Green 700 #007A52, Amber 600 #DC8A09, Red 600 #E0362C (status)
+Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
+- brand   #017276  dark teal — identity, primary actions, default chart series
+- ink     #0E1414  text            ink-muted #5B6666  secondary text
+- surface #F4F8F8  page            #FFFFFF  cards      border #E2EAEA
+- accent  #8A6D1D  gold — premium/featured moments only
+- positive #177F55 / negative #C33D41 — real holder inflow / outflow only
+- warning #9C6500  caution (distinct from accent)
 */
 
 @layer base {
   :root {
-    --background: 220 45% 94%;
-    --foreground: 235 45% 25%;
+    --background: 180 22% 96%;
+    --foreground: 180 18% 7%;
 
-    --nav-background: 215 88% 89%;
-    --gradient-start: 226 100% 94%;
-    --gradient-end: 190 100% 92%;
-    --card: 233 60% 98%;
-    --card-foreground: 235 45% 25%;
+    --nav-background: 0 0% 100%;
+    --gradient-start: 180 30% 97%;
+    --gradient-end: 180 22% 93%;
+    --card: 0 0% 100%;
+    --card-foreground: 180 18% 7%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 235 45% 25%;
+    --popover-foreground: 180 18% 7%;
 
-    --primary: 233 79% 56%;
+    --primary: 182 98% 23%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 233 100% 97%;
-    --secondary-foreground: 233 79% 36%;
+    --secondary: 180 29% 94%;
+    --secondary-foreground: 183 97% 14%;
 
-    --muted: 232 33% 96%;
-    --muted-foreground: 233 16% 42%;
+    --muted: 180 20% 93%;
+    --muted-foreground: 180 6% 38%;
 
-    --accent: 193 100% 96%;
-    --accent-foreground: 194 100% 28%;
+    --accent: 180 29% 90%;
+    --accent-foreground: 183 97% 14%;
 
-    --destructive: 4 72% 51%;
+    --destructive: 358 53% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 233 38% 82%;
-    --input: 233 25% 82%;
-    --ring: 233 79% 56%;
+    --border: 180 16% 88%;
+    --input: 180 16% 82%;
+    --ring: 182 98% 23%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    --status-review: 37 92% 45%;
-    --status-passed: 139 68% 38%;
-    --status-implemented: 160 100% 24%;
-    --status-rejected: 4 72% 51%;
+    --status-review: 39 100% 31%;
+    --status-passed: 156 69% 29%;
+    --status-implemented: 182 98% 23%;
+    --status-rejected: 358 53% 50%;
 
-    --action-blue: 233 79% 56%;
+    --action-blue: 182 98% 23%;
 
-    /* Telcoin Blue 500 #14C9FF — bright accent for gradients and tile art */
-    --telcoin-blue: 193 100% 50%;
+    /* Brighter teal (#22B8C0) for gradients and decorative art only — never
+       for text on light surfaces (fails 4.5:1). */
+    --brand-bright: 183 70% 44%;
+
+    /* Holder Analytics semantic tokens, consumed by tailwind.config.ts
+       (bg-brand, text-positive, bg-negative-tint, text-warning, ...). These
+       were referenced by the Tailwind config but never defined, so every
+       one of those utilities silently resolved to nothing. */
+    --ha-brand: 182 98% 23%;
+    --ha-brand-hover: 183 97% 14%;
+    --ha-brand-tint: 180 29% 88%;
+    --ha-accent: 44 65% 33%;
+    --ha-accent-tint: 44 65% 95%;
+    --ha-positive: 156 69% 29%;
+    --ha-positive-tint: 148 45% 94%;
+    --ha-negative: 358 53% 50%;
+    --ha-negative-tint: 0 68% 96%;
+    --ha-warning: 39 100% 31%;
+    --ha-link: 182 98% 23%;
+
+    --radius-md: 8px;
+    --radius-sm: 4px;
+    --radius-pill: 999px;
 
     /* Fluid Typography - Scales smoothly from 320px to 1920px */
     --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
@@ -84,8 +105,8 @@ Palette follows the Telcoin Association style guide:
     @apply text-foreground;
     background-color: hsl(var(--background));
     background-image:
-      radial-gradient(ellipse at 8% 0%, hsl(var(--primary) / 0.28) 0%, transparent 48%),
-      radial-gradient(ellipse at 92% 8%, hsl(var(--telcoin-blue) / 0.32) 0%, transparent 46%),
+      radial-gradient(ellipse at 8% 0%, hsl(var(--primary) / 0.10) 0%, transparent 48%),
+      radial-gradient(ellipse at 92% 8%, hsl(var(--brand-bright) / 0.12) 0%, transparent 46%),
       linear-gradient(145deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -112,22 +133,22 @@ Palette follows the Telcoin Association style guide:
   .premium-surface-card {
     border: 1px solid hsl(var(--border));
     border-radius: 1.25rem;
-    background: linear-gradient(180deg, hsl(233 70% 99%), hsl(var(--card)));
+    background: linear-gradient(180deg, hsl(180 70% 99%), hsl(var(--card)));
     box-shadow:
-      0 1px 3px hsl(235 45% 25% / 0.08),
-      0 12px 30px -14px hsl(235 45% 25% / 0.22);
+      0 1px 3px hsl(180 45% 25% / 0.08),
+      0 12px 30px -14px hsl(180 45% 25% / 0.22);
   }
 
   .premium-surface-card:hover {
     border-color: hsl(var(--primary) / 0.45);
     box-shadow:
-      0 2px 5px hsl(235 45% 25% / 0.10),
+      0 2px 5px hsl(180 45% 25% / 0.10),
       0 18px 38px -14px hsl(var(--primary) / 0.32);
   }
 
   .premium-surface-featured {
     box-shadow:
-      0 2px 6px hsl(235 45% 25% / 0.06),
+      0 2px 6px hsl(180 45% 25% / 0.06),
       0 12px 32px -12px hsl(var(--primary) / 0.18);
   }
 
@@ -135,10 +156,10 @@ Palette follows the Telcoin Association style guide:
     position: relative;
     overflow: hidden;
     border: 1px solid hsl(var(--border));
-    background: linear-gradient(180deg, hsl(233 80% 98.5%), hsl(233 75% 95%));
+    background: linear-gradient(180deg, hsl(180 80% 98.5%), hsl(180 75% 95%));
     box-shadow:
-      0 1px 3px hsl(235 45% 25% / 0.08),
-      0 12px 30px -14px hsl(235 45% 25% / 0.22);
+      0 1px 3px hsl(180 45% 25% / 0.08),
+      0 12px 30px -14px hsl(180 45% 25% / 0.22);
   }
 
   .premium-stat-card > * {
@@ -147,25 +168,22 @@ Palette follows the Telcoin Association style guide:
   }
 
   .premium-event-card {
-    background: linear-gradient(90deg, hsl(233 100% 97%), hsl(193 100% 96%));
+    background: linear-gradient(90deg, hsl(180 100% 97%), hsl(181 100% 96%));
   }
 
   .premium-section-card {
     border: 1px solid hsl(var(--border));
     border-radius: 1.5rem;
-    background: linear-gradient(135deg, hsl(233 100% 97.5%), hsl(193 100% 97%));
-    box-shadow: 0 1px 2px hsl(235 45% 25% / 0.03);
+    background: linear-gradient(135deg, hsl(180 100% 97.5%), hsl(181 100% 97%));
+    box-shadow: 0 1px 2px hsl(180 45% 25% / 0.03);
   }
 
   .premium-nav {
-    background:
-      radial-gradient(circle at 12% 0%, hsl(var(--primary) / 0.22), transparent 42%),
-      linear-gradient(105deg, hsl(var(--nav-background)), hsl(193 100% 85%));
-    border-bottom: 1px solid hsl(var(--primary) / 0.28);
-    box-shadow:
-      0 2px 4px hsl(235 45% 25% / 0.10),
-      0 14px 32px -14px hsl(var(--primary) / 0.32);
+    background: hsl(var(--nav-background) / 0.92);
+    border-bottom: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 2px hsl(180 18% 7% / 0.05);
   }
+
 
 
   .tile-art {
@@ -176,20 +194,20 @@ Palette follows the Telcoin Association style guide:
 
   .tile-art-market {
     background-image:
-      radial-gradient(circle at 84% 16%, hsl(233 79% 56% / 0.12), transparent 45%),
-      linear-gradient(150deg, hsl(233 100% 98%), hsl(233 85% 96%));
+      radial-gradient(circle at 84% 16%, hsl(180 79% 56% / 0.12), transparent 45%),
+      linear-gradient(150deg, hsl(180 100% 98%), hsl(180 85% 96%));
   }
 
   .tile-art-wallet {
     background-image:
-      radial-gradient(circle at 82% 22%, hsl(193 100% 45% / 0.12), transparent 45%),
-      linear-gradient(150deg, hsl(193 100% 98%), hsl(193 80% 96%));
+      radial-gradient(circle at 82% 22%, hsl(181 100% 45% / 0.12), transparent 45%),
+      linear-gradient(150deg, hsl(181 100% 98%), hsl(181 80% 96%));
   }
 
   .tile-art-news {
     background-image:
-      radial-gradient(circle at 78% 14%, hsl(218 96% 62% / 0.10), transparent 45%),
-      linear-gradient(150deg, hsl(220 100% 98%), hsl(220 70% 96%));
+      radial-gradient(circle at 78% 14%, hsl(180 96% 62% / 0.10), transparent 45%),
+      linear-gradient(150deg, hsl(180 100% 98%), hsl(180 70% 96%));
   }
 
   .tile-art-governance {
@@ -200,8 +218,8 @@ Palette follows the Telcoin Association style guide:
 
   .tile-art-network {
     background-image:
-      radial-gradient(circle at 74% 24%, hsl(194 100% 38% / 0.12), transparent 45%),
-      linear-gradient(150deg, hsl(194 100% 98%), hsl(194 75% 96%));
+      radial-gradient(circle at 74% 24%, hsl(181 100% 38% / 0.12), transparent 45%),
+      linear-gradient(150deg, hsl(181 100% 98%), hsl(181 75% 96%));
   }
 
   .tile-art-pets {
@@ -218,8 +236,8 @@ Palette follows the Telcoin Association style guide:
 
   .tile-art-community {
     background-image:
-      radial-gradient(circle at 78% 22%, hsl(193 100% 45% / 0.12), transparent 45%),
-      linear-gradient(150deg, hsl(200 100% 98%), hsl(200 75% 96%));
+      radial-gradient(circle at 78% 22%, hsl(181 100% 45% / 0.12), transparent 45%),
+      linear-gradient(150deg, hsl(181 100% 98%), hsl(181 75% 96%));
   }
 
   /* /holders section headers — three fixed, always-present sections (unlike
@@ -412,9 +430,9 @@ Palette follows the Telcoin Association style guide:
     border: 1px solid rgba(0, 0, 0, 0.06);
   }
 
-  /* Gradient text utility — Electric Blue → Telcoin Blue */
+  /* Gradient text utility — brand teal → bright teal */
   .gradient-text {
-    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--telcoin-blue)));
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--brand-bright)));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;

@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import telcoinLogo from "@/assets/telcoin-hub-logo.svg";
+import logo from "@/assets/holder-analytics-horizontal.svg";
 
 type NavigationProps = {
   /** Optional page name shown beside the logo. The mobile nav is otherwise
@@ -24,7 +24,7 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
   const isMobile = useIsMobile();
 
   // This repo is a single-page extraction of the Holders/Tokenomics section
-  // from the main Telcoin Hub site — no other routes exist here, so there is
+  // from the original multi-page hub — no other routes exist here, so there is
   // nothing left to navigate to. navItems is empty rather than removed
   // wholesale, so re-adding a route later is a one-line change, not a rewrite
   // of the render logic below.
@@ -39,7 +39,7 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
           {/* Logo (+ optional page title) */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <Link to="/" className="flex items-center gap-2 group shrink-0">
-              <img src={telcoinLogo} alt="Telcoin Hub" width={48} height={48} fetchPriority="high" decoding="async" className="h-9 md:h-12 w-auto transition-opacity group-hover:opacity-80" />
+              <img src={logo} alt="Holder Analytics" width={196} height={48} fetchPriority="high" decoding="async" className="h-8 md:h-10 w-auto transition-opacity group-hover:opacity-80" />
             </Link>
             {/* Hidden from lg up, where the nav's own links start rendering
                 their text labels (`hidden lg:inline` below) and the active
@@ -110,7 +110,7 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
                 <div className="flex flex-col h-full">
                   {/* Header */}
                   <div className="flex items-center p-4 border-b border-border/40">
-                    <img src={telcoinLogo} alt="Telcoin Hub" width={32} height={32} className="h-8 w-auto" />
+                    <img src={logo} alt="Holder Analytics" width={131} height={32} className="h-8 w-auto" />
                   </div>
 
                   {/* Nav Items */}
