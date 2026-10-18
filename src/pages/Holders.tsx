@@ -23,6 +23,24 @@ import {
   reduceHeroCollapse,
 } from "@/lib/heroCollapse";
 
+const TILE_DESTINATIONS = {
+  holders: { tab: "holders", panel: "trends" },
+  retailHeld: { tab: "holders", panel: "balances" },
+  staked: { tab: "holders", panel: "staking" },
+  cex: { tab: "holders", panel: "flows" },
+} as const satisfies Record<EcosystemHeadlineTileId, { tab: string; panel: string }>;
+
+const TABS = [
+  { id: "holders", label: "Holders", accent: "data-[state=active]:text-primary" },
+  { id: "distribution", label: "Distribution", accent: "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400" },
+  { id: "supply", label: "Supply", accent: "data-[state=active]:text-sky-600 dark:data-[state=active]:text-sky-400" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+const isTabId = (v: string): v is TabId => TABS.some((t) => t.id === v);
+
+const DEFAULT_TAB: TabId = "holders";
+const resolveTab = (hash: string): TabId => (isTabId(hash) ? hash : DEFAULT_TAB);
+
 const Holders = () => {
   // Route stays /holders deliberately — renaming the URL would reset the
   // page's search history and break the homepage tile's stored route for no
@@ -53,28 +71,13 @@ const Holders = () => {
   // number and its own history, on a page whose whole first screen is those
   // four numbers. The tile is the more direct control, and it was already the
   // thing being looked at.
-  const TILE_DESTINATIONS = {
-    holders: { tab: "holders", panel: "trends" },
-    retailHeld: { tab: "holders", panel: "balances" },
-    staked: { tab: "holders", panel: "staking" },
-    cex: { tab: "holders", panel: "flows" },
-  } as const satisfies Record<EcosystemHeadlineTileId, { tab: string; panel: string }>;
 
-  const TABS = [
-    { id: "holders", label: "Holders", accent: "data-[state=active]:text-primary" },
-    { id: "distribution", label: "Distribution", accent: "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400" },
-    { id: "supply", label: "Supply", accent: "data-[state=active]:text-sky-600 dark:data-[state=active]:text-sky-400" },
-  ] as const;
-  type TabId = (typeof TABS)[number]["id"];
-  const isTabId = (v: string): v is TabId => TABS.some((t) => t.id === v);
 
   // Deep links keep working: #holders / #distribution / ... select the tab, and
   // switching tabs rewrites the hash so a URL can be copied and shared.
   // "#overview" is still honoured — it was a real tab until 2026-09-13 and is
   // in shared links — but it now resolves to Holders like any other entry
   // point rather than 404ing into the default.
-  const DEFAULT_TAB: TabId = "holders";
-  const resolveTab = (hash: string): TabId => (isTabId(hash) ? hash : DEFAULT_TAB);
   const [activeTab, setActiveTab] = useState<TabId>(() =>
     resolveTab(typeof window !== "undefined" ? window.location.hash.slice(1) : ""),
   );

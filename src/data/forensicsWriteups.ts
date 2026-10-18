@@ -260,7 +260,7 @@ export const ASSOCIATION_STABLECOIN_FLOWS: FlowReport = {
   coverage:
     "Ethereum + Polygon, full USDC/USDT/DAI history through 2026-08-28. Base not covered (explorer outage).",
   headline:
-    "Association Safes fund a TA-managed EOA (the \'TA Sale Wallet\') that sells TEL for USDC and makes the payments on their behalf — so these are Association payments, executed one hop out. The money ends up at regulated venues: Coinbase Prime, Coinbase, Bybit and Uphold. No link to any Telcoin Holdings Safe was found.",
+    "Association Safes fund a TA-managed EOA (the 'TA Sale Wallet') that sells TEL for USDC and makes the payments on their behalf — so these are Association payments, executed one hop out. The money ends up at regulated venues: Coinbase Prime, Coinbase, Bybit and Uphold. No link to any Telcoin Holdings Safe was found.",
   sections: [
     {
       heading: "1. How the payments are initiated",
