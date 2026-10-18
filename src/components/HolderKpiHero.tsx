@@ -187,12 +187,12 @@ export const HolderKpiHero = ({
                   </span>
                 )}
                 {t.ath && (
-                  <span className={`text-[10px] font-extrabold tracking-wide text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 rounded-full px-2 py-0.5 ${collapsed ? "hidden sm:inline" : ""}`}>ATH</span>
+                  <span className={`text-[10px] font-extrabold tracking-wide text-emerald-700 dark:text-emerald-400 border border-emerald-500/40 rounded-full px-2 py-0.5 ${collapsed ? "hidden sm:inline" : ""}`}>ATH</span>
                 )}
               </div>
               <div className={`headline-collapse ${collapsed ? "" : "is-open"}`}>
                 <div>
-                  <div className={`text-[11px] sm:text-xs mt-1 sm:mt-1.5 leading-snug ${t.ath ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}`}>{t.sub}</div>
+                  <div className={`text-[11px] sm:text-xs mt-1 sm:mt-1.5 leading-snug ${t.ath ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}`}>{t.sub}</div>
                 </div>
               </div>
             </TileShell>

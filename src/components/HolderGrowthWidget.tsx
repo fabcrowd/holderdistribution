@@ -459,7 +459,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     return "";
   };
 
-  const changeTone = stats.change !== null && stats.change >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
+  const changeTone = stats.change !== null && stats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400";
   const ChangeIcon = stats.change !== null && stats.change >= 0 ? TrendingUp : TrendingDown;
 
   return (
@@ -468,7 +468,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
         <div>
           <div className="flex items-center gap-2 text-base sm:text-lg font-bold tracking-tight flex-wrap">
             <span className="p-1.5 rounded-xl bg-emerald-500/12 border border-emerald-500/20 shrink-0">
-              <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <TrendingUp className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
             </span>
             Holder Growth
             <span className="ml-auto"><ActiveRangeNote rangeDays={rangeDays} /></span>
@@ -608,7 +608,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         <span>Retail {formatCompactTEL(balanceStats.latest)}</span>
                       )}
                       {balanceStats.change !== null && balanceStats.changePct !== null && (
-                        <span className={`inline-flex items-center gap-1 ${balanceStats.change >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                        <span className={`inline-flex items-center gap-1 ${balanceStats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                           {balanceStats.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                           {balanceStats.change >= 0 ? "+" : ""}
                           {formatCompactTEL(Math.abs(balanceStats.change))}
@@ -816,7 +816,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         <span>{formatCompactTEL(stakingStats.latest)}</span>
                       )}
                       {stakingStats.change !== null && stakingStats.changePct !== null && (
-                        <span className={`inline-flex items-center gap-1 ${stakingStats.change >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                        <span className={`inline-flex items-center gap-1 ${stakingStats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                           {stakingStats.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                           {stakingStats.change >= 0 ? "+" : ""}
                           {formatCompactTEL(Math.abs(stakingStats.change))} ({stakingStats.changePct.toFixed(2)}%)

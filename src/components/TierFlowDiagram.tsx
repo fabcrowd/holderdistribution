@@ -38,6 +38,9 @@ type Props = {
 // moves — no market buy or sell). Same palette in both Wallets and TEL modes.
 const GREEN = "hsl(142 71% 45%)", RED = "hsl(0 72% 55%)", YELLOW = "hsl(48 95% 50%)";
 const POSITIVE = GREEN, NEGATIVE = RED, NEUTRAL = YELLOW;
+// Darker variants for text on tinted backgrounds — GREEN/RED are chart fills and
+// fail 4.5:1 as small text.
+const POSITIVE_TEXT = "hsl(142 72% 26%)", NEGATIVE_TEXT = "hsl(0 70% 40%)";
 const MUTED = "hsl(var(--muted-foreground))";
 const BUY_DEX = POSITIVE, BUY_CEX = POSITIVE, BUY_WALLET = NEUTRAL;
 const colorForVerdict = (verdict: "unknown" | "relocated" | "sold") =>
@@ -629,7 +632,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
             <div className="text-sm text-muted-foreground">No baseline available for this period.</div>
           ) : (
             <>
-              <div className={`text-xl font-bold ${netInfo.netWallets >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+              <div className={`text-xl font-bold ${netInfo.netWallets >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                 {signed(netInfo.netWallets, fmtInt)} wallets
               </div>
               {netInfo.partialWallets && <div className="text-xs text-muted-foreground mt-0.5">Some tiers have no baseline yet — this total only counts the ones that do.</div>}
@@ -649,7 +652,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                 <div className="text-sm text-muted-foreground">No baseline available for this period.</div>
               ) : (
                 <>
-                  <div className={`text-xl font-bold ${scopedNetTel >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                  <div className={`text-xl font-bold ${scopedNetTel >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                     <ExplainNumber
                       value={`${signed(scopedNetTel, fmtTel)} TEL`}
                       explanation={tierLabelShort
@@ -667,7 +670,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
               </div>
               {retailDemand ? (
                 <>
-                  <div className={`text-xl font-bold ${retailDemand.net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                  <div className={`text-xl font-bold ${retailDemand.net >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                     <ExplainNumber
                       value={`${signed(retailDemand.net, fmtTel)} TEL`}
                       explanation={`Buy pressure (${fmtTel(retailDemand.bought)}: DEX buys + exchange withdrawals) minus sell pressure (${fmtTel(retailDemand.sold)}: DEX sells + exchange deposits)${tierLabelShort ? ` for ${tierLabelShort}` : " across retail tiers"}. Excludes wallet-to-wallet relocation — that's redistribution, not market pressure.`}
@@ -685,7 +688,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
               </div>
               {scopedDex ? (
                 <>
-                  <div className={`text-xl font-bold ${scopedDex.net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                  <div className={`text-xl font-bold ${scopedDex.net >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                     <span style={{ color: POSITIVE }}>{fmtTel(scopedDex.bought)}</span>
                     {" bought / "}
                     <span style={{ color: NEGATIVE }}>{fmtTel(scopedDex.sold)}</span>
@@ -1000,7 +1003,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                         {prev != null && cur !== prev && (
                           <span
                             className="text-xs font-semibold tabular-nums whitespace-nowrap"
-                            style={{ color: cur > prev ? POSITIVE : NEGATIVE }}
+                            style={{ color: cur > prev ? POSITIVE_TEXT : NEGATIVE_TEXT }}
                           >
                             {cur > prev ? "+" : "−"}{isWallets ? fmtInt(Math.abs(cur - prev)) : fmtTel(Math.abs(cur - prev))}
                           </span>
@@ -1267,7 +1270,7 @@ const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHover
         Net (vs {baselineLabel(baselineDate)}):{" "}
         {netWallets != null
           ? (
-            <span className={netWallets >= 0 ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-red-600 dark:text-red-400 font-semibold"}>
+            <span className={netWallets >= 0 ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-red-700 dark:text-red-400 font-semibold"}>
               <ExplainNumber
                 value={`${signed(netWallets, fmtInt)} wallets`}
                 explanation={`Change in holder count for ${field.label} vs the ${baselineLabel(baselineDate, "prior")} snapshot (includes wallets that appeared or emptied without crossing a tier boundary).`}
@@ -1446,7 +1449,7 @@ const TelPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHoverFlow
       <div className="text-center text-sm text-muted-foreground">
         Net (vs {baselineLabel(baselineDate)}):{" "}
         {netTel != null
-          ? <span className={netTel >= 0 ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-red-600 dark:text-red-400 font-semibold"}>{signed(netTel, fmtTel)} TEL</span>
+          ? <span className={netTel >= 0 ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-red-700 dark:text-red-400 font-semibold"}>{signed(netTel, fmtTel)} TEL</span>
           : "no baseline"}
       </div>
 

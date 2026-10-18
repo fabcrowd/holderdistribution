@@ -21,8 +21,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://svvjdtmvmqdejjqxzclp.supabase.co">
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
+    <!-- display=swap keeps text visible while fonts load. A plain stylesheet link (not the
+         media=print/onload trick) so the CSP can forbid inline event handlers. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Holder Distribution">

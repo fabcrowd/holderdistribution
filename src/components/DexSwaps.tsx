@@ -79,7 +79,7 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
             </div>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Net DEX</div>
-              <div className={`text-xl font-bold ${view.dexNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+              <div className={`text-xl font-bold ${view.dexNet >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                 {view.dexNet >= 0 ? "+" : "−"}{formatCompactTEL(Math.abs(view.dexNet))} TEL
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">

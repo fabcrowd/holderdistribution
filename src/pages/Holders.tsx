@@ -33,7 +33,7 @@ const TILE_DESTINATIONS = {
 const TABS = [
   { id: "holders", label: "Holders", accent: "data-[state=active]:text-primary" },
   { id: "distribution", label: "Distribution", accent: "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400" },
-  { id: "supply", label: "Supply", accent: "data-[state=active]:text-sky-600 dark:data-[state=active]:text-sky-400" },
+  { id: "supply", label: "Supply", accent: "data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-400" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 const isTabId = (v: string): v is TabId => TABS.some((t) => t.id === v);

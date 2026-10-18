@@ -76,9 +76,9 @@ export const ChangeIndicator = ({
   let palette = "border-border/60 text-muted-foreground bg-muted/10";
   if (tone !== "neutral") {
     if (diff > 0) {
-      palette = "border-emerald-500/40 dark:border-emerald-400/40 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30";
+      palette = "border-emerald-500/40 dark:border-emerald-400/40 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30";
     } else if (diff < 0) {
-      palette = "border-red-500/40 dark:border-red-400/40 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30";
+      palette = "border-red-500/40 dark:border-red-400/40 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30";
     }
   }
 
