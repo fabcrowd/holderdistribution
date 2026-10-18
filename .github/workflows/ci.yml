@@ -1,0 +1,45 @@
+name: CI
+
+# Quality gate for code changes. Deliberately NOT triggered by the data-refresh
+# commits the pipeline pushes to main (paths-ignore below), and it never deploys:
+# production deploys are manual from the Netlify dashboard (see docs/DEPLOYMENT.md).
+
+on:
+  pull_request:
+    paths-ignore:
+      - "data/**"
+      - "public/data/**"
+      - "**/*.md"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "data/**"
+      - "public/data/**"
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Dependency audit (production deps, informational)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true

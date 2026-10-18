@@ -154,6 +154,8 @@ Secrets are encrypted via `scripts/encrypt-env.js` / `decrypt-env.js`.
 
 ## Current goals / active work
 
+- **Rebrand status (2026-10-18):** the UI, theme tokens, logo, favicons, OG image, meta tags and canonical URLs are now Holder Analytics / holderdistribution.com. `src/index.css` maps the shadcn variables to the Holder Analytics palette; `--ha-*` tokens are defined there. See `README.md` and `docs/DEPLOYMENT.md` for run/deploy/security notes.
+
 - **Rebranding** from "TelcoinHub" → "Holder Distribution" / "Holder Analytics" brand is partially complete. The Footer, copyright, and design system are updated. Some component interiors and meta tags may still reference the old brand.
 - **Design system rollout** — tokens are in `tailwind.config.ts` and `design-system/tokens.css`. Components should progressively adopt the semantic tokens (`brand`, `positive`, `negative`, `ha-accent`, etc.) instead of raw Tailwind color classes.
 - **Forensics Gate** — premium content gate in `netlify/functions/forensics-gate.cjs`. Gated via `ForensicsGate.tsx` + `SubscriptionGate.tsx` components.

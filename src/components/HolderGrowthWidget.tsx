@@ -553,9 +553,13 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         tickMargin={8}
                       />
                       <YAxis
-                        tickFormatter={(value) => formatInteger(value)}
+                        // Whole numbers only: the domain's "nice" ticks are fractional
+                        // (97,235.75) and, at the default 60px axis width, the
+                        // leading digits were clipped off ("0,053.25").
+                        tickFormatter={(value) => formatInteger(Math.round(value))}
                         domain={yDomain}
                         tickMargin={8}
+                        width={64}
                       />
                       <ChartTooltip
                         content={
