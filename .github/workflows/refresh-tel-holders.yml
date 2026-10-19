@@ -1,4 +1,16 @@
 name: Refresh TEL holders snapshot
+# THE single daily data workflow (consolidated 2026-10-19). It used to be the
+# first of a chain: scan-exchange-flows, generate-tier-outflows and
+# fill-history-gaps each re-triggered off it via workflow_run AND kept their
+# own fallback cron, and the watchdog re-ran the whole chain daily. That was up
+# to 8 scheduled jobs a day and ~2,500 billed minutes a month on a 2,000-minute
+# plan. Now one cron runs every stage in one job, in dependency order; those
+# workflows stay as workflow_dispatch-only manual backfill tools.
+#
+# Delivery: the data commits below do NOT rebuild Netlify (netlify.toml ignores
+# git builds). The live site reads public/data/* at runtime through the
+# live-data function (netlify/functions/live-data.mjs), which serves the latest
+# committed copy from GitHub — see docs/DEPLOYMENT.md "Live data".
 on:
   schedule:
     - cron: '0 0 * * *'
@@ -21,7 +33,9 @@ jobs:
     # is billed against the 2,000 included/month, and failing runs here burned
     # ~50 min each on a throttled fallback path (2026-10-03..13, ~600 min).
     # A healthy run is ~25-35 min; a long catch-up over public RPC takes ~10 min.
-    timeout-minutes: 120
+    # Typical: 15-30 min (log scans on public RPC, see RPC_PREFER_PUBLIC).
+    # Hard cap keeps a pathological day from burning more than 1.5 h.
+    timeout-minutes: 90
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -57,7 +71,7 @@ jobs:
         continue-on-error: true
         # Cap the step: it is non-fatal, so when it degrades to the throttled
         # Etherscan path it must not spend ~50 billed minutes before giving up.
-        timeout-minutes: 45
+        timeout-minutes: 20
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           # Lets pull-staker-balances.js's stakedBy() calls go through Alchemy
@@ -66,7 +80,23 @@ jobs:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
         run: node scripts/pull-staker-balances.js
 
-      - name: Refresh TEL holders snapshot
+      - name: Refresh TEL holders snapshot (public RPC first)
+        # Log scan. The Alchemy free tier caps eth_getLogs at 10 blocks, which
+        # made this step ~23 billed minutes a day; the public nodes take wide
+        # ranges. Keys are still the fallback inside getUsableRpcUrls, and the
+        # step below retries entirely on keys if this one fails. The script
+        # resumes from its checkpoint, so a failed attempt loses nothing.
+        id: holders_public
+        continue-on-error: true
+        timeout-minutes: 20
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          RPC_PREFER_PUBLIC: '1'
+        run: node scripts/pull-holders-rpc.js
+
+      - name: Refresh TEL holders snapshot (retry on keys)
+        if: ${{ steps.holders_public.outcome == 'failure' }}
+        timeout-minutes: 35
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
         run: node scripts/pull-holders-rpc.js
@@ -146,12 +176,9 @@ jobs:
 
       - name: Configure git user
         run: |
-          # THE daily publish. This is the one scheduled commit that carries
-          # no [skip netlify] marker, so it is the build that takes every
-          # data commit made since live — exactly one production deploy per
-          # day instead of the 3-5 the separate feeds used to each trigger.
-          # If this stops committing, nothing publishes: the watchdog below
-          # is the backstop, and pipeline-health.js reports the staleness.
+          # THE daily publish. netlify.toml no longer builds on git pushes, so
+          # this commit reaches the live site through the live-data function
+          # (no deploy, no build credits). pipeline-health.js reports staleness.
           git config user.email "action@github.com"
           git config user.name "github-actions[bot]"
 
@@ -197,10 +224,62 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # No explicit deploy step: the push to main above is itself the deploy
-      # trigger. netlify.toml has no build.ignore rule, so Netlify's native git
-      # auto-deploy publishes every commit that lands on main. See netlify.toml
-      # and lessons.md → "Netlify Deployment" before adding a hook back.
+      # ---- Stage 2: downstream feeds (formerly separate chained workflows) ----
+      # They run only after the holders snapshot above committed successfully
+      # (the old workflow_run guard), against that fresh classification. Each
+      # is non-fatal and time-boxed: a slow scan must not eat the minute budget,
+      # and its checkpoint simply resumes tomorrow.
+
+      - name: Scan exchange flows
+        id: flows
+        continue-on-error: true
+        timeout-minutes: 25
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          RPC_PREFER_PUBLIC: '1'
+        run: node scripts/scan-exchange-flows.js
+
+      - name: Generate tier outflows
+        id: tiers
+        continue-on-error: true
+        timeout-minutes: 25
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          RPC_PREFER_PUBLIC: '1'
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: node scripts/generate-tier-outflows.js
+
+      - name: Fill holders-history gaps
+        # Uses archive-state reads, so it stays on the keys (no RPC_PREFER_PUBLIC).
+        id: gaps
+        continue-on-error: true
+        timeout-minutes: 15
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+        run: node scripts/fill-history-gaps.js --days=14
+
+      - name: Re-check cross-feed consistency
+        run: |
+          node scripts/validate-outputs.js
+          node scripts/check-feed-consistency.js
+
+      - name: Commit downstream feeds
+        run: |
+          FILES="public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json public/data/holders-history.json data/holders-asof-blocks.json"
+          for f in $FILES; do [ -e "$f" ] && git add "$f"; done
+          if git diff --cached --quiet; then
+            echo "No downstream changes to commit"
+          else
+            git commit -m "Daily downstream feeds: exchange flows, tier outflows, history gaps"
+            git checkout -- .
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
+          echo "flows=${{ steps.flows.outcome }} tiers=${{ steps.tiers.outcome }} gaps=${{ steps.gaps.outcome }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Notify on failure
         if: failure()

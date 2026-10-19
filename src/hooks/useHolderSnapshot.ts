@@ -6,6 +6,7 @@ import type {
   ChainOverlapStats,
 } from "@/lib/holderInsights";
 import type { WalletVelocity } from "@/lib/holderVelocity";
+import { resolveDataUrl } from "@/lib/dataUrl";
 
 export type DisplaySelection = "combined" | "ethereum" | "polygon" | "base";
 
@@ -165,7 +166,7 @@ export const assertHolderLiteSnapshot = (value: unknown): HolderLiteSnapshot => 
 };
 
 const fetchHolderLiteSnapshot = async (): Promise<HolderLiteSnapshot> => {
-  const response = await fetch(`/data/holders-lite.json`);
+  const response = await fetch(resolveDataUrl("holders-lite.json"));
 
   if (!response.ok) {
     throw new Error(

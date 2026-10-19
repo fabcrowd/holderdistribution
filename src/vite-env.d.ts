@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_ANON_KEY?: string;
   /** Optional override for the holders-history JSON feed. */
   readonly VITE_HOLDER_HISTORY_URL?: string;
+  /** "off" forces the static /data/ path instead of the /live-data/ function. */
+  readonly VITE_LIVE_DATA?: string;
 }
 
 interface ImportMeta {

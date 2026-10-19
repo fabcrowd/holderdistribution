@@ -40,3 +40,14 @@ unstake legacy TEL; on-chain `totalStaked()` is ~0.80 B vs 4.17 B in the stale f
 2. Alchemy: the keys reset on their billing cycle; upgrade the plan or add keys. Until then the
    public fallback keeps a daily incremental run alive (a 16-day catch-up took ~7 min locally).
 3. TEL v3 is now tracked alongside legacy TEL (see `docs/TEL-CONTRACTS.md`, "Supply accounting"). The first v3-aware run scans v3 from its deploy block per chain (a one-off extra scan; keyless public RPCs need ~15 min for it).
+
+## 2026-10-19: daily schedule and live delivery
+
+* Daily commits were not reaching the site at all: `netlify.toml` ignores git builds, so the
+  live site served the last manual deploy. Now served through `/live-data/*` (see
+  `docs/DEPLOYMENT.md`, "Data pipeline (daily) and live data"), which needs the
+  `LIVE_DATA_GITHUB_TOKEN` Netlify env var.
+* All daily stages are one job in `refresh-tel-holders.yml`; the other data workflows are
+  manual-only and the watchdog is weekly, to fit the 2,000 free Actions minutes/month.
+* Manual recovery is unchanged: fix Actions billing, then run *Refresh TEL holders snapshot*
+  once (Actions → that workflow → Run workflow). Its commits go live within ~1 h, no deploy.

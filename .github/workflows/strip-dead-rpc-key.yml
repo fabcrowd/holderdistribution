@@ -3,10 +3,6 @@ name: Strip dead RPC key
 # One-shot: remove ETH_RPC_0 from .env.enc and commit. Uses ENV_PASSPHRASE.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "scripts/strip-env-keys.js"
-      - ".github/workflows/strip-dead-rpc-key.yml"
 
 permissions:
   contents: write

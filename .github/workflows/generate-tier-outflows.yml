@@ -6,24 +6,10 @@ name: Generate tier outflows
 # MAX_BLOCKS_PER_RUN blocks, so a full backfill completes over several runs.
 # Trigger manually; re-run until "complete=true" appears.
 on:
-  # CHAINED, not clocked. The 01:00 cron encoded a real dependency — this needs
-  # the holder snapshot committed first, so tier maps use the freshest balances
-  # — as a one-hour guess. workflow_run enforces the dependency instead of
-  # estimating it. Chained off the flow scan, which is itself chained off the
-  # holders snapshot, so the three run strictly in order.
-  workflow_run:
-    workflows: ["Scan exchange flows"]
-    types: [completed]
-  # Safety net: if the chain upstream breaks (the holders workflow disabled,
-  # or its run skipped) this still advances rather than silently freezing.
-  # Removing it was tried on 2026-09-13 to cut deploys and was WRONG —
-  # scripts/lib/workflowChain.test.js asserts this cron exists precisely so a
-  # broken chain cannot freeze a feed forever. The deploy cost it used to
-  # carry is gone for a different reason: this workflow's commit now carries
-  # [skip netlify], so a second run in a day costs a second commit but NOT a
-  # second build.
-  schedule:
-    - cron: '0 7 * * *'
+  # MANUAL ONLY since 2026-10-19: the daily run of this stage is a step in
+  # refresh-tel-holders.yml (the single scheduled data workflow), so it no
+  # longer needs its own workflow_run chain or fallback cron, each of which
+  # was a second billed run a day. Dispatch this for a bigger backfill.
   workflow_dispatch:
     inputs:
       max_blocks_per_run:
@@ -42,7 +28,6 @@ concurrency:
 jobs:
   scan:
     # Skip when the upstream run failed or was cancelled — see scan-exchange-flows.
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 330
     steps:

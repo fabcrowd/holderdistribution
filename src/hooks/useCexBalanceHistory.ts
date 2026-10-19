@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { resolveDataUrl } from "@/lib/dataUrl";
 
 export type CexHistoryEntry = {
   date: string;
@@ -14,7 +15,7 @@ type CexHistoryPayload = {
 const resolveUrl = () => {
   const base = import.meta.env.BASE_URL ?? "/";
   const normalized = base.endsWith("/") ? base : `${base}/`;
-  return `${normalized}data/cex-balance-history.json`;
+  return resolveDataUrl("cex-balance-history.json", { base: normalized });
 };
 
 export const useCexBalanceHistory = () => {

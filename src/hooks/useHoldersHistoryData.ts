@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { resolveDataUrl } from "@/lib/dataUrl";
 
 export type HolderHistoryChainEntry = {
   holderCount: number;
@@ -57,7 +58,7 @@ export const resolveHolderHistoryUrl = () => {
 
   const base = import.meta.env.BASE_URL ?? "/";
   const normalizedBase = withTrailingSlash(ensureLeadingSlash(base));
-  return `${normalizedBase}data/holders-history.json`;
+  return resolveDataUrl("holders-history.json", { base: normalizedBase });
 };
 
 /**

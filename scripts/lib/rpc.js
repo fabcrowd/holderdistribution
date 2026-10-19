@@ -104,8 +104,38 @@ async function probeUrls(urls) {
   );
 }
 
+/**
+ * RPC_PREFER_PUBLIC=1 flips the order: try the keyless public endpoints FIRST
+ * and only fall back to the configured keys when none of them answers.
+ *
+ * Why: the Alchemy FREE tier caps eth_getLogs at a 10-block range, so a daily
+ * incremental log scan on a key is tens of thousands of serial sub-requests
+ * plus 429 back-off (the 2026-10-02 holders step took 22.8 billed minutes),
+ * while the public nodes accept wide ranges and caught three chains up 17 days
+ * in ~7 minutes. Only the log SCANNERS should set it (pull-holders-rpc,
+ * scan-exchange-flows, generate-tier-outflows) — public nodes may refuse
+ * archive-state calls (see ARCHIVE_UNAVAILABLE_PATTERN), so anything that reads
+ * historical balances keeps the keys. Scoped per workflow step, never global.
+ */
+export const preferPublicRpc = () => /^(1|true|yes|on)$/i.test(process.env.RPC_PREFER_PUBLIC ?? "");
+
 export async function getUsableRpcUrls(chainKey, { logger = console } = {}) {
   if (usableUrlCache.has(chainKey)) return usableUrlCache.get(chainKey);
+
+  if (preferPublicRpc()) {
+    const publicUrls = getPublicFallbackUrls(chainKey);
+    if (publicUrls.length > 0) {
+      const publicUsable = (await probeUrls(publicUrls)).filter((r) => r.ok).map((r) => r.url);
+      if (publicUsable.length > 0) {
+        logger.log(
+          `RPC pool ${chainKey}: RPC_PREFER_PUBLIC — using ${publicUsable.length}/${publicUrls.length} public endpoint(s), keys held in reserve`,
+        );
+        usableUrlCache.set(chainKey, publicUsable);
+        return publicUsable;
+      }
+      logger.warn(`RPC pool ${chainKey}: RPC_PREFER_PUBLIC set but no public endpoint answered — using configured keys`);
+    }
+  }
 
   const configured = getAllRpcUrls(chainKey);
   if (configured.length === 0) {

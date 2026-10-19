@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { resolveDataUrl } from "@/lib/dataUrl";
 
 export type TransitionCell = { count: number; tel: number };
 export type TransitionMatrix = Record<string, Record<string, TransitionCell>>;
@@ -13,7 +14,7 @@ export type HolderTransitions = {
 const resolveUrl = () => {
   const base = import.meta.env.BASE_URL ?? "/";
   const normalized = base.endsWith("/") ? base : `${base}/`;
-  return `${normalized}data/holder-transitions.json`;
+  return resolveDataUrl("holder-transitions.json", { base: normalized });
 };
 
 // Map a page rangeDays value to the transitions key (matches the generator).

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { EXPLORER_BASE, v3TokenUrl } from "@/lib/telContracts";
+import { resolveDataUrl } from "@/lib/dataUrl";
 
 export type ChainStatus = {
   key: string;
@@ -40,7 +41,7 @@ const CHAIN_META: Record<string, { label: string; explorerUrl: string; tokenUrl:
 const resolveCheckpointUrl = () => {
   const base = import.meta.env.BASE_URL ?? "/";
   const normalized = base.endsWith("/") ? base : `${base}/`;
-  return `${normalized}data/holders-checkpoint.json`;
+  return resolveDataUrl("holders-checkpoint.json", { base: normalized });
 };
 
 export const useChainStatus = () => {

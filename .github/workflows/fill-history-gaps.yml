@@ -13,22 +13,10 @@ name: Fill holders-history gaps
 # produces a live one — see scripts/fill-history-gaps.js for what it will NOT
 # fill (cumulativeHolders/newHolders) and why.
 on:
-  # CHAINED to the daily snapshot rather than clocked, for the same reason
-  # scan-exchange-flows.yml is: a gap is defined relative to the latest row, so
-  # this should look right after that row has landed, not at a guessed offset.
-  workflow_run:
-    workflows: ["Refresh TEL holders snapshot"]
-    types: [completed]
-  # Safety net: if the chain upstream breaks (the holders workflow disabled,
-  # or its run skipped) this still advances rather than silently freezing.
-  # Removing it was tried on 2026-09-13 to cut deploys and was WRONG —
-  # scripts/lib/workflowChain.test.js asserts this cron exists precisely so a
-  # broken chain cannot freeze a feed forever. The deploy cost it used to
-  # carry is gone for a different reason: this workflow's commit now carries
-  # [skip netlify], so a second run in a day costs a second commit but NOT a
-  # second build.
-  schedule:
-    - cron: '40 8 * * *'
+  # MANUAL ONLY since 2026-10-19: the daily run of this stage is a step in
+  # refresh-tel-holders.yml (the single scheduled data workflow), so it no
+  # longer needs its own workflow_run chain or fallback cron, each of which
+  # was a second billed run a day. Dispatch this for a bigger backfill.
   workflow_dispatch:
     inputs:
       days:
