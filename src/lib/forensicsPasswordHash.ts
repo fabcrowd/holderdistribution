@@ -1,7 +1,8 @@
 /**
- * SHA-256 of the Supply forensics gate password. The Netlify function checks this
- * hash so no dashboard env var is required — rotating the password means updating
- * this constant (and telling users).
+ * LEGACY unsalted SHA-256 of the Supply forensics gate password. The Netlify function
+ * still accepts it (constant-time compare) so no dashboard env var is required. To move
+ * to a salted hash, set FORENSICS_PASSWORD_HASH (+ FORENSICS_DISABLE_LEGACY_HASH=1) in
+ * Netlify — see docs/FORENSICS.md.
  *
  * Do not read this as "the plaintext is safe": an earlier version of this comment
  * claimed the plaintext was never stored in the repo, and it is — in a commit body

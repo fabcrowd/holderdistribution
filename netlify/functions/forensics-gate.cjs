@@ -107856,11 +107856,12 @@ async function loadWalletFlows(env = process.env, fetchImpl = fetch, now = Date.
 var TEL_DISPOSITION_LEDGER_KEY = "tel-disposition-ledger";
 var WALLET_FLOWS_KEY = "wallet-flows";
 var SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "https://svvjdtmvmqdejjqxzclp.supabase.co";
-var SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
+var PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2dmpkdG12bXFkZWpqcXh6Y2xwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MjEyNDksImV4cCI6MjA3NTM5NzI0OX0.ENPC-zov9byGwSYIu11wMnz5r4FpdU85tBBKvIJdB14";
+var SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? PUBLIC_SUPABASE_ANON_KEY;
 var requestLimiter = new WindowLimiter(20, 6e4);
 var failureLimiter = new WindowLimiter(10, 15 * 6e4);
 async function isAdmin(authHeader) {
-  if (!authHeader || !SUPABASE_ANON_KEY) return false;
+  if (!authHeader || !/^Bearer\s+\S+/.test(authHeader) || !SUPABASE_ANON_KEY) return false;
   try {
     const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } }

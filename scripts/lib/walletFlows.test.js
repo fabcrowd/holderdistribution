@@ -120,6 +120,20 @@ describe("discoverLargeSellers", () => {
     expect(rows[0]).toMatchObject({ rank: 1, tel: 12e6, addresses: [BOT1, BOT2] });
     expect(rows[1]).toMatchObject({ destination: "KuCoin", usd: 8000 });
   });
+
+  it("credits pass-through deposit addresses to their funder and ignores mints", () => {
+    const DEPOSIT = A(20);
+    const FUNDER = A(21);
+    const t = [
+      tr(FUNDER, DEPOSIT, 7e6, 950),
+      tr(DEPOSIT, CEX, 7e6, 951),
+      tr("0x0000000000000000000000000000000000000000", POOL, 9e6, 952),
+    ];
+    const rows = discoverLargeSellers(t, index, { minTel: 5e6 });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].addresses).toEqual([FUNDER]);
+    expect(rows[0].destination).toMatch(/^KuCoin via 0x0000…0020$/);
+  });
 });
 
 describe("committed wallet-flows report", () => {

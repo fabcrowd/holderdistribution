@@ -21,18 +21,24 @@ export const WALLET_FLOWS_KEY = "wallet-flows";
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "https://svvjdtmvmqdejjqxzclp.supabase.co";
+// Public anon key (the same one shipped in src/integrations/supabase/client.ts; RLS
+// enforces access). Without this default the admin-session path silently never
+// worked, because no SUPABASE_* variable is set in Netlify.
+const PUBLIC_SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2dmpkdG12bXFkZWpqcXh6Y2xwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MjEyNDksImV4cCI6MjA3NTM5NzI0OX0.ENPC-zov9byGwSYIu11wMnz5r4FpdU85tBBKvIJdB14";
 const SUPABASE_ANON_KEY =
   process.env.SUPABASE_ANON_KEY ??
+  process.env.VITE_SUPABASE_ANON_KEY ??
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
   process.env.SUPABASE_PUBLISHABLE_KEY ??
-  "";
+  PUBLIC_SUPABASE_ANON_KEY;
 
 /** 20 requests / minute / IP overall, and 10 failed passwords / 15 minutes / IP. */
 const requestLimiter = new WindowLimiter(20, 60_000);
 const failureLimiter = new WindowLimiter(10, 15 * 60_000);
 
 async function isAdmin(authHeader: string | undefined): Promise<boolean> {
-  if (!authHeader || !SUPABASE_ANON_KEY) return false;
+  if (!authHeader || !/^Bearer\s+\S+/.test(authHeader) || !SUPABASE_ANON_KEY) return false;
   try {
     const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },

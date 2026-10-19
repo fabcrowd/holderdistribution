@@ -327,10 +327,45 @@ export function buildDistribution(recon, tracked) {
  * 72h large-seller discovery from a full transfer list. A wallet is a seller if
  * the TEL it sent to venues (CEX / DEX / swaps) exceeds what it received from
  * them by `minTel` (so arbitrage bots that buy as much as they sell drop out).
- * Upgrades and bridges are never sells. The bot cluster is reported as one row.
+ * Upgrades, bridges and mints are never sells. The bot cluster is one row.
+ *
+ * Pass-throughs (exchange deposit addresses, routers, forwarding wallets) — a
+ * wallet that received in the window about as much as it sent on to venues — are
+ * not reported themselves: the venue-bound share of what they received is
+ * credited to the wallets that funded them (one hop, as in the manual analysis).
  */
 export function discoverLargeSellers(transfers, index, { minTel = 5e6, limit = 15, priceUsd = 0 } = {}) {
-  const infra = (a) => index.cex.has(a) || index.dex.has(a) || index.upgrade.has(a) || index.bridges.has(a) || index.relays.has(a);
+  const ZERO = "0x0000000000000000000000000000000000000000";
+  const infra = (a) =>
+    a === ZERO || index.cex.has(a) || index.dex.has(a) || index.upgrade.has(a) || index.bridges.has(a) || index.relays.has(a);
+  const received = new Map();
+  const sentAll = new Map();
+  const sentVenue = new Map();
+  const add = (m, k, v) => m.set(k, (m.get(k) ?? 0) + v);
+  const kinds = transfers.map((tr) => {
+    const from = norm(tr.from);
+    const to = norm(tr.to);
+    const kind = classifyOutflow(from, to, index, { swapped: tr.swapped });
+    add(received, to, tr.tel);
+    add(sentAll, from, tr.tel);
+    if (kind === "CEX" || kind === "DEX") add(sentVenue, from, tr.tel);
+    return { from, to, kind, tr };
+  });
+  const passThrough = (a) => {
+    const v = sentVenue.get(a) ?? 0;
+    const r = received.get(a) ?? 0;
+    return !infra(a) && !index.bots.has(a) && !index.known.has(a) && v > 0 && r >= 0.9 * v && (sentAll.get(a) ?? 0) <= 1.1 * r;
+  };
+  const venueOf = (kind, to) => (kind === "CEX" ? index.cex.get(to) ?? index.relayLabels?.get(to) ?? "CEX" : "DEX");
+  const passVenue = new Map();
+  for (const { from, to, kind, tr } of kinds) {
+    if ((kind === "CEX" || kind === "DEX") && passThrough(from)) {
+      const m = passVenue.get(from) ?? new Map();
+      m.set(venueOf(kind, to), (m.get(venueOf(kind, to)) ?? 0) + tr.tel);
+      passVenue.set(from, m);
+    }
+  }
+
   const per = new Map();
   const get = (key) => {
     let p = per.get(key);
@@ -340,23 +375,29 @@ export function discoverLargeSellers(transfers, index, { minTel = 5e6, limit = 1
     }
     return p;
   };
-  for (const tr of transfers) {
-    const from = norm(tr.from);
-    const to = norm(tr.to);
-    const toKind = classifyOutflow(from, to, index, { swapped: tr.swapped });
-    if (!infra(from) && (toKind === "CEX" || toKind === "DEX")) {
-      const key = index.bots.has(from) ? "bot-cluster" : from;
-      const p = get(key);
-      p.sold += tr.tel;
-      p.chains.add(tr.chain);
-      p.addresses.add(from);
-      const venue = toKind === "CEX" ? index.cex.get(to) ?? index.relayLabels?.get(to) ?? "CEX" : "DEX";
-      p.venues.set(venue, (p.venues.get(venue) ?? 0) + tr.tel);
-      p.samples.push({ tel: tr.tel, url: txUrl(tr.chain, tr.tx) });
+  const credit = (from, tel, venue, tr) => {
+    const key = index.bots.has(from) ? "bot-cluster" : from;
+    const p = get(key);
+    p.sold += tel;
+    p.chains.add(tr.chain);
+    p.addresses.add(from);
+    p.venues.set(venue, (p.venues.get(venue) ?? 0) + tel);
+    p.samples.push({ tel, url: txUrl(tr.chain, tr.tx) });
+  };
+  for (const { from, to, kind, tr } of kinds) {
+    if (infra(from)) continue;
+    if ((kind === "CEX" || kind === "DEX") && !passThrough(from)) credit(from, tr.tel, venueOf(kind, to), tr);
+    // Funding a pass-through: credit the venue-bound share to the funder.
+    if (passThrough(to) && !passThrough(from) && !index.bots.has(to)) {
+      const share = Math.min(1, (sentVenue.get(to) ?? 0) / (received.get(to) || 1));
+      const top = [...(passVenue.get(to) ?? new Map()).entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "CEX";
+      if (share > 0) credit(from, tr.tel * share, `${top} via ${to.slice(0, 6)}…${to.slice(-4)}`, tr);
     }
+  }
+  for (const { from, to, tr } of kinds) {
     if (!infra(to) && (index.cex.has(from) || index.dex.has(from))) {
       const key = index.bots.has(to) ? "bot-cluster" : to;
-      get(key).bought += tr.tel;
+      if (per.has(key)) per.get(key).bought += tr.tel;
     }
   }
   const rows = [];
@@ -364,12 +405,13 @@ export function discoverLargeSellers(transfers, index, { minTel = 5e6, limit = 1
     const net = p.sold - (key === "bot-cluster" ? 0 : p.bought);
     if (net < minTel) continue;
     const known = index.known.get(key);
-    const named = key === "bot-cluster" ? index.botLabel ?? "Bot cluster" : known?.label ?? index.sellerLabels?.get(key) ?? "Unlabelled wallet";
+    const named =
+      key === "bot-cluster" ? index.botLabel ?? "Bot cluster" : known?.label ?? index.sellerLabels?.get(key) ?? "Unlabelled wallet";
     rows.push({
       entity: named,
       addresses: [...p.addresses],
       chains: [...p.chains],
-      destination: [...p.venues.entries()].sort((a, b) => b[1] - a[1]).map(([v]) => v).join(", "),
+      destination: [...p.venues.entries()].sort((a, b) => b[1] - a[1]).map(([v]) => v).slice(0, 3).join(", "),
       tel: round(p.sold),
       netTel: round(net),
       usd: round(p.sold * priceUsd),

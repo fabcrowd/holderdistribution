@@ -1,0 +1,54 @@
+name: Refresh gated wallet-flows report (optional)
+
+# Regenerates data/forensics/wallet-flows.json — the password-gated "Wallet flows"
+# view (served only by the forensics gate function, never from public/data).
+#
+# WEEKLY, NOT DAILY, on purpose: one run is ~15-20 billed minutes on the keyless
+# public RPCs (90-day log scans on three chains + a full 72h transfer scan). Daily
+# would add ~450-600 min/month on top of the daily pipeline's ~500-900, too close
+# to the 2,000 free minutes. Weekly adds ~80. Run it by hand for a fresh 72h view.
+#
+# NON-FATAL: the script keeps the previous report on any error and exits 0, and
+# this job is continue-on-error, so it can never break or block other workflows.
+# It does not trigger a Netlify build (netlify.toml ignores git pushes); with
+# LIVE_DATA_GITHUB_TOKEN set in Netlify, the gate serves the new file within an hour.
+
+on:
+  schedule:
+    - cron: '41 13 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: holders-refresh
+  cancel-in-progress: false
+
+jobs:
+  wallet-flows:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Generate report (keeps previous file on failure)
+        env:
+          RPC_PREFER_PUBLIC: '1'
+        run: node scripts/generate-wallet-flows.js
+      - name: Commit if changed
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+          git add data/forensics/wallet-flows.json
+          if git diff --cached --quiet; then echo "No change"; exit 0; fi
+          git commit -m "Refresh gated wallet-flows report [skip netlify]"
+          git checkout -- .
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
