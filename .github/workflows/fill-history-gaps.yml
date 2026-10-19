@@ -45,7 +45,7 @@ jobs:
     timeout-minutes: 330
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # Reconstruction anchors on the holders-checkpoint.json and
           # funding-wallets.json committed before the gap, read via git show —

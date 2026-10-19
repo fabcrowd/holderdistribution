@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # Required: recompute-history-from-git.js reads public/data/tel-holders.json
           # and public/data/cex-wallets.json from arbitrary past commits via `git show`.
