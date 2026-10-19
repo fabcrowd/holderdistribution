@@ -162,6 +162,9 @@ export function getPolygonRpcUrl() {
 }
 
 const MAX_RETRIES = 5;
+
+/** A node that does not serve old blocks (publicnode 403, "pruned history unavailable"). Not retryable. */
+export const ARCHIVE_UNAVAILABLE_PATTERN = /archive requests|pruned history|missing trie node|header not found/i;
 const RETRY_DELAY_MS = 2000;
 
 // No timeout used to be set on the fetch below, so a provider that accepted a
@@ -237,6 +240,16 @@ export async function rpcCall(rpcUrl, method, params = [], attempt = 0) {
     // do with the failing request. Retrying these here, same backoff and
     // bound as 429/403, is strictly safer than treating a transient
     // "try again" from the provider as fatal.
+    let bodyText = "";
+    try { bodyText = await response.text(); } catch { /* body already consumed or unreadable */ }
+    // "Archive requests require a personal token" (publicnode) is a 403 that no
+    // retry can ever fix: the node simply does not serve old blocks. Retrying it
+    // with backoff burned ~60 s per call — fatal for the v3 scan, which starts at
+    // the v3 deployment block weeks back. Surface it immediately so the caller can
+    // fail over to an endpoint that does serve history.
+    if (response.status === 403 && ARCHIVE_UNAVAILABLE_PATTERN.test(bodyText)) {
+      throw new Error(`RPC HTTP 403: ${bodyText.slice(0, 200)}`);
+    }
     if ((response.status === 429 || response.status === 403 || response.status === 502 || response.status === 503 || response.status === 504) && attempt < MAX_RETRIES) {
       const retryAfter = response.headers.get("retry-after");
       const waitMs = retryAfter
@@ -250,8 +263,6 @@ export async function rpcCall(rpcUrl, method, params = [], attempt = 0) {
     // eth_getLogs block-range rejection) that response.statusText alone
     // discards — read it so getLogs() below can act on the actual reason,
     // and so a human reading the thrown error isn't stuck guessing why.
-    let bodyText = "";
-    try { bodyText = await response.text(); } catch { /* body already consumed or unreadable */ }
     throw new Error(`RPC HTTP ${response.status}: ${response.statusText}${bodyText ? ` - ${bodyText}` : ""}`);
   }
   const data = await response.json();
