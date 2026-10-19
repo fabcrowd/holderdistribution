@@ -48,7 +48,7 @@ holderdistribution/
 ├── data/                     — static JSON data files served as /data/*
 ├── config/
 │   ├── cex-wallets.json      — known CEX wallet addresses
-│   ├── chains.json           — chain config
+│   ├── chains.json           — chain config + TEL contract registry (legacy + v3, see docs/TEL-CONTRACTS.md)
 │   ├── exclusions.json       — addresses excluded from holder counts
 │   └── dex-contracts.json    — DEX contract addresses
 ├── scripts/                  — Node.js data pipeline scripts (run locally/CI)
