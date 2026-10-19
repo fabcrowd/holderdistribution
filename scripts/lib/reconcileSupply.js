@@ -25,6 +25,13 @@ const norm = (v) => (typeof v === "string" ? v.trim().toLowerCase() : "");
  * is the double-count this whole exercise exists to prevent.
  */
 export const buildReconciliation = (snapshot, exclusions, cexWallets) => {
+  // Per-token ledger written by pull-holders-rpc.js (scripts/lib/supply.js).
+  // Absent in pre-v3 snapshots, where every v3/retired term is zero and the
+  // wallet sums ARE the legacy supply.
+  const tokens = snapshot?.totals?.tokens ?? null;
+  const originKey = snapshot?.totals?.originChain ?? "ethereum";
+  const sumTokens = (map, keys) => keys.reduce((acc, k) => acc + (Number(map?.[k]) || 0), 0);
+
   const labels = exclusions?.labels ?? {};
   const excludedSet = new Set((exclusions?.addresses ?? []).map(norm).filter(Boolean));
   // Per-chain exclusion lists must count too — every other consumer flattens
@@ -67,7 +74,8 @@ export const buildReconciliation = (snapshot, exclusions, cexWallets) => {
     mirrored += pol + base;
 
     if (bridgeSet.has(address)) {
-      bridgeLocked += eth;
+      // Bridge locks hold legacy TEL only; a stray v3 balance is not backing.
+      bridgeLocked += eth - (Number(wallet?.ethereum_v3) || 0);
       items.push({
         address,
         category: "bridge-lock",
@@ -133,24 +141,57 @@ export const buildReconciliation = (snapshot, exclusions, cexWallets) => {
   // Identity: counted + residual === totalSupply.
   // residual ≈ bridgeInFlight − originDrift, where bridgeInFlight is L1 lock
   // ahead of L2 mirrors and originDrift is eth-scan overshoot vs contract.
-  const originDrift = originTotal - TEL_TOTAL_SUPPLY;
-  const bridgeInFlight = bridgeLocked - mirrored;
+  //
+  // With v3 the wallet sums are no longer the legacy supply (legacy swapped into
+  // v3 is netted out of the upgrade contract's wallet, and v3 is added to its
+  // new holders), so the origin total and the mirror total come from the scan's
+  // per-token ledger instead, and one more residual term appears:
+  //   residual = bridgeInFlight − originDrift + (retiredLegacy − v3Supply)
+  // where the last term is v3 not yet backed by retired legacy (≈ 0, in-flight).
+  const retiredTotal = tokens ? sumTokens(tokens.retiredLegacy, Object.keys(tokens.retiredLegacy ?? {})) : 0;
+  const v3Total = tokens ? sumTokens(tokens.v3, Object.keys(tokens.v3 ?? {})) : 0;
+  const derivedOrigin = tokens ? Number(tokens.legacy?.[originKey]) || 0 : originTotal;
+  const mirroredLegacy = tokens
+    ? sumTokens(tokens.legacy, Object.keys(tokens.legacy ?? {}).filter((k) => k !== originKey))
+    : mirrored;
+  const originDrift = derivedOrigin - TEL_TOTAL_SUPPLY;
+  const bridgeInFlight = bridgeLocked - mirroredLegacy;
+  const upgradeUnbacked = retiredTotal - v3Total;
   const residual = TEL_TOTAL_SUPPLY - counted;
-
   items.sort((a, b) => b.balance - a.balance);
 
   return {
     totalSupply: TEL_TOTAL_SUPPLY,
-    derivedOriginTotal: originTotal,
+    derivedOriginTotal: derivedOrigin,
     bridgeLocked,
-    mirrored,
+    mirrored: mirroredLegacy,
     // Mirrored supply must be backed 1:1 by TEL locked on the origin chain.
-    mirrorResidual: mirrored - bridgeLocked,
+    mirrorResidual: mirroredLegacy - bridgeLocked,
     residual,
     residualParts: {
       bridgeInFlight,
       originDrift,
+      // Legacy retired into v3 minus v3 supply. Zero before the upgrade; a
+      // non-zero value is v3 minted without a matching swap, or bridge in-flight.
+      upgradeUnbacked,
     },
+    ...(tokens
+      ? {
+          upgrade: {
+            // Legacy TEL locked in the upgrade contracts in exchange for minted
+            // v3. Excluded from every bucket below (the v3 is counted instead).
+            retiredLegacy: retiredTotal,
+            retiredLegacyByChain: { ...tokens.retiredLegacy },
+            v3Supply: v3Total,
+            v3SupplyByChain: { ...tokens.v3 },
+            legacySupplyByChain: { ...tokens.legacy },
+            // Legacy sent to an upgrade contract with no swap: counted once, on
+            // the contract's own (escrow-labelled) wallet.
+            strandedInUpgrade: sumTokens(tokens.strandedInUpgrade, Object.keys(tokens.strandedInUpgrade ?? {})),
+            strandedInUpgradeByChain: { ...tokens.strandedInUpgrade },
+          },
+        }
+      : {}),
     categories,
     counted,
     circulating,

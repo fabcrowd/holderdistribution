@@ -206,3 +206,103 @@ describe("buildReconciliation coingeckoCirculating", () => {
     expect(r.coingeckoCirculating).toBe(COINGECKO_CIRCULATING);
   });
 });
+
+describe("buildReconciliation with TEL v3 (legacy + 18-decimal v3)", () => {
+  const POLY_BRIDGE = "0x40ec5b33f54e0e8a33a975908c5ba1c14e5bbbdf";
+  const TM = "0x2703e00cae30a7707e4d18c38f8cb6a4a40c2703";
+  const RETAIL = "0xaaaa000000000000000000000000000000000001";
+  const CEX = "0xcccc000000000000000000000000000000000002";
+
+  // 100B legacy minted on Ethereum, 40B of it bridged to Polygon (locked in the
+  // predicate). Holders then swap 10B of Polygon-legacy for v3: the 10B legacy
+  // sits in TokenMigration, 10B v3 exists on Polygon, and 1,000 more legacy was
+  // sent to TokenMigration without a swap.
+  const makeTokens = ({ v3Polygon = 10e9 } = {}) => ({
+    legacy: { ethereum: 100e9, polygon: 40e9, base: 0 },
+    v3: { ethereum: 0, polygon: v3Polygon, base: 0 },
+    retiredLegacy: { ethereum: 0, polygon: 10e9, base: 0 },
+    strandedInUpgrade: { ethereum: 0, polygon: 1_000, base: 0 },
+  });
+  const snapshot = ({ netted = true, v3Polygon = 10e9 } = {}) => ({
+    totals: { totalSupply: 100e9, originChain: "ethereum", tokens: makeTokens({ v3Polygon }) },
+    wallets: [
+      { address: POLY_BRIDGE, ethereum_balance: 40e9, polygon_balance: 0, base_balance: 0 },
+      { address: CEX, ethereum_balance: 20e9, polygon_balance: 0, base_balance: 0 },
+      {
+        address: RETAIL,
+        ethereum_balance: 40e9,
+        // Polygon legacy not in the upgrade contract (40B - 10B swapped - 1,000 stranded)
+        // plus all the v3.
+        polygon_balance: 40e9 - 10e9 - 1_000 + v3Polygon,
+        base_balance: 0,
+        polygon_v3: v3Polygon,
+      },
+      {
+        address: TM,
+        ethereum_balance: 0,
+        polygon_balance: netted ? 1_000 : 10e9 + 1_000,
+        base_balance: 0,
+      },
+    ],
+  });
+  const exclusions = {
+    addresses: [POLY_BRIDGE, TM],
+    labels: {
+      [POLY_BRIDGE]: { category: "bridge-lock", name: "Polygon predicate" },
+      [TM]: { category: "escrow", name: "TokenMigration" },
+    },
+  };
+  const cex = { wallets: [{ address: CEX }] };
+
+  it("buckets every TEL once so counted + residual is exactly 100B", () => {
+    const r = buildReconciliation(snapshot(), exclusions, cex);
+    expect(r.counted + r.residual).toBe(TEL_TOTAL_SUPPLY);
+    expect(r.categories.cex).toBe(20e9);
+    // 40B retail on Ethereum + (30B − 1,000 legacy + 10B v3) on Polygon.
+    expect(r.categories.retail).toBe(40e9 + 40e9 - 1_000);
+    expect(r.categories.escrow).toBe(1_000);
+    expect(r.counted).toBe(100e9);
+    expect(r.residual).toBe(0);
+  });
+
+  it("reports the stranded remainder once, on the escrow-labelled contract, never the swapped legacy", () => {
+    const r = buildReconciliation(snapshot(), exclusions, cex);
+    const item = r.items.find((i) => i.address === TM);
+    expect(item).toMatchObject({ category: "escrow", balance: 1_000, counted: true });
+    expect(r.upgrade).toMatchObject({ retiredLegacy: 10e9, v3Supply: 10e9, strandedInUpgrade: 1_000 });
+    expect(r.upgrade.retiredLegacyByChain.polygon).toBe(10e9);
+    expect(r.upgrade.v3SupplyByChain.polygon).toBe(10e9);
+  });
+
+  it("residualParts account for the whole residual (residual = inFlight − drift + unbacked)", () => {
+    // 5M v3 minted beyond what was retired (e.g. a bridge transfer mid-flight).
+    const r = buildReconciliation(snapshot({ v3Polygon: 10e9 + 5e6 }), exclusions, cex);
+    const { bridgeInFlight, originDrift, upgradeUnbacked } = r.residualParts;
+    expect(upgradeUnbacked).toBe(-5e6);
+    expect(r.residual).toBe(-5e6);
+    expect(bridgeInFlight - originDrift + upgradeUnbacked).toBeCloseTo(r.residual, 3);
+    // Backing check uses LEGACY mirror supply (gross, including what was retired).
+    expect(r.mirrored).toBe(40e9);
+    expect(r.mirrorResidual).toBe(0);
+  });
+
+  it("without netting, swapped TEL is double counted by exactly the retired amount", () => {
+    const r = buildReconciliation(snapshot({ netted: false }), exclusions, cex);
+    expect(r.counted - 100e9).toBe(10e9);
+  });
+
+  it("is unchanged for a pre-v3 snapshot (no totals.tokens)", () => {
+    const pre = {
+      wallets: [
+        { address: POLY_BRIDGE, ethereum_balance: 40e9, polygon_balance: 0, base_balance: 0 },
+        { address: RETAIL, ethereum_balance: 60e9, polygon_balance: 40e9, base_balance: 0 },
+      ],
+    };
+    const r = buildReconciliation(pre, exclusions, { wallets: [] });
+    expect(r.upgrade).toBeUndefined();
+    expect(r.residualParts.upgradeUnbacked).toBe(0);
+    expect(r.counted + r.residual).toBe(TEL_TOTAL_SUPPLY);
+    expect(r.derivedOriginTotal).toBe(100e9);
+    expect(r.mirrored).toBe(40e9);
+  });
+});
