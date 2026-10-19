@@ -56,6 +56,29 @@ describe("TEL contract registry (config/chains.json)", () => {
     expect(v3Addresses.size).toBe(1);
   });
 
+  it("records the v3 deployment block per chain (the pipeline's v3 scan starts there)", () => {
+    // Found on-chain 2026-10-18 by bisecting eth_getCode; see docs/TEL-CONTRACTS.md.
+    const DEPLOY = { ethereum: 25698794, polygon: 91565963, base: 49632434 };
+    for (const [key, chain] of Object.entries(chains)) {
+      expect(chain.tokens.v3.deployBlock, key).toBe(DEPLOY[key]);
+    }
+  });
+
+  it("labels both upgrade contracts as escrow so legacy TEL they hold is never a retail balance", () => {
+    const exclusions = JSON.parse(fs.readFileSync(path.join(root, "config/exclusions.json"), "utf8"));
+    for (const name of ["tokenMigration", "migrationVault"]) {
+      const addr = OFFICIAL.contracts[name];
+      expect(exclusions.addresses, name).toContain(addr);
+      expect(exclusions.labels[addr]?.category, name).toBe("escrow");
+      expect(exclusions.labels[addr]?.confidence, name).toBe("confirmed");
+    }
+    const log = JSON.parse(fs.readFileSync(path.join(root, "config/classification-changelog.json"), "utf8"));
+    const event = log.events.find((e) => e.id === "2026-10-18-tel-v3-upgrade-escrow");
+    expect(event?.type).toBe("reclassification");
+    expect(event.addresses.sort()).toEqual([OFFICIAL.contracts.migrationVault, OFFICIAL.contracts.tokenMigration].sort());
+    expect(["complete", "not-possible"]).toContain(event.backfillStatus);
+  });
+
   it("never lets the v3 or upgrade-contract addresses collide with a legacy token", () => {
     const legacy = new Set(Object.values(chains).map((c) => c.tokens.legacy.address));
     for (const chain of Object.values(chains)) {

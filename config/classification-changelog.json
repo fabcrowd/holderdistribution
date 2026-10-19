@@ -314,6 +314,40 @@
       "backfillNote": "COMPLETE for both artifacts. exchange-flow-history.json: Base rebuilt across its full history (25,614,028 -> head), 167 days added spanning 2025-02-20..2025-09-26, ~508,985 TEL in and out; entries 427 -> 559. tier-outflows.json: Base rebuilt over the same range, 42 byChain.base entries across all tiers and ranges, latestDate 2026-08-21 -> 2026-09-10 and complete false -> true; YTD Base shows 2,821,913,648 TEL moved with cex=0 and dex=0, i.e. Base TEL movement is wallet-to-wallet and never touched a known exchange or DEX address in that window, which matches the flow scan finding that Base exchange activity stopped in September 2025. In both cases only the Base checkpoint was reset; Ethereum and Polygon kept theirs, so no day bucket or tier was double-counted.",
       "uiNote": "Base appears in exchange-flow history from 2025-02-20 where it was previously absent entirely. This is new coverage, not a restatement \u2014 no previously-published Base figure changed, because none existed.",
       "dateNote": "Dated the day the correction shipped. The underlying data spans 2025-02-20 onward."
+    },
+    {
+      "id": "2026-10-18-tel-v3-upgrade-escrow",
+      "date": "2026-10-18",
+      "type": "reclassification",
+      "summary": "TEL v3 upgrade contracts TokenMigration (0x2703\u20262703) and MigrationVault (0x2222\u20263333) labelled category:escrow, and the pipeline now tracks legacy (2-decimal) + TEL v3 (18-decimal) balances per wallet. TokenMigration was an unlabelled retail wallet holding ~19.3B legacy TEL (the largest 'holder' in the snapshot); the legacy TEL it holds in exchange for minted v3 is now netted out of it, so swapped TEL is counted once, as v3 in the swapper's wallet.",
+      "addresses": [
+        "0x2703e00cae30a7707e4d18c38f8cb6a4a40c2703",
+        "0x222213deb441c5a9f71df2942db431978a733333"
+      ],
+      "affects": {
+        "artifacts": [
+          "supply-reconciliation",
+          "holders-history",
+          "holders-lite",
+          "tel-holders",
+          "holder-transitions"
+        ],
+        "metrics": [
+          "retail.count",
+          "retail.balance",
+          "totalHeld",
+          "totalBalance",
+          "holderCount",
+          "escrow"
+        ]
+      },
+      "evidence": "On-chain at 2026-10-19 03:44 UTC = 2026-10-18 23:44 ET (public RPC, all chains pinned to that instant): TokenMigration holds legacy TEL 3,779,440,827.66 (Ethereum) + 19,110,053,421.21 (Polygon) + 123,053,750.56 (Base) = 23,012,547,999.43; TEL v3 totalSupply is 3,557,333,552.74 + 19,271,543,982.98 + 183,445,719.33 = 23,012,323,255.05. The 224,744.38 difference is one Polygon transfer of legacy TEL into TokenMigration with no v3 mint (stranded, not swapped); every other legacy transfer into the contract shares its transaction with a v3 mint of the same amount. v3 crosses chains by burn-and-mint, so v3 supply nets to the swapped amount. Derivation and the full table: docs/TEL-CONTRACTS.md 'Supply accounting'.",
+      "limitation": "Pre-2026-10-18 history is legacy-only, so for dates after the v3 deployment (2026-08-06) swapped TEL appears as a growing balance on TokenMigration with no v3 counterpart, and the swappers' own balances fall by the same amount. Re-labelling TokenMigration backwards without ALSO adding the v3 holdings would remove up to ~19B of swapped TEL from retail on those dates, which is a worse error than leaving it, so those rows are left as published. v3 holdings by date are recoverable from v3 Transfer logs, but rebuilding every archived row from them needs the multi-GB per-chain transfer caches (data/rebuild-transfers-*.ndjson, gitignored) that are not available to CI or to this change. Rows before the v3 deployment are unaffected (v3 = 0, TokenMigration did not exist).",
+      "circulatingImpact": "Retail/escrow split and holder counts move on the first pipeline run that tracks v3; total supply stays 100B. Escrow gains only the stranded remainder on TokenMigration (~224,744 TEL), because the swapped legacy is netted out, not bucketed. No nonCirculatingOverride is set.",
+      "backfillStatus": "not-possible",
+      "backfillNote": "NOT BACKFILLED, deliberately: the committed archive has no v3 balances, so applying the new classification backwards (scripts/recompute-history-from-git.js) would delete swapped TEL from retail without adding it back as v3 and fabricate a step on the first v3-aware row. Dates before 2026-08-06 are exact as published. The first v3-aware row is the next pipeline run after this change; expect one step there, where TEL moves from the TokenMigration wallet to the individual wallets that hold the v3 (retail.balance roughly flat, holderCount up, cexBalance/DEX unchanged). Closing this gap exactly means replaying v3 + legacy transfer logs per archived date (data/date-blocks.json maps dates to blocks) against the full transfer caches.",
+      "uiNote": "Metric names must match the exact strings passed to getEventsAffecting: 'retail.count', 'retail.balance' and 'totalHeld' are queried; the others are documentation. The marker renders only once the history archive has an entry on or after this date.",
+      "dateNote": "`date` is the first data point that can carry the new classification: the first holders-history entry generated after the v3-aware pipeline lands."
     }
   ]
 }

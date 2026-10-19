@@ -165,7 +165,9 @@
     "0xd6040319acdc191e485b2e103b9b4405ea8a30b0",
     "0x222d9b3875d7c37d5037896d9b8b0fb3a19180bf",
     "0x043a163912c680dd2b490b409e8d4ad399e97bf8",
-    "0x9184aae0983e5ffbe06e41ca13c24033857b56cb"
+    "0x9184aae0983e5ffbe06e41ca13c24033857b56cb",
+    "0x2703e00cae30a7707e4d18c38f8cb6a4a40c2703",
+    "0x222213deb441c5a9f71df2942db431978a733333"
   ],
   "labels": {
     "0x0000000000000000000000000000000000000000": {
@@ -1041,6 +1043,20 @@
       "confidence": "medium",
       "assumed": true,
       "note": "Funded 2025-12-01 by Telcoin Holdings ops Safe; 251,992,704 TEL; zero outflows ever; 1,000 TEL test transfer then bulk, the same signature as Anchorage and BitGo. Sits inside the 2025-10-02..12-02 escrow funding window and shares 2025-11-27 with two confirmed BitGo Holdings legs. Custodian NOT identified. Full trace: data/escrow-safe-provenance.md."
+    },
+    "0x2703e00cae30a7707e4d18c38f8cb6a4a40c2703": {
+      "category": "escrow",
+      "name": "Telcoin TEL v3 upgrade contract (TokenMigration)",
+      "evidenceTier": "contract-analysis",
+      "confidence": "confirmed",
+      "note": "Same address on Ethereum, Polygon and Base. Takes a holder's legacy 2-decimal TEL, locks it, and mints the same amount of 18-decimal TEL v3 to the holder. The pipeline nets the legacy TEL it received in exchange for minted v3 out of this wallet (scripts/lib/telTokens.js) so swapped TEL is counted once, as v3 in the swapper's wallet; whatever remains here is legacy sent in WITHOUT a swap (224,744.38 TEL on Polygon at 2026-10-18) and stays counted once. Wiring read on-chain (oldToken()/telcoinV3()); see docs/TEL-CONTRACTS.md. Reclassified 2026-10-18 (was an unlabelled retail wallet holding ~19.3B legacy TEL)."
+    },
+    "0x222213deb441c5a9f71df2942db431978a733333": {
+      "category": "escrow",
+      "name": "Telcoin TEL v3 MigrationVault (Phase 2 upgrade)",
+      "evidenceTier": "contract-analysis",
+      "confidence": "confirmed",
+      "note": "ERC-1967 proxy, same address on Ethereum, Polygon and Base. Phase 2 long-tail upgrade from a pre-funded reserve once Phase 1 closes (OLD_TOKEN()/NEW_TOKEN() read on-chain). Holds no legacy TEL and no v3 yet (2026-10-18). Legacy TEL it receives in exchange for v3 it issues is netted out the same way as TokenMigration; v3 held in its reserve is counted once, on this wallet. Added before it holds anything so Phase 2 can never surface as a 'retail' whale."
     }
   },
   "chains": {
