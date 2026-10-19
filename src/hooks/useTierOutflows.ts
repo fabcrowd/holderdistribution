@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { resolveDataUrl } from "@/lib/dataUrl";
 
 export type TierOutflowCell = {
   dex: number;
@@ -65,7 +66,7 @@ export type TierOutflows = {
 const resolveUrl = () => {
   const base = import.meta.env.BASE_URL ?? "/";
   const normalized = base.endsWith("/") ? base : `${base}/`;
-  return `${normalized}data/tier-outflows.json`;
+  return resolveDataUrl("tier-outflows.json", { base: normalized });
 };
 
 // Map a page rangeDays to the generator's window key. Covers the full

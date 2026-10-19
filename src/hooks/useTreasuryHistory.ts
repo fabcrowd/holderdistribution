@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { resolveDataUrl } from "@/lib/dataUrl";
 
 export type TreasuryHistoryEntry = {
   date: string;
@@ -23,7 +24,7 @@ export type TreasuryHistory = {
 const resolveUrl = () => {
   const base = import.meta.env.BASE_URL ?? "/";
   const normalized = base.endsWith("/") ? base : `${base}/`;
-  return `${normalized}data/treasury-history.json`;
+  return resolveDataUrl("treasury-history.json", { base: normalized });
 };
 
 /**

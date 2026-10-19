@@ -5,7 +5,7 @@
 - Host: Netlify. Build: `npm run build`, publish `dist/`, functions in `netlify/functions`.
 - `netlify.toml` sets `ignore = "exit 0"` for the **production**, **deploy-preview** and
   **branch-deploy** contexts, so a push or PR **does not build** by design (data-refresh
-  commits land on `main` many times a day). To ship: merge to `main`, then
+  commits land on `main` daily and reach the site via the live-data function, see below). To ship: merge to `main`, then
   *Netlify → Deploys → Trigger deploy → Deploy site*.
 - If you ever see builds starting on push, the Netlify UI is overriding `netlify.toml`
   (Site settings → Build & deploy → Build settings / Continuous deployment). Re-check there
@@ -60,15 +60,45 @@ browser will block it. Verify after deploy with
 `curl -sI https://holderdistribution.com | grep -i -E 'content-security|strict-transport'`
 and an empty browser console on all three tabs.
 
-## Data pipeline
+## Data pipeline (daily) and live data (no rebuild)
 
-Scheduled GitHub Actions (`refresh-tel-holders`, `scan-exchange-flows`, `generate-tier-outflows`,
-`fill-history-gaps`, `detect-cex-candidates`, `pipeline-watchdog`, …) commit fresh JSON to
-`public/data/` and `data/`. As of 2026-10-18 **all of them fail within ~3–4 s with no step logs**
-(issues #1–#6): that signature is an account-level Actions block (billing/spending limit),
-not a code fault — see the note in `pipeline-watchdog.yml`. Until Actions is re-enabled the site
-serves feeds last updated 2026-10-02 and shows a stale-data banner. Fix: GitHub → Settings →
-Billing → Actions, then re-run *Refresh TEL holders snapshot* and close the issues.
+**Schedule.** One scheduled workflow, *Refresh TEL holders snapshot*
+(`refresh-tel-holders.yml`, 00:00 UTC daily), runs every stage in one job: staker balances →
+holders scan → derived feeds → commit → exchange flows → tier outflows → history-gap fill →
+consistency gate → commit. `scan-exchange-flows`, `generate-tier-outflows` and
+`fill-history-gaps` are manual (`workflow_dispatch`) backfill tools now; `pipeline-watchdog`
+runs weekly (Mon), `detect-cex-candidates` weekly, `sync-cex-wallets` on the 1st/15th.
+The log scanners run with `RPC_PREFER_PUBLIC=1` (keyless public RPCs take wide `eth_getLogs`
+ranges; the Alchemy free tier's 10-block cap made the holders step alone ~23 min/day) and
+retry on the Alchemy keys if that fails. Expected cost: ~15–30 Actions min/day, i.e.
+~500–900 of the 2,000 free minutes/month (was ~2,500/month with the chained jobs, fallback
+crons and daily watchdog).
+
+**Live data.** Data commits do not rebuild Netlify. The browser fetches feeds from
+`/live-data/<file>` (`netlify/functions/live-data.mjs`), which reads the latest
+`public/data/<file>` from GitHub and is cached at Netlify's durable edge for 1 h
+(stale-while-revalidate 24 h), so it runs at most ~once per file per hour regardless of
+traffic. Without a token, or on any GitHub error, it 302s to the deployed static
+`/data/<file>` (the pre-existing behaviour). It also strips per-address balances from
+`holders-checkpoint.json` (~5 MB → <1 KB per visit).
+
+One-time setup (required for live data; the site keeps working without it):
+
+1. GitHub → Settings → Developer settings → Fine-grained tokens → *Generate new token*.
+   Repository access: only `fabcrowd/holderdistribution`. Permissions: **Contents: Read-only**
+   (nothing else). Pick an expiry and calendar a renewal.
+2. Netlify → Site configuration → Environment variables → add `LIVE_DATA_GITHUB_TOKEN` =
+   that token (scope: Functions). Optional: `LIVE_DATA_REF` (default `main`),
+   `LIVE_DATA_REPO` (default `fabcrowd/holderdistribution`).
+3. Deploys → Trigger deploy → Deploy site (env vars only reach functions after a deploy).
+4. Check: `curl -sI https://holderdistribution.com/live-data/holders-lite.json` shows
+   `x-live-data: github`. `fallback: not configured` means step 2/3 did not take.
+
+Cost of this path on Netlify credits: function compute ≤ ~20 credits/month worst case (all 11
+files re-fetched every hour, ~1 s at 1 GB each), typically a few; web requests
+2 credits/10k; versus 15 credits per production deploy (a daily deploy = ~450/month, over
+the Free plan's 300). If GitHub Actions is billing-blocked, nothing new is committed and
+the site keeps serving the last committed data (the "Data feed delayed" banner shows the age).
 
 ## Rollback
 

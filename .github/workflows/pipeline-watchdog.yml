@@ -28,7 +28,11 @@ on:
     # feed goes stale — exactly the situation where builds are most likely to
     # be failing anyway. Daily still bounds a failed nightly refresh to ~24h,
     # and this workflow only commits when it actually heals something.
-    - cron: '23 12 * * *'
+    # Weekly since 2026-10-19 (Mondays). The consolidated daily workflow already
+    # resumes every feed from its checkpoint and fills history gaps, so a daily
+    # watchdog mostly re-ran the same heavy chain on failure days (~50 billed
+    # minutes each, 2026-10-04..12).
+    - cron: '23 12 * * 1'
   workflow_dispatch:
 
 permissions:

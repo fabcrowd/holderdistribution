@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { resolveDataUrl } from "@/lib/dataUrl";
 
 export type ExchangeFlowEntry = {
   date: string;
@@ -21,7 +22,7 @@ type ExchangeFlowPayload = {
 const resolveUrl = () => {
   const base = import.meta.env.BASE_URL ?? "/";
   const normalized = base.endsWith("/") ? base : `${base}/`;
-  return `${normalized}data/exchange-flow-history.json`;
+  return resolveDataUrl("exchange-flow-history.json", { base: normalized });
 };
 
 /**

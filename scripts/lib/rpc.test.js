@@ -128,6 +128,30 @@ describe("getUsableRpcUrls public fallback", () => {
   });
 });
 
+describe("RPC_PREFER_PUBLIC", () => {
+  afterEach(() => {
+    delete process.env.RPC_PREFER_PUBLIC;
+  });
+
+  it("uses public endpoints first even when a configured key works", async () => {
+    process.env.ETH_RPC_0 = "https://eth-mainnet.g.alchemy.com/v2/goodkey";
+    process.env.RPC_PREFER_PUBLIC = "1";
+    globalThis.fetch = vi.fn(async () => jsonResponse({ jsonrpc: "2.0", id: 1, result: "0x1" }));
+    const urls = await getUsableRpcUrls("ethereum", { logger: { log() {}, warn() {} } });
+    expect(urls).toEqual(getPublicFallbackUrls("ethereum"));
+  });
+
+  it("falls back to configured keys when no public endpoint answers", async () => {
+    process.env.ETH_RPC_0 = "https://eth-mainnet.g.alchemy.com/v2/goodkey";
+    process.env.RPC_PREFER_PUBLIC = "true";
+    globalThis.fetch = vi.fn(async (url) =>
+      String(url).includes("alchemy") ? jsonResponse({ jsonrpc: "2.0", id: 1, result: "0x1" }) : jsonResponse({}, 503),
+    );
+    const urls = await getUsableRpcUrls("ethereum", { logger: { log() {}, warn() {} } });
+    expect(urls).toEqual(["https://eth-mainnet.g.alchemy.com/v2/goodkey"]);
+  });
+});
+
 describe("workflow cost guards", () => {
   // Private-repo Actions minutes are billed; an unbounded job (360-minute default)
   // that fails slowly is how the included minutes were exhausted in October 2026.

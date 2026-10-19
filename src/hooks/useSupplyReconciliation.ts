@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { resolveDataUrl } from "@/lib/dataUrl";
 
 export type SupplyReconciliationItem = {
   address: string;
@@ -66,7 +67,7 @@ export type SupplyReconciliation = {
 const resolveUrl = () => {
   const base = import.meta.env.BASE_URL ?? "/";
   const normalized = base.endsWith("/") ? base : `${base}/`;
-  return `${normalized}data/supply-reconciliation.json`;
+  return resolveDataUrl("supply-reconciliation.json", { base: normalized });
 };
 
 export const useSupplyReconciliation = () => {

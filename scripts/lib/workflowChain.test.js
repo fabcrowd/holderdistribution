@@ -53,50 +53,61 @@ const workflowNames = () =>
       .filter(Boolean),
   );
 
-const CHAIN = [
-  { file: "scan-exchange-flows.yml", dependsOn: "Refresh TEL holders snapshot" },
-  { file: "generate-tier-outflows.yml", dependsOn: "Scan exchange flows" },
-];
+/**
+ * Since 2026-10-19 the chain is ONE scheduled job (refresh-tel-holders.yml)
+ * running the stages as ordered steps, instead of three workflows linked by
+ * workflow_run plus a fallback cron each. These guard that consolidation: the
+ * order, and that no former stage quietly regains its own schedule (each one
+ * was a second billed run every day on a minutes-capped plan).
+ */
+const FORMER_STAGES = ["scan-exchange-flows.yml", "generate-tier-outflows.yml", "fill-history-gaps.yml"];
+const dailyCrons = (doc) =>
+  (triggers(doc).schedule ?? []).filter(({ cron }) => {
+    const [, , dom, , dow] = cron.trim().split(/\s+/);
+    return dom === "*" && (dow === "*" || dow === undefined);
+  });
 
 describe("data pipeline workflow chain", () => {
-  it("every workflow_run dependency names a workflow that exists", () => {
-    const names = workflowNames();
-    for (const { file, dependsOn } of CHAIN) {
-      const refs = triggers(load(file))?.workflow_run?.workflows ?? [];
-      expect(refs, `${file} lost its workflow_run trigger`).toContain(dependsOn);
-      expect(
-        names,
-        `${file} depends on a workflow named "${dependsOn}", which no workflow declares — ` +
-          `the chain is broken and the downstream feed will silently stop updating`,
-      ).toContain(dependsOn);
+  it("only the consolidated daily workflow runs on a daily schedule", () => {
+    const daily = fs
+      .readdirSync(DIR)
+      .filter((f) => f.endsWith(".yml"))
+      .filter((f) => dailyCrons(load(f)).length > 0);
+    expect(daily).toEqual(["refresh-tel-holders.yml"]);
+    expect(dailyCrons(load("refresh-tel-holders.yml"))).toHaveLength(1);
+  });
+
+  it("former chained stages are manual-only (no cron, no workflow_run)", () => {
+    for (const file of FORMER_STAGES) {
+      const on = triggers(load(file));
+      expect(on.schedule, `${file} regained a schedule`).toBeFalsy();
+      expect(on.workflow_run, `${file} regained a workflow_run chain`).toBeFalsy();
+      expect(on).toHaveProperty("workflow_dispatch");
     }
   });
 
-  it("chained workflows skip when the upstream run did not succeed", () => {
-    for (const { file } of CHAIN) {
-      const job = Object.values(load(file).jobs)[0];
-      expect(job.if, `${file}'s job needs an if: guard on workflow_run conclusion`).toBeTruthy();
-      expect(job.if).toContain("workflow_run.conclusion");
-      expect(job.if).toContain("success");
+  it("runs holders -> commit -> exchange flows -> tier outflows -> gaps -> gate -> commit, in order", () => {
+    const steps = load("refresh-tel-holders.yml").jobs.refresh.steps;
+    const idx = (needle, from = 0) => steps.findIndex((s, i) => i >= from && (s.run ?? "").includes(needle));
+    const holders = idx("pull-holders-rpc.js");
+    const commit1 = idx("git commit", holders);
+    const flows = idx("scan-exchange-flows.js", commit1);
+    const tiers = idx("generate-tier-outflows.js", flows);
+    const gaps = idx("fill-history-gaps.js", tiers);
+    const gate = idx("check-feed-consistency.js", gaps);
+    const commit2 = idx("git commit", gate);
+    for (const [name, i] of Object.entries({ holders, commit1, flows, tiers, gaps, gate, commit2 })) {
+      expect(i, `missing or out-of-order stage: ${name}`).toBeGreaterThanOrEqual(0);
     }
-  });
-
-  it("chained workflows check out main, not the triggering commit", () => {
-    // workflow_run checks out the SHA that triggered the UPSTREAM run, which
-    // predates the data commit that run just made. Without `ref: main` the
-    // downstream job scans against the previous classification.
-    for (const { file } of CHAIN) {
-      const steps = Object.values(load(file).jobs)[0].steps;
-      const checkout = steps.find((s) => String(s.uses ?? "").startsWith("actions/checkout"));
-      expect(checkout, `${file} has no checkout step`).toBeTruthy();
-      expect(checkout.with?.ref, `${file}'s checkout must pin ref: main`).toBe("main");
+    // Downstream stages are time-boxed and non-fatal so one slow scan cannot
+    // eat the minute budget or block the holders publish.
+    for (const i of [flows, tiers, gaps]) {
+      expect(steps[i]["continue-on-error"]).toBe(true);
+      expect(steps[i]["timeout-minutes"]).toBeGreaterThan(0);
     }
-  });
-
-  it("keeps a fallback schedule so a broken chain cannot freeze a feed forever", () => {
-    for (const { file } of CHAIN) {
-      expect(triggers(load(file)).schedule, `${file} needs a safety-net cron`).toBeTruthy();
-    }
+    // Archive-state reads stay on the keys; only log scanners prefer public RPC.
+    expect(steps[gaps].env?.RPC_PREFER_PUBLIC).toBeUndefined();
+    expect(steps[flows].env?.RPC_PREFER_PUBLIC).toBe("1");
   });
 
   it("the daily workflow gates on cross-feed consistency before committing", () => {

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ClassificationChangelog } from "@/lib/classificationChangelog";
+import { resolveDataUrl } from "@/lib/dataUrl";
 
 export type { ClassificationChangelog, ClassificationEvent } from "@/lib/classificationChangelog";
 export { getEventsAffecting } from "@/lib/classificationChangelog";
@@ -7,7 +8,7 @@ export { getEventsAffecting } from "@/lib/classificationChangelog";
 const resolveUrl = () => {
   const base = import.meta.env.BASE_URL ?? "/";
   const normalized = base.endsWith("/") ? base : `${base}/`;
-  return `${normalized}data/classification-changelog.json`;
+  return resolveDataUrl("classification-changelog.json", { base: normalized });
 };
 
 /**

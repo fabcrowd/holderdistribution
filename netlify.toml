@@ -1,7 +1,7 @@
 # Deploys are manual-only — trigger from the Netlify dashboard.
 # All git-triggered builds (production, preview, branch) are suppressed via
-# ignore = "exit 0". The /data/* cache and /assets/* immutable headers below
-# are the only netlify.toml rules that affect the live site at runtime.
+# ignore = "exit 0". Daily data commits reach the live site WITHOUT a build via
+# netlify/functions/live-data.mjs (/live-data/*), see docs/DEPLOYMENT.md.
 
 [build]
   command = "npm run build"
