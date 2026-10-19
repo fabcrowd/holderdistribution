@@ -517,10 +517,22 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
               {!isLoading && !error && data?.feedError && (
                 <Alert variant="destructive" className="border-dashed mb-4">
                   <WifiOff className="h-4 w-4" />
-                  <AlertTitle>Feed error — node offline</AlertTitle>
+                  <AlertTitle>Data feed delayed</AlertTitle>
                   <AlertDescription>
-                    The data pipeline has not updated in over 48 hours. Charts may be stale. Last update:{" "}
-                    {data.updatedAt ? new Date(data.updatedAt).toLocaleString() : "unknown"}.
+                    {(() => {
+                      const updated = data.updatedAt ? new Date(data.updatedAt) : null;
+                      const days =
+                        updated && !Number.isNaN(updated.getTime())
+                          ? Math.floor((Date.now() - updated.getTime()) / 86_400_000)
+                          : null;
+                      return (
+                        <>
+                          The holder data has not been refreshed{days !== null ? ` in ${days} days` : " recently"}, so
+                          charts show the last published snapshot rather than live figures. Last update:{" "}
+                          {updated && !Number.isNaN(updated.getTime()) ? updated.toLocaleString() : "unknown"}.
+                        </>
+                      );
+                    })()}
                   </AlertDescription>
                 </Alert>
               )}

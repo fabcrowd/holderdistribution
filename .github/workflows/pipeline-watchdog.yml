@@ -35,9 +35,17 @@ permissions:
   contents: write
   issues: write
 
+# Same group as refresh-tel-holders.yml: both run the holders chain and push.
+concurrency:
+  group: holders-refresh
+  cancel-in-progress: false
+
 jobs:
   watchdog:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    # Was unbounded (360-minute default); failing runs burned ~50 billed minutes
+    # each on a throttled fallback path.
+    timeout-minutes: 120
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
