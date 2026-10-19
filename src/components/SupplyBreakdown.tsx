@@ -30,7 +30,7 @@ import {
   partitionBuckets,
 } from "@/lib/supplyBreakdown";
 import { ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
-import { legacyTokenUrl } from "@/lib/telContracts";
+import { EXPLORER_BASE } from "@/lib/telContracts";
 
 /**
  * CoinGecko circulating (comparison only), fallback for when the served
@@ -99,13 +99,12 @@ const renderActivePieSector = (props: PieSectorDataItem) => {
 const explorerUrl = (item: SupplyReconciliationItem): string => {
   const a = item.address;
   if (item.category === "staking-contract") {
-    return `${legacyTokenUrl("polygon")}?a=${a}`;
+    return `${EXPLORER_BASE.polygon}/address/${a}`;
   }
-  if (item.category === "bridge-lock") {
-    return `https://etherscan.io/address/${a}`;
-  }
-  // Default: Ethereum TEL holder filter (multi-chain balances still listed in table).
-  return `${legacyTokenUrl("ethereum")}?a=${a}`;
+  // The address page lists every token the wallet holds, so it shows both the
+  // legacy (2-decimal) and the TEL v3 (18-decimal) balance that make up the
+  // figure on this page — a single token's holder filter would show only half.
+  return `${EXPLORER_BASE.ethereum}/address/${a}`;
 };
 
 /** Selects the drill-down panel content for a bucket key. Shared by the
@@ -585,6 +584,30 @@ const ResidualPanel = ({
         Still crossing ≈ locked on Ethereum − already showing on Polygon/Base. A tiny scan
         difference can nudge the final number slightly.
       </p>
+      {data?.upgrade && (
+        <div className="border-t border-border/50 pt-2 space-y-1.5">
+          <p className="font-semibold text-foreground">TEL v3 upgrade (legacy → v3, 1:1)</p>
+          <p className="text-muted-foreground">
+            Every wallet balance is legacy TEL plus TEL v3. When a holder upgrades, the legacy TEL is
+            locked in Telcoin&apos;s upgrade contract and the same amount of v3 is minted to them — so
+            the locked legacy TEL is left out and the v3 is counted instead, never both.
+          </p>
+          <dl className="space-y-1.5 tabular-nums">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">TEL v3 in existence (all chains)</dt>
+              <dd>{formatFullTEL(data.upgrade.v3Supply)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Legacy TEL locked for it (not double-counted)</dt>
+              <dd>{formatFullTEL(data.upgrade.retiredLegacy)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Sent to the upgrade contract without upgrading</dt>
+              <dd>{formatFullTEL(data.upgrade.strandedInUpgrade)}</dd>
+            </div>
+          </dl>
+        </div>
+      )}
       {bridges.length > 0 && (
         <div className="border-t border-border/50 pt-2">
           <AddressListPanel

@@ -47,7 +47,7 @@ netlify/functions-src/     forensics gate (bundled to netlify/functions by prebu
 design-system/             brand spec, tokens, logos
 .github/workflows/         ci.yml + scheduled data-pipeline workflows
 docs/DEPLOYMENT.md         deploy + production-readiness runbook
-docs/TEL-CONTRACTS.md      TEL contract registry: legacy vs. new (v3) addresses, sources, verification
+docs/TEL-CONTRACTS.md      TEL contract registry (legacy vs. v3) + supply accounting (legacy + v3 = 100B)
 CLAUDE.md                  deeper architecture/handoff notes
 ```
 

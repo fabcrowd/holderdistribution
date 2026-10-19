@@ -15,8 +15,24 @@ export type SupplyReconciliationItem = {
 export type SupplyResidualParts = {
   /** L1 bridge lock minus L2 mirrored balances (usually positive = in-flight). */
   bridgeInFlight: number;
-  /** Sum of Ethereum balances in the holder scan minus contract totalSupply. */
+  /** Origin-chain legacy TEL in the holder scan minus the 100B total supply. */
   originDrift: number;
+  /** Legacy TEL retired into v3 minus v3 supply (≈ 0; v3 bridge in-flight). Absent before the v3 upgrade. */
+  upgradeUnbacked?: number;
+};
+
+/** TEL v3 upgrade ledger. Absent on snapshots that predate v3 tracking. */
+export type SupplyUpgrade = {
+  /** Legacy TEL locked in the upgrade contracts in exchange for minted v3 (left out of every bucket). */
+  retiredLegacy: number;
+  retiredLegacyByChain: Record<string, number>;
+  /** TEL v3 totalSupply summed over chains (counted in the holder buckets). */
+  v3Supply: number;
+  v3SupplyByChain: Record<string, number>;
+  legacySupplyByChain: Record<string, number>;
+  /** Legacy sent to an upgrade contract with no swap — counted once, on the contract. */
+  strandedInUpgrade: number;
+  strandedInUpgradeByChain: Record<string, number>;
 };
 
 export type SupplyCirculatingExclusions = {
@@ -33,6 +49,7 @@ export type SupplyReconciliation = {
   mirrorResidual: number;
   residual: number;
   residualParts: SupplyResidualParts;
+  upgrade?: SupplyUpgrade;
   categories: Record<string, number>;
   counted: number;
   circulating: number;
