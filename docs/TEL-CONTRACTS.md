@@ -81,22 +81,109 @@ still says "Decimals: 2". That is a stale doc row; the chain says 18.
 
 ## Deprecated
 
-* The three legacy TEL contracts above. They remain the tracked token in the holder pipeline (`tokenAddress`,
-  `decimals: 2` in `config/chains.json` are intentionally unchanged) until the pipeline is taught about v3.
+* The three legacy TEL contracts above. The holder pipeline now tracks them together with TEL v3 (see "Supply
+  accounting"); `tokenAddress`/`decimals: 2` in `config/chains.json` still point at the legacy token for the scripts
+  that only read the legacy token.
 * The Sepolia/Base Sepolia addresses in `tel-v3/docs/bridge-integration.md` are testnet only; never use them.
 
-## Pipeline impact (not changed here, needs a decision)
+## Supply accounting: legacy + v3 = 100B
 
-1. **The migration contract is the largest "holder" in the legacy data.** On 2026-10-18 `TokenMigration` held
-   legacy TEL of 3,777,095,818.94 (Ethereum), 19,098,965,437.02 (Polygon) and 123,053,750.56 (Base). The last
-   published snapshot (`public/data/tel-holders.json`, 2026-10-02) already lists it at 19.30B TEL, unlabelled, so
-   it is counted as a retail wallet. `MigrationVault` will hold legacy TEL once Phase 2 starts. Proposed labels
-   for `config/exclusions.json` (category `escrow`, evidenceTier `contract-analysis`, confidence `confirmed`):
-   `0x2703e00cae30a7707e4d18c38f8cb6a4a40c2703` "Telcoin TEL v3 upgrade contract (TokenMigration)" and
-   `0x222213deb441c5a9f71df2942db431978a733333` "Telcoin TEL v3 MigrationVault". This was **not** applied because
-   the repo's standing rule requires a matching `classification-changelog.json` entry plus a historical backfill
-   (`scripts/check-feed-consistency.js`, step 7), and that needs the data pipeline running.
-2. `tokenAddress`/`decimals` are single-valued per chain, so balances of v3 (18 decimals) are not tracked. Adding
-   v3 means summing legacy + v3 per wallet with a per-token decimals scale, and rethinking the supply identity
-   in `scripts/lib/supply.js` (which assumes Ethereum is the only mint chain and total supply is 100B).
-3. Stakers must unstake before upgrading, so legacy-denominated staking numbers will fall as upgrades proceed.
+Implemented 2026-10-18 (`scripts/lib/telTokens.js`, `v3Scan.js`, `supply.js`, `reconcileSupply.js`).
+Re-derive the table below from the chains at any time with `node scripts/verify-tel-supply.js`
+(keyless public RPCs, no repo data needed).
+
+### What the chains say
+
+All three chains read at the last block at or before **2026-10-19 03:44:05 UTC** (one instant, because v3 crosses
+chains by burn-and-mint and reading each chain at its own "latest" shows bridge traffic as phantom supply):
+
+| | Ethereum (26,224,012) | Polygon (95,784,065) | Base (52,796,049) | Total |
+|---|---:|---:|---:|---:|
+| Legacy TEL `totalSupply` (2 dec) | 100,000,000,000.00 | 38,889,754,532.20 | 888,595,049.09 | 139,778,349,581.29 |
+| TEL v3 `totalSupply` (18 dec) | 3,557,333,552.74 | 19,271,543,982.98 | 183,445,719.33 | 23,012,323,255.05 |
+| Legacy held by TokenMigration + MigrationVault | 3,779,440,827.66 | 19,110,053,421.21 | 123,053,750.56 | 23,012,547,999.43 |
+| ... of which swapped (v3 minted in the same tx) | 3,779,440,827.66 | 19,109,828,676.83 | 123,053,750.56 | 23,012,323,255.05 |
+| ... of which stranded (sent in, never swapped) | 0.00 | 224,744.38 | 0.00 | 224,744.38 |
+| v3 held by the upgrade contracts | 0 | 0 | 0 | 0 |
+| Legacy locked in the labelled Ethereum bridge locks | 39,779,492,726.52 | | | |
+
+```
+Σ legacy supply, all chains                              139,778,349,581.29
+− legacy retired into v3 (swapped)                        23,012,323,255.05
++ v3 supply, all chains                                   23,012,323,255.05
+= TEL held on the chains (legacy + v3, no overlap)       139,778,349,581.29
+− legacy mirrors backed by the Ethereum locks             39,778,349,581.29   (Polygon + Base legacy supply)
+= TOTAL TEL                                              100,000,000,000.00
+```
+
+The Ethereum bridge locks hold 1,143,145.23 TEL more than the Polygon + Base legacy mirrors (39,779,492,726.52 vs
+39,778,349,581.29): bridge transfers in flight / the mirrors' own drift. It is published as `mirrorResidual`, not netted
+into the total.
+
+The v3 replay is also checked against the chain: the balances rebuilt from the v3 `Transfer` logs sum to each
+chain's `totalSupply()` exactly, so the log scan is complete.
+
+### Why legacy + v3 would be 123B+ without netting
+
+A swap moves legacy TEL from the holder into `TokenMigration` (where it stays forever) and mints the same amount of
+v3 to the holder. If both sides are counted, every swapped TEL is counted twice: the ~23.0B swapped so far would
+push the three-chain sum from 100B to ~123.0B. (The ~103.08B seen in an earlier local run is a different, smaller
+overshoot, consistent with the committed staker feed being stale: 4.17B attributed to stakers vs 0.80B actually
+staked once holders unstaked to upgrade, see `docs/PIPELINE-RECOVERY.md`. Refreshing `funding-wallets.json` removes
+that part; v3 netting handles the swapped part.)
+
+### Design: how double counting is avoided
+
+1. **Balance = legacy + v3, per token decimals.** `combineChainBalances` scales legacy (decimals from
+   `chains.json`, 2) and v3 (18) to a common integer precision with BigInt, adds them per wallet and converts to TEL
+   (6 dp). Nothing is hardcoded to 2 decimals. Dust floor: one legacy raw unit (0.01 TEL), on the combined balance.
+2. **Swapped legacy is retired.** A legacy `Transfer` *into* `TokenMigration`/`MigrationVault` counts as swapped only
+   when the **same transaction** also issues v3 (a mint from the zero address, or a release from an upgrade
+   contract), capped at the v3 issued in that tx. Retired legacy is subtracted from that contract's wallet. Whatever
+   is left on the contract (the 224,744.38 TEL Polygon transfer that had no v3 mint) is stranded, not swapped, so it
+   stays counted: once, on the contract's own wallet. This is determined from the logs, not assumed from balances.
+3. **Both contracts are `escrow`-labelled** in `config/exclusions.json` (global exclusions), so even their remainder
+   is never retail. The remainder is the only thing the `escrow` bucket gains (224,744 TEL); the swapped TEL is
+   counted as v3 in the swapper's wallet.
+4. **Supply identity.** `totalSupply` = legacy supply on Ethereum (all 100B was minted there; every other balance
+   is a mirror of it or a 1:1 re-issue as v3). `byChain` parts still sum to it. The independent cross-check
+   `crossCheckTotal = Σ chains (legacy − retired + v3) − Ethereum bridge locks` must land on it too, and the
+   residuals are published: `mirrorResidual` (legacy mirror supply vs bridge locks), `v3Residual` (v3 supply vs
+   legacy retired, ≈ 0 apart from bridge traffic in flight) and, in `supply-reconciliation.json`,
+   `residualParts.upgradeUnbacked`. A `v3Residual` above 0.01% of supply logs a warning.
+5. **Bridging.** v3 crosses chains by LayerZero burn-and-mint (`TelcoinBridge` + `MintBurnWrapper`), so there is no
+   v3 lock contract to double count; Σ v3 supply over chains equals the swapped amount.
+6. **v3 deployment blocks** (found on-chain with `eth_getCode` bisection): Ethereum 25,698,794 (2026-08-06),
+   Polygon 91,565,963, Base 49,632,434; stored as `tokens.v3.deployBlock`. v3 is checkpointed separately
+   (`holders-checkpoint.json` → `chains.<chain>.v3 = {lastBlock, rawBalances, retired}`) and scanned from its deploy
+   block, so pre-v3 data is untouched. With no `tokens.v3` config the pipeline behaves exactly as before.
+7. **History.** Rows before 2026-08-06 are exact (v3 = 0). Rows between the v3 deployment and the first v3-aware
+   run are legacy-only (swapped TEL sits on TokenMigration, counted as retail) and are left as published: applying
+   the escrow label backwards without adding v3 would remove up to ~19B of swapped TEL from retail. See the
+   `2026-10-18-tel-v3-upgrade-escrow` changelog event (`backfillStatus: "not-possible"`) for what a full backfill
+   needs. `--as-of` rebuilds refuse dates on or after the v3 deploy block.
+
+### Polygon scan start (found while reconciling)
+
+Even with v3 netted, the scan reached only 99.70B (mirror residual −299.5M): the Polygon legacy scan started at block
+21,500,000 but the token was deployed at 11,264,036 (first Transfer 11,356,608; 6.49B minted and 3.69B burned before
+21.5M). Balances are replayed from zero, so holders that had not moved since 21.5M were missing: 38,591,385,281.67
+counted vs 38,889,754,532.20 on-chain. `fromBlock` is now 11,264,036, checkpoints record their `fromBlock`, and the
+legacy part of an older checkpoint is rebuilt. Check with a seeded run (replay 11.26M-21.5M, `balanceOf` at the
+head for the 5,177 early holders, scan balances for everyone else): 38,889,742,196.68, within 12,335.52 TEL of
+`totalSupply()` (sub-dust balances). After it the published residual is 1,155,480.75 TEL (0.0012%) = 1,143,145.23 (bridge
+locks vs mirrors, above) + 12,335.52 (dust floor). See changelog event `2026-10-18-polygon-scan-start-block`.
+
+### Known limits
+
+* **Phase 2 (`MigrationVault`)** holds nothing yet. The code treats a v3 release from the vault in the same tx as a
+  legacy deposit into it like a Phase-1 swap, but if the vault's pre-funded v3 reserve is minted *without* retiring
+  legacy elsewhere, `v3Residual` will show it (and warn) rather than hide it. Re-verify when Phase 2 opens.
+* **Exchange-flow, tier-outflow and DEX scans** (`scan-exchange-flows.js`, `generate-tier-outflows.js`,
+  `extend-transfer-caches.js`, `rebuild-history-from-logs.js`) still read only the legacy token, so flows of v3 are
+  not in those feeds yet. Balances (including CEX and DEX balances) are v3-aware.
+* **First run after merge:** Polygon's legacy checkpoint is rebuilt from block 11,264,036 (~42k getLogs at Alchemy's
+  2,000-block cap), and v3 is scanned from the deploy blocks, so it is slower than a daily catch-up. It is a one-off.
+* **Native Telcoin Network TEL** is not tracked (no public network yet).
+* Pool addresses for v3 liquidity are not in `config/dex-contracts.json` yet, so v3 sitting in a new DEX pool shows
+  up as a (large) unlabelled wallet until the pools are added.

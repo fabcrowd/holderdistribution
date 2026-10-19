@@ -66,6 +66,39 @@ describe("getLogs range-limit handling", () => {
   });
 });
 
+describe("getLogs on nodes without archive history", () => {
+  it("fails fast on a 403 'Archive requests' response instead of retrying with backoff", async () => {
+    // publicnode answers old-block queries with a 403 that no retry can fix.
+    // Retrying it five times with 2s..32s backoff cost ~60s per call, which made
+    // the v3 scan (starts weeks back, at the v3 deployment block) unusable.
+    globalThis.fetch = vi.fn(async () =>
+      jsonResponse(
+        { jsonrpc: "2.0", id: 1, error: { code: -32602, message: "Archive requests require a personal token." } },
+        403,
+      ),
+    );
+    const started = Date.now();
+    await expect(
+      getLogs("https://rpc.example/archive", { fromBlock: hex(1), toBlock: hex(10), address: "0xabc", topics: [] }),
+    ).rejects.toThrow(/Archive requests/);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(Date.now() - started).toBeLessThan(1500);
+  });
+
+  it("still retries an ordinary 403/429 (quota) response", async () => {
+    let n = 0;
+    globalThis.fetch = vi.fn(async () => {
+      n += 1;
+      if (n === 1) return new Response("slow down", { status: 429, headers: { "retry-after": "0" } });
+      return jsonResponse({ jsonrpc: "2.0", id: 1, result: [] });
+    });
+    await expect(
+      getLogs("https://rpc.example/quota", { fromBlock: hex(1), toBlock: hex(10), address: "0xabc", topics: [] }),
+    ).resolves.toEqual([]);
+    expect(n).toBe(2);
+  });
+});
+
 describe("getUsableRpcUrls public fallback", () => {
   const quotaError = { jsonrpc: "2.0", id: 1, error: { code: 429, message: "Monthly capacity limit exceeded." } };
 

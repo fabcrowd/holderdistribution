@@ -6,9 +6,12 @@ import { keccak256 } from "ethereum-cryptography/keccak";
 import { utf8ToBytes } from "ethereum-cryptography/utils";
 import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, rpcCall, getLogs } from "./lib/rpc.js";
+import { createLogsFailover } from "./lib/logsFailover.js";
 import { residualCustodyBalance } from "./lib/stakingCustody.js";
 import { ensureWindowCache, readCommittedJson, replayChainRawBalances } from "./lib/holdersAsOfReplay.js";
 import { computeSupplyTotals } from "./lib/supply.js";
+import { resolveChainTokens, combineChainBalances, v3StateToCheckpoint, legacyCheckpointUsable } from "./lib/telTokens.js";
+import { scanV3Chain } from "./lib/v3Scan.js";
 import { loadCexAddressSet, loadDexAddressSet, normalizeAddress as normalizeNonRetailAddress } from "./lib/nonRetailSet.js";
 import {
   RETAIL_THRESHOLD,
@@ -62,7 +65,7 @@ const CHAIN_RPC_SETTINGS = {
 
 const DEFAULT_FROM_BLOCK = {
   ethereum: 4_600_000,
-  polygon: 21_500_000,
+  polygon: 11_264_036,
   base: 100_000,
 };
 
@@ -101,21 +104,7 @@ const ZERO = "0x0000000000000000000000000000000000000000";
  * one endpoint's failure must not fail a chunk another could serve. With a
  * single URL this is exactly the old behaviour.
  */
-async function getLogsWithFailover(rpcUrls, preferredIdx, filter) {
-  let lastError;
-  for (let attempt = 0; attempt < rpcUrls.length; attempt++) {
-    const url = rpcUrls[(preferredIdx + attempt) % rpcUrls.length];
-    try {
-      return await getLogs(url, filter);
-    } catch (error) {
-      lastError = error;
-      if (attempt < rpcUrls.length - 1) {
-        console.warn(`  getLogs failed on …${url.slice(-4)} (${String(error.message).slice(0, 80)}) — trying next RPC URL.`);
-      }
-    }
-  }
-  throw lastError;
-}
+const getLogsWithFailover = createLogsFailover(getLogs);
 
 /**
  * Streams Transfer logs chunk by chunk, calling onBatch for each chunk so
@@ -130,9 +119,12 @@ async function getLogsWithFailover(rpcUrls, preferredIdx, filter) {
  *
  * @param {string[]} rpcUrls - One or more RPC endpoint URLs for this chain.
  */
-async function streamTransferLogs(rpcUrls, tokenAddress, topic0, fromBlock, chunkSize, onBatch) {
-  const latestHex = await rpcCall(rpcUrls[0], "eth_blockNumber", []);
-  const latest = Number.parseInt(String(latestHex), 16);
+async function streamTransferLogs(rpcUrls, tokenAddress, topic0, fromBlock, chunkSize, onBatch, toBlock = null) {
+  // `toBlock` lets the caller pin both tokens (legacy + v3) to ONE head block,
+  // so a swap's two legs can never straddle the scan boundary.
+  const latest = Number.isFinite(toBlock)
+    ? toBlock
+    : Number.parseInt(String(await rpcCall(rpcUrls[0], "eth_blockNumber", [])), 16);
   let totalLogs = 0;
 
   // Pre-build the full list of block ranges so we can slice them into parallel batches.
@@ -221,6 +213,10 @@ function buildBalanceMap(decimals, initialRaw = {}) {
         if (balance >= minRaw) out[addr] = balance.toString();
       }
       return out;
+    },
+    /** Exact raw balances (BigInt), for combining with the v3 token. */
+    rawBalances() {
+      return raw;
     },
     finalize() {
       const out = new Map();
@@ -343,28 +339,35 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
   console.log(`  Using ${rpcUrls.length} RPC URL(s) for ${chainKey} (concurrency = ${rpcUrls.length}).`);
 
   const meta = chainConfig[chainKey];
-  const tokenAddress = (meta?.tokenAddress ?? "").toLowerCase();
-  // `Number(undefined)` is NaN, which is NOT nullish — so `Number(x) ?? fallback`
-  // never falls back and silently yields NaN. With decimals = NaN every holder's
-  // `human` balance becomes NaN, `human > 0` is false, and the chain finalizes
-  // EMPTY; with fromBlock = NaN the chunk loop never runs. Both looked like a
-  // legitimately empty chain rather than a config error, so guard explicitly.
-  const decimals = Number.isFinite(Number(meta?.decimals)) ? Number(meta.decimals) : 2;
+  // Token addresses and decimals come from config (per token), never from a
+  // hardcoded constant: legacy TEL is 2 decimals, TEL v3 is 18.
+  const tokens = resolveChainTokens({ ...meta, key: chainKey });
+  const tokenAddress = tokens.legacy.address;
+  const decimals = tokens.legacy.decimals;
   const configuredFromBlock = Number(meta?.fromBlock);
   const genesisBlock = Number.isFinite(configuredFromBlock)
     ? configuredFromBlock
     : DEFAULT_FROM_BLOCK[chainKey] ?? 0;
 
-  // If we have a checkpoint, resume from the block after the last scanned block.
-  const fromBlock = checkpoint ? checkpoint.lastBlock + 1 : genesisBlock;
-  const resuming = checkpoint && Object.keys(checkpoint.rawBalances ?? {}).length > 0;
+  // Resume the legacy scan only from a checkpoint built from this start block;
+  // otherwise rebuild it (the v3 section is independent and kept).
+  const legacyCheck = legacyCheckpointUsable(chainKey, checkpoint, genesisBlock);
+  if (checkpoint && !legacyCheck.usable) {
+    console.warn(
+      `${chainKey}: legacy checkpoint was built from block ${legacyCheck.startedAt}, config starts at ${genesisBlock} — ` +
+        `discarding it and rescanning from ${genesisBlock} (balances are replayed from zero, a later start misses early holders).`
+    );
+  }
+  const legacyCheckpoint = legacyCheck.usable ? checkpoint : null;
+  const fromBlock = legacyCheckpoint ? legacyCheckpoint.lastBlock + 1 : genesisBlock;
+  const resuming = legacyCheckpoint && Object.keys(legacyCheckpoint.rawBalances ?? {}).length > 0;
 
   let chunkSize = settings.defaultChunkSize;
   const envChunk = process.env[settings.envChunkKey];
   if (envChunk != null) {
     const n = Number(envChunk);
     if (Number.isFinite(n) && n > 0) {
-      chunkSize = chainKey === "polygon" ? Math.min(n, 2000) : Math.min(n, 50000);
+      chunkSize = Math.min(n, 50000);
     }
   }
 
@@ -374,21 +377,99 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
     console.log(`Full scan: ${chainKey} Transfer logs from block ${fromBlock} (chunk ${chunkSize})...`);
   }
 
-  const builder = buildBalanceMap(decimals, checkpoint?.rawBalances ?? {});
+  const builder = buildBalanceMap(decimals, legacyCheckpoint?.rawBalances ?? {});
 
+  // One head block for both tokens (see streamTransferLogs).
+  const headBlock = Number.parseInt(String(await rpcCall(rpcUrls[0], "eth_blockNumber", [])), 16);
   const { totalLogs, latestBlock } = await streamTransferLogs(
-    rpcUrls, tokenAddress, topic0, fromBlock, chunkSize, builder.onBatch
+    rpcUrls, tokenAddress, topic0, fromBlock, chunkSize, builder.onBatch, headBlock
   );
 
+  // TEL v3 (18 decimals): scanned from its deployment block, independently
+  // checkpointed, and combined per wallet with the legacy balance. A chain
+  // without a configured v3 token behaves exactly as before.
+  let v3Result = null;
+  if (tokens.v3) {
+    v3Result = await scanV3(chainKey, rpcUrls, tokens, topic0, headBlock, chunkSize, checkpoint?.v3 ?? null);
+  }
+
+  const combined = combineChainBalances({
+    legacyRaw: builder.rawBalances(),
+    legacyDecimals: decimals,
+    v3Raw: v3Result?.state.raw ?? new Map(),
+    v3Decimals: tokens.v3?.decimals ?? 18,
+    retired: v3Result?.state.retired ?? new Map(),
+  });
+  if (combined.negativeRetired.length > 0) {
+    console.warn(
+      `WARNING: ${chainKey}: retired legacy exceeds the held balance for ${combined.negativeRetired.length} ` +
+        `upgrade contract(s) (${combined.negativeRetired.join(", ")}) — scan is incomplete for them; clamped to 0.`
+    );
+  }
+
   const rawState = builder.getRawState();
-  const balances = builder.finalize();
-  console.log(`  ${chainKey}: ${totalLogs} new logs → ${balances.size} holders with > 0 TEL (scanned to block ${latestBlock})`);
+  const balances = combined.balances;
+  console.log(
+    `  ${chainKey}: ${totalLogs} new logs → ${balances.size} holders with > 0 TEL (scanned to block ${latestBlock})` +
+      (v3Result
+        ? ` | v3 ${v3Result.v3Logs} logs, supply ${Math.round(combined.totals.v3).toLocaleString()}, ` +
+          `retired legacy ${Math.round(combined.totals.retiredLegacy).toLocaleString()}`
+        : "")
+  );
+
+  // Stranded = legacy TEL left on an upgrade contract after netting out what was
+  // swapped (a plain transfer with no v3 mint). Still counted once, on the contract.
+  const stranded = tokens.escrow.reduce((acc, addr) => acc + (balances.get(addr) ?? 0), 0);
 
   return {
     chainKey,
     balances,
-    checkpointData: { lastBlock: latestBlock, rawBalances: rawState },
+    v3ByAddress: combined.v3ByAddress,
+    tokenTotals: { ...combined.totals, strandedInUpgrade: stranded },
+    checkpointData: {
+      lastBlock: latestBlock,
+      fromBlock: genesisBlock,
+      rawBalances: rawState,
+      ...(v3Result ? { v3: v3StateToCheckpoint(v3Result.state, v3Result.toBlock) } : {}),
+    },
   };
+}
+
+// Alchemy PAYG caps Polygon getLogs at 2000 blocks; v3 logs are sparse, so the
+// other chains take a wide range. Overridable per chain for public RPCs.
+const V3_CHUNK_DEFAULTS = { ethereum: 100_000, polygon: 2_000, base: 100_000 };
+
+async function scanV3(chainKey, rpcUrls, tokens, topic0, toBlock, legacyChunkSize, checkpoint) {
+  const envChunk = Number(process.env[`${chainKey.toUpperCase()}_V3_GETLOGS_CHUNK_SIZE`]);
+  const chunkSize = Number.isFinite(envChunk) && envChunk > 0 ? envChunk : (V3_CHUNK_DEFAULTS[chainKey] ?? legacyChunkSize);
+  const deployBlock = tokens.v3.deployBlock;
+  if (!deployBlock) {
+    throw new Error(`${chainKey}: tokens.v3.deployBlock is missing in config/chains.json — refusing to scan v3 from genesis`);
+  }
+  const resumeFrom = checkpoint ? checkpoint.lastBlock + 1 : deployBlock;
+  console.log(`  ${chainKey}: TEL v3 scan from block ${resumeFrom}${checkpoint ? " (checkpoint)" : " (deployment block)"} to ${toBlock}, chunk ${chunkSize}`);
+  const escrowTopics = tokens.escrow.map((a) => "0x" + a.slice(2).padStart(64, "0"));
+  const logsFor = (address, topics) => (from, to) => {
+    if (topics === null) return Promise.resolve([]);
+    return getLogsWithFailover(rpcUrls, from % rpcUrls.length, {
+      fromBlock: "0x" + from.toString(16),
+      toBlock: "0x" + to.toString(16),
+      address,
+      topics,
+    });
+  };
+  const result = await scanV3Chain({
+    deployBlock,
+    toBlock,
+    chunkSize,
+    concurrency: rpcUrls.length,
+    checkpoint,
+    cfg: { escrow: tokens.escrow, legacyDecimals: tokens.legacy.decimals, v3Decimals: tokens.v3.decimals },
+    fetchV3: logsFor(tokens.v3.address, [topic0]),
+    // topic[2] = recipient: legacy TEL moving INTO an upgrade contract.
+    fetchEscrowLegacy: logsFor(tokens.legacy.address, escrowTopics.length ? [topic0, null, escrowTopics] : null),
+  });
+  return result;
 }
 
 async function main() {
@@ -407,6 +488,13 @@ async function main() {
 
   const topic0 = getTransferTopic0();
   const chainBalancesRaw = { ethereum: new Map(), polygon: new Map(), base: new Map() };
+  // v3 (18-decimal) share of each wallet's balance, per chain, in TEL. Already
+  // INCLUDED in chainBalancesRaw (which is legacy + v3 combined); kept separately
+  // only so the snapshot can show the split. Empty when v3 is not configured.
+  const v3ByChain = { ethereum: new Map(), polygon: new Map(), base: new Map() };
+  // Per-chain token totals (legacy supply, v3 supply, retired legacy, stranded)
+  // feeding the supply identity; null until a live scan fills them in.
+  const tokenTotalsByChain = {};
   // Seeded from the EXISTING checkpoint, not empty — a chain that fails below
   // must keep its last-known-good entry rather than have it silently dropped
   // when we save. saveCheckpoint() replaces `chains` wholesale (no merge with
@@ -420,6 +508,17 @@ async function main() {
     const anchor = readCommittedJson("public/data/holders-checkpoint.json", ARG_ANCHOR_DATE);
     console.log(`Reconstructing ${ARG_AS_OF} from the ${ARG_ANCHOR_DATE} checkpoint + cached transfer logs.`);
     for (const chainKey of Object.keys(chainBalancesRaw)) {
+      // A reconstructed day is legacy-only (the anchor checkpoint and the cached
+      // transfer logs predate v3). That is exactly right BEFORE v3 existed (v3
+      // balances are zero), and silently wrong after — swapped TEL would sit in
+      // the upgrade contract with no v3 counterpart. Refuse rather than publish.
+      const v3Deploy = resolveChainTokens({ ...chainConfig[chainKey], key: chainKey }).v3?.deployBlock;
+      if (v3Deploy && blockMap[chainKey] >= v3Deploy) {
+        throw new Error(
+          `--as-of=${ARG_AS_OF} is at or after the TEL v3 deployment on ${chainKey} (block ${v3Deploy}); ` +
+            `historical reconstruction only covers the legacy token. Dates before v3 are unaffected.`
+        );
+      }
       const anchorChain = anchor.chains?.[chainKey];
       if (!anchorChain) throw new Error(`Anchor checkpoint has no ${chainKey} chain`);
       // Prefers the local cache, falls back to fetching just this window so a
@@ -491,8 +590,10 @@ async function main() {
         failedChains.push(settled.reason);
         continue;
       }
-      const { chainKey, balances, checkpointData } = settled.value;
+      const { chainKey, balances, checkpointData, v3ByAddress, tokenTotals } = settled.value;
       chainBalancesRaw[chainKey] = balances;
+      if (v3ByAddress) v3ByChain[chainKey] = v3ByAddress;
+      if (tokenTotals) tokenTotalsByChain[chainKey] = tokenTotals;
       if (checkpointData) newCheckpointChains[chainKey] = checkpointData;
     }
 
@@ -604,11 +705,20 @@ async function main() {
     const totalBalance = chainBalances.ethereum + chainBalances.polygon + chainBalances.base;
     if (totalBalance <= 0) continue;
 
+    // `*_balance` is the wallet's TOTAL TEL on that chain (legacy + v3), so every
+    // downstream consumer keeps working unchanged. The v3 share is added only when
+    // non-zero, keeping pre-v3 snapshots byte-for-byte compatible.
+    const v3Shares = {};
+    for (const chainKey of Object.keys(v3ByChain)) {
+      const v3 = v3ByChain[chainKey].get(address) ?? 0;
+      if (v3 > 0) v3Shares[`${chainKey}_v3`] = v3;
+    }
     output.wallets.push({
       address,
       ethereum_balance: chainBalances.ethereum,
       polygon_balance: chainBalances.polygon,
       base_balance: chainBalances.base,
+      ...v3Shares,
       total_telcoin_balance: totalBalance,
     });
 
@@ -661,7 +771,13 @@ async function main() {
 
   output.wallets.sort((a, b) => b.total_telcoin_balance - a.total_telcoin_balance);
 
-  output.totals = computeSupplyTotals(output, chainConfig, byCategory["bridge-lock"] ?? new Set());
+  output.totals = computeSupplyTotals(
+    output,
+    chainConfig,
+    byCategory["bridge-lock"] ?? new Set(),
+    console,
+    Object.keys(tokenTotalsByChain).length > 0 ? tokenTotalsByChain : null
+  );
 
   output.source = {
     type: "rpc",

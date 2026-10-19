@@ -10,7 +10,10 @@
  *    retired through the official 1:1 upgrade;
  *  - TEL v3 / "new TEL" (18 decimals, ONE address on every chain via CREATE3) —
  *    the canonical token, and the native gas token of Telcoin Network.
- * The holder pipeline still reconstructs balances from the legacy contracts.
+ * The holder pipeline reads BOTH tokens and sums them per wallet (legacy 2 decimals +
+ * v3 18 decimals, each with its own decimals), netting out the legacy TEL that the
+ * upgrade contracts hold in exchange for minted v3 so nothing is counted twice —
+ * see scripts/lib/telTokens.js and docs/TEL-CONTRACTS.md "Supply accounting".
  */
 export type TelChainKey = "ethereum" | "polygon" | "base";
 

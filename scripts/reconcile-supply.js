@@ -20,6 +20,11 @@
 // So Polygon/Base TEL are MIRRORS of locked Ethereum TEL, never additional
 // supply — summing all three chains double-counts every bridged token.
 //
+//
+// TEL v3 (2026-10): total TEL is still 100B but exists as legacy (2 dec) + v3 (18 dec).
+// Wallet balances are legacy + v3; legacy held by the upgrade contracts in exchange for
+// minted v3 is netted out (see scripts/lib/telTokens.js, docs/TEL-CONTRACTS.md).
+//
 // Usage: node scripts/reconcile-supply.js [--json]
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -86,6 +91,14 @@ const main = async () => {
   console.log();
   console.log(`  residualParts.bridgeInFlight     ${fmt(r.residualParts.bridgeInFlight).padStart(16)}`);
   console.log(`  residualParts.originDrift        ${fmt(r.residualParts.originDrift).padStart(16)}`);
+  console.log(`  residualParts.upgradeUnbacked    ${fmt(r.residualParts.upgradeUnbacked ?? 0).padStart(16)}`);
+  if (r.upgrade) {
+    console.log();
+    console.log("TEL v3 upgrade (legacy 2-decimal TEL -> v3 18-decimal TEL, 1:1):");
+    console.log(`  v3 supply (all chains)                 ${fmt(r.upgrade.v3Supply).padStart(16)}`);
+    console.log(`  legacy retired into v3 (not counted)   ${fmt(r.upgrade.retiredLegacy).padStart(16)}`);
+    console.log(`  stranded in upgrade contract (counted) ${fmt(r.upgrade.strandedInUpgrade).padStart(16)}`);
+  }
   console.log();
   console.log(
     `Circulating (excl. treasury/council/SAFE escrow) ${fmt(r.circulating).padStart(15)}`,

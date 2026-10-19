@@ -39,4 +39,4 @@ unstake legacy TEL; on-chain `totalStaked()` is ~0.80 B vs 4.17 B in the stale f
    "Refresh TEL holders snapshot".
 2. Alchemy: the keys reset on their billing cycle; upgrade the plan or add keys. Until then the
    public fallback keeps a daily incremental run alive (a 16-day catch-up took ~7 min locally).
-3. Decide on TEL v3 tracking (see `docs/TEL-CONTRACTS.md`, "Pipeline impact").
+3. TEL v3 is now tracked alongside legacy TEL (see `docs/TEL-CONTRACTS.md`, "Supply accounting"). The first v3-aware run scans v3 from its deploy block per chain (a one-off extra scan; keyless public RPCs need ~15 min for it).

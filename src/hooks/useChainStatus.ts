@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { EXPLORER_BASE, legacyTokenUrl } from "@/lib/telContracts";
+import { EXPLORER_BASE, v3TokenUrl } from "@/lib/telContracts";
 
 export type ChainStatus = {
   key: string;
   label: string;
   lastBlock: number;
   explorerUrl: string;
-  /** Legacy (2-decimal) TEL contract — the one the holder pipeline tracks. */
+  /** Canonical TEL v3 token. The pipeline tracks it together with the deprecated legacy contract. */
   tokenUrl: string;
 };
 
@@ -23,17 +23,17 @@ const CHAIN_META: Record<string, { label: string; explorerUrl: string; tokenUrl:
   ethereum: {
     label: "Ethereum",
     explorerUrl: EXPLORER_BASE.ethereum,
-    tokenUrl: legacyTokenUrl("ethereum"),
+    tokenUrl: v3TokenUrl("ethereum"),
   },
   polygon: {
     label: "Polygon",
     explorerUrl: EXPLORER_BASE.polygon,
-    tokenUrl: legacyTokenUrl("polygon"),
+    tokenUrl: v3TokenUrl("polygon"),
   },
   base: {
     label: "Base",
     explorerUrl: EXPLORER_BASE.base,
-    tokenUrl: legacyTokenUrl("base"),
+    tokenUrl: v3TokenUrl("base"),
   },
 };
 
