@@ -1188,9 +1188,9 @@ var require_serializer = __commonJS({
           throw new Error(`metadata length ${metadata.length} exceeds maximum of 255`);
         }
         const metaLength = this.USER_BROADCAST_PUSH_META_LENGTH + joinRef.length + ref.length + topic.length + userEvent.length + metadata.length;
-        const header = new ArrayBuffer(this.HEADER_LENGTH + metaLength);
-        const view = new DataView(header);
-        const bytes = new Uint8Array(header);
+        const header2 = new ArrayBuffer(this.HEADER_LENGTH + metaLength);
+        const view = new DataView(header2);
+        const bytes = new Uint8Array(header2);
         let offset = 0;
         view.setUint8(offset++, this.KINDS.userBroadcastPush);
         view.setUint8(offset++, joinRef.length);
@@ -1209,9 +1209,9 @@ var require_serializer = __commonJS({
         offset += userEvent.length;
         bytes.set(metadata, offset);
         offset += metadata.length;
-        var combined = new Uint8Array(header.byteLength + encodedPayload.byteLength);
-        combined.set(new Uint8Array(header), 0);
-        combined.set(new Uint8Array(encodedPayload), header.byteLength);
+        var combined = new Uint8Array(header2.byteLength + encodedPayload.byteLength);
+        combined.set(new Uint8Array(header2), 0);
+        combined.set(new Uint8Array(encodedPayload), header2.byteLength);
         return combined.buffer;
       }
       decode(rawPayload, callback) {
@@ -2532,9 +2532,9 @@ var require_phoenix_cjs = __commonJS({
         this.assertFieldSize(topicBytes.byteLength, "topic");
         this.assertFieldSize(eventBytes.byteLength, "event");
         let metaLength = this.META_LENGTH + joinRefBytes.byteLength + refBytes.byteLength + topicBytes.byteLength + eventBytes.byteLength;
-        let header = new ArrayBuffer(this.HEADER_LENGTH + metaLength);
-        let headerBytes = new Uint8Array(header);
-        let view = new DataView(header);
+        let header2 = new ArrayBuffer(this.HEADER_LENGTH + metaLength);
+        let headerBytes = new Uint8Array(header2);
+        let view = new DataView(header2);
         let offset = 0;
         view.setUint8(offset++, this.KINDS.push);
         view.setUint8(offset++, joinRefBytes.byteLength);
@@ -2549,9 +2549,9 @@ var require_phoenix_cjs = __commonJS({
         offset += topicBytes.byteLength;
         headerBytes.set(eventBytes, offset);
         offset += eventBytes.byteLength;
-        var combined = new Uint8Array(header.byteLength + payload.byteLength);
+        var combined = new Uint8Array(header2.byteLength + payload.byteLength);
         combined.set(headerBytes, 0);
-        combined.set(new Uint8Array(payload), header.byteLength);
+        combined.set(new Uint8Array(payload), header2.byteLength);
         return combined.buffer;
       },
       assertFieldSize(size, name) {
@@ -5883,7 +5883,7 @@ var require_helpers = __commonJS({
       crypto.getRandomValues(array);
       return Array.from(array, dec2hex).join("");
     }
-    async function sha256(randomString) {
+    async function sha2562(randomString) {
       const encoder = new TextEncoder();
       const encodedData = encoder.encode(randomString);
       const hash = await crypto.subtle.digest("SHA-256", encodedData);
@@ -5896,7 +5896,7 @@ var require_helpers = __commonJS({
         console.warn("WebCrypto API is not supported. Code challenge method will default to use plain instead of sha256.");
         return verifier;
       }
-      const hashed = await sha256(verifier);
+      const hashed = await sha2562(verifier);
       return btoa(hashed).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
     }
     var PKCE_FLOW_ID_PATTERN = /^[a-zA-Z0-9_-]{8,64}$/;
@@ -13453,7 +13453,7 @@ var require_GoTrueClient = __commonJS({
             }
             token = data.session.access_token;
           }
-          const { header, payload, signature, raw: { header: rawHeader, payload: rawPayload } } = (0, helpers_1.decodeJWT)(token);
+          const { header: header2, payload, signature, raw: { header: rawHeader, payload: rawPayload } } = (0, helpers_1.decodeJWT)(token);
           if (!(options === null || options === void 0 ? void 0 : options.allowExpired)) {
             try {
               (0, helpers_1.validateExp)(payload.exp);
@@ -13461,7 +13461,7 @@ var require_GoTrueClient = __commonJS({
               throw new errors_1.AuthInvalidJwtError(e instanceof Error ? e.message : "JWT validation failed");
             }
           }
-          const signingKey = !header.alg || header.alg.startsWith("HS") || !header.kid || !("crypto" in globalThis && "subtle" in globalThis.crypto) ? null : await this.fetchJwk(header.kid, (options === null || options === void 0 ? void 0 : options.keys) ? { keys: options.keys } : options === null || options === void 0 ? void 0 : options.jwks);
+          const signingKey = !header2.alg || header2.alg.startsWith("HS") || !header2.kid || !("crypto" in globalThis && "subtle" in globalThis.crypto) ? null : await this.fetchJwk(header2.kid, (options === null || options === void 0 ? void 0 : options.keys) ? { keys: options.keys } : options === null || options === void 0 ? void 0 : options.jwks);
           if (!signingKey) {
             const { error } = await this.getUser(token);
             if (error) {
@@ -13470,13 +13470,13 @@ var require_GoTrueClient = __commonJS({
             return {
               data: {
                 claims: payload,
-                header,
+                header: header2,
                 signature
               },
               error: null
             };
           }
-          const algorithm = (0, helpers_1.getAlgorithm)(header.alg);
+          const algorithm = (0, helpers_1.getAlgorithm)(header2.alg);
           const publicKey = await crypto.subtle.importKey("jwk", signingKey, algorithm, true, [
             "verify"
           ]);
@@ -13487,7 +13487,7 @@ var require_GoTrueClient = __commonJS({
           return {
             data: {
               claims: payload,
-              header,
+              header: header2,
               signature
             },
             error: null
@@ -13879,6 +13879,7 @@ var require_main3 = __commonJS({
 // netlify/functions-src/forensics-gate.ts
 var forensics_gate_exports = {};
 __export(forensics_gate_exports, {
+  WALLET_FLOWS_KEY: () => WALLET_FLOWS_KEY,
   handler: () => handler
 });
 module.exports = __toCommonJS(forensics_gate_exports);
@@ -105882,130 +105883,2049 @@ var TEL_DISPOSITION_LEDGER = {
   }
 };
 
+// netlify/functions-src/gateAuth.ts
+var import_node_crypto = require("node:crypto");
+
 // src/lib/forensicsPasswordHash.ts
 var FORENSICS_PASSWORD_SHA256 = "dc1303c56ee8888310bd0560f5d0cb93a3e3ba4653630d6824aa56ba7c0463d8";
-var forensicsPasswordMatches = async (password) => {
-  if (!password) return false;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password));
-  const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
-  return hex === FORENSICS_PASSWORD_SHA256;
+
+// netlify/functions-src/gateAuth.ts
+var DEFAULT_ALLOWED_ORIGINS = ["https://holderdistribution.com", "https://www.holderdistribution.com"];
+var LOCAL_DEV_ORIGINS = [
+  "http://localhost:8888",
+  "http://127.0.0.1:8888",
+  "http://localhost:8080",
+  "http://127.0.0.1:8080",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+  "http://localhost:5173"
+];
+var trimOrigin = (u) => {
+  if (!u) return null;
+  try {
+    return new URL(u.trim()).origin;
+  } catch {
+    return null;
+  }
 };
+function allowedOrigins(env = process.env) {
+  const set = new Set(DEFAULT_ALLOWED_ORIGINS);
+  for (const key of ["URL", "DEPLOY_URL", "DEPLOY_PRIME_URL"]) {
+    const o = trimOrigin(env[key]);
+    if (o) set.add(o);
+  }
+  for (const extra of (env.FORENSICS_ALLOWED_ORIGINS ?? "").split(",")) {
+    const o = trimOrigin(extra);
+    if (o) set.add(o);
+  }
+  if (env.NETLIFY_DEV === "true" || env.CONTEXT === "dev" || env.FORENSICS_ALLOW_LOCALHOST === "1") {
+    for (const o of LOCAL_DEV_ORIGINS) set.add(o);
+  }
+  return set;
+}
+var originAllowed = (origin, env = process.env) => !origin || allowedOrigins(env).has(origin);
+function corsHeaders(origin, env = process.env) {
+  const headers = {
+    "Access-Control-Allow-Headers": "authorization, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    Vary: "Origin"
+  };
+  if (origin && allowedOrigins(env).has(origin)) headers["Access-Control-Allow-Origin"] = origin;
+  return headers;
+}
+var sha256 = (s) => (0, import_node_crypto.createHash)("sha256").update(s, "utf8").digest();
+function digestsEqual(a, b) {
+  if (a.length !== b.length) {
+    (0, import_node_crypto.timingSafeEqual)(a, a);
+    return false;
+  }
+  return (0, import_node_crypto.timingSafeEqual)(a, b);
+}
+var PBKDF2_PREFIX = "pbkdf2-sha256";
+function verifySaltedHash(password, encoded) {
+  const [scheme, iter, saltHex, hashHex] = encoded.trim().split("$");
+  const iterations = Number(iter);
+  if (scheme !== PBKDF2_PREFIX || !Number.isInteger(iterations) || iterations < 1e4 || !saltHex || !hashHex) return false;
+  const expected = Buffer.from(hashHex, "hex");
+  const actual = (0, import_node_crypto.pbkdf2Sync)(password, Buffer.from(saltHex, "hex"), iterations, expected.length || 32, "sha256");
+  return digestsEqual(actual, expected);
+}
+function passwordMatches(candidate, env = process.env) {
+  if (!candidate || typeof candidate !== "string" || candidate.length > 256) return false;
+  let ok = false;
+  if (env.FORENSICS_PASSWORD_HASH) ok = verifySaltedHash(candidate, env.FORENSICS_PASSWORD_HASH) || ok;
+  const digest = sha256(candidate);
+  if (env.FORENSICS_PASSWORD) ok = digestsEqual(digest, sha256(env.FORENSICS_PASSWORD)) || ok;
+  if (env.FORENSICS_DISABLE_LEGACY_HASH !== "1") {
+    ok = digestsEqual(digest, Buffer.from(FORENSICS_PASSWORD_SHA256, "hex")) || ok;
+  }
+  return ok;
+}
+var WindowLimiter = class {
+  constructor(max, windowMs) {
+    this.max = max;
+    this.windowMs = windowMs;
+  }
+  hits = /* @__PURE__ */ new Map();
+  /** Counts a hit; returns seconds to wait when over the limit. */
+  hit(key, now = Date.now()) {
+    const rec = this.hits.get(key);
+    if (!rec || now > rec.resetAt) {
+      this.hits.set(key, { count: 1, resetAt: now + this.windowMs });
+      this.prune(now);
+      return { allowed: true, retryAfter: 0 };
+    }
+    rec.count++;
+    return rec.count > this.max ? { allowed: false, retryAfter: Math.ceil((rec.resetAt - now) / 1e3) } : { allowed: true, retryAfter: 0 };
+  }
+  blocked(key, now = Date.now()) {
+    const rec = this.hits.get(key);
+    if (!rec || now > rec.resetAt || rec.count < this.max) return { blocked: false, retryAfter: 0 };
+    return { blocked: true, retryAfter: Math.ceil((rec.resetAt - now) / 1e3) };
+  }
+  clear(key) {
+    this.hits.delete(key);
+  }
+  prune(now) {
+    if (this.hits.size < 5e3) return;
+    for (const [k, v] of this.hits) if (now > v.resetAt) this.hits.delete(k);
+  }
+};
+
+// data/forensics/wallet-flows.json
+var wallet_flows_default = {
+  version: 1,
+  generated: "2026-10-19T14:22:07.791Z",
+  generator: "seeded from the 2026-10-19 forensics analysis (scripts/generate-wallet-flows.js regenerates it)",
+  priceUsd: 149198e-8,
+  priceSource: "CoinGecko simple/price (telcoin)",
+  chains: [
+    "ethereum",
+    "polygon",
+    "base"
+  ],
+  windows: {},
+  notes: [
+    "Outflows are first-hop TEL transfers (legacy + v3) from each wallet, classified by destination; sends to known deposit relays count as CEX. Base history covers 40 days (RPC pruning).",
+    "Reaching a sell venue is not proof of a market sale: it can be market making, OTC settlement or treasury operations.",
+    "Settlement hub, Recipient Safe and Holdings labels come from this repo's own forensics, not from Telcoin (medium confidence). Association Safes are confirmed by telcoinassociation.com and explorer tags.",
+    "No link found between Telcoin-known wallets and the 0x747e whale group in the 90-day windows.",
+    "USD values use the price above and are rough."
+  ],
+  distribution: {
+    totalSupply: 1e11,
+    counted: 99998844519,
+    classes: [
+      {
+        key: "treasury",
+        label: "Telcoin-linked: TEL Treasury",
+        group: "telcoin",
+        tel: 1191585758,
+        share: 0.01191599526723368
+      },
+      {
+        key: "association",
+        label: "Telcoin-linked: Association Safes & operational wallets",
+        group: "telcoin",
+        tel: 362563250,
+        share: 0.0036256743926703335
+      },
+      {
+        key: "holdings",
+        label: "Telcoin-linked: Telcoin Holdings (company)",
+        group: "telcoin",
+        tel: 1230490076,
+        share: 0.012305042944804775
+      },
+      {
+        key: "escrow",
+        label: "Escrow & custody (BitGo, Anchorage, vaults)",
+        group: "locked",
+        tel: 8084466545,
+        share: 0.0808455996091556
+      },
+      {
+        key: "staking",
+        label: "Staking contract",
+        group: "locked",
+        tel: 797578011,
+        share: 0.00797587226967019
+      },
+      {
+        key: "cex",
+        label: "Centralised exchanges (incl. deposit relays)",
+        group: "market",
+        tel: 21888176379,
+        share: 0.2188842929608103
+      },
+      {
+        key: "dex",
+        label: "DEX pools & market makers",
+        group: "market",
+        tel: 609359004,
+        share: 0.006093660454874648
+      },
+      {
+        key: "bots",
+        label: "Tracked sell bots & large sellers",
+        group: "market",
+        tel: 416610660,
+        share: 0.004166154743938235
+      },
+      {
+        key: "other",
+        label: "Other labelled (dormant whales, burn, unlabelled exclusions)",
+        group: "other",
+        tel: 118219278,
+        share: 0.0011822064359176103
+      },
+      {
+        key: "retail",
+        label: "Retail & unlabelled holders",
+        group: "retail",
+        tel: 65299795557,
+        share: 0.6530055009209246
+      }
+    ],
+    movedFromRetail: [
+      {
+        address: "0x17fcc1f337fd68ff831017684798d08cbd424143",
+        to: "association",
+        tel: 35806179
+      },
+      {
+        address: "0x5b34f69fe6da995f4c5e0de92adcbf02bfe6b4b0",
+        to: "cex",
+        tel: 152759283
+      },
+      {
+        address: "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
+        to: "association",
+        tel: 135451
+      },
+      {
+        address: "0x92e43aec69207755cb1e6a8dc589aae630476330",
+        to: "staking",
+        tel: 797303750
+      },
+      {
+        address: "0xe3a465e1460e9987c772c36b91020946bc60af52",
+        to: "staking",
+        tel: 274261
+      },
+      {
+        address: "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
+        to: "bots",
+        tel: 30673895
+      },
+      {
+        address: "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+        to: "bots",
+        tel: 41399306
+      },
+      {
+        address: "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+        to: "bots",
+        tel: 29686350
+      },
+      {
+        address: "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+        to: "bots",
+        tel: 31266804
+      },
+      {
+        address: "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+        to: "bots",
+        tel: 31642707
+      },
+      {
+        address: "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+        to: "bots",
+        tel: 32865090
+      },
+      {
+        address: "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+        to: "bots",
+        tel: 32555320
+      },
+      {
+        address: "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
+        to: "bots",
+        tel: 34474729
+      },
+      {
+        address: "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+        to: "bots",
+        tel: 35647206
+      },
+      {
+        address: "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
+        to: "bots",
+        tel: 14065775
+      },
+      {
+        address: "0x747e0733b41d29cdf8b33f53e65d59a2072f88c0",
+        to: "bots",
+        tel: 102296709
+      },
+      {
+        address: "0x0421875cd12406c90d765b5c68b723733e581a28",
+        to: "bots",
+        tel: 19400
+      },
+      {
+        address: "0x77ad55c59d5edee8beb31d3942bfc64aee2e5203",
+        to: "bots",
+        tel: 17369
+      },
+      {
+        address: "0x8d00717b41b1212155577b6586c747c47621a736",
+        to: "bots",
+        tel: 0
+      }
+    ],
+    source: "public/data/supply-reconciliation.json (2026-10-19 v3-aware pipeline run)",
+    asOf: "2026-10-19"
+  },
+  telcoinTotals: {
+    "72h": {
+      total: 0,
+      usd: 0,
+      byVenue: {},
+      note: "No known-wallet TEL reached CEX/DEX/bot inside the 72h window; the last pushes were Oct 15-16 ET, just before it. The bot cluster then sold 256M TEL on DEX inside the window."
+    },
+    "30d": {
+      total: 1227543964,
+      usd: 1831471,
+      byVenue: {
+        "CEX (arrived)": 406276180,
+        "CEX relay (pending, v3)": 152759283,
+        "bot-cluster": 611434638,
+        DEX: 57073863
+      }
+    },
+    "90d": {
+      total: 2629590556,
+      usd: 3923297,
+      byVenue: {
+        "CEX (arrived)": 1581033519,
+        "CEX relay (pending, v3)": 152759283,
+        "bot-cluster": 611434638,
+        DEX: 284363116
+      }
+    }
+  },
+  knownWallets: [
+    {
+      label: "Settlement hub",
+      group: "Association-funded hub",
+      entityClass: "association",
+      source: "repo forensics ledger: funded by TAO Safe/TAO Distribution (1.26B TEL), routes to KuCoin",
+      confidence: "medium",
+      address: "0x17fcc1f337fd68ff831017684798d08cbd424143",
+      chains: [
+        "polygon"
+      ],
+      balance: 35806179,
+      balanceDetail: {
+        polygon_v3: 35806179
+      },
+      balanceUsd: 53422,
+      outflows: {
+        "72h": {},
+        "30d": {
+          "bot-cluster": 611434638,
+          CEX: 559035463,
+          internal: 122869577,
+          unlabelled: 100
+        },
+        "90d": {
+          CEX: 1533792802,
+          "bot-cluster": 611434638,
+          bridge: 6e8,
+          internal: 122869577,
+          unlabelled: 100
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 1170470101,
+        "90d": 2145227440
+      },
+      sellVenueUsd90d: 3200636,
+      sampleTxs: [
+        "https://polygonscan.com/tx/0x5b2355242025ef9a3d213bf4e23096b2a64e0a06889fd0ecf7b3c5eaf22e901b",
+        "https://polygonscan.com/tx/0x39b1143f9a1a1ada8bad44a054ca47b2f4055d38162f14d1da99c8114964e9ff",
+        "https://polygonscan.com/tx/0x08987b12e4d63dc1b545109bbf3d1833d738884dc52bedab0c3d0014677bde95",
+        "https://polygonscan.com/tx/0x69bb363650a5646de688f1c66601c61b1d325512961086b73a1ec4ec5ade496b"
+      ],
+      verdict: "selling / sending to sell venues"
+    },
+    {
+      label: "Settlement hub -> KuCoin relay",
+      group: "relay",
+      entityClass: "relay",
+      source: "repo scripts/lib/telEndpoint.js",
+      confidence: "medium",
+      address: "0x1128a473c43a9e0779113c4bf6d3aa186182bb41",
+      chains: [
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {
+          CEX: 357611064
+        },
+        "90d": {
+          CEX: 1132368403
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 357611064,
+        "90d": 1132368403
+      },
+      sellVenueUsd90d: 1689471,
+      sampleTxs: [
+        "https://polygonscan.com/tx/0x4fa6c601086ee4ac1aea97340d518038101e6ff21090111b38eb434ec676684f",
+        "https://polygonscan.com/tx/0x30abc0017636b467823898c354868ded8b422c6db86eb209b56d108f6a1b38e1",
+        "https://polygonscan.com/tx/0xf1abceec0d91bf9f97c9106ac824aec7acf94b73e363af095e091de2914dc8cf"
+      ],
+      verdict: "selling / sending to sell venues"
+    },
+    {
+      label: "KuCoin 32 relay",
+      group: "relay",
+      entityClass: "relay",
+      source: "repo scripts/lib/telEndpoint.js",
+      confidence: "medium",
+      address: "0x5b34f69fe6da995f4c5e0de92adcbf02bfe6b4b0",
+      chains: [
+        "ethereum"
+      ],
+      balance: 152759283,
+      balanceDetail: {
+        ethereum_v3: 152759283
+      },
+      balanceUsd: 227914,
+      outflows: {
+        "72h": {},
+        "30d": {
+          CEX: 48665116
+        },
+        "90d": {
+          CEX: 448665116
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 48665116,
+        "90d": 448665116
+      },
+      sellVenueUsd90d: 669399,
+      sampleTxs: [
+        "https://etherscan.io/tx/0xa5b7d7dfcf1542aa3e45e626097abf9cf949995ae7effd8bbd6362ed888be091",
+        "https://etherscan.io/tx/0xd648bbbf8a1c4f3e87c94a999edf93bc2f4d436fd61860c9d5b975974d891943",
+        "https://etherscan.io/tx/0x759223e796d899532d3ef4c9dce2dc80aa6098b492be7a96ff43cb1b1769aad2"
+      ],
+      verdict: "selling / sending to sell venues"
+    },
+    {
+      label: "Recipient Safe (CoW seller)",
+      group: "Association operational",
+      entityClass: "association",
+      source: "repo forensics (data/association-payment-mapping, tel-disposition ledger)",
+      confidence: "medium",
+      address: "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
+      chains: [
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {
+        polygon_legacy: 0
+      },
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {
+          DEX: 57051402
+        },
+        "90d": {
+          DEX: 267110474,
+          internal: 10072440
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 57051402,
+        "90d": 267110474
+      },
+      sellVenueUsd90d: 398523,
+      sampleTxs: [
+        "https://polygonscan.com/tx/0xf36fae449e9fced2f78399a374eeb8fba463685f5d9147c6a8e423e1ee7d7e3d",
+        "https://polygonscan.com/tx/0xe3b865819e6748e69a4655c3131674f276c5a673246dbc5bd0191f1a5cb36bbe",
+        "https://polygonscan.com/tx/0xdc6c2e1e58f1565606d034dc378dda9d6ac3ba8e4471f46a142154f1f521810d"
+      ],
+      verdict: "selling / sending to sell venues"
+    },
+    {
+      label: "Telcoin Holdings bridge-hub Safe",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (explorer-label)",
+      confidence: "confirmed",
+      address: "0x067173cf1a20e1f7a952d3abd15537d86a239924",
+      chains: [
+        "ethereum"
+      ],
+      balance: 21857644,
+      balanceDetail: {
+        ethereum_legacy: 21857644
+      },
+      balanceUsd: 32611,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {
+          internal: 2e8,
+          CEX: 1e8
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 1e8
+      },
+      sellVenueUsd90d: 149198,
+      sampleTxs: [
+        "https://etherscan.io/tx/0x2f292c46da97b89a95ea37aa2571ec87bc0f07b0c793b36fec16d5697a9e3bdb"
+      ],
+      verdict: "selling / sending to sell venues"
+    },
+    {
+      label: "Telcoin Holdings ops Safe (Base)",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (signer-graph)",
+      confidence: "high",
+      address: "0xcf6994abe437e67b331cd2513f47773cd91244d2",
+      chains: [
+        "ethereum",
+        "base"
+      ],
+      balance: 199888223,
+      balanceDetail: {
+        base_legacy: 199888223
+      },
+      balanceUsd: 298229,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {
+          CEX: 1e8
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 1e8
+      },
+      sellVenueUsd90d: 149198,
+      sampleTxs: [
+        "https://etherscan.io/tx/0x088a8e6134b8bcf0d7d72d2285ea6c39332890d3dc78399e8578b40afd555a6e"
+      ],
+      verdict: "selling / sending to sell venues"
+    },
+    {
+      label: "TA Sale Wallet ('Conduit')",
+      group: "Association operational EOA",
+      entityClass: "association",
+      source: "repo src/data/forensicsWriteups.ts (community-sourced attribution) + on-chain funding from Assoc. Safes",
+      confidence: "high",
+      address: "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
+      chains: [
+        "polygon",
+        "base"
+      ],
+      balance: 135451,
+      balanceDetail: {
+        polygon_v3: 135073,
+        base_legacy: 378
+      },
+      balanceUsd: 202,
+      outflows: {
+        "72h": {},
+        "30d": {
+          internal: 152162466,
+          bridge: 137501647,
+          unlabelled: 1866927
+        },
+        "90d": {
+          bridge: 249728313,
+          internal: 248932133,
+          DEX: 16248440,
+          unlabelled: 1866927
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 16248440
+      },
+      sellVenueUsd90d: 24242,
+      sampleTxs: [
+        "https://polygonscan.com/tx/0x438e560ff9b04af907b788692a3e38466d4df7e70d4bd8b6ebf68ae5367fcd5b",
+        "https://polygonscan.com/tx/0xe50b84f47c8b5614bfe6aabf28134f71720a715bc7836cbfe472ff777dc59157",
+        "https://polygonscan.com/tx/0x66290dcc975648821d6ef1d1b2478125a971af0404ffd8e75f96620dba06894e"
+      ],
+      verdict: "internal / treasury moves"
+    },
+    {
+      label: "Telcoin Holdings controller (Polygon)",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (signer-graph)",
+      confidence: "confirmed",
+      address: "0xc44784b1ace0830a82ceac529cc98d1b38640413",
+      chains: [
+        "polygon"
+      ],
+      balance: 240727397,
+      balanceDetail: {
+        polygon_legacy: 240727397
+      },
+      balanceUsd: 359160,
+      outflows: {
+        "72h": {},
+        "30d": {
+          unlabelled: 0
+        },
+        "90d": {
+          unlabelled: 2025e4,
+          DEX: 75e4
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 75e4
+      },
+      sellVenueUsd90d: 1119,
+      sampleTxs: [
+        "https://polygonscan.com/tx/0x5c8186082706abdd94931831137171cffae3b0577fff993b96357a6224d32d8d"
+      ],
+      verdict: "internal / treasury moves"
+    },
+    {
+      label: "TELx TEL/WBTC reward contract",
+      group: "staking/rewards",
+      entityClass: "staking",
+      source: "repo exclusions.json (owner-supplied)",
+      confidence: "confirmed",
+      address: "0x79e5a6ffe2e6ba053a80e1b199c4f328938f40ca",
+      chains: [
+        "polygon"
+      ],
+      balance: 4150928,
+      balanceDetail: {
+        polygon_legacy: 4150928
+      },
+      balanceUsd: 6193,
+      outflows: {
+        "72h": {},
+        "30d": {
+          "reward/unstake payout": 4726282,
+          internal: 2292571,
+          DEX: 22461
+        },
+        "90d": {
+          internal: 5801790,
+          "reward/unstake payout": 4818249,
+          DEX: 254202
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 22461,
+        "90d": 254202
+      },
+      sellVenueUsd90d: 379,
+      sampleTxs: [
+        "https://polygonscan.com/tx/0x977bccb9a88c561b8add553dce5ab2aae1ddd02ebf8e3797578c3239d6d13321",
+        "https://polygonscan.com/tx/0x81593669f91a9812e110ddb709dd48621ff88ff3823f0b7ed3f7f564d711904c",
+        "https://polygonscan.com/tx/0xa572be5e627a653113d2b0a75e521eb1cbe2ed7a8dc0f682a1cec3375bd15975"
+      ],
+      verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "TEL Treasury",
+      group: "Association Safe",
+      entityClass: "treasury",
+      source: "telcoinassociation.com Safe Wallets page; Etherscan tag 'Telcoin Association: TEL Treasury Safe'",
+      confidence: "confirmed",
+      address: "0x2580ccb2be946ad98effa7f4b76148bed319011c",
+      chains: [
+        "ethereum"
+      ],
+      balance: 1191585758,
+      balanceDetail: {
+        ethereum_legacy: 1191585758
+      },
+      balanceUsd: 1777822,
+      outflows: {
+        "72h": {},
+        "30d": {
+          internal: 1375e5
+        },
+        "90d": {
+          internal: 234166667
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "internal / treasury moves"
+    },
+    {
+      label: "TAO Implementation Safe/Wallet",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0xe4ccf475a8ca5c96edbcdcf77a13ef29253d0878",
+      chains: [
+        "polygon",
+        "base"
+      ],
+      balance: 297313,
+      balanceDetail: {
+        polygon_legacy: 297161,
+        base_legacy: 152
+      },
+      balanceUsd: 444,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Platform Council",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0x6e130c92e6f4d71b081c4d5b664cb210e55dbacf",
+      chains: [
+        "polygon"
+      ],
+      balance: 102662861,
+      balanceDetail: {
+        polygon_legacy: 102662861
+      },
+      balanceUsd: 153171,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Treasury Council",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0xa9d6f0ebe64a931492d23f6782d110a9f25d4a51",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Compliance Council",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0x0454d03c2010862277262cb306749e829ee97591",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "TELx Council",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0x583d596b0a79c0e83c87851ea9fb1a91e80290b2",
+      chains: [
+        "polygon"
+      ],
+      balance: 40710105,
+      balanceDetail: {
+        polygon_v3: 40710105
+      },
+      balanceUsd: 60739,
+      outflows: {
+        "72h": {},
+        "30d": {
+          upgrade: 58639486,
+          unlabelled: 17187530,
+          internal: 195e4
+        },
+        "90d": {
+          upgrade: 58639486,
+          unlabelled: 28060862,
+          internal: 26396667
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "upgrading to v3"
+    },
+    {
+      label: "TAN Council",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page; Polygonscan tag 'Telcoin Association: TAN Council Safe'",
+      confidence: "confirmed",
+      address: "0x8dcf8d134f22ac625a7afb39514695801cd705b5",
+      chains: [
+        "polygon"
+      ],
+      balance: 161031090,
+      balanceDetail: {
+        polygon_legacy: 161031090
+      },
+      balanceUsd: 240255,
+      outflows: {
+        "72h": {},
+        "30d": {
+          internal: 233860
+        },
+        "90d": {
+          internal: 1528347
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "internal / treasury moves"
+    },
+    {
+      label: "TAO Safe",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0xf4bc288d616c4f57071a57f5a4050b5e516fe7e5",
+      chains: [
+        "polygon"
+      ],
+      balance: 3411424,
+      balanceDetail: {
+        polygon_legacy: 3411424
+      },
+      balanceUsd: 5090,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {
+          internal: 105191411,
+          unlabelled: 791151
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "internal / treasury moves"
+    },
+    {
+      label: "TAN Distribution Safe",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0xc4fbeeda84f39ea26f21d50d88590a1f7a03d386",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "TAO Distribution Safe",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0x99ef9f86c41d2a5b1c609e910b06c20ca45a984c",
+      chains: [
+        "polygon"
+      ],
+      balance: 68547,
+      balanceDetail: {
+        polygon_legacy: 68547
+      },
+      balanceUsd: 102,
+      outflows: {
+        "72h": {},
+        "30d": {
+          unlabelled: 14e6,
+          internal: 12e6
+        },
+        "90d": {
+          internal: 308798607,
+          unlabelled: 14e6
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "internal / treasury moves"
+    },
+    {
+      label: "TELx Miner Safe",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0xada13ef9e48e14ee43840e8049f7e0953dfff373",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telcoin Staker Safe",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0x7307a12f34fe797dfe11d7f295a3a3770c822396",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telcoin Developer Safe",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0xaa976f484cfa09852c94828e3570f4b0ec5f758e",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telcoin Validator Safe",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0x741551aa517ac439237119d39084ab9ac0ab3e68",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "TELx Council Operational Safe",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "repo config/exclusions.json (owner-supplied)",
+      confidence: "confirmed",
+      address: "0x90f18755cad5fc696a6dd7418d05c5f5e022774a",
+      chains: [
+        "polygon"
+      ],
+      balance: 6976393,
+      balanceDetail: {
+        polygon_legacy: 6976393
+      },
+      balanceUsd: 10409,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {
+          internal: 1764458
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "internal / treasury moves"
+    },
+    {
+      label: "Treasury -> BitGo relay",
+      group: "relay",
+      entityClass: "relay",
+      source: "repo scripts/lib/telEndpoint.js",
+      confidence: "high",
+      address: "0xb1714f449b85e8ba04ac9e9060928f6fdc0fd533",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Treasury -> Uphold relay",
+      group: "relay",
+      entityClass: "relay",
+      source: "repo scripts/lib/telEndpoint.js",
+      confidence: "high",
+      address: "0x00d328532f71b593510d712146fce346efe2667c",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Treasury -> Polygon bridge relay",
+      group: "relay",
+      entityClass: "relay",
+      source: "repo scripts/lib/telEndpoint.js",
+      confidence: "high",
+      address: "0xacea3a74d6c0d288aea9886a3b78b0654def8c07",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telcoin Association staking contract (Polygon)",
+      group: "staking/rewards",
+      entityClass: "staking",
+      source: "repo exclusions.json (contract-analysis)",
+      confidence: "confirmed",
+      address: "0x92e43aec69207755cb1e6a8dc589aae630476330",
+      chains: [
+        "polygon"
+      ],
+      balance: 797303750,
+      balanceDetail: {
+        polygon_legacy: 797303750
+      },
+      balanceUsd: 1189561,
+      outflows: {
+        "72h": {
+          upgrade: 1639351
+        },
+        "30d": {
+          upgrade: 3386323873,
+          "reward/unstake payout": 83910335
+        },
+        "90d": {
+          upgrade: 3386323873,
+          "reward/unstake payout": 423004193
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "TELx TEL/WETH reward contract",
+      group: "staking/rewards",
+      entityClass: "staking",
+      source: "repo exclusions.json (owner-supplied)",
+      confidence: "confirmed",
+      address: "0x7feb8febddb66189417f732b4221a52e23b926c4",
+      chains: [
+        "polygon"
+      ],
+      balance: 4428989,
+      balanceDetail: {
+        polygon_legacy: 4428989
+      },
+      balanceUsd: 6608,
+      outflows: {
+        "72h": {
+          "reward/unstake payout": 8098
+        },
+        "30d": {
+          "reward/unstake payout": 10242408
+        },
+        "90d": {
+          "reward/unstake payout": 12405390
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "TELx TEL/USDC reward contract",
+      group: "staking/rewards",
+      entityClass: "staking",
+      source: "repo exclusions.json (owner-supplied)",
+      confidence: "confirmed",
+      address: "0x8f702676830ddca2801a4a7cdb971cde4df697ae",
+      chains: [
+        "polygon"
+      ],
+      balance: 2883970,
+      balanceDetail: {
+        polygon_legacy: 2883970
+      },
+      balanceUsd: 4303,
+      outflows: {
+        "72h": {},
+        "30d": {
+          "reward/unstake payout": 4728214,
+          internal: 1410861
+        },
+        "90d": {
+          "reward/unstake payout": 7071986,
+          internal: 3510393
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "TELx reward contract",
+      group: "staking/rewards",
+      entityClass: "staking",
+      source: "repo scripts/lib/telEndpoint.js REWARD_CONTRACTS",
+      confidence: "high",
+      address: "0xe533911f00f1c3b58bb8d821131c9b6e2452fc27",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {
+          "reward/unstake payout": 233860
+        },
+        "90d": {
+          "reward/unstake payout": 1528347
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "TELx rewards (Base)",
+      group: "staking/rewards",
+      entityClass: "staking",
+      source: "repo scripts/lib/telEndpoint.js",
+      confidence: "high",
+      address: "0xe3a465e1460e9987c772c36b91020946bc60af52",
+      chains: [
+        "base"
+      ],
+      balance: 274261,
+      balanceDetail: {
+        base_v3: 274261
+      },
+      balanceUsd: 409,
+      outflows: {
+        "72h": {},
+        "30d": {
+          "reward/unstake payout": 1679076,
+          upgrade: 1305189
+        },
+        "90d": {
+          "reward/unstake payout": 1679076,
+          upgrade: 1305189
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "Telcoin Holdings shared Safe (Polygon)",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (signer-graph)",
+      confidence: "confirmed",
+      address: "0x84b94024463f01d5cbb3086f14f574d7ed83b794",
+      chains: [
+        "polygon"
+      ],
+      balance: 275e6,
+      balanceDetail: {
+        polygon_v3: 275e6
+      },
+      balanceUsd: 410294,
+      outflows: {
+        "72h": {},
+        "30d": {
+          upgrade: 275e6
+        },
+        "90d": {
+          upgrade: 275e6
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "upgrading to v3"
+    },
+    {
+      label: "Telcoin Holdings cold Safe (Base)",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (signer-graph)",
+      confidence: "high",
+      address: "0x9756686f71e9a90558c7cfbad89e9fd8007f97e7",
+      chains: [
+        "base"
+      ],
+      balance: 95874030,
+      balanceDetail: {
+        base_legacy: 95874030
+      },
+      balanceUsd: 143042,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telcoin Holdings cold Safe (Base) #2",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (signer-graph)",
+      confidence: "high",
+      address: "0xa9781d19e5611f65908dd6818fc1c276e2c6ac44",
+      chains: [
+        "base"
+      ],
+      balance: 98142782,
+      balanceDetail: {
+        base_legacy: 98142782
+      },
+      balanceUsd: 146427,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telcoin Holdings reserve (Ethereum)",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (signer-graph)",
+      confidence: "confirmed",
+      address: "0x9f45bccdb42871a955e34d9d5ca33be9ccaef1fd",
+      chains: [
+        "ethereum"
+      ],
+      balance: 299e6,
+      balanceDetail: {
+        ethereum_legacy: 299e6
+      },
+      balanceUsd: 446102,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {
+          internal: 3e8,
+          unlabelled: 0
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "internal / treasury moves"
+    },
+    {
+      label: "BitGo Custody (Treasury collateral)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (funding-trace); TELIP Treasury collateral",
+      confidence: "confirmed",
+      address: "0xbd02c51150a4ab6ce97b9de2025644594f3e75b8",
+      chains: [
+        "ethereum"
+      ],
+      balance: 3834240801,
+      balanceDetail: {
+        ethereum_legacy: 3834240801
+      },
+      balanceUsd: 5720611,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Anchorage Digital Vault (Treasury collateral)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (funding-trace)",
+      confidence: "confirmed",
+      address: "0xaa9ae53fc7a69fde1baaf6aa03796e6ccc764271",
+      chains: [
+        "ethereum"
+      ],
+      balance: 2500001e3,
+      balanceDetail: {
+        ethereum_legacy: 2500001e3
+      },
+      balanceUsd: 3729951,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Escrow vault 1 (assumed)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (on-chain-pattern, Holdings-funded)",
+      confidence: "medium",
+      address: "0x60b1f621736fa7091bad2dc20c0467083f010f57",
+      chains: [
+        "ethereum"
+      ],
+      balance: 480356042,
+      balanceDetail: {
+        ethereum_legacy: 480356042
+      },
+      balanceUsd: 716682,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Escrow vault 2 (assumed)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (on-chain-pattern)",
+      confidence: "medium",
+      address: "0xd6040319acdc191e485b2e103b9b4405ea8a30b0",
+      chains: [
+        "ethereum"
+      ],
+      balance: 369034642,
+      balanceDetail: {
+        ethereum_legacy: 369034642
+      },
+      balanceUsd: 550592,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Escrow vault 3 (assumed)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (on-chain-pattern)",
+      confidence: "medium",
+      address: "0x222d9b3875d7c37d5037896d9b8b0fb3a19180bf",
+      chains: [
+        "ethereum"
+      ],
+      balance: 364564981,
+      balanceDetail: {
+        ethereum_legacy: 364564981
+      },
+      balanceUsd: 543924,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Escrow vault 4 (assumed)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (on-chain-pattern)",
+      confidence: "medium",
+      address: "0x043a163912c680dd2b490b409e8d4ad399e97bf8",
+      chains: [
+        "ethereum"
+      ],
+      balance: 284051631,
+      balanceDetail: {
+        ethereum_legacy: 284051631
+      },
+      balanceUsd: 423799,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Escrow vault 5 (assumed)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (on-chain-pattern)",
+      confidence: "medium",
+      address: "0x9184aae0983e5ffbe06e41ca13c24033857b56cb",
+      chains: [
+        "ethereum"
+      ],
+      balance: 251992704,
+      balanceDetail: {
+        ethereum_legacy: 251992704
+      },
+      balanceUsd: 375968,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telco: Deployer",
+      group: "Telcoin deployer EOA",
+      entityClass: "holdings",
+      source: "Etherscan public name tag 'Telco: Deployer' (seen executing Treasury Safe txs)",
+      confidence: "high",
+      address: "0xfecee4ab07127fff4ee4a3ba61df5fd7b906f84c",
+      chains: [
+        "ethereum",
+        "polygon"
+      ],
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    }
+  ],
+  fundingLinks: [
+    {
+      from: "Settlement hub 0x17fcc1f337fd68ff831017684798d08cbd424143",
+      to: "10-wallet Polygon bot cluster",
+      tel: 611434638,
+      when: "2026-10-15 ~02:06-02:10 ET (10x30M v3) and 2026-10-16 ~04:56-04:59 ET (9x30M + 41.43M legacy)",
+      confidence: "high (direct on-chain transfers)",
+      sampleTxs: [
+        "https://polygonscan.com/tx/0xe509091c642b47c862533197188cbea3291c1476c0565f19d15c2689aca7fe0f",
+        "https://polygonscan.com/tx/0x69bb363650a5646de688f1c66601c61b1d325512961086b73a1ec4ec5ade496b"
+      ]
+    },
+    {
+      from: "KuCoin hot wallets (KuCoin 23/55 Polygon, KuCoin on Ethereum)",
+      to: "bot cluster",
+      tel: 1158380277,
+      note: "Bot also withdraws from KuCoin; Settlement hub deposits ~1.58B to KuCoin in same 90d. Same-operator link is circumstantial (exchange breaks trail).",
+      confidence: "low"
+    },
+    {
+      from: "Telcoin Holdings reserve 0x9f45...1fd / bridge-hub Safe 0x0671...924",
+      to: "Settlement hub (ETH)",
+      tel: 5e8,
+      when: "2026-08-06, 2026-09-08",
+      confidence: "high"
+    },
+    {
+      from: "TAO Safe / TAO Distribution Safe / TA Sale Wallet",
+      to: "Settlement hub (Polygon)",
+      tel: 269868403,
+      when: "2026-07-23, 2026-08-26, 2026-09-23",
+      confidence: "high"
+    },
+    {
+      from: "Safes 0x78f6a33e...e2 (ETH) and 0x78945f73...c4 (Polygon), 2-of-4, share signer 0xf5b39446...d538 with TEL Treasury, TAO Safe, TAO Distribution Safe",
+      to: "Settlement hub",
+      tel: 311165116,
+      when: "2026-09-29",
+      onward: "KuCoin via relays same day",
+      confidence: "medium-high (signer overlap)"
+    },
+    {
+      from: "0x97d925ca...cabf (EOA; receives Balancer Vault + TELx reward flows, upgrades legacy->v3)",
+      to: "Settlement hub",
+      tel: 622869677,
+      when: "2026-10-14",
+      confidence: "medium (feeder, ownership unknown)"
+    },
+    {
+      from: "0xeedd476d...b236 (minimal-proxy/7702 contract)",
+      to: "Settlement hub",
+      tel: 300000100,
+      when: "2026-10-13",
+      confidence: "unknown ownership"
+    },
+    {
+      from: "0x747e0733 whale group",
+      to: "-",
+      note: "No transfers between any Telcoin-known wallet and the 0x747e group were found in the 90d windows.",
+      confidence: "n/a"
+    }
+  ],
+  botCluster: {
+    label: "Polygon 10-wallet ParaSwap sell bot (cluster)",
+    chain: "polygon",
+    note: "Funded in the same blocks, ~1,535 ParaSwap sales of 50k-250k TEL each in 72h; fed by KuCoin withdrawals and the Settlement hub.",
+    addresses: [
+      "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
+      "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+      "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+      "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+      "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+      "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+      "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+      "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
+      "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+      "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e"
+    ],
+    balance: 314277182,
+    dexSales: {
+      "72h": 256072661,
+      "30d": 709802495,
+      "90d": 2007347407
+    }
+  },
+  largeSellers: [
+    {
+      rank: 1,
+      entity: "Polygon 10-wallet ParaSwap sell bot (cluster)",
+      addresses: [
+        "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
+        "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+        "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+        "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+        "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+        "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+        "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+        "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
+        "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+        "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e"
+      ],
+      chains: [
+        "polygon"
+      ],
+      destination: "DEX (ParaSwap Augustus v6.2 -> Uniswap v4/v3, Balancer, QuickSwap) for USDC/WETH",
+      tel: 254861246,
+      usd: 379580,
+      sampleTx: "https://polygonscan.com/tx/0x2b2e9dcbbb5a10214688aaf31f95fef1e2e6bf748c385085f767e6d85c9a4a08\r"
+    },
+    {
+      rank: 2,
+      entity: "Dormant 2021 whale (unlabelled)",
+      addresses: [
+        "0x747e0733b41d29cdf8b33f53e65d59a2072f88c0"
+      ],
+      chains: [
+        "ethereum"
+      ],
+      destination: "KuCoin via deposit 0xa4e5438f98c5b9f384be4faefd5ca80dcca10dd1",
+      tel: 1e8,
+      usd: 148936,
+      sampleTx: "https://etherscan.io/tx/0x5b9ad2a8d976da557ea376d247b3b56027ac6a984ab8952a340507019ae1b288\r",
+      note: "Held TEL since 2021; still ~102M. Sibling wallets hold ~900M more; one used the same KuCoin deposit address for 100M in May and August."
+    },
+    {
+      rank: 3,
+      entity: "Repeat KuCoin depositor",
+      addresses: [
+        "0x0421875cd12406c90d765b5c68b723733e581a28"
+      ],
+      chains: [
+        "ethereum"
+      ],
+      destination: "KuCoin via deposit 0xb0f136aab1e5b15d6ae3e0acecd661def3cfb8ba",
+      tel: 11e6,
+      usd: 16383,
+      sampleTx: "https://etherscan.io/tx/0x04a328271c7ed0dd51c54cdd3deef5a7f291c30d7cc3f359442c9a65e9ddf420\r"
+    },
+    {
+      rank: 4,
+      entity: "Single-shot KuCoin depositor",
+      addresses: [
+        "0xf13027d57e3fa914e03d94d1d4ac1095a3ab90da"
+      ],
+      chains: [
+        "polygon"
+      ],
+      destination: "KuCoin 23 via deposit 0x0a235f305ad8c0cace5bc38a12a8760d606969e8",
+      tel: 10179823,
+      usd: 15161,
+      sampleTx: "https://polygonscan.com/tx/0x3a11d54ff158f2e1c091a2166b24ce96f1466b1886b7ae8356d5535107500e5c\r"
+    },
+    {
+      rank: 5,
+      entity: "Possible MEXC depositor",
+      addresses: [
+        "0x77ad55c59d5edee8beb31d3942bfc64aee2e5203"
+      ],
+      chains: [
+        "polygon"
+      ],
+      destination: "MEXC via 0xef6538e43979c56a8b4a42e48902b5e317364c24 (pass-through)",
+      tel: 10643547,
+      usd: 15852,
+      sampleTx: "https://polygonscan.com/tx/0x46915373c40c47101faee208a64160814cf4bdd93965496a08094688849d0073\r",
+      note: "Received about the same amount inside the window \u2014 may be a pass-through."
+    },
+    {
+      rank: 6,
+      entity: "Exit to unlabelled wallet (watch)",
+      addresses: [
+        "0x8d00717b41b1212155577b6586c747c47621a736"
+      ],
+      chains: [
+        "ethereum"
+      ],
+      destination: "0x780e2ac81e6d2222caa57d223130431582d1156c (not yet at a CEX)",
+      tel: 8991047,
+      usd: 13391,
+      sampleTx: "https://etherscan.io/tx/0x8c51ed9e7fce6c88a403e6233b5c6910486941e21483c666206b08653bc412a2",
+      note: "Not yet at a CEX \u2014 watch."
+    }
+  ],
+  largeSellersWindow: "72h to 2026-10-19 ~10:00 ET"
+};
+
+// netlify/functions-src/walletFlowsSource.ts
+var CACHE_MS = 60 * 60 * 1e3;
+var TIMEOUT_MS = 6e3;
+var PATH = "data/forensics/wallet-flows.json";
+var cache = null;
+var isReport = (r) => !!r && typeof r === "object" && r.version === 1 && Array.isArray(r.knownWallets);
+var newer = (a, b) => Date.parse(a.generated ?? "") >= Date.parse(b.generated ?? "");
+async function loadWalletFlows(env = process.env, fetchImpl = fetch, now = Date.now()) {
+  const bundled = wallet_flows_default;
+  if (cache && now - cache.at < CACHE_MS) return cache;
+  const token = env.LIVE_DATA_GITHUB_TOKEN?.trim();
+  let result = { report: bundled, source: "bundled" };
+  if (token) {
+    const repo = env.LIVE_DATA_REPO?.trim() || "fabcrowd/holderdistribution";
+    const ref = env.LIVE_DATA_REF?.trim() || "main";
+    try {
+      const res = await fetchImpl(`https://api.github.com/repos/${repo}/contents/${PATH}?ref=${encodeURIComponent(ref)}`, {
+        headers: {
+          Accept: "application/vnd.github.raw+json",
+          Authorization: `Bearer ${token}`,
+          "User-Agent": "holderdistribution-forensics-gate",
+          "X-GitHub-Api-Version": "2022-11-28"
+        },
+        signal: AbortSignal.timeout(TIMEOUT_MS)
+      });
+      if (res.ok) {
+        const remote = await res.json();
+        if (isReport(remote) && newer(remote, bundled)) result = { report: remote, source: "github" };
+      }
+    } catch {
+    }
+  }
+  cache = { at: now, ...result };
+  return result;
+}
 
 // netlify/functions-src/forensics-gate.ts
 var TEL_DISPOSITION_LEDGER_KEY = "tel-disposition-ledger";
-var corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
-};
+var WALLET_FLOWS_KEY = "wallet-flows";
 var SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "https://svvjdtmvmqdejjqxzclp.supabase.co";
 var SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
-var rateLimitMap = /* @__PURE__ */ new Map();
-var RATE_LIMIT_WINDOW_MS = 6e4;
-var MAX_REQUESTS_PER_WINDOW = 20;
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return { allowed: true };
-  }
-  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
-    return { allowed: false, retryAfter: Math.ceil((record.resetTime - now) / 1e3) };
-  }
-  record.count++;
-  return { allowed: true };
-}
+var requestLimiter = new WindowLimiter(20, 6e4);
+var failureLimiter = new WindowLimiter(10, 15 * 6e4);
 async function isAdmin(authHeader) {
   if (!authHeader || !SUPABASE_ANON_KEY) return false;
-  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: authHeader } }
-  });
-  const { data: userData } = await client.auth.getUser();
-  const userId = userData?.user?.id;
-  if (!userId) return false;
-  const { data, error } = await client.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
-  if (error) return false;
-  return !!data;
+  try {
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { data: userData } = await client.auth.getUser();
+    const userId = userData?.user?.id;
+    if (!userId) return false;
+    const { data, error } = await client.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+    if (error) return false;
+    return !!data;
+  } catch {
+    return false;
+  }
 }
-async function passwordOk(password) {
-  if (!password) return false;
-  const expected = process.env.FORENSICS_PASSWORD;
-  if (expected && password === expected) return true;
-  return forensicsPasswordMatches(password);
-}
+var header = (event, name) => {
+  const headers = event.headers ?? {};
+  return headers[name] ?? headers[name.toLowerCase()] ?? Object.entries(headers).find(([k]) => k.toLowerCase() === name)?.[1];
+};
 async function handler(event) {
+  const origin = header(event, "origin");
+  const cors = corsHeaders(origin);
+  const json = (statusCode, body, extra = {}) => ({
+    statusCode,
+    headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store", ...extra },
+    body: JSON.stringify(body)
+  });
   if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 204, headers: corsHeaders, body: "" };
+    return { statusCode: originAllowed(origin) ? 204 : 403, headers: cors, body: "" };
   }
-  if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "Method not allowed" })
-    };
-  }
-  const clientIp = event.headers["x-forwarded-for"]?.split(",")[0]?.trim() || event.headers["client-ip"] || event.headers["x-nf-client-connection-ip"] || "unknown";
-  const rate = checkRateLimit(clientIp);
+  if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed" });
+  const clientIp = header(event, "x-nf-client-connection-ip") || header(event, "x-forwarded-for")?.split(",")[0]?.trim() || header(event, "client-ip") || "unknown";
+  const rate = requestLimiter.hit(clientIp);
   if (!rate.allowed) {
-    return {
-      statusCode: 429,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-        "Retry-After": String(rate.retryAfter ?? 60)
-      },
-      body: JSON.stringify({ error: "Too many requests. Please try again later." })
-    };
+    return json(429, { error: "Too many requests. Please try again later." }, { "Retry-After": String(rate.retryAfter || 60) });
+  }
+  const lockout = failureLimiter.blocked(clientIp);
+  if (lockout.blocked) {
+    return json(429, { error: "Too many failed attempts. Please try again later." }, { "Retry-After": String(lockout.retryAfter || 900) });
   }
   try {
     const body = JSON.parse(event.body ?? "{}");
-    const address = body.address?.trim().toLowerCase();
-    if (!address) {
-      return {
-        statusCode: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "address is required" })
-      };
+    const address = typeof body.address === "string" ? body.address.trim().toLowerCase() : "";
+    if (!address) return json(400, { error: "address is required" });
+    const admin = await isAdmin(header(event, "authorization"));
+    if (!admin && !passwordMatches(body.password)) {
+      failureLimiter.hit(clientIp);
+      return json(401, { error: "Invalid password" });
     }
-    const admin = await isAdmin(event.headers.authorization);
-    if (!admin && !await passwordOk(body.password)) {
-      return {
-        statusCode: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "Invalid password" })
-      };
-    }
-    if (address === ASSOCIATION_FLOW_REPORT_KEY) {
-      return {
-        statusCode: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({ report: ASSOCIATION_STABLECOIN_FLOWS })
-      };
-    }
-    if (address === TEL_DISPOSITION_LEDGER_KEY) {
-      return {
-        statusCode: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({ report: TEL_DISPOSITION_LEDGER })
-      };
+    failureLimiter.clear(clientIp);
+    if (address === ASSOCIATION_FLOW_REPORT_KEY) return json(200, { report: ASSOCIATION_STABLECOIN_FLOWS });
+    if (address === TEL_DISPOSITION_LEDGER_KEY) return json(200, { report: TEL_DISPOSITION_LEDGER });
+    if (address === WALLET_FLOWS_KEY) {
+      const { report, source } = await loadWalletFlows();
+      return json(200, { report }, { "X-Wallet-Flows-Source": source });
     }
     const analysis = WALLET_ANALYSES[address] ?? null;
-    return {
-      statusCode: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify({ analysis })
-    };
+    return json(200, { analysis });
   } catch (error) {
     console.error("forensics-gate error:", error);
-    return {
-      statusCode: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "Internal error" })
-    };
+    return json(500, { error: "Internal error" });
   }
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  WALLET_FLOWS_KEY,
   handler
 });

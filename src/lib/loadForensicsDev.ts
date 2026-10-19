@@ -11,6 +11,7 @@
  */
 import type { TelDispositionLedgerReport } from "@/components/TelDispositionLedger";
 import type { FlowReport, WalletAnalysis } from "@/data/forensicsWriteups";
+import type { WalletFlowsReport } from "@/lib/walletFlowsTypes";
 
 const ASSOCIATION_FLOW_REPORT_KEY = "association-stablecoin-flows";
 
@@ -30,4 +31,9 @@ export const loadAssociationFlowReportDev = async (): Promise<FlowReport> => {
 export const loadDispositionLedgerDev = async (): Promise<TelDispositionLedgerReport> => {
   const mod = await import("../../data/association-forensics/tel-disposition-ui.json");
   return (mod.default ?? mod) as TelDispositionLedgerReport;
+};
+
+export const loadWalletFlowsDev = async (): Promise<WalletFlowsReport> => {
+  const mod = await import("../../data/forensics/wallet-flows.json");
+  return (mod.default ?? mod) as unknown as WalletFlowsReport;
 };
