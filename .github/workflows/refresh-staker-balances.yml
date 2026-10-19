@@ -5,7 +5,7 @@ permissions:
   contents: write
 jobs:
   refresh:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # No explicit timeout-minutes — 30min proved too tight for a full cold
     # run (~6,144 sequential stakedBy calls, 25+min baseline) under any
     # Etherscan free-tier throttling, and even 90min is still a guess at

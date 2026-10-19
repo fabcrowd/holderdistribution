@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { EXPLORER_BASE, legacyTokenUrl } from "@/lib/telContracts";
 
 export type ChainStatus = {
   key: string;
   label: string;
   lastBlock: number;
   explorerUrl: string;
+  /** Legacy (2-decimal) TEL contract — the one the holder pipeline tracks. */
   tokenUrl: string;
 };
 
@@ -20,18 +22,18 @@ type Checkpoint = {
 const CHAIN_META: Record<string, { label: string; explorerUrl: string; tokenUrl: string }> = {
   ethereum: {
     label: "Ethereum",
-    explorerUrl: "https://etherscan.io",
-    tokenUrl: "https://etherscan.io/token/0x467bccd9d29f223bce8043b84e8c8b282827790f",
+    explorerUrl: EXPLORER_BASE.ethereum,
+    tokenUrl: legacyTokenUrl("ethereum"),
   },
   polygon: {
     label: "Polygon",
-    explorerUrl: "https://polygonscan.com",
-    tokenUrl: "https://polygonscan.com/token/0xdf7837de1f2fa4631d716cf2502f8b230f1dcc32",
+    explorerUrl: EXPLORER_BASE.polygon,
+    tokenUrl: legacyTokenUrl("polygon"),
   },
   base: {
     label: "Base",
-    explorerUrl: "https://basescan.org",
-    tokenUrl: "https://basescan.org/token/0x09be1692ca16e06f536f0038ff11d1da8524adb1",
+    explorerUrl: EXPLORER_BASE.base,
+    tokenUrl: legacyTokenUrl("base"),
   },
 };
 

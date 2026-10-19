@@ -4,13 +4,17 @@
  * on-chain data, so each section links to where a skeptic can check it
  * themselves on a block explorer.
  */
+import { legacyTokenUrl, v3TokenUrl } from "@/lib/telContracts";
+
 export type MethodologyLink = { label: string; href: string };
 export type Methodology = { how: string; verify: string; links: MethodologyLink[] };
 
-// TEL token contracts (2 decimals) on each chain, on their explorers.
-const TEL_ETH = "https://etherscan.io/token/0x467bccd9d29f223bce8043b84e8c8b282827790f";
-const TEL_POLYGON = "https://polygonscan.com/token/0xdf7837de1f2fa4631d716cf2502f8b230f1dcc32";
-const TEL_BASE = "https://basescan.org/token/0x09be1692ca16e06f536f0038ff11d1da8524adb1";
+// Legacy TEL token contracts (2 decimals) on each chain, on their explorers.
+// These are what the holder pipeline tracks. Upgraded TEL v3 (18 decimals, one
+// address on every chain) is listed separately — see src/lib/telContracts.ts.
+const TEL_ETH = legacyTokenUrl("ethereum");
+const TEL_POLYGON = legacyTokenUrl("polygon");
+const TEL_BASE = legacyTokenUrl("base");
 const STAKING = "https://polygonscan.com/address/0x92e43Aec69207755CB1E6A8Dc589aAE630476330";
 const DEX_TEL_USDC = "https://polygonscan.com/address/0xa5cabfc725dfa129f618d527e93702d10412f039";
 const DEX_TEL_WPOL = "https://polygonscan.com/address/0x9b5c71936670e9f1f36e63f03384de7e06e60d2a";
@@ -19,6 +23,7 @@ const TEL_TOKENS: MethodologyLink[] = [
   { label: "TEL on Etherscan", href: TEL_ETH },
   { label: "TEL on Polygonscan", href: TEL_POLYGON },
   { label: "TEL on Basescan", href: TEL_BASE },
+  { label: "TEL v3 (upgraded) on Etherscan", href: v3TokenUrl("ethereum") },
 ];
 
 const TREASURY_ETHERSCAN = `${TEL_ETH}?a=0x2580ccb2be946ad98effa7f4b76148bed319011c`;
@@ -30,7 +35,7 @@ export const METHODOLOGY: Record<string, Methodology> = {
     links: [{ label: "Treasury wallet (0x2580…)", href: TREASURY_ETHERSCAN }],
   },
   holderSnapshot: {
-    how: "Every wallet's TEL balance is reconstructed from the token's on-chain Transfer event logs on Ethereum, Polygon and Base — read directly from full nodes, the same ledger the block explorers use — then staking is added from the Polygon staking contract. A holder is any wallet with a non-zero balance, with no minimum applied: that includes roughly 9,500 wallets holding less than 1 TEL each (a few thousand TEL between all of them). They are counted in the headline and in the smallest distribution tier alike, so every holder count on this page reconciles to the same total.",
+    how: "Every wallet's TEL balance is reconstructed from the token's on-chain Transfer event logs on Ethereum, Polygon and Base — read directly from full nodes, the same ledger the block explorers use — then staking is added from the Polygon staking contract. A holder is any wallet with a non-zero balance, with no minimum applied: that includes roughly 9,500 wallets holding less than 1 TEL each (a few thousand TEL between all of them). They are counted in the headline and in the smallest distribution tier alike, so every holder count on this page reconciles to the same total. These figures track the legacy 2-decimal TEL contracts; upgraded TEL v3 (18 decimals, 0x7E13…0731 on every chain) is being phased in through the official 1:1 upgrade and is not yet counted here.",
     verify: "Open the TEL token contract on any explorer and check the Holders tab, or look up any single wallet's TEL balance directly.",
     links: [...TEL_TOKENS, { label: "Staking contract", href: STAKING }],
   },

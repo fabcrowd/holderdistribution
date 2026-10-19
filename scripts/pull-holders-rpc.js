@@ -95,6 +95,29 @@ function parseTransferLog(log) {
 const ZERO = "0x0000000000000000000000000000000000000000";
 
 /**
+ * Tries the chunk's assigned URL first, then every other URL in the pool. A
+ * pool of keyless public endpoints (the fallback when all Alchemy keys are
+ * dead) has members that each reject things differently or go down mid-run, so
+ * one endpoint's failure must not fail a chunk another could serve. With a
+ * single URL this is exactly the old behaviour.
+ */
+async function getLogsWithFailover(rpcUrls, preferredIdx, filter) {
+  let lastError;
+  for (let attempt = 0; attempt < rpcUrls.length; attempt++) {
+    const url = rpcUrls[(preferredIdx + attempt) % rpcUrls.length];
+    try {
+      return await getLogs(url, filter);
+    } catch (error) {
+      lastError = error;
+      if (attempt < rpcUrls.length - 1) {
+        console.warn(`  getLogs failed on …${url.slice(-4)} (${String(error.message).slice(0, 80)}) — trying next RPC URL.`);
+      }
+    }
+  }
+  throw lastError;
+}
+
+/**
  * Streams Transfer logs chunk by chunk, calling onBatch for each chunk so
  * raw log objects are never accumulated in memory. Each batch is processed
  * and discarded before the next chunk is fetched.
@@ -123,7 +146,7 @@ async function streamTransferLogs(rpcUrls, tokenAddress, topic0, fromBlock, chun
     const slice = chunks.slice(i, i + concurrency);
     const results = await Promise.all(
       slice.map(({ from, to }, idx) =>
-        getLogs(rpcUrls[idx % concurrency], {
+        getLogsWithFailover(rpcUrls, idx % concurrency, {
           fromBlock: "0x" + from.toString(16),
           toBlock: "0x" + to.toString(16),
           address: tokenAddress.toLowerCase(),
