@@ -30,6 +30,7 @@ import {
   partitionBuckets,
 } from "@/lib/supplyBreakdown";
 import { ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
+import { legacyTokenUrl } from "@/lib/telContracts";
 
 /**
  * CoinGecko circulating (comparison only), fallback for when the served
@@ -98,13 +99,13 @@ const renderActivePieSector = (props: PieSectorDataItem) => {
 const explorerUrl = (item: SupplyReconciliationItem): string => {
   const a = item.address;
   if (item.category === "staking-contract") {
-    return `https://polygonscan.com/token/0xdf7837de1f2fa4631d716cf2502f8b230f1dcc32?a=${a}`;
+    return `${legacyTokenUrl("polygon")}?a=${a}`;
   }
   if (item.category === "bridge-lock") {
     return `https://etherscan.io/address/${a}`;
   }
   // Default: Ethereum TEL holder filter (multi-chain balances still listed in table).
-  return `https://etherscan.io/token/0x467bccd9d29f223bce8043b84e8c8b282827790f?a=${a}`;
+  return `${legacyTokenUrl("ethereum")}?a=${a}`;
 };
 
 /** Selects the drill-down panel content for a bucket key. Shared by the

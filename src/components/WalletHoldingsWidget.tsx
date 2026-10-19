@@ -314,7 +314,7 @@ const renderMetrics = (
                 changelogEvents={item.changelogEvents}
               />
             </div>
-            <div className={`text-xs ${item.badge === "ATH" ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}`}>{item.description}</div>
+            <div className={`text-xs ${item.badge === "ATH" ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}`}>{item.description}</div>
             {deltaLabel && item.previous !== null && (
               <div className="text-xs text-muted-foreground/60 mt-1">vs {deltaLabel}</div>
             )}
@@ -484,8 +484,8 @@ const renderVelocity = (
 ) => {
   if (!momentum) return null;
 
-  const netTone = momentum.net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
-  const emerald = "text-emerald-600 dark:text-emerald-400";
+  const netTone = momentum.net >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400";
+  const emerald = "text-emerald-700 dark:text-emerald-400";
   const items: Array<{ label: string; value: string; sub: string; tone: string }> = [];
   if (everHeld?.total != null) {
     // Adoption framing first: first-time holders never subtract churn.
@@ -1065,7 +1065,7 @@ const renderCexFlows = (
                           return (
                             <TableCell
                               className={`px-2 sm:px-4 py-2 text-right text-sm font-medium tabular-nums ${
-                                net > 0 ? "text-red-600 dark:text-red-400" : net < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                                net > 0 ? "text-red-700 dark:text-red-400" : net < 0 ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"
                               }`}
                             >
                               {formatSignedTokenAmount(net)}

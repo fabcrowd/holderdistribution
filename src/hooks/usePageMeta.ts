@@ -15,6 +15,8 @@ interface PageMetaProps {
   jsonLd?: JsonLdSchema[];
 }
 
+const SITE_URL = (import.meta.env.VITE_SITE_URL ?? 'https://holderdistribution.com').replace(/\/$/, '');
+
 export const usePageMeta = ({ 
   title, 
   description, 
@@ -58,7 +60,7 @@ export const usePageMeta = ({
     }
 
     // Update canonical URL
-    const baseUrl = 'https://www.telcoinhub.com';
+    const baseUrl = SITE_URL;
     const fullUrl = `${baseUrl}${canonicalPath}`;
     
     let canonical = document.querySelector('link[rel="canonical"]');

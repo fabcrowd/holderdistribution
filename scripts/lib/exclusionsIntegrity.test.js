@@ -188,7 +188,11 @@ describe("exclusions integrity", () => {
     // 1 overlaps). A duplicated exclusion list would overlap heavily.
     const exclusionSet = new Set(exclusions.addresses.map((a) => a.toLowerCase()));
     const offenders = [];
+    // Forensic write-ups are narrative prose that cites the wallets they discuss
+    // by address; they are not a second exclusion list.
+    const PROSE_ALLOWLIST = new Set(["src/data/forensicsWriteups.ts"]);
     for (const file of walk(path.join(root, "src"))) {
+      if (PROSE_ALLOWLIST.has(path.relative(root, file).split(path.sep).join("/"))) continue;
       const found = new Set(
         (fs.readFileSync(file, "utf8").match(/0x[a-fA-F0-9]{40}/g) ?? []).map((a) => a.toLowerCase())
       );

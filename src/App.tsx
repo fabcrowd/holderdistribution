@@ -7,18 +7,30 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
 
-// Single-route extraction of the Telcoin Hub's Holders/Tokenomics section.
-// The full hub has many pages; this repo deploys just this one, so there is
+// Single-route extraction of the original hub's Holders/Tokenomics section.
+// The full hub had many pages; this repo deploys just this one, so there is
 // only one lazy-loaded route rather than the original app's route table.
 const Holders = lazy(() => import("./pages/Holders"));
 
 const PageLoader = () => (
-  <div className="min-h-screen bg-gradient-telcoin flex items-center justify-center">
-    <Loader2 className="h-8 w-8 text-primary animate-spin" />
+  <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite">
+    <Loader2 className="h-8 w-8 text-primary animate-spin" aria-hidden="true" />
+    <span className="sr-only">Loading…</span>
   </div>
 );
 
-const queryClient = new QueryClient();
+// The data feeds are static JSON refreshed by a scheduled pipeline, so a short
+// stale window avoids refetch storms on tab focus while still picking up new
+// snapshots; retries are bounded so a dead feed surfaces its error state fast.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

@@ -152,6 +152,18 @@ export type HolderLiteSnapshot = {
   cex?: CexFlowSnapshot | null;
 };
 
+/** Rejects a payload that parsed as JSON but is not a usable snapshot (an
+ *  empty object from a failed pipeline run, a CDN error page served as 200,
+ *  ...). Throwing here lets TanStack Query surface the normal error state
+ *  instead of the page crashing on `views.combined` further down the tree. */
+export const assertHolderLiteSnapshot = (value: unknown): HolderLiteSnapshot => {
+  const views = (value as { views?: Record<string, unknown> } | null)?.views;
+  if (!views || typeof views !== "object" || !views.combined || typeof views.combined !== "object") {
+    throw new Error("Holder snapshot is malformed (missing views.combined)");
+  }
+  return value as HolderLiteSnapshot;
+};
+
 const fetchHolderLiteSnapshot = async (): Promise<HolderLiteSnapshot> => {
   const response = await fetch(`/data/holders-lite.json`);
 
@@ -161,7 +173,7 @@ const fetchHolderLiteSnapshot = async (): Promise<HolderLiteSnapshot> => {
     );
   }
 
-  return response.json();
+  return assertHolderLiteSnapshot(await response.json());
 };
 
 const sharedQueryOptions = {

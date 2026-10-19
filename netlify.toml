@@ -28,11 +28,22 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Cross-Origin-Opener-Policy = "same-origin"
+    # No inline/eval scripts anywhere in the app (index.html's JSON-LD is a data
+    # block, not executable). style-src needs 'unsafe-inline' because Recharts,
+    # Radix and Framer Motion set inline style attributes. If you add a new third-
+    # party origin (analytics, fonts, API), allow it here or the browser blocks it.
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://svvjdtmvmqdejjqxzclp.supabase.co wss://svvjdtmvmqdejjqxzclp.supabase.co; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
 
 [[headers]]
   for = "/data/*"
   [headers.values]
     Cache-Control = "public, max-age=300, stale-while-revalidate=600"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
   for = "/assets/*"

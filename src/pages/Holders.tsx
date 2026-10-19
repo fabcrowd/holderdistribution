@@ -23,14 +23,32 @@ import {
   reduceHeroCollapse,
 } from "@/lib/heroCollapse";
 
+const TILE_DESTINATIONS = {
+  holders: { tab: "holders", panel: "trends" },
+  retailHeld: { tab: "holders", panel: "balances" },
+  staked: { tab: "holders", panel: "staking" },
+  cex: { tab: "holders", panel: "flows" },
+} as const satisfies Record<EcosystemHeadlineTileId, { tab: string; panel: string }>;
+
+const TABS = [
+  { id: "holders", label: "Holders", accent: "data-[state=active]:text-primary" },
+  { id: "distribution", label: "Distribution", accent: "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400" },
+  { id: "supply", label: "Supply", accent: "data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-400" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+const isTabId = (v: string): v is TabId => TABS.some((t) => t.id === v);
+
+const DEFAULT_TAB: TabId = "holders";
+const resolveTab = (hash: string): TabId => (isTabId(hash) ? hash : DEFAULT_TAB);
+
 const Holders = () => {
   // Route stays /holders deliberately — renaming the URL would reset the
   // page's search history and break the homepage tile's stored route for no
   // functional gain. Only the labels describe the page as a whole.
   usePageMeta({
-    title: 'TEL Tokenomics - Telcoin Hub',
+    title: 'TEL Holder Distribution & Tokenomics | Holder Analytics',
     description: 'TEL tokenomics: circulating supply breakdown, holder distribution and tiers, exchange flows, and historical growth from real-time on-chain data.',
-    canonicalPath: '/holders',
+    canonicalPath: '/',
   });
 
   // One panel at a time rather than five stacked accordions. Every section
@@ -53,28 +71,13 @@ const Holders = () => {
   // number and its own history, on a page whose whole first screen is those
   // four numbers. The tile is the more direct control, and it was already the
   // thing being looked at.
-  const TILE_DESTINATIONS = {
-    holders: { tab: "holders", panel: "trends" },
-    retailHeld: { tab: "holders", panel: "balances" },
-    staked: { tab: "holders", panel: "staking" },
-    cex: { tab: "holders", panel: "flows" },
-  } as const satisfies Record<EcosystemHeadlineTileId, { tab: string; panel: string }>;
 
-  const TABS = [
-    { id: "holders", label: "Holders", accent: "data-[state=active]:text-primary" },
-    { id: "distribution", label: "Distribution", accent: "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400" },
-    { id: "supply", label: "Supply", accent: "data-[state=active]:text-sky-600 dark:data-[state=active]:text-sky-400" },
-  ] as const;
-  type TabId = (typeof TABS)[number]["id"];
-  const isTabId = (v: string): v is TabId => TABS.some((t) => t.id === v);
 
   // Deep links keep working: #holders / #distribution / ... select the tab, and
   // switching tabs rewrites the hash so a URL can be copied and shared.
   // "#overview" is still honoured — it was a real tab until 2026-09-13 and is
   // in shared links — but it now resolves to Holders like any other entry
   // point rather than 404ing into the default.
-  const DEFAULT_TAB: TabId = "holders";
-  const resolveTab = (hash: string): TabId => (isTabId(hash) ? hash : DEFAULT_TAB);
   const [activeTab, setActiveTab] = useState<TabId>(() =>
     resolveTab(typeof window !== "undefined" ? window.location.hash.slice(1) : ""),
   );
@@ -169,7 +172,13 @@ const Holders = () => {
     : RANGE_OPTIONS;
 
   return (
-    <div className="min-h-screen bg-gradient-telcoin">
+    <div className="min-h-screen">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:shadow-md"
+      >
+        Skip to main content
+      </a>
       {/* Page identity lives in the main nav, not the selector bar below:
           the mobile nav shows no active state or page name at all, and the
           ~42px a title unit cost in the selector bar was what forced that
@@ -190,8 +199,7 @@ const Holders = () => {
           not two stacked cards. */}
       <div
         ref={stickyBarRef}
-        className="sticky top-16 md:top-20 z-40 w-full backdrop-blur-xl border-b border-border/40 shadow-[0_1px_2px_hsl(235_45%_25%/0.05)]"
-        style={{ background: "linear-gradient(90deg, hsl(233 100% 97%), hsl(193 100% 96%))" }}
+        className="sticky top-16 md:top-20 z-40 w-full backdrop-blur-xl border-b border-border/40 bg-card/90 shadow-[0_1px_2px_hsl(180_18%_7%/0.05)]"
       >
         {/* Scrolls rather than wraps below sm: a wrapped selector bar costs a
             whole second row of chrome (~40px) on the screen that can least
@@ -227,7 +235,9 @@ const Holders = () => {
           adds the focus-only part (dropping section descriptions), which is
           only safe when the collapsed strip is there to name the metric. */}
       <main
-        className={`terminal-dense container mx-auto px-4 py-4 sm:py-8 max-w-7xl ${
+        id="main-content"
+        tabIndex={-1}
+        className={`terminal-dense focus:outline-none container mx-auto px-4 py-4 sm:py-8 max-w-7xl ${
           activeTileId ? "terminal-focus" : ""
         }`}
       >
@@ -260,7 +270,7 @@ const Holders = () => {
             the background, and a latched-compact hero at the top of the
             page does not. */}
         <div
-          className={`sticky z-30 transition-[margin] duration-200 ${heroCollapsed ? "mb-2" : "mb-5 sm:mb-6"}${scrolledPast ? " bg-gradient-telcoin pt-1.5 pb-2 sm:pt-2 sm:pb-3 -mx-4 px-4 sm:mx-0 sm:px-0" : ""}`}
+          className={`sticky z-30 transition-[margin] duration-200 ${heroCollapsed ? "mb-2" : "mb-5 sm:mb-6"}${scrolledPast ? " bg-background/95 backdrop-blur-md pt-1.5 pb-2 sm:pt-2 sm:pb-3 -mx-4 px-4 sm:mx-0 sm:px-0" : ""}`}
           style={{ top: stickyOffset }}
         >
           <div className="animate-fade-in" style={{ animationDelay: '0.15s' }}>

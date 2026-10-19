@@ -459,7 +459,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     return "";
   };
 
-  const changeTone = stats.change !== null && stats.change >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
+  const changeTone = stats.change !== null && stats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400";
   const ChangeIcon = stats.change !== null && stats.change >= 0 ? TrendingUp : TrendingDown;
 
   return (
@@ -468,7 +468,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
         <div>
           <div className="flex items-center gap-2 text-base sm:text-lg font-bold tracking-tight flex-wrap">
             <span className="p-1.5 rounded-xl bg-emerald-500/12 border border-emerald-500/20 shrink-0">
-              <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <TrendingUp className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
             </span>
             Holder Growth
             <span className="ml-auto"><ActiveRangeNote rangeDays={rangeDays} /></span>
@@ -517,10 +517,22 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
               {!isLoading && !error && data?.feedError && (
                 <Alert variant="destructive" className="border-dashed mb-4">
                   <WifiOff className="h-4 w-4" />
-                  <AlertTitle>Feed error — node offline</AlertTitle>
+                  <AlertTitle>Data feed delayed</AlertTitle>
                   <AlertDescription>
-                    The data pipeline has not updated in over 48 hours. Charts may be stale. Last update:{" "}
-                    {data.updatedAt ? new Date(data.updatedAt).toLocaleString() : "unknown"}.
+                    {(() => {
+                      const updated = data.updatedAt ? new Date(data.updatedAt) : null;
+                      const days =
+                        updated && !Number.isNaN(updated.getTime())
+                          ? Math.floor((Date.now() - updated.getTime()) / 86_400_000)
+                          : null;
+                      return (
+                        <>
+                          The holder data has not been refreshed{days !== null ? ` in ${days} days` : " recently"}, so
+                          charts show the last published snapshot rather than live figures. Last update:{" "}
+                          {updated && !Number.isNaN(updated.getTime()) ? updated.toLocaleString() : "unknown"}.
+                        </>
+                      );
+                    })()}
                   </AlertDescription>
                 </Alert>
               )}
@@ -553,9 +565,13 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         tickMargin={8}
                       />
                       <YAxis
-                        tickFormatter={(value) => formatInteger(value)}
+                        // Whole numbers only: the domain's "nice" ticks are fractional
+                        // (97,235.75) and, at the default 60px axis width, the
+                        // leading digits were clipped off ("0,053.25").
+                        tickFormatter={(value) => formatInteger(Math.round(value))}
                         domain={yDomain}
                         tickMargin={8}
+                        width={64}
                       />
                       <ChartTooltip
                         content={
@@ -608,7 +624,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         <span>Retail {formatCompactTEL(balanceStats.latest)}</span>
                       )}
                       {balanceStats.change !== null && balanceStats.changePct !== null && (
-                        <span className={`inline-flex items-center gap-1 ${balanceStats.change >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                        <span className={`inline-flex items-center gap-1 ${balanceStats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                           {balanceStats.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                           {balanceStats.change >= 0 ? "+" : ""}
                           {formatCompactTEL(Math.abs(balanceStats.change))}
@@ -816,7 +832,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         <span>{formatCompactTEL(stakingStats.latest)}</span>
                       )}
                       {stakingStats.change !== null && stakingStats.changePct !== null && (
-                        <span className={`inline-flex items-center gap-1 ${stakingStats.change >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                        <span className={`inline-flex items-center gap-1 ${stakingStats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                           {stakingStats.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                           {stakingStats.change >= 0 ? "+" : ""}
                           {formatCompactTEL(Math.abs(stakingStats.change))} ({stakingStats.changePct.toFixed(2)}%)

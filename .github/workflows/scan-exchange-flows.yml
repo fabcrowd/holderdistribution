@@ -45,7 +45,7 @@ jobs:
     # Skip when the upstream run failed or was cancelled: publishing flows
     # derived from a half-updated classification is worse than not publishing.
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 330
     steps:
       - name: Check out repository

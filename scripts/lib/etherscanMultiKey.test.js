@@ -165,7 +165,8 @@ describe("fetchContractLogs", () => {
     expect(results).toHaveLength(1000);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     const secondUrl = fetchImpl.mock.calls[1][0];
-    expect(secondUrl).toContain("fromBlock=1000");
+    // fetchContractLogs advances the cursor to lastBlock + 1 (1000 -> 1001).
+    expect(secondUrl).toContain("fromBlock=1001");
   });
 
   it("retries the same page on 'Unexpected error, timeout or server too busy' instead of failing", async () => {

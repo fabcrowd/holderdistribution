@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f5f7fa" />
+    <meta name="theme-color" content="#017276" />
+    <meta name="color-scheme" content="light" />
     <title>Holder Distribution | Token Holder Analytics & Supply Data</title>
     <meta name="description" content="Real, on-chain holder distribution, supply breakdown, and exchange flow data for crypto tokens — a source of truth for the community, not the project team.">
     <meta name="author" content="Holder Distribution" />
@@ -20,8 +21,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://svvjdtmvmqdejjqxzclp.supabase.co">
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+    <!-- display=swap keeps text visible while fonts load. A plain stylesheet link (not the
+         media=print/onload trick) so the CSP can forbid inline event handlers. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Holder Distribution">
@@ -30,12 +32,17 @@
     <link rel="canonical" href="https://holderdistribution.com/">
     <meta property="og:url" content="https://holderdistribution.com/">
     <meta property="og:image" content="https://holderdistribution.com/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Holder Distribution — on-chain holder analytics for TEL">
+    <meta property="og:locale" content="en_US">
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@holderdist">
     <meta name="twitter:title" content="Holder Distribution | Token Holder Analytics & Supply Data">
     <meta name="twitter:description" content="Real, on-chain holder distribution, supply breakdown, and exchange flow data for crypto tokens.">
     <meta name="twitter:image" content="https://holderdistribution.com/og-image.png">
+    <meta name="twitter:image:alt" content="Holder Distribution — on-chain holder analytics for TEL">
 
     <script type="application/ld+json">
     {
@@ -52,6 +59,12 @@
         {
           "@type": "Organization",
           "name": "Holder Distribution",
+          "url": "https://holderdistribution.com/",
+          "logo": "https://holderdistribution.com/icon-512.png"
+        },
+        {
+          "@type": "WebSite",
+          "name": "Holder Distribution",
           "url": "https://holderdistribution.com/"
         }
       ]
@@ -61,6 +74,12 @@
 
   <body>
     <div id="root"></div>
+    <noscript>
+      <main style="max-width:40rem;margin:4rem auto;padding:0 1rem;font-family:system-ui,sans-serif;line-height:1.5">
+        <h1>Holder Distribution</h1>
+        <p>On-chain holder distribution, supply breakdown, and exchange flow data for the TEL token. This site's charts need JavaScript — please enable it to view the data.</p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
