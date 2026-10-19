@@ -47,7 +47,7 @@ permissions:
 
 jobs:
   rebuild:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Below GitHub's 6h ceiling so a stall fails visibly rather than being killed
     # at the platform limit with no checkpoint flush.
     timeout-minutes: 330

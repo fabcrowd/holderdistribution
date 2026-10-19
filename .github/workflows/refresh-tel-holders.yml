@@ -8,9 +8,20 @@ permissions:
   contents: write
   issues: write
 
+# Shares a group with the watchdog (which runs the same holders chain when this
+# one fails) so the two never run the heavy scan, and push, at the same time.
+concurrency:
+  group: holders-refresh
+  cancel-in-progress: false
+
 jobs:
   refresh:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    # Was unbounded (GitHub's 360-minute default). On a private repo every minute
+    # is billed against the 2,000 included/month, and failing runs here burned
+    # ~50 min each on a throttled fallback path (2026-10-03..13, ~600 min).
+    # A healthy run is ~25-35 min; a long catch-up over public RPC takes ~10 min.
+    timeout-minutes: 120
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -44,6 +55,9 @@ jobs:
         # watchdog report and in the "Daily coverage" line rather than being
         # quietly assumed fresh.
         continue-on-error: true
+        # Cap the step: it is non-fatal, so when it degrades to the throttled
+        # Etherscan path it must not spend ~50 billed minutes before giving up.
+        timeout-minutes: 45
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           # Lets pull-staker-balances.js's stakedBy() calls go through Alchemy

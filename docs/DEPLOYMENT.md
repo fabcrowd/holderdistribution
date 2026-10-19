@@ -22,7 +22,7 @@ npm run check:feeds    # feeds validate and are consistent
 ```
 
 Then confirm in the deployed site: response headers (below), `/robots.txt`, `/sitemap.xml`,
-`/manifest.json`, share preview (`/og-image.png`), and that the "Feed error — node offline"
+`/manifest.json`, share preview (`/og-image.png`), and that the "Data feed delayed"
 banner is not showing (it means `public/data` is >48 h stale — see Data pipeline).
 
 ## Environment & secrets

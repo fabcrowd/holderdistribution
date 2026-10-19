@@ -6,6 +6,37 @@ const RPC_KEYS_BY_CHAIN = {
   base: ["BASE_RPC_0", "BASE_RPC_1", "BASE_RPC_2", "BASE_RPC_3", "BASE_RPC_4", "BASE_RPC_5", "BASE_RPC_6", "BASE_RPC_7", "BASE_RPC_8", "BASE_RPC_9"],
 };
 
+/**
+ * Keyless public endpoints, used ONLY when every configured (Alchemy) key is
+ * dead — e.g. all accounts over their monthly capacity, which silently froze
+ * the feeds from 2026-10-03 on. Curated by probing each one with a real
+ * Transfer-log eth_getLogs (not just eth_blockNumber) over a window ~16 days
+ * back, since many "public" nodes serve blockNumber but reject log queries or
+ * anything non-recent ("Archive requests require a personal token"). Order is
+ * preference order. They are slower and rate-limited versus a paid key, so they
+ * keep a daily incremental run alive; they are not meant for a full-history
+ * rebuild. Set PUBLIC_RPC_FALLBACK=off to disable, or
+ * PUBLIC_RPC_URLS_ETHEREUM / _POLYGON / _BASE (comma-separated) to override.
+ */
+const PUBLIC_RPC_FALLBACKS = {
+  ethereum: ["https://gateway.tenderly.co/public/mainnet", "https://rpc.mevblocker.io"],
+  polygon: [
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://gateway.tenderly.co/public/polygon",
+    "https://poly.api.pocket.network",
+  ],
+  base: ["https://base.gateway.tenderly.co", "https://base-rpc.polkachu.com", "https://base.rpc.blxrbdn.com"],
+};
+
+export function getPublicFallbackUrls(chainKey) {
+  if (/^(off|false|0|no)$/i.test(process.env.PUBLIC_RPC_FALLBACK ?? "")) return [];
+  const override = process.env[`PUBLIC_RPC_URLS_${chainKey.toUpperCase()}`];
+  const list = override
+    ? override.split(",").map((u) => u.trim()).filter(Boolean)
+    : PUBLIC_RPC_FALLBACKS[chainKey] ?? [];
+  return list.map((u) => u.replace(/\/+$/, ""));
+}
+
 function getFirstRpcUrl(keys) {
   for (const key of keys) {
     const url = process.env[key];
@@ -51,17 +82,9 @@ export function getAllRpcUrls(chainKey) {
  */
 const usableUrlCache = new Map();
 
-export async function getUsableRpcUrls(chainKey, { logger = console } = {}) {
-  if (usableUrlCache.has(chainKey)) return usableUrlCache.get(chainKey);
-
-  const configured = getAllRpcUrls(chainKey);
-  if (configured.length === 0) {
-    usableUrlCache.set(chainKey, []);
-    return [];
-  }
-
-  const results = await Promise.all(
-    configured.map(async (url) => {
+async function probeUrls(urls) {
+  return Promise.all(
+    urls.map(async (url) => {
       try {
         const response = await fetch(url, {
           method: "POST",
@@ -79,6 +102,18 @@ export async function getUsableRpcUrls(chainKey, { logger = console } = {}) {
       }
     }),
   );
+}
+
+export async function getUsableRpcUrls(chainKey, { logger = console } = {}) {
+  if (usableUrlCache.has(chainKey)) return usableUrlCache.get(chainKey);
+
+  const configured = getAllRpcUrls(chainKey);
+  if (configured.length === 0) {
+    usableUrlCache.set(chainKey, []);
+    return [];
+  }
+
+  const results = await probeUrls(configured);
 
   const usable = results.filter((r) => r.ok).map((r) => r.url);
   const dead = results.filter((r) => !r.ok);
@@ -89,6 +124,20 @@ export async function getUsableRpcUrls(chainKey, { logger = console } = {}) {
       (dead.length ? ` — skipping ${dead.map((d) => `…${d.url.slice(-4)} (${shortReason(d.reason)})`).join(", ")}` : ""),
   );
   if (usable.length === 0) {
+    const publicUrls = getPublicFallbackUrls(chainKey);
+    if (publicUrls.length > 0) {
+      const publicResults = await probeUrls(publicUrls);
+      const publicUsable = publicResults.filter((r) => r.ok).map((r) => r.url);
+      logger.warn(
+        `RPC pool ${chainKey}: every configured key is down (${shortReason(dead[0]?.reason)}) — ` +
+          `falling back to ${publicUsable.length}/${publicUrls.length} keyless public endpoint(s). ` +
+          `Slower and rate-limited; restore/upgrade the Alchemy keys for full speed.`,
+      );
+      if (publicUsable.length > 0) {
+        usableUrlCache.set(chainKey, publicUsable);
+        return publicUsable;
+      }
+    }
     throw new Error(
       `No usable RPC URLs for ${chainKey}: all ${configured.length} configured key(s) failed a ` +
         `single eth_blockNumber. First reason: ${dead[0]?.reason ?? "unknown"}`,
@@ -211,7 +260,11 @@ export async function rpcCall(rpcUrl, method, params = [], attempt = 0) {
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
       return rpcCall(rpcUrl, method, params, attempt + 1);
     }
-    throw new Error(data.error.message || JSON.stringify(data.error));
+    // Some providers put the actionable reason in error.data and a generic
+    // "invalid params" in error.message (Tenderly: data = "Block range too large
+    // for public access"); keep both so range-limit detection can see it.
+    const detail = typeof data.error.data === "string" ? ` - ${data.error.data}` : "";
+    throw new Error((data.error.message || JSON.stringify(data.error)) + detail);
   }
   return data.result;
 }
@@ -225,42 +278,75 @@ export async function rpcCall(rpcUrl, method, params = [], attempt = 0) {
 // which a plain "retry the same request" can never recover from.
 const FREE_TIER_RANGE_PATTERN = /up to an?\s+(\d+)\s+block range/i;
 
+// Provider-specific "your range is too big" wording that carries no machine
+// readable limit (unlike FREE_TIER_RANGE_PATTERN): Tenderly "Block range too
+// large for public access", nodies "maximum allowed is 50 blocks", drpc
+// "ranges over 10000 blocks", "query returned more than 10000 results", etc.
+const RANGE_LIMIT_PATTERN =
+  /block range|range (is )?too (large|wide|big)|ranges? over|limited to|maximum allowed|too many (blocks|results)|more than \d+ results|query (returned|exceeded)|response size/i;
+
+// Widest span each URL has been seen to accept, learned from bisection, so one
+// rejection per URL per process is paid once instead of on every chunk.
+const learnedSpanByUrl = new Map();
+
 /**
  * Fetch logs (eth_getLogs) for a single block range. Self-adjusts to a
  * smaller range and retries when the provider rejects the requested span —
- * see FREE_TIER_RANGE_PATTERN — instead of failing a whole scan over a limit
- * discovered only by a caller who happened to be on the right tier when the
- * chunk size was originally chosen.
+ * either with an explicit limit (FREE_TIER_RANGE_PATTERN) or with vague
+ * "range too large"/"too many results" wording (RANGE_LIMIT_PATTERN), in which
+ * case the range is bisected until it fits and the working span is remembered
+ * per URL. This is what lets keyless public endpoints (each with its own
+ * undocumented cap) stand in for a dead Alchemy pool.
  * @param {string} rpcUrl
  * @param {{ fromBlock: string; toBlock: string; address: string; topics: string[] }} filter
  * @returns {Promise<{ address: string; topics: string[]; data: string }[]>}
  */
 export async function getLogs(rpcUrl, filter) {
+  const from = Number.parseInt(filter.fromBlock, 16);
+  const to = Number.parseInt(filter.toBlock, 16);
+  const known = learnedSpanByUrl.get(rpcUrl);
+  if (known && Number.isFinite(from) && Number.isFinite(to) && to - from + 1 > known) {
+    return getLogsInSpans(rpcUrl, filter, from, to, known);
+  }
   try {
     const logs = await rpcCall(rpcUrl, "eth_getLogs", [filter]);
     return Array.isArray(logs) ? logs : [];
   } catch (err) {
     const match = FREE_TIER_RANGE_PATTERN.exec(err.message);
-    if (!match) throw err;
-
-    const allowedSpan = Number(match[1]);
-    const from = Number.parseInt(filter.fromBlock, 16);
-    const to = Number.parseInt(filter.toBlock, 16);
-    if (!Number.isFinite(allowedSpan) || allowedSpan < 1 || !Number.isFinite(from) || !Number.isFinite(to) || to < from) {
-      throw err;
+    if (match) {
+      const allowedSpan = Number(match[1]);
+      if (!Number.isFinite(allowedSpan) || allowedSpan < 1 || !Number.isFinite(from) || !Number.isFinite(to) || to < from) {
+        throw err;
+      }
+      console.warn(`  eth_getLogs range too wide for this key's tier — retrying ${from}-${to} in ${allowedSpan}-block sub-chunks.`);
+      return getLogsInSpans(rpcUrl, filter, from, to, allowedSpan);
     }
-    console.warn(`  eth_getLogs range too wide for this key's tier — retrying ${from}-${to} in ${allowedSpan}-block sub-chunks.`);
-
-    const results = [];
-    for (let start = from; start <= to; start += allowedSpan) {
-      const end = Math.min(start + allowedSpan - 1, to);
-      const subLogs = await getLogs(rpcUrl, {
-        ...filter,
-        fromBlock: "0x" + start.toString(16),
-        toBlock: "0x" + end.toString(16),
-      });
-      results.push(...subLogs);
+    if (RANGE_LIMIT_PATTERN.test(err.message) && Number.isFinite(from) && Number.isFinite(to) && to > from) {
+      const span = Math.floor((to - from + 1) / 2);
+      learnedSpanByUrl.set(rpcUrl, Math.min(span, learnedSpanByUrl.get(rpcUrl) ?? span));
+      console.warn(`  eth_getLogs rejected ${to - from + 1}-block range (${String(err.message).slice(0, 80)}) — bisecting to ${span}.`);
+      return getLogsInSpans(rpcUrl, filter, from, to, span);
     }
-    return results;
+    throw err;
   }
+}
+
+async function getLogsInSpans(rpcUrl, filter, from, to, span) {
+  const results = [];
+  for (let start = from; start <= to; start += span) {
+    const end = Math.min(start + span - 1, to);
+    const subLogs = await getLogs(rpcUrl, {
+      ...filter,
+      fromBlock: "0x" + start.toString(16),
+      toBlock: "0x" + end.toString(16),
+    });
+    results.push(...subLogs);
+  }
+  return results;
+}
+
+/** Test hook: forget learned spans and the probed-URL cache. */
+export function __resetRpcCachesForTests() {
+  learnedSpanByUrl.clear();
+  usableUrlCache.clear();
 }

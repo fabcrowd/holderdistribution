@@ -464,17 +464,33 @@ const main = async () => {
     );
   }
 
-  // Sanity check: if the new total is more than STALE_DROP_THRESHOLD below the
-  // previous snapshot, something is badly wrong with this run (not the
-  // methodology change itself, which is a one-time step down from the old
-  // over-attributed figure — see readPreviousTotal's caller for that nuance).
+  // Sanity check: a snapshot more than STALE_DROP_THRESHOLD below the previous
+  // one is normally a truncated/throttled API response, so it is refused.
+  // BUT a drop is also exactly what the TEL v3 upgrade causes for real —
+  // stakers must unstake legacy TEL before swapping it for v3, so the staking
+  // contract's own totalStaked() fell from ~4.17B to ~0.80B TEL (verifiable
+  // on-chain). Refusing on the drop alone therefore froze this feed forever
+  // (2026-10-13: "new staked total (812,341,897 TEL) dropped >40% from previous
+  // (4,173,035,603 TEL)" while totalStaked() read the same ~0.8B). So the drop
+  // is only refused when the sum ALSO fails to reconcile with the contract's
+  // totalStaked() read in this same run: a truncated response can't match it,
+  // a genuine mass-unstake does.
   if (previousTotal > 0 && newTotal < previousTotal * (1 - STALE_DROP_THRESHOLD)) {
-    console.error(
-      `FEED ERROR: new staked total (${newTotal.toLocaleString()} TEL, ${wallets.length} wallets) ` +
-      `dropped >40% from previous (${previousTotal.toLocaleString()} TEL). ` +
-      `Refusing to write snapshot — likely a truncated API response.`
+    const reconciled = contractTotal > 0 && reconciliationGap <= contractTotal * RECONCILIATION_TOLERANCE;
+    if (!reconciled) {
+      console.error(
+        `FEED ERROR: new staked total (${newTotal.toLocaleString()} TEL, ${wallets.length} wallets) ` +
+        `dropped >40% from previous (${previousTotal.toLocaleString()} TEL) and does not reconcile ` +
+        `with totalStaked() (${contractTotal.toLocaleString()} TEL). ` +
+        `Refusing to write snapshot — likely a truncated API response.`
+      );
+      process.exit(1);
+    }
+    console.warn(
+      `Accepting >40% drop from ${previousTotal.toLocaleString()} to ${newTotal.toLocaleString()} TEL: ` +
+      `it reconciles with on-chain totalStaked() (${contractTotal.toLocaleString()} TEL) — genuine unstaking ` +
+      `(e.g. holders unstaking legacy TEL to upgrade to TEL v3), not a truncated response.`
     );
-    process.exit(1);
   }
 
   wallets.sort((a, b) => b.stakedAmount - a.stakedAmount);
