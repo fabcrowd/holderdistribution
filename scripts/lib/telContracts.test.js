@@ -64,6 +64,12 @@ describe("TEL contract registry (config/chains.json)", () => {
     }
   });
 
+  it("starts the Polygon legacy scan at (or before) the token's deploy block, so no early holder is missed", () => {
+    // Deploy block found on-chain by bisecting eth_getCode (2026-10-18). Balances are replayed from zero:
+    // a later start drops every holder who has not moved since (~298M TEL on Polygon at 21.5M).
+    expect(chains.polygon.fromBlock).toBeLessThanOrEqual(11264036);
+  });
+
   it("labels both upgrade contracts as escrow so legacy TEL they hold is never a retail balance", () => {
     const exclusions = JSON.parse(fs.readFileSync(path.join(root, "config/exclusions.json"), "utf8"));
     for (const name of ["tokenMigration", "migrationVault"]) {

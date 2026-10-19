@@ -159,6 +159,11 @@ therefore tracks **both** tokens (`config/chains.json` `tokens.legacy` / `tokens
   (Σ chains of legacy+v3 − Ethereum bridge locks) must land on it. `node scripts/verify-tel-supply.js` re-derives
   the whole proof from public RPCs. Derivation and numbers: `docs/TEL-CONTRACTS.md`, "Supply accounting".
 
+- Balances are replayed from zero, so each chain's legacy scan must start at the token's **deploy block**
+  (`fromBlock`; Polygon 11,264,036 — it used to be 21.5M, which dropped ~298M TEL of early holders). The
+  checkpoint records the `fromBlock` it was built from and is rebuilt (legacy part only) if config changes it.
+  The first run after such a change is a full Polygon rescan.
+
 **Important:** data-refresh commits are tagged `[skip netlify]` or rely on the `ignore = "exit 0"` rule — they do not trigger deploys.
 
 ---

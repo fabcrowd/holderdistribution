@@ -253,3 +253,28 @@ export function combineChainBalances({ legacyRaw, legacyDecimals, v3Raw = new Ma
     negativeRetired,
   };
 }
+
+/**
+ * First block the legacy scan of each chain started at when a checkpoint carries no
+ * `fromBlock` of its own (every checkpoint written before this field existed).
+ */
+export const LEGACY_SCAN_START = Object.freeze({ ethereum: 4_600_000, polygon: 21_500_000, base: 100_000 });
+
+/**
+ * A resumed legacy scan is only exact if the checkpoint's balances were built from
+ * the SAME start block as the configured one. Balances are replayed from zero, so a
+ * checkpoint built from a later block misses every holder whose balance had already
+ * been set earlier and has not moved since (Polygon: the scan used to start at block
+ * 21.5M although the token was deployed at 11.26M, leaving ~298M TEL of untouched
+ * early holders out of the supply). Negative interim balances are not stored, so the
+ * missing history cannot be patched in: the legacy checkpoint must be rebuilt.
+ *
+ * @returns {{usable: boolean, startedAt: number|null}}
+ */
+export function legacyCheckpointUsable(chainKey, checkpoint, configuredFromBlock) {
+  if (!checkpoint || !checkpoint.rawBalances) return { usable: false, startedAt: null };
+  const startedAt = Number.isFinite(Number(checkpoint.fromBlock))
+    ? Number(checkpoint.fromBlock)
+    : (LEGACY_SCAN_START[chainKey] ?? null);
+  return { usable: startedAt === configuredFromBlock, startedAt };
+}

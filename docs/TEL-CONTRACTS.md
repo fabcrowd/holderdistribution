@@ -163,6 +163,17 @@ that part; v3 netting handles the swapped part.)
    `2026-10-18-tel-v3-upgrade-escrow` changelog event (`backfillStatus: "not-possible"`) for what a full backfill
    needs. `--as-of` rebuilds refuse dates on or after the v3 deploy block.
 
+### Polygon scan start (found while reconciling)
+
+Even with v3 netted, the scan reached only 99.70B (mirror residual −299.5M): the Polygon legacy scan started at block
+21,500,000 but the token was deployed at 11,264,036 (first Transfer 11,356,608; 6.49B minted and 3.69B burned before
+21.5M). Balances are replayed from zero, so holders that had not moved since 21.5M were missing: 38,591,385,281.67
+counted vs 38,889,754,532.20 on-chain. `fromBlock` is now 11,264,036, checkpoints record their `fromBlock`, and the
+legacy part of an older checkpoint is rebuilt. Check with a seeded run (replay 11.26M-21.5M, `balanceOf` at the
+head for the 5,177 early holders, scan balances for everyone else): 38,889,742,196.68, within 12,335.52 TEL of
+`totalSupply()` (sub-dust balances). After it the published residual is 1,155,480.75 TEL (0.0012%) = 1,143,145.23 (bridge
+locks vs mirrors, above) + 12,335.52 (dust floor). See changelog event `2026-10-18-polygon-scan-start-block`.
+
 ### Known limits
 
 * **Phase 2 (`MigrationVault`)** holds nothing yet. The code treats a v3 release from the vault in the same tx as a
@@ -171,6 +182,8 @@ that part; v3 netting handles the swapped part.)
 * **Exchange-flow, tier-outflow and DEX scans** (`scan-exchange-flows.js`, `generate-tier-outflows.js`,
   `extend-transfer-caches.js`, `rebuild-history-from-logs.js`) still read only the legacy token, so flows of v3 are
   not in those feeds yet. Balances (including CEX and DEX balances) are v3-aware.
+* **First run after merge:** Polygon's legacy checkpoint is rebuilt from block 11,264,036 (~42k getLogs at Alchemy's
+  2,000-block cap), and v3 is scanned from the deploy blocks, so it is slower than a daily catch-up. It is a one-off.
 * **Native Telcoin Network TEL** is not tracked (no public network yet).
 * Pool addresses for v3 liquidity are not in `config/dex-contracts.json` yet, so v3 sitting in a new DEX pool shows
   up as a (large) unlabelled wallet until the pools are added.

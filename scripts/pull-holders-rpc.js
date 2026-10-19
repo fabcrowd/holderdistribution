@@ -10,7 +10,7 @@ import { createLogsFailover } from "./lib/logsFailover.js";
 import { residualCustodyBalance } from "./lib/stakingCustody.js";
 import { ensureWindowCache, readCommittedJson, replayChainRawBalances } from "./lib/holdersAsOfReplay.js";
 import { computeSupplyTotals } from "./lib/supply.js";
-import { resolveChainTokens, combineChainBalances, v3StateToCheckpoint } from "./lib/telTokens.js";
+import { resolveChainTokens, combineChainBalances, v3StateToCheckpoint, legacyCheckpointUsable } from "./lib/telTokens.js";
 import { scanV3Chain } from "./lib/v3Scan.js";
 import { loadCexAddressSet, loadDexAddressSet, normalizeAddress as normalizeNonRetailAddress } from "./lib/nonRetailSet.js";
 import {
@@ -65,7 +65,7 @@ const CHAIN_RPC_SETTINGS = {
 
 const DEFAULT_FROM_BLOCK = {
   ethereum: 4_600_000,
-  polygon: 21_500_000,
+  polygon: 11_264_036,
   base: 100_000,
 };
 
@@ -349,16 +349,25 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
     ? configuredFromBlock
     : DEFAULT_FROM_BLOCK[chainKey] ?? 0;
 
-  // If we have a checkpoint, resume from the block after the last scanned block.
-  const fromBlock = checkpoint ? checkpoint.lastBlock + 1 : genesisBlock;
-  const resuming = checkpoint && Object.keys(checkpoint.rawBalances ?? {}).length > 0;
+  // Resume the legacy scan only from a checkpoint built from this start block;
+  // otherwise rebuild it (the v3 section is independent and kept).
+  const legacyCheck = legacyCheckpointUsable(chainKey, checkpoint, genesisBlock);
+  if (checkpoint && !legacyCheck.usable) {
+    console.warn(
+      `${chainKey}: legacy checkpoint was built from block ${legacyCheck.startedAt}, config starts at ${genesisBlock} — ` +
+        `discarding it and rescanning from ${genesisBlock} (balances are replayed from zero, a later start misses early holders).`
+    );
+  }
+  const legacyCheckpoint = legacyCheck.usable ? checkpoint : null;
+  const fromBlock = legacyCheckpoint ? legacyCheckpoint.lastBlock + 1 : genesisBlock;
+  const resuming = legacyCheckpoint && Object.keys(legacyCheckpoint.rawBalances ?? {}).length > 0;
 
   let chunkSize = settings.defaultChunkSize;
   const envChunk = process.env[settings.envChunkKey];
   if (envChunk != null) {
     const n = Number(envChunk);
     if (Number.isFinite(n) && n > 0) {
-      chunkSize = chainKey === "polygon" ? Math.min(n, 2000) : Math.min(n, 50000);
+      chunkSize = Math.min(n, 50000);
     }
   }
 
@@ -368,7 +377,7 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
     console.log(`Full scan: ${chainKey} Transfer logs from block ${fromBlock} (chunk ${chunkSize})...`);
   }
 
-  const builder = buildBalanceMap(decimals, checkpoint?.rawBalances ?? {});
+  const builder = buildBalanceMap(decimals, legacyCheckpoint?.rawBalances ?? {});
 
   // One head block for both tokens (see streamTransferLogs).
   const headBlock = Number.parseInt(String(await rpcCall(rpcUrls[0], "eth_blockNumber", [])), 16);
@@ -419,6 +428,7 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
     tokenTotals: { ...combined.totals, strandedInUpgrade: stranded },
     checkpointData: {
       lastBlock: latestBlock,
+      fromBlock: genesisBlock,
       rawBalances: rawState,
       ...(v3Result ? { v3: v3StateToCheckpoint(v3Result.state, v3Result.toBlock) } : {}),
     },

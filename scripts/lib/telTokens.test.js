@@ -8,6 +8,7 @@ import {
   combineChainBalances,
   v3StateToCheckpoint,
   v3StateFromCheckpoint,
+  legacyCheckpointUsable,
 } from "./telTokens.js";
 import { scanV3Chain } from "./v3Scan.js";
 import chains from "../../config/chains.json";
@@ -279,5 +280,27 @@ describe("v3 checkpoint round trip", () => {
     await expect(
       scanV3Chain({ deployBlock: NaN, toBlock: 10, chunkSize: 5, cfg: CFG, fetchV3: async () => [], fetchEscrowLegacy: async () => [] }),
     ).rejects.toThrow(/deployBlock/);
+  });
+});
+
+describe("legacyCheckpointUsable", () => {
+  const cp = (extra = {}) => ({ lastBlock: 100, rawBalances: { "0xa": "1" }, ...extra });
+
+  it("resumes a checkpoint built from the configured start block", () => {
+    expect(legacyCheckpointUsable("polygon", cp({ fromBlock: 11_264_036 }), 11_264_036).usable).toBe(true);
+  });
+
+  it("treats a checkpoint without fromBlock as built from the old start block", () => {
+    expect(legacyCheckpointUsable("ethereum", cp(), 4_600_000).usable).toBe(true);
+    expect(legacyCheckpointUsable("base", cp(), 100_000).usable).toBe(true);
+  });
+
+  it("rejects an old Polygon checkpoint once the start moves back to the deploy block", () => {
+    const r = legacyCheckpointUsable("polygon", cp(), 11_264_036);
+    expect(r).toEqual({ usable: false, startedAt: 21_500_000 });
+  });
+
+  it("rejects a missing checkpoint", () => {
+    expect(legacyCheckpointUsable("polygon", null, 1).usable).toBe(false);
   });
 });
