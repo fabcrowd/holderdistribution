@@ -30,19 +30,19 @@ banner is not showing (it means `public/data` is >48 h stale — see Data pipeli
 | Where | Variable | Notes |
 |---|---|---|
 | Browser (build time) | `VITE_SITE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_HOLDER_HISTORY_URL` | All optional; **public** values only. Anything `VITE_*` is shipped to every visitor. |
-| Netlify function | `FORENSICS_PASSWORD`, `SUPABASE_SECRET_KEY` | Netlify → Environment variables. Never commit. |
+| Netlify function | `LIVE_DATA_GITHUB_TOKEN` (live data + latest wallet-flows report), optional `FORENSICS_PASSWORD_HASH`, `FORENSICS_DISABLE_LEGACY_HASH`, `FORENSICS_PASSWORD`, `FORENSICS_ALLOWED_ORIGINS` | Netlify → Environment variables (scope: Functions). Never commit. See docs/FORENSICS.md. |
 | GitHub Actions | `ENV_PASSPHRASE` | Decrypts `.env.enc` (RPC/Etherscan/Dune keys) for the pipeline. |
 
 `.env`, `.env.local` are git-ignored; `.env.enc` is the only committed (encrypted) env file.
 
-### Known security caveats (not changed here — need an owner decision)
+### Known security caveats
 
-- `src/lib/forensicsPasswordHash.ts` holds an unsalted SHA-256 of the forensics gate password
-  (server-side only, absent from `dist/`). Treat the gate as "off the public web", not secret;
-  prefer setting `FORENSICS_PASSWORD` in Netlify and removing the hash/rotating the password.
-- The forensics function answers with `Access-Control-Allow-Origin: *` and an in-memory,
-  per-instance rate limiter. Restrict the origin to `https://holderdistribution.com` if the
-  gate is only used from the site.
+- Forensics gate: see `docs/FORENSICS.md`. Origin allowlist, per-IP rate limit and
+  failed-password lockout, constant-time compares, and optional salted hash
+  (`FORENSICS_PASSWORD_HASH`) are in place. The legacy unsalted SHA-256 in
+  `src/lib/forensicsPasswordHash.ts` still works for backward compatibility. Disable it
+  with `FORENSICS_DISABLE_LEGACY_HASH=1` after setting the salted hash. The limiter is
+  in memory and per instance (best effort).
 - `npm audit --omit=dev` reports advisories in the Tailwind 3 build tool chain
   (`braces`/`chokidar`/`micromatch`, build-time only, nothing is shipped) and `react-router`
   6.x (open-redirect via backslash in `<Link>`, SSR `deserializeErrors` — neither applies: no

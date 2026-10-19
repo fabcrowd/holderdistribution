@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { TreasuryHistoryChart } from "@/components/TreasuryHistoryChart";
 import { AssociationFlowAnalysis } from "@/components/AssociationFlowAnalysis";
 import { TelDispositionLedger } from "@/components/TelDispositionLedger";
 import { ForensicsUnlockGate, ForensicsUnlockProvider, useForensicsUnlock } from "@/components/ForensicsGate";
 import { SubscriptionGate } from "@/components/SubscriptionGate";
+
+// Own chunk: holds only UI code (no wallet data); loaded when the tab opens.
+const WalletFlowsPanel = lazy(() => import("@/components/WalletFlowsPanel"));
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +50,7 @@ const SUPPLY_PANELS = [
   { id: "breakdown", label: "Breakdown" },
   { id: "reconciliation", label: "Reconciliation" },
   { id: "history", label: "History" },
+  { id: "wallet-flows", label: "Wallet flows" },
 ];
 
 type SupplyBreakdownProps = {
@@ -529,6 +533,14 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                   <TreasuryHistoryChart rangeDays={rangeDays} />
                   <AssociationFlowAnalysis />
                 </SubscriptionGate>
+              </TabsContent>
+
+              {/* Password-gated: the report is fetched from the forensics gate
+                  function only after unlock; nothing is in the public bundle. */}
+              <TabsContent value="wallet-flows" className="mt-4 focus-visible:outline-none">
+                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading…</p>}>
+                  <WalletFlowsPanel />
+                </Suspense>
               </TabsContent>
               </SubPanelTabs>
             )}

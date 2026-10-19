@@ -1,0 +1,579 @@
+{
+ "version": 1,
+ "description": "Registry for the gated Wallet flows report (scripts/generate-wallet-flows.js). Labels, sources and confidence come from the Oct 2026 forensics analysis; edit here, not in the generated report. NOT public: served only via the forensics gate.",
+ "knownWallets": [
+  {
+   "address": "0x17fcc1f337fd68ff831017684798d08cbd424143",
+   "label": "Settlement hub",
+   "group": "Association-funded hub",
+   "entityClass": "association",
+   "source": "repo forensics ledger: funded by TAO Safe/TAO Distribution (1.26B TEL), routes to KuCoin",
+   "confidence": "medium",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x1128a473c43a9e0779113c4bf6d3aa186182bb41",
+   "label": "Settlement hub -> KuCoin relay",
+   "group": "relay",
+   "entityClass": "relay",
+   "source": "repo scripts/lib/telEndpoint.js",
+   "confidence": "medium",
+   "chains": [
+    "polygon"
+   ],
+   "relayTo": "CEX",
+   "relayLabel": "KuCoin"
+  },
+  {
+   "address": "0x5b34f69fe6da995f4c5e0de92adcbf02bfe6b4b0",
+   "label": "KuCoin 32 relay",
+   "group": "relay",
+   "entityClass": "relay",
+   "source": "repo scripts/lib/telEndpoint.js",
+   "confidence": "medium",
+   "chains": [
+    "ethereum"
+   ],
+   "relayTo": "CEX",
+   "relayLabel": "KuCoin"
+  },
+  {
+   "address": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
+   "label": "Recipient Safe (CoW seller)",
+   "group": "Association operational",
+   "entityClass": "association",
+   "source": "repo forensics (data/association-payment-mapping, tel-disposition ledger)",
+   "confidence": "medium",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x067173cf1a20e1f7a952d3abd15537d86a239924",
+   "label": "Telcoin Holdings bridge-hub Safe",
+   "group": "Telcoin Holdings (company)",
+   "entityClass": "holdings",
+   "source": "repo exclusions.json (explorer-label)",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum"
+   ]
+  },
+  {
+   "address": "0xcf6994abe437e67b331cd2513f47773cd91244d2",
+   "label": "Telcoin Holdings ops Safe (Base)",
+   "group": "Telcoin Holdings (company)",
+   "entityClass": "holdings",
+   "source": "repo exclusions.json (signer-graph)",
+   "confidence": "high",
+   "chains": [
+    "ethereum",
+    "base"
+   ]
+  },
+  {
+   "address": "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
+   "label": "TA Sale Wallet ('Conduit')",
+   "group": "Association operational EOA",
+   "entityClass": "association",
+   "source": "repo src/data/forensicsWriteups.ts (community-sourced attribution) + on-chain funding from Assoc. Safes",
+   "confidence": "high",
+   "chains": [
+    "polygon",
+    "base"
+   ]
+  },
+  {
+   "address": "0xc44784b1ace0830a82ceac529cc98d1b38640413",
+   "label": "Telcoin Holdings controller (Polygon)",
+   "group": "Telcoin Holdings (company)",
+   "entityClass": "holdings",
+   "source": "repo exclusions.json (signer-graph)",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x79e5a6ffe2e6ba053a80e1b199c4f328938f40ca",
+   "label": "TELx TEL/WBTC reward contract",
+   "group": "staking/rewards",
+   "entityClass": "staking",
+   "source": "repo exclusions.json (owner-supplied)",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x2580ccb2be946ad98effa7f4b76148bed319011c",
+   "label": "TEL Treasury",
+   "group": "Association Safe",
+   "entityClass": "treasury",
+   "source": "telcoinassociation.com Safe Wallets page; Etherscan tag 'Telcoin Association: TEL Treasury Safe'",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum"
+   ]
+  },
+  {
+   "address": "0xe4ccf475a8ca5c96edbcdcf77a13ef29253d0878",
+   "label": "TAO Implementation Safe/Wallet",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon",
+    "base"
+   ]
+  },
+  {
+   "address": "0x6e130c92e6f4d71b081c4d5b664cb210e55dbacf",
+   "label": "Platform Council",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0xa9d6f0ebe64a931492d23f6782d110a9f25d4a51",
+   "label": "Treasury Council",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x0454d03c2010862277262cb306749e829ee97591",
+   "label": "Compliance Council",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x583d596b0a79c0e83c87851ea9fb1a91e80290b2",
+   "label": "TELx Council",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x8dcf8d134f22ac625a7afb39514695801cd705b5",
+   "label": "TAN Council",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page; Polygonscan tag 'Telcoin Association: TAN Council Safe'",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0xf4bc288d616c4f57071a57f5a4050b5e516fe7e5",
+   "label": "TAO Safe",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0xc4fbeeda84f39ea26f21d50d88590a1f7a03d386",
+   "label": "TAN Distribution Safe",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x99ef9f86c41d2a5b1c609e910b06c20ca45a984c",
+   "label": "TAO Distribution Safe",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0xada13ef9e48e14ee43840e8049f7e0953dfff373",
+   "label": "TELx Miner Safe",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x7307a12f34fe797dfe11d7f295a3a3770c822396",
+   "label": "Telcoin Staker Safe",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ]
+  },
+  {
+   "address": "0xaa976f484cfa09852c94828e3570f4b0ec5f758e",
+   "label": "Telcoin Developer Safe",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x741551aa517ac439237119d39084ab9ac0ab3e68",
+   "label": "Telcoin Validator Safe",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x90f18755cad5fc696a6dd7418d05c5f5e022774a",
+   "label": "TELx Council Operational Safe",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "repo config/exclusions.json (owner-supplied)",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0xb1714f449b85e8ba04ac9e9060928f6fdc0fd533",
+   "label": "Treasury -> BitGo relay",
+   "group": "relay",
+   "entityClass": "relay",
+   "source": "repo scripts/lib/telEndpoint.js",
+   "confidence": "high",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ],
+   "relayTo": "custody",
+   "relayLabel": "BitGo Custody"
+  },
+  {
+   "address": "0x00d328532f71b593510d712146fce346efe2667c",
+   "label": "Treasury -> Uphold relay",
+   "group": "relay",
+   "entityClass": "relay",
+   "source": "repo scripts/lib/telEndpoint.js",
+   "confidence": "high",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ],
+   "relayTo": "CEX",
+   "relayLabel": "Uphold"
+  },
+  {
+   "address": "0xacea3a74d6c0d288aea9886a3b78b0654def8c07",
+   "label": "Treasury -> Polygon bridge relay",
+   "group": "relay",
+   "entityClass": "relay",
+   "source": "repo scripts/lib/telEndpoint.js",
+   "confidence": "high",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ],
+   "relayTo": "bridge",
+   "relayLabel": "Polygon bridge"
+  },
+  {
+   "address": "0x92e43aec69207755cb1e6a8dc589aae630476330",
+   "label": "Telcoin Association staking contract (Polygon)",
+   "group": "staking/rewards",
+   "entityClass": "staking",
+   "source": "repo exclusions.json (contract-analysis)",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x7feb8febddb66189417f732b4221a52e23b926c4",
+   "label": "TELx TEL/WETH reward contract",
+   "group": "staking/rewards",
+   "entityClass": "staking",
+   "source": "repo exclusions.json (owner-supplied)",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x8f702676830ddca2801a4a7cdb971cde4df697ae",
+   "label": "TELx TEL/USDC reward contract",
+   "group": "staking/rewards",
+   "entityClass": "staking",
+   "source": "repo exclusions.json (owner-supplied)",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0xe533911f00f1c3b58bb8d821131c9b6e2452fc27",
+   "label": "TELx reward contract",
+   "group": "staking/rewards",
+   "entityClass": "staking",
+   "source": "repo scripts/lib/telEndpoint.js REWARD_CONTRACTS",
+   "confidence": "high",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ]
+  },
+  {
+   "address": "0xe3a465e1460e9987c772c36b91020946bc60af52",
+   "label": "TELx rewards (Base)",
+   "group": "staking/rewards",
+   "entityClass": "staking",
+   "source": "repo scripts/lib/telEndpoint.js",
+   "confidence": "high",
+   "chains": [
+    "base"
+   ]
+  },
+  {
+   "address": "0x84b94024463f01d5cbb3086f14f574d7ed83b794",
+   "label": "Telcoin Holdings shared Safe (Polygon)",
+   "group": "Telcoin Holdings (company)",
+   "entityClass": "holdings",
+   "source": "repo exclusions.json (signer-graph)",
+   "confidence": "confirmed",
+   "chains": [
+    "polygon"
+   ]
+  },
+  {
+   "address": "0x9756686f71e9a90558c7cfbad89e9fd8007f97e7",
+   "label": "Telcoin Holdings cold Safe (Base)",
+   "group": "Telcoin Holdings (company)",
+   "entityClass": "holdings",
+   "source": "repo exclusions.json (signer-graph)",
+   "confidence": "high",
+   "chains": [
+    "base"
+   ]
+  },
+  {
+   "address": "0xa9781d19e5611f65908dd6818fc1c276e2c6ac44",
+   "label": "Telcoin Holdings cold Safe (Base) #2",
+   "group": "Telcoin Holdings (company)",
+   "entityClass": "holdings",
+   "source": "repo exclusions.json (signer-graph)",
+   "confidence": "high",
+   "chains": [
+    "base"
+   ]
+  },
+  {
+   "address": "0x9f45bccdb42871a955e34d9d5ca33be9ccaef1fd",
+   "label": "Telcoin Holdings reserve (Ethereum)",
+   "group": "Telcoin Holdings (company)",
+   "entityClass": "holdings",
+   "source": "repo exclusions.json (signer-graph)",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum"
+   ]
+  },
+  {
+   "address": "0xbd02c51150a4ab6ce97b9de2025644594f3e75b8",
+   "label": "BitGo Custody (Treasury collateral)",
+   "group": "escrow",
+   "entityClass": "escrow",
+   "source": "repo exclusions.json (funding-trace); TELIP Treasury collateral",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum"
+   ]
+  },
+  {
+   "address": "0xaa9ae53fc7a69fde1baaf6aa03796e6ccc764271",
+   "label": "Anchorage Digital Vault (Treasury collateral)",
+   "group": "escrow",
+   "entityClass": "escrow",
+   "source": "repo exclusions.json (funding-trace)",
+   "confidence": "confirmed",
+   "chains": [
+    "ethereum"
+   ]
+  },
+  {
+   "address": "0x60b1f621736fa7091bad2dc20c0467083f010f57",
+   "label": "Escrow vault 1 (assumed)",
+   "group": "escrow",
+   "entityClass": "escrow",
+   "source": "repo exclusions.json (on-chain-pattern, Holdings-funded)",
+   "confidence": "medium",
+   "chains": [
+    "ethereum"
+   ]
+  },
+  {
+   "address": "0xd6040319acdc191e485b2e103b9b4405ea8a30b0",
+   "label": "Escrow vault 2 (assumed)",
+   "group": "escrow",
+   "entityClass": "escrow",
+   "source": "repo exclusions.json (on-chain-pattern)",
+   "confidence": "medium",
+   "chains": [
+    "ethereum"
+   ]
+  },
+  {
+   "address": "0x222d9b3875d7c37d5037896d9b8b0fb3a19180bf",
+   "label": "Escrow vault 3 (assumed)",
+   "group": "escrow",
+   "entityClass": "escrow",
+   "source": "repo exclusions.json (on-chain-pattern)",
+   "confidence": "medium",
+   "chains": [
+    "ethereum"
+   ]
+  },
+  {
+   "address": "0x043a163912c680dd2b490b409e8d4ad399e97bf8",
+   "label": "Escrow vault 4 (assumed)",
+   "group": "escrow",
+   "entityClass": "escrow",
+   "source": "repo exclusions.json (on-chain-pattern)",
+   "confidence": "medium",
+   "chains": [
+    "ethereum"
+   ]
+  },
+  {
+   "address": "0x9184aae0983e5ffbe06e41ca13c24033857b56cb",
+   "label": "Escrow vault 5 (assumed)",
+   "group": "escrow",
+   "entityClass": "escrow",
+   "source": "repo exclusions.json (on-chain-pattern)",
+   "confidence": "medium",
+   "chains": [
+    "ethereum"
+   ]
+  },
+  {
+   "address": "0xfecee4ab07127fff4ee4a3ba61df5fd7b906f84c",
+   "label": "Telco: Deployer",
+   "group": "Telcoin deployer EOA",
+   "entityClass": "holdings",
+   "source": "Etherscan public name tag 'Telco: Deployer' (seen executing Treasury Safe txs)",
+   "confidence": "high",
+   "chains": [
+    "ethereum",
+    "polygon"
+   ]
+  }
+ ],
+ "botCluster": {
+  "label": "Polygon 10-wallet ParaSwap sell bot (cluster)",
+  "chain": "polygon",
+  "addresses": [
+   "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
+   "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+   "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+   "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+   "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+   "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+   "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+   "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
+   "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+   "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e"
+  ],
+  "note": "Funded in the same blocks, ~1,535 ParaSwap sales of 50k-250k TEL each in 72h; fed by KuCoin withdrawals and the Settlement hub."
+ },
+ "watchedSellers": [
+  {
+   "address": "0x747e0733b41d29cdf8b33f53e65d59a2072f88c0",
+   "label": "Dormant 2021 whale (unlabelled)",
+   "chain": "ethereum"
+  },
+  {
+   "address": "0x0421875cd12406c90d765b5c68b723733e581a28",
+   "label": "Repeat KuCoin depositor",
+   "chain": "ethereum"
+  },
+  {
+   "address": "0xf13027d57e3fa914e03d94d1d4ac1095a3ab90da",
+   "label": "Single-shot KuCoin depositor",
+   "chain": "polygon"
+  },
+  {
+   "address": "0x77ad55c59d5edee8beb31d3942bfc64aee2e5203",
+   "label": "Possible MEXC depositor",
+   "chain": "polygon"
+  },
+  {
+   "address": "0x8d00717b41b1212155577b6586c747c47621a736",
+   "label": "Exit to unlabelled wallet (watch)",
+   "chain": "ethereum"
+  }
+ ],
+ "extraCex": {
+  "0xa4e5438f98c5b9f384be4faefd5ca80dcca10dd1": "KuCoin (deposit address)",
+  "0xb0f136aab1e5b15d6ae3e0acecd661def3cfb8ba": "KuCoin (deposit address)",
+  "0x0a235f305ad8c0cace5bc38a12a8760d606969e8": "KuCoin (deposit address)",
+  "0xef6538e43979c56a8b4a42e48902b5e317364c24": "MEXC (deposit address)"
+ },
+ "extraDex": {
+  "0x000000000004444c5dc75cb358380d2e3de08a90": "Uniswap v4 PoolManager (Ethereum)",
+  "0x67366782805870060151383f4bbff9dab53e5cd6": "Uniswap v4 PoolManager (Polygon)",
+  "0x498581ff718922c3f8e6a244956af099b2652b2b": "Uniswap v4 PoolManager (Base)",
+  "0x6a000f20005980200259b80c5102003040001068": "ParaSwap Augustus v6.2",
+  "0xba12222222228d8ba445958a75a0704d566bf2c8": "Balancer Vault",
+  "0x9008d19f58aabd9ed0d60971565aa8510560ab41": "CoW Protocol settlement",
+  "0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae": "LI.FI diamond",
+  "0x082738d007001080a00099a000004f3006152085": "DEX (swap-detected, Polygon)",
+  "0x006d0e0d006109f0020f3050000a713780b7b000": "DEX (swap-detected, Polygon)",
+  "0x1ca8dd7e4b0f8162ff899162cd3b1025f02c177b": "DEX (swap-detected, Polygon)",
+  "0x8f10b468b06c6fd214b65f87778827f7d113f996": "DEX (swap-detected)",
+  "0x74de5d4fcbf63e00296fd95d33236b9794016631": "MetaMask swap router"
+ }
+}

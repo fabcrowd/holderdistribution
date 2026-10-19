@@ -48,8 +48,11 @@ const loadLocalPayload = async (address: string): Promise<GateResponse> => {
   if (!import.meta.env.DEV) {
     throw new ForensicsGateError("Could not load gated content", 503);
   }
-  const { loadWalletAnalysisDev, loadAssociationFlowReportDev, loadDispositionLedgerDev } =
+  const { loadWalletAnalysisDev, loadAssociationFlowReportDev, loadDispositionLedgerDev, loadWalletFlowsDev } =
     await import("@/lib/loadForensicsDev");
+  if (address === "wallet-flows") {
+    return { report: await loadWalletFlowsDev() };
+  }
   if (address === "association-stablecoin-flows") {
     return { report: await loadAssociationFlowReportDev() };
   }
