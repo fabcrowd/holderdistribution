@@ -34,6 +34,10 @@ export const DEFAULT_PANEL: Record<ViewId, string | null> = {
 
 export type ViewRoute = { view: ViewId; panel: string | null };
 
+export const PANEL_ALIASES: Partial<Record<ViewId, Record<string, string>>> = {
+  holders: { momentum: "growth" },
+};
+
 export const isViewId = (v: string): v is ViewId => (VIEW_IDS as readonly string[]).includes(v);
 
 export const panelIdsFor = (view: ViewId): readonly string[] =>
@@ -45,7 +49,10 @@ export const parseViewHash = (hash: string): ViewRoute | null => {
   const [first, second] = raw.split("/");
   const view = first === "overview" ? "holders" : first;
   if (!isViewId(view)) return null;
-  const panel = second && panelIdsFor(view).includes(second) ? second : null;
+  // Aliases for panel names readers see on screen: the Explore tab labelled
+  // "Momentum" is the "growth" panel.
+  const aliased = second ? (PANEL_ALIASES[view]?.[second] ?? second) : second;
+  const panel = aliased && panelIdsFor(view).includes(aliased) ? aliased : null;
   return { view, panel };
 };
 

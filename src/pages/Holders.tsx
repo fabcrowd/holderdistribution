@@ -31,6 +31,8 @@ import {
   reduceHeroCollapse,
 } from "@/lib/heroCollapse";
 
+const VIEW_TITLES: Record<string, string> = { holders: "Holders", distribution: "Distribution", supply: "Supply" };
+
 const TILE_DESTINATIONS = {
   holders: { tab: "holders", panel: "trends" },
   retailHeld: { tab: "holders", panel: "balances" },
@@ -82,11 +84,6 @@ const Holders = () => {
   // Route stays /holders deliberately — renaming the URL would reset the
   // page's search history and break the homepage tile's stored route for no
   // functional gain. Only the labels describe the page as a whole.
-  usePageMeta({
-    title: 'TEL Holder Distribution & Tokenomics | Holder Analytics',
-    description: 'TEL tokenomics: circulating supply breakdown, holder distribution and tiers, exchange flows, and historical growth from real-time on-chain data.',
-    canonicalPath: '/',
-  });
 
   // One panel at a time rather than five stacked accordions. Every section
   // used to start collapsed, so a first-time visitor got the hero and five
@@ -163,6 +160,14 @@ const Holders = () => {
     writeHash(value, null);
   };
   const isTerminal = useMediaQuery(TERMINAL_QUERY);
+
+  // Per-view title so tabs, history and bookmarks say which view they are.
+  // Canonical stays "/": the views are one page, not separate documents.
+  usePageMeta({
+    title: `${VIEW_TITLES[activeTab]} · TEL Holder Distribution | Holder Analytics`,
+    description: 'TEL tokenomics: circulating supply breakdown, holder distribution and tiers, exchange flows, and historical growth from real-time on-chain data.',
+    canonicalPath: '/',
+  });
 
   const [selectedView, setSelectedView] = useState<DisplaySelection>(settings0.chain ?? "combined");
 

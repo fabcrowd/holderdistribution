@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useIntro } from "@/hooks/useMotion";
 import { X } from "lucide-react";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton } from "./TerminalPanel";
@@ -59,6 +59,16 @@ const ReadySupply = (p: Props) => {
   // History is always on screen here (its own panel), so a #supply/history
   // deep link simply lands on the default tab beside it.
   const tabBase = TABS.some((t) => t.id === p.panel) ? p.panel : "breakdown";
+  // ...but the link should still take the reader there: move focus (and the
+  // outline) to the history panel so #supply/history isn't a silent no-op.
+  const wantsHistory = p.panel === "history";
+  useEffect(() => {
+    if (!wantsHistory) return;
+    const el = document.querySelector<HTMLElement>('[data-testid="panel-treasury-history"]');
+    if (!el) return;
+    if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "-1");
+    el.focus({ preventScroll: false });
+  }, [wantsHistory]);
   return (
     <div
       className={`grid h-full min-h-0 grid-cols-12 gap-2 ${intro ? "ha-stagger" : ""} ${
