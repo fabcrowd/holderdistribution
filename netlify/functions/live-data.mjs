@@ -17,9 +17,9 @@
  *      served before this function existed. So it can only add freshness,
  *      never take data away.
  *
- * holders-checkpoint.json is ~5 MB of per-address balances, but the browser
- * only needs each chain's lastBlock (ChainStatusBar). The function strips the
- * balances, cutting ~5 MB of bandwidth per visitor (20 Netlify credits/GB).
+ * The browser reads chain-status.json (each chain's lastBlock). If an old
+ * bundle still asks for holders-checkpoint.json (~5 MB of per-address
+ * balances) the function strips every balance map before returning it.
  */
 
 export const config = { path: "/live-data/*" };
@@ -29,6 +29,9 @@ export const LIVE_DATA_FILES = new Set([
   "holders-lite.json",
   "holders-summary.json",
   "holders-history.json",
+  "chain-status.json",
+  // No longer fetched by the current bundle (it reads chain-status.json), kept
+  // so tabs still running an older bundle get a slimmed copy, not a 404.
   "holders-checkpoint.json",
   "holder-transitions.json",
   "supply-reconciliation.json",
@@ -43,16 +46,27 @@ const BROWSER_CACHE = "public, max-age=300";
 const CDN_CACHE = "public, durable, max-age=3600, stale-while-revalidate=86400";
 const UPSTREAM_TIMEOUT_MS = 8000;
 
-/** Drop per-address balances; keep generatedAt and each chain's lastBlock. */
-export const slimCheckpoint = (data) => ({
-  ...data,
-  chains: Object.fromEntries(
-    Object.entries(data?.chains ?? {}).map(([key, chain]) => {
-      const { rawBalances: _drop, ...rest } = chain ?? {};
-      return [key, rest];
-    }),
-  ),
-});
+/**
+ * Drop per-address balances at ANY depth (chains.*.rawBalances, chains.*.v3,
+ * chains.*.v3Staking.<contract>.rawBalances, …); keep generatedAt and each
+ * chain's lastBlock / fromBlock.
+ */
+export const slimCheckpoint = (data) => {
+  const strip = (v) => {
+    if (Array.isArray(v)) return v.map(strip);
+    if (!v || typeof v !== "object") return v;
+    const out = {};
+    for (const [k, child] of Object.entries(v)) {
+      if (k === "rawBalances" || k === "balances") continue;
+      const s = strip(child);
+      // Drop containers that held nothing but balances.
+      if (s && typeof s === "object" && !Array.isArray(s) && Object.keys(s).length === 0 && Object.keys(child).length > 0) continue;
+      out[k] = s;
+    }
+    return out;
+  };
+  return strip(data);
+};
 
 const staticFallback = (file, reason) =>
   new Response(null, {

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { EXPLORER_BASE, v3TokenUrl } from "@/lib/telContracts";
 import { resolveDataUrl } from "@/lib/dataUrl";
+import { FeedError } from "@/lib/fetchJson";
 
 export type ChainStatus = {
   key: string;
@@ -38,19 +39,19 @@ const CHAIN_META: Record<string, { label: string; explorerUrl: string; tokenUrl:
   },
 };
 
-const resolveCheckpointUrl = () => {
+const resolveChainStatusUrl = () => {
   const base = import.meta.env.BASE_URL ?? "/";
   const normalized = base.endsWith("/") ? base : `${base}/`;
-  return resolveDataUrl("holders-checkpoint.json", { base: normalized });
+  return resolveDataUrl("chain-status.json", { base: normalized });
 };
 
 export const useChainStatus = () => {
   return useQuery({
     queryKey: ["chain-status"],
     queryFn: async (): Promise<{ chains: ChainStatus[]; generatedAt: string | null }> => {
-      const url = resolveCheckpointUrl();
+      const url = resolveChainStatusUrl();
       const res = await fetch(url);
-      if (!res.ok) return { chains: [], generatedAt: null };
+      if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       const data: Checkpoint = await res.json();
       const chains = Object.entries(data.chains ?? {})
         .filter(([key]) => CHAIN_META[key])

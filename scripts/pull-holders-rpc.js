@@ -5,6 +5,7 @@ import process from "node:process";
 import { keccak256 } from "ethereum-cryptography/keccak";
 import { utf8ToBytes } from "ethereum-cryptography/utils";
 import { loadEnv } from "./loadEnv.js";
+import { buildChainStatus } from "./lib/chainStatus.js";
 import { getUsableRpcUrls, rpcCall, getLogs } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
 import { residualCustodyBalance, attributeStakingReceipts } from "./lib/stakingCustody.js";
@@ -181,6 +182,12 @@ async function saveCheckpoint(chainCheckpoints) {
   };
   await fs.mkdir(path.dirname(CHECKPOINT_PATH), { recursive: true });
   await fs.writeFile(CHECKPOINT_PATH, `${JSON.stringify(payload)}\n`, "utf8");
+  // The browser reads this ~200-byte slice instead of the 5 MB checkpoint.
+  await fs.writeFile(
+    path.join(path.dirname(CHECKPOINT_PATH), "chain-status.json"),
+    `${JSON.stringify(buildChainStatus(payload), null, 2)}\n`,
+    "utf8",
+  );
 }
 
 /**

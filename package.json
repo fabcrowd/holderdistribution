@@ -6,8 +6,9 @@
   "scripts": {
     "predev": "tsx scripts/generate-sitemap.ts",
     "dev": "vite",
-    "prebuild": "tsx scripts/generate-sitemap.ts && node scripts/bundle-forensics-gate.js",
+    "prebuild": "tsx scripts/generate-sitemap.ts && node scripts/bundle-forensics-gate.js && node scripts/write-chain-status.js",
     "build": "vite build",
+    "postbuild": "node scripts/prune-dist-data.js",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
