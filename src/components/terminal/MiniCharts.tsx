@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -88,6 +89,13 @@ export const TimeChart = ({
   // Draw in on first mount only; range/chain changes then update instantly.
   const anim = useChartIntro();
   const fade = (key: string) => highlight != null && highlight !== key;
+  const labelled = useMemo(() => {
+    const ts = data.map((d) => Number(d.t)).filter(Number.isFinite);
+    const span = ts.length ? Math.max(...ts) - Math.min(...ts) : 0;
+    const gap = span * 0.12;
+    const sorted = markers.map((m) => m.t);
+    return markers.map((m) => !sorted.some((t) => t > m.t && t - m.t < gap));
+  }, [data, markers]);
   const fullLabel = markers.length
     ? `${label} ${markers.map((m) => `${m.description} on ${fmtDate(m.t, dateFull)}.`).join(" ")}`
     : label;
@@ -116,7 +124,7 @@ export const TimeChart = ({
             tickFormatter={(v: number) => formatCompact(v, 1)}
           />
           <Tooltip content={<TooltipBox series={series} format={format} />} />
-          {markers.map((m) => (
+          {markers.map((m, i) => (
             <ReferenceLine
               key={`${m.t}-${m.label}`}
               x={m.t}
@@ -124,7 +132,13 @@ export const TimeChart = ({
               stroke="hsl(var(--ha-accent))"
               strokeDasharray="3 3"
               strokeWidth={1}
-              label={{ value: m.label, position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 10, fontWeight: 600 }}
+              // Close-together markers share one label (on the latest) so
+              // their text doesn't overprint.
+              label={
+                labelled[i]
+                  ? { value: m.label, position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 10, fontWeight: 600 }
+                  : undefined
+              }
             />
           ))}
           {series.map((s) =>
