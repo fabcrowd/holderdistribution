@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { InfoTip } from "@/components/InfoTip";
 import type { ClassificationEvent } from "@/lib/classificationChangelog";
 
 const integerFormatter = new Intl.NumberFormat();
@@ -26,7 +27,16 @@ export type ChangeIndicatorProps = {
    *  "methodology changed" badge with a tooltip explaining what happened
    *  instead. */
   changelogEvents?: ClassificationEvent[];
+  /** "pill" (default) is the bordered chip used in cards. "plain" is the
+   *  dense header form: a coloured signed number, and a "†" marker (with the
+   *  same explainer) in place of the "Relabeled" chip. */
+  variant?: "pill" | "plain";
 };
+
+const relabelText = (events: ClassificationEvent[]) =>
+  `Some wallets were reclassified since this comparison's start date (e.g. later identified as an exchange), so the change can't be shown as a plain gain or loss:\n\n${events
+    .map((e) => `${e.date}: ${e.summary}`)
+    .join("\n\n")}`;
 
 export const ChangeIndicator = ({
   current,
@@ -38,16 +48,26 @@ export const ChangeIndicator = ({
   formatter,
   tone = "auto",
   changelogEvents,
+  variant = "pill",
 }: ChangeIndicatorProps) => {
   if (previous === null || previous === undefined) {
     return null;
   }
 
+  if (variant === "plain" && changelogEvents && changelogEvents.length > 0) {
+    return (
+      <InfoTip
+        content={relabelText(changelogEvents)}
+        label="Change not shown: some wallets were reclassified. Details"
+        className={cn("-my-1 -ml-1 text-sm font-semibold text-muted-foreground", className)}
+      >
+        <span aria-hidden="true">†</span>
+      </InfoTip>
+    );
+  }
+
   if (changelogEvents && changelogEvents.length > 0) {
     const baseClasses = size === "md" ? "px-2.5 py-0.5 text-sm" : "px-2 py-0.5 text-xs";
-    const tooltipText = changelogEvents
-      .map((e) => `${e.date}: ${e.summary}`)
-      .join("\n\n");
     return (
       <span
         className={cn(
@@ -58,7 +78,7 @@ export const ChangeIndicator = ({
         )}
       >
         Relabeled
-        <InfoTooltip text={`Some wallets were reclassified since this comparison's start date (e.g. later identified as an exchange), so the change can't be shown as a plain gain or loss:\n\n${tooltipText}`} />
+        <InfoTooltip text={relabelText(changelogEvents)} />
       </span>
     );
   }
@@ -91,6 +111,16 @@ export const ChangeIndicator = ({
   const formattedValue = diff === 0
     ? "0"
     : `${diff > 0 ? "+" : "-"}${resolvedFormatter(Math.abs(diff))}`;
+
+  if (variant === "plain") {
+    const plainTone =
+      tone === "neutral" || diff === 0 ? "text-muted-foreground" : diff > 0 ? "text-positive" : "text-negative";
+    return (
+      <span className={cn("text-xs font-semibold tabular-nums", plainTone, className)}>
+        {formattedValue.replace(/^-/, "−")}
+      </span>
+    );
+  }
 
   return (
     <span className={cn(
