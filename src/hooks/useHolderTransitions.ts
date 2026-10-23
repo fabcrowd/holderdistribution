@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { resolveDataUrl } from "@/lib/dataUrl";
+import { FeedError } from "@/lib/fetchJson";
 
 export type TransitionCell = { count: number; tel: number };
 export type TransitionMatrix = Record<string, Record<string, TransitionCell>>;
@@ -38,7 +39,7 @@ export const useHolderTransitions = () => {
     queryKey: ["holder-transitions"],
     queryFn: async (): Promise<HolderTransitions | null> => {
       const res = await fetch(resolveUrl());
-      if (!res.ok) return null;
+      if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       return (await res.json()) as HolderTransitions;
     },
     staleTime: 5 * 60 * 1000,

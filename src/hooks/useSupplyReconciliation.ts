@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { resolveDataUrl } from "@/lib/dataUrl";
+import { FeedError } from "@/lib/fetchJson";
 
 export type SupplyReconciliationItem = {
   address: string;
@@ -75,7 +76,7 @@ export const useSupplyReconciliation = () => {
     queryKey: ["supply-reconciliation"],
     queryFn: async (): Promise<SupplyReconciliation | null> => {
       const res = await fetch(resolveUrl());
-      if (!res.ok) return null;
+      if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       return (await res.json()) as SupplyReconciliation;
     },
     staleTime: 5 * 60 * 1000,

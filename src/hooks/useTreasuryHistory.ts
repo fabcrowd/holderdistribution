@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { resolveDataUrl } from "@/lib/dataUrl";
+import { FeedError } from "@/lib/fetchJson";
 
 export type TreasuryHistoryEntry = {
   date: string;
@@ -38,7 +39,7 @@ export const useTreasuryHistory = () => {
     queryKey: ["treasury-history"],
     queryFn: async (): Promise<TreasuryHistory | null> => {
       const res = await fetch(resolveUrl());
-      if (!res.ok) return null;
+      if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       return (await res.json()) as TreasuryHistory;
     },
     staleTime: 5 * 60 * 1000,
