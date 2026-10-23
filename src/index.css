@@ -436,6 +436,22 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     padding: 0.75rem 0.75rem 0.5rem;
   }
 
+  /* Tier / side-tile detail portaled into the Distribution terminal's
+     right-hand panel: that panel is the frame, so the card's own centred
+     max-width, border and padding go. */
+  .terminal-detail > div {
+    max-width: none;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 0.25rem;
+  }
+  /* Centred copy reads fine in a narrow inline card, badly in a wide panel. */
+  .terminal-detail .text-center {
+    text-align: left;
+  }
+
   .terminal-focus [data-panel-desc] {
     display: none;
   }
