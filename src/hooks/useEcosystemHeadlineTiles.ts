@@ -169,7 +169,10 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
         sub: perChain && chain !== "polygon" ? "Staking runs on Polygon" : pctOfSupply(staked, supply),
         // ChangeIndicator only renders (and so only shows the "†") with a
         // baseline; with no v3 baseline, hand it the current value as one.
-        ath: false, current: staked, previous: stakedEvents.length ? staked : prevStaked, fmt: formatTokenAmount, scope: perChain ? "chain" : "all",
+        ath: false, current: staked,
+        // Sub-1-TEL differences are float noise between the lite snapshot and the
+        // history row (same day): show "0" like the Staking panel, not "−0.38".
+        previous: stakedEvents.length || (prevStaked != null && Math.abs(staked - prevStaked) < 1) ? staked : prevStaked, fmt: formatTokenAmount, scope: perChain ? "chain" : "all",
         changelogEvents: stakedEvents,
       },
       {
