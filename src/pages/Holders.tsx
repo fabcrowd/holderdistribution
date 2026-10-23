@@ -405,10 +405,14 @@ const Holders = () => {
           headline tile and loose when opened from the tab bar. terminal-focus
           adds the focus-only part (dropping section descriptions), which is
           only safe when the collapsed strip is there to name the metric. */}
+      {/* min-h-[100svh]: while the lazy panels and their data load, the page
+          is shorter than the viewport and the footer sits on screen; when
+          content arrives it is pushed down (mobile #distribution CLS was
+          0.33). Reserving a viewport keeps the footer below the fold. */}
       <main
         id="main-content"
         tabIndex={-1}
-        className={`terminal-dense focus:outline-none container mx-auto px-4 py-4 sm:py-8 max-w-7xl ${
+        className={`terminal-dense focus:outline-none container mx-auto px-4 py-4 sm:py-8 max-w-7xl min-h-[100svh] ${
           activeTileId ? "terminal-focus" : ""
         }`}
       >
