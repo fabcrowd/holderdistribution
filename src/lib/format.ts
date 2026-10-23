@@ -20,8 +20,13 @@ export const formatCompact = (value: number, digits = 2): string => {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
 };
 
-export const formatSignedCompact = (value: number, digits = 2): string =>
-  value === 0 ? "0" : `${value > 0 ? "+" : "−"}${formatCompact(Math.abs(value), digits)}`;
+/** True when a formatted magnitude reads as zero ("0", "0.0", "0.00%", "0K"). */
+export const isZeroText = (s: string): boolean => !/[1-9]/.test(s);
+
+export const formatSignedCompact = (value: number, digits = 2): string => {
+  const mag = formatCompact(Math.abs(value), digits);
+  return value === 0 || isZeroText(mag) ? mag : `${value > 0 ? "+" : "−"}${mag}`;
+};
 
 /** "just now", "12 min ago", "5 hours ago", "1 day ago", "21 days ago". */
 export const formatRelativeAge = (iso: string | null | undefined, now: number = Date.now()): string | null => {
@@ -53,6 +58,8 @@ export type Freshness = {
   ageDays: number | null;
   relative: string | null;
   date: string | null;
+  /** "Oct 2" — compact form for tight UI; `date` keeps the year. */
+  monthDay: string | null;
 };
 
 /** The feeds refresh daily; allow a few hours of slack before calling it late. */
@@ -61,11 +68,17 @@ export const STALE_AFTER_DAYS = 7;
 
 export const describeFreshness = (iso: string | null | undefined, now: number = Date.now()): Freshness => {
   const t = iso ? Date.parse(iso) : NaN;
-  if (Number.isNaN(t)) return { status: "unknown", ageDays: null, relative: null, date: null };
+  if (Number.isNaN(t)) return { status: "unknown", ageDays: null, relative: null, date: null, monthDay: null };
   const diff = Math.max(0, now - t);
   const ageDays = Math.floor(diff / DAY_MS);
   const status = diff <= FRESH_WINDOW_HOURS * HOUR_MS ? "fresh" : ageDays >= STALE_AFTER_DAYS ? "stale" : "delayed";
-  return { status, ageDays, relative: formatRelativeAge(iso, now), date: formatShortDate(iso) };
+  return {
+    status,
+    ageDays,
+    relative: formatRelativeAge(iso, now),
+    date: formatShortDate(iso),
+    monthDay: new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+  };
 };
 
 const SOURCE_LABELS: Record<string, string> = {

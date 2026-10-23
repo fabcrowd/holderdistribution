@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { isZeroText } from "@/lib/format";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { InfoTip } from "@/components/InfoTip";
 import type { ClassificationEvent } from "@/lib/classificationChangelog";
@@ -108,13 +109,17 @@ export const ChangeIndicator = ({
       ? (value: number) => `${value.toFixed(precision ?? 1)}%`
       : (value: number) => integerFormatter.format(Math.round(value));
 
-  const formattedValue = diff === 0
-    ? "0"
-    : `${diff > 0 ? "+" : "-"}${resolvedFormatter(Math.abs(diff))}`;
+  const magnitude = resolvedFormatter(Math.abs(diff));
+  // Rounds to zero → "0" (never "−0"), and no up/down colouring.
+  const formattedValue = diff === 0 || isZeroText(magnitude)
+    ? diff === 0 ? "0" : magnitude
+    : `${diff > 0 ? "+" : "-"}${magnitude}`;
+  const flat = diff === 0 || isZeroText(magnitude);
+  if (flat) palette = "border-border/60 text-muted-foreground bg-muted/10";
 
   if (variant === "plain") {
     const plainTone =
-      tone === "neutral" || diff === 0 ? "text-muted-foreground" : diff > 0 ? "text-positive" : "text-negative";
+      tone === "neutral" || flat ? "text-muted-foreground" : diff > 0 ? "text-positive" : "text-negative";
     return (
       <span className={cn("text-xs font-semibold tabular-nums", plainTone, className)}>
         {formattedValue.replace(/^-/, "−")}

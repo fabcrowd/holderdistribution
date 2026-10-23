@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useChartIntro, useIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
 import { X } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
 import { TierFlowDiagram, type TierMetric } from "@/components/TierFlowDiagram";
@@ -18,6 +18,42 @@ import { formatCompact } from "@/lib/format";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
 
 const int = new Intl.NumberFormat("en-US");
+
+/** "+3" / "−2" / "0" — never "-0". */
+export const signedInt = (v: number): string => {
+  const r = Math.round(v);
+  if (r === 0) return "0";
+  return r > 0 ? `+${int.format(r)}` : `−${int.format(-r)}`;
+};
+
+type BarLabelProps = { x?: number | string; y?: number | string; width?: number | string; height?: number | string; value?: number | string };
+
+/** Value at the outer end of each net-change bar (right of positives, left of negatives). */
+const NetBarLabel = (props: BarLabelProps) => {
+  const x = Number(props.x ?? 0);
+  const y = Number(props.y ?? 0);
+  const w = Number(props.width ?? 0);
+  const h = Number(props.height ?? 0);
+  const v = Number(props.value ?? 0);
+  if (!Number.isFinite(v)) return null;
+  const left = Math.min(x, x + w);
+  const right = Math.max(x, x + w);
+  const neg = v < 0;
+  return (
+    <text
+      x={neg ? left - 3 : right + 3}
+      y={y + h / 2}
+      dy="0.35em"
+      textAnchor={neg ? "end" : "start"}
+      fontSize={10}
+      className="tabular-nums"
+      fill="hsl(var(--foreground))"
+      aria-hidden="true"
+    >
+      {signedInt(v)}
+    </text>
+  );
+};
 
 type Props = {
   snapshot: HolderLiteSnapshot | undefined;
@@ -158,17 +194,25 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
             (netByTier.some((d) => d.has) ? (
               <div
                 role="img"
-                aria-label={`Net wallet change by tier: ${netByTier.map((d) => `${d.name} ${d.value >= 0 ? "+" : ""}${int.format(d.value)}`).join(", ")}. Select a tier in the Tiers table to see its detail.`}
+                aria-label={`Net wallet change by tier: ${netByTier.map((d) => `${d.name} ${signedInt(d.value)}`).join(", ")}. Select a tier in the Tiers table to see its detail.`}
                 className="h-full w-full [&_.recharts-bar-rectangle]:cursor-pointer"
               >
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={netByTier} layout="vertical" margin={{ top: 2, right: 12, bottom: 0, left: 0 }}>
+                  <BarChart data={netByTier} layout="vertical" margin={{ top: 2, right: 16, bottom: 0, left: 0 }}>
                     <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
-                    <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v, 1)} />
+                    <XAxis
+                      type="number"
+                      // Headroom on both sides so the value labels at the bar ends fit.
+                      domain={[(min: number) => (min < 0 ? Math.floor(min * 1.3) : 0), (max: number) => (max > 0 ? Math.ceil(max * 1.3) : 0)]}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v: number) => formatCompact(v, 1)}
+                    />
                     <YAxis type="category" dataKey="name" width={72} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} tickLine={false} axisLine={false} interval={0} />
                     <Tooltip
                       cursor={{ fill: "hsl(var(--muted))" }}
-                      formatter={(v: number) => [`${v >= 0 ? "+" : ""}${int.format(v)}`, "Net wallets"]}
+                      formatter={(v: number) => [signedInt(v), "Net wallets"]}
                       contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 11 }}
                       labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                       itemStyle={{ color: "hsl(var(--popover-foreground))" }}
@@ -187,6 +231,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
                       {netByTier.map((d) => (
                         <Cell key={d.label} fill={d.value >= 0 ? "hsl(var(--ha-positive))" : "hsl(var(--ha-negative))"} />
                       ))}
+                      <LabelList dataKey="value" content={NetBarLabel} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>

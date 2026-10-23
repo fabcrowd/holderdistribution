@@ -2,6 +2,7 @@ import { type ReactNode, useId } from "react";
 import { RotateCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { InfoTip } from "@/components/InfoTip";
+import { isZeroText } from "@/lib/format";
 
 type TerminalPanelProps = {
   title: ReactNode;
@@ -94,12 +95,15 @@ export const PanelSkeleton = () => (
 /** Signed change chip: green up, red down, muted when flat/unknown. */
 export const Delta = ({ value, format, suffix = "" }: { value: number | null | undefined; format: (n: number) => string; suffix?: string }) => {
   if (value == null || !Number.isFinite(value)) return <span className="text-xs text-muted-foreground">—</span>;
-  const tone = value > 0 ? "text-positive" : value < 0 ? "text-negative" : "text-muted-foreground";
-  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  const mag = format(Math.abs(value));
+  // A change that rounds to zero reads "0", never "−0" / "+0".
+  const v = isZeroText(mag) ? 0 : value;
+  const tone = v > 0 ? "text-positive" : v < 0 ? "text-negative" : "text-muted-foreground";
+  const sign = v > 0 ? "+" : v < 0 ? "−" : "";
   return (
     <span className={`text-xs font-semibold tabular-nums ${tone}`}>
       {sign}
-      {format(Math.abs(value))}
+      {mag}
       {suffix}
     </span>
   );

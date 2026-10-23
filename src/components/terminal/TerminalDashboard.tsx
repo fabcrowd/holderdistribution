@@ -78,8 +78,12 @@ export const TerminalDashboard = ({
   const intro = useIntro();
   // The first view fades in with the panel stagger; later view switches get a
   // quick crossfade instead (the keyed wrapper below remounts per view).
+  // The first view rides the header's intro fade; every later switch
+  // (including back to the first view) gets the short view crossfade.
   const firstView = useRef(view);
-  const viewIn = view !== firstView.current || !intro ? "ha-view-in" : "";
+  const switched = useRef(false);
+  if (view !== firstView.current) switched.current = true;
+  const viewIn = switched.current || !intro ? "ha-view-in" : "";
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -104,16 +108,26 @@ export const TerminalDashboard = ({
             </Link>
             <div className="flex flex-col justify-center leading-none">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Holder Analytics</span>
+                {/* When the data is late the pill takes the eyebrow's place
+                    below 1400px, so the brand column doesn't grow into the KPIs. */}
+                <span className={`text-[10px] font-semibold uppercase tracking-[0.14em] text-primary ${stale ? "hidden min-[1400px]:inline" : ""}`}>
+                  Holder Analytics
+                </span>
                 {stale && (
                   <span
                     role="status"
                     data-testid="header-stale-pill"
+                    data-status={fresh.status}
                     title={`The daily refresh is behind. Figures are as of ${fresh.date}.`}
-                    className="inline-flex items-center gap-1 rounded-full border border-amber-500/50 bg-amber-50 px-1.5 py-px text-[10px] font-semibold leading-none text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                    aria-label={`Data as of ${fresh.date}. The daily refresh is behind.`}
+                    className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-px text-[10px] font-semibold leading-none ${
+                      fresh.status === "stale"
+                        ? "border-red-500/50 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300"
+                        : "border-amber-500/50 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                    }`}
                   >
                     <Clock className="h-2.5 w-2.5" aria-hidden="true" />
-                    Data {fresh.date}
+                    {fresh.status === "stale" ? "Stale · " : ""}As of {fresh.monthDay}
                   </span>
                 )}
               </div>
@@ -268,8 +282,8 @@ export const TerminalDashboard = ({
               </button>
             </span>
           ) : (
-            <span className={stale ? "font-semibold text-[hsl(var(--ha-warning))]" : undefined}>
-              {fresh.status === "unknown" ? "Loading data…" : fresh.status === "fresh" ? `Updated ${fresh.relative}` : `Data from ${fresh.date} · daily refresh delayed`}
+            <span className={fresh.status === "stale" ? "font-semibold text-destructive" : stale ? "font-semibold text-[hsl(var(--ha-warning))]" : undefined}>
+              {fresh.status === "unknown" ? "Loading data…" : fresh.status === "fresh" ? `Updated ${fresh.relative}` : fresh.status === "stale" ? `Stale: data from ${fresh.date} (${fresh.ageDays} days old)` : `Data from ${fresh.date} · daily refresh delayed`}
             </span>
           )}
           <span aria-hidden="true">·</span>
@@ -295,24 +309,13 @@ export const TerminalDashboard = ({
   );
 };
 
-const formatCount = (v: number) => new Intl.NumberFormat().format(Math.round(v));
 
 /**
- * KPI value that counts up once on first load. The final string is laid out
- * invisibly to reserve its width, and the counting number sits on top, so the
- * header never shifts while it counts.
+ * Headline value. Values fade in with the header rather than counting up (a
+ * count-up read as the numbers "changing" on every visit); `useCountUp` with a
+ * zero duration returns the target immediately.
  */
-const KpiValue = ({ value, current, fmt }: { value: string; current: number | null; fmt?: (v: number) => string }) => {
-  const shown = useCountUp(current);
-  const counting = current !== null && shown !== null && shown !== current;
-  return (
-    <span className="relative text-base font-semibold tabular-nums text-foreground min-[1400px]:text-lg">
-      <span className={counting ? "opacity-0" : undefined}>{value}</span>
-      {counting && (
-        <span aria-hidden="true" className="absolute inset-y-0 left-0 whitespace-nowrap">
-          {(fmt ?? formatCount)(shown)}
-        </span>
-      )}
-    </span>
-  );
+const KpiValue = ({ value, current }: { value: string; current: number | null; fmt?: (v: number) => string }) => {
+  useCountUp(current, 0);
+  return <span className="relative text-base font-semibold tabular-nums text-foreground min-[1400px]:text-lg">{value}</span>;
 };

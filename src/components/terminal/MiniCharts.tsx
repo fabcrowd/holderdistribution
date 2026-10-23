@@ -224,7 +224,7 @@ export const CategoryBars = ({ data, format = (n) => formatCompact(n), label }: 
         <BarChart data={data} margin={MARGIN}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
           <XAxis dataKey="name" tick={TICK} tickLine={false} axisLine={false} interval={0} />
-          <YAxis tick={TICK} tickLine={false} axisLine={false} width={36} tickFormatter={(v: number) => formatCompact(v, 0)} />
+          <YAxis tick={TICK} tickLine={false} axisLine={false} width={40} tickFormatter={(v: number) => formatCompact(v, 1)} />
           <Tooltip
             cursor={{ fill: "hsl(var(--muted))" }}
             formatter={(v: number) => [format(v), "Wallets"]}

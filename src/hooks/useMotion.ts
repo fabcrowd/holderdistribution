@@ -28,7 +28,7 @@ export const useChartIntro = (): boolean => {
  * `target` unchanged, so later data changes never re-count.
  */
 export const useCountUp = (target: number | null, duration: number = COUNT_UP_MS): number | null => {
-  const [play] = useState(() => introActive(CHART_INTRO_WINDOW_MS));
+  const [play] = useState(() => duration > 0 && introActive(CHART_INTRO_WINDOW_MS));
   const done = useRef(!play);
   const [shown, setShown] = useState<number | null>(play ? 0 : target);
 
