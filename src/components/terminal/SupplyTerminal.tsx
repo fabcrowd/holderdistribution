@@ -74,7 +74,7 @@ const ReadySupply = (p: Props) => {
       className={`grid h-full min-h-0 grid-cols-12 gap-2 ${intro ? "ha-stagger" : ""} ${
         // Locked, the history panel is a one-row tile; the category detail
         // gets everything else. Unlocked, the chart earns real height.
-        unlocked ? "grid-rows-[minmax(0,3fr)_minmax(0,2fr)]" : "grid-rows-[minmax(0,1fr)_auto]"
+        unlocked ? "grid-rows-[minmax(0,1fr)_minmax(0,1fr)]" : "grid-rows-[minmax(0,1fr)_auto]"
       }`}
       data-testid="supply-terminal"
       data-forensics={unlocked ? "unlocked" : "locked"}

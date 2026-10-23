@@ -529,7 +529,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                   primary={layout === "terminal"}
                   description="Association Safes, Telcoin Holdings and Escrow balance history. One password unlocks every protected panel."
                 >
-                  <TreasuryHistoryChart rangeDays={rangeDays} />
+                  <TreasuryHistoryChart rangeDays={rangeDays} compact={layout === "terminal"} />
                   <AssociationFlowAnalysis />
                 </SubscriptionGate>
   );
