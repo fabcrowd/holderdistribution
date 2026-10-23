@@ -246,6 +246,10 @@ export const useFlowField = (rows: TierRow[], chain: ChainKey, metric: "wallets"
     sourceTierSince: outflows?.sourceTierSince ?? null,
     // When the tier-outflows feed was built: it refreshes on its own job, so
     // it can lag the snapshot the rest of the diagram reads.
+    // The transitions window actually used for the tier crossings. It can
+    // differ from the page range when the archive has gaps (a "1D" window
+    // spanning three weeks), so panels print the real dates.
+    crossingsWindow: rangeData?.from && rangeData?.to ? { from: rangeData.from, to: rangeData.to } : null,
     outflowsAsOf: outflows?.generatedAt ?? (outflows?.latestDate ? `${outflows.latestDate}T00:00:00Z` : null),
   };
 };

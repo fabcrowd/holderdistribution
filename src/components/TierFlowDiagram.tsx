@@ -174,7 +174,7 @@ export const TierFlowDiagram = ({
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   // 1 until measured, so the first paint is the unshrunken desktop layout.
   const [scale, setScale] = useState(1);
-  const { fields, netInfo, grossExplainer, maxMigrationCount, loading, errored, ready, complete, attributedDays, totalDays, sourceTierSince, outflowsAsOf } = useFlowField(rows, chain, metric, rangeDays);
+  const { fields, netInfo, grossExplainer, maxMigrationCount, loading, errored, ready, complete, attributedDays, totalDays, sourceTierSince, outflowsAsOf, crossingsWindow } = useFlowField(rows, chain, metric, rangeDays);
   const { data: exchangeFlow } = useExchangeFlow();
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
   const isWallets = metric === "wallets";
@@ -617,7 +617,7 @@ export const TierFlowDiagram = ({
 
   const detailNode: ReactNode = selectedField ? (
     isWallets
-      ? <WalletsPanel field={selectedField} baselineDate={baselineDate ?? null} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} />
+      ? <WalletsPanel field={selectedField} baselineDate={baselineDate ?? null} crossingsWindow={crossingsWindow} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} />
       : <TelPanel field={selectedField} baselineDate={baselineDate ?? null} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} chain={chain} attributedDays={attributedDays} totalDays={totalDays} sourceTierSince={sourceTierSince} />
   ) : selectedSideTile && !isWallets ? (
     <SideTilePanel
@@ -1437,7 +1437,18 @@ const SideTilePanel = ({
 // one panel with conditional sections) is deliberate — it's the fix for
 // "there's a lot to wrap your head around" being about two unrelated
 // stories showing at once regardless of which the toggle was asking for.
-const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHoverFlow }: { field: TierField; baselineDate: string | null; expandedFlow: string | null; onToggleFlow: (key: string) => void; onHoverFlow: (key: string | null) => void }) => {
+const utcDay = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+const fmtDay = (ymd: string) => {
+  const t = Date.parse(`${ymd}T00:00:00Z`);
+  return Number.isNaN(t) ? ymd : utcDay.format(t);
+};
+
+const WalletsPanel = ({ field, baselineDate, crossingsWindow = null, expandedFlow, onToggleFlow, onHoverFlow }: { field: TierField; baselineDate: string | null; crossingsWindow?: { from: string; to: string } | null; expandedFlow: string | null; onToggleFlow: (key: string) => void; onHoverFlow: (key: string | null) => void }) => {
+  // The crossing counts and the snapshot net only reconcile when they cover
+  // the same dates; otherwise comparing them would be arithmetic across two
+  // different periods, so the reconciliation sentence is dropped.
+  const comparable = !!crossingsWindow && !!baselineDate && crossingsWindow.from === baselineDate;
+  const windowLabel = crossingsWindow ? `${fmtDay(crossingsWindow.from)} → ${fmtDay(crossingsWindow.to)}` : null;
   const { row } = field;
   const netWallets = row?.previousCount != null ? (row.count - row.previousCount) : null;
   const gained = field.migrations.filter((m) => m.gained);
@@ -1458,6 +1469,7 @@ const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHover
     { gainedUp, gainedDown, lostUp, lostDown },
     field.verdict,
     field.cause,
+    { comparable, windowLabel },
   );
 
   return (
@@ -1492,6 +1504,11 @@ const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHover
         <div className="pt-1 border-t border-border/40 text-sm">
           <div className="text-center text-muted-foreground font-semibold uppercase tracking-wide text-xs mb-1">
             Net movement by tier
+            {windowLabel && (
+              <span className="ml-1 font-normal normal-case tracking-normal" data-testid="crossings-window">
+                · {windowLabel}
+              </span>
+            )}
           </div>
           <ul className="space-y-0.5">
             {nets.map((n) => {
@@ -1540,7 +1557,7 @@ const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHover
           </ul>
           {/* The list is exactly where someone starts adding numbers up, so
               say plainly why they don't reach the headline figure. */}
-          {netWallets != null && netWallets !== crossingNet && (
+          {comparable && netWallets != null && netWallets !== crossingNet && (
             <p className="mt-1.5 px-2 text-xs text-muted-foreground/80 leading-relaxed">
               These crossings net to {signed(crossingNet, fmtInt)}, not the {signed(netWallets, fmtInt)} above — the other {signed(netWallets - crossingNet, fmtInt)} is wallets that appeared or emptied out entirely, without crossing a tier line.
             </p>
@@ -1797,8 +1814,10 @@ const walletNarrativeFor = (
   { gainedUp, gainedDown, lostUp, lostDown }: { gainedUp: number; gainedDown: number; lostUp: number; lostDown: number },
   verdict: TierField["verdict"],
   cause: Cause,
+  { comparable = true, windowLabel = null }: { comparable?: boolean; windowLabel?: string | null } = {},
 ): string | null => {
   const gainedTotal = gainedUp + gainedDown;
+  const period = windowLabel ? `between ${windowLabel.replace(" → ", " and ")}` : "this period";
   const lostTotal = lostUp + lostDown;
   if (gainedTotal === 0 && lostTotal === 0) {
     return netWallets ? `${tier} had a net ${signed(netWallets, fmtInt)} wallets this period — that came from wallets appearing or disappearing entirely (new holders or fully cashed-out ones), not from wallets crossing in or out of this tier.` : null;
@@ -1818,7 +1837,7 @@ const walletNarrativeFor = (
     if (gainedDown > 0) {
       parts.push(`${fmtInt(gainedDown)} arrived after their balance fell from a larger tier`);
     }
-    sentences.push(`This tier gained ${fmtInt(gainedTotal)} wallet${gainedTotal === 1 ? "" : "s"} this period: ${parts.join(", and ")}.`);
+    sentences.push(`This tier gained ${fmtInt(gainedTotal)} wallet${gainedTotal === 1 ? "" : "s"} ${period}: ${parts.join(", and ")}.`);
   }
   if (lostTotal > 0) {
     const parts: string[] = [];
@@ -1836,7 +1855,10 @@ const walletNarrativeFor = (
   // line. Stating the crossing net, the real snapshot net, AND the gap keeps
   // the three figures from looking like arithmetic that doesn't add up.
   const crossingNet = gainedTotal - lostTotal;
-  if (netWallets == null) {
+  if (!comparable && netWallets != null) {
+    // Different dates from the snapshot net above: don't reconcile them.
+    sentences.push(`Those crossings net to ${signed(crossingNet, fmtInt)} wallets ${period}.`);
+  } else if (netWallets == null) {
     sentences.push(`Those crossings net to ${signed(crossingNet, fmtInt)} wallets — there's no baseline snapshot for this period to compare the tier's overall count against.`);
   } else {
     const gap = netWallets - crossingNet;
