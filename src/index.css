@@ -588,7 +588,10 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
 @media (prefers-reduced-motion: reduce) {
   .ha-fade-in,
   .ha-view-in,
-  .ha-stagger > * {
+  .ha-stagger > *,
+  /* Loading skeletons and spinners hold still too. */
+  .animate-pulse,
+  .animate-spin {
     animation: none !important;
   }
 }
