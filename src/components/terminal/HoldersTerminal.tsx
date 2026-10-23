@@ -1,14 +1,15 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
+import { clampToRange, shortBucketLabel } from "@/lib/chartRange";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { formatCompact, formatSignedCompact } from "@/lib/format";
-import { TerminalPanel, PanelMessage, PanelSkeleton, Delta } from "./TerminalPanel";
-import { TimeChart, SignedBars, CategoryBars } from "./MiniCharts";
+import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
+import { TimeChart, SignedBars, CategoryBars, type ChartMarker } from "./MiniCharts";
 import { DetailsButton } from "./DetailsButton";
 
-const DAY_MS = 86_400_000;
 const int = new Intl.NumberFormat("en-US");
 const pct = (n: number, d = 1) => `${n.toFixed(d)}%`;
 
@@ -20,13 +21,57 @@ type Props = {
   onExplore: (panel: string) => void;
 };
 
-/** Points within `days` of the series' own last date (feeds can lag "now"). */
-const withinRange = <T,>(rows: T[], getT: (r: T) => number, days: number): T[] => {
-  if (!rows.length) return rows;
-  const last = getT(rows[rows.length - 1]);
-  const from = last - days * DAY_MS;
-  return rows.filter((r) => getT(r) >= from);
+/** Points inside the selected range — YTD from Jan 1, rolling ranges back
+ *  from the series' own last date (feeds can lag "now"). */
+const withinRange = <T,>(rows: T[], getT: (r: T) => number, days: number): T[] => clampToRange(rows, getT, days);
+
+/** Unbackfilled reclassifications that touch `metric`, from the chart's first
+ *  point to today, as chart markers. An event after the last data point
+ *  (feed lag) still shows: the axis extends to it. */
+const reclassMarkers = (
+  changelog: Parameters<typeof getEventsAffecting>[0],
+  metric: string,
+  firstMs: number | undefined,
+): ChartMarker[] => {
+  if (firstMs == null) return [];
+  const seen = new Set<string>();
+  return getEventsAffecting(changelog, metric, firstMs, Date.now())
+    .filter((e) => (seen.has(e.date) ? false : (seen.add(e.date), true)))
+    .map((e) => ({ t: Date.parse(e.date), label: "† Reclassified", description: "Wallets were reclassified" }));
 };
+
+const LegendKey = ({
+  id,
+  swatch,
+  label,
+  value,
+  active,
+  onActive,
+}: {
+  id: string;
+  swatch: string;
+  label: string;
+  value: string;
+  active: string | null;
+  onActive: (id: string | null) => void;
+}) => (
+  <button
+    type="button"
+    aria-pressed={active === id}
+    aria-label={`${label} ${value}. Highlight ${label} line`}
+    onMouseEnter={() => onActive(id)}
+    onMouseLeave={() => onActive(null)}
+    onFocus={() => onActive(id)}
+    onBlur={() => onActive(null)}
+    onClick={() => onActive(active === id ? null : id)}
+    className={`inline-flex min-h-6 items-center gap-1 rounded px-1 text-xs text-muted-foreground transition-opacity hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+      active != null && active !== id ? "opacity-50" : ""
+    }`}
+  >
+    <span className={`h-2 w-2 rounded-sm ${swatch}`} aria-hidden="true" />
+    {label} <span className="font-semibold text-foreground">{value}</span>
+  </button>
+);
 
 const firstLast = <T,>(rows: T[]) => (rows.length ? { first: rows[0], last: rows[rows.length - 1] } : null);
 
@@ -34,21 +79,40 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const growth = useHolderGrowth({ view: selectedView, days: rangeDays });
   const flow = useExchangeFlow();
   const cexHistory = useCexBalanceHistory();
+  const { data: changelog } = useClassificationChangelog();
+  const [balanceFocus, setBalanceFocus] = useState<string | null>(null);
   const isCombined = selectedView === "combined";
   const view = snapshot?.views[selectedView];
 
   const holders = useMemo(
-    () => (growth.data?.series ?? []).map((p) => ({ t: Date.parse(p.timestamp), holders: p.holders })),
-    [growth.data],
+    () =>
+      withinRange(
+        (growth.data?.series ?? []).map((p) => ({ t: Date.parse(p.timestamp), holders: p.holders })),
+        (r) => r.t,
+        rangeDays,
+      ),
+    [growth.data, rangeDays],
   );
   const balance = useMemo(
-    () => (growth.data?.balanceSeries ?? []).map((p) => ({ t: Date.parse(p.timestamp), retail: p.retail, cex: p.cex })),
-    [growth.data],
+    () =>
+      withinRange(
+        (growth.data?.balanceSeries ?? []).map((p) => ({ t: Date.parse(p.timestamp), retail: p.retail, cex: p.cex })),
+        (r) => r.t,
+        rangeDays,
+      ),
+    [growth.data, rangeDays],
   );
   const staking = useMemo(
-    () => (growth.data?.stakingSeries ?? []).map((p) => ({ t: Date.parse(p.timestamp), staking: p.staking })),
-    [growth.data],
+    () =>
+      withinRange(
+        (growth.data?.stakingSeries ?? []).map((p) => ({ t: Date.parse(p.timestamp), staking: p.staking })),
+        (r) => r.t,
+        rangeDays,
+      ),
+    [growth.data, rangeDays],
   );
+  const holderMarkers = useMemo(() => reclassMarkers(changelog, "retail.count", holders[0]?.t), [changelog, holders]);
+  const balanceMarkers = useMemo(() => reclassMarkers(changelog, "retail.balance", balance[0]?.t), [changelog, balance]);
   const netflow = useMemo(() => {
     const rows = (flow.data ?? []).map((e) => ({ t: Date.parse(e.date), value: e.net, in: e.in, out: e.out }));
     return withinRange(rows, (r) => r.t, Math.max(rangeDays, 1));
@@ -75,7 +139,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const growthFailed = !!growth.error && !growth.data;
 
   const series = (content: React.ReactNode, has: boolean) =>
-    loading ? <PanelSkeleton /> : growthFailed ? <PanelMessage>History feed unavailable.</PanelMessage> : has ? content : <PanelMessage>No data for this period.</PanelMessage>;
+    loading ? <PanelSkeleton /> : growthFailed ? <PanelError>Couldn't load holder history.</PanelError> : has ? content : <PanelMessage>No data for this period.</PanelMessage>;
 
   const stats = view?.balanceStats;
   const buckets = stats?.distributionBuckets ?? [];
@@ -105,6 +169,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             series={[{ key: "holders", label: "Holders", color: "hsl(var(--primary))" }]}
             format={(n) => int.format(n)}
             label={h ? `Retail holders from ${int.format(h.first.holders)} to ${int.format(h.last.holders)} over the period.` : "Retail holders"}
+            markers={holderMarkers}
           />,
           holders.length > 1,
         )}
@@ -117,14 +182,15 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         stat={
           b && (
             <>
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-sm bg-primary" aria-hidden="true" />
-                Retail <span className="font-semibold text-foreground">{formatCompact(b.last.retail)}</span>
-              </span>
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-sm bg-[hsl(var(--ha-accent))]" aria-hidden="true" />
-                CEX <span className="font-semibold text-foreground">{b.last.cex != null ? formatCompact(b.last.cex) : "—"}</span>
-              </span>
+              <LegendKey id="retail" swatch="bg-primary" label="Retail" value={formatCompact(b.last.retail)} active={isCombined ? balanceFocus : null} onActive={setBalanceFocus} />
+              <LegendKey
+                id="cex"
+                swatch="bg-[hsl(var(--ha-accent))]"
+                label="CEX"
+                value={b.last.cex != null ? formatCompact(b.last.cex) : "—"}
+                active={isCombined ? balanceFocus : null}
+                onActive={setBalanceFocus}
+              />
             </>
           )
         }
@@ -142,6 +208,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
               ]}
               format={(n) => `${formatCompact(n)} TEL`}
               label={b ? `Retail TEL ${formatCompact(b.last.retail)}, exchange TEL ${b.last.cex != null ? formatCompact(b.last.cex) : "unknown"} at the end of the period.` : "TEL held"}
+              markers={balanceMarkers}
+              highlight={balanceFocus}
             />,
             balance.length > 1,
           )
@@ -167,7 +235,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         {flow.isLoading ? (
           <PanelSkeleton />
         ) : flow.isError ? (
-          <PanelMessage>Exchange flow feed unavailable.</PanelMessage>
+          <PanelError>Couldn't load exchange flows.</PanelError>
         ) : netflow.length ? (
           <SignedBars
             data={netflow.map(({ t, value }) => ({ t, value }))}
@@ -224,10 +292,15 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         actions={<DetailsButton onClick={() => onExplore("balances")} label="Wallet sizes" />}
       >
         {!snapshot ? (
-          snapshotError ? <PanelMessage>Snapshot unavailable.</PanelMessage> : <PanelSkeleton />
+          snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />
         ) : buckets.length ? (
           <CategoryBars
-            data={buckets.map((bk) => ({ name: bk.rangeLabel, value: bk.count, highlight: bk.rangeLabel === stats?.averageRangeLabel }))}
+            data={buckets.map((bk) => ({
+              name: shortBucketLabel(bk.rangeLabel),
+              full: bk.rangeLabel,
+              value: bk.count,
+              highlight: bk.rangeLabel === stats?.averageRangeLabel,
+            }))}
             format={(n) => int.format(n)}
             label={`Retail wallets by balance: ${buckets.map((bk) => `${bk.rangeLabel} ${int.format(bk.count)}`).join(", ")}.`}
           />
@@ -245,7 +318,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         flush
       >
         {!snapshot ? (
-          <div className="h-full p-2">{snapshotError ? <PanelMessage>Snapshot unavailable.</PanelMessage> : <PanelSkeleton />}</div>
+          <div className="h-full p-2">{snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />}</div>
         ) : (
           <table className="w-full text-xs tabular-nums">
             <caption className="sr-only">Share of retail TEL held by the top wallets</caption>
@@ -296,7 +369,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         {cexHistory.isLoading ? (
           <div className="h-full p-2"><PanelSkeleton /></div>
         ) : cexHistory.isError ? (
-          <PanelMessage>Exchange balance feed unavailable.</PanelMessage>
+          <PanelError>Couldn't load exchange balances.</PanelError>
         ) : (
           <table className="w-full text-xs tabular-nums">
             <caption className="sr-only">TEL held per exchange</caption>

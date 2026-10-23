@@ -7,6 +7,7 @@ import {
   Cell,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -25,6 +26,8 @@ const fmtDate = (v: unknown, f = dateTick) => {
 };
 
 export type SeriesDef = { key: string; label: string; color: string };
+/** A dated annotation drawn as a dashed vertical rule (e.g. a reclassification). */
+export type ChartMarker = { t: number; label: string; description: string };
 
 const TooltipBox = ({
   active,
@@ -65,12 +68,27 @@ type TimeChartProps = {
   kind?: "line" | "area";
   /** Screen-reader summary; the SVG itself is presentational. */
   label: string;
+  markers?: ChartMarker[];
+  /** Series key to emphasise (legend hover/focus); the others fade. */
+  highlight?: string | null;
 };
 
-export const TimeChart = ({ data, series, format = (n) => formatCompact(n), kind = "line", label }: TimeChartProps) => {
+export const TimeChart = ({
+  data,
+  series,
+  format = (n) => formatCompact(n),
+  kind = "line",
+  label,
+  markers = [],
+  highlight = null,
+}: TimeChartProps) => {
   const Chart = kind === "area" ? AreaChart : LineChart;
+  const fade = (key: string) => highlight != null && highlight !== key;
+  const fullLabel = markers.length
+    ? `${label} ${markers.map((m) => `${m.description} on ${fmtDate(m.t, dateFull)}.`).join(" ")}`
+    : label;
   return (
-    <div role="img" aria-label={label} className="h-full w-full">
+    <div role="img" aria-label={fullLabel} className="h-full w-full" data-markers={markers.length || undefined}>
       <ResponsiveContainer width="100%" height="100%">
         <Chart data={data} margin={MARGIN}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
@@ -94,6 +112,17 @@ export const TimeChart = ({ data, series, format = (n) => formatCompact(n), kind
             tickFormatter={(v: number) => formatCompact(v, 1)}
           />
           <Tooltip content={<TooltipBox series={series} format={format} />} />
+          {markers.map((m) => (
+            <ReferenceLine
+              key={`${m.t}-${m.label}`}
+              x={m.t}
+              ifOverflow="extendDomain"
+              stroke="hsl(var(--ha-accent))"
+              strokeDasharray="3 3"
+              strokeWidth={1}
+              label={{ value: m.label, position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 10, fontWeight: 600 }}
+            />
+          ))}
           {series.map((s) =>
             kind === "area" ? (
               <Area
@@ -102,8 +131,9 @@ export const TimeChart = ({ data, series, format = (n) => formatCompact(n), kind
                 type="monotone"
                 stroke={s.color}
                 fill={s.color}
-                fillOpacity={0.15}
-                strokeWidth={1.5}
+                fillOpacity={fade(s.key) ? 0.04 : 0.15}
+                strokeOpacity={fade(s.key) ? 0.25 : 1}
+                strokeWidth={highlight === s.key ? 2.25 : 1.5}
                 dot={false}
                 isAnimationActive={false}
                 connectNulls
@@ -114,7 +144,8 @@ export const TimeChart = ({ data, series, format = (n) => formatCompact(n), kind
                 dataKey={s.key}
                 type="monotone"
                 stroke={s.color}
-                strokeWidth={1.5}
+                strokeOpacity={fade(s.key) ? 0.25 : 1}
+                strokeWidth={highlight === s.key ? 2.25 : 1.5}
                 dot={false}
                 isAnimationActive={false}
                 connectNulls
@@ -157,7 +188,8 @@ export const SignedBars = ({ data, format = (n) => formatCompact(n), label, seri
 );
 
 type CategoryBarsProps = {
-  data: Array<{ name: string; value: number; highlight?: boolean }>;
+  /** `name` is the axis label; `full` (if given) is the tooltip's. */
+  data: Array<{ name: string; full?: string; value: number; highlight?: boolean }>;
   format?: (n: number) => string;
   label: string;
 };
@@ -173,6 +205,10 @@ export const CategoryBars = ({ data, format = (n) => formatCompact(n), label }: 
         <Tooltip
           cursor={{ fill: "hsl(var(--muted))" }}
           formatter={(v: number) => [format(v), "Wallets"]}
+          labelFormatter={(name: string) => {
+            const row = data.find((d) => d.name === name);
+            return row?.full ? `${row.full} TEL` : name;
+          }}
           contentStyle={{
             background: "hsl(var(--popover))",
             border: "1px solid hsl(var(--border))",
