@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useMemo,
   useState,
   type FormEvent,
   type ReactNode,
@@ -30,6 +31,9 @@ export type ForensicsUnlockContextValue = {
   status: ForensicsUnlockStatus;
   unlock: (candidate: string) => Promise<boolean>;
   lock: () => void;
+  /** One password form on screen (the one marked `primary`); every other
+   *  gate under this provider points to it instead of repeating the form. */
+  singleGate?: boolean;
 };
 
 const ForensicsUnlockContext = createContext<ForensicsUnlockContextValue | null>(null);
@@ -87,14 +91,28 @@ function useForensicsUnlockState(): ForensicsUnlockContextValue {
     };
   }, [tryUnlock]);
 
-  return { password, status, unlock: tryUnlock, lock };
+  return useMemo(() => ({ password, status, unlock: tryUnlock, lock }), [password, status, tryUnlock, lock]);
 }
 
-export const ForensicsUnlockProvider = ({ children }: { children: ReactNode }) => {
-  const value = useForensicsUnlockState();
+export const ForensicsUnlockProvider = ({
+  children,
+  singleGate = false,
+}: {
+  children: ReactNode;
+  singleGate?: boolean;
+}) => {
+  const state = useForensicsUnlockState();
+  const value = useMemo(() => ({ ...state, singleGate }), [state, singleGate]);
   return (
     <ForensicsUnlockContext.Provider value={value}>{children}</ForensicsUnlockContext.Provider>
   );
+};
+
+const focusPrimaryGate = () => {
+  const input = document.querySelector<HTMLInputElement>("[data-forensics-primary] input");
+  if (!input) return;
+  input.scrollIntoView({ block: "nearest" });
+  input.focus();
 };
 
 export const useForensicsUnlock = (): ForensicsUnlockContextValue => {
@@ -117,10 +135,44 @@ export const ForensicsUnlockGate = ({
   status,
   onUnlock,
   label = "Password",
+  primary = false,
+  compact = false,
 }: {
   status: ForensicsUnlockStatus;
   onUnlock: (candidate: string) => Promise<boolean>;
   label?: string;
+  /** The one form that renders when the provider is in `singleGate` mode. */
+  primary?: boolean;
+  /** One-row form: visually hidden label, 36px controls. */
+  compact?: boolean;
+}) => {
+  const ctx = useContext(ForensicsUnlockContext);
+  if (ctx?.singleGate && !primary) {
+    return (
+      <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground" data-testid="forensics-gate-pointer">
+        <Lock aria-hidden="true" className="h-3.5 w-3.5" />
+        <span>Password protected.</span>
+        <Button type="button" variant="outline" size="sm" className="h-7 px-2.5 text-xs" onClick={focusPrimaryGate}>
+          Enter password
+        </Button>
+      </div>
+    );
+  }
+  return <GateForm status={status} onUnlock={onUnlock} label={label} primary={primary} compact={compact} />;
+};
+
+const GateForm = ({
+  status,
+  onUnlock,
+  label,
+  primary,
+  compact,
+}: {
+  status: ForensicsUnlockStatus;
+  onUnlock: (candidate: string) => Promise<boolean>;
+  label: string;
+  primary: boolean;
+  compact: boolean;
 }) => {
   const [value, setValue] = useState("");
   const [visible, setVisible] = useState(false);
@@ -135,8 +187,13 @@ export const ForensicsUnlockGate = ({
   };
 
   return (
-    <form onSubmit={submit} className="space-y-1.5" data-testid="forensics-unlock-form">
-      <label htmlFor={inputId} className="text-xs font-medium text-foreground">
+    <form
+      onSubmit={submit}
+      className="space-y-1.5"
+      data-testid="forensics-unlock-form"
+      {...(primary ? { "data-forensics-primary": "" } : {})}
+    >
+      <label htmlFor={inputId} className={compact ? "sr-only" : "text-xs font-medium text-foreground"}>
         {label}
       </label>
       <div className="flex items-stretch gap-2">
@@ -151,19 +208,19 @@ export const ForensicsUnlockGate = ({
             placeholder="Enter password"
             aria-invalid={status === "error"}
             aria-describedby={status === "error" ? errorId : undefined}
-            className="h-11 pl-9 pr-11 text-sm"
+            className={`${compact ? "h-9" : "h-11"} pl-9 pr-11 text-sm`}
           />
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
             aria-label={visible ? "Hide password" : "Show password"}
             aria-pressed={visible}
-            className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={`absolute right-1 top-1/2 inline-flex ${compact ? "h-7 w-7" : "h-9 w-9"} -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
           >
             {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        <Button type="submit" className="h-11 px-4 shrink-0" disabled={checking || !value.trim()}>
+        <Button type="submit" className={`${compact ? "h-9" : "h-11"} px-4 shrink-0`} disabled={checking || !value.trim()}>
           {checking ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : null}
           {checking ? "Checking…" : "Unlock"}
         </Button>

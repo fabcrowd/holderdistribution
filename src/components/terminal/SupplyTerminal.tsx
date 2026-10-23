@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
-import { TerminalPanel, PanelMessage, PanelSkeleton } from "./TerminalPanel";
+import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton } from "./TerminalPanel";
+import { useForensicsAccess } from "@/hooks/useForensicsAccess";
 
 const TABS = [
   { id: "breakdown", label: "Category detail" },
@@ -26,9 +27,11 @@ type Props = {
 
 /**
  * Supply on one screen: the 100B split (donut + list) stays on the left,
- * the analysis on the right. Clicking a category fills "Category detail";
+ * the analysis on the right. "Category detail" (largest category by default)
+ * is the big panel; clicking a category switches it;
  * the password-gated panels sit behind one unlock (the parent provides the
- * ForensicsUnlockProvider), so a reader unlocks once for all of them.
+ * ForensicsUnlockProvider in singleGate mode): the treasury tile holds the
+ * only password form, and every other gate points to it.
  */
 export const SupplyTerminal = (p: Props) => {
   if (p.state !== "ready") {
@@ -37,18 +40,33 @@ export const SupplyTerminal = (p: Props) => {
         <TerminalPanel className="col-span-12" title="Supply">
           {p.state === "loading" ? (
             <PanelSkeleton />
+          ) : p.state === "error" ? (
+            <PanelError>Couldn&apos;t load the supply breakdown.</PanelError>
           ) : (
-            <PanelMessage>{p.state === "error" ? "Could not load supply reconciliation." : "No supply data available."}</PanelMessage>
+            <PanelMessage>No supply data available.</PanelMessage>
           )}
         </TerminalPanel>
       </div>
     );
   }
+  return <ReadySupply {...p} />;
+};
+
+const ReadySupply = (p: Props) => {
+  const { unlocked } = useForensicsAccess();
   // History is always on screen here (its own panel), so a #supply/history
   // deep link simply lands on the default tab beside it.
   const tabBase = TABS.some((t) => t.id === p.panel) ? p.panel : "breakdown";
   return (
-    <div className="grid h-full min-h-0 grid-cols-12 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-2" data-testid="supply-terminal">
+    <div
+      className={`grid h-full min-h-0 grid-cols-12 gap-2 ${
+        // Locked, the history panel is a one-row tile; the category detail
+        // gets everything else. Unlocked, the chart earns real height.
+        unlocked ? "grid-rows-[minmax(0,3fr)_minmax(0,2fr)]" : "grid-rows-[minmax(0,1fr)_auto]"
+      }`}
+      data-testid="supply-terminal"
+      data-forensics={unlocked ? "unlocked" : "locked"}
+    >
       <TerminalPanel
         className="col-span-4 row-span-2"
         title="Where all TEL sits"
@@ -62,16 +80,11 @@ export const SupplyTerminal = (p: Props) => {
         </div>
       </TerminalPanel>
 
-      <TerminalPanel
-        className="col-span-8"
-        title="Treasury & escrow history"
-        info="Association Safes, Telcoin Holdings and escrow balances over the selected period. Password protected."
-      >
-        <div className="text-xs">{p.history}</div>
-      </TerminalPanel>
-
       <section aria-label="Supply analysis" className="relative col-span-8 flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
-        <div role="tablist" aria-label="Supply analysis" className="flex h-9 shrink-0 items-center gap-1 border-b border-border/70 px-2">
+        <div className="flex h-9 shrink-0 items-center gap-1 border-b border-border/70 px-2">
+          {/* The ✕ sits beside the tablist, not in it: a tablist may only
+              own tabs (axe aria-required-children). */}
+          <div role="tablist" aria-label="Supply analysis" className="flex items-center gap-1">
           {TABS.map((t) => {
             const selected = tabBase === t.id;
             return (
@@ -99,6 +112,7 @@ export const SupplyTerminal = (p: Props) => {
               </button>
             );
           })}
+          </div>
           {tabBase === "breakdown" && p.openBucketLabel && (
             <button
               type="button"
@@ -123,6 +137,14 @@ export const SupplyTerminal = (p: Props) => {
           {tabBase === "wallet-flows" && p.walletFlows}
         </div>
       </section>
+      <TerminalPanel
+        className="col-span-8"
+        title="Treasury & escrow history"
+        info="Association Safes, Telcoin Holdings and escrow balances over the selected period. Password protected."
+        testId="panel-treasury-history"
+      >
+        <div className={unlocked ? "text-xs" : "h-full text-xs"}>{p.history}</div>
+      </TerminalPanel>
     </div>
   );
 };

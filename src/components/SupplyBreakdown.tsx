@@ -33,15 +33,16 @@ import {
   otherCategoryLabel,
   partitionBuckets,
 } from "@/lib/supplyBreakdown";
-import { ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
+import { reconcileStatus } from "@/lib/supplyGuard";
 import { EXPLORER_BASE } from "@/lib/telContracts";
 
 /**
  * CoinGecko circulating (comparison only), fallback for when the served
  * supply-reconciliation.json predates its coingeckoCirculating field —
  * scripts/lib/reconcileSupply.js is the source of truth. Traced 2026-08:
- * their implied non-circulating amount (100B - this) is treasury
- * 0x2580…'s exact balance right after its 2025-10-01 transfer to
+ * their implied non-circulating amount (100B - this) is the main treasury
+ * wallet's exact balance right after its 2025-10-01 transfer to
  * Anchorage (4,922,764,633, within 1,000 TEL of this figure's complement)
  * — a frozen snapshot, not a live read.
  */
@@ -90,8 +91,12 @@ const supplyPieChartConfig = { amount: { label: "TEL" } };
  *  not 100%) so the grown sector never clips against the chart box. */
 const renderActivePieSector = (props: PieSectorDataItem) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+  const p = props.payload as { label?: string; amount?: number; pct?: number } | undefined;
   return (
     <Sector
+      // recharts gives each sector role="img"; the redrawn active one needs
+      // its own text alternative too (axe svg-img-alt).
+      aria-label={p?.label ? `${p.label}: ${formatCompactTEL(p.amount ?? 0)} TEL (${(p.pct ?? 0).toFixed(1)}%), selected` : "Selected category"}
       cx={cx}
       cy={cy}
       innerRadius={innerRadius}
@@ -172,17 +177,21 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
   // Which bucket's drill-down popover is open. Lives here rather than inside
   // a row so a click on the WEDGE and a click on that bucket's LIST ROW open
   // the exact same popover instead of two competing ones.
-  const [openBucketKey, setOpenBucketKey] = useState<string | null>(null);
+  // `undefined` = the reader hasn't picked anything yet. The terminal layout
+  // then shows the largest category rather than an empty "select a category"
+  // panel; ✕ sets an explicit null, which sticks.
+  const [pickedBucketKey, setOpenBucketKey] = useState<string | null | undefined>(undefined);
 
   // Terminal layout: picking a category always shows its detail, even if
-  // another analysis tab was open on the right.
+  // another analysis tab was open on the right. Only a real pick — the
+  // default selection must not override a #supply/reconciliation deep link.
   useEffect(() => {
-    if (layout === "terminal" && openBucketKey) {
+    if (layout === "terminal" && pickedBucketKey) {
       setPanelState("breakdown");
       onPanelChange?.("breakdown");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openBucketKey, layout]);
+  }, [pickedBucketKey, layout]);
 
   const { buckets, totalSupply, circulating, residualItems, otherItems, associationItems, holdingsItems, dexItems, cexItems, escrowItems } =
     useMemo(() => {
@@ -223,6 +232,17 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
       };
     }, [data]);
 
+  // Largest category that has something to drill into. Retail is usually
+  // bigger, but its "detail" is one sentence (there is no address list),
+  // which left the dashboard's biggest panel nearly empty on arrival.
+  const largestBucketKey = useMemo(() => {
+    const pool = buckets.filter((b) => b.key !== "retail" && b.amount > 0);
+    const from = pool.length ? pool : buckets;
+    return from.reduce<(typeof buckets)[number] | null>((m, b) => (m && m.amount >= b.amount ? m : b), null)?.key ?? null;
+  }, [buckets]);
+  const openBucketKey: string | null =
+    pickedBucketKey === undefined ? (layout === "terminal" ? largestBucketKey : null) : pickedBucketKey;
+
   // List-only order: the active bucket floats to the top so it's never
   // scrolled off-screen after selection (mobile motivation). The donut's
   // own `pieSlices` is untouched — its array order fixes each wedge's
@@ -235,6 +255,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
   }, [buckets, openBucketKey]);
 
   const partitionSum = buckets.reduce((s, b) => s + b.amount, 0);
+  const reconcile = reconcileStatus(partitionSum, totalSupply);
   // Zero-amount buckets are dropped for the pie itself (a 0% wedge draws
   // nothing anyway), computed once so the Pie's data, its Cells, and the
   // active-slice label all index the same array — recharts' `index` in
@@ -375,13 +396,18 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                       const pieIndex = pieSlices.findIndex((s) => s.key === b.key);
                       const isActive = pieIndex !== -1 && pieIndex === activeIndex;
                       const isRowActive = isOpen || isActive;
-                      const anySelected = openBucketKey !== null || activeIndex !== null;
+                      // Compact (terminal) list: a category is always selected,
+                      // so fading every other row to 40% would leave most of
+                      // the list unreadable (and failing contrast). There the
+                      // selection is carried by the row highlight alone, and
+                      // only a hover preview fades the rest.
+                      const anySelected = compact ? activeIndex !== null : openBucketKey !== null || activeIndex !== null;
                       return (
                         <motion.button
                           key={b.key}
                           layout
                           transition={{ layout: { duration: 0.3, ease: "easeOut" } }}
-                          animate={{ scale: isRowActive ? 1.035 : 1 }}
+                          animate={{ scale: isRowActive && !compact ? 1.035 : 1 }}
                           type="button"
                           onMouseEnter={() => pieIndex !== -1 && setActiveIndex(pieIndex)}
                           onMouseLeave={() => setActiveIndex(null)}
@@ -395,6 +421,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                           // framer-motion's `layout` prop animates the
                           // resulting DOM-order change.
                           onClick={() => setOpenBucketKey(isOpen ? null : b.key)}
+                          aria-pressed={isOpen}
                           // Origin left, not center, so the scale (applied via
                           // `animate` above, not a CSS class — see below)
                           // grows toward the reader instead of also
@@ -441,14 +468,25 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
     </>
   );
   const footnote = (
-<p className="mt-3 text-[11px] text-muted-foreground text-center">
-                    Segments sum to {formatCompactTEL(partitionSum)} (
-                    {Math.abs(partitionSum - totalSupply) < 1
-                      ? "exact 100B identity"
-                      : `vs ${formatCompactTEL(totalSupply)} total`}
-                    ). Solid = retail wallets / DEX LP; muted = exchanges & project; grey = in
-                    transit.
-                  </p>
+    <>
+      {reconcile.kind === "reconciling" && (
+        <div
+          role="status"
+          data-testid="supply-reconciling"
+          className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-50 px-2.5 py-1.5 text-left text-[11px] leading-snug text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+        >
+          <AlertTriangle aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0" />
+          <span>
+            <span className="font-semibold">Reconciling.</span> This snapshot's categories don't yet add up to the{" "}
+            {formatCompactTEL(totalSupply)} total supply, so individual amounts may shift slightly at the next
+            refresh.
+          </span>
+        </div>
+      )}
+      <p className="mt-3 text-[11px] text-muted-foreground text-center">
+        Solid = retail wallets / DEX LP; muted = exchanges &amp; project; grey = in transit.
+      </p>
+    </>
   );
   const reconciliationBody = (
     <>
@@ -470,7 +508,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                           {" "}
                           (Δ {cgDelta >= 0 ? "+" : "−"}
                           {formatCompactTEL(Math.abs(cgDelta))}). CoinGecko's figure isn't a
-                          different methodology — it's treasury 0x2580…'s exact on-chain balance
+                          different methodology — it's the main treasury wallet's exact on-chain balance
                           right after its 2025-10-01 transfer to Anchorage, never refreshed since.
                           Every treasury move after that date, down to today's ~1.43B balance, is
                           invisible to their number.
@@ -485,7 +523,9 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
   const historyBody = (
                 <SubscriptionGate
                   minHeightClass="min-h-[18rem]"
-                  description="Association Safes, Telcoin Holdings and Escrow balance history. Same password as Reconciliation."
+                  compact={layout === "terminal"}
+                  primary={layout === "terminal"}
+                  description="Association Safes, Telcoin Holdings and Escrow balance history. One password unlocks every protected panel."
                 >
                   <TreasuryHistoryChart rangeDays={rangeDays} />
                   <AssociationFlowAnalysis />
@@ -499,7 +539,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
 
   if (layout === "terminal") {
     return (
-      <ForensicsUnlockProvider>
+      <ForensicsUnlockProvider singleGate>
       <SupplyTerminal
         state={isLoading ? "loading" : error ? "error" : buckets.length === 0 ? "empty" : "ready"}
         panel={panel}
@@ -756,7 +796,7 @@ const AddressRow = ({
     ) : (
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <Lock className="h-3 w-3 shrink-0" />
-        Detailed forensic analysis — enter password above to unlock
+        Detailed forensic analysis — unlocks with the password
       </div>
     )}
   </li>
@@ -925,8 +965,7 @@ const RetailPanel = ({ amount }: { amount: number }) => (
       {formatCompactTEL(amount)} TEL spread across every wallet holding TEL directly, outside
       exchanges, DEX pools, and the addresses itemised elsewhere on this card — from the scheduled
       holders snapshot, not a fixed address list. There's no single "retail" address to link to;
-      see the Holder Snapshot section above for the full per-chain, per-wallet breakdown and
-      individual explorer links.
+      the Holders and Distribution tabs break it down by wallet size and tier.
     </p>
   </div>
 );
