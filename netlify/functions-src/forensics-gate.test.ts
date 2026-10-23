@@ -185,6 +185,36 @@ describe("forensics gate: session tokens", () => {
     expect(tokenKey({ FORENSICS_TOKEN_SECRET: "a" })!.equals(tokenKey({ FORENSICS_TOKEN_SECRET: "b" })!)).toBe(false);
   });
 
+  it("FORENSICS_TOKEN_SECRET is optional: the key is derived from whichever gate secret is configured", async () => {
+    // Deploy reality: only the password (or its salted hash) is set — no new env var.
+    delete process.env.FORENSICS_TOKEN_SECRET;
+    const issued = JSON.parse((await post({ address: "session-check", password: TEST_PASSWORD })).body);
+    expect(issued.token).toMatch(/^hdg1\./);
+    expect((await post({ address: "session-check", token: issued.token })).statusCode).toBe(200);
+
+    const hashOnly = { FORENSICS_PASSWORD_HASH: hashPassword("rotated", { iterations: 20_000 }) };
+    const t = issueToken(hashOnly)!.token;
+    expect(verifyToken(t, hashOnly)).toBe(true);
+    // Key is bound to the source var + value: a different secret can't verify it.
+    expect(verifyToken(t, { FORENSICS_PASSWORD_HASH: hashPassword("rotated", { iterations: 20_000 }) })).toBe(false);
+    expect(tokenKey({ FORENSICS_PASSWORD: "x" })!.equals(tokenKey({ FORENSICS_TOKEN_SECRET: "x" })!)).toBe(false);
+    // Explicit secret wins when present; blank values fall through.
+    expect(tokenKey({ FORENSICS_TOKEN_SECRET: "s", FORENSICS_PASSWORD: "p" })!.equals(tokenKey({ FORENSICS_TOKEN_SECRET: "s" })!)).toBe(true);
+    expect(tokenKey({ FORENSICS_TOKEN_SECRET: "  ", FORENSICS_PASSWORD: "p" })!.equals(tokenKey({ FORENSICS_PASSWORD: "p" })!)).toBe(true);
+    // The derived key is not the raw secret.
+    expect(tokenKey({ FORENSICS_PASSWORD: "p" })!.toString("utf8")).not.toContain("p:");
+  });
+
+  it("with no server secret at all (in-repo legacy hash only) unlock still works, just without a token", async () => {
+    delete process.env.FORENSICS_PASSWORD;
+    delete process.env.FORENSICS_TOKEN_SECRET;
+    expect(tokenKey(process.env)).toBeNull();
+    // Wrong password still 401s; no token is minted from a public constant.
+    const res = await post({ address: "session-check", password: "definitely-wrong" });
+    expect(res.statusCode).toBe(401);
+    expect(JSON.parse(res.body).token).toBeUndefined();
+  });
+
   it("an authenticated batch is not rate limited like anonymous traffic", async () => {
     const ip = "198.51.100.9";
     const { token } = JSON.parse((await post({ address: "session-check", password: TEST_PASSWORD }, { "x-nf-client-connection-ip": ip })).body);
