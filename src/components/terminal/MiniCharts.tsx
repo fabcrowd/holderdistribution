@@ -14,6 +14,8 @@ import {
   YAxis,
 } from "recharts";
 import { formatCompact } from "@/lib/format";
+import { useChartIntro } from "@/hooks/useMotion";
+import { CHART_DRAW_MS } from "@/lib/motion";
 
 /** Dense defaults: 10px ticks, hairline grid, no legend (the panel header names series). */
 const TICK = { fill: "hsl(var(--muted-foreground))", fontSize: 10 };
@@ -83,6 +85,8 @@ export const TimeChart = ({
   highlight = null,
 }: TimeChartProps) => {
   const Chart = kind === "area" ? AreaChart : LineChart;
+  // Draw in on first mount only; range/chain changes then update instantly.
+  const anim = useChartIntro();
   const fade = (key: string) => highlight != null && highlight !== key;
   const fullLabel = markers.length
     ? `${label} ${markers.map((m) => `${m.description} on ${fmtDate(m.t, dateFull)}.`).join(" ")}`
@@ -135,7 +139,7 @@ export const TimeChart = ({
                 strokeOpacity={fade(s.key) ? 0.25 : 1}
                 strokeWidth={highlight === s.key ? 2.25 : 1.5}
                 dot={false}
-                isAnimationActive={false}
+                isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out"
                 connectNulls
               />
             ) : (
@@ -147,7 +151,7 @@ export const TimeChart = ({
                 strokeOpacity={fade(s.key) ? 0.25 : 1}
                 strokeWidth={highlight === s.key ? 2.25 : 1.5}
                 dot={false}
-                isAnimationActive={false}
+                isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out"
                 connectNulls
               />
             ),
@@ -166,26 +170,29 @@ type SignedBarsProps = {
 };
 
 /** Daily signed bars (green = positive, red = negative). */
-export const SignedBars = ({ data, format = (n) => formatCompact(n), label, seriesLabel }: SignedBarsProps) => (
-  <div role="img" aria-label={label} className="h-full w-full">
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={MARGIN}>
-        <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
-        <XAxis dataKey="t" tickFormatter={(v) => fmtDate(v)} tick={TICK} tickLine={false} axisLine={false} minTickGap={40} />
-        <YAxis tick={TICK} tickLine={false} axisLine={false} width={44} tickFormatter={(v: number) => formatCompact(v, 1)} />
-        <Tooltip
-          cursor={{ fill: "hsl(var(--muted))" }}
-          content={<TooltipBox series={[{ key: "value", label: seriesLabel, color: "hsl(var(--primary))" }]} format={format} />}
-        />
-        <Bar dataKey="value" isAnimationActive={false}>
-          {data.map((d) => (
-            <Cell key={d.t} fill={d.value >= 0 ? "hsl(var(--ha-positive))" : "hsl(var(--ha-negative))"} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  </div>
-);
+export const SignedBars = ({ data, format = (n) => formatCompact(n), label, seriesLabel }: SignedBarsProps) => {
+  const anim = useChartIntro();
+  return (
+    <div role="img" aria-label={label} className="h-full w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={MARGIN}>
+          <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
+          <XAxis dataKey="t" tickFormatter={(v) => fmtDate(v)} tick={TICK} tickLine={false} axisLine={false} minTickGap={40} />
+          <YAxis tick={TICK} tickLine={false} axisLine={false} width={44} tickFormatter={(v: number) => formatCompact(v, 1)} />
+          <Tooltip
+            cursor={{ fill: "hsl(var(--muted))" }}
+            content={<TooltipBox series={[{ key: "value", label: seriesLabel, color: "hsl(var(--primary))" }]} format={format} />}
+          />
+          <Bar dataKey="value" isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out">
+            {data.map((d) => (
+              <Cell key={d.t} fill={d.value >= 0 ? "hsl(var(--ha-positive))" : "hsl(var(--ha-negative))"} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
 
 type CategoryBarsProps = {
   /** `name` is the axis label; `full` (if given) is the tooltip's. */
@@ -195,36 +202,39 @@ type CategoryBarsProps = {
 };
 
 /** Vertical category bars for distributions (buckets on X). */
-export const CategoryBars = ({ data, format = (n) => formatCompact(n), label }: CategoryBarsProps) => (
-  <div role="img" aria-label={label} className="h-full w-full">
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={MARGIN}>
-        <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
-        <XAxis dataKey="name" tick={TICK} tickLine={false} axisLine={false} interval={0} />
-        <YAxis tick={TICK} tickLine={false} axisLine={false} width={36} tickFormatter={(v: number) => formatCompact(v, 0)} />
-        <Tooltip
-          cursor={{ fill: "hsl(var(--muted))" }}
-          formatter={(v: number) => [format(v), "Wallets"]}
-          labelFormatter={(name: string) => {
-            const row = data.find((d) => d.name === name);
-            return row?.full ? `${row.full} TEL` : name;
-          }}
-          contentStyle={{
-            background: "hsl(var(--popover))",
-            border: "1px solid hsl(var(--border))",
-            borderRadius: 6,
-            fontSize: 11,
-            color: "hsl(var(--popover-foreground))",
-          }}
-          labelStyle={{ color: "hsl(var(--popover-foreground))" }}
-          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-        />
-        <Bar dataKey="value" radius={[2, 2, 0, 0]} isAnimationActive={false}>
-          {data.map((d) => (
-            <Cell key={d.name} fill={d.highlight ? "hsl(var(--ha-accent))" : "hsl(var(--primary))"} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  </div>
-);
+export const CategoryBars = ({ data, format = (n) => formatCompact(n), label }: CategoryBarsProps) => {
+  const anim = useChartIntro();
+  return (
+    <div role="img" aria-label={label} className="h-full w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={MARGIN}>
+          <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
+          <XAxis dataKey="name" tick={TICK} tickLine={false} axisLine={false} interval={0} />
+          <YAxis tick={TICK} tickLine={false} axisLine={false} width={36} tickFormatter={(v: number) => formatCompact(v, 0)} />
+          <Tooltip
+            cursor={{ fill: "hsl(var(--muted))" }}
+            formatter={(v: number) => [format(v), "Wallets"]}
+            labelFormatter={(name: string) => {
+              const row = data.find((d) => d.name === name);
+              return row?.full ? `${row.full} TEL` : name;
+            }}
+            contentStyle={{
+              background: "hsl(var(--popover))",
+              border: "1px solid hsl(var(--border))",
+              borderRadius: 6,
+              fontSize: 11,
+              color: "hsl(var(--popover-foreground))",
+            }}
+            labelStyle={{ color: "hsl(var(--popover-foreground))" }}
+            itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+          />
+          <Bar dataKey="value" radius={[2, 2, 0, 0]} isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out">
+            {data.map((d) => (
+              <Cell key={d.name} fill={d.highlight ? "hsl(var(--ha-accent))" : "hsl(var(--primary))"} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};

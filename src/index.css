@@ -555,3 +555,40 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     }
   }
 }
+
+/* ── Entrance motion (see src/lib/motion.ts) ─────────────────────────────
+   Opacity/transform only, so nothing reflows and the one-viewport fit holds.
+   Classes are added only during the intro window, so re-renders, selections
+   and later mounts never replay them. Reduced motion disables all of it. */
+@keyframes ha-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ha-rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.ha-fade-in {
+  animation: ha-fade-in 300ms ease-out both;
+}
+/* Quick crossfade when switching views (incoming view fades in). */
+.ha-view-in {
+  animation: ha-fade-in 160ms ease-out both;
+}
+/* Direct children rise in one after another: 40ms steps, capped at 6. */
+.ha-stagger > * {
+  animation: ha-rise-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ha-stagger > :nth-child(2) { animation-delay: 40ms; }
+.ha-stagger > :nth-child(3) { animation-delay: 80ms; }
+.ha-stagger > :nth-child(4) { animation-delay: 120ms; }
+.ha-stagger > :nth-child(5) { animation-delay: 160ms; }
+.ha-stagger > :nth-child(6) { animation-delay: 200ms; }
+.ha-stagger > :nth-child(n + 7) { animation-delay: 240ms; }
+@media (prefers-reduced-motion: reduce) {
+  .ha-fade-in,
+  .ha-view-in,
+  .ha-stagger > * {
+    animation: none !important;
+  }
+}

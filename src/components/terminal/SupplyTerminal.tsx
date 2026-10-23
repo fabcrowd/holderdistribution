@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useIntro } from "@/hooks/useMotion";
 import { X } from "lucide-react";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton } from "./TerminalPanel";
 import { useForensicsAccess } from "@/hooks/useForensicsAccess";
@@ -54,12 +55,13 @@ export const SupplyTerminal = (p: Props) => {
 
 const ReadySupply = (p: Props) => {
   const { unlocked } = useForensicsAccess();
+  const intro = useIntro();
   // History is always on screen here (its own panel), so a #supply/history
   // deep link simply lands on the default tab beside it.
   const tabBase = TABS.some((t) => t.id === p.panel) ? p.panel : "breakdown";
   return (
     <div
-      className={`grid h-full min-h-0 grid-cols-12 gap-2 ${
+      className={`grid h-full min-h-0 grid-cols-12 gap-2 ${intro ? "ha-stagger" : ""} ${
         // Locked, the history panel is a one-row tile; the category detail
         // gets everything else. Unlocked, the chart earns real height.
         unlocked ? "grid-rows-[minmax(0,3fr)_minmax(0,2fr)]" : "grid-rows-[minmax(0,1fr)_auto]"

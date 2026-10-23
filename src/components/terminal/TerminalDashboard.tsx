@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDownRight, ArrowUpRight, Clock, Coins, Info, LayoutGrid, Minus, PanelsTopLeft, PieChart, Users } from "lucide-react";
@@ -12,6 +12,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimeRangeDropdown } from "@/components/TimeRangeDropdown";
 import { Footer } from "@/components/Footer";
 import { useHeadlineSummary } from "@/hooks/useHeadlineSummary";
+import { useCountUp, useIntro } from "@/hooks/useMotion";
 import type { DisplaySelection } from "@/hooks/useHolderSnapshot";
 import { describeFreshness } from "@/lib/format";
 import type { SummaryPoint } from "@/lib/holderSummary";
@@ -74,6 +75,11 @@ export const TerminalDashboard = ({
   const qc = useQueryClient();
   const fresh = describeFreshness(snapshot?.generatedAt);
   const stale = fresh.status === "delayed" || fresh.status === "stale";
+  const intro = useIntro();
+  // The first view fades in with the panel stagger; later view switches get a
+  // quick crossfade instead (the keyed wrapper below remounts per view).
+  const firstView = useRef(view);
+  const viewIn = view !== firstView.current || !intro ? "ha-view-in" : "";
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -85,7 +91,7 @@ export const TerminalDashboard = ({
           Skip to main content
         </a>
         <header
-          className="relative flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card px-3 shadow-[0_1px_0_0_hsl(var(--border))] 2xl:gap-5 2xl:px-4"
+          className={`relative flex h-14 shrink-0 items-center gap-3 ${intro ? "ha-fade-in" : ""} border-b border-border bg-card px-3 shadow-[0_1px_0_0_hsl(var(--border))] 2xl:gap-5 2xl:px-4`}
           data-testid="terminal-header"
         >
           {/* Brand accent: a 2px primary rule across the top of the bar so the
@@ -145,7 +151,7 @@ export const TerminalDashboard = ({
               <div key={t.id} className="flex shrink-0 flex-col gap-0.5 leading-tight" data-testid={`kpi-${t.id}`}>
                 <dt className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t.label}</dt>
                 <dd className="flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="text-base font-semibold tabular-nums text-foreground min-[1400px]:text-lg">{t.value}</span>
+                  <KpiValue value={t.value} current={t.current} fmt={t.fmt} />
                   {t.current !== null && (
                     // Numeric deltas (e.g. "+195.18M") need room the 1280 bar
                     // doesn't have, so they appear from 1400px; the † reclass
@@ -244,7 +250,9 @@ export const TerminalDashboard = ({
         </header>
 
         <main id="main-content" tabIndex={-1} className="relative min-h-0 flex-1 overflow-hidden p-2 focus:outline-none">
-          {children}
+          <div key={view} className={`h-full min-h-0 ${viewIn}`}>
+            {children}
+          </div>
         </main>
 
         <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-card px-3 text-[11px] text-muted-foreground">
@@ -284,5 +292,27 @@ export const TerminalDashboard = ({
         </footer>
       </div>
     </TooltipProvider>
+  );
+};
+
+const formatCount = (v: number) => new Intl.NumberFormat().format(Math.round(v));
+
+/**
+ * KPI value that counts up once on first load. The final string is laid out
+ * invisibly to reserve its width, and the counting number sits on top, so the
+ * header never shifts while it counts.
+ */
+const KpiValue = ({ value, current, fmt }: { value: string; current: number | null; fmt?: (v: number) => string }) => {
+  const shown = useCountUp(current);
+  const counting = current !== null && shown !== null && shown !== current;
+  return (
+    <span className="relative text-base font-semibold tabular-nums text-foreground min-[1400px]:text-lg">
+      <span className={counting ? "opacity-0" : undefined}>{value}</span>
+      {counting && (
+        <span aria-hidden="true" className="absolute inset-y-0 left-0 whitespace-nowrap">
+          {(fmt ?? formatCount)(shown)}
+        </span>
+      )}
+    </span>
   );
 };

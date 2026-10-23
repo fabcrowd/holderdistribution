@@ -36,6 +36,8 @@ import {
 import { AlertTriangle, ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
 import { reconcileStatus } from "@/lib/supplyGuard";
 import { EXPLORER_BASE } from "@/lib/telContracts";
+import { useChartIntro } from "@/hooks/useMotion";
+import { CHART_DRAW_MS } from "@/lib/motion";
 
 /**
  * CoinGecko circulating (comparison only), fallback for when the served
@@ -162,6 +164,7 @@ const renderBucketDetail = (
 
 
 const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = "stacked" }: SupplyBreakdownProps) => {
+  const pieIntro = useChartIntro();
   // Controlled when the page owns the panel (so #supply/<panel> deep links
   // work), uncontrolled otherwise.
   const [panelState, setPanelState] = useState("breakdown");
@@ -338,7 +341,9 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                         outerRadius="92%"
                         paddingAngle={0}
                         animationBegin={0}
-                        animationDuration={700}
+                        // Draws in on first load only — not on every range change.
+                        isAnimationActive={pieIntro}
+                        animationDuration={CHART_DRAW_MS}
                         animationEasing="ease-out"
                         // Pop the selected wedge out toward the viewer on
                         // click (or hover-preview), same trigger as the

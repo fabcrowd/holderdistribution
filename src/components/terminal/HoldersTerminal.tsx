@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useIntro } from "@/hooks/useMotion";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
 import { clampToRange, shortBucketLabel } from "@/lib/chartRange";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
@@ -77,6 +78,7 @@ const firstLast = <T,>(rows: T[]) => (rows.length ? { first: rows[0], last: rows
 
 export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDays, onExplore }: Props) => {
   const growth = useHolderGrowth({ view: selectedView, days: rangeDays });
+  const intro = useIntro();
   const flow = useExchangeFlow();
   const cexHistory = useCexBalanceHistory();
   const { data: changelog } = useClassificationChangelog();
@@ -148,7 +150,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const retailTotal = stats?.total ?? 0;
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-12 grid-rows-2 gap-2" data-testid="holders-terminal">
+    <div className={`grid h-full min-h-0 grid-cols-12 grid-rows-2 gap-2 ${intro ? "ha-stagger" : ""}`} data-testid="holders-terminal">
       <TerminalPanel
         className="col-span-4"
         title="Retail holders"

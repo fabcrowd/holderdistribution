@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, useEffect, useLayoutEffect, useCallback, type ReactNode } from "react";
+import { useChartIntro } from "@/hooks/useMotion";
 import { createPortal } from "react-dom";
 import { ChevronRight, RotateCw, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -119,6 +120,8 @@ export const TierFlowDiagram = ({
   layout = "stacked",
   detailContainer,
 }: Props) => {
+  // One-shot: fades with the first load, not when a chain change reloads it.
+  const canvasIntro = useChartIntro();
   // Chain is driven by the page-level chain selector (the in-diagram chain
   // buttons were a second, conflicting control). Uncontrolled = all chains.
   const chain: ChainKey = chainProp ?? "all";
@@ -896,7 +899,8 @@ export const TierFlowDiagram = ({
       >
         <div className="relative shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>
         <div
-          className="absolute left-0 top-0"
+          // Tier nodes and any arcs fade in once with the first load.
+          className={`absolute left-0 top-0 ${canvasIntro ? "ha-fade-in" : ""}`}
           style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
           {/* The svg itself stays pointer-events:none so it never intercepts

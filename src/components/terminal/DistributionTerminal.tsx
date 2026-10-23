@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useChartIntro, useIntro } from "@/hooks/useMotion";
+import { CHART_DRAW_MS } from "@/lib/motion";
 import { X } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
@@ -34,6 +36,8 @@ const chainKeyFor = (v: DisplaySelection): ChainKey => (v === "combined" ? "all"
  */
 export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, rangeDays }: Props) => {
   const { data: historicalDelta } = useHolderHistoricalDelta({ view: selectedView, days: rangeDays, enabled: rangeDays >= 1 });
+  const intro = useIntro();
+  const chartIntro = useChartIntro();
   const [metric, setMetric] = useState<TierMetric>("wallets");
   const [selection, setSelection] = useState<DistSelection>(EMPTY_SELECTION);
   const dispatch = (a: DistAction) => setSelection((s) => reduceSelection(s, a));
@@ -91,7 +95,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
   );
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-12 grid-rows-2 gap-2" data-testid="distribution-terminal">
+    <div className={`grid h-full min-h-0 grid-cols-12 grid-rows-2 gap-2 ${intro ? "ha-stagger" : ""}`} data-testid="distribution-terminal">
       <TerminalPanel
         className="col-span-7 row-span-2"
         title="Tier flows"
@@ -171,7 +175,8 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
                     />
                     <Bar
                       dataKey="value"
-                      isAnimationActive={false}
+                      isAnimationActive={chartIntro}
+                      animationDuration={CHART_DRAW_MS}
                       radius={2}
                       // A transparent full-row background takes the same click,
                       // so a near-zero bar (a few px wide) is still a real target.
