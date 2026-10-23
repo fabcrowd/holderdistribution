@@ -30,8 +30,13 @@ export function pickBaseline<T>(
 
   const latestTs = pts[pts.length - 1].ts;
   const targetTs = latestTs - days * 86400000;
-  let best = pts[0];
-  for (const x of pts) {
+  // Never the latest point itself: with a gap in the archive (e.g. nothing
+  // between Oct 2 and Oct 23) a 1D request used to pick today's own row and
+  // report "0" for every delta. No earlier point in tolerance → no baseline.
+  const earlier = days > 0 ? pts.filter((x) => x.ts < latestTs) : pts;
+  if (earlier.length === 0) return null;
+  let best = earlier[0];
+  for (const x of earlier) {
     if (Math.abs(x.ts - targetTs) < Math.abs(best.ts - targetTs)) best = x;
   }
 
