@@ -3,6 +3,8 @@ import { RotateCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { InfoTip } from "@/components/InfoTip";
 import { isZeroText } from "@/lib/format";
+import { ChangeIndicator } from "@/components/ChangeIndicator";
+import type { ClassificationEvent } from "@/lib/classificationChangelog";
 
 type TerminalPanelProps = {
   title: ReactNode;
@@ -93,7 +95,23 @@ export const PanelSkeleton = () => (
 );
 
 /** Signed change chip: green up, red down, muted when flat/unknown. */
-export const Delta = ({ value, format, suffix = "" }: { value: number | null | undefined; format: (n: number) => string; suffix?: string }) => {
+export const Delta = ({
+  value,
+  format,
+  suffix = "",
+  relabel,
+}: {
+  value: number | null | undefined;
+  format: (n: number) => string;
+  suffix?: string;
+  /** Reclassifications after this delta's baseline for the metric it shows.
+   *  Same rule as the header KPIs: the number is replaced by a "†" that
+   *  explains why, since part of the change is relabelling, not movement. */
+  relabel?: ClassificationEvent[];
+}) => {
+  if (relabel && relabel.length > 0 && value != null) {
+    return <ChangeIndicator variant="plain" current={0} previous={0} changelogEvents={relabel} className="text-xs" />;
+  }
   if (value == null || !Number.isFinite(value)) return <span className="text-xs text-muted-foreground">—</span>;
   const mag = format(Math.abs(value));
   // A change that rounds to zero reads "0", never "−0" / "+0".

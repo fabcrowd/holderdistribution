@@ -6,6 +6,8 @@ import { X } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
+import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
+import { ChangeIndicator } from "@/components/ChangeIndicator";
 import { TierFlowDiagram, type TierMetric } from "@/components/TierFlowDiagram";
 import { tierDisplayLabel } from "@/components/tierflow/geometry";
 import { SIDE_TILE_LABELS } from "@/components/tierflow/netFlow";
@@ -79,6 +81,20 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
     [view, historicalDelta],
   );
   const growth = summarizeTierGrowth(rows);
+  // † rule shared with the header KPIs and the Holders cards: when a
+  // reclassification falls after this period's baseline, tier deltas mix
+  // relabelling with real movement, so they're replaced by a † that says so.
+  const { data: changelog } = useClassificationChangelog();
+  const baselineMs = historicalDelta?.referenceDate ? Date.parse(historicalDelta.referenceDate) : NaN;
+  const countRelabel = useMemo(
+    () => (Number.isFinite(baselineMs) ? getEventsAffecting(changelog, "retail.count", baselineMs, Date.now()) : []),
+    [changelog, baselineMs],
+  );
+  const balanceRelabel = useMemo(
+    () => (Number.isFinite(baselineMs) ? getEventsAffecting(changelog, "retail.balance", baselineMs, Date.now()) : []),
+    [changelog, baselineMs],
+  );
+  const countSuppressed = countRelabel.length > 0;
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
   const selectedTier = selection.tier;
   const selected = hasSelection(selection);
@@ -137,7 +153,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
               <span className="font-semibold text-foreground">
                 {growth.grew} of {growth.tiers}
               </span>{" "}
-              tiers gained wallets · <Delta value={growth.netWallets} format={(n) => int.format(n)} /> net over {rangeLabel}
+              tiers gained wallets · <Delta value={growth.netWallets} format={(n) => int.format(n)} relabel={countRelabel} /> net over {rangeLabel}
             </span>
           )
         }
@@ -186,7 +202,16 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
           testId="panel-net-change"
         >
           {placeholder ??
-            (netByTier.some((d) => d.has) ? (
+            (countSuppressed && netByTier.some((d) => d.has) ? (
+              <PanelMessage>
+                <span data-testid="net-change-relabelled">
+                  <ChangeIndicator variant="plain" current={0} previous={0} changelogEvents={countRelabel} className="mr-1 text-xs" />
+                  Net change isn&apos;t shown: wallets were reclassified after this period&apos;s baseline
+                  {historicalDelta?.referenceDate ? ` (${historicalDelta.referenceDate})` : ""}, so tier counts would mix relabelling
+                  with real moves.
+                </span>
+              </PanelMessage>
+            ) : netByTier.some((d) => d.has) ? (
               <div
                 role="img"
                 aria-label={`Net wallet change by tier: ${netByTier.map((d) => `${d.name} ${signedInt(d.value)}`).join(", ")}. Select a tier in the Tiers table to see its detail.`}
@@ -289,11 +314,11 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
                     </th>
                     <td className="px-2 py-1 text-right">{int.format(r.count)}</td>
                     <td className="px-2 py-1 text-right">
-                      <Delta value={r.previousCount != null ? r.count - r.previousCount : null} format={(n) => int.format(n)} />
+                      <Delta value={r.previousCount != null ? r.count - r.previousCount : null} format={(n) => int.format(n)} relabel={countRelabel} />
                     </td>
                     <td className="px-2 py-1 text-right">{formatCompact(r.totalBalance)}</td>
                     <td className="px-2 py-1 text-right">
-                      <Delta value={r.previousTotalBalance != null ? r.totalBalance - r.previousTotalBalance : null} format={(n) => formatCompact(n, 1)} />
+                      <Delta value={r.previousTotalBalance != null ? r.totalBalance - r.previousTotalBalance : null} format={(n) => formatCompact(n, 1)} relabel={balanceRelabel} />
                     </td>
                     <td className="px-3 py-1 text-right">{r.percent.toFixed(1)}%</td>
                   </tr>

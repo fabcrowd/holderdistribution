@@ -20,7 +20,7 @@ import {
   retailDemandFor, tierNetTel, tierDexActivity,
   type FlowTone, type SideTileSelection, type SideTileKey,
 } from "@/components/tierflow/netFlow";
-import { RANGE_OPTIONS, ytdDays } from "@/lib/timeRange";
+import { RANGE_OPTIONS, ytdDays, ytdStartMs } from "@/lib/timeRange";
 import { baselineLabel } from "@/lib/baseline";
 import { useClassificationChangelog, getEventsAffecting, type ClassificationEvent } from "@/hooks/useClassificationChangelog";
 import {
@@ -193,7 +193,7 @@ export const TierFlowDiagram = ({
   const flowChangelogEvents = useMemo(() => {
     const end = Date.now();
     const start = rangeDays === ytdDays()
-      ? new Date(new Date(end).getUTCFullYear(), 0, 1).getTime()
+      ? ytdStartMs(new Date(end))
       : end - rangeDays * 86400000;
     const merged = new Map<string, ClassificationEvent>();
     for (const metricName of ["cexBalance", "vault-unattributed"]) {

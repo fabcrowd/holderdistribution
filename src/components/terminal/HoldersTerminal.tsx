@@ -114,6 +114,12 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
     [growth.data, rangeDays],
   );
   const holderMarkers = useMemo(() => reclassMarkers(changelog, "retail.count", holders[0]?.t), [changelog, holders]);
+  // Same † rule as the header KPIs: a reclassification after the period's
+  // first point for the metric a card's delta shows suppresses that delta.
+  const holderRelabel = useMemo(
+    () => (holders[0] ? getEventsAffecting(changelog, "retail.count", holders[0].t, Date.now()) : []),
+    [changelog, holders],
+  );
   const balanceMarkers = useMemo(() => reclassMarkers(changelog, "retail.balance", balance[0]?.t), [changelog, balance]);
   const netflow = useMemo(() => {
     const rows = (flow.data ?? []).map((e) => ({ t: Date.parse(e.date), value: e.net, in: e.in, out: e.out }));
@@ -159,7 +165,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           h && (
             <>
               <span className="font-semibold text-foreground">{int.format(h.last.holders)}</span>
-              <Delta value={h.last.holders - h.first.holders} format={(n) => int.format(Math.round(n))} />
+              <Delta value={h.last.holders - h.first.holders} format={(n) => int.format(Math.round(n))} relabel={holderRelabel} />
             </>
           )
         }
