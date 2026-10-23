@@ -862,6 +862,7 @@ export const TierFlowDiagram = ({
                 <button
                   type="button"
                   aria-pressed={isSelected}
+                  data-tier={f.label}
                   onClick={() => selectTier(f.label)}
                   className={`relative flex min-h-[48px] w-full items-center gap-2 overflow-hidden rounded-lg border px-3 py-2 text-left transition-colors ${isSelected ? "ring-2 ring-offset-1 ring-offset-background" : "hover:bg-muted/40"}`}
                   style={{ borderColor: isSelected ? fill : "hsl(var(--border) / 0.6)", ["--tw-ring-color" as string]: fill }}
@@ -1118,6 +1119,7 @@ export const TierFlowDiagram = ({
                 <button
                   type="button"
                   aria-pressed={isSelected}
+                  data-tier={f.label}
                   onClick={() => selectTier(f.label)}
                   // transition-all (not transition-colors) so a metric toggle
                   // or chain-filter change — which move `left`/`width` via the

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChartIntro, useIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
 import { signedInt } from "@/lib/format";
@@ -72,7 +72,12 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
   const intro = useIntro();
   const chartIntro = useChartIntro();
   const [metric, setMetric] = useState<TierMetric>("wallets");
-  const [selection, setSelection] = useState<DistSelection>(EMPTY_SELECTION);
+  // The selected tier rides in the URL (?tier=, replaceState: shareable, but
+  // not a Back-button step per click).
+  const [selection, setSelection] = useState<DistSelection>(() => {
+    const t = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tier") : null;
+    return t ? { ...EMPTY_SELECTION, tier: t } : EMPTY_SELECTION;
+  });
   const dispatch = (a: DistAction) => setSelection((s) => reduceSelection(s, a));
   const [detailEl, setDetailEl] = useState<HTMLDivElement | null>(null);
   const view = snapshot?.views[selectedView];
@@ -103,6 +108,59 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
   useEffect(() => {
     if (selectedTier && rows.length && !rows.some((r) => r.label === selectedTier)) dispatch({ type: "clear" });
   }, [rows, selectedTier]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if ((url.searchParams.get("tier") ?? null) === (selectedTier ?? null)) return;
+    if (selectedTier) url.searchParams.set("tier", selectedTier);
+    else url.searchParams.delete("tier");
+    window.history.replaceState(window.history.state, "", url);
+  }, [selectedTier]);
+  // Leaving Distribution drops the param: it only means something here.
+  useEffect(
+    () => () => {
+      const url = new URL(window.location.href);
+      if (!url.searchParams.has("tier")) return;
+      url.searchParams.delete("tier");
+      window.history.replaceState(window.history.state, "", url);
+    },
+    [],
+  );
+
+  // Focus return: closing the detail (✕, Esc or Clear) unmounts the control
+  // that had focus, which would drop it on <body>. Send it back to the tier the
+  // reader picked — its Tiers-table button, else its diagram tile — or to the
+  // diagram itself.
+  const lastTier = useRef<string | null>(selectedTier);
+  if (selectedTier) lastTier.current = selectedTier;
+  const wasSelected = useRef(selected);
+  const origin = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const was = wasSelected.current;
+    wasSelected.current = selected;
+    if (!was && selected) {
+      const a = document.activeElement;
+      origin.current = a instanceof HTMLElement && a !== document.body ? a : null;
+      return;
+    }
+    if (!was || selected) return;
+    const active = document.activeElement;
+    const lost = !active || active === document.body || !document.contains(active);
+    const inDetail = !!active?.closest?.('[data-testid="panel-tier-detail"], [data-testid="tier-flow"]');
+    if (!lost && !inDetail) return;
+    const tier = lastTier.current;
+    const esc = (v: string) => (typeof CSS !== "undefined" && CSS.escape ? CSS.escape(v) : v.replace(/"/g, '\\"'));
+    const from = origin.current;
+    origin.current = null;
+    const target =
+      (from && document.contains(from) && !from.closest('[data-testid="panel-tier-detail"]') ? from : null) ||
+      (tier && document.querySelector<HTMLElement>(`[data-testid="panel-tiers"] tr[data-tier="${esc(tier)}"] button`)) ||
+      (tier && document.querySelector<HTMLElement>(`[data-testid="tier-flow"] [data-tier="${esc(tier)}"]`)) ||
+      document.querySelector<HTMLElement>('[data-testid="tier-flow"]');
+    if (!target) return;
+    if (!target.hasAttribute("tabindex") && !/^(BUTTON|A|INPUT)$/.test(target.tagName)) target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+  }, [selected]);
 
   // Escape also works when focus is in the table / bars, not only the diagram.
   useEffect(() => {
