@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SubPanelTabs } from "@/components/SubPanelTabs";
-import { formatSourceLabel } from "@/lib/format";
+import { formatSourceLabel, formatCompact } from "@/lib/format";
+import { v3StakingGapEvents } from "@/lib/staking";
 import { TabsContent } from "@/components/ui/tabs";
 import {
   Table,
@@ -58,6 +59,8 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, ReferenceLine, Line } from "recharts";
 import "@/lib/rechartsMotion";
+
+const formatCompactTokens = (n: number) => formatCompact(n, 2);
 
 type DisplaySelection = "combined" | "ethereum" | "polygon" | "base";
 
@@ -165,6 +168,9 @@ type HistoricalPrevious = {
   totalBalance: number | null;
   totalHeld: number | null;
   stakingBalance: number | null;
+  stakingV3Balance?: number | null;
+  stakingTotal?: number | null;
+  referenceDate?: string | null;
 };
 
 type StatItem = {
@@ -203,9 +209,18 @@ const renderMetrics = (
   const previousRetailHeld = historicalPrevious
     ? historicalPrevious.totalBalance
     : (result.previousMetrics?.totalBalance ?? null);
+  // Staked = legacy + v3 StakingModule, so compare against the combined
+  // baseline; inside the unmeasured v3 window there is none (see lib/staking).
+  const v3Stats = result.stakingStats?.v3;
   const previousStakingBalance = historicalPrevious
-    ? historicalPrevious.stakingBalance
+    ? v3Stats
+      ? historicalPrevious.stakingTotal ?? null
+      : historicalPrevious.stakingBalance
     : null;
+  const stakedEvents =
+    v3Stats && historicalPrevious?.referenceDate
+      ? v3StakingGapEvents(historicalPrevious.referenceDate, historicalPrevious.stakingV3Balance, v3Stats.deployDate ?? undefined)
+      : [];
 
   // Exchange-held TEL, added into the "Total TEL Held" tile so it counts all
   // wallets (custody deposits are not sales).
@@ -231,7 +246,7 @@ const renderMetrics = (
       rawValue: result.metrics.totalBalance,
       icon: Database,
       formatter: formatTokenAmount,
-      info: "TEL held in ordinary wallets — everything except exchange custody, Association treasury, Telcoin Holdings, escrow, bridges and DEX liquidity.\n\nShown separately from CEX Balance rather than blended into one total, because the two moving in opposite directions is the signal: TEL leaving exchanges for self-custody is accumulation, the reverse is supply moving toward the market. A combined figure stays flat through both.",
+      info: "TEL held in ordinary wallets — everything except exchange custody, Association treasury, Telcoin Holdings, escrow, bridges and DEX liquidity.\n\nShown separately from CEX Balance rather than blended into one total, because the two moving in opposite directions is the signal: TEL leaving exchanges for self-custody is accumulation, the reverse is supply moving toward the market. A combined figure stays flat through both.\n\nStaked TEL, including the Staked (v3) StakingModule portion, is already inside this figure (credited to each staker's wallet), not added on top.",
       changelogEvents: retailBalanceEvents,
     },
   ];
@@ -241,14 +256,15 @@ const renderMetrics = (
     items.push({
       label: "Staked TEL",
       value: formatTokenAmount(stakedTotal),
-      description: `${formatPercentage(
-        percentOf(stakedTotal, totals.totalSupply),
-      )} of total supply`,
-      previous: previousStakingBalance,
+      description: v3Stats && result.stakingStats.legacy
+        ? `Legacy ${formatCompactTokens(result.stakingStats.legacy.stakedTotal)} / v3 ${formatCompactTokens(v3Stats.stakedTotal)} · ${formatPercentage(percentOf(stakedTotal, totals.totalSupply))} of supply`
+        : `${formatPercentage(percentOf(stakedTotal, totals.totalSupply))} of total supply`,
+      previous: stakedEvents.length ? stakedTotal : previousStakingBalance,
       rawValue: stakedTotal,
       icon: Layers,
       formatter: formatTokenAmount,
-      info: "TEL locked in the Telcoin staking contract on Polygon. It's a subset of Total TEL Held (already counted there), shown separately as a measure of long-term conviction. Staked TEL can't be sold until unstaked.",
+      changelogEvents: stakedEvents,
+      info: "TEL staked on Polygon: the legacy staking contract plus the v3 StakingModule (live since 1 Sep 2026), counted once per staker. It's a subset of Retail Held (already counted there, including the v3 portion), shown separately as a measure of long-term conviction. Staked TEL can't be sold until unstaked.",
     });
   }
 
@@ -745,8 +761,16 @@ const renderStakingInsights = (
   // for two different things (% of TEL staked vs. % of wallets that stake) —
   // easy to mix up at a glance. Named for what each one actually counts.
   const items = [
-    { label: "Stakers", value: formatInteger(stats.stakerCount) },
-    { label: "Staked Total", value: formatTokenAmount(stats.stakedTotal) },
+    {
+      label: "Stakers",
+      value: formatInteger(stats.stakerCount),
+      sub: stats.v3 && stats.legacy ? `Legacy ${formatInteger(stats.legacy.stakerCount)} / v3 ${formatInteger(stats.v3.stakerCount)}` : undefined,
+    },
+    {
+      label: "Staked Total",
+      value: formatTokenAmount(stats.stakedTotal),
+      sub: stats.v3 && stats.legacy ? `Legacy ${formatCompactTokens(stats.legacy.stakedTotal)} / v3 ${formatCompactTokens(stats.v3.stakedTotal)}` : undefined,
+    },
     { label: "% of Retail TEL Staked", value: formatPercentage(stats.stakedShareOfRetail * 100, 2) },
     { label: "% of Wallets Staking", value: formatPercentage(stats.stakerShareOfHolders * 100, 2) },
     { label: "Avg Staked", value: formatTokenAmount(stats.averageStakedPerStaker) },
@@ -770,7 +794,7 @@ const renderStakingInsights = (
           </CardTitle>
         </div>
         <CardDescription data-panel-desc className="text-sm sm:text-base text-muted-foreground">
-          TEL staked by retail, mapped back to holder wallets (excludes exchange &amp; hot wallets).
+          TEL staked by retail in the legacy staking contract and the v3 StakingModule, mapped back to holder wallets and counted once per staker (excludes exchange &amp; hot wallets).
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-5 space-y-6">
@@ -779,6 +803,7 @@ const renderStakingInsights = (
             <div key={item.label} className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">{item.label}</div>
               <div className="text-xl font-semibold text-primary">{item.value}</div>
+              {"sub" in item && item.sub && <div className="mt-1 text-xs tabular-nums text-muted-foreground">{item.sub}</div>}
             </div>
           ))}
         </div>

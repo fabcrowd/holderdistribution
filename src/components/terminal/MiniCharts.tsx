@@ -28,7 +28,30 @@ const fmtDate = (v: unknown, f = dateTick) => {
   return Number.isFinite(n) ? f.format(new Date(n)) : "";
 };
 
-export type SeriesDef = { key: string; label: string; color: string };
+export type SeriesDef = {
+  key: string;
+  label: string;
+  color: string;
+  /** Draw straight across missing values (default). Turn off for a series
+   *  whose nulls mean "unknown", so the line doesn't invent a history. */
+  connectNulls?: boolean;
+  dashed?: boolean;
+};
+
+/** With connectNulls off, a value with no measured neighbour draws no line
+ *  at all; give those isolated points a dot so they stay visible. */
+const isolatedDot = (data: TimeChartProps["data"], key: string, color: string) =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (props: any) => {
+    const i = props?.index as number;
+    const has = (j: number) => data[j] != null && data[j][key] != null;
+    const show = has(i) && !has(i - 1) && !has(i + 1) && Number.isFinite(props?.cx) && Number.isFinite(props?.cy);
+    return show ? (
+      <circle key={`${key}-${i}`} cx={props.cx} cy={props.cy} r={3} fill={color} stroke="hsl(var(--background))" strokeWidth={1} />
+    ) : (
+      <g key={`${key}-${i}`} />
+    );
+  };
 /** A dated annotation drawn as a dashed vertical rule (e.g. a reclassification). */
 export type ChartMarker = { t: number; label: string; description: string };
 
@@ -152,9 +175,10 @@ export const TimeChart = ({
                 fillOpacity={fade(s.key) ? 0.04 : 0.15}
                 strokeOpacity={fade(s.key) ? 0.25 : 1}
                 strokeWidth={highlight === s.key ? 2.25 : 1.5}
-                dot={false}
+                strokeDasharray={s.dashed ? "4 3" : undefined}
+                dot={s.connectNulls === false ? isolatedDot(data, s.key, s.color) : false}
                 isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out"
-                connectNulls
+                connectNulls={s.connectNulls ?? true}
               />
             ) : (
               <Line
@@ -164,9 +188,10 @@ export const TimeChart = ({
                 stroke={s.color}
                 strokeOpacity={fade(s.key) ? 0.25 : 1}
                 strokeWidth={highlight === s.key ? 2.25 : 1.5}
-                dot={false}
+                strokeDasharray={s.dashed ? "4 3" : undefined}
+                dot={s.connectNulls === false ? isolatedDot(data, s.key, s.color) : false}
                 isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out"
-                connectNulls
+                connectNulls={s.connectNulls ?? true}
               />
             ),
           )}

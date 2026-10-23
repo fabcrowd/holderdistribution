@@ -4,6 +4,7 @@ import { useHolderLiteSnapshot, type HolderLiteSnapshot } from "@/hooks/useHolde
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useHeadlineTiles } from "@/hooks/useHeadlineTiles";
 import type { ClassificationEvent } from "@/hooks/useClassificationChangelog";
+import { v3StakingGapEvents } from "@/lib/staking";
 
 const formatInteger = (v: number) => new Intl.NumberFormat().format(v);
 const formatTokenAmount = (v: number) => {
@@ -95,7 +96,17 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     // Retail baseline, not the retail+CEX totalHeld — diffing this value against
     // that baseline would report the entire ~20B CEX book as a change.
     const prevHeld = historicalDelta?.totalBalance ?? null;
-    const prevStaked = historicalDelta?.stakingBalance ?? null;
+    // Staked = legacy + v3 StakingModule, so the baseline must be too. Before
+    // the module's deploy v3 was 0 (a valid comparison: the migration out of
+    // the legacy contract nets out); after it, v3 wasn't recorded, so the
+    // delta is replaced by the "†" explainer rather than reading the
+    // migration as a 3B outflow.
+    const v3Stats = view.stakingStats?.v3;
+    const prevStaked = v3Stats ? historicalDelta?.stakingTotal ?? null : historicalDelta?.stakingBalance ?? null;
+    const stakedEvents =
+      v3Stats && !perChain && historicalDelta?.referenceDate
+        ? v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance, v3Stats.deployDate ?? undefined)
+        : [];
     const prevCex = cexPrevious;
 
     // The "Retail Holders" delta badge shows NET change — same metric every
@@ -146,12 +157,20 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
         // was invariant to it. So it needs the same changelog suppression the
         // holders tile has — retail.balance events, already computed upstream.
         changelogEvents: events.retailBalance,
+        // Staked TEL is a subset of this, not an addition: v3 StakingModule
+        // positions are credited to each staker's wallet at the source.
+        infoTooltip: v3Stats && !perChain
+          ? `Includes ${formatTokenAmount(staked)} staked TEL, of which ${formatTokenAmount(v3Stats.stakedTotal)} is Staked (v3) in the StakingModule. Staked TEL is counted once, inside this figure.`
+          : null,
       },
       {
         id: "staked",
         icon: Layers, label: "Staked TEL", value: formatTokenAmount(staked),
         sub: perChain && chain !== "polygon" ? "Staking runs on Polygon" : pctOfSupply(staked, supply),
-        ath: false, current: staked, previous: prevStaked, fmt: formatTokenAmount, scope: perChain ? "chain" : "all",
+        // ChangeIndicator only renders (and so only shows the "†") with a
+        // baseline; with no v3 baseline, hand it the current value as one.
+        ath: false, current: staked, previous: stakedEvents.length ? staked : prevStaked, fmt: formatTokenAmount, scope: perChain ? "chain" : "all",
+        changelogEvents: stakedEvents,
       },
       {
         id: "cex",

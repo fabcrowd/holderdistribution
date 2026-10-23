@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-23T15:25:08.290Z",
+  "generatedAt": "2026-10-23T18:14:33.944Z",
   "source": {
     "type": "static",
     "configPath": "config/classification-changelog.json"
@@ -407,7 +407,7 @@
         ]
       },
       "evidence": "Sourcify verified source for the implementation 0xd12ba966cc3ebc87f1b8bcbf1fa3bfed397203ae: src/StakingModule.sol (stake/stakeFor/requestWithdrawal, ERC-20 receipt balances). At Polygon block 96,042,367: StakingModule totalSupply() 2,991,605,169.62, TEL v3 balanceOf(module) 2,991,605,169.62, totalPendingWithdrawal() 0. Replaying the module's own Transfer logs from its deployment block 93,048,895 gives 829 positive positions summing exactly to totalSupply().",
-      "limitation": "Stakers' positions are counted at their staked amount; rewards or pending withdrawals that are not represented by receipts stay on the module (non-retail). The site's staking stats (funding-wallets.json) still describe the legacy staking contract only.",
+      "limitation": "Stakers' positions are counted at their staked amount; rewards or pending withdrawals that are not represented by receipts stay on the module (non-retail). Staked TEL now combines the legacy staking contract and the v3 StakingModule, deduped by staker. The module's positions aren't in the archived snapshots, so its history can't be backfilled: comparisons that start between 2026-09-01 and the first measured date show a dagger instead of a change.",
       "circulatingImpact": "No change to total supply or circulating; ~2.99B moves from one wallet to 829 stakers, most of whom are retail. The 500M+ tier loses one wallet and smaller tiers gain stakers.",
       "backfillStatus": "not-possible",
       "backfillNote": "Published history after the v3 launch cannot be rebuilt (as-of reconstruction is legacy-only), so earlier rows keep the module as one wallet.",

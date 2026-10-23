@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useHoldersHistoryData } from "./useHoldersHistoryData";
 import { pickBaseline } from "@/lib/baseline";
+import { combinedStaked, v3StakedOn } from "@/lib/staking";
 
 export type HistoricalDistributionRow = {
   label: string;
@@ -20,7 +21,12 @@ export type HistoricalDelta = {
   // One field so every consumer reads the same baseline regardless of view,
   // instead of hand-summing totalBalance + a separately-fetched CEX figure.
   totalHeld: number | null;
+  /** Legacy staking contract only. */
   stakingBalance: number | null;
+  /** v3 StakingModule on the baseline date: 0 before its deploy, null when unmeasured. */
+  stakingV3Balance: number | null;
+  /** Legacy + v3; null when either is unknown (compare "Staked TEL" against this). */
+  stakingTotal: number | null;
   concentrationTop: Record<string, number> | null;
   distribution: HistoricalDistributionRow[] | null;
   cumulativeHolders: number | null;
@@ -34,6 +40,8 @@ const EMPTY_DELTA: HistoricalDelta = {
   totalBalance: null,
   totalHeld: null,
   stakingBalance: null,
+  stakingV3Balance: null,
+  stakingTotal: null,
   concentrationTop: null,
   distribution: null,
   cumulativeHolders: null,
@@ -103,6 +111,11 @@ export const useHolderHistoricalDelta = ({ view, days, enabled = true }: QueryPa
         totalBalance: closest.combined?.totalBalance ?? null,
         totalHeld: closest.combined?.totalHeld ?? closest.combined?.totalBalance ?? null,
         stakingBalance: closest.combined?.stakingBalance ?? null,
+        stakingV3Balance: v3StakedOn(closest.date, closest.combined?.stakingV3Balance),
+        stakingTotal: combinedStaked(
+          closest.combined?.stakingBalance ?? null,
+          v3StakedOn(closest.date, closest.combined?.stakingV3Balance),
+        ),
         concentrationTop: closest.concentration ?? null,
         distribution: closest.distribution ?? null,
         cumulativeHolders: closest.cumulativeHolders ?? null,
@@ -118,6 +131,8 @@ export const useHolderHistoricalDelta = ({ view, days, enabled = true }: QueryPa
       totalBalance: chain?.totalBalance ?? null,
       totalHeld: chain?.totalBalance ?? null,
       stakingBalance: null,
+      stakingV3Balance: null,
+      stakingTotal: null,
       concentrationTop: chain?.concentration ?? null,
       distribution: chain?.distribution ?? null,
       cumulativeHolders: null,

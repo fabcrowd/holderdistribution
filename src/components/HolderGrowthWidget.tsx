@@ -16,6 +16,7 @@ import { formatRelativeAge, formatShortDate } from "@/lib/format";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
 import { insertGapBreaks } from "@/lib/seriesGaps";
+import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
 import { computeSeriesDomain, activeKeys } from "@/lib/chartDomain";
 
 type HolderGrowthWidgetProps = {
@@ -62,10 +63,22 @@ const balanceChartConfig = {
 type BalanceSeriesKey = keyof typeof balanceChartConfig;
 
 const stakingChartConfig = {
-  staking: {
-    label: "Staked TEL",
-    color: "hsl(var(--chart-4, 262 83% 58%))",
-  },
+  stakingTotal: { label: "Total staked", color: "hsl(var(--primary))" },
+  staking: { label: "Legacy contract", color: "hsl(var(--muted-foreground))" },
+  stakingV3: { label: "v3 StakingModule", color: "hsl(var(--ha-accent))" },
+};
+const V3_DEPLOY_MS = Date.parse(V3_STAKING_DEPLOY_DATE);
+
+/** Dot only where a series has a value with no neighbour (no line drawn). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isolatedDot = (rows: Array<Record<string, number | null>>, key: string, color: string) => (props: any) => {
+  const i = props?.index as number;
+  const has = (j: number) => rows[j] != null && rows[j][key] != null;
+  return has(i) && !has(i - 1) && !has(i + 1) && Number.isFinite(props?.cx) ? (
+    <circle key={`${key}-${i}`} cx={props.cx} cy={props.cy} r={3.5} fill={color} />
+  ) : (
+    <g key={`${key}-${i}`} />
+  );
 };
 
 const formatInteger = (value: number) => new Intl.NumberFormat().format(value);
@@ -167,32 +180,49 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
         const timestamp = Date.parse(point.timestamp);
         const staking = Number(point.staking);
         if (!Number.isFinite(timestamp) || !Number.isFinite(staking)) return null;
-        return { timestamp, staking };
+        return {
+          timestamp,
+          staking,
+          stakingV3: timestamp >= V3_DEPLOY_MS ? point.stakingV3 : null,
+          stakingTotal: point.stakingTotal,
+        };
       })
-      .filter((entry): entry is { timestamp: number; staking: number } => !!entry)
+      .filter(
+        (entry): entry is { timestamp: number; staking: number; stakingV3: number | null; stakingTotal: number | null } => !!entry,
+      )
       .sort((a, b) => a.timestamp - b.timestamp);
   }, [data?.stakingSeries]);
 
   const stakingStats = useMemo(() => {
-    if (stakingChartData.length === 0) return { latest: null, change: null, changePct: null };
-    const latest = stakingChartData[stakingChartData.length - 1].staking;
+    const none = { latest: null, change: null, changePct: null, gap: [] as ReturnType<typeof v3StakingGapEvents> };
+    if (stakingChartData.length === 0) return none;
+    const last = stakingChartData[stakingChartData.length - 1];
+    // Staked = legacy + v3 StakingModule once v3 is measured.
+    const hasV3 = (last.stakingV3 ?? 0) > 0;
+    const latest = hasV3 ? last.stakingTotal ?? last.staking : last.staking;
     // Same pickBaseline-sourced baseline as the hero's Staked TEL tile — see
-    // the Wallets `stats` comment above for why this matters.
-    const baseline = historicalDelta?.stakingBalance ?? null;
+    // the Wallets `stats` comment above for why this matters. With v3 in the
+    // total, a baseline inside the unmeasured v3 window has no honest delta.
+    if (hasV3 && historicalDelta?.referenceDate) {
+      const gap = v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance);
+      if (gap.length) return { ...none, latest, gap };
+    }
+    const baseline = hasV3 ? historicalDelta?.stakingTotal ?? null : historicalDelta?.stakingBalance ?? null;
     if (baseline !== null) {
       const change = latest - baseline;
       const changePct = baseline > 0 ? (change / baseline) * 100 : null;
-      return { latest, change, changePct };
+      return { latest, change, changePct, gap: none.gap };
     }
-    const first = stakingChartData[0].staking;
+    const first = hasV3 ? stakingChartData[0].stakingTotal : stakingChartData[0].staking;
+    if (first == null) return { ...none, latest, gap: v3StakingGapEvents(stakingChartData[0].timestamp, null) };
     const change = latest - first;
     const changePct = first > 0 ? (change / first) * 100 : null;
-    return { latest, change, changePct };
+    return { latest, change, changePct, gap: none.gap };
   }, [stakingChartData, historicalDelta]);
 
   const stakingYDomain = useMemo((): [number, number] | ["auto", "auto"] => {
     if (stakingChartData.length === 0) return ["auto", "auto"];
-    const values = stakingChartData.map((p) => p.staking);
+    const values = stakingChartData.flatMap((p) => [p.staking, p.stakingTotal, p.stakingV3]).filter((v): v is number => v != null);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = Math.max(1, max - min);
@@ -834,12 +864,21 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                   <span className="font-medium text-foreground">Staked TEL</span>
                   {selectedView !== "combined" ? (
                     <span className="text-xs text-muted-foreground">(combined view only)</span>
-                  ) : stakingChartData.length === 0 ? (
-                    <span className="text-xs text-muted-foreground">(run backfill-history-staking-field.js to populate)</span>
-                  ) : (
+                  ) : stakingChartData.length === 0 ? null : (
                     <>
                       {stakingStats.latest !== null && (
                         <span>{formatCompactTEL(stakingStats.latest)}</span>
+                      )}
+                      {(() => {
+                        const last = stakingChartData[stakingChartData.length - 1];
+                        return last && (last.stakingV3 ?? 0) > 0 ? (
+                          <span className="text-xs tabular-nums" data-testid="staked-split">
+                            Legacy {formatCompactTEL(last.staking)} / v3 {formatCompactTEL(last.stakingV3 ?? 0)}
+                          </span>
+                        ) : null;
+                      })()}
+                      {stakingStats.gap.length > 0 && (
+                        <ChangeIndicator variant="plain" current={0} previous={0} changelogEvents={stakingStats.gap} className="text-xs" />
                       )}
                       {stakingStats.change !== null && stakingStats.changePct !== null && (
                         <span className={`inline-flex items-center gap-1 ${stakingStats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
@@ -865,7 +904,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                   </div>
                 ) : stakingChartData.length === 0 ? (
                   <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
-                    No staking history available. Run <code className="mx-1 px-1 py-0.5 rounded bg-muted text-xs">backfill-history-staking-field.js</code> to populate.
+                    No staking history for this period.
                   </div>
                 ) : (
                   <div className="h-56 w-full sm:h-64">
@@ -885,22 +924,49 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                           tickFormatter={(value) => formatCompactTEL(value)}
                           domain={stakingYDomain}
                           tickMargin={8}
-                          width={56}
+                          width={64}
                         />
                         <ChartTooltip
                           content={
                             <ChartTooltipContent
                               labelFormatter={(value) => formatDateValue(value, tooltipFormatter)}
-                              formatter={(value) => [formatCompactTEL(Number(value)), "Staked"]}
+                              formatter={(value, name) => [
+                                formatCompactTEL(Number(value)),
+                                stakingChartConfig[name as keyof typeof stakingChartConfig]?.label ?? "Staked",
+                              ]}
                             />
                           }
+                        />
+                        {stakingChartData[0] && stakingChartData[0].timestamp <= V3_DEPLOY_MS && stakingChartData.some((p) => p.stakingV3 != null) && (
+                          <ReferenceLine
+                            x={V3_DEPLOY_MS}
+                            stroke="hsl(var(--ha-accent))"
+                            strokeDasharray="3 3"
+                            label={{ value: "v3 migration", position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 11, fontWeight: 600 }}
+                          />
+                        )}
+                        <Line
+                          dataKey="stakingTotal"
+                          type="monotone"
+                          stroke="var(--color-stakingTotal)"
+                          strokeWidth={2}
+                          dot={isolatedDot(stakingChartData, "stakingTotal", "hsl(var(--primary))")}
                         />
                         <Line
                           dataKey="staking"
                           type="monotone"
                           stroke="var(--color-staking)"
-                          strokeWidth={2}
+                          strokeWidth={1.5}
+                          strokeDasharray="4 3"
                           dot={false}
+                          connectNulls
+                        />
+                        <Line
+                          dataKey="stakingV3"
+                          type="monotone"
+                          stroke="var(--color-stakingV3)"
+                          strokeWidth={2}
+                          dot={isolatedDot(stakingChartData, "stakingV3", "hsl(var(--ha-accent))")}
                         />
                       </LineChart>
                     </ChartContainer>

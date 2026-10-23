@@ -5,6 +5,7 @@
  * themselves on a block explorer.
  */
 import { legacyTokenUrl, v3TokenUrl } from "@/lib/telContracts";
+import { V3_STAKING_MODULE } from "@/lib/staking";
 
 export type MethodologyLink = { label: string; href: string };
 export type Methodology = { how: string; verify: string; links: MethodologyLink[] };
@@ -16,6 +17,7 @@ const TEL_ETH = legacyTokenUrl("ethereum");
 const TEL_POLYGON = legacyTokenUrl("polygon");
 const TEL_BASE = legacyTokenUrl("base");
 const STAKING = "https://polygonscan.com/address/0x92e43Aec69207755CB1E6A8Dc589aAE630476330";
+const STAKING_V3 = `https://polygonscan.com/address/${V3_STAKING_MODULE}`;
 const DEX_TEL_USDC = "https://polygonscan.com/address/0xa5cabfc725dfa129f618d527e93702d10412f039";
 const DEX_TEL_WPOL = "https://polygonscan.com/address/0x9b5c71936670e9f1f36e63f03384de7e06e60d2a";
 
@@ -35,7 +37,7 @@ export const METHODOLOGY: Record<string, Methodology> = {
     links: [{ label: "Treasury wallet (Etherscan)", href: TREASURY_ETHERSCAN }],
   },
   holderSnapshot: {
-    how: "Every wallet's TEL balance is reconstructed from the token's on-chain Transfer event logs on Ethereum, Polygon and Base — read directly from full nodes, the same ledger the block explorers use — then staking is added from the Polygon staking contract. A holder is any wallet with a non-zero balance, with no minimum applied: that includes roughly 9,500 wallets holding less than 1 TEL each (a few thousand TEL between all of them). They are counted in the headline and in the smallest distribution tier alike, so every holder count on this page reconciles to the same total. A wallet's balance is its legacy TEL (2 decimals) plus its upgraded TEL v3 (18 decimals, 0x7E13…0731 on every chain), each read with its own decimals. Telcoin's official upgrade swaps legacy for v3 1:1: the upgrade contract locks the legacy TEL and mints the same amount of v3 to the holder, so the locked legacy TEL is left out and the v3 is counted instead — nothing is counted twice, and the total stays 100B.",
+    how: "Every wallet's TEL balance is reconstructed from the token's on-chain Transfer event logs on Ethereum, Polygon and Base — read directly from full nodes, the same ledger the block explorers use — then staking is added from the Polygon staking contracts (legacy and v3 StakingModule). A holder is any wallet with a non-zero balance, with no minimum applied: that includes roughly 9,500 wallets holding less than 1 TEL each (a few thousand TEL between all of them). They are counted in the headline and in the smallest distribution tier alike, so every holder count on this page reconciles to the same total. A wallet's balance is its legacy TEL (2 decimals) plus its upgraded TEL v3 (18 decimals, 0x7E13…0731 on every chain), each read with its own decimals. Telcoin's official upgrade swaps legacy for v3 1:1: the upgrade contract locks the legacy TEL and mints the same amount of v3 to the holder, so the locked legacy TEL is left out and the v3 is counted instead — nothing is counted twice, and the total stays 100B.",
     verify: "Open the TEL token contract on any explorer and check the Holders tab, or look up any single wallet's TEL balance directly.",
     links: [...TEL_TOKENS, { label: "Staking contract", href: STAKING }],
   },
@@ -55,9 +57,13 @@ export const METHODOLOGY: Record<string, Methodology> = {
     links: TEL_TOKENS,
   },
   staking: {
-    how: "Staked balances are read directly from the Telcoin staking contract on Polygon and mapped back to each staker's wallet.",
-    verify: "Open the staking contract on Polygonscan to inspect staked positions and transactions.",
-    links: [{ label: "Staking contract", href: STAKING }, { label: "TEL on Polygonscan", href: TEL_POLYGON }],
+    how: "Staked TEL combines two contracts on Polygon: the legacy Telcoin staking contract and the TEL v3 StakingModule (live since 1 Sep 2026, block 93,048,895). Both are read on-chain and mapped back to each staker's wallet; a wallet staked in both is counted once as a staker, with its two amounts added. Staked TEL is already part of each staker's retail balance, so it is never added on top of Retail Held. The module's positions aren't in the archived daily snapshots, so its history can't be rebuilt: before 1 Sep 2026 it held nothing (the legacy figure is the whole total), and between then and the first measured date its balance is unknown and left blank rather than guessed. Changes that start in that window show a dagger (†) instead of a number.",
+    verify: "Open either contract on Polygonscan to inspect staked positions and transactions.",
+    links: [
+      { label: "Legacy staking contract", href: STAKING },
+      { label: "v3 StakingModule", href: STAKING_V3 },
+      { label: "TEL on Polygonscan", href: TEL_POLYGON },
+    ],
   },
   overlap: {
     how: "Wallets that hold TEL on more than one chain are matched by address across the per-chain snapshots.",

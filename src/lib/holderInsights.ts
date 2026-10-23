@@ -27,6 +27,12 @@ export type StakingStats = {
   stakedShareOfRetail: number;
   stakerShareOfHolders: number;
   averageStakedPerStaker: number;
+  /** Legacy staking contract only (holders-lite >= D12). */
+  legacy?: { stakerCount: number; stakedTotal: number };
+  /** v3 StakingModule; absent on chains it isn't deployed on. stakedTotal /
+   *  stakerCount above are legacy + v3, deduped by staker. */
+  v3?: { stakerCount: number; stakedTotal: number; deployDate: string | null; deployBlock: number | null; module: string };
+  stakedInBoth?: number;
 };
 
 export type ChainOverlapStats = {

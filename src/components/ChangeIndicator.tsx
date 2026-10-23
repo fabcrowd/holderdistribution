@@ -34,8 +34,15 @@ export type ChangeIndicatorProps = {
   variant?: "pill" | "plain";
 };
 
+// "other" events aren't reclassifications (e.g. the v3 StakingModule's
+// unrecorded history, lib/staking.ts), so they get neutral wording.
+const isMeasurementOnly = (events: ClassificationEvent[]) => events.every((e) => e.type === "other");
 const relabelText = (events: ClassificationEvent[]) =>
-  `Some wallets were reclassified since this comparison's start date (e.g. later identified as an exchange), so the change can't be shown as a plain gain or loss:\n\n${events
+  `${
+    isMeasurementOnly(events)
+      ? "What this figure measures changed since this comparison's start date"
+      : "Some wallets were reclassified since this comparison's start date (e.g. later identified as an exchange)"
+  }, so the change can't be shown as a plain gain or loss:\n\n${events
     .map((e) => `${e.date}: ${e.summary}`)
     .join("\n\n")}`;
 
@@ -59,7 +66,11 @@ export const ChangeIndicator = ({
     return (
       <InfoTip
         content={relabelText(changelogEvents)}
-        label="Change not shown: some wallets were reclassified. Details"
+        label={
+          isMeasurementOnly(changelogEvents)
+            ? "Change not shown: no comparable baseline. Details"
+            : "Change not shown: some wallets were reclassified. Details"
+        }
         className={cn("-my-1 -ml-1 text-sm font-semibold text-muted-foreground", className)}
       >
         <span aria-hidden="true">†</span>
@@ -78,7 +89,7 @@ export const ChangeIndicator = ({
           className,
         )}
       >
-        Relabeled
+        {isMeasurementOnly(changelogEvents) ? "Not comparable" : "Relabeled"}
         <InfoTooltip text={relabelText(changelogEvents)} />
       </span>
     );
