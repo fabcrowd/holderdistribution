@@ -39,3 +39,53 @@ export const residualCustodyBalance = (contractBalance, attributed) => {
   if (!Number.isFinite(placed) || placed <= 0) return held;
   return Math.max(0, held - placed);
 };
+
+/**
+ * Moves a staking contract's custodied tokens onto the stakers who own them.
+ *
+ * Used for the TEL v3 StakingModule (Polygon 0x573105be…5731). It is an
+ * ERC-20-style receipt token: staking mints receipts 1:1 to the staker, a
+ * withdrawal burns them, so replaying the module's OWN Transfer logs gives each
+ * staker's position exactly (on 2026-10-23: 829 holders summing to the
+ * module's totalSupply() of 2,991,605,169.62, equal to the v3 TEL it held).
+ * Before this, the whole ~3B sat on the module's address and was published as
+ * ONE retail wallet in the 500M+ tier.
+ *
+ * Mutates `balances` (address -> TEL) and, when given, `v3Balances` (the v3
+ * share of each balance, which the staked TEL is). Whatever is not attributed
+ * (pending withdrawals, rewards) stays on the contract, counted once, via
+ * residualCustodyBalance; attribution above custody is clamped and reported.
+ *
+ * @param {Map<string, number>} balances
+ * @param {string} custody custody contract address (lowercase)
+ * @param {Map<string, number>} receipts staker -> staked TEL
+ * @param {Map<string, number>} [v3Balances]
+ * @returns {{ held: number, attributed: number, residual: number, stakers: number, overAttributed: number }}
+ */
+export const attributeStakingReceipts = (balances, custody, receipts, v3Balances = null) => {
+  const held = Number(balances.get(custody) ?? 0);
+  let attributed = 0;
+  let stakers = 0;
+  for (const [account, amount] of receipts) {
+    if (account === custody || !Number.isFinite(amount) || amount <= 0) continue;
+    attributed += amount;
+    stakers++;
+  }
+  // Over-attribution would invent TEL: scale every position down to what the
+  // contract really holds (never expected; the caller logs it if it happens).
+  const scale = attributed > held && attributed > 0 ? held / attributed : 1;
+  let placed = 0;
+  for (const [account, amount] of receipts) {
+    if (account === custody || !Number.isFinite(amount) || amount <= 0) continue;
+    const credit = amount * scale;
+    balances.set(account, (balances.get(account) ?? 0) + credit);
+    if (v3Balances) v3Balances.set(account, (v3Balances.get(account) ?? 0) + credit);
+    placed += credit;
+  }
+  const residual = residualCustodyBalance(held, placed);
+  if (held > 0 || balances.has(custody)) balances.set(custody, residual);
+  if (v3Balances && v3Balances.has(custody)) {
+    v3Balances.set(custody, residualCustodyBalance(v3Balances.get(custody), placed));
+  }
+  return { held, attributed: placed, residual, stakers, overAttributed: Math.max(0, attributed - held) };
+};
