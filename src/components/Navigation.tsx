@@ -46,10 +46,11 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
             {/* Hidden from lg up, where the nav's own links start rendering
                 their text labels (`hidden lg:inline` below) and the active
                 pill already names the page — showing both reads as a
-                stutter. Below lg the links are icon-only or absent
-                entirely, so this is the only page identity there. */}
+                stutter. Hidden below sm too: a phone only has room for
+                "Token…", and the hero heading directly beneath already names
+                the page. Between sm and lg it's the only page identity. */}
             {pageTitle && (
-              <span className="lg:hidden truncate border-l border-primary/25 pl-2 md:pl-3 text-base md:text-lg font-bold text-foreground">
+              <span className="hidden sm:inline lg:hidden truncate border-l border-primary/25 pl-2 md:pl-3 text-base md:text-lg font-bold text-foreground">
                 {pageTitle}
               </span>
             )}

@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowDownRight, ArrowUpRight, Coins, Info, LayoutGrid, Minus, PanelsTopLeft, PieChart, Users } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowDownRight, ArrowUpRight, Clock, Coins, Info, LayoutGrid, Minus, PanelsTopLeft, PieChart, Users } from "lucide-react";
 import logoIcon from "@/assets/holder-analytics-icon.svg";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -51,8 +52,9 @@ type Props = {
 };
 
 /**
- * Desktop (>=1280px) shell: one 48px header row carrying identity, view
- * switch, the four headline KPIs and every control; a viewport-height grid
+ * Desktop (>=1280px) shell: one 56px title bar carrying the brand (eyebrow +
+ * an always-visible "TEL Holder Distribution" h1, plus a stale-data pill),
+ * the view switch, the four headline KPIs and every control; a viewport-height grid
  * below it; a 24px status line. The document itself never scrolls; panels
  * scroll internally.
  */
@@ -68,7 +70,8 @@ export const TerminalDashboard = ({
   onSelectedViewChange,
   children,
 }: Props) => {
-  const { summary, snapshot, tiles } = useHeadlineSummary(rangeDays);
+  const { summary, snapshot, tiles, isError } = useHeadlineSummary(rangeDays);
+  const qc = useQueryClient();
   const fresh = describeFreshness(snapshot?.generatedAt);
   const stale = fresh.status === "delayed" || fresh.status === "stale";
 
@@ -81,12 +84,38 @@ export const TerminalDashboard = ({
         >
           Skip to main content
         </a>
-        <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-card px-3">
-          <Link to="/" className="flex shrink-0 items-center gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <img src={logoIcon} alt="" width={28} height={28} className="h-7 w-7" />
-            <span className="sr-only">Holder Analytics home</span>
-          </Link>
-          <h1 className="hidden shrink-0 text-sm font-bold tracking-tight 2xl:block">TEL holder distribution</h1>
+        <header
+          className="relative flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card px-3 shadow-[0_1px_0_0_hsl(var(--border))] 2xl:gap-5 2xl:px-4"
+          data-testid="terminal-header"
+        >
+          {/* Brand accent: a 2px primary rule across the top of the bar so the
+              header reads as the portal's title bar, not another panel. */}
+          <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary via-primary/70 to-[hsl(var(--ha-accent))]" />
+          <div className="flex shrink-0 items-center gap-2.5">
+            <Link to="/" className="shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <img src={logoIcon} alt="" width={36} height={36} className="h-8 w-8 min-[1400px]:h-9 min-[1400px]:w-9" />
+              <span className="sr-only">Holder Analytics home</span>
+            </Link>
+            <div className="flex flex-col justify-center leading-none">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Holder Analytics</span>
+                {stale && (
+                  <span
+                    role="status"
+                    data-testid="header-stale-pill"
+                    title={`The daily refresh is behind. Figures are as of ${fresh.date}.`}
+                    className="inline-flex items-center gap-1 rounded-full border border-amber-500/50 bg-amber-50 px-1.5 py-px text-[10px] font-semibold leading-none text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                  >
+                    <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+                    Data {fresh.date}
+                  </span>
+                )}
+              </div>
+              <h1 className="mt-1 whitespace-nowrap text-base font-extrabold leading-none tracking-tight text-foreground min-[1400px]:text-lg 2xl:text-xl">
+                TEL Holder Distribution
+              </h1>
+            </div>
+          </div>
 
           <nav aria-label="Views" className="flex shrink-0 items-center rounded-md border border-border bg-muted/50 p-0.5">
             {VIEWS.map((v) => {
@@ -100,25 +129,37 @@ export const TerminalDashboard = ({
                     e.preventDefault();
                     onViewChange(v.id);
                   }}
-                  className={`inline-flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  className={`inline-flex h-8 items-center gap-1.5 rounded px-2.5 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     active ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <v.icon className="h-3.5 w-3.5" aria-hidden="true" />
+                  <v.icon className="hidden h-3.5 w-3.5 2xl:block" aria-hidden="true" />
                   {v.label}
                 </a>
               );
             })}
           </nav>
 
-          <dl className="flex min-w-0 flex-1 items-center gap-4 overflow-hidden px-1" aria-label="Headline numbers">
+          <dl className="flex min-w-0 flex-1 items-center justify-[safe_center] gap-3 min-[1400px]:gap-6 2xl:gap-10" aria-label="Headline numbers" data-testid="headline-numbers">
             {tiles.map((t) => (
-              <div key={t.id} className="flex min-w-0 shrink-0 flex-col leading-tight">
-                <dt className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t.label}</dt>
+              <div key={t.id} className="flex shrink-0 flex-col gap-0.5 leading-tight" data-testid={`kpi-${t.id}`}>
+                <dt className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t.label}</dt>
                 <dd className="flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="text-sm font-bold tabular-nums">{t.value}</span>
+                  <span className="text-base font-semibold tabular-nums text-foreground min-[1400px]:text-lg">{t.value}</span>
                   {t.current !== null && (
-                    <ChangeIndicator current={t.current} previous={t.previous} formatter={t.fmt} tone={t.tone ?? "auto"} changelogEvents={t.changelogEvents} />
+                    // Numeric deltas (e.g. "+195.18M") need room the 1280 bar
+                    // doesn't have, so they appear from 1400px; the † reclass
+                    // markers are narrow and always show.
+                    <span className={t.changelogEvents?.length ? "inline-flex" : "hidden min-[1400px]:inline-flex"}>
+                    <ChangeIndicator
+                      variant="plain"
+                      current={t.current}
+                      previous={t.previous}
+                      formatter={t.fmt}
+                      tone={t.tone ?? "auto"}
+                      changelogEvents={t.changelogEvents}
+                    />
+                    </span>
                   )}
                 </dd>
               </div>
@@ -137,13 +178,14 @@ export const TerminalDashboard = ({
                     type="button"
                     aria-pressed={explore === on}
                     onClick={() => onExploreChange(on)}
-                    title={on ? "Every chart and table for this view, one at a time" : "All key charts on one screen"}
-                    className={`inline-flex h-7 items-center gap-1 rounded px-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    title={on ? "Explore: every chart and table for this view, one at a time" : "Dashboard: all key charts on one screen"}
+                    aria-label={label}
+                    className={`inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded px-1.5 text-xs 2xl:px-2 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       explore === on ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                    {label}
+                    <span className="hidden 2xl:inline">{label}</span>
                   </button>
                 ))}
               </div>
@@ -196,7 +238,7 @@ export const TerminalDashboard = ({
                 )}
               </PopoverContent>
             </Popover>
-            <GlossaryDialog className="!min-h-0 h-8 px-2 text-xs" />
+            <GlossaryDialog className="!min-h-0 h-8 px-2 text-xs" labelClassName="sr-only 2xl:not-sr-only" />
             <ThemeToggle />
           </div>
         </header>
@@ -206,9 +248,22 @@ export const TerminalDashboard = ({
         </main>
 
         <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-card px-3 text-[11px] text-muted-foreground">
-          <span className={stale ? "font-semibold text-[hsl(var(--ha-warning))]" : undefined} role={stale ? "status" : undefined}>
-            {fresh.status === "unknown" ? "Loading data…" : fresh.status === "fresh" ? `Updated ${fresh.relative}` : `Data from ${fresh.date} · daily refresh delayed`}
-          </span>
+          {fresh.status === "unknown" && isError ? (
+            <span role="alert" className="inline-flex items-center gap-2 font-semibold text-destructive">
+              Couldn&apos;t load the holder snapshot.
+              <button
+                type="button"
+                onClick={() => void qc.refetchQueries({ predicate: (q) => q.state.status === "error" })}
+                className="rounded border border-border px-1.5 font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Retry
+              </button>
+            </span>
+          ) : (
+            <span className={stale ? "font-semibold text-[hsl(var(--ha-warning))]" : undefined}>
+              {fresh.status === "unknown" ? "Loading data…" : fresh.status === "fresh" ? `Updated ${fresh.relative}` : `Data from ${fresh.date} · daily refresh delayed`}
+            </span>
+          )}
           <span aria-hidden="true">·</span>
           <span>On-chain data for Ethereum, Polygon and Base. Prices by CoinGecko.</span>
           <span className="ml-auto">Independent community project. Not financial advice.</span>
