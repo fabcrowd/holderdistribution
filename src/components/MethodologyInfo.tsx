@@ -22,7 +22,7 @@ export const MethodologyInfo = ({ section, className }: MethodologyInfoProps) =>
         <button
           type="button"
           aria-label="How this works and how to verify it on-chain"
-          className={`inline-flex items-center justify-center text-muted-foreground/60 hover:text-primary transition-colors ${className ?? ""}`}
+          className={`inline-flex items-center justify-center text-muted-foreground/80 hover:text-primary transition-colors ${className ?? ""}`}
           onClick={(e) => {
             // Parent collapsible headers are full-width triggers; keep this
             // info control from toggling the section open/closed.

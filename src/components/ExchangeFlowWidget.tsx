@@ -1,4 +1,3 @@
-import { ActiveRangeNote } from "@/components/ActiveRangeNote";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { ExchangeNetflow } from "@/components/ExchangeNetflow";
 import { ArrowLeftRight } from "lucide-react";
@@ -32,8 +31,7 @@ export const ExchangeFlowWidget = ({ rangeDays }: ExchangeFlowWidgetProps) => (
       </span>
       Exchange Flows
       <MethodologyInfo section="cexFlows" />
-      <span className="ml-auto"><ActiveRangeNote rangeDays={rangeDays} /></span>
-    </div>
+          </div>
     <p data-panel-desc className="text-sm text-muted-foreground mt-1.5">
       TEL actually moving to and from exchanges, counted from Transfer logs. Unlike the
       balance charts, this is unaffected by how a wallet is categorised.

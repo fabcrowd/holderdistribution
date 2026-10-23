@@ -31,7 +31,9 @@ export const SubscriptionGate = ({
 
   return (
     <div className={`relative rounded-lg border border-border/60 overflow-hidden ${minHeightClass}`}>
-      <div className="select-none pointer-events-none blur-sm opacity-60" aria-hidden>
+      {/* inert, not just aria-hidden: the blurred preview's own buttons must
+          not be reachable by Tab either (axe aria-hidden-focus). */}
+      <div className="select-none pointer-events-none blur-sm opacity-60" aria-hidden {...{ inert: "" }}>
         {children}
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/70 backdrop-blur-[2px] p-4 text-center">

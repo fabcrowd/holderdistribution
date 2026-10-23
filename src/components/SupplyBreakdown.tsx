@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SubPanelTabs } from "@/components/SubPanelTabs";
+import { SupplyTerminal } from "@/components/terminal/SupplyTerminal";
 import { TabsContent } from "@/components/ui/tabs";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,10 @@ const SUPPLY_PANELS = [
 type SupplyBreakdownProps = {
   /** Page-wide range, so the history chart below matches every other widget. */
   rangeDays: number;
+  panel?: string;
+  onPanelChange?: (panel: string) => void;
+  /** "terminal": the fixed-height desktop dashboard grid (>=1280px). */
+  layout?: "stacked" | "terminal";
 };
 
 const formatCompactTEL = (value: number) => {
@@ -151,8 +156,15 @@ const renderBucketDetail = (
 };
 
 
-const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
-  const [panel, setPanel] = useState("breakdown");
+const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = "stacked" }: SupplyBreakdownProps) => {
+  // Controlled when the page owns the panel (so #supply/<panel> deep links
+  // work), uncontrolled otherwise.
+  const [panelState, setPanelState] = useState("breakdown");
+  const panel = panelProp ?? panelState;
+  const setPanel = (next: string) => {
+    setPanelState(next);
+    onPanelChange?.(next);
+  };
   const { data, isLoading, error } = useSupplyReconciliation();
   // Hovered slice — highlights the wedge and its list row together, in
   // either direction.
@@ -161,6 +173,16 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
   // a row so a click on the WEDGE and a click on that bucket's LIST ROW open
   // the exact same popover instead of two competing ones.
   const [openBucketKey, setOpenBucketKey] = useState<string | null>(null);
+
+  // Terminal layout: picking a category always shows its detail, even if
+  // another analysis tab was open on the right.
+  useEffect(() => {
+    if (layout === "terminal" && openBucketKey) {
+      setPanelState("breakdown");
+      onPanelChange?.("breakdown");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openBucketKey, layout]);
 
   const { buckets, totalSupply, circulating, residualItems, otherItems, associationItems, holdingsItems, dexItems, cexItems, escrowItems } =
     useMemo(() => {
@@ -249,64 +271,8 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
   const cgDelta = circulating != null ? circulating - coingeckoCirculating : null;
 
 
-  // Mini donut swatch for the collapsed row — same colors/order as the full
-  // chart below, just a static conic-gradient instead of a recharts Pie
-  // (recharts' ResponsiveContainer has no proven pattern in this codebase at
-  // this size, so a plain CSS gradient avoids that risk entirely).
-  return (
-    <ForensicsUnlockProvider>
-    <Card className="premium-surface-card overflow-hidden">
-      {/* No Collapsible: sole content of the "Supply" tab. */}
-      <CardHeader className="holders-header-supply">
-          <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
-            <span className="p-1.5 rounded-xl bg-sky-500/12 border border-sky-500/20 shrink-0">
-              <PieChart className="h-4 w-4 sm:h-5 sm:w-5 text-sky-600 dark:text-sky-400" />
-            </span>
-            Supply Breakdown
-            <MethodologyInfo section="supplyBreakdown" />
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base text-muted-foreground mt-2">
-            Where every TEL sits — click any segment for more detail
-          </CardDescription>
-      </CardHeader>
-          <CardContent className="space-y-5 pt-2">
-            {isLoading && (
-              <p className="text-sm text-muted-foreground">Loading supply reconciliation…</p>
-            )}
-            {error && (
-              <p className="text-sm text-destructive">Could not load supply reconciliation.</p>
-            )}
-            {!isLoading && !error && buckets.length === 0 && (
-              <p className="text-sm text-muted-foreground">No supply data available.</p>
-            )}
-            {buckets.length > 0 && (
-              <SubPanelTabs panels={SUPPLY_PANELS} value={panel} onValueChange={setPanel}>
-              <TabsContent value="breakdown" className="mt-4 space-y-5 focus-visible:outline-none">
-                <div>
-                  <div className="flex items-baseline justify-between mb-3 gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-                      Total supply
-                    </span>
-                    <span className="text-sm font-semibold tabular-nums">
-                      {formatCompactTEL(totalSupply)} TEL
-                    </span>
-                  </div>
-                  {/* Donut beside its list on desktop, stacked on mobile —
-                      the same two pieces, only the axis changes.
-                      On-chart connector labels were tried here and removed:
-                      five of the eight buckets are <=1.8% and adjacent, so
-                      they share a ~19deg arc while their labels need ~150px
-                      of vertical space. Every connector then has to fan out
-                      of effectively one point, which no routing or
-                      column-balancing scheme makes legible. A list beside
-                      the chart carries the same names, values and shares
-                      with none of that, and uses the width desktop already
-                      had spare. */}
-                  {/* max-w on the list, not just flex-1: on a wide card the
-                      value column would otherwise be flung ~1000px from its
-                      label, which breaks the row's readability far worse
-                      than any whitespace saved. */}
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-center md:gap-10">
+
+  const renderDonut = (className: string) => (
                   <ChartContainer
                     config={supplyPieChartConfig}
                     // Explicit height rather than aspect-square + max-h: that
@@ -316,7 +282,7 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                     // aspect-ratio doesn't reconcile the two backwards), which
                     // showed up as the list's first row rendering underneath
                     // the donut instead of below it.
-                    className="mx-auto w-full h-[240px] md:mx-0 md:h-[300px] md:w-[300px] md:shrink-0"
+                    className={className}
                     role="img"
                     aria-label="TEL total supply by category"
                   >
@@ -397,11 +363,9 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                       </Pie>
                     </RePieChart>
                   </ChartContainer>
-
-                  {/* The reading surface, at both sizes: every bucket's name,
-                      value and share at full text size with a real 44px
-                      target, hover-synced with its wedge. */}
-                  <div className="w-full min-w-0 space-y-0.5 md:max-w-[30rem]">
+  );
+  const renderList = (compact: boolean) => (
+                  <div className={compact ? "w-full min-w-0 space-y-px" : "w-full min-w-0 space-y-0.5 md:max-w-[30rem]"}>
                     {orderedBuckets.map((b) => {
                       const pct = totalSupply > 0 ? (b.amount / totalSupply) * 100 : 0;
                       const isOpen = openBucketKey === b.key;
@@ -435,7 +399,7 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                           // `animate` above, not a CSS class — see below)
                           // grows toward the reader instead of also
                           // expanding left past the color dot.
-                          className={`flex w-full origin-left items-center justify-between gap-3 rounded-lg px-2.5 py-2.5 min-h-[44px] text-left transition-[background-color,opacity,box-shadow] duration-150 ${
+                          className={`flex w-full origin-left items-center justify-between gap-3 rounded-lg px-2.5 ${compact ? "py-1 min-h-[30px]" : "py-2.5 min-h-[44px]"} text-left transition-[background-color,opacity,box-shadow] duration-150 ${
                             isRowActive
                               ? "relative z-10 bg-primary/10 shadow-lg ring-1 ring-primary/30"
                               : "hover:bg-muted/40"
@@ -458,18 +422,9 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                       );
                     })}
                   </div>
-                  </div>
-
-                  {/* Shared inline panel, not a floating popover: it used to
-                      cover the donut and the rows above the clicked one,
-                      making it impossible to reach a different section
-                      without closing it first. Always in normal document
-                      flow beneath the donut+list, so both stay reachable —
-                      clicking a different wedge or row swaps this panel's
-                      content directly, no close step needed. Internal
-                      scroll (not the whole page) keeps a long list (e.g.
-                      CEX Custody's ~57 wallets) from pushing Reconciliation/
-                      History far down the page. */}
+  );
+  const detailBlock = (
+    <>
                   {openBucketKey && (
                     <div className="relative mt-3 rounded-lg border border-border/50 bg-muted/20 p-3 pr-9 text-xs leading-relaxed max-h-[60vh] overflow-y-auto">
                       <button
@@ -483,7 +438,10 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                       {getDetail(openBucketKey)}
                     </div>
                   )}
-                  <p className="mt-3 text-[11px] text-muted-foreground text-center">
+    </>
+  );
+  const footnote = (
+<p className="mt-3 text-[11px] text-muted-foreground text-center">
                     Segments sum to {formatCompactTEL(partitionSum)} (
                     {Math.abs(partitionSum - totalSupply) < 1
                       ? "exact 100B identity"
@@ -491,10 +449,9 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                     ). Solid = retail wallets / DEX LP; muted = exchanges & project; grey = in
                     transit.
                   </p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="reconciliation" className="mt-4 space-y-5 focus-visible:outline-none">
+  );
+  const reconciliationBody = (
+    <>
                 {circulating != null && (
                   <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground space-y-1">
                     <div>
@@ -523,12 +480,9 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                   </div>
                 )}
                 <TelDispositionLedger />
-              </TabsContent>
-
-              {/* Behind a panel rather than always-on: the gate reserves
-                  =18rem even when locked, so for a logged-out visitor it was
-                  ~288px of blurred placeholder on every load. */}
-              <TabsContent value="history" className="mt-4 focus-visible:outline-none">
+    </>
+  );
+  const historyBody = (
                 <SubscriptionGate
                   minHeightClass="min-h-[18rem]"
                   description="Association Safes, Telcoin Holdings and Escrow balance history. Same password as Reconciliation."
@@ -536,14 +490,131 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                   <TreasuryHistoryChart rangeDays={rangeDays} />
                   <AssociationFlowAnalysis />
                 </SubscriptionGate>
+  );
+  const walletFlowsBody = (
+                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading…</p>}>
+                  <WalletFlowsPanel />
+                </Suspense>
+  );
+
+  if (layout === "terminal") {
+    return (
+      <ForensicsUnlockProvider>
+      <SupplyTerminal
+        state={isLoading ? "loading" : error ? "error" : buckets.length === 0 ? "empty" : "ready"}
+        panel={panel}
+        onPanelChange={setPanel}
+        totalSupplyLabel={`${formatCompactTEL(totalSupply)} TEL`}
+        donut={renderDonut("mx-auto h-[170px] w-[170px] shrink-0 2xl:h-[240px] 2xl:w-[240px]")}
+        list={renderList(true)}
+        footnote={footnote}
+        openBucketLabel={openBucketKey ? buckets.find((b) => b.key === openBucketKey)?.label ?? null : null}
+        detail={openBucketKey ? getDetail(openBucketKey) : null}
+        onCloseDetail={() => setOpenBucketKey(null)}
+        reconciliation={reconciliationBody}
+        history={historyBody}
+        walletFlows={walletFlowsBody}
+      />
+      </ForensicsUnlockProvider>
+    );
+  }
+
+  // Mini donut swatch for the collapsed row — same colors/order as the full
+  // chart below, just a static conic-gradient instead of a recharts Pie
+  // (recharts' ResponsiveContainer has no proven pattern in this codebase at
+  // this size, so a plain CSS gradient avoids that risk entirely).
+  return (
+    <ForensicsUnlockProvider>
+    <Card className="premium-surface-card overflow-hidden">
+      {/* No Collapsible: sole content of the "Supply" tab. */}
+      <CardHeader className="holders-header-supply">
+          <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
+            <span className="p-1.5 rounded-xl bg-sky-500/12 border border-sky-500/20 shrink-0">
+              <PieChart className="h-4 w-4 sm:h-5 sm:w-5 text-sky-600 dark:text-sky-400" />
+            </span>
+            Supply Breakdown
+            <MethodologyInfo section="supplyBreakdown" />
+          </CardTitle>
+          <CardDescription className="text-sm sm:text-base text-muted-foreground mt-2">
+            Where every TEL sits — click any segment for more detail
+          </CardDescription>
+      </CardHeader>
+          <CardContent className="space-y-5 pt-2">
+            {isLoading && (
+              <p className="text-sm text-muted-foreground">Loading supply reconciliation…</p>
+            )}
+            {error && (
+              <p className="text-sm text-destructive">Could not load supply reconciliation.</p>
+            )}
+            {!isLoading && !error && buckets.length === 0 && (
+              <p className="text-sm text-muted-foreground">No supply data available.</p>
+            )}
+            {buckets.length > 0 && (
+              <SubPanelTabs panels={SUPPLY_PANELS} value={panel} onValueChange={setPanel}>
+              <TabsContent value="breakdown" className="mt-4 space-y-5 focus-visible:outline-none">
+                <div>
+                  <div className="flex items-baseline justify-between mb-3 gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                      Total supply
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">
+                      {formatCompactTEL(totalSupply)} TEL
+                    </span>
+                  </div>
+                  {/* Donut beside its list on desktop, stacked on mobile —
+                      the same two pieces, only the axis changes.
+                      On-chart connector labels were tried here and removed:
+                      five of the eight buckets are <=1.8% and adjacent, so
+                      they share a ~19deg arc while their labels need ~150px
+                      of vertical space. Every connector then has to fan out
+                      of effectively one point, which no routing or
+                      column-balancing scheme makes legible. A list beside
+                      the chart carries the same names, values and shares
+                      with none of that, and uses the width desktop already
+                      had spare. */}
+                  {/* max-w on the list, not just flex-1: on a wide card the
+                      value column would otherwise be flung ~1000px from its
+                      label, which breaks the row's readability far worse
+                      than any whitespace saved. */}
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-center md:gap-10">
+                  {renderDonut("mx-auto w-full h-[240px] md:mx-0 md:h-[300px] md:w-[300px] md:shrink-0")}
+
+                  {/* The reading surface, at both sizes: every bucket's name,
+                      value and share at full text size with a real 44px
+                      target, hover-synced with its wedge. */}
+                  {renderList(false)}
+                  </div>
+
+                  {/* Shared inline panel, not a floating popover: it used to
+                      cover the donut and the rows above the clicked one,
+                      making it impossible to reach a different section
+                      without closing it first. Always in normal document
+                      flow beneath the donut+list, so both stay reachable —
+                      clicking a different wedge or row swaps this panel's
+                      content directly, no close step needed. Internal
+                      scroll (not the whole page) keeps a long list (e.g.
+                      CEX Custody's ~57 wallets) from pushing Reconciliation/
+                      History far down the page. */}
+                  {detailBlock}
+                  {footnote}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="reconciliation" className="mt-4 space-y-5 focus-visible:outline-none">
+                {reconciliationBody}
+              </TabsContent>
+
+              {/* Behind a panel rather than always-on: the gate reserves
+                  =18rem even when locked, so for a logged-out visitor it was
+                  ~288px of blurred placeholder on every load. */}
+              <TabsContent value="history" className="mt-4 focus-visible:outline-none">
+                {historyBody}
               </TabsContent>
 
               {/* Password-gated: the report is fetched from the forensics gate
                   function only after unlock; nothing is in the public bundle. */}
               <TabsContent value="wallet-flows" className="mt-4 focus-visible:outline-none">
-                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading…</p>}>
-                  <WalletFlowsPanel />
-                </Suspense>
+                {walletFlowsBody}
               </TabsContent>
               </SubPanelTabs>
             )}

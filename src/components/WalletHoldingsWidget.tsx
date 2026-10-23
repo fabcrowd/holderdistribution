@@ -50,7 +50,6 @@ import { CexHistoryTiles } from "@/components/CexHistoryTiles";
 import { useCexBalanceHistory, type CexHistoryEntry } from "@/hooks/useCexBalanceHistory";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
-import { ActiveRangeNote } from "@/components/ActiveRangeNote";
 import { pickBaseline, baselineLabel } from "@/lib/baseline";
 import { type ClassificationEvent } from "@/hooks/useClassificationChangelog";
 import { useHeadlineTiles } from "@/hooks/useHeadlineTiles";
@@ -308,7 +307,7 @@ const renderMetrics = (
             </div>
             <div className={`text-xs ${item.badge === "ATH" ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}`}>{item.description}</div>
             {deltaLabel && item.previous !== null && (
-              <div className="text-xs text-muted-foreground/60 mt-1">vs {deltaLabel}</div>
+              <div className="text-xs text-muted-foreground mt-1">vs {deltaLabel}</div>
             )}
           </div>
         );
@@ -389,8 +388,7 @@ const renderConcentration = (
         <span className="text-[10px] sm:text-xs font-medium text-muted-foreground border border-border/60 rounded-full px-2 py-0.5">
           Retail only — excludes exchange &amp; hot wallets
         </span>
-        <span className="ml-auto"><SectionRange {...ctl} /></span>
-      </div>
+              </div>
       {isRangeAware && (
         <div className="text-xs text-muted-foreground">
           {hasPrevious ? `Compared vs ${baselineLabel(referenceDate)}` : "No baseline available for this period."}
@@ -433,7 +431,7 @@ const renderConcentration = (
                     a "pp" (percentage-point) delta, since that abbreviation
                     isn't something most readers would recognize. */}
                 {previousPct !== null && previousPct !== undefined && (
-                  <span className="text-muted-foreground/70">(was {previousPct.toFixed(2)}%)</span>
+                  <span className="text-muted-foreground">(was {previousPct.toFixed(2)}%)</span>
                 )}
               </div>
             </div>
@@ -504,7 +502,6 @@ const renderVelocity = (
             Holder Momentum
             <MethodologyInfo section="holderMomentum" />
           </CardTitle>
-          <SectionRange {...ctl} />
         </div>
         <CardDescription className="text-sm sm:text-base text-muted-foreground">
           First-time holders and holder growth for {selectionLabel} over the selected timeframe.
@@ -572,7 +569,6 @@ const balanceRangeDisplayLabel = (label: string): string => label;
 /** The timeframe control itself lives once in the page's sticky bar; each
  *  section just confirms which period its numbers reflect. */
 type RangeCtl = { rangeDays: number; onRangeDaysChange: (d: number) => void };
-const SectionRange = ({ rangeDays }: RangeCtl) => <ActiveRangeNote rangeDays={rangeDays} />;
 
 const renderBalanceInsights = (stats: HolderLiteView["balanceStats"] | null, ctl: RangeCtl) => {
   if (!stats || stats.count === 0) return null;
@@ -624,7 +620,6 @@ const renderBalanceInsights = (stats: HolderLiteView["balanceStats"] | null, ctl
             Balance Insights
             <MethodologyInfo section="balanceInsights" />
           </CardTitle>
-          <SectionRange {...ctl} />
         </div>
         <CardDescription data-panel-desc className="text-sm sm:text-base text-muted-foreground">
           Distribution stats and balance curve for retail wallets (&gt;0 TEL, excludes exchange &amp; hot wallets).
@@ -772,7 +767,6 @@ const renderStakingInsights = (
             Staking Overview
             <MethodologyInfo section="staking" />
           </CardTitle>
-          <SectionRange {...ctl} />
         </div>
         <CardDescription data-panel-desc className="text-sm sm:text-base text-muted-foreground">
           TEL staked by retail, mapped back to holder wallets (excludes exchange &amp; hot wallets).
@@ -835,7 +829,6 @@ const renderOverlap = (stats: HolderLiteSnapshot["overlap"] | null, ctl: RangeCt
             Multi-chain Overlap
             <MethodologyInfo section="overlap" />
           </CardTitle>
-          <SectionRange {...ctl} />
         </div>
         <CardDescription className="text-sm sm:text-base text-muted-foreground">
           Unique holders across chains in the combined view.
@@ -942,7 +935,6 @@ const renderCexFlows = (
               {updatedAt && <Badge variant="outline">List updated {updatedAt}</Badge>}
               {cex.listQueryId && <Badge variant="outline">Query {cex.listQueryId}</Badge>}
             </div>
-            <ActiveRangeNote rangeDays={rangeDays} />
           </div>
         </div>
       </CardHeader>
@@ -1508,7 +1500,6 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
                 )}
               </div>
               <ChainStatusBar />
-              <ActiveRangeNote rangeDays={rangeDays} />
             </div>
           </CardContent>
     </Card>

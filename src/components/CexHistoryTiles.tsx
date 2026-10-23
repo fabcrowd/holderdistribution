@@ -3,7 +3,6 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { LineChart, Line, XAxis, YAxis } from "recharts";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
-import { ActiveRangeNote } from "@/components/ActiveRangeNote";
 import { buildCexHistoryTiles, MIN_CEX_TILE_BALANCE } from "@/components/buildCexHistoryTiles";
 import { ChangeIndicator } from "@/components/ChangeIndicator";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
@@ -83,7 +82,6 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
         <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
           Exchange Balance History
         </div>
-        <ActiveRangeNote rangeDays={rangeDays} />
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {visibleTiles.map((tile) => {

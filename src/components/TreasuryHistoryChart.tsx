@@ -199,14 +199,17 @@ export const TreasuryHistoryChart = ({ rangeDays }: { rangeDays: number }) => {
               key={key}
               type="button"
               onClick={() => setVisible((prev) => ({ ...prev, [key]: !prev[key] }))}
-              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                on ? "border-transparent text-white" : "border-border/60 text-muted-foreground hover:text-foreground"
+              aria-pressed={on}
+              // Series colour on the border + dot, never as the text
+              // background: white on these mid-tone hues failed AA (2.8:1).
+              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full border-2 px-2.5 py-1 text-xs font-medium transition-colors ${
+                on ? "bg-card text-foreground" : "border-border/60 text-muted-foreground hover:text-foreground"
               }`}
-              style={on ? { backgroundColor: SERIES[key].color } : undefined}
+              style={on ? { borderColor: SERIES[key].color } : undefined}
             >
               <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: on ? "currentColor" : SERIES[key].color }}
+                className={`h-2 w-2 rounded-full ${on ? "" : "opacity-50"}`}
+                style={{ backgroundColor: SERIES[key].color }}
               />
               {SERIES[key].label}
             </button>

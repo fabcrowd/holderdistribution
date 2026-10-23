@@ -74,6 +74,10 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     --ha-negative: 358 53% 50%;
     --ha-negative-tint: 0 68% 96%;
     --ha-warning: 39 100% 31%;
+    /* Delta text drawn ON the tier diagram's tinted tiles (darker than
+       --ha-positive/negative, which are tuned for plain card surfaces). */
+    --tier-positive-text: 142 72% 22%;
+    --tier-negative-text: 0 70% 36%;
     --ha-link: 182 98% 23%;
 
     --radius-md: 8px;
@@ -93,6 +97,61 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     /* Responsive spacing */
     --spacing-section: clamp(2rem, 4vw, 4rem);
     --spacing-card: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  /* Dark theme ("terminal"). Same hues as the light brand, re-balanced for a
+     near-black teal surface: primary is lifted to the bright brand teal so it
+     clears 4.5:1 as text on cards, and its foreground flips to ink. Every
+     text/surface pair here was checked with axe at AA. */
+  .dark {
+    --background: 190 20% 6%;
+    --foreground: 180 14% 92%;
+
+    --nav-background: 190 20% 8%;
+    --gradient-start: 190 22% 7%;
+    --gradient-end: 190 20% 5%;
+    --card: 190 18% 9%;
+    --card-foreground: 180 14% 92%;
+
+    --popover: 190 18% 10%;
+    --popover-foreground: 180 14% 92%;
+
+    --primary: 181 62% 50%;
+    --primary-foreground: 190 30% 6%;
+
+    --secondary: 190 14% 15%;
+    --secondary-foreground: 180 14% 92%;
+
+    --muted: 190 14% 14%;
+    --muted-foreground: 185 8% 66%;
+
+    --accent: 190 14% 16%;
+    --accent-foreground: 180 14% 92%;
+
+    --destructive: 358 75% 66%;
+    --destructive-foreground: 190 30% 6%;
+
+    --border: 190 12% 19%;
+    --input: 190 12% 24%;
+    --ring: 181 62% 50%;
+
+    --brand-bright: 183 70% 50%;
+
+    --ha-brand: 181 62% 50%;
+    --ha-brand-hover: 181 62% 60%;
+    --ha-brand-tint: 185 30% 16%;
+    --ha-accent: 44 70% 60%;
+    --ha-accent-tint: 44 40% 14%;
+    --ha-positive: 152 55% 52%;
+    --ha-positive-tint: 152 35% 13%;
+    --ha-negative: 358 75% 68%;
+    --ha-negative-tint: 358 35% 15%;
+    --ha-warning: 39 90% 60%;
+    --tier-positive-text: 142 70% 72%;
+    --tier-negative-text: 0 95% 82%;
+    --ha-link: 181 62% 55%;
+
+    color-scheme: dark;
   }
 }
 
@@ -436,6 +495,37 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+
+  /* Dark surfaces: the light theme's decorative gradients are hard-coded
+     near-white HSL values, so each gets a token-based dark equivalent. */
+  .dark body {
+    background-image: linear-gradient(160deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+  }
+  .dark .premium-surface-card,
+  .dark .premium-stat-card,
+  .dark .premium-section-card {
+    background: hsl(var(--card));
+    border-color: hsl(var(--border));
+    box-shadow: 0 1px 2px hsl(0 0% 0% / 0.4);
+  }
+  .dark .premium-surface-card:hover {
+    border-color: hsl(var(--primary) / 0.45);
+    box-shadow: 0 1px 2px hsl(0 0% 0% / 0.4);
+  }
+  .dark .premium-event-card {
+    background: hsl(var(--muted));
+  }
+  .dark .holders-header-snapshot,
+  .dark .holders-header-growth,
+  .dark .holders-header-distribution {
+    background-image: none;
+    background-color: hsl(var(--card));
+  }
+  .dark .glass {
+    background: hsl(var(--card) / 0.7);
+    border-color: hsl(var(--border));
   }
 
   /* Respect user motion preferences */
