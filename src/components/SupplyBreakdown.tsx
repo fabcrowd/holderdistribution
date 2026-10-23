@@ -154,7 +154,7 @@ const renderBucketDetail = (
     case "cex":
       return <CexCustodyPanel items={ctx.cexItems} />;
     case "escrow":
-      return <EscrowPanel items={ctx.escrowItems} />;
+      return <EscrowPanel items={ctx.escrowItems} committed={ctx.data?.circulatingExclusions?.total ?? null} />;
     case "retail":
       return <RetailPanel amount={ctx.retailAmount} />;
     default:
@@ -200,7 +200,9 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
     useMemo(() => {
       const total = data?.totalSupply ?? 100_000_000_000;
       const residual = data?.residual ?? Math.max(0, total - (data?.counted ?? 0));
-      const all = groupSupplyCategories(data?.categories, residual);
+      // No reconciliation (loading / failed) → no buckets. Grouping an empty
+      // payload used to put the whole 100B into "In transit".
+      const all = data ? groupSupplyCategories(data.categories, residual) : [];
       const parts = partitionBuckets(all);
       const items = data?.items ?? [];
       return {
@@ -246,16 +248,9 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
   const openBucketKey: string | null =
     pickedBucketKey === undefined ? (layout === "terminal" ? largestBucketKey : null) : pickedBucketKey;
 
-  // List-only order: the active bucket floats to the top so it's never
-  // scrolled off-screen after selection (mobile motivation). The donut's
-  // own `pieSlices` is untouched — its array order fixes each wedge's
-  // angular position, and reordering it would rotate/reassign colors.
-  const orderedBuckets = useMemo(() => {
-    if (!openBucketKey) return buckets;
-    const idx = buckets.findIndex((b) => b.key === openBucketKey);
-    if (idx <= 0) return buckets;
-    return [buckets[idx], ...buckets.slice(0, idx), ...buckets.slice(idx + 1)];
-  }, [buckets, openBucketKey]);
+  // Stable list order: rows keep their place (and their wedge's order) when
+  // one is selected, so the reader's eye and pointer don't lose the row.
+  const orderedBuckets = buckets;
 
   const partitionSum = buckets.reduce((s, b) => s + b.amount, 0);
   const reconcile = reconcileStatus(partitionSum, totalSupply);
@@ -421,11 +416,10 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                           // straight to it (no floating popover to close
                           // first — see the shared panel below the list,
                           // which is what actually renders getDetail now).
-                          // A click also reorders `orderedBuckets`, which is
-                          // what actually drives the slide-to-top motion —
-                          // framer-motion's `layout` prop animates the
-                          // resulting DOM-order change.
-                          onClick={() => setOpenBucketKey(isOpen ? null : b.key)}
+                          // Terminal: a category is always shown, so clicking
+                          // the active row keeps it selected rather than
+                          // emptying the detail panel. Stacked: toggle.
+                          onClick={() => setOpenBucketKey(isOpen && !compact ? null : b.key)}
                           aria-pressed={isOpen}
                           // Origin left, not center, so the scale (applied via
                           // `animate` above, not a CSS class — see below)
@@ -515,7 +509,8 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                           {formatCompactTEL(Math.abs(cgDelta))}). CoinGecko's figure isn't a
                           different methodology — it's the main treasury wallet's exact on-chain balance
                           right after its 2025-10-01 transfer to Anchorage, never refreshed since.
-                          Every treasury move after that date, down to today's ~1.43B balance, is
+                          Every treasury move after that date
+                          {data?.categories?.treasury != null ? `, down to today's ${formatCompactTEL(data.categories.treasury)} balance,` : ""} is
                           invisible to their number.
                         </>
                       )}
@@ -899,17 +894,19 @@ const AddressListPanel = ({
 const AssociationPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   <AddressListPanel
     title="Telcoin Association-Controlled Safes"
-    description="Treasury, council / ops Safes, and the Polygon staking contract — Association-controlled custody, listed together in the hero bucket. Balances checked on-chain."
+    description="Treasury and council / ops Safes — Association-controlled custody, listed together in the hero bucket. Balances checked on-chain."
     items={items}
     subcategoryFor={(item) => associationCategoryLabel(item.category)}
     emptyLabel="No Association addresses itemised."
   />
 );
 
+const sumBalances = (items: SupplyReconciliationItem[]) => items.reduce((s, i) => s + (Number.isFinite(i.balance) ? i.balance : 0), 0);
+
 const HoldingsPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   <AddressListPanel
     title="Telcoin Holdings"
-    description="Confirmed Holdings wallets (~1.65B): reserves, shared Safes, bridge-hub, and Base ops/cold custody."
+    description={`Confirmed Holdings wallets (${formatCompactTEL(sumBalances(items))} TEL): reserves, shared Safes, bridge-hub, and Base ops/cold custody.`}
     items={items}
     subcategoryFor={() => "Telcoin Holdings"}
     emptyLabel="No Holdings addresses itemised."
@@ -946,22 +943,30 @@ const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   />
 );
 
-const EscrowPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
+const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; committed: number | null }) => {
+  const total = sumBalances(items);
+  const rest = committed != null ? Math.max(0, total - committed) : null;
+  return (
   <AddressListPanel
     title="Escrow"
     description={
       <>
-        TEL held by third-party custodians under a SAFE — ~5.00B is contractually committed back
-        to Association treasury and excluded from circulating; the remaining ~1.33B, sourced from
-        Telcoin Holdings, stays circulating (traced on-chain in{" "}
-        <code className="text-[11px]">data/escrow-safe-provenance.md</code>).
+        TEL held by third-party custodians under a SAFE
+        {committed != null && rest != null ? (
+          <>
+            {" "}— {formatCompactTEL(committed)} is contractually committed back to Association treasury and
+            excluded from circulating; the remaining {formatCompactTEL(rest)} stays circulating
+          </>
+        ) : null}{" "}
+        (traced on-chain in <code className="text-[11px]">data/escrow-safe-provenance.md</code>).
       </>
     }
     items={items}
     subcategoryFor={(item) => item.name ?? "Escrow custodian"}
     emptyLabel="No escrow addresses itemised."
   />
-);
+  );
+};
 
 const RetailPanel = ({ amount }: { amount: number }) => (
   <div className="space-y-3">
