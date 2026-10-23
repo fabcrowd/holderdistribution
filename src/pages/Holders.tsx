@@ -443,6 +443,7 @@ const Holders = () => {
           <div className="animate-fade-in" style={{ animationDelay: '0.15s' }}>
             <HolderKpiHero
               rangeDays={rangeDays}
+              view={selectedView}
               collapsed={heroCollapsed}
               onToggle={heroCollapse.latched ? () => dispatchHeroCollapse("toggle") : undefined}
               onTileSelect={handleTileSelect}

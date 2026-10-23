@@ -71,7 +71,7 @@ export const TerminalDashboard = ({
   onSelectedViewChange,
   children,
 }: Props) => {
-  const { summary, snapshot, tiles, isError } = useHeadlineSummary(rangeDays);
+  const { summary, snapshot, tiles, isError } = useHeadlineSummary(rangeDays, selectedView);
   const qc = useQueryClient();
   const fresh = describeFreshness(snapshot?.generatedAt);
   const stale = fresh.status === "delayed" || fresh.status === "stale";
@@ -163,7 +163,16 @@ export const TerminalDashboard = ({
           <dl className="flex min-w-0 flex-1 items-center justify-[safe_center] gap-3 min-[1400px]:gap-6 2xl:gap-10" aria-label="Headline numbers" data-testid="headline-numbers">
             {tiles.map((t) => (
               <div key={t.id} className="flex shrink-0 flex-col gap-0.5 leading-tight" data-testid={`kpi-${t.id}`}>
-                <dt className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t.label}</dt>
+                <dt className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {t.label}
+                  {/* A chain is picked but this figure can't be split by
+                      chain: say so rather than pass it off as that chain's. */}
+                  {selectedView !== "combined" && t.scope === "all" && (
+                    <span className="ml-1 rounded-sm bg-muted px-1 text-[9px] normal-case tracking-normal" title="Not split by chain: this figure covers all chains" data-testid={`kpi-${t.id}-scope`}>
+                      All chains
+                    </span>
+                  )}
+                </dt>
                 <dd className="flex items-center gap-1.5 whitespace-nowrap">
                   <KpiValue value={t.value} current={t.current} fmt={t.fmt} />
                   {t.current !== null && (

@@ -1,13 +1,13 @@
 import { useHolderLiteSnapshot, type HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
-import { useEcosystemHeadlineTiles } from "@/hooks/useEcosystemHeadlineTiles";
+import { useEcosystemHeadlineTiles, type HeadlineView } from "@/hooks/useEcosystemHeadlineTiles";
 import { buildHolderSummary, type SummaryMetric } from "@/lib/holderSummary";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 
 /** The plain-language headline + trend bullets, from the same tile values the KPIs show. */
-export const useHeadlineSummary = (rangeDays: number) => {
+export const useHeadlineSummary = (rangeDays: number, chain: HeadlineView = "combined") => {
   const { data, isError } = useHolderLiteSnapshot();
   const snapshot = data as HolderLiteSnapshot | undefined;
-  const result = useEcosystemHeadlineTiles(rangeDays);
+  const result = useEcosystemHeadlineTiles(rangeDays, chain);
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
   const metric = (id: string): SummaryMetric => {
     const t = result?.tiles.find((x) => x.id === id);
