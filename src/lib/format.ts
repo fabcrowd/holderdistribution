@@ -114,3 +114,10 @@ export const formatSourceLabel = (parts: Array<string | null | undefined>): stri
   }
   return out.length ? out.join(" · ") : null;
 };
+
+/** "+3" / "−2" / "0" — never "-0". */
+export const signedInt = (v: number): string => {
+  const r = Math.round(v);
+  if (r === 0) return "0";
+  return r > 0 ? `+${new Intl.NumberFormat("en-US").format(r)}` : `−${new Intl.NumberFormat("en-US").format(-r)}`;
+};

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useChartIntro, useIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
+import { signedInt } from "@/lib/format";
 import { X } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
@@ -19,12 +20,6 @@ import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from ".
 
 const int = new Intl.NumberFormat("en-US");
 
-/** "+3" / "−2" / "0" — never "-0". */
-export const signedInt = (v: number): string => {
-  const r = Math.round(v);
-  if (r === 0) return "0";
-  return r > 0 ? `+${int.format(r)}` : `−${int.format(-r)}`;
-};
 
 type BarLabelProps = { x?: number | string; y?: number | string; width?: number | string; height?: number | string; value?: number | string };
 

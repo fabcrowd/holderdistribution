@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handler } from "./forensics-gate.ts";
-import { digestsEqual, hashPassword, passwordMatches, verifySaltedHash, WindowLimiter, corsHeaders } from "./gateAuth.ts";
+import { digestsEqual, hashPassword, issueToken, passwordMatches, tokenKey, verifySaltedHash, verifyToken, WindowLimiter, corsHeaders, TOKEN_TTL_SECONDS } from "./gateAuth.ts";
 import { __resetWalletFlowsCache, loadWalletFlows } from "./walletFlowsSource.ts";
 
 // A throwaway test password supplied via env — never the real one.
@@ -145,5 +145,62 @@ describe("walletFlowsSource", () => {
     __resetWalletFlowsCache();
     expect((await loadWalletFlows({}, down as unknown as typeof fetch, 0)).source).toBe("bundled");
     expect(down).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("forensics gate: session tokens", () => {
+  it("a correct password returns a signed ~12h token; the token alone then unlocks", async () => {
+    const res = await post({ address: "session-check", password: TEST_PASSWORD });
+    expect(res.statusCode).toBe(200);
+    const { ok, token, tokenExpiresAt } = JSON.parse(res.body);
+    expect(ok).toBe(true);
+    expect(token).toMatch(/^hdg1\.[\w-]+\.[\w-]+$/);
+    expect(token).not.toContain(TEST_PASSWORD);
+    expect(tokenExpiresAt - Date.now()).toBeGreaterThan(11.9 * 3600_000);
+    expect(tokenExpiresAt - Date.now()).toBeLessThanOrEqual(12 * 3600_000 + 1000);
+
+    const withToken = await post({ address: "wallet-flows", token });
+    expect(withToken.statusCode).toBe(200);
+    expect(JSON.parse(withToken.body).report.version).toBe(1);
+    // Token-authenticated calls don't mint a fresh token.
+    expect(JSON.parse(withToken.body).token).toBeUndefined();
+  });
+
+  it("rejects tampered, expired and foreign-key tokens with 401 'Session expired'", async () => {
+    const env = { FORENSICS_PASSWORD: TEST_PASSWORD };
+    const t = issueToken(env)!.token;
+    expect(verifyToken(t, env)).toBe(true);
+    expect(verifyToken(t.slice(0, -2) + "xx", env)).toBe(false);
+    expect(verifyToken(t, env, Date.now() + TOKEN_TTL_SECONDS * 1000 + 1)).toBe(false);
+    expect(verifyToken(t, { FORENSICS_PASSWORD: "rotated" })).toBe(false);
+    expect(verifyToken("hdg1.e30.abc", env)).toBe(false);
+    const res = await post({ address: "wallet-flows", token: t.slice(0, -2) + "xx" });
+    expect(res.statusCode).toBe(401);
+    expect(JSON.parse(res.body)).toEqual({ error: "Session expired" });
+  });
+
+  it("derives the key only from server env, never a built-in constant", () => {
+    expect(tokenKey({})).toBeNull();
+    expect(issueToken({})).toBeNull();
+    expect(tokenKey({ FORENSICS_TOKEN_SECRET: "a" })!.equals(tokenKey({ FORENSICS_TOKEN_SECRET: "b" })!)).toBe(false);
+  });
+
+  it("an authenticated batch is not rate limited like anonymous traffic", async () => {
+    const ip = "198.51.100.9";
+    const { token } = JSON.parse((await post({ address: "session-check", password: TEST_PASSWORD }, { "x-nf-client-connection-ip": ip })).body);
+    const codes: number[] = [];
+    for (let i = 0; i < 30; i++) codes.push((await post({ address: "session-check", token }, { "x-nf-client-connection-ip": ip })).statusCode);
+    expect(codes.every((c) => c === 200)).toBe(true);
+    const anon: number[] = [];
+    for (let i = 0; i < 25; i++) anon.push((await post({ address: "session-check" }, { "x-nf-client-connection-ip": "198.51.100.10" })).statusCode);
+    expect(anon).toContain(429);
+  });
+
+  it("429 carries Retry-After", async () => {
+    const ip = "198.51.100.11";
+    let res = { statusCode: 0, headers: {} as Record<string, string> };
+    for (let i = 0; i < 22; i++) res = await post({ address: "session-check" }, { "x-nf-client-connection-ip": ip });
+    expect(res.statusCode).toBe(429);
+    expect(Number(res.headers["Retry-After"])).toBeGreaterThan(0);
   });
 });

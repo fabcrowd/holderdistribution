@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabase } from "@/integrations/supabase/lazy";
 import { forensicsPasswordMatches } from "@/lib/forensicsPasswordHash";
 
 export const FORENSICS_GATE_URL = "/.netlify/functions/forensics-gate";
@@ -7,14 +7,23 @@ export class ForensicsGateError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /** Seconds to wait, from the 429's Retry-After header. */
+    readonly retryAfter: number | null = null,
   ) {
     super(message);
     this.name = "ForensicsGateError";
   }
 }
 
+/** Session tokens issued by the gate look like `hdg1.<payload>.<sig>`. */
+export const isGateToken = (credential: string | null | undefined): credential is string =>
+  typeof credential === "string" && credential.startsWith("hdg1.");
+
+export const SESSION_CHECK_KEY = "session-check";
+
 async function gateHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const supabase = await getSupabase();
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -24,7 +33,11 @@ async function gateHeaders(): Promise<Record<string, string>> {
 type GateResponse = {
   analysis?: unknown;
   report?: unknown;
+  ok?: boolean;
   error?: string;
+  /** Present when a password (not a token) authenticated the call. */
+  token?: string;
+  tokenExpiresAt?: number;
 };
 
 const gateUnavailable = (status: number) => status === 404 || status === 502 || status === 503;
@@ -59,6 +72,7 @@ const loadLocalPayload = async (address: string): Promise<GateResponse> => {
   if (address === "tel-disposition-ledger") {
     return { report: await loadDispositionLedgerDev() };
   }
+  if (address === SESSION_CHECK_KEY) return { ok: true };
   return { analysis: await loadWalletAnalysisDev(address) };
 };
 
@@ -81,51 +95,84 @@ const fallbackWithPassword = async (
   return loadLocalPayload(address);
 };
 
-/** POST to the Netlify forensics gate. Admins may omit password (session header). */
+/**
+ * POST to the Netlify forensics gate. `credential` is a session token from a
+ * previous unlock (preferred) or the typed password (only during unlock).
+ * Admins may omit it (session header).
+ */
 export const fetchForensicsGate = async (
   address: string,
-  password?: string | null,
+  credential?: string | null,
 ): Promise<GateResponse> => {
   const normalized = address.trim().toLowerCase();
   const headers = await gateHeaders();
+  const token = isGateToken(credential) ? credential : undefined;
+  const password = token ? undefined : credential ?? undefined;
 
   let res: Response;
   try {
     res = await fetch(FORENSICS_GATE_URL, {
       method: "POST",
       headers,
-      body: JSON.stringify({
-        address: normalized,
-        password: password ?? undefined,
-      }),
+      body: JSON.stringify({ address: normalized, password, token }),
     });
   } catch {
     return fallbackWithPassword(normalized, password);
   }
 
   if (!res.ok) {
-    if (gateUnavailable(res.status)) {
+    if (gateUnavailable(res.status) && import.meta.env.DEV) {
       return fallbackWithPassword(normalized, password);
     }
+    const retryAfter = Number(res.headers.get("Retry-After"));
     const message =
       res.status === 401
-        ? "Invalid password"
+        ? token
+          ? "Session expired"
+          : "Invalid password"
         : res.status === 429
-          ? "Too many attempts. Wait a minute and try again."
-          : "Could not load gated content";
-    throw new ForensicsGateError(message, res.status);
+          ? "Too many attempts"
+          : res.status === 403
+            ? "Not allowed from this site"
+            : gateUnavailable(res.status)
+              ? "Gate unavailable"
+              : "Could not load gated content";
+    throw new ForensicsGateError(message, res.status, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null);
   }
 
   return (await res.json()) as GateResponse;
 };
 
-/** Lightweight unlock check — hits the gate (or hash fallback if the function is down). */
-export const verifyForensicsPassword = async (password: string): Promise<boolean> => {
+export type UnlockResult = { credential: string; expiresAt: number | null };
+
+/**
+ * Exchange a password for a session credential. Returns the signed token when
+ * the gate issues one, else (server without a signing secret, or dev) the
+ * password itself, which the caller must keep in memory only. Resolves null
+ * for a wrong password; throws ForensicsGateError for 429 / 403 / 503 etc.
+ */
+export const unlockWithPassword = async (password: string): Promise<UnlockResult | null> => {
   try {
-    await fetchForensicsGate("association-stablecoin-flows", password);
+    const res = await fetchForensicsGate(SESSION_CHECK_KEY, password);
+    if (res.token) return { credential: res.token, expiresAt: res.tokenExpiresAt ?? null };
+    return { credential: password, expiresAt: null };
+  } catch (error) {
+    if (error instanceof ForensicsGateError && error.status === 401) return null;
+    throw error;
+  }
+};
+
+/** Is a stored token still accepted? (401 → false; other failures throw.) */
+export const checkSession = async (token: string): Promise<boolean> => {
+  try {
+    await fetchForensicsGate(SESSION_CHECK_KEY, token);
     return true;
   } catch (error) {
     if (error instanceof ForensicsGateError && error.status === 401) return false;
     throw error;
   }
 };
+
+/** Lightweight unlock check (kept for callers that only need yes/no). */
+export const verifyForensicsPassword = async (password: string): Promise<boolean> =>
+  (await unlockWithPassword(password)) !== null;
