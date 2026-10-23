@@ -13,6 +13,11 @@ import { TimeRangeDropdown } from "@/components/TimeRangeDropdown";
 import { PageIntro } from "@/components/PageIntro";
 import { Coins, PieChart, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TerminalDashboard } from "@/components/terminal/TerminalDashboard";
+import { HoldersTerminal } from "@/components/terminal/HoldersTerminal";
+import { DistributionTerminal } from "@/components/terminal/DistributionTerminal";
+import { TERMINAL_QUERY, useMediaQuery } from "@/hooks/useMediaQuery";
+import { buildViewHash, DEFAULT_PANEL, parseViewHash, type ViewId } from "@/lib/viewRoute";
 
 import { useHolderLiteSnapshot, type DisplaySelection } from "@/hooks/useHolderSnapshot";
 import { RANGE_OPTIONS, ytdDays } from "@/lib/timeRange";
@@ -55,11 +60,11 @@ const TABS = [
     accent: "data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-400",
   },
 ] as const;
-type TabId = (typeof TABS)[number]["id"];
+type TabId = ViewId;
 const isTabId = (v: string): v is TabId => TABS.some((t) => t.id === v);
 
-const DEFAULT_TAB: TabId = "holders";
-const resolveTab = (hash: string): TabId => (isTabId(hash) ? hash : DEFAULT_TAB);
+const initialRoute = () =>
+  (typeof window !== "undefined" ? parseViewHash(window.location.hash) : null) ?? { view: "holders" as ViewId, panel: null };
 
 /** One plain sentence under the hero saying what the open tab answers. */
 const TabBlurb = ({ id, hidden }: { id: TabId; hidden: boolean }) => {
@@ -109,12 +114,31 @@ const Holders = () => {
   // "#overview" is still honoured — it was a real tab until 2026-09-13 and is
   // in shared links — but it now resolves to Holders like any other entry
   // point rather than 404ing into the default.
-  const [activeTab, setActiveTab] = useState<TabId>(() =>
-    resolveTab(typeof window !== "undefined" ? window.location.hash.slice(1) : ""),
+  // Hash routing lives in lib/viewRoute: "#view" or "#view/panel". Hashes
+  // that are not views (the skip link's "#main-content") are ignored rather
+  // than bouncing the reader back to the default tab.
+  const [route0] = useState(initialRoute);
+  const [activeTab, setActiveTab] = useState<TabId>(route0.view);
+  // Desktop only: a panel in the URL means "Explore" (the full multi-panel
+  // widget) instead of the dashboard grid.
+  const [explore, setExplore] = useState<boolean>(route0.view === "holders" && route0.panel !== null);
+  const [supplyPanel, setSupplyPanel] = useState<string>(
+    route0.view === "supply" && route0.panel ? route0.panel : (DEFAULT_PANEL.supply as string),
   );
+  const writeHash = (view: ViewId, panel: string | null) => {
+    const next = buildViewHash({ view, panel });
+    if (window.location.hash !== next) window.history.replaceState(null, "", next);
+  };
   useEffect(() => {
     const onHash = () => {
-      setActiveTab(resolveTab(window.location.hash.slice(1)));
+      const r = parseViewHash(window.location.hash);
+      if (!r) return;
+      setActiveTab(r.view);
+      if (r.view === "holders") {
+        setExplore(r.panel !== null);
+        if (r.panel) setHolderPanel(r.panel);
+      }
+      if (r.view === "supply") setSupplyPanel(r.panel ?? (DEFAULT_PANEL.supply as string));
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
@@ -122,10 +146,10 @@ const Holders = () => {
   const selectTab = (value: string) => {
     if (!isTabId(value)) return;
     setActiveTab(value);
-    if (window.location.hash.slice(1) !== value) {
-      window.history.replaceState(null, "", `#${value}`);
-    }
+    setExplore(false);
+    writeHash(value, null);
   };
+  const isTerminal = useMediaQuery(TERMINAL_QUERY);
 
   const [selectedView, setSelectedView] = useState<DisplaySelection>("combined");
 
@@ -157,7 +181,27 @@ const Holders = () => {
   // same destination the Retail Holders tile routes to, so landing there and
   // clicking that tile agree with each other. Every panel is still one click
   // away on the row above.
-  const [holderPanel, setHolderPanel] = useState("trends");
+  const [holderPanel, setHolderPanel] = useState<string>(
+    route0.view === "holders" && route0.panel ? route0.panel : (DEFAULT_PANEL.holders as string),
+  );
+  const changeHolderPanel = (panel: string) => {
+    setHolderPanel(panel);
+    writeHash("holders", panel);
+  };
+  const changeSupplyPanel = (panel: string) => {
+    setSupplyPanel(panel);
+    writeHash("supply", panel === DEFAULT_PANEL.supply ? null : panel);
+  };
+  const openExplore = (panel: string) => {
+    setActiveTab("holders");
+    setHolderPanel(panel);
+    setExplore(true);
+    writeHash("holders", panel);
+  };
+  const changeExplore = (on: boolean) => {
+    setExplore(on);
+    writeHash("holders", on ? holderPanel : null);
+  };
   const [activeTileId, setActiveTileId] = useState<EcosystemHeadlineTileId | null>(null);
 
   // Collapse first, then route. "select" puts the hero in exactly the state a
@@ -168,8 +212,8 @@ const Holders = () => {
     const destination = TILE_DESTINATIONS[id];
     dispatchHeroCollapse("select");
     setActiveTileId(id);
-    setHolderPanel(destination.panel);
-    selectTab(destination.tab);
+    setActiveTab(destination.tab);
+    changeHolderPanel(destination.panel);
   };
 
   // A tile stays lit only while its own destination is on screen; changing tab
@@ -183,7 +227,7 @@ const Holders = () => {
     }
   }, [activeTab, holderPanel, activeTileId]);
   const [rangeDays, setRangeDays] = useState<number>(ytdDays());
-  const { data } = useHolderLiteSnapshot();
+  const { data, isError: snapshotError } = useHolderLiteSnapshot();
   const snapshot = data as import('@/hooks/useHolderSnapshot').HolderLiteSnapshot | undefined;
 
   // Hide range options the archive can't actually answer yet (e.g. "1Y"
@@ -201,6 +245,72 @@ const Holders = () => {
           pickBaseline(holdersHistory.entries!, option.days, (e) => Date.parse(e.generatedAt ?? e.date)) !== null,
       )
     : RANGE_OPTIONS;
+
+  const holdersWidget = (
+    <WalletHoldingsWidget
+      // Always, not just in focus mode. The card's title block reads
+      // "Holder Snapshot" under a page tab that already says Holders,
+      // above a panel that carries its own heading — three names for one
+      // thing, and ~150px of them before any data on all eight panels.
+      compactHeader
+      panel={holderPanel}
+      onPanelChange={changeHolderPanel}
+      selectedView={selectedView}
+      onViewChange={setSelectedView}
+      rangeDays={rangeDays}
+      onRangeDaysChange={setRangeDays}
+      trendsPanel={
+        <HolderGrowthWidget selectedView={selectedView} rangeDays={rangeDays} onRangeDaysChange={setRangeDays} />
+      }
+      flowsPanel={<ExchangeFlowWidget rangeDays={rangeDays} />}
+    />
+  );
+
+  // Desktop: a no-scroll trading-terminal grid. Rendered instead of (not
+  // hidden alongside) the stacked layout, so there is one set of ids and one
+  // set of data subscriptions.
+  if (isTerminal) {
+    return (
+      <TerminalDashboard
+        view={activeTab}
+        onViewChange={selectTab}
+        explore={activeTab === "holders" && explore}
+        onExploreChange={activeTab === "holders" ? changeExplore : undefined}
+        rangeDays={rangeDays}
+        onRangeDaysChange={setRangeDays}
+        rangeOptions={visibleRangeOptions}
+        selectedView={selectedView}
+        onSelectedViewChange={setSelectedView}
+      >
+        {activeTab === "holders" &&
+          (explore ? (
+            <div className="terminal-dense h-full overflow-auto rounded-lg" data-testid="holders-explore">
+              {holdersWidget}
+            </div>
+          ) : (
+            <HoldersTerminal
+              snapshot={snapshot}
+              snapshotError={snapshotError}
+              selectedView={selectedView}
+              rangeDays={rangeDays}
+              onExplore={openExplore}
+            />
+          ))}
+        {activeTab === "distribution" && (
+          <DistributionTerminal
+            snapshot={snapshot}
+            snapshotError={snapshotError}
+            selectedView={selectedView}
+            rangeDays={rangeDays}
+            onViewChange={setSelectedView}
+          />
+        )}
+        {activeTab === "supply" && (
+          <SupplyBreakdown rangeDays={rangeDays} layout="terminal" panel={supplyPanel} onPanelChange={changeSupplyPanel} />
+        )}
+      </TerminalDashboard>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -329,7 +439,7 @@ const Holders = () => {
               // thing, and ~150px of them before any data on all eight panels.
               compactHeader
               panel={holderPanel}
-              onPanelChange={setHolderPanel}
+              onPanelChange={changeHolderPanel}
               selectedView={selectedView}
               onViewChange={setSelectedView}
               rangeDays={rangeDays}
@@ -362,7 +472,7 @@ const Holders = () => {
         <TabsContent value="supply" className="mt-0 focus-visible:outline-none">
           <TabBlurb id="supply" hidden={!!activeTileId} />
           <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
-            <SupplyBreakdown rangeDays={rangeDays} />
+            <SupplyBreakdown rangeDays={rangeDays} panel={supplyPanel} onPanelChange={changeSupplyPanel} />
           </div>
         </TabsContent>
       </main>

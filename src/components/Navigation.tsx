@@ -9,6 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import logo from "@/assets/holder-analytics-horizontal.svg";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type NavigationProps = {
   /** Optional page name shown beside the logo. The mobile nav is otherwise
@@ -57,6 +58,7 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
           {/* Always visible, phone included: the jargon problem is worst for
               exactly the newcomer who has no other way to decode it. */}
           <GlossaryDialog className="ml-auto" />
+          <ThemeToggle className="h-11 w-11" />
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-1 lg:gap-2">

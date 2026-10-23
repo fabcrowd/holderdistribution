@@ -18,7 +18,7 @@ export const InfoTooltip = ({ text, className }: InfoTooltipProps) => (
       <button
         type="button"
         aria-label="More information"
-        className={`inline-flex items-center justify-center text-muted-foreground/60 hover:text-primary transition-colors ${className ?? ""}`}
+        className={`inline-flex items-center justify-center text-muted-foreground/80 hover:text-primary transition-colors ${className ?? ""}`}
         onClick={(e) => e.preventDefault()}
       >
         <Info className="h-3.5 w-3.5" />

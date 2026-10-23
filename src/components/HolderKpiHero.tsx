@@ -7,7 +7,6 @@ import {
 import { useHolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { ChangeIndicator } from "@/components/ChangeIndicator";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
-import { ActiveRangeNote } from "@/components/ActiveRangeNote";
 import { InfoTooltip } from "@/components/InfoTooltip";
 
 /**
@@ -157,7 +156,6 @@ export const HolderKpiHero = ({
               All chains — Ethereum + Polygon + Base
             </span>
             <span className="ml-auto flex items-center gap-1">
-              <ActiveRangeNote rangeDays={rangeDays} />
               {!collapsed ? toggleControl : null}
             </span>
           </div>

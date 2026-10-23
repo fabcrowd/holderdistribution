@@ -21,7 +21,7 @@ import { ChangeIndicator } from "@/components/ChangeIndicator";
 import { type HolderLiteSnapshot, type DisplaySelection } from "@/hooks/useHolderSnapshot";
 import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
-import { ActiveRangeNote } from "@/components/ActiveRangeNote";
+import { mergeDistributionBaseline, summarizeTierGrowth } from "@/lib/distributionRows";
 import { TierFlowDiagram, type TierMetric } from "@/components/TierFlowDiagram";
 import { tierDisplayLabel } from "@/components/tierflow/geometry";
 import { DexSwaps } from "@/components/DexSwaps";
@@ -89,24 +89,7 @@ const DistributionAnalysisWidget = ({
   const view = snapshot.views[selectedView];
   if (!view) return null;
   const baseRows = view?.distribution ?? [];
-  const historicalRows = historicalDelta?.distribution ?? null;
-  const historicalByLabel = historicalRows
-    ? new Map(historicalRows.map((r) => [r.label, r]))
-    : null;
-  const historicalTotal = historicalRows
-    ? historicalRows.reduce((sum, r) => sum + r.totalBalance, 0)
-    : 0;
-  const rows = baseRows.map((row) => {
-    if (!historicalByLabel) return row;
-    const h = historicalByLabel.get(row.label);
-    if (!h) return { ...row, previousCount: null, previousTotalBalance: null, previousPercent: null };
-    return {
-      ...row,
-      previousCount: h.count,
-      previousTotalBalance: h.totalBalance,
-      previousPercent: historicalTotal > 0 ? (h.totalBalance / historicalTotal) * 100 : null,
-    };
-  });
+  const rows = mergeDistributionBaseline(baseRows, historicalDelta?.distribution ?? null);
 
   if (rows.length === 0) return null;
 
@@ -138,11 +121,9 @@ const DistributionAnalysisWidget = ({
   };
 
   // Broad-accumulation signal: how many tiers gained holders over the window.
-  const tiersWithBaseline = rows.filter((r) => (r.previousCount ?? null) !== null);
-  const tiersGrew = tiersWithBaseline.filter((r) => r.count > (r.previousCount ?? 0)).length;
-  const netNewHolders = tiersWithBaseline.reduce((s, r) => s + (r.count - (r.previousCount ?? r.count)), 0);
+  const { tiers: tiersWithBaselineCount, grew: tiersGrew, netWallets: netNewHolders } = summarizeTierGrowth(rows);
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label;
-  const showAccumulation = tiersWithBaseline.length > 0 && rangeLabel;
+  const showAccumulation = tiersWithBaselineCount > 0 && rangeLabel;
 
   return (
     <Card className="premium-surface-card">
@@ -191,14 +172,13 @@ const DistributionAnalysisWidget = ({
                 <span className="underline">View all chains</span>
               </button>
             )}
-            {rangeDays !== undefined && <ActiveRangeNote rangeDays={rangeDays} />}
           </div>
       </CardHeader>
           <CardContent className="p-0 space-y-6">
             {showAccumulation && (
               <div className="mx-4 mt-4 sm:mx-6 rounded-2xl border border-border/50 bg-muted/20 px-5 py-4 text-center">
                 <div className="text-2xl font-bold text-foreground">
-                  {tiersGrew} of {tiersWithBaseline.length} tiers gained holders
+                  {tiersGrew} of {tiersWithBaselineCount} tiers gained holders
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
                   {netNewHolders >= 0 ? "+" : ""}{formatInteger(netNewHolders)} net retail holders across all tiers over {rangeLabel}
@@ -316,7 +296,7 @@ const DistributionAnalysisWidget = ({
                               instead of a "pp" delta, which isn't an
                               abbreviation most readers would recognize. */}
                           {row.previousPercent != null && (
-                            <span className="text-muted-foreground/70">(was {row.previousPercent.toFixed(2)}%)</span>
+                            <span className="text-muted-foreground">(was {row.previousPercent.toFixed(2)}%)</span>
                           )}
                         </div>
                       </TableCell>

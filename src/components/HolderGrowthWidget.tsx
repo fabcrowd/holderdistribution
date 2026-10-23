@@ -12,7 +12,6 @@ import { type DisplaySelection } from "@/hooks/useHolderSnapshot";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import { Clock, Database, Layers, Loader2, TrendingDown, TrendingUp } from "lucide-react";
 import { formatRelativeAge, formatShortDate } from "@/lib/format";
-import { ActiveRangeNote } from "@/components/ActiveRangeNote";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
 import { insertGapBreaks } from "@/lib/seriesGaps";
@@ -472,15 +471,14 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
               <TrendingUp className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
             </span>
             Holder Growth
-            <span className="ml-auto"><ActiveRangeNote rangeDays={rangeDays} /></span>
-          </div>
+                      </div>
           <p data-panel-desc className="text-sm text-muted-foreground mt-1.5">
             Holder history based on the scheduled snapshot archive.
           </p>
         </div>
         <div>
           <div className="space-y-4 pt-4">
-            <SubPanelTabs panels={GROWTH_PANELS} value={growthPanel} onValueChange={setGrowthPanel}>
+            <SubPanelTabs panels={GROWTH_PANELS} value={growthPanel} onValueChange={setGrowthPanel} variant="filter">
             <TabsContent value="wallets" className="mt-4 space-y-4 focus-visible:outline-none">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -690,15 +688,16 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                           disabled
                             ? "opacity-40 cursor-not-allowed border-border/40 text-muted-foreground"
                             : active
-                              ? "border-transparent text-white"
+                              ? "bg-card text-foreground border-2"
                               : "border-border/60 text-muted-foreground hover:text-foreground"
                         }`}
-                        style={active && !disabled ? { backgroundColor: balanceChartConfig[key].color } : undefined}
+                        aria-pressed={active}
+                        style={active && !disabled ? { borderColor: balanceChartConfig[key].color } : undefined}
                         title={disabled ? "Not enough history yet" : undefined}
                       >
                         <span
                           className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: active && !disabled ? "currentColor" : balanceChartConfig[key].color }}
+                          style={{ backgroundColor: balanceChartConfig[key].color }}
                         />
                         {balanceChartConfig[key].label}
                       </button>

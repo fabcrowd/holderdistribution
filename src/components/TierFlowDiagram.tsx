@@ -4,6 +4,7 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
+import { useMediaQuery, PHONE_QUERY } from "@/hooks/useMediaQuery";
 import {
   TIERS, CANVAS_W, CANVAS_H, rowTop, rowCenterY, tileW, tierLeftX, TIER_COL_CENTER_X, tileEdgeX,
   sideTop, sideCenterY, SIDE_H, bezierPath, laneArcPath, fanY, strokeWidth, rankedStrokeWidths, TIER_H,
@@ -40,7 +41,7 @@ const GREEN = "hsl(142 71% 45%)", RED = "hsl(0 72% 55%)", YELLOW = "hsl(48 95% 5
 const POSITIVE = GREEN, NEGATIVE = RED, NEUTRAL = YELLOW;
 // Darker variants for text on tinted backgrounds — GREEN/RED are chart fills and
 // fail 4.5:1 as small text.
-const POSITIVE_TEXT = "hsl(142 72% 26%)", NEGATIVE_TEXT = "hsl(0 70% 40%)";
+const POSITIVE_TEXT = "hsl(var(--tier-positive-text))", NEGATIVE_TEXT = "hsl(var(--tier-negative-text))";
 const MUTED = "hsl(var(--muted-foreground))";
 const BUY_DEX = POSITIVE, BUY_CEX = POSITIVE, BUY_WALLET = NEUTRAL;
 const colorForVerdict = (verdict: "unknown" | "relocated" | "sold") =>
@@ -121,6 +122,9 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
   const { data: exchangeFlow } = useExchangeFlow();
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
   const isWallets = metric === "wallets";
+  // Under 640px the scaled-down canvas renders tier labels at ~6px; phones
+  // get a stacked, full-size list driving the same selection + detail panel.
+  const isPhone = useMediaQuery(PHONE_QUERY);
 
   const { data: changelog } = useClassificationChangelog();
 
@@ -154,7 +158,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollLeft = Math.max(0, TIER_COL_CENTER_X * scale - el.clientWidth / 2);
-  }, [ready, scale]);
+  }, [ready, scale, isPhone]);
 
   // Scale-to-fit. The canvas is a fixed 936×682 grid — every tile position is
   // computed in those coordinates, so it cannot reflow. On a 430px phone that
@@ -176,7 +180,9 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+    // Re-attach when crossing the phone breakpoint: the canvas (and this ref)
+    // only exists at ≥640px, where phones get the stacked tier list instead.
+  }, [isPhone]);
 
   // An expansion key is only meaningful within one mode (a counterpart tier
   // label in Wallets, a cause key in TEL), so switching modes must clear it
@@ -559,7 +565,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Retail Distribution — {rangeLabel}</div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Retail distribution by tier</div>
           <InfoTooltip text={isWallets ? INFO_WALLETS : INFO_TEL} />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -725,7 +731,9 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
           #1 usability gap found in review was that clicking a tier isn't
           discoverable at all. */}
       <div className="text-center text-sm text-muted-foreground">
-        {isWallets
+        {isPhone
+          ? "Tap a tier to see where its wallets came from and went."
+          : isWallets
           ? "Click a tier below to see where its wallets came from and went."
           : selectedField && expandedFlow === "wallet"
             ? (selectedSideTile?.side === "out"
@@ -738,6 +746,52 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
               : "Click a tier to scope buy/sell pressure to that tier, or a side tile (Bought on DEX, From exchange, …) for every tier’s share. Click off a tier for period totals."}
       </div>
 
+      {isPhone ? (
+        <ul className="space-y-1.5" aria-label={`Retail tiers by ${isWallets ? "wallet count" : "TEL held"}`}>
+          {[...fields].sort((a, b) => a.index - b.index).map((f) => {
+            const isSelected = selected === f.label;
+            const cur = isWallets ? f.row?.count ?? 0 : f.row?.totalBalance ?? 0;
+            const prev = isWallets ? f.row?.previousCount ?? null : f.row?.previousTotalBalance ?? null;
+            const grew = prev != null ? cur > prev : null;
+            const fill = grew === null ? "hsl(var(--primary))" : grew ? POSITIVE : colorForVerdict(f.verdict);
+            const fmt = isWallets ? fmtInt : fmtTel;
+            return (
+              <li key={f.label}>
+                <button
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => selectTier(f.label)}
+                  className={`relative flex min-h-[48px] w-full items-center gap-2 overflow-hidden rounded-lg border px-3 py-2 text-left transition-colors ${isSelected ? "ring-2 ring-offset-1 ring-offset-background" : "hover:bg-muted/40"}`}
+                  style={{ borderColor: isSelected ? fill : "hsl(var(--border) / 0.6)", ["--tw-ring-color" as string]: fill }}
+                >
+                  {/* Share-of-retail bar behind the row, same encoding as the
+                      tile width on the desktop canvas. */}
+                  <span aria-hidden="true" className="absolute inset-y-0 left-0" style={{ width: `${Math.max(2, Math.min(100, f.pct))}%`, background: fill, opacity: 0.16 }} />
+                  <span className="relative min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-foreground">{tierDisplayLabel(f.label)}</span>
+                    {isWallets && (f.addedCount > 0 || f.removedCount > 0) && (
+                      <span className="block text-[11px] tabular-nums text-muted-foreground">
+                        <span style={{ color: POSITIVE_TEXT }}>+{fmtInt(f.addedCount)} in</span>
+                        {" · "}
+                        <span style={{ color: NEGATIVE_TEXT }}>−{fmtInt(f.removedCount)} out</span>
+                      </span>
+                    )}
+                  </span>
+                  <span className="relative shrink-0 text-right">
+                    <span className="block text-sm font-bold tabular-nums text-foreground">{fmt(cur)}</span>
+                    {prev != null && cur !== prev && (
+                      <span className="block text-xs font-semibold tabular-nums" style={{ color: cur > prev ? POSITIVE_TEXT : NEGATIVE_TEXT }}>
+                        {cur > prev ? "+" : "−"}{fmt(Math.abs(cur - prev))}
+                      </span>
+                    )}
+                  </span>
+                  <ChevronRight className={`relative h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isSelected ? "rotate-90" : ""}`} aria-hidden="true" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
       <div ref={scrollRef} className="overflow-x-auto -webkit-overflow-scrolling-touch pb-1">
         <div style={{ height: CANVAS_H * scale }}>
         <div
@@ -1063,6 +1117,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
         </div>
         </div>
       </div>
+      )}
 
       {selectedField && (isWallets
         ? <WalletsPanel field={selectedField} baselineDate={baselineDate ?? null} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} />
@@ -1320,7 +1375,7 @@ const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHover
                   >
                     <span className="text-muted-foreground">{tierDisplayLabel(n.counterpart)}</span>
                     <span className="font-semibold tabular-nums" style={{ color: tone }}>
-                      {n.net === 0 ? <span className="text-muted-foreground/60">no net change</span> : signed(n.net, fmtInt)}
+                      {n.net === 0 ? <span className="text-muted-foreground">no net change</span> : signed(n.net, fmtInt)}
                     </span>
                   </button>
                   {isOpen && (
@@ -1388,7 +1443,7 @@ const TierAttributionBreakdown = ({
             <span>{fmtTel(v)} TEL</span>
           </li>
         ))}
-        <li className="flex items-center justify-between gap-2 tabular-nums text-muted-foreground/70">
+        <li className="flex items-center justify-between gap-2 tabular-nums text-muted-foreground">
           <span>Untracked (no tier on counterparty)</span>
           <span>{fmtTel(untracked)} TEL</span>
         </li>
@@ -1483,7 +1538,7 @@ const TelPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHoverFlow
                   >
                     <span className="text-muted-foreground">{c.label}</span>
                     <span className="font-semibold tabular-nums" style={{ color: colorForTone(c.tone) }}>
-                      {c.net === 0 ? <span className="text-muted-foreground/60">no net flow</span> : `${signed(c.net, fmtTel)} TEL`}
+                      {c.net === 0 ? <span className="text-muted-foreground">no net flow</span> : `${signed(c.net, fmtTel)} TEL`}
                     </span>
                   </button>
                   {isOpen && (
