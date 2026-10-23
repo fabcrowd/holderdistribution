@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SubPanelTabs } from "@/components/SubPanelTabs";
+import { formatSourceLabel } from "@/lib/format";
 import { TabsContent } from "@/components/ui/tabs";
 import {
   Table,
@@ -103,15 +104,6 @@ const formatSignedTokenAmount = (value: number) => {
 const formatSignedInteger = (value: number) => {
   const sign = value > 0 ? "+" : value < 0 ? "-" : "";
   return `${sign}${formatInteger(Math.abs(value))}`;
-};
-
-const normalizeSourceLabel = (raw?: string | null) => {
-  if (!raw) return null;
-  return raw
-    .split(/[_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 };
 
 const formatHost = (raw?: string | null) => {
@@ -1318,7 +1310,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
     const source = snapshot?.source;
     if (!source) return null;
 
-    const provider = normalizeSourceLabel(source.type) ?? "Unknown";
+    const provider = source.type ?? "Unknown";
 
     // New explorer format: source.chains has per-chain API hosts
     const chainApis = source.chains
@@ -1327,7 +1319,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
     const host = chainApis.length > 0 ? chainApis.join(", ") : formatHost(source.upstream);
     const queryLabel = source.queryId ? `Query ${source.queryId}` : null;
 
-    return [provider, host, queryLabel].filter(Boolean).join(" • ");
+    return formatSourceLabel([provider, host, queryLabel]);
   }, [snapshot?.source]);
 
   const selectionLabel = VIEW_OPTIONS.find((option) => option.key === selectedView)?.label ?? "Selected";
@@ -1371,14 +1363,27 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
             {error && (
               <Alert variant="destructive" className="border-dashed">
                 <AlertTitle>Snapshot unavailable</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="space-y-2">
+                  <p>We couldn&apos;t load the latest holder data. This is usually temporary.</p>
+                  <p className="text-xs opacity-80">{error}</p>
+                  <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => void refetch()}>
+                    <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                    Try again
+                  </Button>
+                </AlertDescription>
               </Alert>
             )}
 
             {isLoading && !snapshot && (
-              <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 bg-muted/10 p-8 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading latest holder data...
+              <div role="status" aria-label="Loading latest holder data" className="space-y-3" data-testid="panel-skeleton">
+                <div className="flex gap-2">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-9 w-24 rounded-md bg-muted/70 animate-pulse" />
+                  ))}
+                </div>
+                <div className="h-5 w-48 rounded bg-muted/70 animate-pulse" />
+                <div className="h-64 sm:h-80 w-full rounded-2xl bg-muted/50 animate-pulse" />
+                <span className="sr-only">Loading latest holder data…</span>
               </div>
             )}
 

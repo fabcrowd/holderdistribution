@@ -57,8 +57,8 @@ export const ChangeIndicator = ({
           className,
         )}
       >
-        Δ N/A
-        <InfoTooltip text={`Classification changed since this comparison's baseline date, so this figure can't be shown as a plain gain/loss:\n\n${tooltipText}`} />
+        Relabeled
+        <InfoTooltip text={`Some wallets were reclassified since this comparison's start date (e.g. later identified as an exchange), so the change can't be shown as a plain gain or loss:\n\n${tooltipText}`} />
       </span>
     );
   }

@@ -936,7 +936,11 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
             const prev = isWallets ? f.row?.previousCount ?? null : f.row?.previousTotalBalance ?? null;
             const grew = prev != null ? cur > prev : null;
             const fill = grew === null ? "hsl(var(--primary))" : grew ? POSITIVE : colorForVerdict(f.verdict);
-            const barW = Math.max(w, 100);
+            // 160px floor: the narrowest tiers (500M+, 250M–500M) used to clip their
+            // own label to "500…" at 100px, hiding which tier the row even was.
+            // 200px fits "250M-500M" + count + net with the chevron hidden on
+            // phones (it's only a hover affordance there anyway).
+            const barW = Math.max(w, 200);
             const barLeft = tileEdgeX(barW, "left");
             return (
               // A wrapping div (not the button itself) is the positioned
@@ -996,8 +1000,8 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                         match the green-positive/red-negative language used
                         everywhere else on this page (HolderGrowthWidget,
                         HolderKpiHero). */}
-                    <div className="relative h-full flex items-center px-2 gap-2 min-w-0">
-                      <span className="text-sm font-semibold truncate shrink min-w-0">{tierDisplayLabel(f.label)}</span>
+                    <div className="relative h-full flex items-center px-2 gap-1.5 sm:gap-2 min-w-0">
+                      <span className="text-[13px] sm:text-sm font-semibold truncate shrink min-w-0" title={tierDisplayLabel(f.label)}>{tierDisplayLabel(f.label)}</span>
                       <span className="ml-auto flex items-center gap-1.5 shrink-0">
                         <span className="text-sm font-bold tabular-nums whitespace-nowrap">{isWallets ? fmtInt(cur) : fmtTel(cur)}</span>
                         {prev != null && cur !== prev && (
@@ -1013,7 +1017,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                           affordance — visible before any tile is ever
                           clicked, not just discoverable by accident hover. */}
                       <ChevronRight
-                        className={`h-3.5 w-3.5 shrink-0 ml-2 transition-opacity ${isSelected ? "opacity-0" : "opacity-40 group-hover:opacity-90"}`}
+                        className={`hidden sm:block h-3.5 w-3.5 shrink-0 ml-1 transition-opacity ${isSelected ? "opacity-0" : "opacity-40 group-hover:opacity-90"}`}
                         aria-hidden="true"
                       />
                     </div>

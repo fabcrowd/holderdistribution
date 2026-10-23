@@ -10,6 +10,8 @@ import { HolderKpiHero } from "@/components/HolderKpiHero";
 import type { EcosystemHeadlineTileId } from "@/hooks/useEcosystemHeadlineTiles";
 import SupplyBreakdown from "@/components/SupplyBreakdown";
 import { TimeRangeDropdown } from "@/components/TimeRangeDropdown";
+import { PageIntro } from "@/components/PageIntro";
+import { Coins, PieChart, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useHolderLiteSnapshot, type DisplaySelection } from "@/hooks/useHolderSnapshot";
@@ -31,15 +33,44 @@ const TILE_DESTINATIONS = {
 } as const satisfies Record<EcosystemHeadlineTileId, { tab: string; panel: string }>;
 
 const TABS = [
-  { id: "holders", label: "Holders", accent: "data-[state=active]:text-primary" },
-  { id: "distribution", label: "Distribution", accent: "data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400" },
-  { id: "supply", label: "Supply", accent: "data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-400" },
+  {
+    id: "holders",
+    label: "Holders",
+    icon: Users,
+    blurb: "How many wallets hold TEL, how much they hold and how that is changing.",
+    accent: "data-[state=active]:text-primary",
+  },
+  {
+    id: "distribution",
+    label: "Distribution",
+    icon: PieChart,
+    blurb: "Which balance tiers are gaining or losing wallets, and where their TEL went.",
+    accent: "data-[state=active]:text-violet-700 dark:data-[state=active]:text-violet-400",
+  },
+  {
+    id: "supply",
+    label: "Supply",
+    icon: Coins,
+    blurb: "Where all 100B TEL sits: retail, exchanges, DEX pools, escrow and Telcoin wallets.",
+    accent: "data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-400",
+  },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 const isTabId = (v: string): v is TabId => TABS.some((t) => t.id === v);
 
 const DEFAULT_TAB: TabId = "holders";
 const resolveTab = (hash: string): TabId => (isTabId(hash) ? hash : DEFAULT_TAB);
+
+/** One plain sentence under the hero saying what the open tab answers. */
+const TabBlurb = ({ id, hidden }: { id: TabId; hidden: boolean }) => {
+  if (hidden) return null;
+  const tab = TABS.find((t) => t.id === id)!;
+  return (
+    <p className="mb-3 text-sm text-muted-foreground">
+      <span className="font-semibold text-foreground">{tab.label}:</span> {tab.blurb}
+    </p>
+  );
+};
 
 const Holders = () => {
   // Route stays /holders deliberately — renaming the URL would reset the
@@ -218,8 +249,9 @@ const Holders = () => {
               <TabsTrigger
                 key={t.id}
                 value={t.id}
-                className={`min-h-[36px] text-[11px] sm:text-sm font-semibold rounded-full px-2.5 sm:px-3.5 py-1.5 whitespace-nowrap text-muted-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm ${t.accent}`}
+                className={`min-h-[40px] gap-1.5 text-xs sm:text-sm font-semibold rounded-full px-3 sm:px-4 py-1.5 whitespace-nowrap text-muted-foreground bg-transparent hover:text-foreground hover:bg-background/60 data-[state=active]:bg-background data-[state=active]:shadow-sm ${t.accent}`}
               >
+                <t.icon aria-hidden="true" className="hidden min-[400px]:block h-4 w-4 shrink-0" />
                 {t.label}
               </TabsTrigger>
             ))}
@@ -257,6 +289,7 @@ const Holders = () => {
             HolderKpiHero's tiles morph via its `collapsed` prop. Before
             that point sticky positioning is a no-op, so the hero renders in
             normal flow exactly as before. */}
+        {!activeTileId && <PageIntro rangeDays={rangeDays} />}
         <div ref={heroRef} />
         {/* `position: sticky` does NOT pull this box out of document flow —
             unlike `fixed`, later siblings are laid out as if it were
@@ -286,6 +319,7 @@ const Holders = () => {
 
 
         <TabsContent value="holders" className="mt-0 focus-visible:outline-none">
+          <TabBlurb id="holders" hidden={!!activeTileId} />
           <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
             <WalletHoldingsWidget
               // Always, not just in focus mode. The card's title block reads
@@ -313,6 +347,7 @@ const Holders = () => {
         </TabsContent>
 
         <TabsContent value="distribution" className="mt-0 focus-visible:outline-none">
+          <TabBlurb id="distribution" hidden={!!activeTileId} />
           <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
             <DistributionAnalysisWidget
               snapshot={snapshot ?? null}
@@ -325,6 +360,7 @@ const Holders = () => {
         </TabsContent>
 
         <TabsContent value="supply" className="mt-0 focus-visible:outline-none">
+          <TabBlurb id="supply" hidden={!!activeTileId} />
           <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
             <SupplyBreakdown rangeDays={rangeDays} />
           </div>

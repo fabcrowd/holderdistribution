@@ -1,21 +1,15 @@
 import { ExternalLink } from "lucide-react";
 import { useChainStatus } from "@/hooks/useChainStatus";
+import { formatRelativeAge } from "@/lib/format";
 
-const timeAgo = (iso: string): string => {
-  const diff = Date.now() - Date.parse(iso);
-  const h = Math.floor(diff / 3_600_000);
-  const m = Math.floor((diff % 3_600_000) / 60_000);
-  if (h > 0) return `${h}h ago`;
-  if (m > 0) return `${m}m ago`;
-  return "just now";
-};
+const timeAgo = (iso: string): string => formatRelativeAge(iso) ?? "unknown";
 
 export const ChainStatusBar = () => {
   const { data } = useChainStatus();
   if (!data || data.chains.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground/60">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
       {data.generatedAt && (
         <span className="tabular-nums">
           Updated {timeAgo(data.generatedAt)}
