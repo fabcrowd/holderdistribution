@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
+import { PanelError } from "@/components/terminal/TerminalPanel";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
+import "@/lib/rechartsMotion";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { useTreasuryHistory } from "@/hooks/useTreasuryHistory";
 import { computeSeriesDomain, activeKeys } from "@/lib/chartDomain";
@@ -88,8 +90,13 @@ const formatSignedTEL = (value: number) => {
   return `${sign}${formatCompactTEL(Math.abs(value))}`;
 };
 
-export const TreasuryHistoryChart = ({ rangeDays }: { rangeDays: number }) => {
-  const { data } = useTreasuryHistory();
+/**
+ * `compact` (the desktop terminal): no section rule, chips share the title
+ * row and the plot is shorter, so the whole chart fits the history panel at
+ * 1440x900 instead of being cut off at the bottom.
+ */
+export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays: number; compact?: boolean }) => {
+  const { data, isError } = useTreasuryHistory();
   // Escrow off by default: at ~6.3B it is roughly two-thirds of the total and
   // flattens the other two, and it is third-party custody (BitGo, Anchorage)
   // rather than discretionary supply.
@@ -164,15 +171,16 @@ export const TreasuryHistoryChart = ({ rangeDays }: { rangeDays: number }) => {
     [display, visible, mode],
   );
 
+  if (isError) return <div className="min-h-[8rem]"><PanelError>Couldn&apos;t load treasury history.</PanelError></div>;
   if (!data || points.length < 2) return null;
 
   const fmt = mode === "change" ? formatSignedTEL : formatCompactTEL;
-  const dateFmt = new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric" });
-  const tipFmt = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+  const dateFmt = new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric", timeZone: "UTC" });
+  const tipFmt = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" });
 
   return (
-    <div className="pt-5 mt-5 border-t border-border/40">
-      <div className="flex flex-wrap items-center gap-2 mb-3">
+    <div className={compact ? "" : "pt-5 mt-5 border-t border-border/40"} data-testid="treasury-history-chart">
+      <div className={`flex flex-wrap items-center gap-2 ${compact ? "mb-2" : "mb-3"}`}>
         <span className="font-medium text-foreground text-sm">Project-held balances over time</span>
         <InfoTooltip text={`Daily balances reconstructed from on-chain Transfer logs, one line per group.\n\nThe two "Association —" lines are subsets of ONE entity, the Telcoin Association: its Treasury address, and its TAO / council / ops Safes. The pie above combines them into a single Association bucket, so it shows one figure where this chart shows two.\n\nTelcoin Holdings is a SEPARATE entity, not part of the Association, and the two are never combined into a single figure.\n\nEscrow is third-party custody (BitGo, Anchorage) plus five assumed Holdings-funded vaults — not discretionary supply, and hidden by default because it dwarfs the rest.`} />
         <div className="inline-flex rounded-full border border-border/60 bg-card/80 p-0.5 ml-auto">
@@ -191,7 +199,7 @@ export const TreasuryHistoryChart = ({ rangeDays }: { rangeDays: number }) => {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mb-3">
+      <div className={`flex flex-wrap items-center gap-2 ${compact ? "mb-2" : "mb-3"}`}>
         {(Object.keys(SERIES) as SeriesKey[]).map((key) => {
           const on = visible[key];
           return (
@@ -202,7 +210,7 @@ export const TreasuryHistoryChart = ({ rangeDays }: { rangeDays: number }) => {
               aria-pressed={on}
               // Series colour on the border + dot, never as the text
               // background: white on these mid-tone hues failed AA (2.8:1).
-              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full border-2 px-2.5 py-1 text-xs font-medium transition-colors ${
+              className={`inline-flex ${compact ? "min-h-7" : "min-h-[44px]"} items-center gap-1.5 rounded-full border-2 px-2.5 py-1 text-xs font-medium transition-colors ${
                 on ? "bg-card text-foreground" : "border-border/60 text-muted-foreground hover:text-foreground"
               }`}
               style={on ? { borderColor: SERIES[key].color } : undefined}
@@ -217,9 +225,9 @@ export const TreasuryHistoryChart = ({ rangeDays }: { rangeDays: number }) => {
         })}
       </div>
 
-      <div className="h-56 w-full">
+      <div className={`${compact ? "h-44" : "h-56"} w-full`}>
         <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
-          <LineChart data={display}>
+          <LineChart data={display} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="timestamp"

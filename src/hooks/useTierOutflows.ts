@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { resolveDataUrl } from "@/lib/dataUrl";
+import { FeedError } from "@/lib/fetchJson";
 
 export type TierOutflowCell = {
   dex: number;
@@ -91,7 +92,7 @@ export const useTierOutflows = () => {
       // stops the BROWSER's own disk cache from serving something stale
       // across visits — the edge cache is what's meant to absorb repeat load.
       const res = await fetch(resolveUrl(), { cache: "no-store" });
-      if (!res.ok) return null;
+      if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       return (await res.json()) as TierOutflows;
     },
     staleTime: 5 * 60 * 1000,

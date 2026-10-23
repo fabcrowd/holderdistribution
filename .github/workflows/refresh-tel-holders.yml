@@ -185,7 +185,7 @@ jobs:
       - name: Commit snapshot changes
         id: commit
         run: |
-          FILES_TO_CHECK="public/data/funding-wallets.json public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/cex-wallets.json public/data/cex-flows.json public/data/cex-balance-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json"
+          FILES_TO_CHECK="public/data/funding-wallets.json public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/cex-wallets.json public/data/cex-flows.json public/data/cex-balance-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/chain-status.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json"
 
           git add $FILES_TO_CHECK
           # staker-balances-checkpoint.json only exists if pull-staker-balances.js

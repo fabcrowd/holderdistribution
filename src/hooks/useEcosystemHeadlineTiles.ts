@@ -4,6 +4,7 @@ import { useHolderLiteSnapshot, type HolderLiteSnapshot } from "@/hooks/useHolde
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useHeadlineTiles } from "@/hooks/useHeadlineTiles";
 import type { ClassificationEvent } from "@/hooks/useClassificationChangelog";
+import { v3StakingGapEvents } from "@/lib/staking";
 
 const formatInteger = (v: number) => new Intl.NumberFormat().format(v);
 const formatTokenAmount = (v: number) => {
@@ -34,7 +35,13 @@ export type EcosystemHeadlineTile = {
   changelogEvents?: ClassificationEvent[];
   infoTooltip?: string | null;
   tone?: "neutral" | "auto";
+  /** "all" = the value isn't splittable by chain (exchange custody is
+   *  tracked per exchange, not per chain), so it stays the all-chains figure
+   *  whichever chain is selected and is labelled that way. */
+  scope: "chain" | "all";
 };
+
+export type HeadlineView = "combined" | "ethereum" | "polygon" | "base";
 
 /**
  * The four Ecosystem Headline numbers, extracted from HolderKpiHero so a
@@ -45,7 +52,7 @@ export type EcosystemHeadlineTile = {
  * react-query's cache means calling this from two components costs no extra
  * network request.
  */
-export const useEcosystemHeadlineTiles = (rangeDays: number) => {
+export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView = "combined") => {
   const { data } = useHolderLiteSnapshot();
   const snap = data as HolderLiteSnapshot | undefined;
   // Separate, effectively-unbounded fetch for the ATH check — a 365-day
@@ -53,24 +60,28 @@ export const useEcosystemHeadlineTiles = (rangeDays: number) => {
   // year", which happens to equal true all-time today only because history
   // began under a year ago. Once the archive exceeds 365 days this would
   // start awarding a false "ATH" badge for a merely-recent local high.
-  const { data: fullHistory } = useHolderGrowth({ view: "combined", days: 36500 });
+  const { data: fullHistory } = useHolderGrowth({ view: chain, days: 36500 });
   // Shared with WalletHoldingsWidget's Holder Snapshot section, so these
   // four tiles can never show a different delta depending on which
   // component renders them — see useHeadlineTiles' doc comment.
-  const { historicalDelta, cexPrevious, events } = useHeadlineTiles({ view: "combined", rangeDays });
+  const { historicalDelta, cexPrevious, events } = useHeadlineTiles({ view: chain, rangeDays });
 
   const isAth = useMemo(() => {
     const series = fullHistory?.series;
     if (!snap || !series?.length) return false;
     const holders = series.map((p) => p.holders);
-    const latest = snap.views.combined?.metrics.holderCount ?? 0;
+    const latest = snap.views[chain]?.metrics.holderCount ?? 0;
     return latest > 0 && latest >= Math.max(...holders);
-  }, [fullHistory, snap]);
+  }, [fullHistory, snap, chain]);
 
   return useMemo<{ tiles: EcosystemHeadlineTile[]; isAth: boolean } | null>(() => {
     if (!snap) return null;
-    const view = snap.views.combined;
+    // Per-chain view when a chain is picked; holders-lite carries the same
+    // metrics block for every chain. Falls back to combined if a chain view
+    // is missing from an older snapshot.
+    const view = snap.views[chain] ?? snap.views.combined;
     if (!view) return null;
+    const perChain = chain !== "combined" && !!snap.views[chain];
 
     const cexHeld = snap.cex?.overall?.currentBalance ?? 0;
     const holders = view.metrics.holderCount;
@@ -85,7 +96,17 @@ export const useEcosystemHeadlineTiles = (rangeDays: number) => {
     // Retail baseline, not the retail+CEX totalHeld — diffing this value against
     // that baseline would report the entire ~20B CEX book as a change.
     const prevHeld = historicalDelta?.totalBalance ?? null;
-    const prevStaked = historicalDelta?.stakingBalance ?? null;
+    // Staked = legacy + v3 StakingModule, so the baseline must be too. Before
+    // the module's deploy v3 was 0 (a valid comparison: the migration out of
+    // the legacy contract nets out); after it, v3 wasn't recorded, so the
+    // delta is replaced by the "†" explainer rather than reading the
+    // migration as a 3B outflow.
+    const v3Stats = view.stakingStats?.v3;
+    const prevStaked = v3Stats ? historicalDelta?.stakingTotal ?? null : historicalDelta?.stakingBalance ?? null;
+    const stakedEvents =
+      v3Stats && !perChain && historicalDelta?.referenceDate
+        ? v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance, v3Stats.deployDate ?? undefined)
+        : [];
     const prevCex = cexPrevious;
 
     // The "Retail Holders" delta badge shows NET change — same metric every
@@ -122,7 +143,7 @@ export const useEcosystemHeadlineTiles = (rangeDays: number) => {
         id: "holders",
         icon: Users, label: "Retail Holders", value: formatInteger(holders),
         sub: isAth ? "All-time high" : "Wallets >0 TEL, excl. exchanges",
-        ath: isAth, current: holders, previous: prevHolders, fmt: undefined,
+        ath: isAth, current: holders, previous: prevHolders, fmt: undefined, scope: perChain ? "chain" : "all",
         changelogEvents: events.holders,
         infoTooltip: cumulativeHoldersTooltip,
       },
@@ -130,22 +151,37 @@ export const useEcosystemHeadlineTiles = (rangeDays: number) => {
         id: "retailHeld",
         icon: Database, label: "Retail Held", value: formatTokenAmount(retailHeld),
         sub: "Excl. exchanges, treasury & DEX", ath: false,
-        current: retailHeld, previous: prevHeld, fmt: formatTokenAmount,
+        current: retailHeld, previous: prevHeld, fmt: formatTokenAmount, scope: perChain ? "chain" : "all",
         // Now relabel-SENSITIVE: moving a wallet between retail and CEX changes
         // this number without any TEL moving, whereas the old retail+CEX blend
         // was invariant to it. So it needs the same changelog suppression the
         // holders tile has — retail.balance events, already computed upstream.
         changelogEvents: events.retailBalance,
+        // Staked TEL is a subset of this, not an addition: v3 StakingModule
+        // positions are credited to each staker's wallet at the source.
+        infoTooltip: v3Stats && !perChain
+          ? `Includes ${formatTokenAmount(staked)} staked TEL, of which ${formatTokenAmount(v3Stats.stakedTotal)} is Staked (v3) in the StakingModule. Staked TEL is counted once, inside this figure.`
+          : null,
       },
       {
         id: "staked",
         icon: Layers, label: "Staked TEL", value: formatTokenAmount(staked),
-        sub: pctOfSupply(staked, supply), ath: false, current: staked, previous: prevStaked, fmt: formatTokenAmount,
+        sub: perChain && chain !== "polygon" ? "Staking runs on Polygon" : pctOfSupply(staked, supply),
+        // ChangeIndicator only renders (and so only shows the "†") with a
+        // baseline; with no v3 baseline, hand it the current value as one.
+        ath: false, current: staked,
+        // Sub-1-TEL differences are float noise between the lite snapshot and the
+        // history row (same day): show "0" like the Staking panel, not "−0.38".
+        previous: stakedEvents.length || (prevStaked != null && Math.abs(staked - prevStaked) < 1) ? staked : prevStaked, fmt: formatTokenAmount, scope: perChain ? "chain" : "all",
+        changelogEvents: stakedEvents,
       },
       {
         id: "cex",
         icon: Building2, label: "CEX Balance", value: formatTokenAmount(cexHeld),
-        sub: pctOfSupply(cexHeld, supply), ath: false, current: cexHeld, previous: prevCex, fmt: formatTokenAmount,
+        sub: perChain ? `All chains · ${pctOfSupply(cexHeld, supply)}` : pctOfSupply(cexHeld, supply),
+        ath: false, current: cexHeld, previous: prevCex, fmt: formatTokenAmount,
+        // Exchange custody is tracked per exchange wallet list, not per chain.
+        scope: "all",
         // Neither direction is inherently good or bad — custody isn't a sale —
         // so this stays neutral rather than implying growth is bad news.
         tone: "neutral",
@@ -154,5 +190,5 @@ export const useEcosystemHeadlineTiles = (rangeDays: number) => {
     ];
 
     return { tiles, isAth };
-  }, [snap, historicalDelta, cexPrevious, events, isAth]);
+  }, [snap, historicalDelta, cexPrevious, events, isAth, chain]);
 };

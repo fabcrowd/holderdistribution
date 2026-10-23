@@ -5,9 +5,10 @@ import process from "node:process";
 import { keccak256 } from "ethereum-cryptography/keccak";
 import { utf8ToBytes } from "ethereum-cryptography/utils";
 import { loadEnv } from "./loadEnv.js";
+import { buildChainStatus } from "./lib/chainStatus.js";
 import { getUsableRpcUrls, rpcCall, getLogs } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
-import { residualCustodyBalance } from "./lib/stakingCustody.js";
+import { residualCustodyBalance, attributeStakingReceipts } from "./lib/stakingCustody.js";
 import { ensureWindowCache, readCommittedJson, replayChainRawBalances } from "./lib/holdersAsOfReplay.js";
 import { computeSupplyTotals } from "./lib/supply.js";
 import { resolveChainTokens, combineChainBalances, v3StateToCheckpoint, legacyCheckpointUsable } from "./lib/telTokens.js";
@@ -181,6 +182,12 @@ async function saveCheckpoint(chainCheckpoints) {
   };
   await fs.mkdir(path.dirname(CHECKPOINT_PATH), { recursive: true });
   await fs.writeFile(CHECKPOINT_PATH, `${JSON.stringify(payload)}\n`, "utf8");
+  // The browser reads this ~200-byte slice instead of the 5 MB checkpoint.
+  await fs.writeFile(
+    path.join(path.dirname(CHECKPOINT_PATH), "chain-status.json"),
+    `${JSON.stringify(buildChainStatus(payload), null, 2)}\n`,
+    "utf8",
+  );
 }
 
 /**
@@ -393,6 +400,17 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
     v3Result = await scanV3(chainKey, rpcUrls, tokens, topic0, headBlock, chunkSize, checkpoint?.v3 ?? null);
   }
 
+  // TEL v3 staking modules (config tokens.v3.staking): replay each module's own
+  // receipt-token Transfer logs to get every staker's position, checkpointed
+  // like the token scans. Attributed to the stakers in main().
+  const stakingReceipts = [];
+  const stakingCheckpoint = {};
+  for (const module of tokens.v3 ? (meta.tokens?.v3?.staking ?? []) : []) {
+    const r = await scanStakingReceipts(chainKey, rpcUrls, module, topic0, headBlock, checkpoint?.v3Staking?.[module.address.toLowerCase()] ?? null);
+    stakingReceipts.push(r.result);
+    stakingCheckpoint[r.result.address] = r.checkpoint;
+  }
+
   const combined = combineChainBalances({
     legacyRaw: builder.rawBalances(),
     legacyDecimals: decimals,
@@ -425,13 +443,61 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
     chainKey,
     balances,
     v3ByAddress: combined.v3ByAddress,
+    stakingReceipts,
     tokenTotals: { ...combined.totals, strandedInUpgrade: stranded },
     checkpointData: {
       lastBlock: latestBlock,
       fromBlock: genesisBlock,
       rawBalances: rawState,
       ...(v3Result ? { v3: v3StateToCheckpoint(v3Result.state, v3Result.toBlock) } : {}),
+      ...(stakingReceipts.length ? { v3Staking: stakingCheckpoint } : {}),
     },
+  };
+}
+
+/**
+ * Staker positions in a TEL v3 StakingModule. The module is an ERC-20-style
+ * receipt token (stake mints 1:1 to the staker, withdrawal burns), so replaying
+ * its OWN Transfer logs from deployment gives balanceOf() for every staker.
+ * Resumes from checkpoint.lastBlock; a missing checkpoint replays from deployBlock.
+ */
+async function scanStakingReceipts(chainKey, rpcUrls, module, topic0, headBlock, checkpoint) {
+  const address = module.address.toLowerCase();
+  const decimals = Number(module.decimals ?? 18);
+  if (!module.deployBlock) throw new Error(`${chainKey}: staking module ${address} has no deployBlock in config/chains.json`);
+  const usable = checkpoint && Number.isFinite(checkpoint.lastBlock) && checkpoint.fromBlock === module.deployBlock;
+  const fromBlock = usable ? checkpoint.lastBlock + 1 : module.deployBlock;
+  const envChunk = Number(process.env[`${chainKey.toUpperCase()}_V3_GETLOGS_CHUNK_SIZE`]);
+  const chunkSize = Number.isFinite(envChunk) && envChunk > 0 ? envChunk : (V3_CHUNK_DEFAULTS[chainKey] ?? 2_000);
+  console.log(`  ${chainKey}: ${module.name ?? "staking module"} ${address} receipts from block ${fromBlock}${usable ? " (checkpoint)" : " (deployment block)"}, chunk ${chunkSize}`);
+  // Keep the full raw state (no dust floor): a position is exact, and a
+  // dropped sub-dust remainder would surface as a negative after a later burn.
+  const raw = new Map(Object.entries(usable ? checkpoint.rawBalances ?? {} : {}).map(([a, v]) => [a, BigInt(v)]));
+  const onBatch = (batch) => {
+    for (const log of batch) {
+      const p = parseTransferLog(log);
+      if (!p) continue;
+      if (p.to !== ZERO) raw.set(p.to, (raw.get(p.to) ?? 0n) + p.value);
+      if (p.from !== ZERO) raw.set(p.from, (raw.get(p.from) ?? 0n) - p.value);
+    }
+  };
+  const { totalLogs, latestBlock } = fromBlock <= headBlock
+    ? await streamTransferLogs(rpcUrls, address, topic0, fromBlock, chunkSize, onBatch, headBlock)
+    : { totalLogs: 0, latestBlock: checkpoint.lastBlock };
+  const receipts = new Map();
+  const rawOut = {};
+  let negatives = 0;
+  for (const [a, v] of raw) {
+    if (v < 0n) negatives++;
+    if (v <= 0n) continue;
+    rawOut[a] = v.toString();
+    receipts.set(a, Number(v) / 10 ** decimals);
+  }
+  if (negatives > 0) console.warn(`WARNING: ${chainKey}: ${negatives} negative staking receipt balance(s) on ${address} — scan incomplete.`);
+  console.log(`  ${chainKey}: ${totalLogs} new receipt logs → ${receipts.size} stakers in ${address}`);
+  return {
+    result: { address, name: module.name ?? null, receipts },
+    checkpoint: { fromBlock: module.deployBlock, lastBlock: latestBlock, rawBalances: rawOut },
   };
 }
 
@@ -495,6 +561,8 @@ async function main() {
   // Per-chain token totals (legacy supply, v3 supply, retired legacy, stranded)
   // feeding the supply identity; null until a live scan fills them in.
   const tokenTotalsByChain = {};
+  // TEL v3 StakingModule positions per chain: [{ address, name, receipts }].
+  const stakingReceiptsByChain = {};
   // Seeded from the EXISTING checkpoint, not empty — a chain that fails below
   // must keep its last-known-good entry rather than have it silently dropped
   // when we save. saveCheckpoint() replaces `chains` wholesale (no merge with
@@ -590,9 +658,10 @@ async function main() {
         failedChains.push(settled.reason);
         continue;
       }
-      const { chainKey, balances, checkpointData, v3ByAddress, tokenTotals } = settled.value;
+      const { chainKey, balances, checkpointData, v3ByAddress, tokenTotals, stakingReceipts } = settled.value;
       chainBalancesRaw[chainKey] = balances;
       if (v3ByAddress) v3ByChain[chainKey] = v3ByAddress;
+      if (stakingReceipts?.length) stakingReceiptsByChain[chainKey] = stakingReceipts;
       if (tokenTotals) tokenTotalsByChain[chainKey] = tokenTotals;
       if (checkpointData) newCheckpointChains[chainKey] = checkpointData;
     }
@@ -681,6 +750,27 @@ async function main() {
         `Staking contract balance ${Math.round(contractBalance).toLocaleString()} -> ` +
           `${Math.round(residual).toLocaleString()} TEL after attributing ` +
           `${Math.round(stakedAttributed).toLocaleString()} to stakers (prevents double-counting).`
+      );
+    }
+  }
+
+  // TEL v3 staking: the StakingModule custodies stakers' v3 TEL. Move each
+  // staker's receipt balance from the module onto the staker (both the
+  // combined balance and its v3 share), so ~3B of individual stakes is no
+  // longer published as one 500M+ "retail" wallet. Any unattributed remainder
+  // stays on the module, which is labelled staking-contract (non-retail).
+  for (const [chainKey, modules] of Object.entries(stakingReceiptsByChain)) {
+    for (const { address, name, receipts } of modules) {
+      const r = attributeStakingReceipts(chainBalancesRaw[chainKey], address, receipts, v3ByChain[chainKey]);
+      if (r.overAttributed >= 1) { // ignore float rounding (sub-1 TEL)
+        console.warn(
+          `WARNING: ${chainKey}: ${name ?? address} receipts exceed its TEL balance by ` +
+            `${Math.round(r.overAttributed).toLocaleString()} — positions scaled down to the held balance.`
+        );
+      }
+      console.log(
+        `${chainKey}: ${name ?? address} ${Math.round(r.held).toLocaleString()} TEL -> ` +
+          `${Math.round(r.residual).toLocaleString()} after attributing ${Math.round(r.attributed).toLocaleString()} to ${r.stakers} stakers.`
       );
     }
   }

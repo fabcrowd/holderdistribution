@@ -62,6 +62,23 @@ describe("live-data Netlify function", () => {
     const fetchImpl = vi.fn(async () => ok(checkpoint));
     const res = await handleLiveData(req("holders-checkpoint.json"), { LIVE_DATA_GITHUB_TOKEN: "t" }, fetchImpl);
     expect(await res.json()).toEqual({ generatedAt: "g", chains: { ethereum: { lastBlock: 5 } } });
-    expect(slimCheckpoint({})).toEqual({ chains: {} });
+    expect(slimCheckpoint({})).toEqual({});
+  });
+
+  it("strips nested balance maps too (v3, v3Staking)", () => {
+    const cp = {
+      generatedAt: "g",
+      chains: {
+        ethereum: { lastBlock: 5, fromBlock: 1, rawBalances: { "0xa": "1" }, v3: { rawBalances: { "0xb": "2" } } },
+        polygon: { lastBlock: 7, v3Staking: { "0x57": { rawBalances: { "0xc": "3" } } } },
+      },
+    };
+    const out = slimCheckpoint(cp);
+    expect(out).toEqual({ generatedAt: "g", chains: { ethereum: { lastBlock: 5, fromBlock: 1 }, polygon: { lastBlock: 7 } } });
+    expect(JSON.stringify(out)).not.toMatch(/0x[abc]"/);
+  });
+
+  it("serves chain-status.json", () => {
+    expect(LIVE_DATA_FILES.has("chain-status.json")).toBe(true);
   });
 });

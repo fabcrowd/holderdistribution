@@ -1,5 +1,6 @@
 import { buildChainHolders, buildMetrics, applyStaking } from "./stakingAttribution.js";
 import { reconcileDistributionCounts } from "./holderHistoryReconcile.js";
+import { applyV3Staking, summarizeStaking } from "./v3Staking.js";
 
 export const CONCENTRATION_BUCKETS = [10, 25, 50, 100, 250, 500, 1000];
 
@@ -116,10 +117,17 @@ export const buildBalanceStats = (holders) => {
   };
 };
 
-export const buildStakingStats = (holders, retailSupply) => {
-  const stakers = holders.filter((holder) => (holder.stakedBalance ?? 0) > 0);
-  const stakedTotal = stakers.reduce((sum, holder) => sum + (holder.stakedBalance ?? 0), 0);
-  const stakerCount = stakers.length;
+/**
+ * Staking stats for one view: the legacy staking contract (per-holder
+ * `stakedBalance`) plus, when given, the v3 StakingModule's positions —
+ * deduped by staker, so a wallet staked in both counts once. Without `v3`
+ * the result is exactly the legacy-only stats this used to return (plus the
+ * `legacy` breakdown).
+ */
+export const buildStakingStats = (holders, retailSupply, v3 = null) => {
+  const summary = summarizeStaking(holders, v3);
+  const stakerCount = summary.stakers.size;
+  const stakedTotal = summary.legacy.stakedTotal + (summary.v3?.stakedTotal ?? 0);
   const holderCount = holders.length;
 
   return {
@@ -129,12 +137,26 @@ export const buildStakingStats = (holders, retailSupply) => {
     stakedShareOfRetail: retailSupply > 0 ? stakedTotal / retailSupply : 0,
     stakerShareOfHolders: holderCount > 0 ? stakerCount / holderCount : 0,
     averageStakedPerStaker: stakerCount > 0 ? stakedTotal / stakerCount : 0,
+    legacy: summary.legacy,
+    ...(summary.v3
+      ? {
+          v3: {
+            stakerCount: summary.v3.stakerCount,
+            stakedTotal: summary.v3.stakedTotal,
+            deployDate: summary.v3.deployDate,
+            deployBlock: summary.v3.modules[0]?.deployBlock ?? null,
+            module: summary.v3.modules[0]?.address ?? null,
+          },
+          stakedInBoth: summary.bothCount,
+        }
+      : {}),
   };
 };
 
-export const buildStakingDistribution = (holders) => {
-  const stakedAmounts = holders
-    .map((holder) => holder.stakedBalance ?? 0)
+export const buildStakingDistribution = (holders, v3 = null) => {
+  const summary = summarizeStaking(holders, v3);
+  const stakedAmounts = [...summary.stakers]
+    .map((a) => summary.perStaker(a))
     .filter((value) => Number.isFinite(value) && value > 0);
   if (!stakedAmounts.length) return null;
 
@@ -303,9 +325,12 @@ export const buildOverlapStats = (chains, chainOrder) => {
 };
 
 /** Builds enriched per-chain + combined metrics for one raw tel-holders.json snapshot. */
-export const buildSnapshotData = (snapshot, fundingWallets, isNonRetailAddress) => {
+export const buildSnapshotData = (snapshot, fundingWallets, isNonRetailAddress, v3Staking = null) => {
   if (!snapshot) return null;
-  const chains = applyStaking(buildChainHolders(snapshot, isNonRetailAddress), fundingWallets);
+  const chains = applyV3Staking(
+    applyStaking(buildChainHolders(snapshot, isNonRetailAddress), fundingWallets),
+    v3Staking,
+  );
   const chainOrder = snapshot.chainOrder ?? Object.keys(chains);
 
   const enrichedChains = {};
@@ -328,6 +353,7 @@ export const buildSnapshotData = (snapshot, fundingWallets, isNonRetailAddress) 
     chainOrder,
     chains: enrichedChains,
     combined: combinedMetrics,
+    v3Staking: v3Staking ?? null,
   };
 };
 
@@ -358,8 +384,13 @@ export const buildViewData = (selection, current, previous) => {
   const concentration = buildConcentration(currentHolders);
   const previousConcentration = previous ? buildConcentration(previousHolders) : null;
   const balanceStats = buildBalanceStats(currentHolders);
-  const stakingStats = buildStakingStats(currentHolders, currentMetrics.retail.balance ?? 0);
-  const stakingDistribution = buildStakingDistribution(currentHolders);
+  // v3 StakingModule positions belong to the combined view and the module's
+  // own chain; every other chain view stays legacy-only (i.e. zero).
+  const v3 = current?.v3Staking && (selection === "combined" || selection === current.v3Staking.chain)
+    ? current.v3Staking
+    : null;
+  const stakingStats = buildStakingStats(currentHolders, currentMetrics.retail.balance ?? 0, v3);
+  const stakingDistribution = buildStakingDistribution(currentHolders, v3);
   const rawDistribution = buildDistributionRows(
     currentHolders,
     currentMetrics.retail.balance ?? 0,

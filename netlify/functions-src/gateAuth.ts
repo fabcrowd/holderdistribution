@@ -10,7 +10,7 @@
  *      is set in Netlify. See docs/FORENSICS.md → "Rotating to a salted hash".
  * All digest comparisons use crypto.timingSafeEqual.
  */
-import { createHash, pbkdf2Sync, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, pbkdf2Sync, randomBytes, timingSafeEqual } from "node:crypto";
 import { FORENSICS_PASSWORD_SHA256 } from "../../src/lib/forensicsPasswordHash.ts";
 
 type Env = Record<string, string | undefined>;
@@ -141,5 +141,66 @@ export class WindowLimiter {
   private prune(now: number) {
     if (this.hits.size < 5000) return;
     for (const [k, v] of this.hits) if (now > v.resetAt) this.hits.delete(k);
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Short-lived session tokens                                               */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * After a correct password the gate returns a signed token so the browser
+ * never has to keep the password. Format: `hdg1.<payloadB64url>.<sigB64url>`,
+ * payload `{"exp":<unix seconds>}`, signature HMAC-SHA256.
+ *
+ * The signing key is DERIVED from a secret that already exists in the server
+ * env (first present of FORENSICS_TOKEN_SECRET, FORENSICS_PASSWORD_HASH,
+ * FORENSICS_PASSWORD, LIVE_DATA_GITHUB_TOKEN) — never hardcoded, never the
+ * in-repo legacy hash. Rotating that secret (e.g. the password) invalidates
+ * every outstanding token. With none set, no tokens are issued and the client
+ * keeps the password in memory for the tab only.
+ */
+export const TOKEN_PREFIX = "hdg1";
+export const TOKEN_TTL_SECONDS = 12 * 60 * 60;
+const TOKEN_SECRET_VARS = ["FORENSICS_TOKEN_SECRET", "FORENSICS_PASSWORD_HASH", "FORENSICS_PASSWORD", "LIVE_DATA_GITHUB_TOKEN"];
+
+export function tokenKey(env: Env = process.env): Buffer | null {
+  for (const name of TOKEN_SECRET_VARS) {
+    const material = env[name]?.trim();
+    if (material) return createHmac("sha256", "holderdistribution/forensics-gate/token/v1").update(`${name}:${material}`).digest();
+  }
+  return null;
+}
+
+const b64url = (b: Buffer) => b.toString("base64url");
+
+export function issueToken(env: Env = process.env, now = Date.now()): { token: string; expiresAt: number } | null {
+  const key = tokenKey(env);
+  if (!key) return null;
+  const exp = Math.floor(now / 1000) + TOKEN_TTL_SECONDS;
+  const payload = b64url(Buffer.from(JSON.stringify({ exp }), "utf8"));
+  const sig = b64url(createHmac("sha256", key).update(`${TOKEN_PREFIX}.${payload}`).digest());
+  return { token: `${TOKEN_PREFIX}.${payload}.${sig}`, expiresAt: exp * 1000 };
+}
+
+export function verifyToken(token: unknown, env: Env = process.env, now = Date.now()): boolean {
+  if (typeof token !== "string" || token.length > 512) return false;
+  const key = tokenKey(env);
+  if (!key) return false;
+  const [prefix, payload, sig, ...rest] = token.split(".");
+  if (prefix !== TOKEN_PREFIX || !payload || !sig || rest.length) return false;
+  const expected = createHmac("sha256", key).update(`${TOKEN_PREFIX}.${payload}`).digest();
+  let actual: Buffer;
+  try {
+    actual = Buffer.from(sig, "base64url");
+  } catch {
+    return false;
+  }
+  if (!digestsEqual(actual, expected)) return false;
+  try {
+    const { exp } = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { exp?: unknown };
+    return typeof exp === "number" && exp * 1000 > now && exp * 1000 <= now + TOKEN_TTL_SECONDS * 1000 + 60_000;
+  } catch {
+    return false;
   }
 }

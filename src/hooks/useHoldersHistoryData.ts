@@ -17,7 +17,10 @@ export type HolderHistoryEntry = {
     retailHolderCount: number;
     totalBalance: number;
     totalHeld?: number;
+    /** Legacy staking contract only. */
     stakingBalance?: number;
+    /** v3 StakingModule, on dates the pipeline measured it (see lib/staking). */
+    stakingV3Balance?: number;
     /** TEL sitting in known DEX pools/routers (retail-owned LP). */
     dexLiquidity?: number;
     /** CEX custody balance, sourced from cex-balance-history.json. */

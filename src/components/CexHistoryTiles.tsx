@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis } from "recharts";
+import "@/lib/rechartsMotion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import { buildCexHistoryTiles, MIN_CEX_TILE_BALANCE } from "@/components/buildCexHistoryTiles";
@@ -136,7 +137,7 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
                       <ChartTooltipContent
                         labelFormatter={(_, payload) => {
                           const ts = payload?.[0]?.payload?.timestamp;
-                          return ts ? new Date(ts).toLocaleDateString() : "";
+                          return ts ? new Date(ts).toLocaleDateString(undefined, { timeZone: "UTC" }) : "";
                         }}
                         formatter={(value) => [`${formatCompactTEL(Number(value))} TEL`, "Balance"]}
                       />

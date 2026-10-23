@@ -30,10 +30,28 @@ banner is not showing (it means `public/data` is >48 h stale — see Data pipeli
 | Where | Variable | Notes |
 |---|---|---|
 | Browser (build time) | `VITE_SITE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_HOLDER_HISTORY_URL` | All optional; **public** values only. Anything `VITE_*` is shipped to every visitor. |
-| Netlify function | `LIVE_DATA_GITHUB_TOKEN` (live data + latest wallet-flows report), optional `FORENSICS_PASSWORD_HASH`, `FORENSICS_DISABLE_LEGACY_HASH`, `FORENSICS_PASSWORD`, `FORENSICS_ALLOWED_ORIGINS` | Netlify → Environment variables (scope: Functions). Never commit. See docs/FORENSICS.md. |
+| Netlify function | `LIVE_DATA_GITHUB_TOKEN` (live data + latest wallet-flows report), optional `FORENSICS_PASSWORD_HASH`, `FORENSICS_DISABLE_LEGACY_HASH`, `FORENSICS_PASSWORD`, `FORENSICS_ALLOWED_ORIGINS`, `FORENSICS_TOKEN_SECRET` (optional — see *Forensics session tokens* below) | Netlify → Environment variables (scope: Functions). Never commit. See docs/FORENSICS.md. |
 | GitHub Actions | `ENV_PASSPHRASE` | Decrypts `.env.enc` (RPC/Etherscan/Dune keys) for the pipeline. |
 
 `.env`, `.env.local` are git-ignored; `.env.enc` is the only committed (encrypted) env file.
+
+### Forensics session tokens (no new env var required)
+
+After a correct password the gate returns a signed 12-hour session token, which the
+browser keeps in `sessionStorage` (this tab only) instead of the password.
+`FORENSICS_TOKEN_SECRET` is **optional**. The HMAC signing key is derived server-side
+(HMAC-SHA256 with the fixed context `holderdistribution/forensics-gate/token/v1`) from the
+first of these that is set: `FORENSICS_TOKEN_SECRET`, `FORENSICS_PASSWORD_HASH`,
+`FORENSICS_PASSWORD`, `LIVE_DATA_GITHUB_TOKEN`. An existing deploy therefore keeps
+working with no new variable. Nothing is hardcoded, and the in-repo legacy hash is never
+used as key material (it is public).
+
+- Rotating whichever variable is in use (e.g. the password) signs everyone out, as intended.
+- Set `FORENSICS_TOKEN_SECRET` (any long random string, scope: Functions) if you want
+  sessions to survive a password rotation, or to decouple them from the GitHub token.
+- If none of the four are set (only the in-repo legacy hash unlocks), no tokens are
+  issued. Unlock still works, and the client keeps the password in memory for that tab
+  only (it is never written to storage).
 
 ### Known security caveats
 

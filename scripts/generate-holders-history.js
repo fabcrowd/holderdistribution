@@ -137,6 +137,10 @@ const upsertEntry = (map, entry, { skipIfExists = false } = {}) => {
     // adding yesterday's staking figure on top was a double-count.
     entry.combined.stakingBalance = existing.combined.stakingBalance;
   }
+  if (existing?.combined && entry.combined && entry.combined.stakingV3Balance == null && existing.combined.stakingV3Balance != null) {
+    // Same date re-run without lite details: keep the measured v3 figure.
+    entry.combined.stakingV3Balance = existing.combined.stakingV3Balance;
+  }
   if (existing?.combined && entry.combined && entry.combined.dexLiquidity == null && existing.combined.dexLiquidity != null) {
     entry.combined.dexLiquidity = existing.combined.dexLiquidity;
   }
@@ -241,6 +245,13 @@ const main = async () => {
     if (entry.combined && dexLiquidity != null && Number.isFinite(dexLiquidity)) {
       entry.combined.dexLiquidity = Math.round(dexLiquidity);
     }
+    // v3 StakingModule total for this date, alongside (never inside) the
+    // legacy-only stakingBalance. Only dates the pipeline actually measured
+    // carry it; the module did not exist before stakingStats.v3.deployDate,
+    // so the frontend reads earlier dates as 0 and the gap in between as
+    // unknown (no carry-forward: that would invent a history).
+    const v3Staked = Number(liteCombined.stakingStats?.v3?.stakedTotal);
+    if (entry.combined && Number.isFinite(v3Staked)) entry.combined.stakingV3Balance = Math.round(v3Staked);
     if (liteCombined.concentration?.top) {
       entry.concentration = roundConcentration(liteCombined.concentration.top);
     }

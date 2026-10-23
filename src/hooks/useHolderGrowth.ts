@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { combinedStaked, v3StakedOn } from "@/lib/staking";
 import { useHoldersHistoryData } from "./useHoldersHistoryData";
 
 export type HolderGrowthPoint = {
@@ -44,7 +45,12 @@ export type BalanceGrowthPoint = {
 
 export type StakingGrowthPoint = {
   timestamp: string;
+  /** Legacy staking contract. */
   staking: number;
+  /** v3 StakingModule: 0 before its deploy, null where it wasn't measured. */
+  stakingV3: number | null;
+  /** Legacy + v3; null where v3 is unknown. Never interpolate across nulls. */
+  stakingTotal: number | null;
 };
 
 export type DexLiquidityGrowthPoint = {
@@ -127,12 +133,13 @@ export const useHolderGrowth = ({ view, days, enabled = true }: HolderGrowthQuer
           view === "combined" && Number.isFinite(entry?.combined?.stakingBalance) && (entry.combined.stakingBalance ?? 0) > 0
             ? (entry.combined.stakingBalance as number)
             : null;
+        const stakingV3 = view === "combined" ? v3StakedOn(entry.date ?? timestamp, entry?.combined?.stakingV3Balance) : null;
         const dexLiqRaw = entry?.combined?.dexLiquidity;
         const dexLiquidity =
           view === "combined" && Number.isFinite(dexLiqRaw) && (dexLiqRaw ?? 0) > 0
             ? (dexLiqRaw as number)
             : null;
-        return { timestamp, holders: holderCount, cumulativeHolders, retail, cex, staking, dexLiquidity };
+        return { timestamp, holders: holderCount, cumulativeHolders, retail, cex, staking, stakingV3, dexLiquidity };
       })
       .filter((entry): entry is {
         timestamp: number;
@@ -141,6 +148,7 @@ export const useHolderGrowth = ({ view, days, enabled = true }: HolderGrowthQuer
         retail: number | null;
         cex: number | null;
         staking: number | null;
+        stakingV3: number | null;
         dexLiquidity: number | null;
       } => !!entry)
       .sort((a, b) => a.timestamp - b.timestamp);
@@ -196,6 +204,8 @@ export const useHolderGrowth = ({ view, days, enabled = true }: HolderGrowthQuer
       .map((entry) => ({
         timestamp: new Date(entry.timestamp).toISOString(),
         staking: entry.staking,
+        stakingV3: entry.stakingV3,
+        stakingTotal: combinedStaked(entry.staking, entry.stakingV3),
       }));
 
     const dexLiquiditySeries = filteredEntries

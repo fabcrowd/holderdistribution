@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import {
   useEcosystemHeadlineTiles,
+  type HeadlineView,
   type EcosystemHeadlineTileId,
 } from "@/hooks/useEcosystemHeadlineTiles";
 import { useHolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
@@ -96,8 +97,11 @@ export const HolderKpiHero = ({
   onToggle,
   onTileSelect,
   activeTileId = null,
+  view = "combined",
 }: {
   rangeDays: number;
+  /** Header chain selector; per-chain values where the feed splits them. */
+  view?: HeadlineView;
   collapsed?: boolean;
   onToggle?: () => void;
   /** Makes each tile a destination: clicking one collapses the hero and opens
@@ -105,7 +109,7 @@ export const HolderKpiHero = ({
   onTileSelect?: (id: EcosystemHeadlineTileId) => void;
   activeTileId?: EcosystemHeadlineTileId | null;
 }) => {
-  const result = useEcosystemHeadlineTiles(rangeDays);
+  const result = useEcosystemHeadlineTiles(rangeDays, view);
   const { isError: liteError } = useHolderLiteSnapshot();
   // Reserve the tiles' space while the snapshot loads. Returning null here
   // made the whole first screen jump once data arrived (the hero popped in

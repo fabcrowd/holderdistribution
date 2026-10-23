@@ -1,5 +1,9 @@
 import { useMemo, useRef, useState, useEffect, useLayoutEffect, useCallback, type ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
+import { AsOfBadge } from "@/components/AsOfBadge";
+import { useChartIntro } from "@/hooks/useMotion";
+import { createPortal } from "react-dom";
+import { ChevronRight, RotateCw, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -10,15 +14,18 @@ import {
   sideTop, sideCenterY, SIDE_H, bezierPath, laneArcPath, fanY, strokeWidth, rankedStrokeWidths, TIER_H,
   tierDisplayLabel,
 } from "@/components/tierflow/geometry";
-import { useFlowField, CHAIN_OPTIONS, type ChainKey, type TierRow, type Cause, type TierField } from "@/components/tierflow/useFlowField";
+import { useFlowField, type ChainKey, type TierRow, type Cause, type TierField } from "@/components/tierflow/useFlowField";
 import {
   netMigrationsFor, netCausesFor, valueForSideTile, sideTileContributions, sideTileRowIndex, SIDE_TILE_LABELS,
   retailDemandFor, tierNetTel, tierDexActivity,
   type FlowTone, type SideTileSelection, type SideTileKey,
 } from "@/components/tierflow/netFlow";
-import { RANGE_OPTIONS, ytdDays } from "@/lib/timeRange";
+import { RANGE_OPTIONS, ytdDays, ytdStartMs } from "@/lib/timeRange";
 import { baselineLabel } from "@/lib/baseline";
 import { useClassificationChangelog, getEventsAffecting, type ClassificationEvent } from "@/hooks/useClassificationChangelog";
+import {
+  EMPTY_SELECTION, reduceSelection, shouldClearOnEscape, type DistAction, type DistSelection,
+} from "@/lib/distributionSelection";
 
 export type { TierRow };
 export type TierMetric = "wallets" | "tel";
@@ -32,6 +39,21 @@ type Props = {
    *  same day, so this must be labeled honestly rather than implying "since
    *  Jan 1" when the true baseline is weeks later. */
   baselineDate?: string | null;
+  /** † rule: when the caller suppressed tier deltas (a reclassification after
+   *  the baseline), it passes previous* = null plus the reason to show in
+   *  place of "no baseline", so the diagram agrees with the Tiers table. */
+  suppressedNote?: { count?: string | null; balance?: string | null };
+  /** Chain filter from the page-level selector; defaults to all chains. */
+  chain?: ChainKey;
+  /** Controlled selection, shared with sibling panels (Tiers table, bars). */
+  selection?: DistSelection;
+  onSelectionChange?: (next: DistSelection) => void;
+  /** "terminal": fits the canvas to its container in both dimensions and
+   *  drops the card chrome the surrounding panel already provides. */
+  layout?: "stacked" | "terminal";
+  /** Terminal layout: where the selected tier / side tile detail renders
+   *  (the right-hand column). Falls back to inline below the canvas. */
+  detailContainer?: HTMLElement | null;
 };
 
 // Strict three-way classification used everywhere in this diagram: GREEN =
@@ -91,14 +113,46 @@ const LEGEND: { color: string; label: string; explanation: string }[] = [
   { color: NEUTRAL, label: "Redistribution", explanation: "TEL moved to another wallet or added to / withdrawn from an LP pool — not market buy or sell pressure. In Wallets mode, used when a tier's outflow was mostly relocation, not a sale." },
 ];
 
-export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, baselineDate }: Props) => {
-  const [chain, setChain] = useState<ChainKey>("all");
-  const [selected, setSelected] = useState<string | null>(null);
+export const TierFlowDiagram = ({
+  rangeDays,
+  rows,
+  metric,
+  onMetricChange,
+  baselineDate,
+  suppressedNote,
+  chain: chainProp,
+  selection: selectionProp,
+  onSelectionChange,
+  layout = "stacked",
+  detailContainer,
+}: Props) => {
+  // One-shot: fades with the first load, not when a chain change reloads it.
+  const canvasIntro = useChartIntro();
+  // Chain is driven by the page-level chain selector (the in-diagram chain
+  // buttons were a second, conflicting control). Uncontrolled = all chains.
+  const chain: ChainKey = chainProp ?? "all";
+  // Selection is shared with the Tiers table / net-change bars on desktop
+  // (DistributionTerminal owns it); standalone it is internal.
+  const [innerSelection, setInnerSelection] = useState<DistSelection>(EMPTY_SELECTION);
+  const selection = selectionProp ?? innerSelection;
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+  const dispatch = useCallback(
+    (action: DistAction) => {
+      const next = reduceSelection(selectionRef.current, action);
+      if (next === selectionRef.current) return;
+      selectionRef.current = next;
+      if (onSelectionChange) onSelectionChange(next);
+      if (!selectionProp) setInnerSelection(next);
+    },
+    [onSelectionChange, selectionProp],
+  );
+  const selected = selection.tier;
   // Second level of disclosure, on top of `selected`: which single flow has
   // been broken open from its net figure into its underlying gross flows.
   // Holds a counterpart tier label in Wallets mode or a cause key in TEL mode
   // — the two modes are mutually exclusive, so one variable serves both.
-  const [expandedFlow, setExpandedFlow] = useState<string | null>(null);
+  const expandedFlow = selection.expandedFlow;
   // Lighter-weight PREVIEW layer on top of the click-driven expansion above:
   // hovering a canvas line (or focusing its matching panel row) sets this,
   // driving a bubble + dim-the-rest effect without pinning anything open.
@@ -113,12 +167,19 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
   const [hoveredAttrTier, setHoveredAttrTier] = useState<string | null>(null);
   // TEL mode: pivot the canvas around a SIDE TILE (cause category) instead of
   // a tier — draws lines from that tile to every tier that contributed, with
-  // a contribution panel below. Mutually exclusive with `selected`.
-  const [selectedSideTile, setSelectedSideTile] = useState<SideTileSelection | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  // a contribution panel. Mutually exclusive with `selected` (except the
+  // wallet 2-step drill — see lib/distributionSelection).
+  const selectedSideTile = selection.sideTile;
+  const isTerminal = layout === "terminal";
+  // Callback ref, not useRef: the canvas only mounts once data is ready (a
+  // skeleton renders while loading), so an effect keyed on a ref object ran
+  // against null and never attached its ResizeObserver — the diagram stayed
+  // at scale 1 and overflowed. A state-backed ref re-runs the effect when the
+  // node actually appears.
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   // 1 until measured, so the first paint is the unshrunken desktop layout.
   const [scale, setScale] = useState(1);
-  const { fields, netInfo, grossExplainer, maxMigrationCount, loading, errored, ready, complete, attributedDays, totalDays, sourceTierSince } = useFlowField(rows, chain, metric, rangeDays);
+  const { fields, netInfo, grossExplainer, maxMigrationCount, loading, errored, ready, complete, attributedDays, totalDays, sourceTierSince, outflowsAsOf, crossingsWindow } = useFlowField(rows, chain, metric, rangeDays);
   const { data: exchangeFlow } = useExchangeFlow();
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
   const isWallets = metric === "wallets";
@@ -137,7 +198,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
   const flowChangelogEvents = useMemo(() => {
     const end = Date.now();
     const start = rangeDays === ytdDays()
-      ? new Date(new Date(end).getUTCFullYear(), 0, 1).getTime()
+      ? ytdStartMs(new Date(end))
       : end - rangeDays * 86400000;
     const merged = new Map<string, ClassificationEvent>();
     for (const metricName of ["cexBalance", "vault-unattributed"]) {
@@ -156,33 +217,35 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
   // no layout POSITION is derived from a measurement, only this one-time
   // scroll offset is.
   useLayoutEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollLeft = Math.max(0, TIER_COL_CENTER_X * scale - el.clientWidth / 2);
-  }, [ready, scale, isPhone]);
+    const el = scrollEl;
+    if (el && !isTerminal) el.scrollLeft = Math.max(0, TIER_COL_CENTER_X * scale - el.clientWidth / 2);
+  }, [scrollEl, ready, scale, isTerminal]);
 
   // Scale-to-fit. The canvas is a fixed 936×682 grid — every tile position is
-  // computed in those coordinates, so it cannot reflow. On a 430px phone that
-  // left ~46% of the diagram visible and, because the effect above centres on
-  // the tier column, BOTH side-tile columns (left: 8 and left: 738) sat
-  // permanently off-screen — the "From exchange / Bought on DEX" context was
-  // simply unreachable. Shrinking the whole canvas keeps every element on
-  // screen and needs no second rendering path.
+  // computed in those coordinates, so it cannot reflow. Shrinking the whole
+  // canvas keeps every element on screen and needs no second rendering path.
   //
-  // Scale is capped at 1, so at ≥936px of room this is the identity transform
-  // and desktop rendering is unchanged. The wrapper carries the scaled height
-  // because a transform does not affect layout — without it the card would
-  // reserve the full 682px and leave a gap below a shrunken diagram.
+  // Stacked layout: fit the WIDTH (the page scrolls vertically anyway).
+  // Terminal layout: fit BOTH dimensions of the panel, so the whole diagram
+  // — both side-tile columns and the bottom tier — is visible with no
+  // internal scrolling. Scale is capped at 1.
+  //
+  // The wrapper carries the scaled size because a transform does not affect
+  // layout — without it the card would reserve the full 682px.
   useLayoutEffect(() => {
-    const el = scrollRef.current;
+    const el = scrollEl;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const measure = () => setScale(Math.min(1, el.clientWidth / CANVAS_W));
+    const measure = () => {
+      const byW = el.clientWidth / CANVAS_W;
+      const byH = isTerminal && el.clientHeight > 0 ? el.clientHeight / CANVAS_H : Infinity;
+      const next = Math.max(0.2, Math.min(1, byW, byH));
+      setScale((prev) => (Math.abs(prev - next) < 0.002 ? prev : next));
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-    // Re-attach when crossing the phone breakpoint: the canvas (and this ref)
-    // only exists at ≥640px, where phones get the stacked tier list instead.
-  }, [isPhone]);
+  }, [scrollEl, isTerminal]);
 
   // An expansion key is only meaningful within one mode (a counterpart tier
   // label in Wallets, a cause key in TEL), so switching modes must clear it
@@ -190,58 +253,54 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
   // is handled here rather than in the toggle's own onClick — it stays
   // correct even if the parent changes the metric some other way.
   useEffect(() => {
-    setExpandedFlow(null);
+    dispatch({ type: "reset-mode" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on mode change
+  }, [metric, rangeDays]);
+  // Hover previews belong to the selection they were drawn for.
+  useEffect(() => {
     setHoveredFlow(null);
     setHoveredAttrTier(null);
-    setSelectedSideTile(null);
-  }, [metric, rangeDays]);
+  }, [selected, selectedSideTile, expandedFlow]);
+
+  // Phones/tablets: the detail renders below a long list or canvas, so a tap
+  // that opens it must bring it into view (it used to open off-screen).
+  const inlineDetailRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isTerminal || (!selected && !selectedSideTile)) return;
+    const id = window.requestAnimationFrame(() => {
+      const el = inlineDetailRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (r.top > window.innerHeight * 0.6 || r.top < 0) {
+        el.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      }
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [selected, selectedSideTile, isTerminal]);
+
+  // Escape clears the selection (after any open popover/dialog has had the
+  // chance to close itself — see shouldClearOnEscape).
+  useEffect(() => {
+    if (!selected && !selectedSideTile) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (shouldClearOnEscape(e, document)) dispatch({ type: "clear" });
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selected, selectedSideTile, dispatch]);
 
   // Selecting/deselecting a tier collapses any open flow with it: the
   // expansion belongs to the tier that was selected when it was opened.
   // Also clears a side-tile pivot — the two selection modes are exclusive.
-  const selectTier = (label: string) => {
-    setSelected((prev) => (prev === label ? null : label));
-    setSelectedSideTile(null);
-    setExpandedFlow(null);
-    setHoveredFlow(null);
-    setHoveredAttrTier(null);
-  };
+  const selectTier = (label: string) => dispatch({ type: "tier", label });
   // Side-tile click has two modes:
   // 1) No tier selected → market-wide pivot (fan from that cause to every tier).
   // 2) Tier already selected + wallet tile → keep the tier and drill into
-  //    that tier's wallet↔wallet destinations/sources as tier-to-tier traces
-  //    (the yellow "To wallet" / "From wallet" 2-step: pick a tier, then the
-  //    wallet sink/source to see where the redistribution actually went).
-  // DEX/CEX side tiles still clear the tier (they have no per-counterpart
-  // attribution matrix — only wallet does).
-  const selectSideTile = (next: SideTileSelection) => {
-    if (selected && next.key === "wallet") {
-      const turningOff = !!(
-        selectedSideTile
-        && selectedSideTile.side === next.side
-        && selectedSideTile.key === next.key
-      );
-      setSelectedSideTile(turningOff ? null : next);
-      setExpandedFlow(turningOff ? null : "wallet");
-      setHoveredFlow(null);
-      setHoveredAttrTier(null);
-      return;
-    }
-    setSelectedSideTile((prev) =>
-      prev && prev.side === next.side && prev.key === next.key ? null : next,
-    );
-    setSelected(null);
-    setExpandedFlow(null);
-    setHoveredFlow(null);
-    setHoveredAttrTier(null);
-  };
-  const toggleFlow = (key: string) => {
-    setExpandedFlow((prev) => (prev === key ? null : key));
-    // Path-click into "Other wallets" without a side-tile direction: clear
-    // any stale From/To filter so both attribution directions can show.
-    if (key === "wallet") setSelectedSideTile(null);
-    setHoveredAttrTier(null);
-  };
+  //    that tier's wallet↔wallet destinations/sources as tier-to-tier traces.
+  // DEX/CEX side tiles clear the tier (no per-counterpart attribution).
+  const selectSideTile = (next: SideTileSelection) => dispatch({ type: "side", tile: next });
+  const toggleFlow = (key: string) => dispatch({ type: "flow", key });
+  const clearSelection = () => dispatch({ type: "clear" });
 
   const fieldOf = (label: string) => fields.find((f) => f.label === label) ?? null;
   const selectedField = selected ? fieldOf(selected) : null;
@@ -558,66 +617,100 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
     return s;
   }, [selectedField, expandedFlow, selectedSideTile]);
 
-  if (loading) return <FlowSkeleton />;
+  if (loading) return <FlowSkeleton terminal={isTerminal} />;
   if (errored || !ready) return <FlowError />;
 
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Retail distribution by tier</div>
-          <InfoTooltip text={isWallets ? INFO_WALLETS : INFO_TEL} />
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex rounded-full border border-border/60 bg-card/80 p-0.5">
-            {CHAIN_OPTIONS.map((o) => (
-              <button
-                key={o.key}
-                type="button"
-                onClick={() => setChain(o.key)}
-                className={`min-h-[44px] text-[11px] font-semibold rounded-full px-2.5 py-1 transition-colors ${chain === o.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-primary"}`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-          <div className="inline-flex rounded-full border border-border/60 bg-card/80 p-0.5">
-            {([["wallets", "Wallets"], ["tel", "TEL"]] as const).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => onMetricChange(key)}
-                className={`min-h-[44px] text-xs font-semibold rounded-full px-3 py-1 transition-colors ${metric === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-primary"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+  const detailNode: ReactNode = selectedField ? (
+    isWallets
+      ? <WalletsPanel field={selectedField} baselineDate={baselineDate ?? null} noBaselineText={suppressedNote?.count ?? null} crossingsWindow={crossingsWindow} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} />
+      : <TelPanel field={selectedField} baselineDate={baselineDate ?? null} noBaselineText={suppressedNote?.balance ?? null} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} chain={chain} attributedDays={attributedDays} totalDays={totalDays} sourceTierSince={sourceTierSince} />
+  ) : selectedSideTile && !isWallets ? (
+    <SideTilePanel
+      selection={selectedSideTile}
+      fields={fields}
+      hoveredTier={hoveredAttrTier}
+      onHoverTier={setHoveredAttrTier}
+    />
+  ) : null;
 
-      {/* Color legend — the same green/red/yellow meaning applies to every
-          figure in this diagram (cause breakdown, migration lines, tile
-          ticks), so it's stated once here rather than re-explained per
-          element. Each swatch is itself clickable for more detail, matching
-          the click-to-explain convention used throughout. */}
-      <div className="flex items-center justify-center gap-4 flex-wrap text-sm text-muted-foreground">
-        {LEGEND.map((l) => (
-          <span key={l.label} className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ background: l.color }} />
-            <ExplainNumber value={l.label} explanation={l.explanation} />
-          </span>
-        ))}
-      </div>
+  const hasAnySelection = !!(selected || selectedSideTile);
+  const metricToggle = (
+    <div role="group" aria-label="Measure tiers by" className="inline-flex rounded-full border border-border/60 bg-card/80 p-0.5">
+      {([["wallets", "Wallets"], ["tel", "TEL"]] as const).map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          aria-pressed={metric === key}
+          onClick={() => onMetricChange(key)}
+          className={`${isTerminal ? "h-7 px-3 text-xs" : "min-h-[44px] px-3 py-1 text-xs"} font-semibold rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${metric === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-primary"}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+  const clearButton = hasAnySelection ? (
+    <button
+      type="button"
+      onClick={clearSelection}
+      className={`inline-flex items-center gap-1 rounded-full border border-border px-2.5 font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isTerminal ? "h-7 text-xs" : "min-h-[44px] text-sm"}`}
+      aria-label="Clear selection (Esc)"
+      data-testid="flow-clear-selection"
+    >
+      <X className="h-3.5 w-3.5" aria-hidden="true" />
+      Clear
+    </button>
+  ) : null;
+  // Color legend — the same green/red/yellow meaning applies to every figure
+  // in this diagram, so it's stated once. Each label opens its explainer.
+  const legend = (
+    <div className={`flex items-center gap-x-4 gap-y-1 flex-wrap text-muted-foreground ${isTerminal ? "text-xs" : "justify-center text-sm"}`}>
+      {LEGEND.map((l) => (
+        <span key={l.label} className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ background: l.color }} />
+          <ExplainNumber value={l.label} explanation={l.explanation} ariaLabel={`${l.label}: what this colour means`} className="inline-flex min-h-6 items-center" />
+        </span>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className={isTerminal ? "flex h-full min-h-0 flex-col gap-2" : "space-y-3"} data-testid="tier-flow">
+      {isTerminal ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
+          {metricToggle}
+          {legend}
+          <div className="ml-auto flex items-center gap-2">
+            <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />
+            {clearButton}
+            <InfoTooltip text={isWallets ? INFO_WALLETS : INFO_TEL} label="How to read the tier flows" />
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Retail distribution by tier</h3>
+              <InfoTooltip text={isWallets ? INFO_WALLETS : INFO_TEL} label="How to read the tier flows" />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />
+              {clearButton}
+              {metricToggle}
+            </div>
+          </div>
+          {legend}
+        </>
+      )}
 
       {complete !== true && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-800 dark:text-amber-300 text-center">
+        <div className={`rounded-lg border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-center ${isTerminal ? "shrink-0 px-2 py-1 text-xs" : "px-3 py-2 text-sm"}`}>
           On-chain classification is still backfilling for some chains — figures below may under-represent recent activity.
         </div>
       )}
 
       {flowChangelogEvents.length > 0 && (
-        <div className="rounded-lg border border-border/60 bg-muted/10 px-3 py-2 text-sm text-muted-foreground text-center inline-flex items-center justify-center gap-1.5 w-full">
+        <div className={`rounded-lg border border-border/60 bg-muted/10 text-muted-foreground text-center inline-flex items-center justify-center gap-1.5 w-full ${isTerminal ? "shrink-0 px-2 py-0.5 text-xs" : "px-3 py-2 text-sm"}`}>
           Classification changed during this window — some figures below may blend the old and new categorization.
           <InfoTooltip
             text={`Transfers in this window were scanned before this reclassification landed, so day-buckets predating it still reflect the old categorization:\n\n${flowChangelogEvents.map((e) => `${e.date}: ${e.summary}`).join("\n\n")}`}
@@ -625,17 +718,23 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
         </div>
       )}
 
+      {isWallets && chain !== "all" && (
+        <div className={`text-center text-muted-foreground ${isTerminal ? "shrink-0 text-[11px]" : "text-xs"}`}>
+          Tier sizes are for this chain; wallet moves between tiers (the +/− ticks and lines) are tracked across all chains combined.
+        </div>
+      )}
+
       {/* WALLETS mode: one focused stat, in wallets — matches everything else
           on screen in this mode, so nothing needs a unit switch mid-read.
           TEL mode: buy/sell pressure summary — period totals when no tier is
           selected; scoped to the selected tier when one is. */}
-      {isWallets ? (
+      {isWallets ? (isTerminal ? null : (
         <div className="premium-surface-card p-4 text-center max-w-md mx-auto">
           <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">
             Retail wallets, net change {`(vs ${baselineLabel(baselineDate)})`}
           </div>
           {netInfo.netWallets == null ? (
-            <div className="text-sm text-muted-foreground">No baseline available for this period.</div>
+            <div className="text-sm text-muted-foreground">{suppressedNote?.count ?? "No baseline available for this period."}</div>
           ) : (
             <>
               <div className={`text-xl font-bold ${netInfo.netWallets >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
@@ -645,9 +744,9 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
             </>
           )}
         </div>
-      ) : (
+      )) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className={`grid sm:grid-cols-3 ${isTerminal ? "shrink-0 gap-2 [&>div]:!p-2 [&_.text-xl]:!text-base [&>div>div:first-child]:!text-[10px] [&>div>div:first-child]:!mb-0" : "gap-3"}`}>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">
                 {tierLabelShort
@@ -655,7 +754,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                   : `Retail net change`}{` (vs ${baselineLabel(baselineDate)})`}
               </div>
               {scopedNetTel == null ? (
-                <div className="text-sm text-muted-foreground">No baseline available for this period.</div>
+                <div className="text-sm text-muted-foreground">{suppressedNote?.balance ?? "No baseline available for this period."}</div>
               ) : (
                 <>
                   <div className={`text-xl font-bold ${scopedNetTel >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
@@ -712,7 +811,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
             </div>
           </div>
 
-          <div className="text-xs text-muted-foreground text-center">
+          <div className={`text-muted-foreground text-center ${isTerminal ? "shrink-0 text-[11px]" : "text-xs"}`}>
             Of the TEL that left retail tiers:{" "}
             <span style={{ color: NEGATIVE }} className="font-semibold">
               <ExplainNumber value={`${fmtTel(grossExplainer.dex)}`} explanation="Sold on a DEX — a direct, unambiguous sale (sell pressure)." />
@@ -730,11 +829,19 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
       {/* Always-visible instruction, not buried in the (i) tooltip — the
           #1 usability gap found in review was that clicking a tier isn't
           discoverable at all. */}
-      <div className="text-center text-sm text-muted-foreground">
+      <div className={`text-center text-muted-foreground ${isTerminal ? "shrink-0 text-xs" : "text-sm"}`} aria-live="polite">
         {isPhone
-          ? "Tap a tier to see where its wallets came from and went."
+          ? isWallets
+            ? selected
+              ? "Details for this tier are below. Tap it again to close."
+              : "Tap a tier to see where its wallets came from and went."
+            : selected
+              ? "Buy and sell pressure for this tier is below. Tap it again for period totals."
+              : "Tap a tier to scope buy and sell pressure to that tier."
           : isWallets
-          ? "Click a tier below to see where its wallets came from and went."
+          ? selected
+            ? `Showing where ${tierDisplayLabel(selected)} wallets came from and went. Click a line for its gross flows; Esc or Clear to reset.`
+            : "Click a tier to see where its wallets came from and went."
           : selectedField && expandedFlow === "wallet"
             ? (selectedSideTile?.side === "out"
               ? "Yellow lines are wallet transfers out of this tier — click To wallet again to close."
@@ -760,6 +867,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                 <button
                   type="button"
                   aria-pressed={isSelected}
+                  data-tier={f.label}
                   onClick={() => selectTier(f.label)}
                   className={`relative flex min-h-[48px] w-full items-center gap-2 overflow-hidden rounded-lg border px-3 py-2 text-left transition-colors ${isSelected ? "ring-2 ring-offset-1 ring-offset-background" : "hover:bg-muted/40"}`}
                   style={{ borderColor: isSelected ? fill : "hsl(var(--border) / 0.6)", ["--tw-ring-color" as string]: fill }}
@@ -792,10 +900,16 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
           })}
         </ul>
       ) : (
-      <div ref={scrollRef} className="overflow-x-auto -webkit-overflow-scrolling-touch pb-1">
-        <div style={{ height: CANVAS_H * scale }}>
+      <div
+        ref={setScrollEl}
+        data-testid="tier-flow-canvas"
+        data-scale={scale.toFixed(3)}
+        className={isTerminal ? "relative flex min-h-0 flex-1 justify-center overflow-hidden" : "overflow-x-auto -webkit-overflow-scrolling-touch pb-1"}
+      >
+        <div className="relative shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>
         <div
-          className="relative mx-auto"
+          // Tier nodes and any arcs fade in once with the first load.
+          className={`absolute left-0 top-0 ${canvasIntro ? "ha-fade-in" : ""}`}
           style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
           {/* The svg itself stays pointer-events:none so it never intercepts
@@ -897,7 +1011,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
           {/* Source/sink tiles are a TEL concept (DEX/exchange/wallet origin
               of TEL) — not rendered at all in Wallets mode, where nothing on
               the canvas would ever connect to them. */}
-          {!isWallets && SIDE_LABELS_IN.map((s, j) => {
+          {!isWallets && <div role="group" aria-label="Where retail TEL came from" className="contents">{SIDE_LABELS_IN.map((s, j) => {
             const aggregate = selectedField
               ? valueForSideTile(selectedField.cause, "in", s.key)
               : fields.reduce((sum, f) => sum + valueForSideTile(f.cause, "in", s.key), 0);
@@ -917,6 +1031,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                 type="button"
                 onClick={() => selectSideTile({ side: "in", key: s.key })}
                 aria-pressed={isSideSelected}
+                aria-label={`${s.label}: ${aggregate > 0 ? `${fmtTel(aggregate)} TEL` : "none"}${selectedField ? ` into ${tierDisplayLabel(selectedField.label)}` : ""}`}
                 className={`absolute rounded-xl border px-2 py-1.5 flex flex-col justify-center text-left transition-opacity duration-150 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${dimmed ? "opacity-30" : "opacity-100"} ${isSideSelected ? "ring-2 ring-offset-1 ring-offset-background" : ""}`}
                 style={{
                   left: 8, top: sideTop(j), width: 190, height: SIDE_H,
@@ -929,8 +1044,8 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                 <div className="text-sm font-bold tabular-nums" style={{ color: s.color }}>{aggregate > 0 ? fmtTel(aggregate) : "—"}</div>
               </button>
             );
-          })}
-          {!isWallets && SIDE_LABELS_OUT.map((s, j) => {
+          })}</div>}
+          {!isWallets && <div role="group" aria-label="Where retail TEL went" className="contents">{SIDE_LABELS_OUT.map((s, j) => {
             const outKey: SideTileKey = s.key;
             const aggregate = selectedField
               ? valueForSideTile(selectedField.cause, "out", outKey)
@@ -948,6 +1063,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                 type="button"
                 onClick={() => selectSideTile({ side: "out", key: outKey })}
                 aria-pressed={isSideSelected}
+                aria-label={`${s.label}: ${aggregate > 0 ? `${fmtTel(aggregate)} TEL` : "none"}${selectedField ? ` from ${tierDisplayLabel(selectedField.label)}` : ""}`}
                 className={`absolute rounded-xl border px-2 py-1.5 flex flex-col justify-center text-left transition-opacity duration-150 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${dimmed ? "opacity-30" : "opacity-100"} ${isSideSelected ? "ring-2 ring-offset-1 ring-offset-background" : ""}`}
                 style={{
                   left: 738, top: sideTop(j), width: 190, height: SIDE_H,
@@ -960,12 +1076,13 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                 <div className="text-sm font-bold tabular-nums" style={{ color: s.color }}>{aggregate > 0 ? fmtTel(aggregate) : "—"}</div>
               </button>
             );
-          })}
+          })}</div>}
 
           {/* Tier tiles — CENTER-aligned: every tile shares the same
               horizontal center (TIER_COL_CENTER_X) and grows left/right by
               equal amounts as its value grows, instead of all starting flush
               left and only ever extending rightward. */}
+          <div role="group" aria-label={`Balance tiers, by ${isWallets ? "wallet count" : "TEL held"}`} className="contents">
           {fields.map((f) => {
             const isSelected = selected === f.label;
             // While hovering a flow line, the tile at its OTHER end highlights
@@ -1007,6 +1124,7 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                 <button
                   type="button"
                   aria-pressed={isSelected}
+                  data-tier={f.label}
                   onClick={() => selectTier(f.label)}
                   // transition-all (not transition-colors) so a metric toggle
                   // or chain-filter change — which move `left`/`width` via the
@@ -1095,42 +1213,48 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
                     Previously the ticks were the other way round, so a green
                     "+12 added" tick sat on the right while every green inbound
                     arc landed on the left. */}
+                {/* 40px canvas hit area (≥24px rendered down to a 0.6
+                    canvas scale — the smallest stacked/tablet and terminal
+                    scales) and a name that says what the number counts.
+                    Absolutely positioned, so the larger box never shifts
+                    the tile layout. */}
                 {isWallets && f.addedCount > 0 && (
-                  <span className="absolute -left-1 top-1/2 -translate-y-1/2 -translate-x-full text-[11px] font-bold tabular-nums pr-1" style={{ color: POSITIVE }}>
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full text-[13px] font-bold tabular-nums" style={{ color: POSITIVE }}>
                     <ExplainNumber
                       value={`+${fmtInt(f.addedCount)}`}
                       explanation={addedTickExplanation(f)}
+                      ariaLabel={`+${fmtInt(f.addedCount)} wallet${f.addedCount === 1 ? "" : "s"} arrived into ${tierDisplayLabel(f.label)}. Explain`}
+                      className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center px-1"
                     />
                   </span>
                 )}
                 {isWallets && f.removedCount > 0 && (
-                  <span className="absolute -right-1 top-1/2 -translate-y-1/2 translate-x-full text-[11px] font-bold tabular-nums pl-1" style={{ color: NEGATIVE }}>
+                  <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full text-[13px] font-bold tabular-nums" style={{ color: NEGATIVE }}>
                     <ExplainNumber
                       value={`−${fmtInt(f.removedCount)}`}
                       explanation={removedTickExplanation(f)}
+                      ariaLabel={`${fmtInt(f.removedCount)} wallet${f.removedCount === 1 ? "" : "s"} left ${tierDisplayLabel(f.label)}. Explain`}
+                      className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center px-1"
                     />
                   </span>
                 )}
               </div>
             );
           })}
+          </div>
         </div>
         </div>
       </div>
       )}
 
-      {selectedField && (isWallets
-        ? <WalletsPanel field={selectedField} baselineDate={baselineDate ?? null} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} />
-        : <TelPanel field={selectedField} baselineDate={baselineDate ?? null} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} chain={chain} attributedDays={attributedDays} totalDays={totalDays} sourceTierSince={sourceTierSince} />
-      )}
-      {!selectedField && selectedSideTile && !isWallets && (
-        <SideTilePanel
-          selection={selectedSideTile}
-          fields={fields}
-          hoveredTier={hoveredAttrTier}
-          onHoverTier={setHoveredAttrTier}
-        />
-      )}
+      {detailNode &&
+        (isTerminal ? (
+          detailContainer ? createPortal(<div className="terminal-detail">{detailNode}</div>, detailContainer) : null
+        ) : (
+          <div ref={inlineDetailRef} className="scroll-mt-48" data-testid="tier-flow-detail">
+            {detailNode}
+          </div>
+        ))}
 
       {/* Plain list, not a <table> — a table's auto-layout sizing algorithm
           can ignore sr-only's width:1px and expand to its content's intrinsic
@@ -1143,8 +1267,8 @@ export const TierFlowDiagram = ({ rangeDays, rows, metric, onMetricChange, basel
         {fields.map((f) => (
           <li key={f.label}>
             {tierDisplayLabel(f.label)}: {f.row?.count ?? 0} holders, {f.row?.totalBalance ?? 0} TEL.{" "}
-            Holder change: {f.row?.previousCount != null ? (f.row.count - f.row.previousCount) : "no baseline"}.{" "}
-            TEL change: {f.row?.previousTotalBalance != null ? (f.row.totalBalance - f.row.previousTotalBalance) : "no baseline"}.
+            Holder change: {f.row?.previousCount != null ? (f.row.count - f.row.previousCount) : (suppressedNote?.count ?? "no baseline")}.{" "}
+            TEL change: {f.row?.previousTotalBalance != null ? (f.row.totalBalance - f.row.previousTotalBalance) : (suppressedNote?.balance ?? "no baseline")}.
           </li>
         ))}
       </ul>
@@ -1195,13 +1319,24 @@ const FlowPath = ({ d, color, width }: { d: string; color: string; width: number
 // affordance as mouse users (matches the tier-tile click convention already
 // used elsewhere in this diagram). Styled as a dotted-underline inline button
 // so it reads as interactive without adding visual weight to the numbers.
-const ExplainNumber = ({ value, explanation }: { value: ReactNode; explanation: string }) => (
+const ExplainNumber = ({
+  value,
+  explanation,
+  ariaLabel,
+  className = "",
+}: {
+  value: ReactNode;
+  explanation: string;
+  ariaLabel?: string;
+  className?: string;
+}) => (
   <Popover>
     <PopoverTrigger asChild>
       <button
         type="button"
         onClick={(e) => e.stopPropagation()}
-        className="underline decoration-dotted decoration-current/50 underline-offset-2 rounded-sm hover:decoration-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={ariaLabel}
+        className={`${className} underline decoration-dotted decoration-current/50 underline-offset-2 rounded-sm hover:decoration-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
       >
         {value}
       </button>
@@ -1212,18 +1347,32 @@ const ExplainNumber = ({ value, explanation }: { value: ReactNode; explanation: 
   </Popover>
 );
 
-const FlowSkeleton = () => (
-  <div className="space-y-3">
+const FlowSkeleton = ({ terminal = false }: { terminal?: boolean }) => (
+  <div role="status" aria-label="Loading tier flows" className={terminal ? "flex h-full flex-col gap-2" : "space-y-3"}>
     <div className="h-4 w-40 rounded bg-muted/40 animate-pulse" />
-    <div className="rounded-xl border border-border/50 bg-muted/20 animate-pulse mx-auto" style={{ width: CANVAS_W, maxWidth: "100%", height: CANVAS_H }} />
+    <div
+      className={`rounded-xl border border-border/50 bg-muted/20 animate-pulse mx-auto ${terminal ? "w-full flex-1" : ""}`}
+      style={terminal ? undefined : { width: CANVAS_W, maxWidth: "100%", height: CANVAS_H }}
+    />
   </div>
 );
 
-const FlowError = () => (
-  <div className="rounded-xl border border-border/50 bg-muted/10 p-8 text-center text-sm text-muted-foreground">
-    Couldn't load the distribution data. Try refreshing the page.
-  </div>
-);
+const FlowError = () => {
+  const qc = useQueryClient();
+  return (
+    <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-border/50 bg-muted/10 p-8 text-center text-sm text-muted-foreground">
+      Couldn&apos;t load the distribution data.
+      <button
+        type="button"
+        onClick={() => void qc.refetchQueries({ predicate: (q) => q.state.status === "error" })}
+        className="inline-flex min-h-[36px] items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
+        Retry
+      </button>
+    </div>
+  );
+};
 
 // Side-tile pivot panel: lists every tier's contribution to the selected
 // cause (Bought on DEX, From exchange, …), sorted by amount. Hover syncs
@@ -1295,7 +1444,18 @@ const SideTilePanel = ({
 // one panel with conditional sections) is deliberate — it's the fix for
 // "there's a lot to wrap your head around" being about two unrelated
 // stories showing at once regardless of which the toggle was asking for.
-const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHoverFlow }: { field: TierField; baselineDate: string | null; expandedFlow: string | null; onToggleFlow: (key: string) => void; onHoverFlow: (key: string | null) => void }) => {
+const utcDay = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+const fmtDay = (ymd: string) => {
+  const t = Date.parse(`${ymd}T00:00:00Z`);
+  return Number.isNaN(t) ? ymd : utcDay.format(t);
+};
+
+const WalletsPanel = ({ field, baselineDate, noBaselineText = null, crossingsWindow = null, expandedFlow, onToggleFlow, onHoverFlow }: { field: TierField; baselineDate: string | null; noBaselineText?: string | null; crossingsWindow?: { from: string; to: string } | null; expandedFlow: string | null; onToggleFlow: (key: string) => void; onHoverFlow: (key: string | null) => void }) => {
+  // The crossing counts and the snapshot net only reconcile when they cover
+  // the same dates; otherwise comparing them would be arithmetic across two
+  // different periods, so the reconciliation sentence is dropped.
+  const comparable = !!crossingsWindow && !!baselineDate && crossingsWindow.from === baselineDate;
+  const windowLabel = crossingsWindow ? `${fmtDay(crossingsWindow.from)} → ${fmtDay(crossingsWindow.to)}` : null;
   const { row } = field;
   const netWallets = row?.previousCount != null ? (row.count - row.previousCount) : null;
   const gained = field.migrations.filter((m) => m.gained);
@@ -1316,6 +1476,7 @@ const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHover
     { gainedUp, gainedDown, lostUp, lostDown },
     field.verdict,
     field.cause,
+    { comparable, windowLabel },
   );
 
   return (
@@ -1336,7 +1497,7 @@ const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHover
               />
             </span>
           )
-          : "no baseline"}
+          : (noBaselineText ?? "no baseline")}
       </div>
 
       {narrative && <p className="text-center text-sm text-muted-foreground leading-relaxed">{narrative}</p>}
@@ -1350,6 +1511,11 @@ const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHover
         <div className="pt-1 border-t border-border/40 text-sm">
           <div className="text-center text-muted-foreground font-semibold uppercase tracking-wide text-xs mb-1">
             Net movement by tier
+            {windowLabel && (
+              <span className="ml-1 font-normal normal-case tracking-normal" data-testid="crossings-window">
+                · {windowLabel}
+              </span>
+            )}
           </div>
           <ul className="space-y-0.5">
             {nets.map((n) => {
@@ -1398,7 +1564,7 @@ const WalletsPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHover
           </ul>
           {/* The list is exactly where someone starts adding numbers up, so
               say plainly why they don't reach the headline figure. */}
-          {netWallets != null && netWallets !== crossingNet && (
+          {comparable && netWallets != null && netWallets !== crossingNet && (
             <p className="mt-1.5 px-2 text-xs text-muted-foreground/80 leading-relaxed">
               These crossings net to {signed(crossingNet, fmtInt)}, not the {signed(netWallets, fmtInt)} above — the other {signed(netWallets - crossingNet, fmtInt)} is wallets that appeared or emptied out entirely, without crossing a tier line.
             </p>
@@ -1488,8 +1654,8 @@ const TierAttributionBreakdown = ({
   );
 };
 
-const TelPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHoverFlow, chain, attributedDays, totalDays, sourceTierSince }: {
-  field: TierField; baselineDate: string | null; expandedFlow: string | null; onToggleFlow: (key: string) => void; onHoverFlow: (key: string | null) => void;
+const TelPanel = ({ field, baselineDate, noBaselineText = null, expandedFlow, onToggleFlow, onHoverFlow, chain, attributedDays, totalDays, sourceTierSince }: {
+  field: TierField; baselineDate: string | null; noBaselineText?: string | null; expandedFlow: string | null; onToggleFlow: (key: string) => void; onHoverFlow: (key: string | null) => void;
   chain: ChainKey; attributedDays: number; totalDays: number; sourceTierSince: string | null;
 }) => {
   const { cause, row } = field;
@@ -1509,7 +1675,7 @@ const TelPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHoverFlow
         Net (vs {baselineLabel(baselineDate)}):{" "}
         {netTel != null
           ? <span className={netTel >= 0 ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-red-700 dark:text-red-400 font-semibold"}>{signed(netTel, fmtTel)} TEL</span>
-          : "no baseline"}
+          : (noBaselineText ?? "no baseline")}
       </div>
 
       {/* Net flow per category, biggest story first, each expandable to the
@@ -1655,8 +1821,10 @@ const walletNarrativeFor = (
   { gainedUp, gainedDown, lostUp, lostDown }: { gainedUp: number; gainedDown: number; lostUp: number; lostDown: number },
   verdict: TierField["verdict"],
   cause: Cause,
+  { comparable = true, windowLabel = null }: { comparable?: boolean; windowLabel?: string | null } = {},
 ): string | null => {
   const gainedTotal = gainedUp + gainedDown;
+  const period = windowLabel ? `between ${windowLabel.replace(" → ", " and ")}` : "this period";
   const lostTotal = lostUp + lostDown;
   if (gainedTotal === 0 && lostTotal === 0) {
     return netWallets ? `${tier} had a net ${signed(netWallets, fmtInt)} wallets this period — that came from wallets appearing or disappearing entirely (new holders or fully cashed-out ones), not from wallets crossing in or out of this tier.` : null;
@@ -1676,7 +1844,7 @@ const walletNarrativeFor = (
     if (gainedDown > 0) {
       parts.push(`${fmtInt(gainedDown)} arrived after their balance fell from a larger tier`);
     }
-    sentences.push(`This tier gained ${fmtInt(gainedTotal)} wallet${gainedTotal === 1 ? "" : "s"} this period: ${parts.join(", and ")}.`);
+    sentences.push(`This tier gained ${fmtInt(gainedTotal)} wallet${gainedTotal === 1 ? "" : "s"} ${period}: ${parts.join(", and ")}.`);
   }
   if (lostTotal > 0) {
     const parts: string[] = [];
@@ -1694,7 +1862,10 @@ const walletNarrativeFor = (
   // line. Stating the crossing net, the real snapshot net, AND the gap keeps
   // the three figures from looking like arithmetic that doesn't add up.
   const crossingNet = gainedTotal - lostTotal;
-  if (netWallets == null) {
+  if (!comparable && netWallets != null) {
+    // Different dates from the snapshot net above: don't reconcile them.
+    sentences.push(`Those crossings net to ${signed(crossingNet, fmtInt)} wallets ${period}.`);
+  } else if (netWallets == null) {
     sentences.push(`Those crossings net to ${signed(crossingNet, fmtInt)} wallets — there's no baseline snapshot for this period to compare the tier's overall count against.`);
   } else {
     const gap = netWallets - crossingNet;

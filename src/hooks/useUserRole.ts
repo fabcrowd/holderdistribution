@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabase } from "@/integrations/supabase/lazy";
 import { useAuth } from "./useAuth";
 
 export const useUserRole = () => {
@@ -9,6 +9,7 @@ export const useUserRole = () => {
     queryKey: ["user-role", user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
+      const supabase = await getSupabase();
 
       const { data, error } = await supabase
         .from("user_roles")

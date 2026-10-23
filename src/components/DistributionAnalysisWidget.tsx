@@ -28,6 +28,7 @@ import { DexSwaps } from "@/components/DexSwaps";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid } from "recharts";
+import "@/lib/rechartsMotion";
 
 type DistributionAnalysisWidgetProps = {
   snapshot: HolderLiteSnapshot | null;
@@ -89,7 +90,10 @@ const DistributionAnalysisWidget = ({
   const view = snapshot.views[selectedView];
   if (!view) return null;
   const baseRows = view?.distribution ?? [];
-  const rows = mergeDistributionBaseline(baseRows, historicalDelta?.distribution ?? null);
+  // [] not null: with no history baseline for the range, drop the
+  // pipeline's own previousCount (vs its last run, which can be weeks old)
+  // instead of showing it under a "1D"/"7D" label.
+  const rows = mergeDistributionBaseline(baseRows, historicalDelta?.distribution ?? []);
 
   if (rows.length === 0) return null;
 
@@ -123,7 +127,8 @@ const DistributionAnalysisWidget = ({
   // Broad-accumulation signal: how many tiers gained holders over the window.
   const { tiers: tiersWithBaselineCount, grew: tiersGrew, netWallets: netNewHolders } = summarizeTierGrowth(rows);
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label;
-  const showAccumulation = tiersWithBaselineCount > 0 && rangeLabel;
+  // † rule: the "N of M tiers gained" summary is itself a tier delta.
+  const showAccumulation = tiersWithBaselineCount > 0 && rangeLabel && distributionCountEvents.length === 0;
 
   return (
     <Card className="premium-surface-card">
@@ -195,12 +200,18 @@ const DistributionAnalysisWidget = ({
                   metric={metric}
                   onMetricChange={setMetric}
                   baselineDate={historicalDelta?.referenceDate ?? null}
+                  // † rule (same as the desktop terminal): no tier deltas on
+                  // the diagram when a reclassification follows the baseline.
+                  suppressedNote={{
+                    count: distributionCountEvents.length ? "† not shown (wallets reclassified since baseline)" : null,
+                    balance: distributionBalanceEvents.length ? "† not shown (wallets reclassified since baseline)" : null,
+                  }}
                   rows={rows.map((r) => ({
                     label: r.label,
                     count: r.count ?? 0,
                     totalBalance: r.totalBalance ?? 0,
-                    previousCount: r.previousCount ?? null,
-                    previousTotalBalance: r.previousTotalBalance ?? null,
+                    previousCount: distributionCountEvents.length ? null : r.previousCount ?? null,
+                    previousTotalBalance: distributionBalanceEvents.length ? null : r.previousTotalBalance ?? null,
                   }))}
                 />
               </div>

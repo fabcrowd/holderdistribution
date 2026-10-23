@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ClassificationChangelog } from "@/lib/classificationChangelog";
 import { resolveDataUrl } from "@/lib/dataUrl";
+import { FeedError } from "@/lib/fetchJson";
 
 export type { ClassificationChangelog, ClassificationEvent } from "@/lib/classificationChangelog";
 export { getEventsAffecting } from "@/lib/classificationChangelog";
@@ -23,7 +24,7 @@ export const useClassificationChangelog = () => {
     queryKey: ["classification-changelog"],
     queryFn: async (): Promise<ClassificationChangelog | null> => {
       const res = await fetch(resolveUrl());
-      if (!res.ok) return null;
+      if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       return (await res.json()) as ClassificationChangelog;
     },
     staleTime: 5 * 60 * 1000,

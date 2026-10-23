@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { resolveDataUrl } from "@/lib/dataUrl";
+import { FeedError } from "@/lib/fetchJson";
 
 export type ExchangeFlowEntry = {
   date: string;
@@ -36,7 +37,7 @@ export const useExchangeFlow = () => {
     queryKey: ["exchange-flow-history"],
     queryFn: async (): Promise<ExchangeFlowEntry[]> => {
       const res = await fetch(resolveUrl());
-      if (!res.ok) return [];
+      if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       const payload = (await res.json()) as ExchangeFlowPayload;
       return (payload.entries ?? [])
         .filter((e) => e?.date)

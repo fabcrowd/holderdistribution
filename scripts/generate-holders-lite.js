@@ -8,12 +8,16 @@ import {
   buildOverlapStats,
 } from "./lib/holdersView.js";
 import { loadNonRetailSet, createNonRetailChecker } from "./lib/nonRetailSet.js";
+import { loadV3StakingPositions } from "./lib/v3Staking.js";
 
 const INPUT_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
 const PREVIOUS_PATH = path.resolve(process.cwd(), "public/data/tel-holders-previous.json");
 const FUNDING_WALLETS_PATH = path.resolve(process.cwd(), "public/data/funding-wallets.json");
 const CEX_FLOWS_PATH = path.resolve(process.cwd(), "public/data/cex-flows.json");
 const OUTPUT_PATH = path.resolve(process.cwd(), "public/data/holders-lite.json");
+const CHECKPOINT_PATH = path.resolve(process.cwd(), "public/data/holders-checkpoint.json");
+const CHAINS_CONFIG_PATH = path.resolve(process.cwd(), "config/chains.json");
+const ASOF_BLOCKS_PATH = path.resolve(process.cwd(), "data/holders-asof-blocks.json");
 
 const readJson = async (absolutePath, fallback = null) => {
   try {
@@ -56,7 +60,31 @@ const main = async () => {
 
   const isNonRetailAddress = createNonRetailChecker(nonRetailSet);
 
-  const current = buildSnapshotData(snapshot, fundingWallets, isNonRetailAddress);
+  // v3 StakingModule positions from the same checkpoint pull-holders-rpc.js
+  // just wrote (no RPC needed). Only for the current snapshot: the previous
+  // one predates this checkpoint, and staking stats have no "previous" side.
+  const [checkpoint, chainConfig, asOfBlocks] = await Promise.all([
+    readJson(CHECKPOINT_PATH),
+    readJson(CHAINS_CONFIG_PATH),
+    readJson(ASOF_BLOCKS_PATH),
+  ]);
+  let v3Staking = loadV3StakingPositions(checkpoint, chainConfig, asOfBlocks);
+  // A rebuilt past day (pull-holders-rpc.js --as-of) from before the module
+  // existed must not pick up today's positions from the live checkpoint.
+  const snapshotDate = snapshot?.source?.snapshotDate ?? null;
+  if (v3Staking && snapshotDate && v3Staking.modules.every((m) => m.deployDate && snapshotDate < m.deployDate)) {
+    console.log(`v3 staking: snapshot ${snapshotDate} predates the StakingModule; skipped.`);
+    v3Staking = null;
+  }
+  if (v3Staking) {
+    const total = [...v3Staking.positions.values()].reduce((s, v) => s + v, 0);
+    console.log(
+      `v3 staking: ${v3Staking.positions.size} stakers, ${Math.round(total).toLocaleString()} TEL ` +
+        `(${v3Staking.modules.map((m) => `${m.name} from ${m.deployDate ?? `block ${m.deployBlock}`}`).join(", ")}).`,
+    );
+  }
+
+  const current = buildSnapshotData(snapshot, fundingWallets, isNonRetailAddress, v3Staking);
   const previous = buildSnapshotData(effectivePrevious, fundingWallets, isNonRetailAddress);
 
   // Views are derived from the snapshot's own chainOrder — never a hardcoded

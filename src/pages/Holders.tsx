@@ -18,6 +18,7 @@ import { HoldersTerminal } from "@/components/terminal/HoldersTerminal";
 import { DistributionTerminal } from "@/components/terminal/DistributionTerminal";
 import { TERMINAL_QUERY, useMediaQuery } from "@/hooks/useMediaQuery";
 import { buildViewHash, DEFAULT_PANEL, parseViewHash, type ViewId } from "@/lib/viewRoute";
+import { navigate, readSettings, withHash, withSettings, type NavKind } from "@/lib/historyNav";
 
 import { useHolderLiteSnapshot, type DisplaySelection } from "@/hooks/useHolderSnapshot";
 import { RANGE_OPTIONS, ytdDays } from "@/lib/timeRange";
@@ -29,6 +30,8 @@ import {
   isHeroCollapsed,
   reduceHeroCollapse,
 } from "@/lib/heroCollapse";
+
+const VIEW_TITLES: Record<string, string> = { holders: "Holders", distribution: "Distribution", supply: "Supply" };
 
 const TILE_DESTINATIONS = {
   holders: { tab: "holders", panel: "trends" },
@@ -81,11 +84,6 @@ const Holders = () => {
   // Route stays /holders deliberately — renaming the URL would reset the
   // page's search history and break the homepage tile's stored route for no
   // functional gain. Only the labels describe the page as a whole.
-  usePageMeta({
-    title: 'TEL Holder Distribution & Tokenomics | Holder Analytics',
-    description: 'TEL tokenomics: circulating supply breakdown, holder distribution and tiers, exchange flows, and historical growth from real-time on-chain data.',
-    canonicalPath: '/',
-  });
 
   // One panel at a time rather than five stacked accordions. Every section
   // used to start collapsed, so a first-time visitor got the hero and five
@@ -125,10 +123,16 @@ const Holders = () => {
   const [supplyPanel, setSupplyPanel] = useState<string>(
     route0.view === "supply" && route0.panel ? route0.panel : (DEFAULT_PANEL.supply as string),
   );
-  const writeHash = (view: ViewId, panel: string | null) => {
-    const next = buildViewHash({ view, panel });
-    if (window.location.hash !== next) window.history.replaceState(null, "", next);
+  // View / panel / Explore changes are pushed so the browser Back button
+  // steps back through them (lib/historyNav); range and chain are replaced.
+  const writeHash = (view: ViewId, panel: string | null, kind: NavKind = "push") => {
+    navigate(window.history, withHash(window.location, buildViewHash({ view, panel })), kind);
   };
+  const [settings0] = useState(() =>
+    typeof window !== "undefined"
+      ? readSettings(window.location.search, RANGE_OPTIONS.map((o) => o.days))
+      : { range: null, chain: null },
+  );
   useEffect(() => {
     const onHash = () => {
       const r = parseViewHash(window.location.hash);
@@ -140,8 +144,14 @@ const Holders = () => {
       }
       if (r.view === "supply") setSupplyPanel(r.panel ?? (DEFAULT_PANEL.supply as string));
     };
+    // Back/Forward across pushState entries fires popstate (and hashchange
+    // only when the hash differs); both resolve to the same idempotent sync.
     window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    window.addEventListener("popstate", onHash);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("popstate", onHash);
+    };
   }, []);
   const selectTab = (value: string) => {
     if (!isTabId(value)) return;
@@ -151,7 +161,15 @@ const Holders = () => {
   };
   const isTerminal = useMediaQuery(TERMINAL_QUERY);
 
-  const [selectedView, setSelectedView] = useState<DisplaySelection>("combined");
+  // Per-view title so tabs, history and bookmarks say which view they are.
+  // Canonical stays "/": the views are one page, not separate documents.
+  usePageMeta({
+    title: `${VIEW_TITLES[activeTab]} · TEL Holder Distribution | Holder Analytics`,
+    description: 'TEL tokenomics: circulating supply breakdown, holder distribution and tiers, exchange flows, and historical growth from real-time on-chain data.',
+    canonicalPath: '/',
+  });
+
+  const [selectedView, setSelectedView] = useState<DisplaySelection>(settings0.chain ?? "combined");
 
   // Ecosystem Headline: the tiles themselves are the sticky, morphing
   // element. A sentinel at the hero's natural top edge (heroRef) reports
@@ -226,7 +244,16 @@ const Holders = () => {
       setActiveTileId(null);
     }
   }, [activeTab, holderPanel, activeTileId]);
-  const [rangeDays, setRangeDays] = useState<number>(ytdDays());
+  const [rangeDays, setRangeDays] = useState<number>(settings0.range ?? ytdDays());
+  // Range and chain live in the query string (replaceState: shareable and
+  // reload-safe without adding Back steps).
+  useEffect(() => {
+    navigate(
+      window.history,
+      withSettings(window.location, { range: rangeDays, chain: selectedView }, { range: ytdDays(), chain: "combined" }),
+      "replace",
+    );
+  }, [rangeDays, selectedView, activeTab]);
   const { data, isError: snapshotError } = useHolderLiteSnapshot();
   const snapshot = data as import('@/hooks/useHolderSnapshot').HolderLiteSnapshot | undefined;
 
@@ -302,7 +329,6 @@ const Holders = () => {
             snapshotError={snapshotError}
             selectedView={selectedView}
             rangeDays={rangeDays}
-            onViewChange={setSelectedView}
           />
         )}
         {activeTab === "supply" && (
@@ -338,8 +364,11 @@ const Holders = () => {
           Shares the nav's background gradient but skips its own shadow so
           the two rows read as one header with a single hairline divider,
           not two stacked cards. */}
-      <div
+      <nav
         ref={stickyBarRef}
+        // A landmark so the section tabs + range picker aren't orphaned
+        // outside every region (axe "region" on phone/tablet).
+        aria-label="Dashboard sections"
         className="sticky top-16 md:top-20 z-40 w-full backdrop-blur-xl border-b border-border/40 bg-card/90 shadow-[0_1px_2px_hsl(180_18%_7%/0.05)]"
       >
         {/* Scrolls rather than wraps below sm: a wrapped selector bar costs a
@@ -368,7 +397,7 @@ const Holders = () => {
           </TabsList>
           <TimeRangeDropdown value={rangeDays} onChange={setRangeDays} options={visibleRangeOptions} className="shrink-0" />
         </div>
-      </div>
+      </nav>
 
       {/* terminal-dense is page-wide: density should be a property of this page,
           not of which control you used to get here. Before this it applied only
@@ -376,10 +405,14 @@ const Holders = () => {
           headline tile and loose when opened from the tab bar. terminal-focus
           adds the focus-only part (dropping section descriptions), which is
           only safe when the collapsed strip is there to name the metric. */}
+      {/* min-h-[100svh]: while the lazy panels and their data load, the page
+          is shorter than the viewport and the footer sits on screen; when
+          content arrives it is pushed down (mobile #distribution CLS was
+          0.33). Reserving a viewport keeps the footer below the fold. */}
       <main
         id="main-content"
         tabIndex={-1}
-        className={`terminal-dense focus:outline-none container mx-auto px-4 py-4 sm:py-8 max-w-7xl ${
+        className={`terminal-dense focus:outline-none container mx-auto px-4 py-4 sm:py-8 max-w-7xl min-h-[100svh] ${
           activeTileId ? "terminal-focus" : ""
         }`}
       >
@@ -419,6 +452,7 @@ const Holders = () => {
           <div className="animate-fade-in" style={{ animationDelay: '0.15s' }}>
             <HolderKpiHero
               rangeDays={rangeDays}
+              view={selectedView}
               collapsed={heroCollapsed}
               onToggle={heroCollapse.latched ? () => dispatchHeroCollapse("toggle") : undefined}
               onTileSelect={handleTileSelect}

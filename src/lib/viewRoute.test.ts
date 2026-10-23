@@ -34,3 +34,12 @@ describe("buildViewHash", () => {
     expect(buildViewHash({ view: "distribution", panel: "x" })).toBe("#distribution");
   });
 });
+
+describe("panel aliases", () => {
+  it("maps #holders/momentum to the growth (Momentum) panel", () => {
+    expect(parseViewHash("#holders/momentum")).toEqual({ view: "holders", panel: "growth" });
+  });
+  it("keeps #supply/history as the history panel", () => {
+    expect(parseViewHash("#supply/history")).toEqual({ view: "supply", panel: "history" });
+  });
+});

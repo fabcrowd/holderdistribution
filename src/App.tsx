@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 // The full hub had many pages; this repo deploys just this one, so there is
 // only one lazy-loaded route rather than the original app's route table.
 const Holders = lazy(() => import("./pages/Holders"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite">
@@ -43,6 +44,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Holders />} />
               <Route path="/holders" element={<Holders />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>

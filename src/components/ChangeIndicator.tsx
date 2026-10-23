@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
+import { isZeroText } from "@/lib/format";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { InfoTip } from "@/components/InfoTip";
 import type { ClassificationEvent } from "@/lib/classificationChangelog";
 
 const integerFormatter = new Intl.NumberFormat();
@@ -26,7 +28,23 @@ export type ChangeIndicatorProps = {
    *  "methodology changed" badge with a tooltip explaining what happened
    *  instead. */
   changelogEvents?: ClassificationEvent[];
+  /** "pill" (default) is the bordered chip used in cards. "plain" is the
+   *  dense header form: a coloured signed number, and a "†" marker (with the
+   *  same explainer) in place of the "Relabeled" chip. */
+  variant?: "pill" | "plain";
 };
+
+// "other" events aren't reclassifications (e.g. the v3 StakingModule's
+// unrecorded history, lib/staking.ts), so they get neutral wording.
+const isMeasurementOnly = (events: ClassificationEvent[]) => events.every((e) => e.type === "other");
+const relabelText = (events: ClassificationEvent[]) =>
+  `${
+    isMeasurementOnly(events)
+      ? "What this figure measures changed since this comparison's start date"
+      : "Some wallets were reclassified since this comparison's start date (e.g. later identified as an exchange)"
+  }, so the change can't be shown as a plain gain or loss:\n\n${events
+    .map((e) => `${e.date}: ${e.summary}`)
+    .join("\n\n")}`;
 
 export const ChangeIndicator = ({
   current,
@@ -38,16 +56,30 @@ export const ChangeIndicator = ({
   formatter,
   tone = "auto",
   changelogEvents,
+  variant = "pill",
 }: ChangeIndicatorProps) => {
   if (previous === null || previous === undefined) {
     return null;
   }
 
+  if (variant === "plain" && changelogEvents && changelogEvents.length > 0) {
+    return (
+      <InfoTip
+        content={relabelText(changelogEvents)}
+        label={
+          isMeasurementOnly(changelogEvents)
+            ? "Change not shown: no comparable baseline. Details"
+            : "Change not shown: some wallets were reclassified. Details"
+        }
+        className={cn("-my-1 -ml-1 text-sm font-semibold text-muted-foreground", className)}
+      >
+        <span aria-hidden="true">†</span>
+      </InfoTip>
+    );
+  }
+
   if (changelogEvents && changelogEvents.length > 0) {
     const baseClasses = size === "md" ? "px-2.5 py-0.5 text-sm" : "px-2 py-0.5 text-xs";
-    const tooltipText = changelogEvents
-      .map((e) => `${e.date}: ${e.summary}`)
-      .join("\n\n");
     return (
       <span
         className={cn(
@@ -57,8 +89,8 @@ export const ChangeIndicator = ({
           className,
         )}
       >
-        Relabeled
-        <InfoTooltip text={`Some wallets were reclassified since this comparison's start date (e.g. later identified as an exchange), so the change can't be shown as a plain gain or loss:\n\n${tooltipText}`} />
+        {isMeasurementOnly(changelogEvents) ? "Not comparable" : "Relabeled"}
+        <InfoTooltip text={relabelText(changelogEvents)} />
       </span>
     );
   }
@@ -88,9 +120,23 @@ export const ChangeIndicator = ({
       ? (value: number) => `${value.toFixed(precision ?? 1)}%`
       : (value: number) => integerFormatter.format(Math.round(value));
 
-  const formattedValue = diff === 0
-    ? "0"
-    : `${diff > 0 ? "+" : "-"}${resolvedFormatter(Math.abs(diff))}`;
+  const magnitude = resolvedFormatter(Math.abs(diff));
+  // Rounds to zero → "0" (never "−0"), and no up/down colouring.
+  const formattedValue = diff === 0 || isZeroText(magnitude)
+    ? diff === 0 ? "0" : magnitude
+    : `${diff > 0 ? "+" : "-"}${magnitude}`;
+  const flat = diff === 0 || isZeroText(magnitude);
+  if (flat) palette = "border-border/60 text-muted-foreground bg-muted/10";
+
+  if (variant === "plain") {
+    const plainTone =
+      tone === "neutral" || flat ? "text-muted-foreground" : diff > 0 ? "text-positive" : "text-negative";
+    return (
+      <span className={cn("text-xs font-semibold tabular-nums", plainTone, className)}>
+        {formattedValue.replace(/^-/, "−")}
+      </span>
+    );
+  }
 
   return (
     <span className={cn(

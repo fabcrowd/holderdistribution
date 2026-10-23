@@ -1,3 +1,12 @@
-# SPA fallback — this is a single-page app (one route), so every path that
-# isn't a static asset resolves to index.html and the client router decides.
+# Missing static files are real 404s, not the SPA shell. These rules are not
+# forced, so they only apply when no file exists at the path: a stale tab
+# asking for an old hashed chunk gets a 404 (and reloads once, see
+# src/lib/chunkReload.ts) instead of index.html served as JavaScript, and a
+# missing /data feed fails its fetch instead of parsing HTML as JSON.
+/assets/*  /404.html  404
+/data/*    /404.html  404
+
+# SPA fallback — every other path that isn't a static asset resolves to
+# index.html and the client router decides (unknown routes render NotFound,
+# which sets noindex).
 /*    /index.html   200

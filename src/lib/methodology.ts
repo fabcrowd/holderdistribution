@@ -5,6 +5,7 @@
  * themselves on a block explorer.
  */
 import { legacyTokenUrl, v3TokenUrl } from "@/lib/telContracts";
+import { V3_STAKING_MODULE } from "@/lib/staking";
 
 export type MethodologyLink = { label: string; href: string };
 export type Methodology = { how: string; verify: string; links: MethodologyLink[] };
@@ -16,6 +17,7 @@ const TEL_ETH = legacyTokenUrl("ethereum");
 const TEL_POLYGON = legacyTokenUrl("polygon");
 const TEL_BASE = legacyTokenUrl("base");
 const STAKING = "https://polygonscan.com/address/0x92e43Aec69207755CB1E6A8Dc589aAE630476330";
+const STAKING_V3 = `https://polygonscan.com/address/${V3_STAKING_MODULE}`;
 const DEX_TEL_USDC = "https://polygonscan.com/address/0xa5cabfc725dfa129f618d527e93702d10412f039";
 const DEX_TEL_WPOL = "https://polygonscan.com/address/0x9b5c71936670e9f1f36e63f03384de7e06e60d2a";
 
@@ -30,12 +32,12 @@ const TREASURY_ETHERSCAN = `${TEL_ETH}?a=0x2580ccb2be946ad98effa7f4b76148bed3190
 
 export const METHODOLOGY: Record<string, Methodology> = {
   circulatingSupply: {
-    how: "This box shows CoinGecko's reported circulating supply (~95.08B), not a figure we compute. It is not a different accounting method — it's a frozen snapshot. Treasury wallet 0x2580… held exactly 4,922,764,633 TEL immediately after sending 2.5B to Anchorage Digital Vault on 2025-10-01; CoinGecko's implied non-circulating amount (100B minus their reported figure) is 4,922,763,633 — within 1,000 TEL, the size of a routine test transfer that precedes it. CoinGecko read that balance once around that date and has not updated it since. Every treasury transaction after 2025-10-01 — including the escrow funding into BitGo a month later, and payouts down to treasury's actual balance today — is invisible to their number. The Tokenomics page's Supply Breakdown reconstructs circulating supply directly from on-chain balances instead.",
+    how: "This box shows CoinGecko's reported circulating supply (~95.08B), not a figure we compute. It is not a different accounting method — it's a frozen snapshot. The main treasury wallet held exactly 4,922,764,633 TEL immediately after sending 2.5B to Anchorage Digital Vault on 2025-10-01; CoinGecko's implied non-circulating amount (100B minus their reported figure) is 4,922,763,633 — within 1,000 TEL, the size of a routine test transfer that precedes it. CoinGecko read that balance once around that date and has not updated it since. Every treasury transaction after 2025-10-01 — including the escrow funding into BitGo a month later, and payouts down to treasury's actual balance today — is invisible to their number. The Tokenomics page's Supply Breakdown reconstructs circulating supply directly from on-chain balances instead.",
     verify: "Open the treasury wallet on Etherscan and read its Transfer history: the balance right after its 2025-10-01 transfer to Anchorage Digital Vault matches CoinGecko's implied carve-out to within 1,000 TEL.",
-    links: [{ label: "Treasury wallet (0x2580…)", href: TREASURY_ETHERSCAN }],
+    links: [{ label: "Treasury wallet (Etherscan)", href: TREASURY_ETHERSCAN }],
   },
   holderSnapshot: {
-    how: "Every wallet's TEL balance is reconstructed from the token's on-chain Transfer event logs on Ethereum, Polygon and Base — read directly from full nodes, the same ledger the block explorers use — then staking is added from the Polygon staking contract. A holder is any wallet with a non-zero balance, with no minimum applied: that includes roughly 9,500 wallets holding less than 1 TEL each (a few thousand TEL between all of them). They are counted in the headline and in the smallest distribution tier alike, so every holder count on this page reconciles to the same total. A wallet's balance is its legacy TEL (2 decimals) plus its upgraded TEL v3 (18 decimals, 0x7E13…0731 on every chain), each read with its own decimals. Telcoin's official upgrade swaps legacy for v3 1:1: the upgrade contract locks the legacy TEL and mints the same amount of v3 to the holder, so the locked legacy TEL is left out and the v3 is counted instead — nothing is counted twice, and the total stays 100B.",
+    how: "Every wallet's TEL balance is reconstructed from the token's on-chain Transfer event logs on Ethereum, Polygon and Base — read directly from full nodes, the same ledger the block explorers use — then staking is added from the Polygon staking contracts (legacy and v3 StakingModule). A holder is any wallet with a non-zero balance, with no minimum applied: that includes roughly 9,500 wallets holding less than 1 TEL each (a few thousand TEL between all of them). They are counted in the headline and in the smallest distribution tier alike, so every holder count on this page reconciles to the same total. A wallet's balance is its legacy TEL (2 decimals) plus its upgraded TEL v3 (18 decimals, 0x7E13…0731 on every chain), each read with its own decimals. Telcoin's official upgrade swaps legacy for v3 1:1: the upgrade contract locks the legacy TEL and mints the same amount of v3 to the holder, so the locked legacy TEL is left out and the v3 is counted instead — nothing is counted twice, and the total stays 100B.",
     verify: "Open the TEL token contract on any explorer and check the Holders tab, or look up any single wallet's TEL balance directly.",
     links: [...TEL_TOKENS, { label: "Staking contract", href: STAKING }],
   },
@@ -55,9 +57,13 @@ export const METHODOLOGY: Record<string, Methodology> = {
     links: TEL_TOKENS,
   },
   staking: {
-    how: "Staked balances are read directly from the Telcoin staking contract on Polygon and mapped back to each staker's wallet.",
-    verify: "Open the staking contract on Polygonscan to inspect staked positions and transactions.",
-    links: [{ label: "Staking contract", href: STAKING }, { label: "TEL on Polygonscan", href: TEL_POLYGON }],
+    how: "Staked TEL combines two contracts on Polygon: the legacy Telcoin staking contract and the TEL v3 StakingModule (live since 1 Sep 2026, block 93,048,895). Both are read on-chain and mapped back to each staker's wallet; a wallet staked in both is counted once as a staker, with its two amounts added. Staked TEL is already part of each staker's retail balance, so it is never added on top of Retail Held. The module's positions aren't in the archived daily snapshots, so its history can't be rebuilt: before 1 Sep 2026 it held nothing (the legacy figure is the whole total), and between then and the first measured date its balance is unknown and left blank rather than guessed. Changes that start in that window show a dagger (†) instead of a number.",
+    verify: "Open either contract on Polygonscan to inspect staked positions and transactions.",
+    links: [
+      { label: "Legacy staking contract", href: STAKING },
+      { label: "v3 StakingModule", href: STAKING_V3 },
+      { label: "TEL on Polygonscan", href: TEL_POLYGON },
+    ],
   },
   overlap: {
     how: "Wallets that hold TEL on more than one chain are matched by address across the per-chain snapshots.",
@@ -80,7 +86,7 @@ export const METHODOLOGY: Record<string, Methodology> = {
     links: [{ label: "TEL/USDC pool", href: DEX_TEL_USDC }, { label: "TEL/WPOL pool", href: DEX_TEL_WPOL }, { label: "TEL on Polygonscan", href: TEL_POLYGON }],
   },
   supplyBreakdown: {
-    how: "Total supply is always 100B (the legacy TEL contract on Ethereum, where all of it was minted). Since the TEL v3 upgrade every balance is legacy TEL plus v3 TEL, and the legacy TEL locked in Telcoin's upgrade contract in exchange for minted v3 is left out so it is never counted twice (legacy supply − locked-for-v3 + v3 supply − bridge-locked mirrors = 100B; scripts/verify-tel-supply.js re-derives this from the chains). We split it into simple base-layer buckets anyone can read — retail wallets, DEX liquidity, exchange custody, escrow, Telcoin Association-Controlled Safes (treasury + council/ops + staking contract), Telcoin Holdings (~1.65B confirmed Holdings wallets), Other, and In transit (bridges) — so the pieces add to 100B. In transit is mostly TEL locked on Ethereum while it shows up on Polygon or Base — not missing wallets. Circulating excludes treasury + council, plus the ~5.00B of escrow that's contractually committed back to treasury under a SAFE (traced on-chain to Telcoin Association funding — see data/escrow-safe-provenance.md); the remaining ~1.33B of escrow, sourced from Telcoin Holdings, stays circulating. CoinGecko’s ~95B is treasury 0x2580…'s on-chain balance right after its 2025-10-01 transfer to Anchorage, never refreshed since — not a different methodology, just a frozen snapshot (see the Circulating Supply info icon on the home page for the full trace). Click Association, Holdings, Other, or In transit for address-level drill-down. Wallets with an Analysis badge expose a gated deep dive (funding chain, counterparties, controllers) unlocked for admin accounts. After wallet labels change (especially retail vs excluded), run a full holders scrape so Retail, history, transitions, and supply reconciliation stay consistent — incremental scans alone are not enough. Temporary Other detail tags like “large personal wallet” are not the permanent Retail home until that full scrape.",
+    how: "Total supply is always 100B (the legacy TEL contract on Ethereum, where all of it was minted). Since the TEL v3 upgrade every balance is legacy TEL plus v3 TEL, and the legacy TEL locked in Telcoin's upgrade contract in exchange for minted v3 is left out so it is never counted twice (legacy supply − locked-for-v3 + v3 supply − bridge-locked mirrors = 100B; scripts/verify-tel-supply.js re-derives this from the chains). We split it into simple base-layer buckets anyone can read — retail wallets, DEX liquidity, exchange custody, escrow, Telcoin Association-Controlled Safes (treasury + council/ops), Telcoin Holdings (confirmed Holdings wallets), Other, and In transit (bridges) — so the pieces add to 100B. In transit is mostly TEL locked on Ethereum while it shows up on Polygon or Base — not missing wallets. Circulating excludes treasury + council, plus the escrow that's contractually committed back to treasury under a SAFE (traced on-chain to Telcoin Association funding — see data/escrow-safe-provenance.md; the Escrow detail shows the current split); the rest of escrow stays circulating. CoinGecko’s ~95B is the main treasury wallet's on-chain balance right after its 2025-10-01 transfer to Anchorage, never refreshed since — not a different methodology, just a frozen snapshot (see the Circulating Supply info icon on the home page for the full trace). Click Association, Holdings, Other, or In transit for address-level drill-down. Wallets with an Analysis badge expose a gated deep dive (funding chain, counterparties, controllers) unlocked for admin accounts. After wallet labels change (especially retail vs excluded), run a full holders scrape so Retail, history, transitions, and supply reconciliation stay consistent — incremental scans alone are not enough. Temporary Other detail tags like “large personal wallet” are not the permanent Retail home until that full scrape.",
     verify: "Base layer: the chart and bucket list. Power users can click Association, Holdings, Other, or In transit for address lists, bridge math, and explorer links. Identity notes: data/other-address-identity.md and data/holdings-wallet-analysis.md.",
     links: [
       ...TEL_TOKENS,

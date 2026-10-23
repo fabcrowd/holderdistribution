@@ -1,14 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useIntro } from "@/hooks/useMotion";
+import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
+import { clampToRange, shortBucketLabel } from "@/lib/chartRange";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { formatCompact, formatSignedCompact } from "@/lib/format";
-import { TerminalPanel, PanelMessage, PanelSkeleton, Delta } from "./TerminalPanel";
-import { TimeChart, SignedBars, CategoryBars } from "./MiniCharts";
+import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
+import { TimeChart, SignedBars, CategoryBars, type ChartMarker } from "./MiniCharts";
 import { DetailsButton } from "./DetailsButton";
+import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
 
-const DAY_MS = 86_400_000;
 const int = new Intl.NumberFormat("en-US");
 const pct = (n: number, d = 1) => `${n.toFixed(d)}%`;
 
@@ -20,35 +23,126 @@ type Props = {
   onExplore: (panel: string) => void;
 };
 
-/** Points within `days` of the series' own last date (feeds can lag "now"). */
-const withinRange = <T,>(rows: T[], getT: (r: T) => number, days: number): T[] => {
-  if (!rows.length) return rows;
-  const last = getT(rows[rows.length - 1]);
-  const from = last - days * DAY_MS;
-  return rows.filter((r) => getT(r) >= from);
+/** Points inside the selected range — YTD from Jan 1, rolling ranges back
+ *  from the series' own last date (feeds can lag "now"). */
+const withinRange = <T,>(rows: T[], getT: (r: T) => number, days: number): T[] => clampToRange(rows, getT, days);
+
+/** Unbackfilled reclassifications that touch `metric`, from the chart's first
+ *  point to today, as chart markers. An event after the last data point
+ *  (feed lag) still shows: the axis extends to it. */
+const reclassMarkers = (
+  changelog: Parameters<typeof getEventsAffecting>[0],
+  metric: string,
+  firstMs: number | undefined,
+): ChartMarker[] => {
+  if (firstMs == null) return [];
+  const seen = new Set<string>();
+  return getEventsAffecting(changelog, metric, firstMs, Date.now())
+    .filter((e) => (seen.has(e.date) ? false : (seen.add(e.date), true)))
+    .map((e) => ({ t: Date.parse(e.date), label: "† Reclassified", description: "Wallets were reclassified" }));
 };
+
+const LegendKey = ({
+  id,
+  swatch,
+  label,
+  value,
+  active,
+  onActive,
+}: {
+  id: string;
+  swatch: string;
+  label: string;
+  value: string;
+  active: string | null;
+  onActive: (id: string | null) => void;
+}) => (
+  <button
+    type="button"
+    aria-pressed={active === id}
+    aria-label={`${label} ${value}. Highlight ${label} line`}
+    onMouseEnter={() => onActive(id)}
+    onMouseLeave={() => onActive(null)}
+    onFocus={() => onActive(id)}
+    onBlur={() => onActive(null)}
+    onClick={() => onActive(active === id ? null : id)}
+    className={`inline-flex min-h-6 items-center gap-1 rounded px-1 text-xs text-muted-foreground transition-opacity hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+      active != null && active !== id ? "opacity-50" : ""
+    }`}
+  >
+    <span className={`h-2 w-2 rounded-sm ${swatch}`} aria-hidden="true" />
+    {label} <span className="font-semibold text-foreground">{value}</span>
+  </button>
+);
 
 const firstLast = <T,>(rows: T[]) => (rows.length ? { first: rows[0], last: rows[rows.length - 1] } : null);
 
 export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDays, onExplore }: Props) => {
   const growth = useHolderGrowth({ view: selectedView, days: rangeDays });
+  const intro = useIntro();
   const flow = useExchangeFlow();
   const cexHistory = useCexBalanceHistory();
+  const { data: changelog } = useClassificationChangelog();
+  const [balanceFocus, setBalanceFocus] = useState<string | null>(null);
   const isCombined = selectedView === "combined";
   const view = snapshot?.views[selectedView];
+  const combinedStaking = snapshot?.views.combined?.stakingStats;
+  const v3Staking = combinedStaking?.v3 ?? null;
+  const v3DeployDate = v3Staking?.deployDate ?? V3_STAKING_DEPLOY_DATE;
+  const v3DeployMs = Date.parse(v3DeployDate);
 
   const holders = useMemo(
-    () => (growth.data?.series ?? []).map((p) => ({ t: Date.parse(p.timestamp), holders: p.holders })),
-    [growth.data],
+    () =>
+      withinRange(
+        (growth.data?.series ?? []).map((p) => ({ t: Date.parse(p.timestamp), holders: p.holders })),
+        (r) => r.t,
+        rangeDays,
+      ),
+    [growth.data, rangeDays],
   );
   const balance = useMemo(
-    () => (growth.data?.balanceSeries ?? []).map((p) => ({ t: Date.parse(p.timestamp), retail: p.retail, cex: p.cex })),
-    [growth.data],
+    () =>
+      withinRange(
+        (growth.data?.balanceSeries ?? []).map((p) => ({ t: Date.parse(p.timestamp), retail: p.retail, cex: p.cex })),
+        (r) => r.t,
+        rangeDays,
+      ),
+    [growth.data, rangeDays],
   );
   const staking = useMemo(
-    () => (growth.data?.stakingSeries ?? []).map((p) => ({ t: Date.parse(p.timestamp), staking: p.staking })),
-    [growth.data],
+    () =>
+      withinRange(
+        (growth.data?.stakingSeries ?? []).map((p) => {
+          const t = Date.parse(p.timestamp);
+          return {
+            t,
+            staking: p.staking,
+            // The v3 series starts at the module's deploy; before it, v3 is 0
+            // and the total is just the legacy line.
+            stakingV3: t >= v3DeployMs ? p.stakingV3 : null,
+            stakingTotal: p.stakingTotal,
+          };
+        }),
+        (r) => r.t,
+        rangeDays,
+      ),
+    [growth.data, rangeDays, v3DeployMs],
   );
+  const stakingMarkers = useMemo<ChartMarker[]>(
+    () =>
+      staking.length && v3Staking && staking[0].t <= v3DeployMs
+        ? [{ t: v3DeployMs, label: "v3 migration", description: "The v3 StakingModule went live and stakers began migrating from the legacy contract" }]
+        : [],
+    [staking, v3Staking, v3DeployMs],
+  );
+  const holderMarkers = useMemo(() => reclassMarkers(changelog, "retail.count", holders[0]?.t), [changelog, holders]);
+  // Same † rule as the header KPIs: a reclassification after the period's
+  // first point for the metric a card's delta shows suppresses that delta.
+  const holderRelabel = useMemo(
+    () => (holders[0] ? getEventsAffecting(changelog, "retail.count", holders[0].t, Date.now()) : []),
+    [changelog, holders],
+  );
+  const balanceMarkers = useMemo(() => reclassMarkers(changelog, "retail.balance", balance[0]?.t), [changelog, balance]);
   const netflow = useMemo(() => {
     const rows = (flow.data ?? []).map((e) => ({ t: Date.parse(e.date), value: e.net, in: e.in, out: e.out }));
     return withinRange(rows, (r) => r.t, Math.max(rangeDays, 1));
@@ -71,11 +165,21 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const h = firstLast(holders);
   const b = firstLast(balance);
   const s = firstLast(staking);
+  // Staked = legacy + v3. Headline is today's measured total; the delta runs
+  // from the period's first point, and is a "†" when that point falls in the
+  // stretch where v3 wasn't recorded (no baseline, so no honest delta).
+  const stakedNow = combinedStaking?.stakedTotal ?? s?.last.stakingTotal ?? s?.last.staking ?? null;
+  const stakedFirst = s ? (v3Staking ? s.first.stakingTotal : s.first.staking) : null;
+  const stakedRelabel = s && v3Staking ? v3StakingGapEvents(s.first.t, s.first.stakingTotal == null ? null : 0, v3DeployDate) : [];
+  const stakingSplit =
+    v3Staking && combinedStaking?.legacy
+      ? `Legacy ${formatCompact(combinedStaking.legacy.stakedTotal)} / v3 ${formatCompact(v3Staking.stakedTotal)}`
+      : null;
   const loading = growth.isLoading;
   const growthFailed = !!growth.error && !growth.data;
 
   const series = (content: React.ReactNode, has: boolean) =>
-    loading ? <PanelSkeleton /> : growthFailed ? <PanelMessage>History feed unavailable.</PanelMessage> : has ? content : <PanelMessage>No data for this period.</PanelMessage>;
+    loading ? <PanelSkeleton /> : growthFailed ? <PanelError>Couldn't load holder history.</PanelError> : has ? content : <PanelMessage>No data for this period.</PanelMessage>;
 
   const stats = view?.balanceStats;
   const buckets = stats?.distributionBuckets ?? [];
@@ -84,16 +188,16 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const retailTotal = stats?.total ?? 0;
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-12 grid-rows-2 gap-2" data-testid="holders-terminal">
+    <div className={`grid h-full min-h-0 grid-cols-12 grid-rows-2 gap-2 ${intro ? "ha-stagger" : ""}`} data-testid="holders-terminal">
       <TerminalPanel
         className="col-span-4"
         title="Retail holders"
-        info="Wallets holding at least 1 TEL, excluding exchange, DEX, contract and Telcoin-controlled wallets."
+        info="Wallets holding more than 0 TEL, excluding exchange, DEX, contract and Telcoin-controlled wallets."
         stat={
           h && (
             <>
               <span className="font-semibold text-foreground">{int.format(h.last.holders)}</span>
-              <Delta value={h.last.holders - h.first.holders} format={(n) => int.format(Math.round(n))} />
+              <Delta value={h.last.holders - h.first.holders} format={(n) => int.format(Math.round(n))} relabel={holderRelabel} />
             </>
           )
         }
@@ -105,6 +209,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             series={[{ key: "holders", label: "Holders", color: "hsl(var(--primary))" }]}
             format={(n) => int.format(n)}
             label={h ? `Retail holders from ${int.format(h.first.holders)} to ${int.format(h.last.holders)} over the period.` : "Retail holders"}
+            markers={holderMarkers}
           />,
           holders.length > 1,
         )}
@@ -113,18 +218,21 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         className="col-span-4"
         title="TEL held"
-        info="TEL in retail wallets compared with TEL in custody at known exchange wallets. All chains combined."
+        info={`TEL in retail wallets compared with TEL in custody at known exchange wallets. All chains combined.${
+          v3Staking ? ` Retail includes ${formatCompact(combinedStaking?.stakedTotal ?? 0)} staked TEL, of which ${formatCompact(v3Staking.stakedTotal)} is in the v3 StakingModule (credited to each staker's wallet, so it isn't counted twice).` : ""
+        }`}
         stat={
           b && (
             <>
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-sm bg-primary" aria-hidden="true" />
-                Retail <span className="font-semibold text-foreground">{formatCompact(b.last.retail)}</span>
-              </span>
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-sm bg-[hsl(var(--ha-accent))]" aria-hidden="true" />
-                CEX <span className="font-semibold text-foreground">{b.last.cex != null ? formatCompact(b.last.cex) : "—"}</span>
-              </span>
+              <LegendKey id="retail" swatch="bg-primary" label="Retail" value={formatCompact(b.last.retail)} active={isCombined ? balanceFocus : null} onActive={setBalanceFocus} />
+              <LegendKey
+                id="cex"
+                swatch="bg-[hsl(var(--ha-accent))]"
+                label="CEX"
+                value={b.last.cex != null ? formatCompact(b.last.cex) : "—"}
+                active={isCombined ? balanceFocus : null}
+                onActive={setBalanceFocus}
+              />
             </>
           )
         }
@@ -142,6 +250,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
               ]}
               format={(n) => `${formatCompact(n)} TEL`}
               label={b ? `Retail TEL ${formatCompact(b.last.retail)}, exchange TEL ${b.last.cex != null ? formatCompact(b.last.cex) : "unknown"} at the end of the period.` : "TEL held"}
+              markers={balanceMarkers}
+              highlight={balanceFocus}
             />,
             balance.length > 1,
           )
@@ -167,7 +277,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         {flow.isLoading ? (
           <PanelSkeleton />
         ) : flow.isError ? (
-          <PanelMessage>Exchange flow feed unavailable.</PanelMessage>
+          <PanelError>Couldn't load exchange flows.</PanelError>
         ) : netflow.length ? (
           <SignedBars
             data={netflow.map(({ t, value }) => ({ t, value }))}
@@ -183,12 +293,21 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         className="col-span-3"
         title="Staked TEL"
-        info="Retail TEL locked in staking contracts. All chains combined."
+        info={
+          v3Staking
+            ? `Retail TEL staked in the legacy staking contract plus the v3 StakingModule (Polygon, live ${v3DeployDate}), counted once per staker. v3 balances weren't recorded between its launch and the latest snapshot, so the total has a gap there rather than a guessed line.`
+            : "Retail TEL locked in staking contracts. All chains combined."
+        }
         stat={
-          s && (
+          s &&
+          stakedNow != null && (
             <>
-              <span className="font-semibold text-foreground">{formatCompact(s.last.staking)}</span>
-              <Delta value={s.last.staking - s.first.staking} format={(n) => formatCompact(n)} />
+              <span className="font-semibold text-foreground" data-testid="staked-total">{formatCompact(stakedNow)}</span>
+              <Delta
+                value={stakedFirst != null ? stakedNow - stakedFirst : stakedRelabel.length ? 0 : null}
+                format={(n) => formatCompact(n)}
+                relabel={stakedRelabel}
+              />
             </>
           )
         }
@@ -198,13 +317,49 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           <PanelMessage>Available for all chains combined only.</PanelMessage>
         ) : (
           series(
-            <TimeChart
-              kind="area"
-              data={staking}
-              series={[{ key: "staking", label: "Staked", color: "hsl(var(--primary))" }]}
-              format={(n) => `${formatCompact(n)} TEL`}
-              label={s ? `Staked TEL ${formatCompact(s.last.staking)} at the end of the period.` : "Staked TEL"}
-            />,
+            v3Staking ? (
+              <div className="flex h-full min-h-0 flex-col">
+                {stakingSplit && combinedStaking?.legacy && (
+                  // Doubles as the chart's legend (swatches match the series).
+                  <p className="flex shrink-0 flex-wrap items-center gap-x-2 text-[11px] tabular-nums text-muted-foreground" data-testid="staked-split">
+                    <span className="sr-only">{stakingSplit}</span>
+                    <span aria-hidden="true" className="inline-flex items-center gap-1">
+                      <span className="h-0.5 w-2.5 bg-primary" />
+                      Total
+                    </span>
+                    <span aria-hidden="true" className="inline-flex items-center gap-1">
+                      <span className="w-2.5 border-t border-dashed border-muted-foreground" />
+                      Legacy <span className="font-semibold text-foreground">{formatCompact(combinedStaking.legacy.stakedTotal)}</span>
+                    </span>
+                    <span aria-hidden="true" className="inline-flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-ha-accent" />
+                      v3 <span className="font-semibold text-foreground">{formatCompact(v3Staking.stakedTotal)}</span>
+                    </span>
+                  </p>
+                )}
+                <div className="min-h-0 flex-1">
+                  <TimeChart
+                    data={staking}
+                    series={[
+                      { key: "stakingTotal", label: "Total staked", color: "hsl(var(--primary))", connectNulls: false },
+                      { key: "staking", label: "Legacy contract", color: "hsl(var(--muted-foreground))", dashed: true },
+                      { key: "stakingV3", label: "v3 StakingModule", color: "hsl(var(--ha-accent))", connectNulls: false },
+                    ]}
+                    markers={stakingMarkers}
+                    format={(n) => `${formatCompact(n)} TEL`}
+                    label={`Staked TEL ${stakedNow != null ? formatCompact(stakedNow) : ""} now${stakingSplit ? ` (${stakingSplit})` : ""}. The legacy contract fell as stakers moved to the v3 StakingModule; v3 balances before the latest snapshot weren't recorded.`}
+                  />
+                </div>
+              </div>
+            ) : (
+              <TimeChart
+                kind="area"
+                data={staking}
+                series={[{ key: "staking", label: "Staked", color: "hsl(var(--primary))" }]}
+                format={(n) => `${formatCompact(n)} TEL`}
+                label={s ? `Staked TEL ${formatCompact(s.last.staking)} at the end of the period.` : "Staked TEL"}
+              />
+            ),
             staking.length > 1,
           )
         )}
@@ -224,10 +379,15 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         actions={<DetailsButton onClick={() => onExplore("balances")} label="Wallet sizes" />}
       >
         {!snapshot ? (
-          snapshotError ? <PanelMessage>Snapshot unavailable.</PanelMessage> : <PanelSkeleton />
+          snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />
         ) : buckets.length ? (
           <CategoryBars
-            data={buckets.map((bk) => ({ name: bk.rangeLabel, value: bk.count, highlight: bk.rangeLabel === stats?.averageRangeLabel }))}
+            data={buckets.map((bk) => ({
+              name: shortBucketLabel(bk.rangeLabel),
+              full: bk.rangeLabel,
+              value: bk.count,
+              highlight: bk.rangeLabel === stats?.averageRangeLabel,
+            }))}
             format={(n) => int.format(n)}
             label={`Retail wallets by balance: ${buckets.map((bk) => `${bk.rangeLabel} ${int.format(bk.count)}`).join(", ")}.`}
           />
@@ -245,7 +405,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         flush
       >
         {!snapshot ? (
-          <div className="h-full p-2">{snapshotError ? <PanelMessage>Snapshot unavailable.</PanelMessage> : <PanelSkeleton />}</div>
+          <div className="h-full p-2">{snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />}</div>
         ) : (
           <table className="w-full text-xs tabular-nums">
             <caption className="sr-only">Share of retail TEL held by the top wallets</caption>
@@ -296,7 +456,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         {cexHistory.isLoading ? (
           <div className="h-full p-2"><PanelSkeleton /></div>
         ) : cexHistory.isError ? (
-          <PanelMessage>Exchange balance feed unavailable.</PanelMessage>
+          <PanelError>Couldn't load exchange balances.</PanelError>
         ) : (
           <table className="w-full text-xs tabular-nums">
             <caption className="sr-only">TEL held per exchange</caption>

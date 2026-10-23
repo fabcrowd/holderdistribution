@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
+import "@/lib/rechartsMotion";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { InfoTooltip } from "@/components/InfoTooltip";
 
@@ -77,7 +78,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
               type="number"
               domain={["dataMin", "dataMax"]}
               scale="time"
-              tickFormatter={(v) => new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+              tickFormatter={(v) => new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })}
               tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
               tickMargin={8}
             />
@@ -88,7 +89,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
                 <ChartTooltipContent
                   labelFormatter={(_, p) => {
                     const ts = p?.[0]?.payload?.timestamp;
-                    return ts ? new Date(ts).toLocaleDateString() : "";
+                    return ts ? new Date(ts).toLocaleDateString(undefined, { timeZone: "UTC" }) : "";
                   }}
                   formatter={(value) => [`${Number(value) >= 0 ? "+" : "−"}${formatCompactTEL(Math.abs(Number(value)))} TEL`, "Net flow"]}
                 />

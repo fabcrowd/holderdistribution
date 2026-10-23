@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useMemo,
   useState,
   type FormEvent,
   type ReactNode,
@@ -13,11 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   clearLocalUnlock,
-  persistLocalUnlock,
-  readLocalUnlock,
-  readValidLocalUnlock,
+  clearSessionToken,
+  persistSessionToken,
+  purgeLegacyUnlock,
+  readSessionToken,
 } from "@/lib/localUnlock";
-import { verifyForensicsPassword } from "@/lib/forensicsGateApi";
+import { checkSession, unlockWithPassword } from "@/lib/forensicsGateApi";
+import { describeGateFailure, formatWait, gateErrorMessage, type ForensicsUnlockError } from "@/lib/gateErrors";
+
+export type { ForensicsUnlockError };
 
 /**
  * One shared unlock for every gated Supply surface (Reconciliation ledger,
@@ -25,76 +30,114 @@ import { verifyForensicsPassword } from "@/lib/forensicsGateApi";
  */
 export type ForensicsUnlockStatus = "idle" | "checking" | "unlocked" | "error";
 
+
 export type ForensicsUnlockContextValue = {
+  /**
+   * The credential gated fetches send: a signed session token from the gate
+   * (or, when the server issues none, the password held in memory for this tab
+   * only). Named `password` for the existing call sites.
+   */
   password: string | null;
   status: ForensicsUnlockStatus;
+  error?: ForensicsUnlockError | null;
   unlock: (candidate: string) => Promise<boolean>;
   lock: () => void;
+  /** One password form on screen (the one marked `primary`); every other
+   *  gate under this provider points to it instead of repeating the form. */
+  singleGate?: boolean;
 };
 
 const ForensicsUnlockContext = createContext<ForensicsUnlockContextValue | null>(null);
 
-const failUnlock = (): false => {
-  clearLocalUnlock();
-  return false;
-};
 
 function useForensicsUnlockState(): ForensicsUnlockContextValue {
   const [password, setPassword] = useState<string | null>(null);
-  const [status, setStatus] = useState<ForensicsUnlockStatus>(() =>
-    readLocalUnlock() ? "checking" : "idle",
-  );
+  const [error, setError] = useState<ForensicsUnlockError | null>(null);
+  const [status, setStatus] = useState<ForensicsUnlockStatus>(() => (readSessionToken() ? "checking" : "idle"));
 
-  const tryUnlock = useCallback(async (candidate: string) => {
-    setStatus("checking");
-    try {
-      if (!(await verifyForensicsPassword(candidate))) {
-        setPassword(null);
-        setStatus("error");
-        return failUnlock();
-      }
-      setPassword(candidate);
-      setStatus("unlocked");
-      persistLocalUnlock(candidate);
-      return true;
-    } catch {
-      setPassword(null);
-      setStatus("error");
-      return failUnlock();
-    }
+  const fail = useCallback((e: ForensicsUnlockError) => {
+    clearSessionToken();
+    setPassword(null);
+    setError(e);
+    setStatus("error");
+    return false as const;
   }, []);
+
+  const tryUnlock = useCallback(
+    async (candidate: string) => {
+      setStatus("checking");
+      setError(null);
+      try {
+        const result = await unlockWithPassword(candidate);
+        if (!result) return fail({ kind: "invalid" });
+        setPassword(result.credential);
+        setStatus("unlocked");
+        // Only a signed token is ever remembered; a bare password stays in memory.
+        persistSessionToken(result.credential, result.expiresAt);
+        return true;
+      } catch (e) {
+        return fail(describeGateFailure(e));
+      }
+    },
+    [fail],
+  );
 
   const lock = useCallback(() => {
     clearLocalUnlock();
     setPassword(null);
+    setError(null);
     setStatus("idle");
   }, []);
 
   useEffect(() => {
+    // Older builds stored the plaintext password in localStorage. Delete it.
+    purgeLegacyUnlock();
     let cancelled = false;
-    const run = async () => {
-      const stored = readValidLocalUnlock();
-      if (cancelled) return;
-      if (stored) {
-        await tryUnlock(stored);
-        return;
-      }
+    const stored = readSessionToken();
+    if (!stored) {
       setStatus((current) => (current === "checking" ? "idle" : current));
-    };
-    void run();
+      return;
+    }
+    void checkSession(stored)
+      .then((ok) => {
+        if (cancelled) return;
+        if (ok) {
+          setPassword(stored);
+          setStatus("unlocked");
+        } else {
+          fail({ kind: "expired" });
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) fail(describeGateFailure(e));
+      });
     return () => {
       cancelled = true;
     };
-  }, [tryUnlock]);
+  }, [fail]);
 
-  return { password, status, unlock: tryUnlock, lock };
+  return useMemo(() => ({ password, status, error, unlock: tryUnlock, lock }), [password, status, error, tryUnlock, lock]);
 }
 
-export const ForensicsUnlockProvider = ({ children }: { children: ReactNode }) => {
-  const value = useForensicsUnlockState();
+export const ForensicsUnlockProvider = ({
+  children,
+  singleGate = false,
+}: {
+  children: ReactNode;
+  singleGate?: boolean;
+}) => {
+  const state = useForensicsUnlockState();
+  const value = useMemo(() => ({ ...state, singleGate }), [state, singleGate]);
   return (
     <ForensicsUnlockContext.Provider value={value}>{children}</ForensicsUnlockContext.Provider>
   );
+};
+
+const focusPrimaryGate = () => {
+  const input = document.querySelector<HTMLInputElement>("[data-forensics-primary] input");
+  if (!input) return;
+  input.scrollIntoView({ block: "nearest" });
+  input.focus();
 };
 
 export const useForensicsUnlock = (): ForensicsUnlockContextValue => {
@@ -117,26 +160,83 @@ export const ForensicsUnlockGate = ({
   status,
   onUnlock,
   label = "Password",
+  primary = false,
+  compact = false,
 }: {
   status: ForensicsUnlockStatus;
   onUnlock: (candidate: string) => Promise<boolean>;
   label?: string;
+  /** The one form that renders when the provider is in `singleGate` mode. */
+  primary?: boolean;
+  /** One-row form: visually hidden label, 36px controls. */
+  compact?: boolean;
+}) => {
+  const ctx = useContext(ForensicsUnlockContext);
+  if (ctx?.singleGate && !primary) {
+    return (
+      <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground" data-testid="forensics-gate-pointer">
+        <Lock aria-hidden="true" className="h-3.5 w-3.5" />
+        <span>Password protected.</span>
+        <Button type="button" variant="outline" size="sm" className="h-7 px-2.5 text-xs" onClick={focusPrimaryGate}>
+          Enter password
+        </Button>
+      </div>
+    );
+  }
+  return <GateForm status={status} error={ctx?.error ?? null} onUnlock={onUnlock} label={label} primary={primary} compact={compact} />;
+};
+
+/** Seconds left until `retryAt`, ticking once a second; 0 when not limited. */
+const useCountdown = (retryAt: number | null): number => {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!retryAt) return;
+    setNow(Date.now());
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [retryAt]);
+  return retryAt ? Math.max(0, Math.ceil((retryAt - now) / 1000)) : 0;
+};
+
+
+
+const GateForm = ({
+  status,
+  error,
+  onUnlock,
+  label,
+  primary,
+  compact,
+}: {
+  status: ForensicsUnlockStatus;
+  error: ForensicsUnlockError | null;
+  onUnlock: (candidate: string) => Promise<boolean>;
+  label: string;
+  primary: boolean;
+  compact: boolean;
 }) => {
   const [value, setValue] = useState("");
   const [visible, setVisible] = useState(false);
   const checking = status === "checking";
+  const waitS = useCountdown(status === "error" && error?.kind === "rate-limited" ? error.retryAt : null);
+  const limited = status === "error" && error?.kind === "rate-limited" && waitS > 0;
   const inputId = useId();
   const errorId = `${inputId}-error`;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!value.trim() || checking) return;
+    if (!value.trim() || checking || limited) return;
     void onUnlock(value);
   };
 
   return (
-    <form onSubmit={submit} className="space-y-1.5" data-testid="forensics-unlock-form">
-      <label htmlFor={inputId} className="text-xs font-medium text-foreground">
+    <form
+      onSubmit={submit}
+      className="space-y-1.5"
+      data-testid="forensics-unlock-form"
+      {...(primary ? { "data-forensics-primary": "" } : {})}
+    >
+      <label htmlFor={inputId} className={compact ? "sr-only" : "text-xs font-medium text-foreground"}>
         {label}
       </label>
       <div className="flex items-stretch gap-2">
@@ -151,26 +251,32 @@ export const ForensicsUnlockGate = ({
             placeholder="Enter password"
             aria-invalid={status === "error"}
             aria-describedby={status === "error" ? errorId : undefined}
-            className="h-11 pl-9 pr-11 text-sm"
+            className={`${compact ? "h-9" : "h-11"} pl-9 pr-11 text-sm`}
           />
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
             aria-label={visible ? "Hide password" : "Show password"}
             aria-pressed={visible}
-            className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={`absolute right-1 top-1/2 inline-flex ${compact ? "h-7 w-7" : "h-9 w-9"} -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
           >
             {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        <Button type="submit" className="h-11 px-4 shrink-0" disabled={checking || !value.trim()}>
+        <Button type="submit" className={`${compact ? "h-9" : "h-11"} px-4 shrink-0`} disabled={checking || limited || !value.trim()}>
           {checking ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : null}
-          {checking ? "Checking…" : "Unlock"}
+          {checking ? "Checking…" : limited ? `Wait ${formatWait(waitS)}` : "Unlock"}
         </Button>
       </div>
       {status === "error" && (
-        <p id={errorId} role="alert" className="text-xs text-destructive">
-          That password didn&apos;t work. Check it and try again. After 10 wrong attempts the gate pauses for 15 minutes.
+        <p
+          id={errorId}
+          role="alert"
+          data-testid="forensics-gate-error"
+          data-kind={error?.kind ?? "invalid"}
+          className={error?.kind === "expired" ? "text-xs text-muted-foreground" : "text-xs text-destructive"}
+        >
+          {gateErrorMessage(error, waitS)}
         </p>
       )}
     </form>

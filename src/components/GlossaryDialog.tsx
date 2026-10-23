@@ -9,7 +9,14 @@ import { GLOSSARY } from "@/lib/glossary";
  * and per-tile tooltips only explain one term at a time. One always-visible
  * entry point answers "what does this word mean?" from anywhere on the page.
  */
-export const GlossaryDialog = ({ className = "" }: { className?: string }) => (
+export const GlossaryDialog = ({
+  className = "",
+  labelClassName = "",
+}: {
+  className?: string;
+  /** e.g. "sr-only 2xl:not-sr-only" for an icon-only trigger on narrow desktops. */
+  labelClassName?: string;
+}) => (
   <Sheet>
     <SheetTrigger asChild>
       <Button
@@ -18,7 +25,7 @@ export const GlossaryDialog = ({ className = "" }: { className?: string }) => (
         className={`min-h-[44px] gap-1.5 px-3 text-sm font-medium text-foreground/80 hover:text-foreground ${className}`}
       >
         <BookOpen aria-hidden="true" className="h-4 w-4 text-primary" />
-        <span>Key terms</span>
+        <span className={labelClassName}>Key terms</span>
       </Button>
     </SheetTrigger>
     <SheetContent side="right" className="w-full max-w-md overflow-y-auto sm:max-w-md">

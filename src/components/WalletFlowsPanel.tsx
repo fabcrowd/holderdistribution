@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState } from "react";
+import { AsOfBadge } from "@/components/AsOfBadge";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ExternalLink, Lock, LockOpen, Search, ShieldCheck } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
@@ -457,9 +458,12 @@ const LargeSellers = ({ report }: { report: WalletFlowsReport }) => (
 
 const Summary = ({ report }: { report: WalletFlowsReport }) => (
   <section aria-labelledby="wf-summary" className="space-y-2">
-    <h4 id="wf-summary" className="text-base font-semibold text-foreground">
-      Telcoin-linked TEL sent to sell venues
-    </h4>
+    <div className="flex flex-wrap items-center gap-2">
+      <h4 id="wf-summary" className="text-base font-semibold text-foreground">
+        Telcoin-linked TEL sent to sell venues
+      </h4>
+      <AsOfBadge iso={report.generated} testId="wallet-flows-asof" />
+    </div>
     <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
       {FLOW_WINDOWS.map((w) => (
         <div key={w} className="rounded-xl border border-border/50 bg-card p-3 sm:p-4">
