@@ -192,7 +192,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         className="col-span-4"
         title="Retail holders"
-        info="Wallets holding at least 1 TEL, excluding exchange, DEX, contract and Telcoin-controlled wallets."
+        info="Wallets holding more than 0 TEL, excluding exchange, DEX, contract and Telcoin-controlled wallets."
         stat={
           h && (
             <>

@@ -39,6 +39,10 @@ type Props = {
    *  same day, so this must be labeled honestly rather than implying "since
    *  Jan 1" when the true baseline is weeks later. */
   baselineDate?: string | null;
+  /** † rule: when the caller suppressed tier deltas (a reclassification after
+   *  the baseline), it passes previous* = null plus the reason to show in
+   *  place of "no baseline", so the diagram agrees with the Tiers table. */
+  suppressedNote?: { count?: string | null; balance?: string | null };
   /** Chain filter from the page-level selector; defaults to all chains. */
   chain?: ChainKey;
   /** Controlled selection, shared with sibling panels (Tiers table, bars). */
@@ -115,6 +119,7 @@ export const TierFlowDiagram = ({
   metric,
   onMetricChange,
   baselineDate,
+  suppressedNote,
   chain: chainProp,
   selection: selectionProp,
   onSelectionChange,
@@ -617,8 +622,8 @@ export const TierFlowDiagram = ({
 
   const detailNode: ReactNode = selectedField ? (
     isWallets
-      ? <WalletsPanel field={selectedField} baselineDate={baselineDate ?? null} crossingsWindow={crossingsWindow} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} />
-      : <TelPanel field={selectedField} baselineDate={baselineDate ?? null} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} chain={chain} attributedDays={attributedDays} totalDays={totalDays} sourceTierSince={sourceTierSince} />
+      ? <WalletsPanel field={selectedField} baselineDate={baselineDate ?? null} noBaselineText={suppressedNote?.count ?? null} crossingsWindow={crossingsWindow} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} />
+      : <TelPanel field={selectedField} baselineDate={baselineDate ?? null} noBaselineText={suppressedNote?.balance ?? null} expandedFlow={expandedFlow} onToggleFlow={toggleFlow} onHoverFlow={setHoveredFlow} chain={chain} attributedDays={attributedDays} totalDays={totalDays} sourceTierSince={sourceTierSince} />
   ) : selectedSideTile && !isWallets ? (
     <SideTilePanel
       selection={selectedSideTile}
@@ -729,7 +734,7 @@ export const TierFlowDiagram = ({
             Retail wallets, net change {`(vs ${baselineLabel(baselineDate)})`}
           </div>
           {netInfo.netWallets == null ? (
-            <div className="text-sm text-muted-foreground">No baseline available for this period.</div>
+            <div className="text-sm text-muted-foreground">{suppressedNote?.count ?? "No baseline available for this period."}</div>
           ) : (
             <>
               <div className={`text-xl font-bold ${netInfo.netWallets >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
@@ -749,7 +754,7 @@ export const TierFlowDiagram = ({
                   : `Retail net change`}{` (vs ${baselineLabel(baselineDate)})`}
               </div>
               {scopedNetTel == null ? (
-                <div className="text-sm text-muted-foreground">No baseline available for this period.</div>
+                <div className="text-sm text-muted-foreground">{suppressedNote?.balance ?? "No baseline available for this period."}</div>
               ) : (
                 <>
                   <div className={`text-xl font-bold ${scopedNetTel >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
@@ -1262,8 +1267,8 @@ export const TierFlowDiagram = ({
         {fields.map((f) => (
           <li key={f.label}>
             {tierDisplayLabel(f.label)}: {f.row?.count ?? 0} holders, {f.row?.totalBalance ?? 0} TEL.{" "}
-            Holder change: {f.row?.previousCount != null ? (f.row.count - f.row.previousCount) : "no baseline"}.{" "}
-            TEL change: {f.row?.previousTotalBalance != null ? (f.row.totalBalance - f.row.previousTotalBalance) : "no baseline"}.
+            Holder change: {f.row?.previousCount != null ? (f.row.count - f.row.previousCount) : (suppressedNote?.count ?? "no baseline")}.{" "}
+            TEL change: {f.row?.previousTotalBalance != null ? (f.row.totalBalance - f.row.previousTotalBalance) : (suppressedNote?.balance ?? "no baseline")}.
           </li>
         ))}
       </ul>
@@ -1445,7 +1450,7 @@ const fmtDay = (ymd: string) => {
   return Number.isNaN(t) ? ymd : utcDay.format(t);
 };
 
-const WalletsPanel = ({ field, baselineDate, crossingsWindow = null, expandedFlow, onToggleFlow, onHoverFlow }: { field: TierField; baselineDate: string | null; crossingsWindow?: { from: string; to: string } | null; expandedFlow: string | null; onToggleFlow: (key: string) => void; onHoverFlow: (key: string | null) => void }) => {
+const WalletsPanel = ({ field, baselineDate, noBaselineText = null, crossingsWindow = null, expandedFlow, onToggleFlow, onHoverFlow }: { field: TierField; baselineDate: string | null; noBaselineText?: string | null; crossingsWindow?: { from: string; to: string } | null; expandedFlow: string | null; onToggleFlow: (key: string) => void; onHoverFlow: (key: string | null) => void }) => {
   // The crossing counts and the snapshot net only reconcile when they cover
   // the same dates; otherwise comparing them would be arithmetic across two
   // different periods, so the reconciliation sentence is dropped.
@@ -1492,7 +1497,7 @@ const WalletsPanel = ({ field, baselineDate, crossingsWindow = null, expandedFlo
               />
             </span>
           )
-          : "no baseline"}
+          : (noBaselineText ?? "no baseline")}
       </div>
 
       {narrative && <p className="text-center text-sm text-muted-foreground leading-relaxed">{narrative}</p>}
@@ -1649,8 +1654,8 @@ const TierAttributionBreakdown = ({
   );
 };
 
-const TelPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHoverFlow, chain, attributedDays, totalDays, sourceTierSince }: {
-  field: TierField; baselineDate: string | null; expandedFlow: string | null; onToggleFlow: (key: string) => void; onHoverFlow: (key: string | null) => void;
+const TelPanel = ({ field, baselineDate, noBaselineText = null, expandedFlow, onToggleFlow, onHoverFlow, chain, attributedDays, totalDays, sourceTierSince }: {
+  field: TierField; baselineDate: string | null; noBaselineText?: string | null; expandedFlow: string | null; onToggleFlow: (key: string) => void; onHoverFlow: (key: string | null) => void;
   chain: ChainKey; attributedDays: number; totalDays: number; sourceTierSince: string | null;
 }) => {
   const { cause, row } = field;
@@ -1670,7 +1675,7 @@ const TelPanel = ({ field, baselineDate, expandedFlow, onToggleFlow, onHoverFlow
         Net (vs {baselineLabel(baselineDate)}):{" "}
         {netTel != null
           ? <span className={netTel >= 0 ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-red-700 dark:text-red-400 font-semibold"}>{signed(netTel, fmtTel)} TEL</span>
-          : "no baseline"}
+          : (noBaselineText ?? "no baseline")}
       </div>
 
       {/* Net flow per category, biggest story first, each expandable to the

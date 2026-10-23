@@ -100,6 +100,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
     [changelog, baselineMs],
   );
   const countSuppressed = countRelabel.length > 0;
+  const balanceSuppressed = balanceRelabel.length > 0;
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
   const selectedTier = selection.tier;
   const selected = hasSelection(selection);
@@ -219,10 +220,17 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
         stat={
           growth.tiers > 0 && (
             <span className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">
-                {growth.grew} of {growth.tiers}
-              </span>{" "}
-              tiers gained wallets · <Delta value={growth.netWallets} format={(n) => int.format(n)} relabel={countRelabel} /> net over {rangeLabel}
+              {/* † rule: "N of M tiers gained" is itself a tier delta. */}
+              {!countSuppressed && (
+                <>
+                  <span className="font-semibold text-foreground">
+                    {growth.grew} of {growth.tiers}
+                  </span>{" "}
+                  tiers gained wallets ·{" "}
+                </>
+              )}
+              {countSuppressed && "Tier change "}
+              <Delta value={growth.netWallets} format={(n) => int.format(n)} relabel={countRelabel} /> net over {rangeLabel}
             </span>
           )
         }
@@ -240,12 +248,19 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
               metric={metric}
               onMetricChange={setMetric}
               baselineDate={historicalDelta?.referenceDate ?? null}
+              // Same † rule as the Tiers table and net-change bars: no tier
+              // deltas on the diagram (pills, colours, detail) when they'd mix
+              // a reclassification with real moves.
+              suppressedNote={{
+                count: countSuppressed ? "† not shown (wallets reclassified since baseline)" : null,
+                balance: balanceSuppressed ? "† not shown (wallets reclassified since baseline)" : null,
+              }}
               rows={rows.map((r) => ({
                 label: r.label,
                 count: r.count ?? 0,
                 totalBalance: r.totalBalance ?? 0,
-                previousCount: r.previousCount ?? null,
-                previousTotalBalance: r.previousTotalBalance ?? null,
+                previousCount: countSuppressed ? null : r.previousCount ?? null,
+                previousTotalBalance: balanceSuppressed ? null : r.previousTotalBalance ?? null,
               }))}
             />
           ) : (
