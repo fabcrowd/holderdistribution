@@ -244,6 +244,9 @@ export const useFlowField = (rows: TierRow[], chain: ChainKey, metric: "wallets"
     attributedDays: outflows?.ranges?.[outflowsKey]?.attributedDays ?? 0,
     totalDays: outflows?.ranges?.[outflowsKey]?.totalDays ?? 0,
     sourceTierSince: outflows?.sourceTierSince ?? null,
+    // When the tier-outflows feed was built: it refreshes on its own job, so
+    // it can lag the snapshot the rest of the diagram reads.
+    outflowsAsOf: outflows?.generatedAt ?? (outflows?.latestDate ? `${outflows.latestDate}T00:00:00Z` : null),
   };
 };
 

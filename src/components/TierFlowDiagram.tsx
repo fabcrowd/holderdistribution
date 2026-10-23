@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, useEffect, useLayoutEffect, useCallback, type ReactNode } from "react";
+import { AsOfBadge } from "@/components/AsOfBadge";
 import { useChartIntro } from "@/hooks/useMotion";
 import { createPortal } from "react-dom";
 import { ChevronRight, RotateCw, X } from "lucide-react";
@@ -173,7 +174,7 @@ export const TierFlowDiagram = ({
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   // 1 until measured, so the first paint is the unshrunken desktop layout.
   const [scale, setScale] = useState(1);
-  const { fields, netInfo, grossExplainer, maxMigrationCount, loading, errored, ready, complete, attributedDays, totalDays, sourceTierSince } = useFlowField(rows, chain, metric, rangeDays);
+  const { fields, netInfo, grossExplainer, maxMigrationCount, loading, errored, ready, complete, attributedDays, totalDays, sourceTierSince, outflowsAsOf } = useFlowField(rows, chain, metric, rangeDays);
   const { data: exchangeFlow } = useExchangeFlow();
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
   const isWallets = metric === "wallets";
@@ -675,6 +676,7 @@ export const TierFlowDiagram = ({
           {metricToggle}
           {legend}
           <div className="ml-auto flex items-center gap-2">
+            <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />
             {clearButton}
             <InfoTooltip text={isWallets ? INFO_WALLETS : INFO_TEL} label="How to read the tier flows" />
           </div>
@@ -687,6 +689,7 @@ export const TierFlowDiagram = ({
               <InfoTooltip text={isWallets ? INFO_WALLETS : INFO_TEL} label="How to read the tier flows" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />
               {clearButton}
               {metricToggle}
             </div>
