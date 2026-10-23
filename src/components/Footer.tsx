@@ -143,9 +143,11 @@ export const Footer = () => {
             onClick={copyAddress}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-card border border-border hover:bg-muted transition-colors group"
             title="Click to copy address"
-            aria-label={`Copy donation address ${donationAddress}`}
             type="button"
           >
+            {/* No aria-label: the accessible name is this prefix plus the
+                visible address, so it always contains what is on screen. */}
+            <span className="sr-only">Copy donation address: </span>
             <code className="text-xs font-mono text-foreground group-hover:text-foreground">
               <span className="hidden sm:inline">{donationAddress}</span>
               <span className="sm:hidden">{donationAddress.slice(0, 10)}...{donationAddress.slice(-8)}</span>

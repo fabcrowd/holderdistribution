@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
+import "@/lib/rechartsMotion";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { InfoTooltip } from "@/components/InfoTooltip";
 

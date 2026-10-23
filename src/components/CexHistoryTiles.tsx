@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis } from "recharts";
+import "@/lib/rechartsMotion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import { buildCexHistoryTiles, MIN_CEX_TILE_BALANCE } from "@/components/buildCexHistoryTiles";

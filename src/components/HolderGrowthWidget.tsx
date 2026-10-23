@@ -10,6 +10,7 @@ import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
 import { type DisplaySelection } from "@/hooks/useHolderSnapshot";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
+import "@/lib/rechartsMotion";
 import { Clock, Database, Layers, Loader2, TrendingDown, TrendingUp } from "lucide-react";
 import { formatRelativeAge, formatShortDate } from "@/lib/format";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -135,6 +136,19 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
       } => !!entry)
       .sort((a, b) => a.timestamp - b.timestamp);
   }, [data?.series]);
+
+  // Text alternative for the holders line: start, end and net change in
+  // one sentence (the chart's points are mouse-only tooltips).
+  const holdersAriaSummary = useMemo(() => {
+    if (chartData.length === 0) return "Retail holders: no data for this range.";
+    const f = chartData[0];
+    const l = chartData[chartData.length - 1];
+    const day = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+    const n = new Intl.NumberFormat();
+    const d = l.holders - f.holders;
+    const change = d === 0 ? "no net change" : `${d > 0 ? "up" : "down"} ${n.format(Math.abs(d))}`;
+    return `Retail holders line chart: ${n.format(f.holders)} on ${day.format(f.timestamp)} to ${n.format(l.holders)} on ${day.format(l.timestamp)}, ${change}.`;
+  }, [chartData]);
 
   // Render-only view of chartData: breaks the line across days the pipeline
   // never sampled instead of drawing a straight segment through them (see
@@ -546,7 +560,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
               )}
 
               {!isLoading && !error && chartData.length > 0 && (
-                <div className="h-56 w-full sm:h-64">
+                <div className="h-56 w-full sm:h-64" role="img" aria-label={holdersAriaSummary} data-testid="holder-growth-chart">
                   <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                     <LineChart data={holdersLineData}>
                       <CartesianGrid vertical={false} />

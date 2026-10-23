@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import LockedAnalysisTile from "@/components/LockedAnalysisTile";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Pie, PieChart as RePieChart, Cell, Sector } from "recharts";
+import "@/lib/rechartsMotion";
 import type { PieSectorDataItem } from "recharts/types/polar/Pie";
 import {
   useSupplyReconciliation,

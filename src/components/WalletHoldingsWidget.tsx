@@ -57,6 +57,7 @@ import { ChainStatusBar } from "@/components/ChainStatusBar";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, ReferenceLine, Line } from "recharts";
+import "@/lib/rechartsMotion";
 
 type DisplaySelection = "combined" | "ethereum" | "polygon" | "base";
 

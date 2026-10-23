@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { PanelError } from "@/components/terminal/TerminalPanel";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
+import "@/lib/rechartsMotion";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { useTreasuryHistory } from "@/hooks/useTreasuryHistory";
 import { computeSeriesDomain, activeKeys } from "@/lib/chartDomain";

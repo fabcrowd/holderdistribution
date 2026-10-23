@@ -186,6 +186,17 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
       ? SIDE_TILE_LABELS[selection.sideTile.side][selection.sideTile.key]
       : "";
 
+  // One-line announcement for screen readers. The detail panel itself is
+  // not a live region: announcing its whole contents on every click was noise.
+  const selectedRow = selectedTier ? rows.find((r) => r.label === selectedTier) : undefined;
+  const liveSummary = selectedTier
+    ? `${detailTitle} selected${
+        selectedRow ? `: ${selectedRow.count.toLocaleString()} wallets` : ""
+      }. Details in the panel; press Escape to close.`
+    : selection.sideTile
+      ? `${detailTitle} selected. Details in the panel; press Escape to close.`
+      : "";
+
   const closeButton = (
     <button
       type="button"
@@ -242,6 +253,9 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
           ))}
       </TerminalPanel>
 
+      <p className="sr-only" aria-live="polite" data-testid="tier-live-summary">
+        {liveSummary}
+      </p>
       {selected ? (
         <TerminalPanel
           className="col-span-5"
@@ -250,7 +264,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
           actions={closeButton}
           testId="panel-tier-detail"
         >
-          <div ref={setDetailEl} className="min-h-full" aria-live="polite" />
+          <div ref={setDetailEl} className="min-h-full" />
         </TerminalPanel>
       ) : (
         <TerminalPanel

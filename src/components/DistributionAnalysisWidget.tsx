@@ -28,6 +28,7 @@ import { DexSwaps } from "@/components/DexSwaps";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid } from "recharts";
+import "@/lib/rechartsMotion";
 
 type DistributionAnalysisWidgetProps = {
   snapshot: HolderLiteSnapshot | null;
