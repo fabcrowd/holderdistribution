@@ -389,12 +389,15 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     const last = chartData[chartData.length - 1].timestamp;
     const first = chartData[0].timestamp;
 
+    // All tick math in UTC: the feed's rows sit on UTC midnights, and the
+    // axis formatters render in UTC, so a local-midnight tick would land a
+    // few hours off its row (and read as the previous day west of UTC).
     if (rangeDays <= 7) {
       // One tick per day
       const ticks: number[] = [];
       for (let t = first; t <= last + 86400000; t += 86400000) {
         const d = new Date(t);
-        ticks.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime());
+        ticks.push(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
       }
       return [...new Set(ticks)];
     }
@@ -403,11 +406,11 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
       // Weekly ticks — Sundays
       const ticks: number[] = [];
       const d = new Date(first);
-      d.setDate(d.getDate() - d.getDay()); // roll back to Sunday
-      d.setHours(0, 0, 0, 0);
+      d.setUTCDate(d.getUTCDate() - d.getUTCDay()); // roll back to Sunday
+      d.setUTCHours(0, 0, 0, 0);
       while (d.getTime() <= last + 86400000) {
         if (d.getTime() >= first) ticks.push(d.getTime());
-        d.setDate(d.getDate() + 7);
+        d.setUTCDate(d.getUTCDate() + 7);
       }
       return ticks.length ? ticks : [first, last];
     }
@@ -416,10 +419,10 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
       // Biweekly ticks — every 14 days from start
       const ticks: number[] = [];
       const d = new Date(first);
-      d.setHours(0, 0, 0, 0);
+      d.setUTCHours(0, 0, 0, 0);
       while (d.getTime() <= last + 86400000) {
         ticks.push(d.getTime());
-        d.setDate(d.getDate() + 14);
+        d.setUTCDate(d.getUTCDate() + 14);
       }
       return ticks;
     }
@@ -427,23 +430,23 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     // YTD / 1Y — 1st of each month
     const ticks: number[] = [];
     const d = new Date(first);
-    d.setDate(1);
-    d.setHours(0, 0, 0, 0);
+    d.setUTCDate(1);
+    d.setUTCHours(0, 0, 0, 0);
     while (d.getTime() <= last + 86400000) {
       ticks.push(d.getTime());
-      d.setMonth(d.getMonth() + 1);
+      d.setUTCMonth(d.getUTCMonth() + 1);
     }
     return ticks;
   }, [chartData, rangeDays]);
 
   const tickFormatter = useMemo(() => {
-    if (rangeDays <= 7) return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
-    if (rangeDays <= 90) return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
-    return new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric" });
+    if (rangeDays <= 7) return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+    if (rangeDays <= 90) return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+    return new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric", timeZone: "UTC" });
   }, [rangeDays]);
 
   const tooltipFormatter = useMemo(() => {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+    return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" });
   }, []);
 
   const formatDateValue = (value: unknown, formatter: Intl.DateTimeFormat) => {

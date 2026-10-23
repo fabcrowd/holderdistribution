@@ -21,8 +21,8 @@ import { CHART_DRAW_MS } from "@/lib/motion";
 /** Dense defaults: 10px ticks, hairline grid, no legend (the panel header names series). */
 const TICK = { fill: "hsl(var(--muted-foreground))", fontSize: 10 };
 const MARGIN = { top: 6, right: 8, bottom: 0, left: 0 };
-const dateTick = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
-const dateFull = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" });
+const dateTick = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+const dateFull = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 const fmtDate = (v: unknown, f = dateTick) => {
   const n = typeof v === "number" ? v : Date.parse(String(v));
   return Number.isFinite(n) ? f.format(new Date(n)) : "";

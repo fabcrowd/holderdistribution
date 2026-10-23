@@ -7,9 +7,9 @@ const DAY = 86_400_000;
 describe("rangeStartMs", () => {
   it("starts YTD on Jan 1 even when the feed lags", () => {
     const now = new Date();
-    const jan1 = new Date(now.getFullYear(), 0, 1).getTime();
+    const jan1 = Date.UTC(now.getUTCFullYear(), 0, 1);
     const lagging = now.getTime() - 21 * DAY;
-    if (lagging >= jan1) expect(rangeStartMs(ytdDays(), lagging, now)).toBe(jan1);
+    if (lagging >= jan1) expect(rangeStartMs(ytdDays(now), lagging, now)).toBe(jan1);
   });
   it("counts rolling ranges back from the last point", () => {
     expect(rangeStartMs(7, 100 * DAY)).toBe(93 * DAY);

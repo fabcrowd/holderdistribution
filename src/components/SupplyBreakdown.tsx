@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
+import { PanelError } from "@/components/terminal/TerminalPanel";
 import { motion } from "framer-motion";
 import { TreasuryHistoryChart } from "@/components/TreasuryHistoryChart";
 import { AssociationFlowAnalysis } from "@/components/AssociationFlowAnalysis";
@@ -584,7 +585,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
               <p className="text-sm text-muted-foreground">Loading supply reconciliation…</p>
             )}
             {error && (
-              <p className="text-sm text-destructive">Could not load supply reconciliation.</p>
+              <div className="min-h-[8rem]"><PanelError>Couldn&apos;t load the supply breakdown.</PanelError></div>
             )}
             {!isLoading && !error && buckets.length === 0 && (
               <p className="text-sm text-muted-foreground">No supply data available.</p>

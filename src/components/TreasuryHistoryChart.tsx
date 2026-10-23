@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PanelError } from "@/components/terminal/TerminalPanel";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { useTreasuryHistory } from "@/hooks/useTreasuryHistory";
@@ -89,7 +90,7 @@ const formatSignedTEL = (value: number) => {
 };
 
 export const TreasuryHistoryChart = ({ rangeDays }: { rangeDays: number }) => {
-  const { data } = useTreasuryHistory();
+  const { data, isError } = useTreasuryHistory();
   // Escrow off by default: at ~6.3B it is roughly two-thirds of the total and
   // flattens the other two, and it is third-party custody (BitGo, Anchorage)
   // rather than discretionary supply.
@@ -164,11 +165,12 @@ export const TreasuryHistoryChart = ({ rangeDays }: { rangeDays: number }) => {
     [display, visible, mode],
   );
 
+  if (isError) return <div className="min-h-[8rem]"><PanelError>Couldn&apos;t load treasury history.</PanelError></div>;
   if (!data || points.length < 2) return null;
 
   const fmt = mode === "change" ? formatSignedTEL : formatCompactTEL;
-  const dateFmt = new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric" });
-  const tipFmt = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+  const dateFmt = new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric", timeZone: "UTC" });
+  const tipFmt = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" });
 
   return (
     <div className="pt-5 mt-5 border-t border-border/40">

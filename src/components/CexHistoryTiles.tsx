@@ -136,7 +136,7 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
                       <ChartTooltipContent
                         labelFormatter={(_, payload) => {
                           const ts = payload?.[0]?.payload?.timestamp;
-                          return ts ? new Date(ts).toLocaleDateString() : "";
+                          return ts ? new Date(ts).toLocaleDateString(undefined, { timeZone: "UTC" }) : "";
                         }}
                         formatter={(value) => [`${formatCompactTEL(Number(value))} TEL`, "Balance"]}
                       />

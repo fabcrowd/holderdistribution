@@ -1,8 +1,14 @@
-export const ytdDays = () => {
-  const now = new Date();
-  const jan1 = new Date(now.getFullYear(), 0, 1);
-  return Math.ceil((now.getTime() - jan1.getTime()) / 86400000);
-};
+const DAY_MS = 86_400_000;
+
+/**
+ * Jan 1 00:00 UTC of `now`'s UTC year. Every feed is dated in UTC (snapshot
+ * `generatedAt`, daily history rows), so calendar ranges start on a UTC
+ * boundary too — a reader in UTC+14 or UTC−10 sees the same YTD window and
+ * the same rows as everyone else instead of one shifted by their offset.
+ */
+export const ytdStartMs = (now: Date = new Date()): number => Date.UTC(now.getUTCFullYear(), 0, 1);
+
+export const ytdDays = (now: Date = new Date()) => Math.max(1, Math.ceil((now.getTime() - ytdStartMs(now)) / DAY_MS));
 
 export const RANGE_OPTIONS = [
   { label: "1D", days: 1 },
