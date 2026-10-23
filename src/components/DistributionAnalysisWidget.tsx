@@ -90,7 +90,10 @@ const DistributionAnalysisWidget = ({
   const view = snapshot.views[selectedView];
   if (!view) return null;
   const baseRows = view?.distribution ?? [];
-  const rows = mergeDistributionBaseline(baseRows, historicalDelta?.distribution ?? null);
+  // [] not null: with no history baseline for the range, drop the
+  // pipeline's own previousCount (vs its last run, which can be weeks old)
+  // instead of showing it under a "1D"/"7D" label.
+  const rows = mergeDistributionBaseline(baseRows, historicalDelta?.distribution ?? []);
 
   if (rows.length === 0) return null;
 

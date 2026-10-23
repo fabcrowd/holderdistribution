@@ -81,8 +81,11 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
   const dispatch = (a: DistAction) => setSelection((s) => reduceSelection(s, a));
   const [detailEl, setDetailEl] = useState<HTMLDivElement | null>(null);
   const view = snapshot?.views[selectedView];
+  // [] not null: with no history baseline for the range, drop the pipeline's
+  // own previousCount (vs its last run, which can be weeks old) rather than
+  // show it under a "1D"/"7D" label.
   const rows = useMemo(
-    () => mergeDistributionBaseline(view?.distribution ?? [], historicalDelta?.distribution ?? null),
+    () => mergeDistributionBaseline(view?.distribution ?? [], historicalDelta?.distribution ?? []),
     [view, historicalDelta],
   );
   const growth = summarizeTierGrowth(rows);
