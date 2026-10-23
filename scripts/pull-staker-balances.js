@@ -57,7 +57,9 @@ import path from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { loadEnv } from "./loadEnv.js";
-import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
+import { getUsableRpcUrls, getPublicFallbackUrls, rpcCall, getLogs } from "./lib/rpc.js";
+import { createLogsFailover } from "./lib/logsFailover.js";
+import { scanStakeChangedCandidates, STAKING_DEPLOY_BLOCK } from "./lib/stakingDiscovery.js";
 import { STAKED_BY_SELECTOR, TOTAL_STAKED_SELECTOR, STAKE_CHANGED_TOPIC0, decodeUint256, parseStakeChangedAccount } from "./lib/staking.js";
 
 await loadEnv();
@@ -69,7 +71,27 @@ const polygonRpcUrls = await getUsableRpcUrls("polygon").catch((error) => {
   console.warn(`No usable Alchemy Polygon RPC (${error.message}) — falling back to Etherscan.`);
   return [];
 });
-const usingAlchemy = polygonRpcUrls.length > 0;
+
+// Keyless public Polygon endpoints, probed, for when there is neither a usable
+// key nor an Etherscan API key (local recovery runs, or both quotas gone at
+// once). getUsableRpcUrls() returns [] when no keys are configured at all
+// (it only falls back to public when configured keys are all DEAD), so probe
+// the public list here directly.
+const probePublicPolygon = async () => {
+  const urls = getPublicFallbackUrls("polygon");
+  const ok = await Promise.all(urls.map(async (url) => {
+    try { await rpcCall(url, "eth_blockNumber", [], 5); return url; } catch { return null; }
+  }));
+  return ok.filter(Boolean);
+};
+
+const apiKey = process.env.ETHERSCAN_API_KEY;
+const publicPolygonUrls = polygonRpcUrls.length === 0 ? await probePublicPolygon() : [];
+// RPC pool for stakedBy()/totalStaked() eth_calls and keyless log discovery.
+const rpcPool = polygonRpcUrls.length > 0 ? polygonRpcUrls : (apiKey ? [] : publicPolygonUrls);
+const usingAlchemy = rpcPool.length > 0;
+const publicSet = new Set(getPublicFallbackUrls("polygon"));
+const rpcSource = rpcPool.length > 0 && rpcPool.every((u) => !publicSet.has(u)) ? "rpc-pool" : "public-rpc";
 
 const OUTPUT_PATH = path.resolve(process.cwd(), "public/data/funding-wallets.json");
 const CHECKPOINT_PATH = path.resolve(process.cwd(), "public/data/staker-balances-checkpoint.json");
@@ -95,10 +117,12 @@ const PAGE_SIZE = 1000;
 // leaves real margin below the 3/sec ceiling instead of sitting right on it.
 const REQUEST_DELAY_MS = Number(process.env.STAKER_REQUEST_DELAY_MS) || 400;
 
-const apiKey = process.env.ETHERSCAN_API_KEY;
-if (!apiKey) {
-  console.error("Missing ETHERSCAN_API_KEY environment variable.");
+if (!apiKey && rpcPool.length === 0) {
+  console.error("Missing ETHERSCAN_API_KEY and no usable Polygon RPC (keys or public) — cannot refresh stakers.");
   process.exit(1);
+}
+if (!apiKey) {
+  console.log(`No ETHERSCAN_API_KEY — discovering candidates from StakeChanged logs over JSON-RPC (${rpcPool.length} URL(s)).`);
 }
 
 const baseUrl = (() => {
@@ -201,6 +225,25 @@ const fetchStakeChangedCandidates = async () => {
     await delay(REQUEST_DELAY_MS);
   }
 
+  return candidates;
+};
+
+/** Keyless candidate discovery: StakeChanged logs straight from JSON-RPC eth_getLogs. */
+const fetchStakeChangedCandidatesViaRpc = async (urls) => {
+  const head = Number.parseInt(await rpcCall(urls[0], "eth_blockNumber", []), 16);
+  const getLogsWithFailover = createLogsFailover(getLogs);
+  // Discovery wants a URL that takes wide ranges first; rpc.getLogs bisects
+  // for the ones that do not, so order only affects speed.
+  const { candidates, logCount } = await scanStakeChangedCandidates({
+    getLogsWithFailover,
+    urls,
+    contract: STAKING_CONTRACT,
+    fromBlock: STAKING_DEPLOY_BLOCK,
+    toBlock: head,
+    normalize: normalizeAddress,
+    log: (m) => console.log(m),
+  });
+  console.log(`  StakeChanged via RPC: ${logCount} logs up to block ${head}.`);
   return candidates;
 };
 
@@ -316,10 +359,10 @@ const fetchStakedByAll = async (candidates, seedRaw = new Map()) => {
   };
 
   if (usingAlchemy) {
-    const concurrency = polygonRpcUrls.length;
+    const concurrency = rpcPool.length;
     console.log(`  Using ${concurrency} Alchemy Polygon RPC URL(s) for stakedBy() (concurrency = ${concurrency}).`);
     await Promise.all(
-      polygonRpcUrls.map(async (rpcUrl, workerIdx) => {
+      rpcPool.map(async (rpcUrl, workerIdx) => {
         for (let i = workerIdx; i < remaining.length; i += concurrency) {
           const address = remaining[i];
           const value = await ethCallViaRpc(rpcUrl, encodeStakedByCall(address));
@@ -351,8 +394,10 @@ const writeSnapshot = async (wallets) => {
       api: baseUrl,
       // Candidate discovery (StakeChanged log scan) always goes through
       // Etherscan (`api` above); this only describes stakedBy()/totalStaked().
-      stakedByApi: usingAlchemy ? "alchemy" : "etherscan",
-      stakedByRpcKeyCount: usingAlchemy ? polygonRpcUrls.length : 0,
+      // "alchemy" = configured key pool, "public-rpc" = keyless fallback.
+      stakedByApi: usingAlchemy ? (rpcSource === "rpc-pool" ? "alchemy" : "public-rpc") : "etherscan",
+      stakedByRpcKeyCount: rpcSource === "rpc-pool" ? rpcPool.length : 0,
+      candidateDiscovery: apiKey ? "etherscan" : "json-rpc",
     },
     wallets,
     totals: {
@@ -396,7 +441,7 @@ const main = async () => {
   console.log(`  TEL token:        ${TEL_TOKEN_POLYGON}`);
   console.log(
     usingAlchemy
-      ? `  stakedBy() source: Alchemy (${polygonRpcUrls.length} Polygon RPC key(s))`
+      ? `  stakedBy() source: ${rpcSource} (${rpcPool.length} Polygon RPC URL(s))`
       : `  stakedBy() source: Etherscan (no Alchemy Polygon RPC keys configured — set ENV_PASSPHRASE to enable)`
   );
 
@@ -412,7 +457,17 @@ const main = async () => {
     seedRaw = new Map(Object.entries(checkpoint.queried).map(([addr, v]) => [addr, Number(v)]));
     console.log(`Resuming from checkpoint (${checkpoint.generatedAt}): ${candidates.size} candidates, ${seedRaw.size} already queried.`);
   } else {
-    candidates = await fetchStakeChangedCandidates();
+    if (apiKey) {
+      try {
+        candidates = await fetchStakeChangedCandidates();
+      } catch (error) {
+        if (rpcPool.length === 0) throw error;
+        console.warn(`Etherscan discovery failed (${error.message}) — falling back to JSON-RPC eth_getLogs.`);
+        candidates = await fetchStakeChangedCandidatesViaRpc(rpcPool);
+      }
+    } else {
+      candidates = await fetchStakeChangedCandidatesViaRpc(rpcPool);
+    }
 
     if (candidates.size === 0) {
       console.warn("No StakeChanged logs found. Writing empty snapshot.");
@@ -447,7 +502,7 @@ const main = async () => {
   // underlying accounting. A gap beyond tolerance means the candidate set
   // missed some stakers (see comment on RECONCILIATION_TOLERANCE above).
   const contractTotalRaw = usingAlchemy
-    ? await ethCallViaRpc(polygonRpcUrls[0], TOTAL_STAKED_SELECTOR)
+    ? await ethCallViaRpc(rpcPool[0], TOTAL_STAKED_SELECTOR)
     : await ethCall(TOTAL_STAKED_SELECTOR);
   const contractTotal = contractTotalRaw / TEL_DIVISOR;
   const reconciliationGap = Math.abs(newTotal - contractTotal);

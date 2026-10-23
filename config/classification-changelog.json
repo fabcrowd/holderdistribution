@@ -378,6 +378,36 @@
       "backfillNote": "Rebuilding history needs a full Polygon replay from block 11,264,036 at every archived date, which the transfer caches (which start at 21.5M) and keyless RPCs cannot supply; the pipeline's next full run only publishes the corrected current snapshot. History rows before that run keep the old Polygon figures.",
       "uiNote": "Polygon balances and the all-chains wallet count step up on the first refresh after this fix. That step is a data correction, not buying or new holders.",
       "dateNote": "Dated the day the correction shipped; the undercount was present for the whole published history."
+    },
+    {
+      "id": "2026-10-23-v3-staking-module",
+      "date": "2026-10-23",
+      "type": "reclassification",
+      "summary": "The TEL v3 StakingModule on Polygon (0x573105be\u20265731, EIP-1967 proxy of StakingModule 0xd12ba966\u202603ae) custodies stakers' TEL v3 \u2014 about 2.99B TEL on 2026-10-23. It was published as a single retail wallet in the 500M+ tier. Its receipt-token positions are now attributed to the 829 individual stakers (as is already done for the legacy staking contract) and the module itself is labelled staking-contract.",
+      "addresses": [
+        "0x573105be2148b8621f202a6d510016a2aa825731"
+      ],
+      "affects": {
+        "artifacts": [
+          "tel-holders",
+          "holders-summary",
+          "holders-history",
+          "holders-lite",
+          "supply-reconciliation"
+        ],
+        "metrics": [
+          "retail.count",
+          "retail.balance",
+          "tiers"
+        ]
+      },
+      "evidence": "Sourcify verified source for the implementation 0xd12ba966cc3ebc87f1b8bcbf1fa3bfed397203ae: src/StakingModule.sol (stake/stakeFor/requestWithdrawal, ERC-20 receipt balances). At Polygon block 96,042,367: StakingModule totalSupply() 2,991,605,169.62, TEL v3 balanceOf(module) 2,991,605,169.62, totalPendingWithdrawal() 0. Replaying the module's own Transfer logs from its deployment block 93,048,895 gives 829 positive positions summing exactly to totalSupply().",
+      "limitation": "Stakers' positions are counted at their staked amount; rewards or pending withdrawals that are not represented by receipts stay on the module (non-retail). The site's staking stats (funding-wallets.json) still describe the legacy staking contract only.",
+      "circulatingImpact": "No change to total supply or circulating; ~2.99B moves from one wallet to 829 stakers, most of whom are retail. The 500M+ tier loses one wallet and smaller tiers gain stakers.",
+      "backfillStatus": "not-possible",
+      "backfillNote": "Published history after the v3 launch cannot be rebuilt (as-of reconstruction is legacy-only), so earlier rows keep the module as one wallet.",
+      "uiNote": "Tier counts shift on the first refresh after this fix; that is a data correction, not buying or selling.",
+      "dateNote": "Dated the day the correction shipped."
     }
   ]
 }

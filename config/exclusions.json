@@ -167,7 +167,8 @@
     "0x043a163912c680dd2b490b409e8d4ad399e97bf8",
     "0x9184aae0983e5ffbe06e41ca13c24033857b56cb",
     "0x2703e00cae30a7707e4d18c38f8cb6a4a40c2703",
-    "0x222213deb441c5a9f71df2942db431978a733333"
+    "0x222213deb441c5a9f71df2942db431978a733333",
+    "0x573105be2148b8621f202a6d510016a2aa825731"
   ],
   "labels": {
     "0x0000000000000000000000000000000000000000": {
@@ -1057,6 +1058,13 @@
       "evidenceTier": "contract-analysis",
       "confidence": "confirmed",
       "note": "ERC-1967 proxy, same address on Ethereum, Polygon and Base. Phase 2 long-tail upgrade from a pre-funded reserve once Phase 1 closes (OLD_TOKEN()/NEW_TOKEN() read on-chain). Holds no legacy TEL and no v3 yet (2026-10-18). Legacy TEL it receives in exchange for v3 it issues is netted out the same way as TokenMigration; v3 held in its reserve is counted once, on this wallet. Added before it holds anything so Phase 2 can never surface as a 'retail' whale."
+    },
+    "0x573105be2148b8621f202a6d510016a2aa825731": {
+      "category": "staking-contract",
+      "name": "Telcoin TEL v3 StakingModule (Polygon)",
+      "evidenceTier": "contract-analysis",
+      "confidence": "confirmed",
+      "note": "EIP-1967 proxy; implementation 0xd12ba966cc3ebc87f1b8bcbf1fa3bfed397203ae is src/StakingModule.sol (Sourcify). Custodied v3 TEL is attributed to stakers from its receipt-token Transfer logs (config/chains.json tokens.v3.staking)."
     }
   },
   "chains": {

@@ -51,3 +51,46 @@ unstake legacy TEL; on-chain `totalStaked()` is ~0.80 B vs 4.17 B in the stale f
   manual-only and the watchdog is weekly, to fit the 2,000 free Actions minutes/month.
 * Manual recovery is unchanged: fix Actions billing, then run *Refresh TEL holders snapshot*
   once (Actions → that workflow → Run workflow). Its commits go live within ~1 h, no deploy.
+
+## 2026-10-23: keyless local refresh (branch `data/refresh-snapshot`)
+
+The published snapshot had been stuck at 2026-10-02. It was regenerated locally
+with no API keys at all:
+
+- **Staker balances without Etherscan.** `pull-staker-balances.js` used to exit
+  when `ETHERSCAN_API_KEY` was missing. It now discovers `StakeChanged`
+  candidates over JSON-RPC (`scripts/lib/stakingDiscovery.js`, from the staking
+  contract's deployment block 36,751,757 in 1M-block chunks) and reads
+  `stakedBy()` / `totalStaked()` from the same pool. Etherscan is still used
+  first when a key exists. Result: 1,207 stakers, 727,240,183.70 TEL, equal to
+  `totalStaked()`.
+- **TEL v3 StakingModule.** Polygon `0x573105be…5731` (proxy of StakingModule
+  `0xd12ba966…03ae`) holds stakers' v3 TEL (~2.99B). It is configured under
+  `config/chains.json` → `polygon.tokens.v3.staking`; `pull-holders-rpc.js`
+  replays the module's receipt-token Transfer logs (checkpointed under
+  `chains.polygon.v3Staking`) and moves each position onto its staker, and the
+  module is labelled `staking-contract`.
+- **Archive getLogs without keys.** Tenderly's public Polygon gateways serve
+  wide archive `eth_getLogs` ranges (rate-limited, retried); publicnode refuses
+  archive requests and Pocket/QuickNode cap ranges at ~5–10k blocks.
+
+Recipe (from a worktree; no secrets needed):
+
+```bash
+export RPC_PREFER_PUBLIC=1
+export PUBLIC_RPC_URLS_POLYGON="https://polygon.gateway.tenderly.co,https://gateway.tenderly.co/public/polygon"
+export MATIC_GETLOGS_CHUNK_SIZE=50000 POLYGON_V3_GETLOGS_CHUNK_SIZE=50000
+for s in pull-staker-balances pull-holders-rpc pull-cex-wallets generate-holders-lite \
+         generate-holders-history generate-holder-transitions reconcile-supply \
+         append-treasury-history sync-classification-changelog; do node scripts/$s.js || break; done
+node scripts/validate-outputs.js && node scripts/check-feed-consistency.js
+node scripts/verify-tel-supply.js
+```
+
+A full Polygon legacy rescan from block 11,264,036 takes many hours on public
+RPCs; resume from an existing `holders-checkpoint.json` instead. Unset
+`RPC_PREFER_PUBLIC` before `npm test` (one rpc test asserts the keyless default).
+
+Not recoverable: holders-history rows between 2026-10-03 and 2026-10-22.
+`pull-holders-rpc.js --as-of` (and so `fill-history-gaps.js`) only reconstructs
+the legacy token and refuses dates after the v3 deployment.
