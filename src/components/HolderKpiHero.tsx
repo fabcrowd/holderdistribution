@@ -4,6 +4,7 @@ import {
   useEcosystemHeadlineTiles,
   type EcosystemHeadlineTileId,
 } from "@/hooks/useEcosystemHeadlineTiles";
+import { useHolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { ChangeIndicator } from "@/components/ChangeIndicator";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { ActiveRangeNote } from "@/components/ActiveRangeNote";
@@ -75,6 +76,21 @@ const TileShell = ({
  * up does not replay the expand animation. `onToggle` is passed once latched
  * so a click (chevron, or the compact strip itself) can reopen it.
  */
+const HeroSkeleton = () => (
+  <div aria-hidden="true" data-testid="hero-skeleton">
+    <div className="mb-3 h-4 w-28 rounded bg-muted/70 animate-pulse" />
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="premium-surface-card p-2.5 sm:p-6 space-y-2.5">
+          <div className="h-3 w-20 rounded bg-muted/70 animate-pulse" />
+          <div className="h-7 w-24 rounded bg-muted/80 animate-pulse" />
+          <div className="h-3 w-32 max-w-full rounded bg-muted/60 animate-pulse" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 export const HolderKpiHero = ({
   rangeDays,
   collapsed = false,
@@ -91,7 +107,13 @@ export const HolderKpiHero = ({
   activeTileId?: EcosystemHeadlineTileId | null;
 }) => {
   const result = useEcosystemHeadlineTiles(rangeDays);
-  if (!result) return null;
+  const { isError: liteError } = useHolderLiteSnapshot();
+  // Reserve the tiles' space while the snapshot loads. Returning null here
+  // made the whole first screen jump once data arrived (the hero popped in
+  // above the already-rendered panel), and an empty page reads as broken.
+  // ...but once the snapshot has definitively failed, a skeleton would pulse
+  // forever; the panel below carries the error and a retry instead.
+  if (!result) return liteError ? null : <HeroSkeleton />;
   const { tiles } = result;
 
   const toggleControl = onToggle ? (
@@ -102,7 +124,7 @@ export const HolderKpiHero = ({
         onToggle();
       }}
       aria-expanded={!collapsed}
-      aria-label={collapsed ? "Expand ecosystem headline" : "Collapse ecosystem headline"}
+      aria-label={collapsed ? "Expand headline numbers" : "Collapse headline numbers"}
       className="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <ChevronDown
@@ -125,7 +147,7 @@ export const HolderKpiHero = ({
       <div className={`headline-collapse ${collapsed ? "" : "is-open"}`}>
         <div>
           <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-            <span className="text-xs uppercase tracking-[0.14em] font-bold text-muted-foreground">Ecosystem headline</span>
+            <h2 className="text-xs uppercase tracking-[0.14em] font-bold text-muted-foreground">At a glance</h2>
             <MethodologyInfo section="holderSnapshot" />
             {/* This hero is always combined-only, unlike the chain-switchable
                 Holder Snapshot section below it — without this, switching that
@@ -149,7 +171,7 @@ export const HolderKpiHero = ({
           delta onto a second line, so the pinned header cost ~170px on the
           screen least able to spare it. */}
       <div className={collapsed && toggleControl ? "flex items-center gap-1" : undefined}>
-      <div className={`min-w-0 flex-1 grid transition-[gap] duration-200 ${collapsed ? "grid-cols-4 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2" : "grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"}`}>
+      <div className={`min-w-0 flex-1 grid transition-[gap] duration-200 ${collapsed ? "grid-cols-4 gap-2" : "grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"}`}>
         {tiles.map((t) => {
           const Icon = t.icon;
           return (
@@ -158,13 +180,13 @@ export const HolderKpiHero = ({
               onSelect={onTileSelect ? () => onTileSelect(t.id) : undefined}
               active={activeTileId === t.id}
               label={t.label}
-              className={`relative overflow-hidden transition-[padding] duration-200 ${collapsed ? "p-0 sm:p-2.5 sm:premium-surface-card" : "premium-surface-card p-2.5 sm:p-6"}`}
+              className={`relative overflow-hidden transition-[padding] duration-200 ${collapsed ? "p-0 sm:px-3 sm:py-2 sm:premium-surface-card" : "premium-surface-card p-2.5 sm:p-6"}`}
             >
               {/* The top rule doubles as the selected-state marker: full-width
                   and solid on the active tile, the usual fading gradient
                   otherwise. One element carrying both states means the active
                   tile never grows or shifts relative to its neighbours. */}
-              <span className={`absolute inset-x-0 top-0 h-[3px] ${activeTileId === t.id ? "bg-primary" : "bg-gradient-to-r from-primary to-primary/40"} ${collapsed ? "hidden sm:block" : ""}`} />
+              <span className={`absolute inset-x-0 top-0 h-[3px] ${activeTileId === t.id ? "bg-primary" : "bg-gradient-to-r from-primary to-primary/40"} ${collapsed ? "hidden" : ""}`} />
               <div className={`headline-collapse ${collapsed ? "" : "is-open"}`}>
                 <div>
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-3">
@@ -180,14 +202,14 @@ export const HolderKpiHero = ({
                     as having relocated next to the value instead of a new
                     element appearing. */}
                 <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0 transition-[opacity,transform] duration-200 ${collapsed ? "opacity-100 translate-x-0" : "opacity-0 translate-x-1 w-0 -ml-2"}`} />
-                <span className={`font-extrabold tracking-tight text-foreground tabular-nums ${collapsed ? "text-sm sm:text-[2rem]" : "text-xl sm:text-[2rem]"}`}>{t.value}</span>
+                <span className={`font-extrabold tracking-tight text-foreground tabular-nums ${collapsed ? "text-sm sm:text-xl" : "text-xl sm:text-[2rem]"}`}>{t.value}</span>
                 {t.current !== null && (
-                  <span className={collapsed ? "hidden sm:inline-flex" : "inline-flex"}>
+                  <span className={collapsed ? "hidden lg:inline-flex" : "inline-flex"}>
                     <ChangeIndicator current={t.current} previous={t.previous} formatter={t.fmt} size="md" tone={t.tone ?? "auto"} changelogEvents={t.changelogEvents} />
                   </span>
                 )}
                 {t.ath && (
-                  <span className={`text-[10px] font-extrabold tracking-wide text-emerald-700 dark:text-emerald-400 border border-emerald-500/40 rounded-full px-2 py-0.5 ${collapsed ? "hidden sm:inline" : ""}`}>ATH</span>
+                  <span className={`text-[10px] font-extrabold tracking-wide text-emerald-700 dark:text-emerald-400 border border-emerald-500/40 rounded-full px-2 py-0.5 ${collapsed ? "hidden lg:inline" : ""}`}>ATH</span>
                 )}
               </div>
               <div className={`headline-collapse ${collapsed ? "" : "is-open"}`}>

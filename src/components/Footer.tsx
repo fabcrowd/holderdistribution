@@ -131,7 +131,7 @@ export const Footer = () => {
         <div className="mt-6 pt-6 border-t border-border/30 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Heart className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Support Holder Distribution</h3>
+            <h3 className="text-sm font-semibold text-foreground">Support Holder Analytics</h3>
           </div>
           <p className="text-xs text-muted-foreground max-w-2xl mx-auto mb-1">
             This site is community-run. If you find it useful, consider donating to help cover hosting + development costs
@@ -159,7 +159,7 @@ export const Footer = () => {
 
         {/* Copyright */}
         <div className="mt-4 pt-4 border-t border-border/30 text-center text-xs text-muted-foreground space-y-0.5">
-          <p>© {new Date().getFullYear()} Holder Distribution. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Holder Analytics. All rights reserved.</p>
           <p>Price data powered by CoinGecko</p>
                     <p className="max-w-4xl mx-auto pt-2">
             *This website is an independent, community-run project. It is not operated by, endorsed by, or affiliated

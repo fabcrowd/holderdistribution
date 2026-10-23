@@ -384,6 +384,9 @@ const SupplyBreakdown = ({ rangeDays }: SupplyBreakdownProps) => {
                             <Cell
                               key={b.key}
                               fill={b.color}
+                              // Recharts hard-codes role="img" on each wedge;
+                              // give it a text alternative (WCAG 1.1.1).
+                              aria-label={`${b.label}: ${formatCompactTEL(b.amount)} TEL (${b.pct.toFixed(1)}%)`}
                               fillOpacity={anySelected ? (isRowActive ? 1 : 0.25) : baseOpacity}
                               stroke="hsl(var(--background))"
                               strokeWidth={isRowActive ? 3 : 0}

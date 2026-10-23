@@ -1,6 +1,18 @@
 import { Fragment, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ExternalLink, Lock } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ExternalLink, Lock, LockOpen, Search, ShieldCheck } from "lucide-react";
+import { CopyButton } from "@/components/CopyButton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DEFAULT_WALLET_SORT,
+  filterWallets,
+  nextSort,
+  shortAddress,
+  sortWallets,
+  verdictTone as toneOf,
+  type WalletSortKey,
+} from "@/lib/walletFlowsTable";
 import { ForensicsUnlockGate, useForensicsUnlock } from "@/components/ForensicsGate";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -31,7 +43,6 @@ const formatTel = (value: number) => {
 const formatUsd = (value: number) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 
-const shortAddress = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 const CHAIN_SHORT: Record<string, string> = { ethereum: "ETH", polygon: "POL", base: "BASE" };
 
@@ -46,8 +57,17 @@ const CLASS_COLOR: Record<string, string> = {
 const confidenceVariant = (c: string): "default" | "secondary" | "outline" | "destructive" =>
   c === "confirmed" ? "default" : c === "high" ? "secondary" : "outline";
 
-const verdictTone = (v: string) =>
-  v.startsWith("selling") ? "text-destructive font-semibold" : v.startsWith("inactive") ? "text-muted-foreground" : "text-foreground";
+const VERDICT_CLASS = {
+  selling: "border-red-500/40 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300",
+  inactive: "border-border/60 bg-muted/40 text-muted-foreground",
+  neutral: "border-sky-500/30 bg-sky-50 text-sky-900 dark:bg-sky-950/40 dark:text-sky-200",
+} as const;
+
+const VerdictBadge = ({ verdict }: { verdict: string }) => (
+  <span className={`inline-block rounded-md border px-2 py-0.5 text-[11px] font-medium leading-snug ${VERDICT_CLASS[toneOf(verdict)]}`}>
+    {verdict}
+  </span>
+);
 
 const AddressLinks = ({ address, chains }: { address: string; chains: string[] }) => {
   const list = chains.length > 0 ? chains : ["ethereum"];
@@ -62,13 +82,14 @@ const AddressLinks = ({ address, chains }: { address: string; chains: string[] }
       >
         {shortAddress(address)}
       </a>
+      <CopyButton value={address} label={`address ${address}`} />
       {list.map((c) => (
         <a
           key={c}
           href={addressExplorerUrl(c, address)}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded border border-border/60 px-1 text-[9px] font-semibold uppercase text-muted-foreground hover:text-foreground"
+          className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground hover:border-primary/50 hover:text-foreground"
           aria-label={`${address} on ${c} explorer`}
         >
           {CHAIN_SHORT[c] ?? c}
@@ -96,8 +117,8 @@ const Breakdown = ({ values }: { values: Record<string, number> }) => {
 const DistributionBars = ({ report }: { report: WalletFlowsReport }) => {
   const { distribution } = report;
   return (
-    <section className="rounded-lg border border-border/50 bg-background/60 p-3" aria-labelledby="wf-distribution">
-      <h4 id="wf-distribution" className="text-sm font-semibold text-foreground">
+    <section className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-distribution">
+      <h4 id="wf-distribution" className="text-base font-semibold text-foreground">
         Supply distribution by entity
       </h4>
       <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -125,81 +146,150 @@ const DistributionBars = ({ report }: { report: WalletFlowsReport }) => {
   );
 };
 
+const SortHeader = ({
+  label,
+  sortKey,
+  sort,
+  onSort,
+  align = "left",
+}: {
+  label: string;
+  sortKey: WalletSortKey;
+  sort: { key: WalletSortKey; dir: "asc" | "desc" };
+  onSort: (k: WalletSortKey) => void;
+  align?: "left" | "right";
+}) => {
+  const active = sort.key === sortKey;
+  const Icon = !active ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <TableHead
+      aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
+      className={`whitespace-nowrap ${align === "right" ? "text-right" : ""}`}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 rounded px-1 py-1 -mx-1 font-medium hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+          active ? "text-foreground" : ""
+        }`}
+      >
+        {label}
+        <Icon aria-hidden="true" className={`h-3 w-3 ${active ? "" : "opacity-40"}`} />
+      </button>
+    </TableHead>
+  );
+};
+
 const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
   const [onlySelling, setOnlySelling] = useState(false);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState(DEFAULT_WALLET_SORT);
   const [open, setOpen] = useState<string | null>(null);
   const rows = useMemo(
-    () => (onlySelling ? report.knownWallets.filter((w) => w.sellVenue["90d"] > 0) : report.knownWallets),
-    [report, onlySelling],
+    () => sortWallets(filterWallets(report.knownWallets, { query, onlySelling }), sort.key, sort.dir),
+    [report, query, onlySelling, sort],
   );
+  const onSort = (k: WalletSortKey) => setSort((cur) => nextSort(cur, k));
   return (
-    <section className="rounded-lg border border-border/50 bg-background/60 p-3" aria-labelledby="wf-known">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h4 id="wf-known" className="text-sm font-semibold text-foreground">
-            Telcoin-linked wallets
-          </h4>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            TEL sent to sell venues (CEX, DEX, bot cluster) per window. Click a row for its source, every outflow type and sample transactions.
-          </p>
-        </div>
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <input type="checkbox" checked={onlySelling} onChange={(e) => setOnlySelling(e.target.checked)} />
-          Only wallets that reached sell venues
-        </label>
+    <section className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-known">
+      <div>
+        <h4 id="wf-known" className="text-base font-semibold text-foreground">
+          Telcoin-linked wallets
+        </h4>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          TEL sent to sell venues (exchanges, DEXs, the bot cluster) in each window. Expand a row for its label source, every outflow type and sample transactions.
+        </p>
       </div>
-      <div className="mt-2 overflow-x-auto">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-xs">
+          <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search name, group or address"
+            aria-label="Search Telcoin-linked wallets"
+            className="h-10 pl-9 text-sm"
+          />
+        </div>
+        <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <label className="inline-flex min-h-[40px] cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-[hsl(var(--primary))]"
+              checked={onlySelling}
+              onChange={(e) => setOnlySelling(e.target.checked)}
+            />
+            Only wallets that reached sell venues
+          </label>
+          <span className="text-xs tabular-nums text-muted-foreground" aria-live="polite">
+            {rows.length} of {report.knownWallets.length}
+          </span>
+        </div>
+      </div>
+      <div className="mt-2 overflow-x-auto rounded-lg border border-border/40">
         <Table className="text-xs">
-          <TableHeader>
+          <TableHeader className="bg-muted/40">
             <TableRow>
-              <TableHead>Wallet</TableHead>
+              <SortHeader label="Wallet" sortKey="label" sort={sort} onSort={onSort} />
               <TableHead>Confidence</TableHead>
               <TableHead>Address</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
+              <SortHeader label="Balance" sortKey="balance" sort={sort} onSort={onSort} align="right" />
               {FLOW_WINDOWS.map((w) => (
-                <TableHead key={w} className="text-right whitespace-nowrap">
-                  Sell venues {w}
-                </TableHead>
+                <SortHeader key={w} label={`Sold ${w}`} sortKey={w} sort={sort} onSort={onSort} align="right" />
               ))}
               <TableHead>Verdict</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                  No wallets match{query ? ` "${query}"` : ""}.
+                </TableCell>
+              </TableRow>
+            )}
             {rows.map((w: WalletFlowsKnownWallet) => {
               const expanded = open === w.address;
+              const detailId = `wf-detail-${w.address}`;
               return (
                 <Fragment key={w.address}>
-                  <TableRow
-                    className="cursor-pointer"
-                    onClick={() => setOpen(expanded ? null : w.address)}
-                    aria-expanded={expanded}
-                    data-testid="wf-known-row"
-                  >
-                    <TableCell className="min-w-[12rem]">
-                      <span className="inline-flex items-center gap-1 font-medium text-foreground">
-                        <ChevronDown className={`h-3 w-3 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} />
-                        {w.label}
-                      </span>
-                      <span className="block pl-4 text-[10px] text-muted-foreground">{w.group}</span>
+                  <TableRow data-testid="wf-known-row" className={expanded ? "bg-muted/20" : undefined}>
+                    <TableCell className="min-w-[13rem]">
+                      <button
+                        type="button"
+                        onClick={() => setOpen(expanded ? null : w.address)}
+                        aria-expanded={expanded}
+                        aria-controls={expanded ? detailId : undefined}
+                        className="inline-flex items-start gap-1.5 rounded text-left font-medium text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <ChevronDown aria-hidden="true" className={`mt-0.5 h-3.5 w-3.5 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} />
+                        <span>
+                          {w.label}
+                          <span className="block text-[11px] font-normal text-muted-foreground">{w.group}</span>
+                        </span>
+                      </button>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={confidenceVariant(w.confidence)} className="text-[10px]">
+                      <Badge variant={confidenceVariant(w.confidence)} className="text-[10px] capitalize">
                         {w.confidence}
                       </Badge>
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="whitespace-nowrap">
                       <AddressLinks address={w.address} chains={w.chains} />
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{formatTel(w.balance)}</TableCell>
                     {FLOW_WINDOWS.map((win) => (
-                      <TableCell key={win} className="text-right tabular-nums">
+                      <TableCell key={win} className={`text-right tabular-nums ${w.sellVenue[win] > 0 ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
                         {w.sellVenue[win] > 0 ? formatTel(w.sellVenue[win]) : "—"}
                       </TableCell>
                     ))}
-                    <TableCell className={`min-w-[9rem] ${verdictTone(w.verdict)}`}>{w.verdict}</TableCell>
+                    <TableCell className="min-w-[10rem]">
+                      <VerdictBadge verdict={w.verdict} />
+                    </TableCell>
                   </TableRow>
                   {expanded && (
-                    <TableRow className="bg-muted/20 hover:bg-muted/20">
+                    <TableRow id={detailId} className="bg-muted/20 hover:bg-muted/20">
                       <TableCell colSpan={8} className="space-y-1.5 text-[11px]">
                         <p>
                           <span className="font-semibold">Label source:</span> {w.source}
@@ -232,7 +322,7 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
                                 className="inline-flex items-center gap-0.5 font-mono text-primary hover:underline"
                               >
                                 {url.split("/tx/")[1]?.slice(0, 10)}…
-                                <ExternalLink className="h-3 w-3" />
+                                <ExternalLink className="h-3 w-3" aria-hidden="true" />
                               </a>
                             ))}
                           </p>
@@ -254,8 +344,8 @@ const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
   const bot = report.botCluster;
   return (
     <section className="grid gap-3 lg:grid-cols-2">
-      <div className="rounded-lg border border-border/50 bg-background/60 p-3" aria-labelledby="wf-bot">
-        <h4 id="wf-bot" className="text-sm font-semibold text-foreground">
+      <div className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-bot">
+        <h4 id="wf-bot" className="text-base font-semibold text-foreground">
           {bot.label}
         </h4>
         {bot.note && <p className="mt-0.5 text-[11px] text-muted-foreground">{bot.note}</p>}
@@ -279,8 +369,8 @@ const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
           ))}
         </ul>
       </div>
-      <div className="rounded-lg border border-border/50 bg-background/60 p-3" aria-labelledby="wf-funding">
-        <h4 id="wf-funding" className="text-sm font-semibold text-foreground">
+      <div className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-funding">
+        <h4 id="wf-funding" className="text-base font-semibold text-foreground">
           Funding links
         </h4>
         <ul className="mt-2 space-y-2 text-[11px]">
@@ -310,8 +400,8 @@ const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
 };
 
 const LargeSellers = ({ report }: { report: WalletFlowsReport }) => (
-  <section className="rounded-lg border border-border/50 bg-background/60 p-3" aria-labelledby="wf-sellers">
-    <h4 id="wf-sellers" className="text-sm font-semibold text-foreground">
+  <section className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-sellers">
+    <h4 id="wf-sellers" className="text-base font-semibold text-foreground">
       Recent large sellers ({report.largeSellersWindow ?? "last 72h"})
     </h4>
     <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -366,30 +456,41 @@ const LargeSellers = ({ report }: { report: WalletFlowsReport }) => (
 );
 
 const Summary = ({ report }: { report: WalletFlowsReport }) => (
-  <div className="rounded-lg border border-border/50 bg-background/60 p-3">
-    <p className="text-sm font-medium text-foreground">Telcoin-linked wallets → sell venues (unique TEL, relays not double counted)</p>
-    <dl className="mt-2 grid grid-cols-3 gap-2 text-xs">
+  <section aria-labelledby="wf-summary" className="space-y-2">
+    <h4 id="wf-summary" className="text-base font-semibold text-foreground">
+      Telcoin-linked TEL sent to sell venues
+    </h4>
+    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
       {FLOW_WINDOWS.map((w) => (
-        <div key={w}>
-          <dt className="text-muted-foreground">{w}</dt>
-          <dd className="font-semibold tabular-nums">
-            {formatTel(report.telcoinTotals[w]?.total ?? 0)} TEL
-            <span className="block font-normal text-muted-foreground">{formatUsd(report.telcoinTotals[w]?.usd ?? 0)}</span>
+        <div key={w} className="rounded-xl border border-border/50 bg-card p-3 sm:p-4">
+          <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Last {w}</dt>
+          <dd className="mt-1">
+            <span className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground">
+              {formatTel(report.telcoinTotals[w]?.total ?? 0)}
+            </span>{" "}
+            <span className="text-sm font-medium text-muted-foreground">TEL</span>
+            <span className="block text-xs tabular-nums text-muted-foreground">≈ {formatUsd(report.telcoinTotals[w]?.usd ?? 0)}</span>
           </dd>
         </div>
       ))}
     </dl>
-    <p className="mt-2 text-[11px] text-muted-foreground">
-      {`Generated ${new Date(report.generated).toLocaleString()} · price $${report.priceUsd} (${report.priceSource}) · chains: ${report.chains.join(", ")}`}
+    <p className="text-[11px] text-muted-foreground">
+      {`Unique TEL (relays not double counted). Report generated ${new Date(report.generated).toLocaleString()} · price $${report.priceUsd} (${report.priceSource}) · chains: ${report.chains.join(", ")}`}
     </p>
-  </div>
+  </section>
 );
 
+const LOCKED_CONTENTS = [
+  "Supply split by entity: Telcoin treasury, Holdings and Association, escrow, exchanges, DEX pools and retail",
+  "Every Telcoin-linked wallet with address, balance and TEL sent to exchanges or DEXs over 72h, 30d and 90d",
+  "Recent large sellers and how the wallets behind them were funded",
+];
+
 export const WalletFlowsPanel = () => {
-  const { password, status, unlock } = useForensicsUnlock();
+  const { password, status, unlock, lock } = useForensicsUnlock();
   const { isAdmin } = useUserRole();
   const unlocked = isAdmin || (status === "unlocked" && password !== null);
-  const { data: report, isLoading, isError } = useQuery({
+  const { data: report, isLoading, isError, refetch } = useQuery({
     queryKey: ["wallet-flows", password, isAdmin],
     queryFn: () => loadWalletFlows(password),
     enabled: unlocked,
@@ -398,31 +499,79 @@ export const WalletFlowsPanel = () => {
     retry: false,
   });
 
+  if (!unlocked) {
+    return (
+      <section className="rounded-2xl border border-border/60 bg-card p-4 sm:p-6" aria-labelledby="wf-title" data-testid="wallet-flows-locked">
+        <div className="mx-auto max-w-xl">
+          <div className="flex items-start gap-3">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Lock className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h3 id="wf-title" className="text-lg font-semibold text-foreground">
+                Wallet flows
+              </h3>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Restricted analysis. Wallet-level data is only sent to your browser after the password is checked on the server.
+              </p>
+            </div>
+          </div>
+          <ul className="mt-4 space-y-1.5 text-sm text-foreground/90">
+            {LOCKED_CONTENTS.map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-5">
+            <ForensicsUnlockGate status={status} onUnlock={unlock} label="Password" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="rounded-xl border border-border/60 bg-muted/10 p-3 sm:p-4" aria-labelledby="wf-title">
-      <header className="flex items-start gap-2">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+    <section className="space-y-4" aria-labelledby="wf-title">
+      <header className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 id="wf-title" className="text-sm font-semibold text-foreground">
+          <h3 id="wf-title" className="inline-flex items-center gap-2 text-lg font-semibold text-foreground">
+            <LockOpen className="h-4 w-4 text-primary" aria-hidden="true" />
             Wallet flows
           </h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             Supply by entity, Telcoin-linked wallets and their exchange/DEX outflows, and recent large sellers.
-            {!unlocked && " Password required."}
           </p>
         </div>
+        {!isAdmin && (
+          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={lock}>
+            <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+            Lock
+          </Button>
+        )}
       </header>
 
-      {!unlocked ? (
-        <div className="mt-3">
-          <ForensicsUnlockGate status={status} onUnlock={unlock} />
+      {isLoading ? (
+        <div role="status" className="space-y-3" aria-label="Loading wallet flows">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-24 rounded-xl bg-muted/60 animate-pulse" />
+            ))}
+          </div>
+          <div className="h-64 rounded-xl bg-muted/50 animate-pulse" />
+          <span className="sr-only">Loading wallet flows…</span>
         </div>
-      ) : isLoading ? (
-        <p className="mt-3 text-xs text-muted-foreground">Loading wallet flows…</p>
       ) : isError || !report ? (
-        <p className="mt-3 text-xs text-destructive">Could not load wallet flows.</p>
+        <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
+          <p className="font-medium text-destructive">Could not load wallet flows.</p>
+          <p className="mt-1 text-muted-foreground">The server may be busy. Try again in a moment.</p>
+          <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => void refetch()}>
+            Try again
+          </Button>
+        </div>
       ) : (
-        <div className="mt-3 space-y-4" data-testid="wallet-flows-report">
+        <div className="space-y-4" data-testid="wallet-flows-report">
           <Summary report={report} />
           <DistributionBars report={report} />
           <KnownWalletsTable report={report} />

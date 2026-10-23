@@ -3,10 +3,12 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useState,
+  type FormEvent,
   type ReactNode,
 } from "react";
-import { Lock } from "lucide-react";
+import { Eye, EyeOff, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -103,39 +105,74 @@ export const useForensicsUnlock = (): ForensicsUnlockContextValue => {
   return ctx;
 };
 
-/** Inline password prompt shown above locked forensic content. */
+/**
+ * Password prompt shown in place of locked forensic content.
+ *
+ * A real <form> (Enter and the button share one submit path, and password
+ * managers recognise it), a programmatic label, a show/hide toggle for typing
+ * on a phone, and an error that is announced (role="alert") and tied to the
+ * input via aria-describedby instead of a 10px red fragment off to the side.
+ */
 export const ForensicsUnlockGate = ({
   status,
   onUnlock,
+  label = "Password",
 }: {
   status: ForensicsUnlockStatus;
   onUnlock: (candidate: string) => Promise<boolean>;
+  label?: string;
 }) => {
   const [value, setValue] = useState("");
+  const [visible, setVisible] = useState(false);
   const checking = status === "checking";
+  const inputId = useId();
+  const errorId = `${inputId}-error`;
 
-  const submit = () => {
-    if (!value.trim()) return;
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!value.trim() || checking) return;
     void onUnlock(value);
   };
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/20 p-2">
-      <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-      <Input
-        type="password"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && submit()}
-        placeholder="Enter password for full details"
-        className="h-11 flex-1 min-w-0 text-xs"
-      />
-      <Button size="sm" variant="secondary" className="h-11 px-2.5 text-xs shrink-0" onClick={submit} disabled={checking}>
-        {checking ? "Checking…" : "Unlock"}
-      </Button>
+    <form onSubmit={submit} className="space-y-1.5" data-testid="forensics-unlock-form">
+      <label htmlFor={inputId} className="text-xs font-medium text-foreground">
+        {label}
+      </label>
+      <div className="flex items-stretch gap-2">
+        <div className="relative flex-1 min-w-0">
+          <Lock aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id={inputId}
+            type={visible ? "text" : "password"}
+            autoComplete="current-password"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Enter password"
+            aria-invalid={status === "error"}
+            aria-describedby={status === "error" ? errorId : undefined}
+            className="h-11 pl-9 pr-11 text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? "Hide password" : "Show password"}
+            aria-pressed={visible}
+            className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        <Button type="submit" className="h-11 px-4 shrink-0" disabled={checking || !value.trim()}>
+          {checking ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : null}
+          {checking ? "Checking…" : "Unlock"}
+        </Button>
+      </div>
       {status === "error" && (
-        <span className="text-[10px] text-destructive shrink-0">Could not unlock. Try again.</span>
+        <p id={errorId} role="alert" className="text-xs text-destructive">
+          That password didn&apos;t work. Check it and try again. After 10 wrong attempts the gate pauses for 15 minutes.
+        </p>
       )}
-    </div>
+    </form>
   );
 };

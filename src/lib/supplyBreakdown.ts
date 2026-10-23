@@ -137,7 +137,7 @@ export const groupSupplyCategories = (
       label: "Telcoin Holdings",
       amount: holdings,
       alignment: "institutional",
-      color: "hsl(165 42% 38%)",
+      color: "hsl(330 55% 48%)",
     },
     {
       key: "other",

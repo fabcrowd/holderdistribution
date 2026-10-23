@@ -10,7 +10,8 @@ import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
 import { type DisplaySelection } from "@/hooks/useHolderSnapshot";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
-import { Database, Layers, Loader2, TrendingDown, TrendingUp, WifiOff } from "lucide-react";
+import { Clock, Database, Layers, Loader2, TrendingDown, TrendingUp } from "lucide-react";
+import { formatRelativeAge, formatShortDate } from "@/lib/format";
 import { ActiveRangeNote } from "@/components/ActiveRangeNote";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
@@ -514,27 +515,20 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                 </div>
               )}
 
+              {/* The page header already carries the full stale-data notice
+                  (StaleDataBanner); repeating it here as a red error inside
+                  the chart read as "this chart is broken" when the numbers
+                  are fine as of their date. A one-line amber note keeps the
+                  context next to the line without the alarm. */}
               {!isLoading && !error && data?.feedError && (
-                <Alert variant="destructive" className="border-dashed mb-4">
-                  <WifiOff className="h-4 w-4" />
-                  <AlertTitle>Data feed delayed</AlertTitle>
-                  <AlertDescription>
-                    {(() => {
-                      const updated = data.updatedAt ? new Date(data.updatedAt) : null;
-                      const days =
-                        updated && !Number.isNaN(updated.getTime())
-                          ? Math.floor((Date.now() - updated.getTime()) / 86_400_000)
-                          : null;
-                      return (
-                        <>
-                          The holder data has not been refreshed{days !== null ? ` in ${days} days` : " recently"}, so
-                          charts show the last published snapshot rather than live figures. Last update:{" "}
-                          {updated && !Number.isNaN(updated.getTime()) ? updated.toLocaleString() : "unknown"}.
-                        </>
-                      );
-                    })()}
-                  </AlertDescription>
-                </Alert>
+                <p className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-50 px-2.5 py-1 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {(() => {
+                    const rel = formatRelativeAge(data.updatedAt);
+                    const date = formatShortDate(data.updatedAt);
+                    return date ? `Last updated ${date}${rel ? ` (${rel})` : ""}` : "Data feed delayed";
+                  })()}
+                </p>
               )}
 
               {!isLoading && error && (
