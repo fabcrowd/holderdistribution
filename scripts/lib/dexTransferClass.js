@@ -38,6 +38,9 @@ const LP_TOPICS = new Set([
   UNI_V3_BURN,
 ]);
 
+/** LP event topic0s, for a bulk eth_getLogs pre-classification (see generate-tier-outflows). */
+export const LP_EVENT_TOPICS = Object.freeze([...LP_TOPICS]);
+
 const SWAP_TOPICS = new Set([
   BALANCER_SWAP,
   UNI_V2_SWAP,
