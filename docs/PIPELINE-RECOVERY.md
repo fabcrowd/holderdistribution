@@ -91,6 +91,32 @@ A full Polygon legacy rescan from block 11,264,036 takes many hours on public
 RPCs; resume from an existing `holders-checkpoint.json` instead. Unset
 `RPC_PREFER_PUBLIC` before `npm test` (one rpc test asserts the keyless default).
 
-Not recoverable: holders-history rows between 2026-10-03 and 2026-10-22.
+holders-history rows 2026-10-03..22 were backfilled on 2026-10-24, because
 `pull-holders-rpc.js --as-of` (and so `fill-history-gaps.js`) only reconstructs
-the legacy token and refuses dates after the v3 deployment.
+the legacy token and refuses dates after the v3 deployment. Method (scratch
+only, not shipped): reverse-replay the 10-24 `holders-checkpoint.json` back to
+each date's 23:59:59 UTC block (legacy + v3 Transfer logs, `applyV3Batch` for
+retired legacy, StakingModule receipts), legacy staking from the first
+`StakeChanged.oldStake` after the boundary. The replay reproduced the committed
+10-23 checkpoint exactly and matched `totalStaked()` at every boundary. Each
+day's checkpoint was then fed to the normal snapshot scripts against a local
+RPC stub whose head is the boundary block. Those rows carry no
+`cumulativeHolders`/`newHolders` (forward-only ever-set). Boundary blocks are
+in `data/holders-asof-blocks.json`.
+
+### Tier outflows
+
+`data/tier-outflows-days.json` and its checkpoint were never in this repo, so
+the first run is a full 368-day scan. On public RPCs:
+
+```sh
+TIER_DEX_CLASSIFY=logs MAX_BLOCKS_PER_RUN=20000000 \
+FLOW_CHUNK_ETHEREUM=10000 FLOW_CHUNK_POLYGON=20000 FLOW_CHUNK_BASE=1000 \
+NODE_OPTIONS=--max-old-space-size=6144 node scripts/generate-tier-outflows.js
+```
+
+`TIER_DEX_CLASSIFY=logs` labels swap vs LP from one LP-event `eth_getLogs` per
+chunk instead of one receipt per DEX transfer (Polygon has ~500k of those a
+year). It agreed with the receipt rule on 111 of 112 sampled txs. Tenderly's
+public Base gateway caps `eth_getLogs` at 1,000 blocks; drpc's free tier no
+longer serves Polygon/Base log ranges.
