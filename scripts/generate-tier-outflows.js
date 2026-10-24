@@ -54,8 +54,12 @@ import process from "node:process";
 import { getUsableRpcUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { reconcileParts } from "./lib/reconcileParts.js";
 import { coverageFor, firstAttributedDate } from "./lib/attributionCoverage.js";
-import { classifyReceiptLogs, dexSubClass } from "./lib/dexTransferClass.js";
+import { classifyReceiptLogs, dexSubClass, LP_EVENT_TOPICS } from "./lib/dexTransferClass.js";
 import { loadEnv } from "./loadEnv.js";
+
+// How DEX transfers are split into swap vs LP: "receipts" (default, one receipt
+// per DEX tx) or "logs" (bulk LP-event getLogs per chunk; for long backfills).
+const DEX_CLASSIFY_MODE = (process.env.TIER_DEX_CLASSIFY ?? "receipts").toLowerCase();
 
 await loadEnv();
 
@@ -118,8 +122,8 @@ const tokenFor = (chainKey) => {
 };
 
 const CHAINS = {
-  ethereum: { token: tokenFor("ethereum"), chunk: 800, blocksPerDay: 7150 },
-  polygon: { token: tokenFor("polygon"), chunk: 1000, blocksPerDay: 43000 },
+  ethereum: { token: tokenFor("ethereum"), chunk: Number(process.env.FLOW_CHUNK_ETHEREUM ?? 800), blocksPerDay: 7150 },
+  polygon: { token: tokenFor("polygon"), chunk: Number(process.env.FLOW_CHUNK_POLYGON ?? 1000), blocksPerDay: 43000 },
   base: { token: tokenFor("base"), chunk: Number(process.env.FLOW_CHUNK_BASE ?? 1000), blocksPerDay: 43000 },
 };
 
@@ -309,6 +313,55 @@ const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
         }),
       ),
     );
+    // Pre-classify this batch's DEX transfers before the per-log loop below,
+    // which awaits resolveDexSub() one transfer at a time — on a cold
+    // full-year scan that was tens of thousands (Polygon: millions) of strictly
+    // sequential receipt round-trips.
+    //   TIER_DEX_CLASSIFY=logs: one eth_getLogs per chunk for LP events
+    //     (Balancer PoolBalanceChanged, Uniswap/QuickSwap Mint/Burn) emitted by
+    //     the configured DEX addresses; a DEX tx with one is dexLp, else dexSwap.
+    //     Same rule as classifyReceiptLogs, restricted to LP events on the DEX
+    //     contracts themselves. A failed chunk falls back to receipts.
+    //   default (receipts): receipts fetched in parallel across the RPC pool.
+    const dexTxsByChunk = batch.map(() => new Set());
+    results.forEach((r, j) => {
+      if (r.status !== "fulfilled") return;
+      for (const log of r.value) {
+        const a = topicToAddress(log.topics?.[1]);
+        const b = topicToAddress(log.topics?.[2]);
+        const tx = typeof log.transactionHash === "string" ? log.transactionHash.toLowerCase() : null;
+        if (tx && !ctx.dexTxClass.has(tx) && ((a && ctx.dexSet.has(a)) || (b && ctx.dexSet.has(b)))) dexTxsByChunk[j].add(tx);
+      }
+    });
+    const needReceipts = [];
+    if (DEX_CLASSIFY_MODE === "logs") {
+      await Promise.all(batch.map(async ([s, e], j) => {
+        if (dexTxsByChunk[j].size === 0) return;
+        try {
+          const lpLogs = await getLogs(rpcUrls[j % rpcUrls.length], {
+            fromBlock: `0x${s.toString(16)}`,
+            toBlock: `0x${e.toString(16)}`,
+            address: [...ctx.dexSet],
+            topics: [LP_EVENT_TOPICS],
+          });
+          const lpTxs = new Set(lpLogs.map((l) => String(l.transactionHash ?? "").toLowerCase()));
+          for (const tx of dexTxsByChunk[j]) ctx.dexTxClass.set(tx, lpTxs.has(tx) ? "dexLp" : "dexSwap");
+        } catch {
+          needReceipts.push(...dexTxsByChunk[j]);
+        }
+      }));
+    } else {
+      for (const set of dexTxsByChunk) needReceipts.push(...set);
+    }
+    const receiptConc = Math.max(1, Math.min(Number(process.env.TIER_RECEIPT_CONCURRENCY) || rpcUrls.length * 2, 16));
+    for (let k = 0; k < needReceipts.length; k += receiptConc) {
+      await Promise.all(
+        needReceipts.slice(k, k + receiptConc).map((tx, n) => resolveDexSub(ctx, rpcUrls[n % rpcUrls.length], tx)),
+      );
+    }
+    if ((i / conc) % 10 === 0) {
+      console.log(`    ${chainKey}: batch ${i / conc + 1}/${Math.ceil(chunks.length / conc)} (block ${batch[0][0]}, ${matched} legs, ${ctx.dexTxClass.size} DEX txs classified)`);
+    }
     for (let j = 0; j < batch.length; j++) {
       const r = results[j];
       if (r.status !== "fulfilled") {

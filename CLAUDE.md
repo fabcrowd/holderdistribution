@@ -71,7 +71,7 @@ holderdistribution/
 | `ExchangeFlowWidget` | CEX inflow/outflow charts |
 | `ForensicsGate` | Premium gated content UI |
 | `Navigation` | Top nav — auto-hides hamburger when empty |
-| `Footer` | 2-column (Official Sites + Social Media) + donation section |
+| `Footer` | Donation section + copyright/disclaimer |
 
 ---
 

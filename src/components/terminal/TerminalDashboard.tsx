@@ -301,13 +301,13 @@ export const TerminalDashboard = ({
           <Sheet>
             <SheetTrigger asChild>
               <button type="button" className="font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                About &amp; links
+                About &amp; support
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
               <SheetHeader className="text-left">
                 <SheetTitle>About Holder Analytics</SheetTitle>
-                <SheetDescription>Official links, support and disclaimer.</SheetDescription>
+                <SheetDescription>Support the project, and the disclaimer.</SheetDescription>
               </SheetHeader>
               <Footer />
             </SheetContent>
