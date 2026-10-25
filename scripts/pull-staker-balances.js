@@ -59,20 +59,31 @@ import { setTimeout as delay } from "node:timers/promises";
 import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, getPublicFallbackUrls, rpcCall, getLogs } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
-import { scanStakeChangedCandidates, STAKING_DEPLOY_BLOCK } from "./lib/stakingDiscovery.js";
+import { scanStakeChangedCandidates } from "./lib/stakingDiscovery.js";
 import { STAKED_BY_SELECTOR, TOTAL_STAKED_SELECTOR, STAKE_CHANGED_TOPIC0, decodeUint256, parseStakeChangedAccount } from "./lib/staking.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths } from "./lib/projects.js";
+import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("pull-staker-balances");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the staking
+// contract, its chain, the staked token and its decimals come from the
+// project's `staking[]` entry with kind "stakeChanged" (TEL: the values that
+// used to be hardcoded here), and output goes to the project's data dir.
+const project = selectPipelineProject("pull-staker-balances", { ported: true });
+const data = projectPaths(project);
+const target = resolveStakeChangedTarget(project);
+if (!target) {
+  console.log(`[pull-staker-balances] project "${project.slug}" has no StakeChanged staking contract — nothing to do.`);
+  process.exit(0);
+}
+const STAKING_CHAIN = target.chain;
+const STAKING_CHAIN_ID = target.chainId;
 
 await loadEnv();
 
 // Probed, not just configured — see getUsableRpcUrls(). It throws when the
 // entire pool is dead, which here must degrade to the Etherscan path below
 // rather than abort the run, so the throw is caught deliberately.
-const polygonRpcUrls = await getUsableRpcUrls("polygon").catch((error) => {
+const polygonRpcUrls = await getUsableRpcUrls(STAKING_CHAIN).catch((error) => {
   console.warn(`No usable Alchemy Polygon RPC (${error.message}) — falling back to Etherscan.`);
   return [];
 });
@@ -83,7 +94,7 @@ const polygonRpcUrls = await getUsableRpcUrls("polygon").catch((error) => {
 // (it only falls back to public when configured keys are all DEAD), so probe
 // the public list here directly.
 const probePublicPolygon = async () => {
-  const urls = getPublicFallbackUrls("polygon");
+  const urls = getPublicFallbackUrls(STAKING_CHAIN);
   const ok = await Promise.all(urls.map(async (url) => {
     try { await rpcCall(url, "eth_blockNumber", [], 5); return url; } catch { return null; }
   }));
@@ -95,19 +106,18 @@ const publicPolygonUrls = polygonRpcUrls.length === 0 ? await probePublicPolygon
 // RPC pool for stakedBy()/totalStaked() eth_calls and keyless log discovery.
 const rpcPool = polygonRpcUrls.length > 0 ? polygonRpcUrls : (apiKey ? [] : publicPolygonUrls);
 const usingAlchemy = rpcPool.length > 0;
-const publicSet = new Set(getPublicFallbackUrls("polygon"));
+const publicSet = new Set(getPublicFallbackUrls(STAKING_CHAIN));
 const rpcSource = rpcPool.length > 0 && rpcPool.every((u) => !publicSet.has(u)) ? "rpc-pool" : "public-rpc";
 
-const OUTPUT_PATH = path.resolve(process.cwd(), "public/data/funding-wallets.json");
-const CHECKPOINT_PATH = path.resolve(process.cwd(), "public/data/staker-balances-checkpoint.json");
+const OUTPUT_PATH = data("funding-wallets.json");
+const CHECKPOINT_PATH = data("staker-balances-checkpoint.json");
 const CHECKPOINT_MAX_AGE_MS = Number(process.env.STAKER_CHECKPOINT_MAX_AGE_MS) || 24 * 60 * 60 * 1000;
 
-// Staking contract address on Polygon
-const STAKING_CONTRACT = "0x92e43aec69207755cb1e6a8dc589aae630476330";
-// TEL token contract on Polygon
-const TEL_TOKEN_POLYGON = "0xdf7837de1f2fa4631d716cf2502f8b230f1dcc32";
-// TEL has 2 decimal places
-const TEL_DECIMALS = 2;
+// Staking contract (TEL: Polygon proxy 0x92e43aec…6330) and the staked token
+// (TEL: legacy TEL on Polygon, 2 decimals) — from project config.
+const STAKING_CONTRACT = target.contract;
+const TEL_TOKEN_POLYGON = target.tokenAddress;
+const TEL_DECIMALS = target.decimals;
 const TEL_DIVISOR = 10 ** TEL_DECIMALS;
 
 const MAX_RETRIES = 8;
@@ -181,7 +191,7 @@ const fetchStakeChangedCandidates = async () => {
   let totalLogs = 0;
 
   while (true) {
-    const url = `${baseUrl}?chainid=137&module=logs&action=getLogs`
+    const url = `${baseUrl}?chainid=${STAKING_CHAIN_ID}&module=logs&action=getLogs`
       + `&address=${STAKING_CONTRACT}&topic0=${STAKE_CHANGED_TOPIC0}`
       + `&fromBlock=${startBlock}&toBlock=latest`
       + `&page=1&offset=${PAGE_SIZE}`
@@ -243,7 +253,7 @@ const fetchStakeChangedCandidatesViaRpc = async (urls) => {
     getLogsWithFailover,
     urls,
     contract: STAKING_CONTRACT,
-    fromBlock: STAKING_DEPLOY_BLOCK,
+    fromBlock: target.deployBlock,
     toBlock: head,
     normalize: normalizeAddress,
     log: (m) => console.log(m),
@@ -261,7 +271,7 @@ const fetchStakeChangedCandidatesViaRpc = async (urls) => {
  * must be retried, not misread as a zero balance.
  */
 const ethCall = async (data, attempt = 0) => {
-  const url = `${baseUrl}?chainid=137&module=proxy&action=eth_call`
+  const url = `${baseUrl}?chainid=${STAKING_CHAIN_ID}&module=proxy&action=eth_call`
     + `&to=${STAKING_CONTRACT}&data=${data}&tag=latest&apikey=${apiKey}`;
   const response = await fetchWithRetry(url);
   if (response.error) {
@@ -393,7 +403,7 @@ const writeSnapshot = async (wallets) => {
     generatedAt: new Date().toISOString(),
     source: {
       type: "explorer",
-      chain: "polygon",
+      chain: STAKING_CHAIN,
       contractAddress: STAKING_CONTRACT,
       tokenAddress: TEL_TOKEN_POLYGON,
       api: baseUrl,
@@ -441,7 +451,7 @@ const readPreviousTotal = async () => {
 const RECONCILIATION_TOLERANCE = 0.01; // 1%
 
 const main = async () => {
-  console.log(`Fetching TEL staker balances (candidate discovery via Etherscan, chainid=137)...`);
+  console.log(`Fetching TEL staker balances (candidate discovery via Etherscan, chainid=${STAKING_CHAIN_ID})...`);
   console.log(`  Staking contract: ${STAKING_CONTRACT}`);
   console.log(`  TEL token:        ${TEL_TOKEN_POLYGON}`);
   console.log(

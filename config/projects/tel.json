@@ -9,6 +9,10 @@
     "legacyRoot": true,
     "dir": "public/data"
   },
+  "pipeline": {
+    "$comment": "Ported pipeline scripts read chain/token/contract addresses from chainsConfig (TEL keeps config/chains.json, which also carries explorerApi settings). A project without chainsConfig gets its chain map derived from chains[] below (scripts/lib/projects.js deriveChainsFromProject).",
+    "chainsConfig": "config/chains.json"
+  },
   "supply": {
     "target": 100000000000,
     "targetLabel": "100B",
@@ -20,6 +24,8 @@
       "key": "ethereum",
       "name": "Ethereum",
       "chainId": 1,
+      "origin": true,
+      "fromBlock": 4600000,
       "explorer": "https://etherscan.io",
       "tokens": [
         {
@@ -59,6 +65,7 @@
       "key": "polygon",
       "name": "Polygon",
       "chainId": 137,
+      "fromBlock": 11264036,
       "explorer": "https://polygonscan.com",
       "tokens": [
         {
@@ -98,6 +105,7 @@
       "key": "base",
       "name": "Base",
       "chainId": 8453,
+      "fromBlock": 100000,
       "explorer": "https://basescan.org",
       "tokens": [
         {
@@ -139,6 +147,8 @@
       "chain": "polygon",
       "address": "0x92e43aec69207755cb1e6a8dc589aae630476330",
       "name": "Legacy TEL staking (proxy)",
+      "kind": "stakeChanged",
+      "deployBlock": 36751757,
       "token": "legacy",
       "attribution": "StakeChanged events -> stakedBy(address), scripts/pull-staker-balances.js"
     },
@@ -146,6 +156,7 @@
       "chain": "polygon",
       "address": "0x573105be2148b8621f202a6d510016a2aa825731",
       "name": "TEL v3 StakingModule",
+      "kind": "receiptModule",
       "token": "v3",
       "deployBlock": 93048895,
       "implementation": "0xd12ba966cc3ebc87f1b8bcbf1fa3bfed397203ae",

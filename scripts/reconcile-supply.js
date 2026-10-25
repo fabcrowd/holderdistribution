@@ -36,7 +36,7 @@ import {
   COINGECKO_CIRCULATING,
   buildReconciliation,
 } from "./lib/reconcileSupply.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
 
 export {
   TEL_TOTAL_SUPPLY,
@@ -45,12 +45,34 @@ export {
   buildReconciliation,
 };
 
-const HOLDERS_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
-const EXCLUSIONS_PATH = path.resolve(process.cwd(), "config/exclusions.json");
-const CEX_WALLETS_PATH = path.resolve(process.cwd(), "config/cex-wallets.json");
-const OUTPUT_PATH = path.resolve(process.cwd(), "public/data/supply-reconciliation.json");
+/**
+ * Inputs/outputs for one project. TEL (legacyRoot): public/data/ + config/
+ * root files + the 100B TEL total and CoinGecko comparison, exactly as before.
+ * Other projects: public/data/<slug>/, their own classification files, their
+ * own supply.target, and no CoinGecko comparison unless configured.
+ */
+export const reconcilePaths = (project, root = process.cwd()) => {
+  const data = projectPaths(project, root);
+  return {
+    holders: data("tel-holders.json"),
+    exclusions: projectClassificationPath(project, "exclusions", root),
+    cexWallets: projectClassificationPath(project, "cexWallets", root),
+    output: data("supply-reconciliation.json"),
+  };
+};
+
+export const reconcileOptions = (project) => {
+  if (project.config?.data?.legacyRoot === true) return {}; // TEL defaults
+  const target = Number(project.config?.supply?.target);
+  if (!Number.isFinite(target) || target <= 0) {
+    throw new Error(`project ${project.slug}: supply.target is required to reconcile supply`);
+  }
+  const cg = Number(project.config?.supply?.coingeckoCirculating);
+  return { totalSupply: target, coingeckoCirculating: Number.isFinite(cg) && cg > 0 ? cg : null };
+};
 
 const readJson = async (p, fallback = null) => {
+  if (p === null) return fallback;
   try {
     return JSON.parse(await fs.readFile(p, "utf8"));
   } catch (error) {
@@ -61,17 +83,20 @@ const readJson = async (p, fallback = null) => {
 
 const fmt = (n) => Math.round(n).toLocaleString();
 
-const main = async () => {
+const main = async (project) => {
+  const paths = reconcilePaths(project);
+  const OUTPUT_PATH = paths.output;
   const [snapshot, exclusions, cexWallets] = await Promise.all([
-    readJson(HOLDERS_PATH),
-    readJson(EXCLUSIONS_PATH, { addresses: [], labels: {} }),
-    readJson(CEX_WALLETS_PATH, { wallets: [] }),
+    readJson(paths.holders),
+    readJson(paths.exclusions, { addresses: [], labels: {} }),
+    readJson(paths.cexWallets, { wallets: [] }),
   ]);
-  if (!snapshot) throw new Error("tel-holders.json not found");
+  if (!snapshot) throw new Error(`${paths.holders} not found`);
 
-  const r = buildReconciliation(snapshot, exclusions, cexWallets);
+  const r = buildReconciliation(snapshot, exclusions, cexWallets, reconcileOptions(project));
+  const cgCirculating = r.coingeckoCirculating;
 
-  console.log("TEL SUPPLY RECONCILIATION");
+  console.log(`${project.config?.ticker ?? "TEL"} SUPPLY RECONCILIATION`);
   console.log("=========================");
   console.log(`Total supply (Ethereum totalSupply())   ${fmt(r.totalSupply).padStart(16)}`);
   console.log(`Derived from our own scan               ${fmt(r.derivedOriginTotal).padStart(16)}`);
@@ -110,10 +135,12 @@ const main = async () => {
       console.log(`    ${(item.name ?? item.address).padEnd(22)} ${fmt(item.amount).padStart(16)}`);
     }
   }
-  console.log(`CoinGecko circulating supply                ${fmt(COINGECKO_CIRCULATING).padStart(16)}`);
-  console.log(
-    `  delta                                     ${fmt(r.circulating - COINGECKO_CIRCULATING).padStart(16)}`,
-  );
+  if (cgCirculating != null) {
+    console.log(`CoinGecko circulating supply                ${fmt(cgCirculating).padStart(16)}`);
+    console.log(
+      `  delta                                     ${fmt(r.circulating - cgCirculating).padStart(16)}`,
+    );
+  }
   // Circulating holds out treasury, council, and any address with a
   // nonCirculatingOverride (TEL contractually committed elsewhere, e.g. a
   // SAFE's return-to-treasury clause — see data/escrow-safe-provenance.md).
@@ -136,6 +163,7 @@ const main = async () => {
     );
   }
 
+  await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
   await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(r, null, 2)}\n`, "utf8");
   console.log(`\nWrote ${OUTPUT_PATH} (${r.items.length} itemised non-retail addresses)`);
 };
@@ -143,10 +171,10 @@ const main = async () => {
 const isDirectRun =
   process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (isDirectRun) {
-  // `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-  // pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-  selectPipelineProject("reconcile-supply");
-  main().catch((error) => {
+  // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and
+  // writes the project's data dir — see scripts/lib/projects.js.
+  const project = selectPipelineProject("reconcile-supply", { ported: true });
+  main(project).catch((error) => {
     console.error(error);
     process.exit(1);
   });

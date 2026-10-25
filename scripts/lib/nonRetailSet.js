@@ -36,6 +36,7 @@ const addAddress = (set, value) => {
  */
 export const loadCexAddressSet = async (cexPath = CEX_CONFIG_PATH) => {
   const set = new Set();
+  if (cexPath === null) return set; // project declares no CEX list
   try {
     const data = await readJson(cexPath);
     for (const wallet of data?.wallets ?? []) {
@@ -53,6 +54,7 @@ export const loadCexAddressSet = async (cexPath = CEX_CONFIG_PATH) => {
  */
 export const loadDexAddressSet = async (dexPath = DEX_CONFIG_PATH) => {
   const set = new Set();
+  if (dexPath === null) return set; // project declares no DEX list
   try {
     const data = await readJson(dexPath);
     for (const pool of data?.pools ?? []) addAddress(set, pool?.address);
@@ -65,16 +67,19 @@ export const loadDexAddressSet = async (dexPath = DEX_CONFIG_PATH) => {
 
 /**
  * Builds the full non-retail exclusion set.
- * @param {{ exclusionsPath?: string, cexPath?: string, dexPath?: string }} [paths]
+ * @param {{ exclusionsPath?: string|null, cexPath?: string|null, dexPath?: string|null }} [paths]
+ *   Omitted = the TEL config/ root file; `null` = the project declares none
+ *   (empty), see projectNonRetailPaths() in ./projects.js.
  * @returns {Promise<{ set: Set<string>, sizes: { exclusions: number, cex: number, dex: number, total: number } }>}
  */
 export const loadNonRetailSet = async (paths = {}) => {
-  const exclusionsPath = paths.exclusionsPath ?? EXCLUSIONS_PATH;
-  const cexPath = paths.cexPath ?? CEX_CONFIG_PATH;
-  const dexPath = paths.dexPath ?? DEX_CONFIG_PATH;
+  const pick = (key, fallback) => (paths[key] === undefined ? fallback : paths[key]);
+  const exclusionsPath = pick("exclusionsPath", EXCLUSIONS_PATH);
+  const cexPath = pick("cexPath", CEX_CONFIG_PATH);
+  const dexPath = pick("dexPath", DEX_CONFIG_PATH);
 
   const set = new Set();
-  const exclusions = await readJson(exclusionsPath);
+  const exclusions = exclusionsPath === null ? {} : await readJson(exclusionsPath);
   for (const address of exclusions.addresses ?? []) addAddress(set, address);
   for (const chainInfo of Object.values(exclusions.chains ?? {})) {
     for (const address of chainInfo?.addresses ?? []) addAddress(set, address);
