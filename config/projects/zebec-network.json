@@ -122,7 +122,26 @@
   },
   "copy": {
     "text": {
-      "holders.staked.info": "{ticker} locked in Zebec SuperApp staking. Shown separately from Retail Held — staked is not merged into the retail holder total for this project."
+      "holders.staked.info": "{ticker} locked in Zebec SuperApp staking: the raw sum of every unclaimed on-chain staking position (~4.795B at the Oct 2026 scan). Shown separately from Retail Held — staked is not merged into the retail holder total for this project.\n\nTwo staking totals, both intentional: the Supply view's Staking bucket is slightly larger (~4.808B) because it counts what the staking program's vault accounts hold — the stake vaults plus two reward vaults (~16.76M of rewards not yet paid out, which are nobody's stake). This tile counts stakers' positions instead. The ~12.37M difference is those reward vaults minus the ZBCN Lockup gap below; it is not a counting error.\n\nZBCN Lockup vault gap (2.42%): this one lockup (AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp) is exempt from our 0.5% position-vs-vault reconcile check. Its unclaimed positions add up to ~2.42% (~4.39M {ticker}) more than its stake-vault token account (ATA) currently holds. Published staked figures use the raw position sums as-is (not scaled down to the vault balance); the vault ATA balance is listed in the Supply view's Staking bucket for transparency.",
+      "staking.intro": "{ticker} staked in Zebec SuperApp staking, summed from unclaimed on-chain positions and counted once per staker. The Supply view's Staking bucket reads slightly higher because it counts vault balances, including reward vaults.",
+      "supply.staking.bucketLabel": "Staking vaults",
+      "supply.staking.description": "{ticker} held by Zebec SuperApp staking vault accounts: the per-lockup stake vaults plus two reward vaults (~16.76M of undistributed rewards). Counted by vault token balance, so it differs slightly (~12.37M) from the Holders Staked tile, which sums stakers' positions — both figures are intentional.",
+      "supply.residual.bucketLabel": "Below {supply} max (buybacks / burns)",
+      "supply.residual.title": "Below the {supply} max (buybacks / burns)",
+      "supply.residual.body": "The ~{gap} gap between the fixed {total} max supply and every {ticker} balance we count on Solana. {name} keeps a fixed {supply} max while buybacks and burns shrink the on-chain supply, so this is a reconcile note — on-chain supply sitting slightly under the max — not missing wallets and not tokens in a bridge ({ticker} here is Solana-only).",
+      "supply.residual.amountLabel": "Gap to {supply} max",
+      "supply.residual.originDriftLabel": "On-chain supply below the {supply} max",
+      "supply.residual.note": "Counted wallets add up to the mint's current on-chain supply; the shortfall to {total} is consistent with buybacks/burns (not itemised burn-by-burn here). Recomputed on every refresh."
+    },
+    "methodology": {
+      "supplyBreakdown": {
+        "how": "Total supply is the fixed {supply} max. We split it into simple buckets — retail wallets, staking vaults, project treasury, and a small gap below the max — so the pieces add to {supply}. Each bucket is built from on-chain Solana token-account balances of labelled addresses; the gap below the max reflects buybacks/burns shrinking on-chain supply, not bridges (ZBCN is Solana-only here)."
+      }
+    },
+    "glossary": {
+      "supply": {
+        "definition": "The fixed {ticker} max supply ({supply}). {ticker} is tracked on Solana only; buybacks and burns shrink the on-chain supply slightly below the max, shown on the Supply view as a reconcile gap."
+      }
     }
   },
   "pipelineNotes": {
