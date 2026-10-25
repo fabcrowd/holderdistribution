@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { TEL_TOTAL_SUPPLY, COINGECKO_CIRCULATING, buildReconciliation } from "./reconcileSupply.js";
+import { TEL_TOTAL_SUPPLY, COINGECKO_CIRCULATING, buildReconciliation, mergeRoleExclusions } from "./reconcileSupply.js";
+import { ROLE_SUPPLY_CATEGORIES } from "./projects.js";
+import { projectExclusions } from "../reconcile-supply.js";
 
 describe("buildReconciliation chains[].addresses", () => {
   it("merges exclusions.chains[].addresses into the excluded set", () => {
@@ -304,5 +306,77 @@ describe("buildReconciliation with TEL v3 (legacy + 18-decimal v3)", () => {
     expect(r.counted + r.residual).toBe(TEL_TOTAL_SUPPLY);
     expect(r.derivedOriginTotal).toBe(100e9);
     expect(r.mirrored).toBe(40e9);
+  });
+});
+
+describe("mergeRoleExclusions (contracts{} roles + token-account owners)", () => {
+  // Solana-style snapshot: one origin chain, `solana_balance` columns, holder
+  // rows are token-account OWNERS (a stake vault ATA resolves to its vault PDA).
+  const TREASURY = "EkXEg6de172aoLvr7w86YzQ2rf5oEFD3iUt8uQsLQuQW";
+  const VAULT_ATA = "3DC8cdCNKEZPapuPHTtkuw8XgbDtYarJojjpGgtF65Vo";
+  const VAULT_PDA = "HJqK7re4GDSm4roQQS2iSLt5p7Gyb9MHBy9dHJw9obUp";
+  const RETAIL = "5rhms6jZQaXnQc6wbicnrxDTkKqKi4iwfWW3612r5rHb";
+  const snapshot = {
+    chainOrder: ["solana"],
+    totals: { method: "bridge-netting", originChain: "solana", bridgeModes: { solana: "origin" }, totalSupply: 1_000 },
+    tokenAccountOwnersByChain: { solana: { [VAULT_ATA]: VAULT_PDA } },
+    wallets: [
+      { address: RETAIL, solana_balance: 800 },
+      { address: VAULT_PDA, solana_balance: 150 },
+      { address: TREASURY, solana_balance: 50 },
+    ],
+  };
+  const roles = {
+    solana: [
+      { name: "buybackTreasury", address: TREASURY, role: "treasury" },
+      { name: "stakeVaultLockup003", address: VAULT_ATA, role: "staking" },
+    ],
+  };
+
+  it("labels treasury + staking (via ATA owner) and keeps Solana case", () => {
+    const ex = mergeRoleExclusions({ addresses: [], labels: {} }, roles, ROLE_SUPPLY_CATEGORIES, snapshot.tokenAccountOwnersByChain);
+    expect(ex.labels[TREASURY]).toMatchObject({ category: "treasury", name: "buybackTreasury" });
+    expect(ex.labels[VAULT_ATA]).toMatchObject({ category: "staking" });
+    expect(ex.labels[VAULT_PDA]).toMatchObject({ category: "staking" });
+    const r = buildReconciliation(snapshot, ex, { wallets: [] }, { totalSupply: 1_000, coingeckoCirculating: null });
+    expect(r.categories).toEqual({ retail: 800, staking: 150, treasury: 50 });
+    expect(r.circulating).toBe(950);
+    expect(r.items.map((i) => [i.address, i.category])).toEqual([
+      [VAULT_PDA, "staking"],
+      [TREASURY, "treasury"],
+    ]);
+  });
+
+  it("without the owner map the vault PDA stays retail (owner lookup is what classifies it)", () => {
+    const ex = mergeRoleExclusions({}, roles, ROLE_SUPPLY_CATEGORIES, {});
+    const r = buildReconciliation(snapshot, ex, { wallets: [] }, { totalSupply: 1_000, coingeckoCirculating: null });
+    expect(r.categories).toEqual({ retail: 950, treasury: 50 });
+  });
+
+  it("never overrides an existing label and does not mutate its input", () => {
+    const input = { addresses: [TREASURY], labels: { [TREASURY]: { category: "council", name: "x" } } };
+    const ex = mergeRoleExclusions(input, roles, ROLE_SUPPLY_CATEGORIES, snapshot.tokenAccountOwnersByChain);
+    expect(ex.labels[TREASURY]).toEqual({ category: "council", name: "x" });
+    expect(input.labels[VAULT_PDA]).toBeUndefined();
+    expect(ex.addresses.filter((a) => a === TREASURY)).toHaveLength(1);
+  });
+
+  it("maps every role to its supply category (bridge -> bridge-lock)", () => {
+    expect(ROLE_SUPPLY_CATEGORIES).toMatchObject({
+      treasury: "treasury",
+      council: "council",
+      holdings: "holdings",
+      escrow: "escrow",
+      staking: "staking",
+      cex: "cex",
+      dex: "dex",
+      bridge: "bridge-lock",
+    });
+  });
+
+  it("projectExclusions leaves TEL (generationsSumOneToOne) exclusions untouched", () => {
+    const tel = { config: { supply: { generationsSumOneToOne: true }, chains: [] } };
+    const ex = { addresses: ["0xabc"], labels: {} };
+    expect(projectExclusions(tel, ex, {})).toBe(ex);
   });
 });

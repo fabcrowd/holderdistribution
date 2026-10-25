@@ -232,3 +232,42 @@ export const buildReconciliation = (
     items,
   };
 };
+
+/**
+ * Merges a project's contracts{} role addresses into its exclusions labels so
+ * buildReconciliation buckets them (treasury, staking, ...) instead of retail.
+ * `roleEntriesByChain` is projectRoleAddresses() output; `categoryByRole` maps
+ * role -> supply category (ROLE_SUPPLY_CATEGORIES). A Solana contracts{} entry
+ * may name a token account whose holder row is its OWNER, so the owner from
+ * `snapshot.tokenAccountOwnersByChain[chainKey][address]` is labelled too
+ * (same idea as pull-holders-rpc.js). Existing labels always win, so a project
+ * whose exclusions file already labels everything is unchanged.
+ * Returns a new exclusions object; the input is not mutated.
+ */
+export const mergeRoleExclusions = (exclusions, roleEntriesByChain, categoryByRole, ownersByChain = {}) => {
+  const labels = { ...(exclusions?.labels ?? {}) };
+  const addresses = [...(exclusions?.addresses ?? [])];
+  const known = new Set(addresses.map(norm).filter(Boolean));
+  const labelOne = (raw, meta) => {
+    const address = norm(raw);
+    if (!address) return;
+    if (!labels[address]) labels[address] = meta;
+    if (!known.has(address)) {
+      known.add(address);
+      addresses.push(address);
+    }
+  };
+  for (const [chainKey, entries] of Object.entries(roleEntriesByChain ?? {})) {
+    const owners = ownersByChain?.[chainKey] ?? {};
+    for (const { name, address, role } of entries ?? []) {
+      const category = categoryByRole?.[role];
+      if (!category) continue;
+      labelOne(address, { category, name: name ?? null, source: "contracts" });
+      const owner = owners[address];
+      if (owner && owner !== address) {
+        labelOne(owner, { category, name: name ? `${name} (token account owner)` : null, source: "contracts-owner" });
+      }
+    }
+  }
+  return { ...(exclusions ?? {}), addresses, labels };
+};

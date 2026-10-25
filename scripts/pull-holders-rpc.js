@@ -835,7 +835,7 @@ async function main() {
   const { globalSet, chainSets, byCategory } = compileExclusionSets(exclusions, { cexSet, dexSet });
   const supplyMethod = selectSupplyMethod(project.config);
   // Generic (bridge-netting) projects: contracts{} with a non-retail role
-  // (bridge, escrow, cex, dex, staking) are excluded from retail on their chain,
+  // (bridge, escrow, cex, dex, staking, treasury, council, holdings) are excluded from retail on their chain,
   // and origin bridge/escrow balances are the non-circulating lock. TEL keeps
   // its own path: those addresses already live in its exclusions.json.
   const lockSet = new Set([...(byCategory["bridge-lock"] ?? []), ...(byCategory.escrow ?? [])]);
@@ -856,6 +856,21 @@ async function main() {
   }
   const output = buildOutputSkeleton(chainConfig);
   if (ARG_AS_OF) output.generatedAt = `${ARG_AS_OF}T23:59:59.000Z`;
+  // Persist token account -> owner for contracts{} role addresses only (not the
+  // full scan map), so reconcile-supply can label the owner row a Solana
+  // contracts{} token account resolves to. Absent when nothing resolves (TEL).
+  if (supplyMethod === "bridge-netting") {
+    const persisted = {};
+    for (const [chainKey, entries] of Object.entries(projectRoleAddresses(project.config))) {
+      const owners = tokenAccountOwnersByChain[chainKey];
+      if (!owners) continue;
+      for (const { address } of entries) {
+        const owner = owners.get(address);
+        if (owner && owner !== address) (persisted[chainKey] ??= {})[address] = owner;
+      }
+    }
+    if (Object.keys(persisted).length) output.tokenAccountOwnersByChain = persisted;
+  }
 
   const allAddresses = new Set();
   for (const m of Object.values(chainBalancesRaw)) {
