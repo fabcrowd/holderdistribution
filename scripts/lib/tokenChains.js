@@ -12,9 +12,19 @@
  *      map, which lists bridged copies at DIFFERENT addresses. Each listed
  *      address is then confirmed on-chain with the same RPC probe.
  *
+ * Solana: when CoinGecko's `platforms.solana` lists a mint (or the project
+ * itself has a Solana chain), the report adds a Solana row. The base58 mint is
+ * kept EXACTLY as listed (never lowercased) and confirmed with the mint's
+ * on-chain metadata over the public Solana RPC.
+ *
+ * Every candidate carries `suggestedBridge: "native"` plus
+ * `bridgeNeedsConfirmation: true`: a human picks native / lock-mint /
+ * burn-mint in the map-new-token questionnaire (wrapped/bridged design).
+ *
  * Never edits config. The report is a review queue for the onboarding
  * questionnaire (docs/MULTI-TOKEN.md "Chain discovery"). No paid APIs, no keys.
  */
+import { isEvmAddress, isSolanaAddress } from "./address.js";
 
 /** Candidate EVM chains: key (matches scripts/lib/rpc.js), chainId, explorer, CoinGecko platform id. */
 export const CANDIDATE_CHAINS = [
@@ -26,6 +36,9 @@ export const CANDIDATE_CHAINS = [
   { key: "bsc", name: "BNB Smart Chain", chainId: 56, explorer: "https://bscscan.com", coingecko: "binance-smart-chain" },
   { key: "avalanche", name: "Avalanche C-Chain", chainId: 43114, explorer: "https://snowtrace.io", coingecko: "avalanche" },
 ];
+
+/** The Solana candidate (non-EVM; probed by mint metadata, not eth_getCode). */
+export const SOLANA_CANDIDATE = { key: "solana", name: "Solana", vm: "solana", explorer: "https://solscan.io", coingecko: "solana" };
 
 const SELECTOR = { symbol: "0x95d89b41", decimals: "0x313ce567" };
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
@@ -82,11 +95,19 @@ export function platformsToChains(platforms, candidates = CANDIDATE_CHAINS) {
   return out;
 }
 
+/** CoinGecko `platforms.solana` as a base58 mint, case preserved; null if absent/invalid. */
+export function solanaPlatformAddress(platforms) {
+  const a = platforms?.[SOLANA_CANDIDATE.coingecko];
+  return typeof a === "string" && isSolanaAddress(a.trim()) ? a.trim() : null;
+}
+
 /** Keyless CoinGecko lookup. Returns {} on any failure (rate limit, unlisted). */
 export async function coingeckoPlatforms({ platform, address, fetchImpl = fetch }) {
   try {
+    // Hex is case-insensitive (CoinGecko wants lowercase); base58 is not.
+    const id = isEvmAddress(address) ? address.toLowerCase() : address.trim();
     const res = await fetchImpl(
-      `https://api.coingecko.com/api/v3/coins/${platform}/contract/${address.toLowerCase()}`,
+      `https://api.coingecko.com/api/v3/coins/${platform}/contract/${id}`,
       { headers: { accept: "application/json" } },
     );
     if (!res.ok) return {};
@@ -106,24 +127,36 @@ export async function coingeckoPlatforms({ platform, address, fetchImpl = fetch 
  * @param {(chainKey: string) => string[]} p.urlsFor public RPC URLs per chain
  * @param {boolean} [p.useCoingecko]
  * @param {Function} [p.fetchImpl]
+ * @param {(mint: string) => Promise<{status: string, symbol?: string|null, decimals?: number, program?: string, error?: string}>} [p.solanaProbe]
+ *   confirms a Solana mint (default: none -> "listed-unverified")
  */
-export async function detectTokenChains({ config, call, urlsFor, useCoingecko = false, fetchImpl = fetch, candidates = CANDIDATE_CHAINS }) {
+export async function detectTokenChains({ config, call, urlsFor, useCoingecko = false, fetchImpl = fetch, candidates = CANDIDATE_CHAINS, solanaProbe = null }) {
   const configured = new Map((config.chains ?? []).map((c) => [c.key, c]));
+  const isSolanaChain = (c) => c?.vm === "solana" || (c?.vm === undefined && c?.key === "solana");
   const canonicalOf = (c) => (c.tokens ?? []).find((t) => t.status === "canonical") ?? (c.tokens ?? []).at(-1);
   const originChain = (config.chains ?? []).find((c) => c.origin) ?? config.chains?.[0];
   const origin = originChain ? canonicalOf(originChain) : null;
-  const seedAddresses = [...new Set((config.chains ?? []).map(canonicalOf).filter(Boolean).map((t) => t.address.toLowerCase()))];
+  // Same-address probes are EVM-only: hex seeds only, lowercased.
+  const seedAddresses = [
+    ...new Set((config.chains ?? []).map(canonicalOf).filter((t) => isEvmAddress(t?.address)).map((t) => t.address.toLowerCase())),
+  ];
 
   let listed = {};
+  let listedSolana = null;
   if (useCoingecko && origin && originChain) {
-    const platform = candidates.find((c) => c.key === originChain.key)?.coingecko;
+    const platform = isSolanaChain(originChain)
+      ? SOLANA_CANDIDATE.coingecko
+      : candidates.find((c) => c.key === originChain.key)?.coingecko;
     // Canonical first, then older generations (CoinGecko may only list one of them).
     const originTokens = [origin, ...(originChain.tokens ?? []).filter((t) => t !== origin)];
     for (const t of platform ? originTokens : []) {
-      listed = platformsToChains(await coingeckoPlatforms({ platform, address: t.address, fetchImpl }), candidates);
-      if (Object.keys(listed).length) break;
+      const platforms = await coingeckoPlatforms({ platform, address: t.address, fetchImpl });
+      listed = platformsToChains(platforms, candidates);
+      listedSolana = solanaPlatformAddress(platforms);
+      if (Object.keys(listed).length || listedSolana) break;
     }
   }
+  const bridgeHint = { suggestedBridge: "native", bridgeNeedsConfirmation: true };
 
   const ticker = String(config.ticker ?? "").toUpperCase();
   const results = [];
@@ -150,10 +183,44 @@ export async function detectTokenChains({ config, call, urlsFor, useCoingecko = 
         decimals: r.decimals,
         source: listed[chain.key] === address ? "coingecko" : "same-address",
         explorer: `${chain.explorer}/token/${address}`,
+        ...bridgeHint,
       };
       if (symbolMatch) break;
     }
     results.push(best);
+  }
+
+  // Solana row: only when the project has a Solana chain or CoinGecko lists one.
+  const configuredSolana = (config.chains ?? []).find(isSolanaChain);
+  if (configuredSolana) {
+    results.push({ chain: configuredSolana.key, name: SOLANA_CANDIDATE.name, vm: "solana", status: "configured" });
+  } else if (listedSolana) {
+    const row = {
+      chain: SOLANA_CANDIDATE.key,
+      name: SOLANA_CANDIDATE.name,
+      vm: "solana",
+      address: listedSolana, // base58, case preserved
+      source: "coingecko",
+      explorer: `${SOLANA_CANDIDATE.explorer}/token/${listedSolana}`,
+      ...bridgeHint,
+    };
+    if (!solanaProbe) {
+      results.push({ ...row, status: "listed-unverified" });
+    } else {
+      const r = await solanaProbe(listedSolana).catch((error) => ({ status: "rpc-error", error: error.message }));
+      if (r.status === "found") {
+        const symbolMatch = !!r.symbol && r.symbol.toUpperCase() === ticker;
+        results.push({
+          ...row,
+          status: symbolMatch || !r.symbol ? "candidate" : "contract-other-symbol",
+          symbol: r.symbol ?? null,
+          decimals: r.decimals,
+          ...(r.program ? { program: r.program } : {}),
+        });
+      } else {
+        results.push({ ...row, status: r.status ?? "not-found", ...(r.error ? { error: r.error } : {}) });
+      }
+    }
   }
   return {
     ticker,

@@ -16,6 +16,7 @@
  */
 import type { ProjectConfig } from "@/lib/projects";
 import { copyContext, fillCopy } from "@/lib/projectCopy";
+import { chainExplorerLink, explorerRoot } from "@/lib/explorerLinks";
 
 export type MethodologyLink = { label: string; href: string };
 export type Methodology = { how: string; verify: string; links: MethodologyLink[] };
@@ -106,21 +107,21 @@ export const explorerName = (explorer: string): string => {
 
 type LinkProject = Pick<ProjectConfig, "ticker" | "chains" | "staking">;
 
-const explorerFor = (p: LinkProject, chainKey: string): string | undefined =>
-  p.chains.find((c) => c.key === chainKey)?.explorer;
+const chainFor = (p: LinkProject, chainKey: string) => p.chains.find((c) => c.key === chainKey);
 
 /** Each chain's canonical token (or its only token) on that chain's explorer. */
 export const projectTokenLinks = (p: LinkProject): MethodologyLink[] =>
   p.chains.flatMap((c) => {
     const token = c.tokens.find((t) => t.status === "canonical") ?? c.tokens[0];
-    if (!token || !c.explorer) return [];
-    return [{ label: `${p.ticker} on ${explorerName(c.explorer)}`, href: `${c.explorer}/token/${token.address}` }];
+    const root = explorerRoot(c); // Solana defaults to Solscan
+    if (!token || !root) return [];
+    return [{ label: `${p.ticker} on ${explorerName(root)}`, href: chainExplorerLink(c, "token", token.address) }];
   });
 
 export const projectStakingLinks = (p: LinkProject): MethodologyLink[] =>
   (p.staking ?? []).flatMap((s) => {
-    const explorer = explorerFor(p, s.chain);
-    return explorer ? [{ label: s.name, href: `${explorer}/address/${s.address}` }] : [];
+    const chain = chainFor(p, s.chain);
+    return chain && explorerRoot(chain) ? [{ label: s.name, href: chainExplorerLink(chain, "address", s.address) }] : [];
   });
 
 const HREF_PLACEHOLDER = /\{(token|explorer):([a-z0-9-]+)(?::([a-z0-9-]+))?\}/g;
@@ -129,10 +130,10 @@ const HREF_PLACEHOLDER = /\{(token|explorer):([a-z0-9-]+)(?::([a-z0-9-]+))?\}/g;
 export const resolveHref = (p: LinkProject, href: string): string =>
   href.replace(HREF_PLACEHOLDER, (whole, kind: string, chainKey: string, generation?: string) => {
     const chain = p.chains.find((c) => c.key === chainKey);
-    if (!chain?.explorer) return whole;
-    if (kind === "explorer") return chain.explorer;
+    if (!chain || !explorerRoot(chain)) return whole;
+    if (kind === "explorer") return explorerRoot(chain);
     const token = chain.tokens.find((t) => t.generation === generation);
-    return token ? `${chain.explorer}/token/${token.address}` : whole;
+    return token ? chainExplorerLink(chain, "token", token.address) : whole;
   });
 
 type MethodologyProject = Pick<ProjectConfig, "ticker" | "name" | "chains" | "supply" | "staking" | "copy">;

@@ -32,6 +32,7 @@ import process from "node:process";
 import { loadNonRetailSet } from "./lib/nonRetailSet.js";
 import { selectPipelineProject, projectPaths, projectNonRetailPaths } from "./lib/projects.js";
 import { projectHolderTiers, rangeLabelOf } from "./lib/holderTiers.js";
+import { normalizeAnyAddress } from "./lib/address.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk and in git history) and its own non-retail lists. Tier
@@ -106,13 +107,13 @@ const main = async () => {
     const bal = new Map();
     for (const chain of Object.values(snap.chains ?? {})) {
       for (const h of chain.holders ?? []) {
-        const a = (h.address ?? "").trim().toLowerCase();
+        const a = normalizeAnyAddress(h.address ?? "");
         if (!a || excl.has(a)) continue;
         bal.set(a, (bal.get(a) ?? 0) + Number(h.balance ?? 0));
       }
     }
     for (const w of fund.wallets ?? []) {
-      const a = (w.fundingWallet ?? "").trim().toLowerCase();
+      const a = normalizeAnyAddress(w.fundingWallet ?? "");
       const s = Number(w.stakedAmount ?? 0);
       if (!a || s <= 0 || excl.has(a)) continue;
       bal.set(a, (bal.get(a) ?? 0) + s);

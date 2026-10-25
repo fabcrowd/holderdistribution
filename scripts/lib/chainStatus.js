@@ -15,8 +15,15 @@ export const CHAIN_STATUS_CHAINS = ["ethereum", "polygon", "base"];
 export function buildChainStatus(checkpoint, chainKeys = CHAIN_STATUS_CHAINS) {
   const chains = {};
   for (const key of chainKeys?.length ? chainKeys : CHAIN_STATUS_CHAINS) {
-    const lastBlock = Number(checkpoint?.chains?.[key]?.lastBlock);
-    if (Number.isFinite(lastBlock) && lastBlock > 0) chains[key] = { lastBlock };
+    const entry = checkpoint?.chains?.[key];
+    const lastBlock = Number(entry?.lastBlock);
+    if (!(Number.isFinite(lastBlock) && lastBlock > 0)) continue;
+    // Solana: lastBlock is the snapshot SLOT; scannedAt lets the UI mark the
+    // chain stale when this run kept a previous (failed-chain) entry. EVM
+    // entries keep exactly { lastBlock }.
+    chains[key] = entry?.vm === "solana"
+      ? { lastBlock, vm: "solana", ...(entry.scannedAt ? { scannedAt: entry.scannedAt } : {}) }
+      : { lastBlock };
   }
   return { generatedAt: checkpoint?.generatedAt ?? null, chains };
 }

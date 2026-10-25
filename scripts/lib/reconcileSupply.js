@@ -1,6 +1,7 @@
 /**
  * Pure supply reconciliation helpers — buckets every wallet's TEL once.
  */
+import { normalizeAnyAddress } from "./address.js";
 
 // The token's own totalSupply() on the origin chain. Not a guess and not a
 // third-party figure — read from the contract. CoinGecko reports the same.
@@ -15,7 +16,8 @@ export const RECONCILE_TOLERANCE = 0.01; // 1%
 // date, not a live read or a different methodology.
 export const COINGECKO_CIRCULATING = 95_077_236_367;
 
-const norm = (v) => (typeof v === "string" ? v.trim().toLowerCase() : "");
+// Hex lowercased, Solana base58 kept as written (case-sensitive).
+const norm = (v) => normalizeAnyAddress(v);
 
 /**
  * Buckets every wallet's balance, counting each TEL exactly once.
@@ -38,11 +40,18 @@ export const buildReconciliation = (
   // Absent in pre-v3 snapshots, where every v3/retired term is zero and the
   // wallet sums ARE the legacy supply.
   const tokens = snapshot?.totals?.tokens ?? null;
-  const originKey = snapshot?.totals?.originChain ?? "ethereum";
   // Wallet columns are `<chainKey>_balance`; the snapshot's chainOrder names
   // them (TEL: ethereum, polygon, base). Mirrors = every non-origin chain.
   const chainKeys = snapshot?.chainOrder?.length ? snapshot.chainOrder : ["ethereum", "polygon", "base"];
-  const mirrorKeys = chainKeys.filter((k) => k !== originKey);
+  // Generic bridge-netting snapshot (scripts/lib/supply.js
+  // computeBridgeNettedSupply): only lock-mint chains are mirrors; native /
+  // burn-mint chains are real supply, counted like the origin.
+  const bridgeModes = snapshot?.totals?.method === "bridge-netting" ? snapshot?.totals?.bridgeModes ?? {} : null;
+  const originKey = snapshot?.totals?.originChain ?? (bridgeModes ? chainKeys[0] : "ethereum");
+  const mirrorKeys = bridgeModes
+    ? chainKeys.filter((k) => k !== originKey && bridgeModes[k] === "lock-mint")
+    : chainKeys.filter((k) => k !== originKey);
+  const ownSupplyKeys = bridgeModes ? chainKeys.filter((k) => k !== originKey && !mirrorKeys.includes(k)) : [];
   const sumTokens = (map, keys) => keys.reduce((acc, k) => acc + (Number(map?.[k]) || 0), 0);
 
   const labels = exclusions?.labels ?? {};
@@ -64,6 +73,8 @@ export const buildReconciliation = (
       .filter(([, meta]) => meta?.category === "bridge-lock")
       .map(([addr]) => norm(addr)),
   );
+  // Origin bridge/escrow contracts from the project's contracts{} roles.
+  if (bridgeModes && mirrorKeys.length) for (const a of snapshot?.totals?.lockAddresses ?? []) bridgeSet.add(norm(a));
 
   const categories = {};
   const items = [];
@@ -82,7 +93,8 @@ export const buildReconciliation = (
     const address = norm(wallet?.address);
     const eth = Number(wallet?.[`${originKey}_balance`]) || 0; // origin chain
     const mirrorBalance = mirrorKeys.reduce((acc, k) => acc + (Number(wallet?.[`${k}_balance`]) || 0), 0);
-    originTotal += eth;
+    const ownSupplyBalance = ownSupplyKeys.reduce((acc, k) => acc + (Number(wallet?.[`${k}_balance`]) || 0), 0);
+    originTotal += eth + ownSupplyBalance;
     mirrored += mirrorBalance;
 
     if (bridgeSet.has(address)) {
@@ -98,7 +110,7 @@ export const buildReconciliation = (
       continue;
     }
 
-    const balance = eth + mirrorBalance;
+    const balance = eth + mirrorBalance + ownSupplyBalance;
 
     // nonCirculatingOverride is orthogonal to category: it says how much of
     // THIS address's balance is contractually committed elsewhere (e.g. a
@@ -162,10 +174,14 @@ export const buildReconciliation = (
   // where the last term is v3 not yet backed by retired legacy (≈ 0, in-flight).
   const retiredTotal = tokens ? sumTokens(tokens.retiredLegacy, Object.keys(tokens.retiredLegacy ?? {})) : 0;
   const v3Total = tokens ? sumTokens(tokens.v3, Object.keys(tokens.v3 ?? {})) : 0;
-  const derivedOrigin = tokens ? Number(tokens.legacy?.[originKey]) || 0 : originTotal;
-  const mirroredLegacy = tokens
-    ? sumTokens(tokens.legacy, Object.keys(tokens.legacy ?? {}).filter((k) => k !== originKey))
-    : mirrored;
+  const derivedOrigin = bridgeModes
+    ? Number(snapshot?.totals?.totalSupply) || originTotal // origin + native/burn-mint supply
+    : tokens ? Number(tokens.legacy?.[originKey]) || 0 : originTotal;
+  const mirroredLegacy = bridgeModes
+    ? (tokens ? sumTokens(tokens.legacy, mirrorKeys) : mirrored)
+    : tokens
+      ? sumTokens(tokens.legacy, Object.keys(tokens.legacy ?? {}).filter((k) => k !== originKey))
+      : mirrored;
   const originDrift = derivedOrigin - TOTAL_SUPPLY;
   const bridgeInFlight = bridgeLocked - mirroredLegacy;
   const upgradeUnbacked = retiredTotal - v3Total;

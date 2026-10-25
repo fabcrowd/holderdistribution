@@ -27,6 +27,7 @@ import {
   type WalletFlowsKnownWallet,
   type WalletFlowsReport,
 } from "@/lib/walletFlowsTypes";
+import { explorerTemplates, resolveChainVm } from "@/lib/explorerLinks";
 
 /**
  * Gated "Wallet flows" view: supply by entity class, project-linked wallets and
@@ -78,7 +79,11 @@ const VerdictBadge = ({ verdict }: { verdict: string }) => (
 const AddressLinks = ({ address, chains }: { address: string; chains: string[] }) => {
   const { project } = useProject();
   const explorers = useMemo(
-    () => Object.fromEntries((project.chains ?? []).map((c) => [c.key, c.explorer])),
+    // EVM: explorer root; Solana: the address template (Solscan /account/{address}).
+    () =>
+      Object.fromEntries(
+        (project.chains ?? []).map((c) => [c.key, resolveChainVm(c) === "solana" ? explorerTemplates(c).address : c.explorer ?? ""]),
+      ),
     [project],
   );
   const list = chains.length > 0 ? chains : [project.chains?.[0]?.key ?? "ethereum"];

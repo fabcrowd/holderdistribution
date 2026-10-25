@@ -93,7 +93,7 @@ describe("chain views: multi-chain demo project", () => {
   });
 
   it("wallet-flow links use the project's explorer for non-built-in chains", () => {
-    const explorers = Object.fromEntries(demo.chains.map((c) => [c.key, c.explorer]));
+    const explorers = Object.fromEntries(demo.chains.map((c) => [c.key, c.explorer ?? ""]));
     expect(addressExplorerUrl("arbitrum", "0xa", explorers)).toBe("https://arbiscan.io/address/0xa");
     expect(addressExplorerUrl("arbitrum", "0xa")).toBe("https://etherscan.io/address/0xa");
   });

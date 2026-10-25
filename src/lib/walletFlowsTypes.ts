@@ -98,12 +98,15 @@ const ADDRESS_EXPLORER: Record<string, string> = {
  * Address page on the chain's explorer. Built-ins cover TEL's chains; any
  * other chain uses the project's `chains[].explorer` root (passed as
  * `explorers`, key -> root), so e.g. an arbitrum wallet links to Arbiscan
- * instead of Etherscan.
+ * instead of Etherscan. An `explorers` value containing `{address}` is a full
+ * template (Solana: "https://solscan.io/account/{address}", base58 case kept).
  */
 export const addressExplorerUrl = (chain: string, address: string, explorers?: Record<string, string>) => {
   const builtIn = ADDRESS_EXPLORER[chain];
   if (builtIn) return `${builtIn}${address}`;
-  const root = explorers?.[chain]?.replace(/\/+$/, "");
+  const configured = explorers?.[chain];
+  if (configured?.includes("{address}")) return configured.split("{address}").join(address);
+  const root = configured?.replace(/\/+$/, "");
   if (root) return `${root}/address/${address}`;
   return `${ADDRESS_EXPLORER.ethereum}${address}`;
 };

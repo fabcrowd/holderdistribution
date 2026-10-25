@@ -25,6 +25,7 @@ export const ChainStatusBar = () => {
           className="inline-flex items-center gap-1 text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-primary transition-colors"
         >
           {chain.label} RPC
+          {chain.stale && <span className="text-amber-500/90 no-underline">(stale)</span>}
           <ExternalLink className="h-3 w-3" />
         </a>
       ))}
