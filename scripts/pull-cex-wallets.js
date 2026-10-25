@@ -13,19 +13,22 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("pull-cex-wallets");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads the
+// project's own `classification.cexWallets` list and writes its data dir
+// (TEL: config/cex-wallets.json -> public/data/; others -> public/data/<slug>/).
+const project = selectPipelineProject("pull-cex-wallets", { ported: true });
+const data = projectPaths(project);
 
-const CONFIG_PATH = path.resolve(process.cwd(), "config/cex-wallets.json");
-const OUTPUT_PATH = path.resolve(process.cwd(), "public/data/cex-wallets.json");
-const CEX_FLOWS_PATH = path.resolve(process.cwd(), "public/data/cex-flows.json");
-const CEX_HISTORY_PATH = path.resolve(process.cwd(), "public/data/cex-balance-history.json");
-const HOLDERS_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
-const PREVIOUS_SNAPSHOT_PATH = path.resolve(process.cwd(), "public/data/tel-holders-previous.json");
-const SUMMARY_PATH = path.resolve(process.cwd(), "public/data/holders-summary.json");
+const CONFIG_PATH = projectClassificationPath(project, "cexWallets", process.cwd());
+const CONFIG_REL = CONFIG_PATH ? path.relative(process.cwd(), CONFIG_PATH).split(path.sep).join("/") : null;
+const OUTPUT_PATH = data("cex-wallets.json");
+const CEX_FLOWS_PATH = data("cex-flows.json");
+const CEX_HISTORY_PATH = data("cex-balance-history.json");
+const HOLDERS_PATH = data("tel-holders.json");
+const PREVIOUS_SNAPSHOT_PATH = data("tel-holders-previous.json");
+const SUMMARY_PATH = data("holders-summary.json");
 
 const readJson = async (absolutePath) => {
   const content = await fs.readFile(absolutePath, "utf8");
@@ -150,6 +153,15 @@ const buildCexFlows = (cexWallets, currentWallets, previousWallets) => {
 };
 
 const main = async () => {
+  if (!CONFIG_PATH) {
+    // A non-legacy project that declares no CEX list: publish an empty list in
+    // the shared format (never TEL's wallets) and skip flows.
+    await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
+    const empty = { generatedAt: new Date().toISOString(), source: { type: "static", configPath: null }, wallets: [], totals: { walletCount: 0 } };
+    await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(empty, null, 2)}\n`, "utf8");
+    console.warn(`project "${project.slug}" declares no classification.cexWallets — wrote an empty ${OUTPUT_PATH}, no CEX flows.`);
+    return;
+  }
   // Load static CEX wallet list from config
   const config = await readJson(CONFIG_PATH);
   const wallets = Array.isArray(config?.wallets) ? config.wallets : [];
@@ -162,7 +174,7 @@ const main = async () => {
   // Write timestamped cex-wallets.json
   const cexWalletsPayload = {
     generatedAt,
-    source: { type: "static", configPath: "config/cex-wallets.json" },
+    source: { type: "static", configPath: CONFIG_REL },
     wallets: wallets.map((w) => ({
       address: normalizeAddress(w.address) ?? w.address,
       label: w.label ?? null,

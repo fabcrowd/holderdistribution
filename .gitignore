@@ -43,3 +43,8 @@ data/rebuild-transfers-*.json
 
 # Local Netlify folder
 .netlify
+
+# Per-project working caches (multi-token: data/<slug>/ mirrors data/ for TEL).
+data/*/rebuild-transfers-*.ndjson
+data/*/asof-window-*.ndjson
+data/*/rebuild-transfers-*.json

@@ -30,16 +30,21 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { loadNonRetailSet } from "./lib/nonRetailSet.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectNonRetailPaths } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("generate-holder-transitions");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
+// data dir (on disk and in git history) and its own non-retail lists. Tier
+// RANGES are still the shared (TEL-sized) buckets — see docs/MULTI-TOKEN.md.
+const project = selectPipelineProject("generate-holder-transitions", { ported: true });
+const data = projectPaths(project);
 
-const OUT_PATH = path.resolve(process.cwd(), "public/data/holder-transitions.json");
-const TEL_HOLDERS_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
-const FUNDING_WALLETS_PATH = path.resolve(process.cwd(), "public/data/funding-wallets.json");
-const HOLDERS_HISTORY_PATH = path.resolve(process.cwd(), "public/data/holders-history.json");
+const OUT_PATH = data("holder-transitions.json");
+const TEL_HOLDERS_PATH = data("tel-holders.json");
+const FUNDING_WALLETS_PATH = data("funding-wallets.json");
+const HOLDERS_HISTORY_PATH = data("holders-history.json");
+// Repo-relative paths for git-history reads (TEL: public/data/<file>).
+const SNAP_REL = data.rel("tel-holders.json");
+const FUND_REL = data.rel("funding-wallets.json");
 
 const RANGES = [
   ["500M+", 500e6, Infinity], ["250M-500M", 250e6, 500e6], ["100M-250M", 100e6, 250e6],
@@ -66,14 +71,14 @@ const commitsByDate = (file) => {
 const showJson = (commit, file) => JSON.parse(git(["show", `${commit}:${file}`]));
 
 const main = async () => {
-  const { set: excl, sizes } = await loadNonRetailSet();
+  const { set: excl, sizes } = await loadNonRetailSet(projectNonRetailPaths(project));
   console.log(
     `Non-retail set: ${sizes.total} addresses ` +
       `(exclusions ${sizes.exclusions}, CEX config ${sizes.cex}, DEX config ${sizes.dex}).`,
   );
 
-  const snapCommits = commitsByDate("public/data/tel-holders.json");
-  const fundCommits = commitsByDate("public/data/funding-wallets.json");
+  const snapCommits = commitsByDate(SNAP_REL);
+  const fundCommits = commitsByDate(FUND_REL);
   const snapDates = [...snapCommits.keys()].sort();
   const fundDates = [...fundCommits.keys()].sort();
   if (snapDates.length === 0) { console.warn("No snapshots."); return; }
@@ -122,9 +127,9 @@ const main = async () => {
 
   const balancesAt = (date) => {
     const sd = nearestOnOrBefore(snapDates, date);
-    const snap = showJson(snapCommits.get(sd), "public/data/tel-holders.json");
+    const snap = showJson(snapCommits.get(sd), SNAP_REL);
     const fd = nearestOnOrBefore(fundDates, date);
-    const fund = fd ? showJson(fundCommits.get(fd), "public/data/funding-wallets.json") : { wallets: [] };
+    const fund = fd ? showJson(fundCommits.get(fd), FUND_REL) : { wallets: [] };
     return { bal: aggregateBalances(snap, fund), snapshotDate: (snap.source ?? {}).snapshotDate ?? sd };
   };
 
@@ -189,6 +194,7 @@ const main = async () => {
     ranges[key] = { from: fromDate, to: toDate, matrix };
   }
 
+  await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
   await fs.writeFile(OUT_PATH, `${JSON.stringify({ generatedAt: new Date().toISOString(), latestDate: toDate, ranges }, null, 2)}\n`, "utf8");
   console.log(`Wrote ${OUT_PATH} (${Object.keys(ranges).length} ranges)`);
 };

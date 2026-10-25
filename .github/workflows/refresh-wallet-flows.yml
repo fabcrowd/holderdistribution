@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        description: 'Project slug from config/projects.json (TEL only: generate-wallet-flows.js is TEL forensics and exits 2 for any other project)'
         required: false
         default: 'tel'
 

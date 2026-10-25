@@ -17,24 +17,26 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("sync-classification-changelog");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: TEL copies
+// config/classification-changelog.json -> public/data/; another project copies
+// its own `classification.changelog` -> public/data/<slug>/ (none declared =
+// an empty events[] feed in the same format, never TEL's events).
+const project = selectPipelineProject("sync-classification-changelog", { ported: true });
 
-const CONFIG_PATH = path.resolve(process.cwd(), "config/classification-changelog.json");
-const OUTPUT_PATH = path.resolve(process.cwd(), "public/data/classification-changelog.json");
+const ROOT = process.cwd();
+const CONFIG_PATH = projectClassificationPath(project, "changelog", ROOT);
+const OUTPUT_PATH = projectPaths(project, ROOT)("classification-changelog.json");
 
 const main = async () => {
-  const raw = await fs.readFile(CONFIG_PATH, "utf8");
-  const config = JSON.parse(raw);
+  const config = CONFIG_PATH ? JSON.parse(await fs.readFile(CONFIG_PATH, "utf8")) : {};
   const events = Array.isArray(config?.events) ? config.events : [];
 
   const payload = {
     schemaVersion: config.schemaVersion ?? 1,
     generatedAt: new Date().toISOString(),
-    source: { type: "static", configPath: "config/classification-changelog.json" },
+    source: { type: "static", configPath: CONFIG_PATH ? path.relative(ROOT, CONFIG_PATH).split(path.sep).join("/") : null },
     events,
   };
 

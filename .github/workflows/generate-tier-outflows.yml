@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        description: 'Project slug from config/projects.json (scripts take --project; non-TEL runs commit public/data/<slug>/** and data/<slug>/**)'
         required: false
         default: 'tel'
       max_blocks_per_run:
@@ -57,6 +57,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Resolve project data paths
+        # HD_DATA_DIR / HD_WORK_DIR: public/data + data for TEL (unchanged),
+        # public/data/<slug> + data/<slug> for any other project.
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
+
       - name: Generate tier outflows
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
@@ -71,7 +76,7 @@ jobs:
         run: |
           git config user.email "action@github.com"
           git config user.name "github-actions[bot]"
-          FILES="public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json"
+          FILES=$(node scripts/workflow-paths.js files public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json)
           git add $FILES
           # git diff misses new untracked files — check the staged index instead.
           if git diff --cached --quiet -- $FILES; then

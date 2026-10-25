@@ -19,16 +19,27 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { loadEnv } from "./loadEnv.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectClassificationPath, projectClassificationRelPath } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("sync-cex-wallets-dune");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: merges into the
+// project's own `classification.cexWallets` file (TEL: config/cex-wallets.json).
+// A non-legacy project must declare that file AND its own Dune query
+// (`pipeline.duneCexQueryId` or DUNE_QUERY_ID) — TEL's query is never reused.
+const project = selectPipelineProject("sync-cex-wallets-dune", { ported: true });
 
 await loadEnv();
 
-const CEX_CONFIG_PATH = path.resolve(process.cwd(), "config/cex-wallets.json");
-const QUERY_ID = process.env.DUNE_QUERY_ID ?? "3761086";
+const CEX_CONFIG_PATH = projectClassificationPath(project, "cexWallets", process.cwd());
+const CEX_CONFIG_REL = projectClassificationRelPath(project, "cexWallets", process.cwd());
+const IS_LEGACY = project.config?.data?.legacyRoot === true;
+const QUERY_ID = process.env.DUNE_QUERY_ID ?? project.config?.pipeline?.duneCexQueryId ?? (IS_LEGACY ? "3761086" : null);
+if (!CEX_CONFIG_PATH || !QUERY_ID) {
+  console.error(
+    `[sync-cex-wallets-dune] project "${project.slug}" needs classification.cexWallets and ` +
+      `pipeline.duneCexQueryId (or DUNE_QUERY_ID) before it can sync from Dune.`,
+  );
+  process.exit(2);
+}
 const LIMIT = Number(process.env.DUNE_RESULT_LIMIT ?? 5000);
 const API_KEY = process.env.DUNE_API_KEY;
 
@@ -139,7 +150,7 @@ const main = async () => {
   config.wallets = [...config.wallets, ...additions];
   await fs.writeFile(CEX_CONFIG_PATH, `${JSON.stringify(config, null, 2)}\n`, "utf8");
   console.log(`\nWrote ${config.wallets.length} total wallets → ${CEX_CONFIG_PATH}`);
-  console.log("Done. Commit config/cex-wallets.json to apply.");
+  console.log(`Done. Commit ${CEX_CONFIG_REL} to apply.`);
 };
 
 main().catch((e) => { console.error(e); process.exit(1); });

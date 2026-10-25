@@ -58,22 +58,34 @@ import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
 import { normalizeAddress } from "./lib/nonRetailSet.js";
 import { findBlockAtTime } from "./lib/historicalReplay.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import {
+  selectPipelineProject,
+  projectPaths,
+  projectChains,
+  projectWork,
+  projectWorkDir,
+  projectClassificationPath,
+} from "./lib/projects.js";
+import { exchangeFlowChains } from "./lib/exchangeFlowChains.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("append-exchange-flows-from-cache");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
+// data dir, chain map, CEX/DEX lists and transfer caches (TEL: public/data/ +
+// data/rebuild-transfers-<chain>.ndjson; others: public/data/<slug>/ + data/<slug>/).
+const project = selectPipelineProject("append-exchange-flows-from-cache", { ported: true });
 
 await loadEnv();
 
 const ROOT = process.cwd();
-const HISTORY_PATH = path.resolve(ROOT, "public/data/exchange-flow-history.json");
-const DATE_BLOCKS_PATH = path.resolve(ROOT, "public/data/date-blocks.json");
-const cachePath = (chainKey) => path.resolve(ROOT, `data/rebuild-transfers-${chainKey}.ndjson`);
+const data = projectPaths(project, ROOT);
+const HISTORY_PATH = data("exchange-flow-history.json");
+const DATE_BLOCKS_PATH = data("date-blocks.json");
+const work = projectWork(project, ROOT);
+const cachePath = (chainKey) => work(`rebuild-transfers-${chainKey}.ndjson`);
 
-const CHAIN_KEYS = ["ethereum", "polygon", "base"];
-const TEL_DIVISOR = 100; // TEL has 2 decimals
-const MAX_SANE_TEL = 200e9; // same guard scan-exchange-flows.js applies
+// Same table scan-exchange-flows.js scans (TEL: ethereum, polygon, base; divisor 100).
+const FLOW_CHAINS = exchangeFlowChains(project, projectChains(project, ROOT), process.env);
+const CHAIN_KEYS = Object.keys(FLOW_CHAINS);
+const MAX_SANE_TEL = 2 * (Number(project.config?.supply?.target) || 100e9); // same guard scan-exchange-flows.js applies
 
 const dryRun = process.argv.includes("--dry-run");
 
@@ -182,7 +194,7 @@ const main = async () => {
       const toDex = toAddr && dexSet.has(toAddr);
       if (!fromCex && !toCex && !fromDex && !toDex) continue;
 
-      const value = Number(BigInt(rec.value ?? "0")) / TEL_DIVISOR;
+      const value = Number(BigInt(rec.value ?? "0")) / FLOW_CHAINS[chainKey].divisor;
       if (!Number.isFinite(value) || value <= 0 || value > MAX_SANE_TEL) continue;
 
       // Last boundary at or below this block.
@@ -250,7 +262,7 @@ const main = async () => {
     cachedTransferAppend: {
       at: new Date().toISOString(),
       dates: newEntries.map((e) => e.date),
-      source: "data/rebuild-transfers-<chain>.ndjson via alchemy_getAssetTransfers",
+      source: `${projectWorkDir(project)}/rebuild-transfers-<chain>.ndjson via alchemy_getAssetTransfers`,
     },
   };
   await fs.writeFile(HISTORY_PATH, `${JSON.stringify(history, null, 2)}\n`);
@@ -269,7 +281,10 @@ const main = async () => {
  * cannot express it.
  */
 const loadFlowSets = async () => {
-  const cexConfig = JSON.parse(await fs.readFile(path.resolve(ROOT, "config/cex-wallets.json"), "utf8"));
+  const cexPath = projectClassificationPath(project, "cexWallets", ROOT);
+  const dexPath = projectClassificationPath(project, "dexContracts", ROOT);
+  if (!cexPath) throw new Error(`project ${project.slug} declares no classification.cexWallets — no flows to classify.`);
+  const cexConfig = JSON.parse(await fs.readFile(cexPath, "utf8"));
   const cexSet = new Set(
     (cexConfig.wallets ?? [])
       .map((w) => (typeof w.address === "string" ? w.address.trim().toLowerCase() : null))
@@ -277,7 +292,8 @@ const loadFlowSets = async () => {
   );
   let dexSet = new Set();
   try {
-    const dexConfig = JSON.parse(await fs.readFile(path.resolve(ROOT, "config/dex-contracts.json"), "utf8"));
+    if (!dexPath) throw Object.assign(new Error("no DEX list declared"), { code: "ENOENT" });
+    const dexConfig = JSON.parse(await fs.readFile(dexPath, "utf8"));
     dexSet = new Set(
       (dexConfig.pools ?? [])
         .map((p) => (typeof p.address === "string" ? p.address.trim().toLowerCase() : null))

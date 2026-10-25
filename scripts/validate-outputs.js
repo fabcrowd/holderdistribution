@@ -9,13 +9,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("validate-outputs");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: validates the
+// project's data dir (TEL: public/data/, others: public/data/<slug>/).
+const project = selectPipelineProject("validate-outputs", { ported: true });
 
-const DATA_DIR = path.resolve(process.cwd(), "public/data");
+const DATA_DIR = projectPaths(project, process.cwd()).dir;
 
 const required = [
   { file: "tel-holders.json", keys: ["generatedAt", "chains", "combined", "wallets", "source", "chainOrder"] },

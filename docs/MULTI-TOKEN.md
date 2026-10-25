@@ -18,7 +18,8 @@ site serve more than one token.
 | Header switcher | `src/components/TokenSwitcher.tsx` |
 | Project-driven copy | `src/lib/projectCopy.ts`, `useProjectCopy()` (`src/hooks/useProjectCopy.ts`), `src/lib/glossary.ts` |
 | Pipeline `--project` | `parseProjectArg` / `pipelineProject` in `scripts/lib/projects.js` |
-| Pipeline data paths and addresses | `projectPaths`, `projectChains`, `projectClassificationPath` in `scripts/lib/projects.js`; `scripts/lib/stakerTarget.js`; `scripts/lib/exchangeFlowChains.js` |
+| Pipeline data paths and addresses | `projectPaths`, `projectWork`, `projectChains`, `projectClassificationPath` in `scripts/lib/projects.js`; `scripts/lib/stakerTarget.js`; `scripts/lib/exchangeFlowChains.js` |
+| Workflow commit paths | `scripts/workflow-paths.js` |
 
 The active project comes from `?token=<slug>`, then localStorage (`ha:project`),
 then the registry default. The default slug is never written into the URL, so
@@ -107,10 +108,19 @@ gh workflow run refresh-tel-holders.yml -f project=tel
 Every ported script resolves files through `projectPaths(project)` /
 `projectDataPath(project, file)` in `scripts/lib/projects.js`:
 
-| Project | Feeds, checkpoints, histories | Git-history reads (`readCommittedJson`) |
-| --- | --- | --- |
-| `data.legacyRoot: true` (TEL) | `public/data/<file>` (unchanged) | `public/data/<file>` |
-| any other project | `public/data/<slug>/<file>` | `public/data/<slug>/<file>` |
+| Project | Feeds, checkpoints, histories | Git-history reads (`readCommittedJson`) | Working files (`projectWork`) |
+| --- | --- | --- | --- |
+| `data.legacyRoot: true` (TEL) | `public/data/<file>` (unchanged) | `public/data/<file>` | `data/<file>` (unchanged) |
+| any other project | `public/data/<slug>/<file>` | `public/data/<slug>/<file>` | `data/<slug>/<file>` |
+
+Working files are the non-served state under `data/`: `holders-asof-blocks.json`,
+`tier-outflows-days.json` / `-checkpoint.json`, `cex-candidates.json`, the
+`rebuild-transfers-<chain>` and `asof-window-*` transfer caches (gitignored for
+every project). `projectWork(project)` /
+`projectWorkPath(project, file)` resolve them (subpaths allowed, absolute
+paths and `..` refused). Before this, `pull-holders-rpc` and
+`generate-holders-lite` read TEL's `data/holders-asof-blocks.json` and transfer
+caches for every project; they now use the project's own.
 
 File names are the same for every project (`tel-holders.json`,
 `holders-lite.json`, `supply-reconciliation.json`, …; see
@@ -156,21 +166,62 @@ run for any registered project. Ported:
 - `pull-staker-balances`
 - `append-treasury-history`: a non-legacy project with no history yet starts a new series; TEL still refuses an empty history.
 - `scan-exchange-flows`
+- `append-exchange-flows-from-cache`: CEX/DEX lists from `classification.*` (a project with no CEX list throws); sanity cap = 2 × `supply.target`.
+- `check-feed-consistency`: changelog falls back to `{ events: [] }`; treasury categories from `treasury.categories` (default TEL's four).
+- `detect-cex-candidates`: writes `data/<slug>/cex-candidates.json`; chains it has no tuning for use chunk 2,000 / lookback 300,000 blocks.
+- `extend-transfer-caches`: every chain in the project's chain map; caches under `data/<slug>/`.
+- `fill-history-gaps`: runs its child scripts with `--project <slug>`.
+- `generate-holder-transitions`: tier ranges are still TEL-sized (see limits below).
+- `generate-tier-outflows`: TEL keeps exactly ethereum/polygon/base with its chunk and blocks-per-day table and divisor 100; other projects scan every mapped chain with `chains[].blocksPerDay` (default 43,200), divisor `10 ** decimals`, `FLOW_CHUNK_<CHAIN>`. Staking contract from `resolveStakeChangedTarget` (none = no staking split).
+- `pull-cex-wallets`: no `classification.cexWallets` = an empty `cex-wallets.json`.
+- `rebuild-history-from-logs`: the StakeChanged chain/contract come from `resolveStakeChangedTarget` instead of a hardcoded Polygon check.
+- `recompute-history-from-git`
+- `resync-chain-holders`
+- `sync-cex-wallets-dune`: needs `classification.cexWallets` and a query id (`DUNE_QUERY_ID` env, then `pipeline.duneCexQueryId`; TEL keeps its built-in query). Missing either = exit 2.
+- `sync-classification-changelog`: no `classification.changelog` = an empty events feed.
+- `validate-outputs`
 
-Every other script still calls `selectPipelineProject(name)` without
-`ported`. It reads `config/chains.json` / the `public/data/` root directly, so
-it accepts only `legacyRoot` projects and **exits 2** for any other slug.
+**Deferred (still exit 2):**
+
+- `generate-wallet-flows`: TEL forensics (CoinGecko `telcoin` price, TEL DEX
+  venues and bridge infrastructure, `data/forensics`, gated views). It stays
+  TEL-only like the other forensics views above; `refresh-wallet-flows.yml`
+  is TEL-only.
+
+Every script not listed as ported still calls `selectPipelineProject(name)`
+without `ported`. It reads `config/chains.json` / the `public/data/` root
+directly, so it accepts only `legacyRoot` projects and **exits 2** for any
+other slug.
 A workflow dispatched with a non-TEL `project` therefore fails at the first
 un-ported step instead of writing the wrong token's numbers. To port a script,
 switch its paths to `projectPaths()` and its addresses to the helpers above,
 pass `{ ported: true }`, and add a TEL-unchanged test to
-`scripts/lib/projectPipeline.test.js`.
+`scripts/lib/projectPipeline.test.js` / `projectPipelinePorts.test.js` (the
+latter also fails if a ported script keeps a `public/data/`, `data/` or
+`config/<classification>.json` literal outside comments).
+
+### Workflow commit paths
+
+Each data workflow runs `node scripts/workflow-paths.js >> "$GITHUB_ENV"`
+after `npm ci`, which exports `HD_DATA_DIR` / `HD_WORK_DIR` (TEL:
+`public/data` / `data`; others: `public/data/<slug>` / `data/<slug>`) and
+`HD_CEX_CONFIG`. Commit steps keep their TEL file lists and pass them through
+`node scripts/workflow-paths.js files <paths…>`:
+
+- TEL: the list is printed unchanged, so TEL runs stage exactly the same paths.
+- Other projects: `public/data/<f>` → `public/data/<slug>/<f>`, `data/<f>` →
+  `data/<slug>/<f>`, `config/cex-wallets.json` (and the other classification
+  root files) → the project's `classification.*` file. Missing files are
+  dropped and `public/data/<slug>` itself is added, so the commit covers
+  `public/data/<slug>/**`. A path with no per-project mapping is refused.
 
 Known limits for a second token (not yet needed by TEL):
 `scripts/lib/rpc.js` only has key/public RPC pools for ethereum, polygon and
 base. Holder metrics thresholds (`RETAIL_THRESHOLD`, `MEGA_HOLDER_THRESHOLD`)
-are TEL-sized constants. The workflows still commit `public/data/*.json` paths
-only.
+are TEL-sized constants, and so are the tier ranges in
+`generate-holder-transitions` / `generate-tier-outflows`. The
+`refresh-tel-holders` verify step requires the same feed set for every project
+(including `funding-wallets.json` and `treasury-history.json`).
 
 ## Adding the next project
 

@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        description: 'Project slug from config/projects.json (scripts take --project; non-TEL runs commit public/data/<slug>/** and data/<slug>/**)'
         required: false
         default: 'tel'
 permissions:
@@ -32,6 +32,10 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Resolve project data paths
+        # HD_DATA_DIR / HD_WORK_DIR: public/data + data for TEL (unchanged),
+        # public/data/<slug> + data/<slug> for any other project.
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
       - name: Recompute holders-history.json and cex-balance-history.json
         # Pure git + local computation — no RPC calls, no secrets needed.
         run: node scripts/recompute-history-from-git.js
@@ -46,7 +50,7 @@ jobs:
           # (the running "ever held" address set) must be staged alongside the other two or
           # its corrections are silently dropped every run and generate-holders-history.js's
           # daily incremental script keeps building on a stale checkpoint.
-          git add public/data/holders-history.json public/data/cex-balance-history.json public/data/holders-ever-checkpoint.json
+          git add $(node scripts/workflow-paths.js files public/data/holders-history.json public/data/cex-balance-history.json public/data/holders-ever-checkpoint.json)
           if git diff --cached --quiet; then
             echo "No changes to commit"
             echo "changed=false" >> "$GITHUB_OUTPUT"

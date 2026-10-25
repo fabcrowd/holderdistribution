@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        description: 'Project slug from config/projects.json (scripts take --project; non-TEL runs commit public/data/<slug>/** and data/<slug>/**)'
         required: false
         default: 'tel'
 
@@ -36,6 +36,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Resolve project data paths
+        # HD_DATA_DIR / HD_WORK_DIR: public/data + data for TEL (unchanged),
+        # public/data/<slug> + data/<slug> for any other project.
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
 
       - name: Sync CEX wallets from Dune
         env:
@@ -79,18 +84,22 @@ jobs:
       - name: Commit updated CEX wallet list
         id: commit
         run: |
-          if git diff --quiet -- config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json; then
+          # TEL: exactly the paths below; other projects: the project's own
+          # classification.cexWallets file and public/data/<slug>/** (see
+          # scripts/workflow-paths.js).
+          CHECK=$(node scripts/workflow-paths.js files config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json)
+          if git diff --quiet -- $CHECK; then
             echo "No new CEX wallets found."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            ADDED=$(git diff -- config/cex-wallets.json | grep '^+' | grep -c '"address"' || true)
+            ADDED=$(git diff -- ${HD_CEX_CONFIG:-config/cex-wallets.json} | grep '^+' | grep -c '"address"' || true)
             git fetch origin main
             git rebase --autostash origin/main
-            git add config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json \
+            git add $(node scripts/workflow-paths.js files config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json \
               public/data/tel-holders.json public/data/holders-summary.json public/data/holders-lite.json \
               public/data/holders-history.json public/data/holder-transitions.json \
               public/data/supply-reconciliation.json public/data/treasury-history.json \
-              public/data/classification-changelog.json public/data/cex-balance-history.json
+              public/data/classification-changelog.json public/data/cex-balance-history.json)
             # "[skip netlify]" — this commit lands the data but does NOT
             # publish. Netlify honours [skip ci] and [skip netlify] in the head
             # commit of a push; [skip ci] is avoided deliberately because

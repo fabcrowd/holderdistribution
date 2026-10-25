@@ -48,37 +48,34 @@ import process from "node:process";
 import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
 import { fetchAllTransfers } from "./lib/alchemyTransfers.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectChains, projectWork } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("extend-transfer-caches");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: token per chain
+// from the project's chain map, caches in its work dir (TEL:
+// data/rebuild-transfers-<chain>.ndjson; others: data/<slug>/…).
+const project = selectPipelineProject("extend-transfer-caches", { ported: true });
 
 await loadEnv();
 
 const ROOT = process.cwd();
 
-/** TEL token per chain, from config/chains.json — see scan-exchange-flows.js.
- *  Base previously hardcoded NFTEarthOFT, so the Base cache holds the wrong
- *  token's transfers and must be rebuilt. */
-const CHAIN_CONFIG = JSON.parse(
-  await fs.readFile(path.resolve(ROOT, "config/chains.json"), "utf8"),
-);
+/** Base token per chain, from the project's chain map (TEL: config/chains.json)
+ *  — see scan-exchange-flows.js. Base previously hardcoded NFTEarthOFT, so the
+ *  Base cache holds the wrong token's transfers and must be rebuilt. */
+const CHAIN_CONFIG = projectChains(project, ROOT);
 const tokenFor = (chainKey) => {
   const token = CHAIN_CONFIG[chainKey]?.tokenAddress;
   if (typeof token !== "string" || !/^0x[0-9a-f]{40}$/i.test(token)) {
-    throw new Error(`config/chains.json is missing a valid tokenAddress for ${chainKey}`);
+    throw new Error(`project ${project.slug}: chain map is missing a valid tokenAddress for ${chainKey}`);
   }
   return token.toLowerCase();
 };
 
-const CHAINS = {
-  ethereum: { token: tokenFor("ethereum") },
-  polygon: { token: tokenFor("polygon") },
-  base: { token: tokenFor("base") },
-};
+// TEL: ethereum, polygon, base (config/chains.json order).
+const CHAINS = Object.fromEntries(Object.keys(CHAIN_CONFIG).map((chainKey) => [chainKey, { token: tokenFor(chainKey) }]));
 
-const cachePath = (chainKey) => path.resolve(ROOT, `data/rebuild-transfers-${chainKey}.ndjson`);
+const work = projectWork(project, ROOT);
+const cachePath = (chainKey) => work(`rebuild-transfers-${chainKey}.ndjson`);
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");

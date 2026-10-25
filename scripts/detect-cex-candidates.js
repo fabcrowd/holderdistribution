@@ -32,17 +32,17 @@ import process from "node:process";
 import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("detect-cex-candidates");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
+// snapshot, chain map and non-retail lists; the review queue goes to its work
+// dir (TEL: data/cex-candidates.json, others: data/<slug>/cex-candidates.json).
+const project = selectPipelineProject("detect-cex-candidates", { ported: true });
 
 await loadEnv();
 
-const HOLDERS_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
-const CHAINS_PATH = path.resolve(process.cwd(), "config/chains.json");
-const OUTPUT_PATH = path.resolve(process.cwd(), "data/cex-candidates.json");
+const HOLDERS_PATH = projectPaths(project)("tel-holders.json");
+const OUTPUT_PATH = projectWork(project)("cex-candidates.json");
 
 // Standard ERC-20 Transfer(address,address,uint256) topic0 — same constant
 // for every ERC-20 token, TEL included. Not worth a keccak256 dependency for
@@ -60,25 +60,28 @@ const CHAIN_RPC_SETTINGS = {
   polygon: { chunkSize: 2_000, defaultLookback: 300_000 }, // ~2s blocks, ~7 days
   base: { chunkSize: 10_000, defaultLookback: 300_000 }, // ~2s blocks, ~7 days
 };
+// Any other chain a project maps: the most conservative (Polygon-sized) settings.
+const DEFAULT_RPC_SETTINGS = { chunkSize: 2_000, defaultLookback: 300_000 };
+const rpcSettingsFor = (chainKey) => CHAIN_RPC_SETTINGS[chainKey] ?? DEFAULT_RPC_SETTINGS;
 
 const lookbackFor = (chainKey) => {
   const envKey = `CEX_CANDIDATE_LOOKBACK_BLOCKS_${chainKey.toUpperCase()}`;
   const override = Number(process.env[envKey]);
   if (Number.isFinite(override) && override > 0) return override;
-  return CHAIN_RPC_SETTINGS[chainKey].defaultLookback;
+  return rpcSettingsFor(chainKey).defaultLookback;
 };
 
 const readJson = async (absolutePath) => JSON.parse(await fs.readFile(absolutePath, "utf8"));
 
 const hex = (n) => "0x" + n.toString(16);
 
-const parseTransferLog = (log) => {
+const parseTransferLog = (log, divisor = 100) => {
   const topics = log.topics ?? [];
   const data = (log.data ?? "").replace("0x", "");
   if (topics.length < 3 || data.length < 64) return null;
   const from = "0x" + (topics[1] ?? "").slice(-40).toLowerCase();
   const to = "0x" + (topics[2] ?? "").slice(-40).toLowerCase();
-  const value = Number(BigInt("0x" + data.slice(0, 64))) / 100; // TEL: 2 decimals
+  const value = Number(BigInt("0x" + data.slice(0, 64))) / divisor; // 10 ** decimals (TEL: 2 -> 100)
   return { from, to, value };
 };
 
@@ -138,8 +141,8 @@ const counterpartyStats = (logs, self) => {
 const main = async () => {
   const [snapshot, chains, { set: nonRetailSet }] = await Promise.all([
     readJson(HOLDERS_PATH),
-    readJson(CHAINS_PATH),
-    loadNonRetailSet(),
+    projectChains(project),
+    loadNonRetailSet(projectNonRetailPaths(project)),
   ]);
 
   const candidates = (snapshot.wallets ?? [])
@@ -150,6 +153,7 @@ const main = async () => {
 
   console.log(`${candidates.length} candidate wallet(s) above ${MIN_BALANCE.toLocaleString()} TEL, not already classified.`);
   if (candidates.length === 0) {
+    await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
     await fs.writeFile(OUTPUT_PATH, `${JSON.stringify({ generatedAt: new Date().toISOString(), thresholds: { minBalance: MIN_BALANCE, fanThreshold: FAN_THRESHOLD }, candidates: [] }, null, 2)}\n`, "utf8");
     return;
   }
@@ -167,7 +171,7 @@ const main = async () => {
     if (onChain.length === 0) continue;
 
     console.log(`Scanning ${onChain.length} candidate(s) on ${chainKey}...`);
-    const { chunkSize } = CHAIN_RPC_SETTINGS[chainKey];
+    const { chunkSize } = rpcSettingsFor(chainKey);
     const lookback = lookbackFor(chainKey);
     const latestHex = await rpcCall(rpcUrls[0], "eth_blockNumber", []);
     const latestBlock = Number.parseInt(String(latestHex), 16);

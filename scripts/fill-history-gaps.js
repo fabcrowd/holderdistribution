@@ -52,24 +52,28 @@ import { execFileSync } from "node:child_process";
 import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
 import { findBlockAtTime } from "./lib/historicalReplay.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChains, projectWork } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("fill-history-gaps");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
+// data dir, its chain map and its own as-of block cache (TEL: public/data/ +
+// data/; others: public/data/<slug>/ + data/<slug>/). The child scripts are
+// run with the same `--project`.
+const project = selectPipelineProject("fill-history-gaps", { ported: true });
 
 await loadEnv();
 
 const ROOT = process.cwd();
-const HISTORY_PATH = path.resolve(ROOT, "public/data/holders-history.json");
-const BLOCKS_PATH = path.resolve(ROOT, "data/holders-asof-blocks.json");
+const data = projectPaths(project, ROOT);
+const HISTORY_PATH = data("holders-history.json");
+const BLOCKS_PATH = projectWork(project, ROOT)("holders-asof-blocks.json");
 // Restored after the run — an --as-of run overwrites these with a past day.
 const LIVE_ARTIFACTS = [
-  "public/data/tel-holders.json",
-  "public/data/holders-summary.json",
-  "public/data/holders-lite.json",
-  "public/data/funding-wallets.json",
+  data.rel("tel-holders.json"),
+  data.rel("holders-summary.json"),
+  data.rel("holders-lite.json"),
+  data.rel("funding-wallets.json"),
 ];
+const PROJECT_ARGS = ["--project", project.slug];
 
 const readArg = (flag, fallback = null) => {
   const hit = process.argv.slice(2).find((a) => a.startsWith(`${flag}=`));
@@ -81,7 +85,7 @@ const WINDOW_DAYS = Number(readArg("--days", "14"));
 const isoDate = (d) => d.toISOString().slice(0, 10);
 
 const run = (script, args = []) => {
-  execFileSync("node", [`scripts/${script}`, ...args], { cwd: ROOT, stdio: "inherit" });
+  execFileSync("node", [`scripts/${script}`, ...PROJECT_ARGS, ...args], { cwd: ROOT, stdio: "inherit" });
 };
 
 const main = async () => {
@@ -117,7 +121,7 @@ const main = async () => {
   // Day-boundary blocks, cached in the repo so a re-run (or a later manual
   // reconstruction) never re-searches a date it has already resolved.
   const blocks = JSON.parse(await fs.readFile(BLOCKS_PATH, "utf8").catch(() => "{}"));
-  const chainConfig = JSON.parse(await fs.readFile(path.resolve(ROOT, "config/chains.json"), "utf8"));
+  const chainConfig = projectChains(project, ROOT);
   for (const date of missing) {
     if (blocks[date]) continue;
     blocks[date] = {};
@@ -138,6 +142,7 @@ const main = async () => {
       console.log(`  ${date} ${chainKey}: block ${blocks[date][chainKey]}`);
     }
   }
+  await fs.mkdir(path.dirname(BLOCKS_PATH), { recursive: true });
   await fs.writeFile(
     BLOCKS_PATH,
     `${JSON.stringify(Object.fromEntries(Object.keys(blocks).sort().map((k) => [k, blocks[k]])), null, 1)}\n`,

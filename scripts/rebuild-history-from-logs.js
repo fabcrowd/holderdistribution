@@ -121,19 +121,23 @@ import {
   partitionLogsByBoundary,
   shardRange,
 } from "./lib/historicalReplay.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
+import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("rebuild-history-from-logs");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
+// data dir, work dir (transfer caches), chain map, non-retail lists and
+// StakeChanged staking contract (TEL: Polygon 0x92e4…6330, as before).
+const project = selectPipelineProject("rebuild-history-from-logs", { ported: true });
 
 await loadEnv();
 
 const ROOT = process.cwd();
-const HISTORY_PATH = path.resolve(ROOT, "public/data/holders-history.json");
-const CEX_HISTORY_PATH = path.resolve(ROOT, "public/data/cex-balance-history.json");
-const EVER_CHECKPOINT_PATH = path.resolve(ROOT, "public/data/holders-ever-checkpoint.json");
-const DATE_BLOCKS_PATH = path.resolve(ROOT, "public/data/date-blocks.json");
+const data = projectPaths(project, ROOT);
+const work = projectWork(project, ROOT);
+const HISTORY_PATH = data("holders-history.json");
+const CEX_HISTORY_PATH = data("cex-balance-history.json");
+const EVER_CHECKPOINT_PATH = data("holders-ever-checkpoint.json");
+const DATE_BLOCKS_PATH = data("date-blocks.json");
 // Cached raw alchemy_getAssetTransfers results per chain — data/, not
 // public/data/, matching generate-tier-outflows.js's convention for
 // non-servable scan state. Lets --resume skip re-fetching entirely rather
@@ -148,9 +152,13 @@ const DATE_BLOCKS_PATH = path.resolve(ROOT, "public/data/date-blocks.json");
 // available memory. Newline-delimited JSON writes and reads one record at a
 // time via a stream, so no single string ever needs to hold more than one
 // transfer's worth of text. See writeTransfersCache/readTransfersCache below.
-const transfersCachePath = (chainKey) => path.resolve(ROOT, `data/rebuild-transfers-${chainKey}.ndjson`);
+const transfersCachePath = (chainKey) => work(`rebuild-transfers-${chainKey}.ndjson`);
 
-const STAKING_CONTRACT = "0x92e43aec69207755cb1e6a8dc589aae630476330";
+// The project's `kind: "stakeChanged"` staking contract (TEL: Polygon
+// 0x92e43aec69207755cb1e6a8dc589aae630476330). None = no staking replay.
+const STAKE_TARGET = resolveStakeChangedTarget(project);
+const STAKING_CONTRACT = STAKE_TARGET?.contract ?? null;
+const STAKE_CHAIN = STAKE_TARGET?.chain ?? null;
 const MIN_TEL_RAW = 1n; // matches pull-holders-rpc.js — any positive balance
 const TOP_N = Math.max(...CONCENTRATION_BUCKETS);
 
@@ -284,10 +292,10 @@ async function resolveDateBlocks(chainKey, rpcUrls, boundaries, genesisBlock, he
 }
 
 async function main() {
-  const { set: nonRetail, sizes } = await loadNonRetailSet();
+  const { set: nonRetail, sizes } = await loadNonRetailSet(projectNonRetailPaths(project, ROOT));
   console.log(`Non-retail set: ${sizes.total} (exclusions ${sizes.exclusions}, CEX ${sizes.cex}, DEX ${sizes.dex}).`);
 
-  const chainConfig = await readJson(path.resolve(ROOT, "config/chains.json"));
+  const chainConfig = projectChains(project, ROOT);
   const chainKeys = Object.keys(chainConfig).filter((k) => !onlyChain || k === onlyChain);
   const endDate = new Date().toISOString().slice(0, 10);
   const boundaries = dailyBoundaries(startDate, endDate);
@@ -345,6 +353,7 @@ async function main() {
 
     console.log(`\n=== ${chainKey}: blocks ${genesis}..${head}, ${rpcUrls.length} Alchemy key(s) ===`);
     const dateBlocks = await resolveDateBlocks(chainKey, rpcUrls, boundaries, genesis, head, dateBlockCache);
+    if (!dryRun) await fs.mkdir(path.dirname(DATE_BLOCKS_PATH), { recursive: true });
     if (!dryRun) await fs.writeFile(DATE_BLOCKS_PATH, `${JSON.stringify(dateBlockCache, null, 2)}\n`, "utf8");
 
     // Polygon only: per-date stakes, replayed first so the Transfer pass can
@@ -356,7 +365,7 @@ async function main() {
     // StakeChanged (only token transfers). Etherscan's getLogs has no such
     // block-range cap.
     const stakesByDate = new Map();
-    if (chainKey === "polygon" && etherscanPool) {
+    if (chainKey === STAKE_CHAIN && etherscanPool) {
       const stakeLedger = createStakeLedger({ decimals });
       console.log(`  Fetching StakeChanged logs via Etherscan...`);
       const stakeLogs = await fetchContractLogs(etherscanPool, {
@@ -370,7 +379,7 @@ async function main() {
         if (boundary) stakesByDate.set(boundary.date, stakeLedger.snapshot());
       }
       console.log(`  Stake ledger: ${stakeLedger.size} accounts.`);
-    } else if (chainKey === "polygon") {
+    } else if (chainKey === STAKE_CHAIN) {
       console.log(`  Skipping staking replay — no Etherscan key configured.`);
     }
 
@@ -417,7 +426,7 @@ async function main() {
       // Merge staking exactly as pull-holders-rpc.js does: credit each staker,
       // then retire the contract's own balance down to whatever the
       // attribution could not place, so nothing is counted twice.
-      if (chainKey === "polygon") {
+      if (chainKey === STAKE_CHAIN) {
         const stakes = stakesByDate.get(boundary.date) ?? new Map();
         let attributed = 0;
         for (const [account, staked] of stakes) {
@@ -445,7 +454,7 @@ async function main() {
         totalBalance: metrics.totalBalance,
         distribution: buildDistribution(holders),
         topBalances,
-        stakingBalance: chainKey === "polygon"
+        stakingBalance: chainKey === STAKE_CHAIN
           ? [...(stakesByDate.get(boundary.date) ?? new Map()).values()].reduce((s, v) => s + v, 0)
           : 0,
       };

@@ -19,14 +19,15 @@ import path from "node:path";
 import process from "node:process";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
 import { computeChainMetrics, buildSummary, RETAIL_THRESHOLD } from "./lib/holderMetrics.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectNonRetailPaths } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("resync-chain-holders");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
+// data dir and its own exclusions/CEX/DEX lists — see scripts/lib/projects.js.
+const project = selectPipelineProject("resync-chain-holders", { ported: true });
+const data = projectPaths(project);
 
-const HOLDERS_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
-const SUMMARY_PATH = path.resolve(process.cwd(), "public/data/holders-summary.json");
+const HOLDERS_PATH = data("tel-holders.json");
+const SUMMARY_PATH = data("holders-summary.json");
 
 const readJson = async (p, fallback = null) => {
   try {
@@ -42,7 +43,7 @@ const main = async () => {
   const snapshot = await readJson(HOLDERS_PATH);
   if (!snapshot) throw new Error("tel-holders.json not found");
 
-  const { set: excluded, sizes } = await loadNonRetailSet();
+  const { set: excluded, sizes } = await loadNonRetailSet(projectNonRetailPaths(project));
   console.log(
     `Non-retail set: ${sizes.total} addresses ` +
       `(exclusions ${sizes.exclusions}, CEX config ${sizes.cex}, DEX config ${sizes.dex}).`,

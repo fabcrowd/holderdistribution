@@ -97,15 +97,16 @@ async function cacheReaches(cachePath, toBlock) {
   }
 }
 
-export async function ensureWindowCache({ chainKey, fromBlock, toBlock, contractAddress, rpcUrl, root = process.cwd() }) {
-  const fullCache = path.resolve(root, `data/rebuild-transfers-${chainKey}.ndjson`);
+// `workDir`: the project's working-file dir (projectWorkDir: TEL "data", others "data/<slug>").
+export async function ensureWindowCache({ chainKey, fromBlock, toBlock, contractAddress, rpcUrl, root = process.cwd(), workDir = "data" }) {
+  const fullCache = path.resolve(root, workDir, `rebuild-transfers-${chainKey}.ndjson`);
   // Present is not the same as sufficient. The cache is only usable if it
   // actually reaches toBlock: a cache that stops short contains no transfers
   // for the tail of the window, so the replay would return a balance sheet
   // that is simply missing those days — with no error anywhere, which is the
   // worst possible failure for a historical row. Checked, not assumed.
   if (await cacheReaches(fullCache, toBlock)) return fullCache;
-  const windowCache = path.resolve(root, `data/asof-window-${chainKey}-${fromBlock}-${toBlock}.ndjson`);
+  const windowCache = path.resolve(root, workDir, `asof-window-${chainKey}-${fromBlock}-${toBlock}.ndjson`);
   try {
     await fs.access(windowCache);
     return windowCache;
