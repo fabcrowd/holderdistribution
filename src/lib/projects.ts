@@ -8,6 +8,7 @@
  * feeds under public/data/<slug>/"; see docs/MULTI-TOKEN.md.
  */
 import registry from "../../config/projects.json";
+import { chainExplorerLink, explorerRoot, type ChainVm, type ExplorerTemplates } from "./explorerLinks";
 
 export type ProjectEntry = {
   slug: string;
@@ -19,13 +20,33 @@ export type ProjectEntry = {
 export type ProjectChain = {
   key: string;
   name: string;
-  chainId: number;
+  /** EVM only (a Solana chain has none; validation rejects it there). */
+  chainId?: number;
+  /** Adapter: "evm" (default) or "solana". A chain keyed "solana" without vm is Solana. */
+  vm?: ChainVm;
+  /** Solana only: "mainnet-beta" (the only supported cluster). */
+  cluster?: "mainnet-beta";
+  /** How this chain's supply nets into the project total (default "native"). */
+  bridge?: "native" | "lock-mint" | "burn-mint";
   /** Pipeline: the supply-origin chain (bridged copies elsewhere are mirrors). */
   origin?: boolean;
-  /** Pipeline: first block the base-token scan starts from. */
+  /** Pipeline: first block the base-token scan starts from (EVM only). */
   fromBlock?: number;
-  explorer: string;
-  tokens: Array<{ generation: string; address: string; decimals: number; status?: string; deployBlock?: number }>;
+  /** Explorer root. Optional on Solana (defaults to Solscan). */
+  explorer?: string;
+  /** Link overrides with {address} / {tx} placeholders (src/lib/explorerLinks.ts). */
+  explorerTemplates?: ExplorerTemplates;
+  tokens: Array<{
+    generation?: string;
+    address: string;
+    decimals?: number;
+    status?: string;
+    /** EVM only. */
+    deployBlock?: number;
+    /** Solana only: "spl-token" | "token-2022". */
+    program?: "spl-token" | "token-2022";
+    symbol?: string;
+  }>;
   contracts?: Record<string, { address: string; role: string }>;
   /** Pipeline RPC wiring (scripts/lib/rpc.js configureProjectRpc): key-pool env prefix + keyless public fallbacks. */
   rpc?: { envPrefix?: string; publicUrls?: string[] };
@@ -156,7 +177,9 @@ export const projectChainMeta = (project: Pick<ProjectConfig, "chains">): Projec
     return {
       key: c.key,
       label: c.name,
-      explorerUrl: explorer,
-      tokenUrl: canonical ? `${explorer}/token/${canonical.address.toLowerCase()}` : explorer,
+      explorerUrl: explorerRoot(c) || explorer,
+      // EVM: `${explorer}/token/<lowercased>` exactly as before; Solana: Solscan
+      // (or explorerTemplates), base58 case kept.
+      tokenUrl: canonical ? chainExplorerLink(c, "token", canonical.address, { lowercase: true }) : explorer,
     };
   });
