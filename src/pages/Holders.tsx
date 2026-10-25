@@ -19,6 +19,7 @@ import { TerminalDashboard } from "@/components/terminal/TerminalDashboard";
 import { HoldersTerminal } from "@/components/terminal/HoldersTerminal";
 import { DistributionTerminal } from "@/components/terminal/DistributionTerminal";
 import { TERMINAL_QUERY, useMediaQuery } from "@/hooks/useMediaQuery";
+import { EXPLORE_HINT } from "@/lib/terminalCopy";
 import { buildViewHash, DEFAULT_PANEL, parseViewHash, type ViewId } from "@/lib/viewRoute";
 import { navigate, readSettings, withHash, withSettings, type NavKind } from "@/lib/historyNav";
 
@@ -308,9 +309,11 @@ const Holders = () => {
     />
   );
 
-  // Desktop: a no-scroll trading-terminal grid. Rendered instead of (not
-  // hidden alongside) the stacked layout, so there is one set of ids and one
-  // set of data subscriptions.
+  // Desktop terminal. Holders dashboard and Distribution scroll inside the
+  // shell (primary charts are taller than a 2×7 grid allowed). Explore and
+  // Supply still fill the viewport. Rendered instead of (not hidden
+  // alongside) the stacked layout, so there is one set of ids and one set
+  // of data subscriptions.
   if (isTerminal) {
     return (
       <TerminalDashboard
@@ -326,7 +329,10 @@ const Holders = () => {
       >
         {activeTab === "holders" &&
           (explore ? (
-            <div className="terminal-dense h-full overflow-auto rounded-lg" data-testid="holders-explore">
+            <div className="terminal-dense flex h-full flex-col overflow-auto rounded-lg" data-testid="holders-explore">
+              <p data-testid="explore-hint" className="shrink-0 border-b border-border/60 bg-card/80 px-3 py-2 text-xs leading-snug text-muted-foreground">
+                {EXPLORE_HINT}
+              </p>
               {holdersWidget}
             </div>
           ) : (

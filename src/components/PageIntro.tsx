@@ -1,15 +1,7 @@
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
-import { type SummaryPoint } from "@/lib/holderSummary";
 import { useHeadlineSummary } from "@/hooks/useHeadlineSummary";
 import { DataFreshnessBadge, StaleDataBanner } from "@/components/DataFreshness";
+import { HeadlineBody } from "@/components/HeadlineBody";
 import { TokenSwitcher } from "@/components/TokenSwitcher";
-
-const TREND_STYLE: Record<SummaryPoint["trend"], { Icon: typeof Minus; cls: string }> = {
-  up: { Icon: ArrowUpRight, cls: "text-emerald-700 dark:text-emerald-400" },
-  down: { Icon: ArrowDownRight, cls: "text-red-700 dark:text-red-400" },
-  flat: { Icon: Minus, cls: "text-muted-foreground" },
-  unknown: { Icon: Minus, cls: "text-muted-foreground" },
-};
 
 /**
  * First-screen answer to "what is happening with TEL holders?": a real page
@@ -29,22 +21,7 @@ export const PageIntro = ({ rangeDays }: { rangeDays: number }) => {
         <DataFreshnessBadge generatedAt={snapshot?.generatedAt} />
       </div>
       {summary ? (
-        <div className="max-w-3xl space-y-2" data-testid="page-summary">
-          <p className="text-base sm:text-lg leading-snug text-foreground/90">{summary.headline}</p>
-          {summary.points.length > 0 && (
-            <ul className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-x-5 text-sm text-muted-foreground">
-              {summary.points.map((p) => {
-                const { Icon, cls } = TREND_STYLE[p.trend];
-                return (
-                  <li key={p.id} className="inline-flex items-start gap-1.5">
-                    <Icon aria-hidden="true" className={`mt-0.5 h-4 w-4 shrink-0 ${cls}`} />
-                    <span>{p.text}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
+        <HeadlineBody summary={summary} />
       ) : isError ? (
         <p className="max-w-3xl text-sm text-muted-foreground">
           Headline numbers are unavailable right now. The panels below explain what failed and let you retry.

@@ -8,9 +8,12 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ChangeIndicator } from "@/components/ChangeIndicator";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
+import { HeadlineBody } from "@/components/HeadlineBody";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TokenSwitcher } from "@/components/TokenSwitcher";
 import { useProject } from "@/hooks/useProject";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
+import { LAYOUT_MODES } from "@/lib/terminalCopy";
 import { TimeRangeDropdown } from "@/components/TimeRangeDropdown";
 import { Footer } from "@/components/Footer";
 import { useHeadlineSummary } from "@/hooks/useHeadlineSummary";
@@ -53,9 +56,11 @@ type Props = {
  * Desktop (>=1280px) shell: one 56px title bar carrying the brand (eyebrow +
  * an always-visible "<TICKER> Holder Distribution" h1 whose ticker is the
  * master token switch, plus a stale-data pill),
- * the view switch, the four headline KPIs and every control; a viewport-height grid
- * below it; a 24px status line. The document itself never scrolls; panels
- * scroll internally.
+ * the view switch, the four headline KPIs and every control; a plain-language
+ * strip (the same sentence the phone shows under the title); then the view.
+ * Holders dashboard and Distribution scroll this region so charts can be
+ * taller than the fold. Supply and Explore still fill the viewport and
+ * scroll inside their panels. A 24px status line stays pinned.
  */
 export const TerminalDashboard = ({
   view,
@@ -71,6 +76,10 @@ export const TerminalDashboard = ({
 }: Props) => {
   const { summary, snapshot, tiles, isError } = useHeadlineSummary(rangeDays, selectedView);
   const { project } = useProject();
+  const { t } = useProjectCopy();
+  // Holders dashboard and Distribution grow past the fold. Supply and the
+  // one-chart Explore view keep a viewport-locked panel.
+  const mainScrolls = (view === "holders" && !explore) || view === "distribution";
   // Chain picker: "All chains" plus the active project's chains[] (src/lib/chainViews.ts).
   const CHAINS = chainViewOptions(project, "All chains");
   const qc = useQueryClient();
@@ -199,25 +208,26 @@ export const TerminalDashboard = ({
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             {onExploreChange && (
               <div role="group" aria-label="Layout" className="flex items-center rounded-md border border-border p-0.5">
-                {[
-                  { on: false, label: "Dashboard", Icon: LayoutGrid },
-                  { on: true, label: "Explore", Icon: PanelsTopLeft },
-                ].map(({ on, label, Icon }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    aria-pressed={explore === on}
-                    onClick={() => onExploreChange(on)}
-                    title={on ? "Explore: every chart and table for this view, one at a time" : "Dashboard: all key charts on one screen"}
-                    aria-label={label}
-                    className={`inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded px-1.5 text-xs 2xl:px-2 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      explore === on ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="hidden 2xl:inline">{label}</span>
-                  </button>
-                ))}
+                {LAYOUT_MODES.map(({ explore: on, label, hint }) => {
+                  const Icon = on ? PanelsTopLeft : LayoutGrid;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      aria-pressed={explore === on}
+                      onClick={() => onExploreChange(on)}
+                      title={hint}
+                      aria-label={hint}
+                      data-testid={on ? "layout-explore" : "layout-dashboard"}
+                      className={`inline-flex h-7 items-center justify-center gap-1 rounded px-1.5 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        explore === on ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
             )}
             <label className="sr-only" htmlFor="terminal-chain">
@@ -273,8 +283,28 @@ export const TerminalDashboard = ({
           </div>
         </header>
 
-        <main id="main-content" tabIndex={-1} className="relative min-h-0 flex-1 overflow-hidden p-2 focus:outline-none">
-          <div key={view} className={`h-full min-h-0 ${viewIn}`}>
+        <div
+          data-testid="terminal-headline"
+          className="shrink-0 border-b border-border bg-card px-3 py-1.5"
+        >
+          {summary ? (
+            <HeadlineBody summary={summary} dense />
+          ) : isError ? (
+            <p className="text-xs text-muted-foreground">Headline numbers are unavailable right now. The panels below explain what failed and let you retry.</p>
+          ) : (
+            <div className="space-y-1" aria-hidden="true">
+              <div className="h-4 w-full max-w-xl rounded bg-muted/70 animate-pulse" />
+              <div className="h-3 w-2/3 max-w-md rounded bg-muted/60 animate-pulse" />
+            </div>
+          )}
+        </div>
+
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className={`relative min-h-0 flex-1 p-2 focus:outline-none ${mainScrolls ? "overflow-y-auto" : "overflow-hidden"}`}
+        >
+          <div key={view} className={mainScrolls ? `min-h-full ${viewIn}` : `h-full min-h-0 ${viewIn}`}>
             {children}
           </div>
         </main>
@@ -297,7 +327,7 @@ export const TerminalDashboard = ({
             </span>
           )}
           <span aria-hidden="true">·</span>
-          <span>On-chain data for Ethereum, Polygon and Base. Prices by CoinGecko.</span>
+          <span>On-chain data for {t("{chains}")}. Prices by CoinGecko.</span>
           <span className="ml-auto">Independent community project. Not financial advice.</span>
           <Sheet>
             <SheetTrigger asChild>

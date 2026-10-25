@@ -34,6 +34,10 @@ const PROJECT_AGNOSTIC_FILES = [
   "src/components/TreasuryHistoryChart.tsx",
   "src/components/SupplyBreakdown.tsx",
   "src/components/terminal/SupplyTerminal.tsx",
+  "src/components/terminal/TerminalDashboard.tsx",
+  "src/components/terminal/DistributionTerminal.tsx",
+  "src/components/terminal/HoldersTerminal.tsx",
+  "src/components/HeadlineBody.tsx",
   "src/components/LockedAnalysisTile.tsx",
 ];
 

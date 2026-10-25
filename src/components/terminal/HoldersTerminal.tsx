@@ -8,6 +8,7 @@ import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { formatCompact, formatSignedCompact } from "@/lib/format";
+import { HOLDERS_PRIMARY_ROW_HEIGHT, SECONDARY_CHART_ROW_PX, TABLE_PANEL_PX } from "@/lib/terminalLayout";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
 import { TimeChart, SignedBars, CategoryBars, type ChartMarker } from "./MiniCharts";
 import { DetailsButton } from "./DetailsButton";
@@ -192,9 +193,14 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const retailTotal = stats?.total ?? 0;
 
   return (
-    <div className={`grid h-full min-h-0 grid-cols-12 grid-rows-2 gap-2 ${intro ? "ha-stagger" : ""}`} data-testid="holders-terminal">
+    <div className={`flex flex-col gap-2 ${intro ? "ha-stagger" : ""}`} data-testid="holders-terminal">
+      <div
+        className="grid shrink-0 grid-cols-2 gap-2"
+        style={{ height: HOLDERS_PRIMARY_ROW_HEIGHT }}
+        data-testid="holders-primary"
+      >
       <TerminalPanel
-        className="col-span-4"
+        className="h-full min-h-0"
         title="Retail holders"
         info={`Wallets holding more than 0 ${tk}, excluding exchange, DEX, contract and ${pn}-controlled wallets.`}
         stat={
@@ -220,7 +226,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       </TerminalPanel>
 
       <TerminalPanel
-        className="col-span-4"
+        className="h-full min-h-0"
         title={`${tk} held`}
         info={`${tk} in retail wallets compared with ${tk} in custody at known exchange wallets. All chains combined.${
           v3Staking ? ` Retail includes ${formatCompact(combinedStaking?.stakedTotal ?? 0)} staked ${tk}, of which ${formatCompact(v3Staking.stakedTotal)} is in the v3 StakingModule (credited to each staker's wallet, so it isn't counted twice).` : ""
@@ -262,8 +268,14 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         )}
       </TerminalPanel>
 
+      </div>
+      <div
+        className="grid shrink-0 grid-cols-3 gap-2"
+        style={{ height: SECONDARY_CHART_ROW_PX }}
+        data-testid="holders-secondary"
+      >
       <TerminalPanel
-        className="col-span-4"
+        className="h-full min-h-0"
         title="Exchange net flow"
         info={`Daily ${tk} deposited to minus withdrawn from known exchange wallets. A deposit is not necessarily a sale.`}
         stat={
@@ -295,7 +307,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       </TerminalPanel>
 
       <TerminalPanel
-        className="col-span-3"
+        className="h-full min-h-0"
         title={`Staked ${tk}`}
         info={
           v3Staking
@@ -370,7 +382,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       </TerminalPanel>
 
       <TerminalPanel
-        className="col-span-3"
+        className="h-full min-h-0"
         title="Wallet sizes"
         info={`Retail wallets by balance (${tk}). The gold bar contains the average balance${stats ? ` (${formatCompact(stats.average)} ${tk})` : ""}.`}
         stat={
@@ -400,8 +412,14 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         )}
       </TerminalPanel>
 
+      </div>
+      <div
+        className="grid shrink-0 grid-cols-2 gap-2"
+        style={{ height: TABLE_PANEL_PX }}
+        data-testid="holders-tables"
+      >
       <TerminalPanel
-        className="col-span-3"
+        className="h-full min-h-0"
         title="Concentration"
         info={`Share of retail ${tk} held by the largest N retail wallets. Change is against the previous snapshot.`}
         stat={stats && <span className="text-[11px] text-muted-foreground">Gini <span className="font-semibold text-foreground">{stats.gini.toFixed(3)}</span></span>}
@@ -450,7 +468,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       </TerminalPanel>
 
       <TerminalPanel
-        className="col-span-3"
+        className="h-full min-h-0"
         title="Exchange balances"
         info={`${tk} held at each exchange's known wallets, with the change over the selected period.`}
         stat={cexTotal > 0 && <span className="font-semibold text-foreground">{formatCompact(cexTotal)}</span>}
@@ -483,6 +501,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           </table>
         )}
       </TerminalPanel>
+      </div>
     </div>
   );
 };
