@@ -44,7 +44,7 @@ jobs:
 
       - name: Sync CEX wallets from Dune
         env:
-          DUNE_API_KEY: zXvw7zC4MllZlMMdrU6N3t3n8Oz4iaaN
+          DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
         run: node scripts/sync-cex-wallets-dune.js
 
       - name: Copy CEX wallets to public data
