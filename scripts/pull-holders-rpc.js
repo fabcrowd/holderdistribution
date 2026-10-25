@@ -21,7 +21,7 @@ import {
   computeChainMetrics,
   buildSummary,
 } from "./lib/holderMetrics.js";
-import { selectPipelineProject, projectPaths, projectChains, projectClassificationPath, projectNonRetailPaths } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChains, projectClassificationPath, projectNonRetailPaths, projectWork, projectWorkDir } from "./lib/projects.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: chain/token
@@ -51,7 +51,8 @@ const CHECKPOINT_PATH = data("holders-checkpoint.json");
 // definition of the metrics.
 const ARG_AS_OF = readArg("--as-of");
 const ARG_ANCHOR_DATE = readArg("--anchor-date") ?? "2026-08-21";
-const AS_OF_BLOCKS_PATH = path.resolve(process.cwd(), "data/holders-asof-blocks.json");
+// Working files (not served): TEL data/, others data/<slug>/.
+const AS_OF_BLOCKS_PATH = projectWork(project)("holders-asof-blocks.json");
 
 // Total supply is DERIVED from the origin chain (see scripts/lib/supply.js),
 // never hardcoded. The previous hardcoded constant here was 92_577_234_366 —
@@ -613,6 +614,7 @@ async function main() {
       // Prefers the local cache, falls back to fetching just this window so a
       // CI runner (where the multi-GB caches are gitignored) can do this too.
       const transfersPath = await ensureWindowCache({
+        workDir: projectWorkDir(project),
         chainKey,
         fromBlock: anchorChain.lastBlock,
         toBlock: blockMap[chainKey],

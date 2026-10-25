@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        description: 'Project slug from config/projects.json (scripts take --project; non-TEL runs commit public/data/<slug>/** and data/<slug>/**)'
         required: false
         default: 'tel'
 
@@ -60,6 +60,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Resolve project data paths
+        # HD_DATA_DIR / HD_WORK_DIR: public/data + data for TEL (unchanged),
+        # public/data/<slug> + data/<slug> for any other project.
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
 
       - name: Refresh TEL staker balances
         # NON-FATAL, deliberately. This step is the pipeline's heaviest RPC
@@ -144,25 +149,25 @@ jobs:
       - name: Verify generated files
         run: |
           REQUIRED_FILES=(
-            "public/data/funding-wallets.json"
-            "public/data/tel-holders.json"
-            "public/data/holders-summary.json"
-            "public/data/holders-history.json"
-            "public/data/cex-wallets.json"
-            "public/data/cex-flows.json"
-            "public/data/cex-balance-history.json"
-            "public/data/holders-lite.json"
-            "public/data/holders-checkpoint.json"
-            "public/data/holder-transitions.json"
-            "public/data/holders-ever-checkpoint.json"
-            "public/data/supply-reconciliation.json"
+            "$HD_DATA_DIR/funding-wallets.json"
+            "$HD_DATA_DIR/tel-holders.json"
+            "$HD_DATA_DIR/holders-summary.json"
+            "$HD_DATA_DIR/holders-history.json"
+            "$HD_DATA_DIR/cex-wallets.json"
+            "$HD_DATA_DIR/cex-flows.json"
+            "$HD_DATA_DIR/cex-balance-history.json"
+            "$HD_DATA_DIR/holders-lite.json"
+            "$HD_DATA_DIR/holders-checkpoint.json"
+            "$HD_DATA_DIR/holder-transitions.json"
+            "$HD_DATA_DIR/holders-ever-checkpoint.json"
+            "$HD_DATA_DIR/supply-reconciliation.json"
             # Was committed (FILES_TO_CHECK below) but never verified here, so a
             # failed append-treasury-history.js left the workflow green while the
             # treasury series silently stopped advancing — see lessons.md,
             # "A Crashed Script Can Log a Convincing 'Complete' and Write Nothing".
             # Keep this list and FILES_TO_CHECK in sync; they drifted once already.
-            "public/data/treasury-history.json"
-            "public/data/classification-changelog.json"
+            "$HD_DATA_DIR/treasury-history.json"
+            "$HD_DATA_DIR/classification-changelog.json"
           )
           for file in "${REQUIRED_FILES[@]}"; do
             if [ ! -f "$file" ]; then
@@ -195,13 +200,13 @@ jobs:
       - name: Commit snapshot changes
         id: commit
         run: |
-          FILES_TO_CHECK="public/data/funding-wallets.json public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/cex-wallets.json public/data/cex-flows.json public/data/cex-balance-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/chain-status.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json"
+          FILES_TO_CHECK=$(node scripts/workflow-paths.js files public/data/funding-wallets.json public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/cex-wallets.json public/data/cex-flows.json public/data/cex-balance-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/chain-status.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json)
 
           git add $FILES_TO_CHECK
           # staker-balances-checkpoint.json only exists if pull-staker-balances.js
           # got interrupted mid-run; -A handles add/update/delete, || true
           # swallows the "no match" case when it's neither tracked nor present.
-          git add -A -- public/data/staker-balances-checkpoint.json 2>/dev/null || true
+          git add -A -- "$HD_DATA_DIR/staker-balances-checkpoint.json" 2>/dev/null || true
 
           # git diff on the unstaged tree misses new untracked files — check
           # the staged index instead.
@@ -276,7 +281,7 @@ jobs:
 
       - name: Commit downstream feeds
         run: |
-          FILES="public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json public/data/holders-history.json data/holders-asof-blocks.json"
+          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json public/data/holders-history.json data/holders-asof-blocks.json)
           for f in $FILES; do [ -e "$f" ] && git add "$f"; done
           if git diff --cached --quiet; then
             echo "No downstream changes to commit"

@@ -100,21 +100,24 @@ import { computeChainMetrics, RETAIL_THRESHOLD } from "./lib/holderMetrics.js";
 import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS } from "./lib/holdersView.js";
 import { classifySnapshot, stakedAmountsByAddress } from "./lib/phantomStakers.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectNonRetailPaths, projectClassificationPath } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("recompute-history-from-git");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
+// data dir (on disk + git history) and its own classification lists (TEL:
+// public/data/ + config/ root files, exactly as before).
+const project = selectPipelineProject("recompute-history-from-git", { ported: true });
 
 const ROOT = process.cwd();
-const HOLDERS_SNAPSHOT_FILE = "public/data/tel-holders.json";
-const FUNDING_WALLETS_FILE = "public/data/funding-wallets.json";
+const data = projectPaths(project, ROOT);
+const HOLDERS_SNAPSHOT_FILE = data.rel("tel-holders.json");
+const FUNDING_WALLETS_FILE = data.rel("funding-wallets.json");
 const FUNDING_WALLETS_PATH = path.resolve(ROOT, FUNDING_WALLETS_FILE);
 const EMPTY_SET = new Set();
-const HOLDERS_HISTORY_PATH = path.resolve(ROOT, "public/data/holders-history.json");
-const CEX_HISTORY_PATH = path.resolve(ROOT, "public/data/cex-balance-history.json");
-const CEX_CONFIG_PATH = path.resolve(ROOT, "config/cex-wallets.json");
-const EVER_CHECKPOINT_PATH = path.resolve(ROOT, "public/data/holders-ever-checkpoint.json");
+const HOLDERS_HISTORY_PATH = data("holders-history.json");
+const CEX_HISTORY_PATH = data("cex-balance-history.json");
+// null = a non-legacy project with no CEX list (empty, never TEL's).
+const CEX_CONFIG_PATH = projectClassificationPath(project, "cexWallets", ROOT);
+const EVER_CHECKPOINT_PATH = data("holders-ever-checkpoint.json");
 
 const dryRun = process.argv.includes("--dry-run");
 
@@ -279,10 +282,10 @@ const asOfDate = (sortedDates, date) => {
 };
 
 const main = async () => {
-  const { set: excluded, sizes } = await loadNonRetailSet();
+  const { set: excluded, sizes } = await loadNonRetailSet(projectNonRetailPaths(project, ROOT));
   console.log(`Current non-retail set: ${sizes.total} addresses (exclusions ${sizes.exclusions}, CEX ${sizes.cex}, DEX ${sizes.dex}).`);
 
-  const cexWallets = await readJson(CEX_CONFIG_PATH);
+  const cexWallets = CEX_CONFIG_PATH ? await readJson(CEX_CONFIG_PATH) : { wallets: [] };
   const snapCommits = commitsByDate(HOLDERS_SNAPSHOT_FILE);
   console.log(`${HOLDERS_SNAPSHOT_FILE}: ${snapCommits.size} distinct dated commits available for recompute.`);
 

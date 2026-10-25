@@ -256,7 +256,7 @@ describe("scripts end to end (fixture repo, no network)", () => {
   });
 
   it("un-ported scripts still exit 2 for a non-legacy project", () => {
-    const r = run("generate-tier-outflows.js", ["--project", "demo"]);
+    const r = run("generate-wallet-flows.js", ["--project", "demo"]);
     expect(r.status).toBe(2);
     expect(r.stderr).toMatch(/not wired into the data pipeline/);
   });

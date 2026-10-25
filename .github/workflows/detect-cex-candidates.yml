@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        description: 'Project slug from config/projects.json (scripts take --project; non-TEL runs commit public/data/<slug>/** and data/<slug>/**)'
         required: false
         default: 'tel'
 
@@ -46,6 +46,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Resolve project data paths
+        # HD_DATA_DIR / HD_WORK_DIR: public/data + data for TEL (unchanged),
+        # public/data/<slug> + data/<slug> for any other project.
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
+
       - name: Detect CEX wallet candidates
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
@@ -58,10 +63,14 @@ jobs:
 
       - name: Commit candidate list
         run: |
-          if git diff --quiet -- data/cex-candidates.json; then
+          # TEL: data/cex-candidates.json; other projects: data/<slug>/… (see
+          # scripts/workflow-paths.js). Staged first so a first-ever (untracked)
+          # file is seen by the diff check.
+          FILES=$(node scripts/workflow-paths.js files data/cex-candidates.json)
+          git add $FILES
+          if git diff --cached --quiet -- $FILES; then
             echo "No changes to commit"
           else
-            git add data/cex-candidates.json
             # "[skip netlify]" — this commit lands the data but does NOT
             # publish. Netlify honours [skip ci] and [skip netlify] in the head
             # commit of a push; [skip ci] is avoided deliberately because

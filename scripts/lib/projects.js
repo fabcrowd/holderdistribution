@@ -151,6 +151,42 @@ export function projectPaths(project, root = process.cwd()) {
   return fn;
 }
 
+/**
+ * Repo-relative directory for a project's NON-served working files (transfer
+ * caches, checkpoints, as-of block maps, forensics, review queues): TEL
+ * (legacyRoot) keeps the original `data/` root; others get `data/<slug>/`.
+ * Never under public/, so nothing here is deployed.
+ */
+export function projectWorkDir(project) {
+  return project.config?.data?.legacyRoot === true ? "data" : `data/${project.slug}`;
+}
+
+/**
+ * Absolute path of one working file for a project (projectWorkDir). Sub-paths
+ * such as "forensics/wallet-flows.json" are allowed; absolute paths and ".."
+ * are refused.
+ */
+export function projectWorkPath(project, file, root = process.cwd()) {
+  if (typeof file !== "string" || !file || path.isAbsolute(file) || file.split(/[\\/]/).includes("..")) {
+    throw new Error(`projectWorkPath: bad file name ${JSON.stringify(file)}`);
+  }
+  return path.resolve(root, projectWorkDir(project), file);
+}
+
+/** Bind projectWorkPath to one project: `const work = projectWork(project); work("x.json")`. */
+export function projectWork(project, root = process.cwd()) {
+  const fn = (file) => projectWorkPath(project, file, root);
+  fn.rel = (file) => path.posix.join(projectWorkDir(project), file);
+  fn.dir = path.resolve(root, projectWorkDir(project));
+  return fn;
+}
+
+/** Repo-relative path of a classification file (null when none declared). */
+export function projectClassificationRelPath(project, kind, root = process.cwd()) {
+  const abs = projectClassificationPath(project, kind, root);
+  return abs ? path.relative(root, abs).split(path.sep).join("/") : null;
+}
+
 /** Classification files every project may declare under `classification`. */
 export const CLASSIFICATION_KINDS = {
   cexWallets: "config/cex-wallets.json",

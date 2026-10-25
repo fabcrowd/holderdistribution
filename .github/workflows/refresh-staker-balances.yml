@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        description: 'Project slug from config/projects.json (scripts take --project; non-TEL runs commit public/data/<slug>/** and data/<slug>/**)'
         required: false
         default: 'tel'
 permissions:
@@ -33,6 +33,10 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Resolve project data paths
+        # HD_DATA_DIR / HD_WORK_DIR: public/data + data for TEL (unchanged),
+        # public/data/<slug> + data/<slug> for any other project.
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
       - name: Refresh TEL staker balances snapshot
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
@@ -47,13 +51,13 @@ jobs:
       - name: Commit staker balance snapshot
         id: commit
         run: |
-          git add public/data/funding-wallets.json
+          git add $(node scripts/workflow-paths.js files public/data/funding-wallets.json)
           # Commit the resumability checkpoint too, same as holders-checkpoint.json
           # / exchange-flow-checkpoint.json / tier-outflows-checkpoint.json — it
           # may be an update (interrupted this run), a deletion (completed and
           # self-cleaned), or absent entirely (never existed); -A handles all
           # three, and the || true swallows the "no match" case.
-          git add -A -- public/data/staker-balances-checkpoint.json 2>/dev/null || true
+          git add -A -- "$HD_DATA_DIR/staker-balances-checkpoint.json" 2>/dev/null || true
           # git diff on the unstaged tree misses new untracked files — check
           # the staged index instead.
           if git diff --cached --quiet; then

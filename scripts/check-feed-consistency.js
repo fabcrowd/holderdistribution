@@ -30,14 +30,20 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("check-feed-consistency");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: checks the
+// project's data dir (TEL: public/data/, others: public/data/<slug>/) against
+// its own classification changelog and treasury categories.
+const project = selectPipelineProject("check-feed-consistency", { ported: true });
 
 const ROOT = process.cwd();
-const DATA = path.resolve(ROOT, "public/data");
+const DATA = projectPaths(project, ROOT).dir;
+const DATA_REL = project.dataDir;
+const CHANGELOG_PATH = projectClassificationPath(project, "changelog", ROOT);
+const CHANGELOG_REL = CHANGELOG_PATH ? path.relative(ROOT, CHANGELOG_PATH).split(path.sep).join("/") : "(none declared)";
+// Same category set as append-treasury-history.js (shared panel format).
+const TREASURY_CATEGORIES = project.config?.treasury?.categories ?? ["treasury", "council", "holdings", "escrow"];
 const strict = process.argv.includes("--strict");
 
 /** Absolute TEL tolerance. Feeds round differently at the sub-TEL level. */
@@ -56,7 +62,6 @@ const read = async (rel, { optional = false } = {}) => {
     throw error;
   }
 };
-const readRoot = async (rel) => JSON.parse(await fs.readFile(path.resolve(ROOT, rel), "utf8"));
 
 const fmt = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString() : String(n));
 
@@ -115,7 +120,7 @@ const main = async () => {
   // re-run after reconcile-supply.js.
   const tLast = lastEntry(treasury);
   if (tLast) {
-    for (const key of ["treasury", "council", "holdings", "escrow"]) {
+    for (const key of TREASURY_CATEGORIES) {
       agree(`category "${key}"`, [
         ["supply-reconciliation.categories", supply?.categories?.[key]],
         [`treasury-history[${tLast.date}]`, tLast.categories?.[key]],
@@ -134,10 +139,11 @@ const main = async () => {
   // --- 5. The served changelog must match the hand-curated config. The app
   // fetches public/data/; editing config/ alone leaves the UI showing no
   // reclassification marker, silently, with no error anywhere.
-  const cfgLog = await readRoot("config/classification-changelog.json");
+  // A non-legacy project that declares no changelog has no events (never TEL's).
+  const cfgLog = CHANGELOG_PATH ? JSON.parse(await fs.readFile(CHANGELOG_PATH, "utf8")) : { events: [] };
   const pubLog = await read("classification-changelog.json", { optional: true });
   if (!pubLog) {
-    failures.push("public/data/classification-changelog.json missing — run scripts/sync-classification-changelog.js");
+    failures.push(`${DATA_REL}/classification-changelog.json missing — run scripts/sync-classification-changelog.js`);
   } else {
     const cfgIds = (cfgLog.events ?? []).map((e) => e.id).sort();
     const pubIds = (pubLog.events ?? []).map((e) => e.id).sort();
@@ -145,7 +151,7 @@ const main = async () => {
     const extra = pubIds.filter((id) => !cfgIds.includes(id));
     if (missing.length || extra.length) {
       failures.push(
-        `classification-changelog config/ and public/data/ out of sync — run scripts/sync-classification-changelog.js` +
+        `classification-changelog ${CHANGELOG_REL} and ${DATA_REL}/ out of sync — run scripts/sync-classification-changelog.js` +
           (missing.length ? `\n      missing from served copy: ${missing.join(", ")}` : "") +
           (extra.length ? `\n      only in served copy: ${extra.join(", ")}` : ""),
       );

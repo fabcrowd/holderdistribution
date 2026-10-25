@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        description: 'Project slug from config/projects.json (scripts take --project; non-TEL runs commit public/data/<slug>/** and data/<slug>/**)'
         required: false
         default: 'tel'
       days:
@@ -71,6 +71,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Resolve project data paths
+        # HD_DATA_DIR / HD_WORK_DIR: public/data + data for TEL (unchanged),
+        # public/data/<slug> + data/<slug> for any other project.
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
+
       - name: Fill missing dates
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
@@ -86,7 +91,7 @@ jobs:
         run: |
           git config user.email "action@github.com"
           git config user.name "github-actions[bot]"
-          FILES="public/data/holders-history.json data/holders-asof-blocks.json"
+          FILES=$(node scripts/workflow-paths.js files public/data/holders-history.json data/holders-asof-blocks.json)
           git add $FILES
           if git diff --cached --quiet -- $FILES; then
             echo "No gaps to fill"

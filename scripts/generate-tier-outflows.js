@@ -56,11 +56,17 @@ import { reconcileParts } from "./lib/reconcileParts.js";
 import { coverageFor, firstAttributedDate } from "./lib/attributionCoverage.js";
 import { classifyReceiptLogs, dexSubClass, LP_EVENT_TOPICS } from "./lib/dexTransferClass.js";
 import { loadEnv } from "./loadEnv.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChains, projectWork, projectClassificationPath } from "./lib/projects.js";
+import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("generate-tier-outflows");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
+// data dir (on disk + git history), work dir (day store / checkpoint), chain
+// map, classification lists and StakeChanged staking contract. TEL resolves to
+// exactly the paths/addresses this script used to hardcode.
+const project = selectPipelineProject("generate-tier-outflows", { ported: true });
+const IS_LEGACY = project.config?.data?.legacyRoot === true;
+const data = projectPaths(project);
+const work = projectWork(project);
 
 // How DEX transfers are split into swap vs LP: "receipts" (default, one receipt
 // per DEX tx) or "logs" (bulk LP-event getLogs per chunk; for long backfills).
@@ -68,24 +74,29 @@ const DEX_CLASSIFY_MODE = (process.env.TIER_DEX_CLASSIFY ?? "receipts").toLowerC
 
 await loadEnv();
 
-const OUT_PATH = path.resolve(process.cwd(), "public/data/tier-outflows.json");
-const DAYS_STORE_PATH = path.resolve(process.cwd(), "data/tier-outflows-days.json");
-const CHECKPOINT_PATH = path.resolve(process.cwd(), "data/tier-outflows-checkpoint.json");
+const OUT_PATH = data("tier-outflows.json");
+const DAYS_STORE_PATH = work("tier-outflows-days.json");
+const CHECKPOINT_PATH = work("tier-outflows-checkpoint.json");
 // Old locations from before the v10 file split — a v9 store still has `days`
 // embedded directly in OUT_PATH, and its checkpoint sat in public/. Read once
 // so the first v10 run migrates seamlessly instead of re-scanning from
 // scratch; every run after that reads/writes only the new paths above.
-const LEGACY_CHECKPOINT_PATH = path.resolve(process.cwd(), "public/data/tier-outflows-checkpoint.json");
-const EXCLUSIONS_PATH = path.resolve(process.cwd(), "config/exclusions.json");
-const CEX_CONFIG_PATH = path.resolve(process.cwd(), "config/cex-wallets.json");
-const DEX_CONFIG_PATH = path.resolve(process.cwd(), "config/dex-contracts.json");
+const LEGACY_CHECKPOINT_PATH = data("tier-outflows-checkpoint.json");
+// TEL: the config/ root files. Another project: its own `classification.*`
+// (null = none declared = empty list, never TEL's).
+const EXCLUSIONS_PATH = projectClassificationPath(project, "exclusions");
+const CEX_CONFIG_PATH = projectClassificationPath(project, "cexWallets");
+const DEX_CONFIG_PATH = projectClassificationPath(project, "dexContracts");
+// Repo-relative snapshot paths for git-history reads (TEL: public/data/<file>).
+const SNAP_REL = data.rel("tel-holders.json");
+const FUND_REL = data.rel("funding-wallets.json");
 
 const TRANSFER_TOPIC0 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-const TEL_DIVISOR = 100; // TEL has 2 decimals
-// Sanity ceiling: a single TEL transfer cannot exceed total supply (~100B).
+// Per-chain divisor = 10 ** decimals from the chain map (TEL: 2 decimals -> 100).
+// Sanity ceiling: a single transfer cannot exceed total supply (TEL ~100B).
 // Anything larger is a corrupt / non-standard log value and is skipped so it
 // can't poison the aggregates.
-const MAX_SANE_TEL = 200e9;
+const MAX_SANE_TEL = 2 * (Number(project.config?.supply?.target) || 100e9);
 // Staking a wallet's own TEL (deposit to this contract) or unstaking (a
 // withdrawal from it) doesn't change that wallet's tier-qualifying balance —
 // makeTierResolver already adds staked amount back into the SAME wallet's
@@ -96,7 +107,10 @@ const MAX_SANE_TEL = 200e9;
 // "Bought in" by amounts that never actually left or arrived, which is why
 // those two figures could net to a different (even opposite-signed) result
 // than the tier's real snapshot-to-snapshot balance change.
-const STAKING_CONTRACT = "0x92e43aec69207755cb1e6a8dc589aae630476330";
+// TEL: 0x92e43aec69207755cb1e6a8dc589aae630476330 (the `kind: "stakeChanged"`
+// entry in config/projects/tel.json). A project without one gets null, which
+// never equals an address, so nothing is special-cased.
+const STAKING_CONTRACT = resolveStakeChangedTarget(project)?.contract ?? null;
 const SCHEMA_VERSION = 9; // v9 = staking contract transfers no longer misclassified as generic moved/wallet flows
 
 // Fixed rolling windows (days), matching the page's timeframe selector
@@ -113,24 +127,44 @@ const KEEP_DAYS = MAX_WINDOW_DAYS + 6; // prune older day buckets
 // so it now falls back correctly regardless of trigger type.
 const MAX_BLOCKS_PER_RUN = Number(process.env.MAX_BLOCKS_PER_RUN) || 3_000_000;
 
-// Token addresses come from config/chains.json — see the note in
-// scan-exchange-flows.js. Base was hardcoded to NFTEarthOFT, not TEL.
-const CHAIN_CONFIG = JSON.parse(
-  await fs.readFile(path.resolve(process.cwd(), "config/chains.json"), "utf8"),
-);
+// Token addresses come from the project's chain map (TEL: config/chains.json)
+// — see the note in scan-exchange-flows.js. Base was hardcoded to NFTEarthOFT, not TEL.
+const CHAIN_CONFIG = projectChains(project);
 const tokenFor = (chainKey) => {
   const token = CHAIN_CONFIG[chainKey]?.tokenAddress;
   if (typeof token !== "string" || !/^0x[0-9a-f]{40}$/i.test(token)) {
-    throw new Error(`config/chains.json is missing a valid tokenAddress for ${chainKey}`);
+    throw new Error(`project ${project.slug}: chain map is missing a valid tokenAddress for ${chainKey}`);
   }
   return token.toLowerCase();
 };
-
-const CHAINS = {
-  ethereum: { token: tokenFor("ethereum"), chunk: Number(process.env.FLOW_CHUNK_ETHEREUM ?? 800), blocksPerDay: 7150 },
-  polygon: { token: tokenFor("polygon"), chunk: Number(process.env.FLOW_CHUNK_POLYGON ?? 1000), blocksPerDay: 43000 },
-  base: { token: tokenFor("base"), chunk: Number(process.env.FLOW_CHUNK_BASE ?? 1000), blocksPerDay: 43000 },
+const divisorFor = (chainKey) => {
+  const d = Number(CHAIN_CONFIG[chainKey]?.decimals ?? CHAIN_CONFIG[chainKey]?.tokens?.legacy?.decimals);
+  if (!Number.isInteger(d) || d < 0 || d > 36) throw new Error(`project ${project.slug}: no valid decimals for ${chainKey}`);
+  return 10 ** d;
 };
+
+// Known chains keep their tuned chunk / blocks-per-day; any other chain a
+// project maps uses its `blocksPerDay` from config/projects/<slug>.json
+// (chains[]) or a 2-second-block default.
+const CHAIN_TUNING = {
+  ethereum: { chunk: 800, blocksPerDay: 7150 },
+  polygon: { chunk: 1000, blocksPerDay: 43000 },
+  base: { chunk: 1000, blocksPerDay: 43000 },
+};
+const chainEntry = (chainKey) => {
+  const tuned = CHAIN_TUNING[chainKey];
+  const declared = Number((project.config?.chains ?? []).find((c) => c.key === chainKey)?.blocksPerDay);
+  return {
+    token: tokenFor(chainKey),
+    chunk: Number(process.env[`FLOW_CHUNK_${chainKey.toUpperCase()}`] ?? tuned?.chunk ?? 1000),
+    blocksPerDay: tuned?.blocksPerDay ?? (Number.isFinite(declared) && declared > 0 ? declared : 43200),
+    divisor: divisorFor(chainKey),
+  };
+};
+// TEL: exactly ethereum, polygon, base (unchanged table + divisor 100).
+const CHAINS = IS_LEGACY
+  ? { ethereum: chainEntry("ethereum"), polygon: chainEntry("polygon"), base: chainEntry("base") }
+  : Object.fromEntries(Object.keys(CHAIN_CONFIG).map((k) => [k, chainEntry(k)]));
 
 const TIERS = [
   ["500M+", 500e6, Infinity], ["250M-500M", 250e6, 500e6], ["100M-250M", 100e6, 250e6],
@@ -214,10 +248,10 @@ const makeTierResolver = (snapCommits, fundCommits, snapDates, fundDates, excl) 
   const buildFor = (snapDate) => {
     // Some old snapshot blobs are malformed / non-JSON; a caller catches the
     // throw and falls back to the next valid snapshot rather than crashing.
-    const snap = showJson(snapCommits.get(snapDate), "public/data/tel-holders.json");
+    const snap = showJson(snapCommits.get(snapDate), SNAP_REL);
     let fund = { wallets: [] };
     const fd = fundDates.length ? nearest(fundDates, snapDate) : null;
-    if (fd) { try { fund = showJson(fundCommits.get(fd), "public/data/funding-wallets.json"); } catch { /* skip bad funding snapshot */ } }
+    if (fd) { try { fund = showJson(fundCommits.get(fd), FUND_REL); } catch { /* skip bad funding snapshot */ } }
     const bal = new Map();
     for (const chain of Object.values(snap.chains ?? {})) {
       for (const h of chain.holders ?? []) {
@@ -384,7 +418,7 @@ const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
         // outflow and an inflow would double-book a net-zero event, inflating
         // both "moved out" and "received" for the same tier/day.
         if (toAddr && toAddr === fromAddr) continue;
-        const value = Number(BigInt(log.data ?? "0x0")) / TEL_DIVISOR;
+        const value = Number(BigInt(log.data ?? "0x0")) / cfg.divisor;
         if (!Number.isFinite(value) || value <= 0 || value > MAX_SANE_TEL) continue;
         const date = dateOf(Number(log.blockNumber ? hexToNumber(log.blockNumber) : batch[j][0]));
         const tierMap = ctx.tierAt(date);
@@ -504,7 +538,7 @@ const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
 };
 
 const main = async () => {
-  const ex = JSON.parse(await fs.readFile(EXCLUSIONS_PATH, "utf8"));
+  const ex = EXCLUSIONS_PATH ? JSON.parse(await fs.readFile(EXCLUSIONS_PATH, "utf8")) : {};
   const excl = new Set();
   for (const a of ex.addresses ?? []) {
     const s = (typeof a === "string" ? a : a?.address)?.trim().toLowerCase();
@@ -521,7 +555,7 @@ const main = async () => {
       if (s) excl.add(s);
     }
   }
-  const cexConfig = JSON.parse(await fs.readFile(CEX_CONFIG_PATH, "utf8"));
+  const cexConfig = CEX_CONFIG_PATH ? JSON.parse(await fs.readFile(CEX_CONFIG_PATH, "utf8")) : { wallets: [] };
   const cexSet = new Set();
   // address -> exchange name, so an outflow can be attributed to the exchange
   // that actually received it (config stores the name in `label`).
@@ -532,14 +566,14 @@ const main = async () => {
     const n = (w.label ?? w.exchange ?? w.walletName ?? "").toString().trim();
     if (n) cexName.set(a, n);
   }
-  const dexConfig = (await readOptionalJson(DEX_CONFIG_PATH)) ?? { pools: [] };
+  const dexConfig = (DEX_CONFIG_PATH ? await readOptionalJson(DEX_CONFIG_PATH) : null) ?? { pools: [] };
   const dexSet = new Set();
   for (const p of dexConfig.pools ?? []) if (typeof p.address === "string") { const a = p.address.trim().toLowerCase(); dexSet.add(a); excl.add(a); }
   for (const r of dexConfig.routers ?? []) if (typeof r.address === "string") { const a = r.address.trim().toLowerCase(); dexSet.add(a); excl.add(a); }
   console.log(`Loaded ${cexSet.size} CEX, ${dexSet.size} DEX addresses.`);
 
-  const snapCommits = commitsByDate("public/data/tel-holders.json");
-  const fundCommits = commitsByDate("public/data/funding-wallets.json");
+  const snapCommits = commitsByDate(SNAP_REL);
+  const fundCommits = commitsByDate(FUND_REL);
   const snapDates = [...snapCommits.keys()].sort();
   const fundDates = [...fundCommits.keys()].sort();
   if (snapDates.length === 0) { console.warn("No snapshots."); return; }
@@ -770,6 +804,7 @@ const main = async () => {
   const complete = Object.values(chainComplete).every(Boolean);
 
   await fs.mkdir(path.dirname(DAYS_STORE_PATH), { recursive: true });
+  await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
   await fs.writeFile(DAYS_STORE_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, days }, null, 2)}\n`, "utf8");
   await fs.writeFile(OUT_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, generatedAt: new Date().toISOString(), latestDate: latestDate ?? null, complete, sourceTierSince, ranges }, null, 2)}\n`, "utf8");
   await fs.writeFile(CHECKPOINT_PATH, `${JSON.stringify(checkpoint, null, 2)}\n`, "utf8");

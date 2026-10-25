@@ -9,7 +9,7 @@ import {
 } from "./lib/holdersView.js";
 import { loadNonRetailSet, createNonRetailChecker } from "./lib/nonRetailSet.js";
 import { loadV3StakingPositions } from "./lib/v3Staking.js";
-import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
 // the project's data dir (TEL: public/data/, others: public/data/<slug>/) and
@@ -23,7 +23,7 @@ const FUNDING_WALLETS_PATH = data("funding-wallets.json");
 const CEX_FLOWS_PATH = data("cex-flows.json");
 const OUTPUT_PATH = data("holders-lite.json");
 const CHECKPOINT_PATH = data("holders-checkpoint.json");
-const ASOF_BLOCKS_PATH = path.resolve(process.cwd(), "data/holders-asof-blocks.json");
+const ASOF_BLOCKS_PATH = projectWork(project)("holders-asof-blocks.json");
 
 const readJson = async (absolutePath, fallback = null) => {
   try {
