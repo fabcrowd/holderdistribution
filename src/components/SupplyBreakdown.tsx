@@ -34,9 +34,13 @@ import {
   isAssociationCategory,
   isHoldingsCategory,
   isOtherCategory,
+  isStakingCategory,
   otherCategoryLabel,
   partitionBuckets,
+  DEFAULT_RESIDUAL_BUCKET_LABEL,
+  DEFAULT_STAKING_BUCKET_LABEL,
 } from "@/lib/supplyBreakdown";
+import { chainExplorerLink, resolveChainVm } from "@/lib/explorerLinks";
 import { AlertTriangle, ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
 import { reconcileStatus } from "@/lib/supplyGuard";
 import { EXPLORER_BASE } from "@/lib/telContracts";
@@ -141,6 +145,7 @@ const renderBucketDetail = (
     dexItems: SupplyReconciliationItem[];
     cexItems: SupplyReconciliationItem[];
     escrowItems: SupplyReconciliationItem[];
+    stakingItems: SupplyReconciliationItem[];
     retailAmount: number;
   },
 ): ReactNode => {
@@ -157,6 +162,8 @@ const renderBucketDetail = (
       return <DexLiquidityPanel items={ctx.dexItems} />;
     case "cex":
       return <CexCustodyPanel items={ctx.cexItems} />;
+    case "staking":
+      return <StakingPanel items={ctx.stakingItems} />;
     case "escrow":
       return <EscrowPanel items={ctx.escrowItems} committed={ctx.data?.circulatingExclusions?.total ?? null} />;
     case "retail":
@@ -184,6 +191,16 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
     onPanelChange?.(next);
   };
   const { data, isLoading, error } = useSupplyReconciliation();
+  // Bucket titles: project entity names + project-copy residual/staking labels
+  // (TEL keeps "In transit (bridges)"; ZBCN relabels its single-chain residual).
+  const bucketLabels = useMemo(
+    () => ({
+      ...entities,
+      residual: text("supply.residual.bucketLabel", DEFAULT_RESIDUAL_BUCKET_LABEL),
+      staking: text("supply.staking.bucketLabel", DEFAULT_STAKING_BUCKET_LABEL),
+    }),
+    [entities, text],
+  );
   // Hovered slice — highlights the wedge and its list row together, in
   // either direction.
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -206,13 +223,13 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickedBucketKey, layout]);
 
-  const { buckets, totalSupply, circulating, residualItems, otherItems, associationItems, holdingsItems, dexItems, cexItems, escrowItems } =
+  const { buckets, totalSupply, circulating, residualItems, otherItems, associationItems, holdingsItems, dexItems, cexItems, escrowItems, stakingItems } =
     useMemo(() => {
       const total = data?.totalSupply ?? supplyTarget;
       const residual = data?.residual ?? Math.max(0, total - (data?.counted ?? 0));
       // No reconciliation (loading / failed) → no buckets. Grouping an empty
       // payload used to put the whole 100B into "In transit".
-      const all = data ? groupSupplyCategories(data.categories, residual, entities) : [];
+      const all = data ? groupSupplyCategories(data.categories, residual, bucketLabels) : [];
       const parts = partitionBuckets(all);
       const items = data?.items ?? [];
       return {
@@ -244,8 +261,12 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
           .filter((i) => i.category === "escrow")
           .slice()
           .sort((a, b) => b.balance - a.balance),
+        stakingItems: items
+          .filter((i) => isStakingCategory(i.category))
+          .slice()
+          .sort((a, b) => b.balance - a.balance),
       };
-    }, [data, entities, supplyTarget]);
+    }, [data, bucketLabels, supplyTarget]);
 
   // Largest category that has something to drill into. Retail is usually
   // bigger, but its "detail" is one sentence (there is no address list),
@@ -294,6 +315,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
       dexItems,
       cexItems,
       escrowItems,
+      stakingItems,
       retailAmount: pieSlices.find((s) => s.key === "retail")?.amount ?? 0,
     });
   const coingeckoCirculating = data?.coingeckoCirculating ?? COINGECKO_CIRCULATING;
@@ -685,47 +707,75 @@ const ResidualPanel = ({
   data: ReturnType<typeof useSupplyReconciliation>["data"];
   bridges: SupplyReconciliationItem[];
 }) => {
-  const { ticker, name } = useProjectCopy();
+  const { ticker, name, text, hasText } = useProjectCopy();
   const parts = data?.residualParts;
   const residual = data?.residual ?? 0;
+  const gap = formatCompactAmount(residual);
+  const total = formatCompactAmount(data?.totalSupply ?? 1e11);
+  const fill = (s: string) => s.replace(/\{gap\}/g, gap).replace(/\{total\}/g, total);
+  // A project with its own residual body (ZBCN: single-chain, no bridges)
+  // drops the bridge rows unless its data actually has bridge amounts.
+  const projectBody = hasText("supply.residual.body");
+  const hasBridgeLegs =
+    (data?.bridgeLocked ?? 0) !== 0 || (data?.mirrored ?? 0) !== 0 || (parts?.bridgeInFlight ?? 0) !== 0 || bridges.length > 0;
+  const showBridgeRows = !projectBody || hasBridgeLegs;
+  const upgrade = data?.upgrade;
+  const hasUpgrade =
+    !!upgrade && (upgrade.v3Supply !== 0 || upgrade.retiredLegacy !== 0 || upgrade.strandedInUpgrade !== 0);
+  const originDrift = parts?.originDrift ?? 0;
   return (
     <div className="space-y-3">
-      <p className="font-semibold text-foreground text-sm">In transit (bridges)</p>
-      <p className="text-muted-foreground">
-        Deeper look at the ~{formatCompactAmount(residual)} gap between wallets we can count and the
-        official {formatCompactAmount(data?.totalSupply ?? 1e11)} total. Most of this is {ticker} that is{" "}
-        <span className="text-foreground font-medium">
-          locked on Ethereum while it moves to Polygon or Base
-        </span>
-        — not a mysterious missing wallet.
+      <p className="font-semibold text-foreground text-sm">
+        {text("supply.residual.title", DEFAULT_RESIDUAL_BUCKET_LABEL)}
       </p>
+      {projectBody ? (
+        <p className="text-muted-foreground">{fill(text("supply.residual.body", ""))}</p>
+      ) : (
+        <p className="text-muted-foreground">
+          Deeper look at the ~{gap} gap between wallets we can count and the
+          official {total} total. Most of this is {ticker} that is{" "}
+          <span className="text-foreground font-medium">
+            locked on Ethereum while it moves to Polygon or Base
+          </span>
+          — not a mysterious missing wallet.
+        </p>
+      )}
       <dl className="space-y-1.5 tabular-nums">
         <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">In transit</dt>
+          <dt className="text-muted-foreground">{text("supply.residual.amountLabel", "In transit")}</dt>
           <dd className="font-medium text-foreground">{formatFullAmount(residual)} {ticker}</dd>
         </div>
+        {showBridgeRows && (
+          <>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Locked on Ethereum (bridges)</dt>
+              <dd>{formatFullAmount(data?.bridgeLocked ?? 0)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Already showing on Polygon + Base</dt>
+              <dd>{formatFullAmount(data?.mirrored ?? 0)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Still crossing bridges</dt>
+              <dd>{formatFullAmount(parts?.bridgeInFlight ?? 0)}</dd>
+            </div>
+          </>
+        )}
         <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">Locked on Ethereum (bridges)</dt>
-          <dd>{formatFullAmount(data?.bridgeLocked ?? 0)}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">Already showing on Polygon + Base</dt>
-          <dd>{formatFullAmount(data?.mirrored ?? 0)}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">Still crossing bridges</dt>
-          <dd>{formatFullAmount(parts?.bridgeInFlight ?? 0)}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">Tiny scan difference</dt>
-          <dd>{formatFullAmount(parts?.originDrift ?? 0)}</dd>
+          <dt className="text-muted-foreground">{text("supply.residual.originDriftLabel", "Tiny scan difference")}</dt>
+          {/* Project copy (ZBCN) labels the drift as a positive gap below the max; TEL keeps the signed figure. */}
+          <dd>{formatFullAmount(hasText("supply.residual.originDriftLabel") ? Math.abs(originDrift) : originDrift)}</dd>
         </div>
       </dl>
       <p className="text-muted-foreground">
-        Still crossing ≈ locked on Ethereum − already showing on Polygon/Base. A tiny scan
-        difference can nudge the final number slightly.
+        {fill(
+          text(
+            "supply.residual.note",
+            "Still crossing ≈ locked on Ethereum − already showing on Polygon/Base. A tiny scan difference can nudge the final number slightly.",
+          ),
+        )}
       </p>
-      {data?.upgrade && (
+      {upgrade && hasUpgrade && (
         <div className="border-t border-border/50 pt-2 space-y-1.5">
           <p className="font-semibold text-foreground">{ticker} v3 upgrade (legacy → v3, 1:1)</p>
           <p className="text-muted-foreground">
@@ -736,15 +786,15 @@ const ResidualPanel = ({
           <dl className="space-y-1.5 tabular-nums">
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">{ticker} v3 in existence (all chains)</dt>
-              <dd>{formatFullAmount(data.upgrade.v3Supply)}</dd>
+              <dd>{formatFullAmount(upgrade.v3Supply)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Legacy {ticker} locked for it (not double-counted)</dt>
-              <dd>{formatFullAmount(data.upgrade.retiredLegacy)}</dd>
+              <dd>{formatFullAmount(upgrade.retiredLegacy)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Sent to the upgrade contract without upgrading</dt>
-              <dd>{formatFullAmount(data.upgrade.strandedInUpgrade)}</dd>
+              <dd>{formatFullAmount(upgrade.strandedInUpgrade)}</dd>
             </div>
           </dl>
         </div>
@@ -772,7 +822,16 @@ const AddressRow = ({
   item: SupplyReconciliationItem;
   subcategory: string;
   password: string | null;
-}) => (
+}) => {
+  const { project } = useProject();
+  // Single-chain Solana projects (ZBCN) link base58 addresses to their own
+  // explorer as-is; everything else keeps the historical EVM links.
+  const chains = project.chains ?? [];
+  const href =
+    chains.length === 1 && resolveChainVm(chains[0]) === "solana"
+      ? chainExplorerLink(chains[0], "address", item.address)
+      : explorerUrl(item);
+  return (
   <li className="space-y-2 border-b border-border/40 pb-2 last:border-0">
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0 space-y-1">
@@ -788,7 +847,7 @@ const AddressRow = ({
           <>
             <div className="text-muted-foreground">{subcategory}</div>
             <a
-              href={explorerUrl(item)}
+              href={href}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-primary hover:underline"
@@ -815,7 +874,8 @@ const AddressRow = ({
       </div>
     )}
   </li>
-);
+  );
+};
 
 /**
  * Two-level address drill-down, shared by every bucket panel that lists
@@ -972,6 +1032,22 @@ const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
     emptyLabel="No CEX addresses itemised."
   />
 );
+
+const StakingPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
+  const { text } = useProjectCopy();
+  return (
+    <AddressListPanel
+      title={text("supply.staking.bucketLabel", DEFAULT_STAKING_BUCKET_LABEL)}
+      description={text(
+        "supply.staking.description",
+        "{ticker} held by the staking program's vault accounts (stake vaults and reward vaults), counted by on-chain token-account balance.",
+      )}
+      items={items}
+      subcategoryFor={(item) => item.name ?? "Staking vault"}
+      emptyLabel="No staking vault addresses itemised."
+    />
+  );
+};
 
 const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; committed: number | null }) => {
   const { entities, text, hasText } = useProjectCopy();
