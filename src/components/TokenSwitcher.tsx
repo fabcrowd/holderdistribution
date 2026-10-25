@@ -29,18 +29,17 @@ export const TokenSwitcher = ({ variant = "pill", className = "" }: Props) => {
       ? "inline-flex items-center gap-0.5 rounded px-0.5 -mx-0.5 text-primary hover:bg-primary/10"
       : "inline-flex h-8 items-center gap-1 rounded-full border border-border bg-card px-2.5 text-xs font-semibold text-foreground hover:bg-muted";
 
-  // On phones the header pill is the single master switch; the heading
-  // variant degrades to a plain ticker label so there's only one control.
-  const mobileLabel =
-    variant === "heading" ? (
-      <span className="text-primary md:hidden" data-testid="token-ticker-label">
+  // One master switch lives in the sticky header; the heading variant is
+  // always a plain ticker label so there is never a second dropdown.
+  if (variant === "heading") {
+    return (
+      <span className={`text-primary ${className}`} data-testid="token-ticker-label">
         {project.ticker}
       </span>
-    ) : null;
+    );
+  }
 
   return (
-    <>
-    {mobileLabel}
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
@@ -48,7 +47,7 @@ export const TokenSwitcher = ({ variant = "pill", className = "" }: Props) => {
           data-testid="token-switcher"
           aria-label={`Token: ${project.name} (${project.ticker}). Switch token`}
           title="Switch token"
-          className={`${trigger} ${variant === "heading" ? "hidden md:inline-flex" : ""} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
+          className={`${trigger} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
         >
           <span>{project.ticker}</span>
           <ChevronDown className={variant === "heading" ? "h-3.5 w-3.5 opacity-70" : "h-3 w-3 opacity-70"} aria-hidden="true" />
@@ -87,7 +86,6 @@ export const TokenSwitcher = ({ variant = "pill", className = "" }: Props) => {
         </ul>
       </PopoverContent>
     </Popover>
-    </>
   );
 };
 
