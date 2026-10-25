@@ -1,7 +1,18 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { legacyRootSlugs, loadProjectConfig, loadRegistry, projectDataDir, SLUG_RE } from "./projects.js";
+import os from "node:os";
+import {
+  defaultProjectSlug,
+  legacyRootSlugs,
+  loadProjectConfig,
+  loadRegistry,
+  parseProjectArg,
+  pipelineProject,
+  projectDataDir,
+  resolveProject,
+  SLUG_RE,
+} from "./projects.js";
 import { LEGACY_ROOT_SLUGS, LEGACY_URL_SLUG, PROJECT_SLUGS } from "../../netlify/functions/live-data.mjs";
 
 const root = path.resolve(".");
@@ -54,5 +65,53 @@ describe("project registry (node side)", () => {
 
   it("rejects malformed slugs", () => {
     expect(() => loadProjectConfig("../chains", root)).toThrow(/invalid/);
+  });
+});
+
+describe("pipeline --project selection", () => {
+  const root = path.resolve(".");
+  it("defaults to the registry default (tel) when the flag and env are absent", () => {
+    expect(defaultProjectSlug(root)).toBe("tel");
+    expect(parseProjectArg([], {}, root)).toBe("tel");
+    expect(parseProjectArg(["--days=14"], {}, root)).toBe("tel");
+  });
+
+  it("accepts --project slug and --project=slug, flag beats HD_PROJECT env", () => {
+    expect(parseProjectArg(["--project", "abc"], {}, root)).toBe("abc");
+    expect(parseProjectArg(["--days=3", "--project=abc"], {}, root)).toBe("abc");
+    expect(parseProjectArg([], { HD_PROJECT: "abc" }, root)).toBe("abc");
+    expect(parseProjectArg(["--project=TEL"], { HD_PROJECT: "abc" }, root)).toBe("tel");
+    expect(parseProjectArg([], { HD_PROJECT: "  " }, root)).toBe("tel");
+  });
+
+  it("rejects a missing or malformed slug", () => {
+    expect(() => parseProjectArg(["--project"], {}, root)).toThrow(/needs a slug/);
+    expect(() => parseProjectArg(["--project", "--days=3"], {}, root)).toThrow(/needs a slug/);
+    expect(() => parseProjectArg(["--project="], {}, root)).toThrow(/needs a slug/);
+    expect(() => parseProjectArg(["--project=../etc"], {}, root)).toThrow(/invalid project slug/);
+  });
+
+  it("resolveProject checks the registry and returns the data dir", () => {
+    expect(resolveProject("tel", root)).toMatchObject({ slug: "tel", dataDir: "public/data", isDefault: true });
+    expect(resolveProject("tel", root).config.ticker).toBe("TEL");
+    expect(() => resolveProject("nope", root)).toThrow(/unknown project "nope"/);
+  });
+
+  it("pipelineProject only lets legacyRoot projects through", () => {
+    expect(pipelineProject("t", { argv: [], env: {}, root }).slug).toBe("tel");
+    expect(() => pipelineProject("t", { argv: ["--project", "nope"], env: {}, root })).toThrow(/unknown project/);
+
+    // A registered, non-legacy project is refused until its scripts are ported.
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "hd-proj-"));
+    fs.mkdirSync(path.join(tmp, "config/projects"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "config/projects.json"), JSON.stringify({ projects: [
+      { slug: "tel", default: true }, { slug: "abc" },
+    ] }));
+    fs.writeFileSync(path.join(tmp, "config/projects/tel.json"), JSON.stringify({ slug: "tel", data: { legacyRoot: true } }));
+    fs.writeFileSync(path.join(tmp, "config/projects/abc.json"), JSON.stringify({ slug: "abc" }));
+    expect(resolveProject("abc", tmp).dataDir).toBe("public/data/abc");
+    expect(() => pipelineProject("pull", { argv: ["--project=abc"], env: {}, root: tmp })).toThrow(/pull: project "abc" is not wired/);
+    expect(pipelineProject("pull", { argv: [], env: {}, root: tmp }).dataDir).toBe("public/data");
+    fs.rmSync(tmp, { recursive: true, force: true });
   });
 });

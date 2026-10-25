@@ -9,6 +9,11 @@ import {
 } from "./lib/holdersView.js";
 import { loadNonRetailSet, createNonRetailChecker } from "./lib/nonRetailSet.js";
 import { loadV3StakingPositions } from "./lib/v3Staking.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("generate-holders-lite");
 
 const INPUT_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
 const PREVIOUS_PATH = path.resolve(process.cwd(), "public/data/tel-holders-previous.json");

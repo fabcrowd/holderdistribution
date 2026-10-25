@@ -5,9 +5,19 @@ on:
     # 1st and 15th of each month at 01:00 UTC (~biweekly)
     - cron: '0 1 1,15 * *'
   workflow_dispatch:
+    inputs:
+      project:
+        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        required: false
+        default: 'tel'
 
 permissions:
   contents: write
+
+# Every pipeline script reads HD_PROJECT as its default `--project` (see
+# scripts/lib/projects.js); scheduled runs have no inputs and stay on TEL.
+env:
+  HD_PROJECT: ${{ inputs.project || 'tel' }}
 
 jobs:
   sync:

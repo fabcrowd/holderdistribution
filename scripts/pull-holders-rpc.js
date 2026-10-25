@@ -21,6 +21,11 @@ import {
   computeChainMetrics,
   buildSummary,
 } from "./lib/holderMetrics.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("pull-holders-rpc");
 
 await loadEnv();
 

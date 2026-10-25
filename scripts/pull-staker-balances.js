@@ -61,6 +61,11 @@ import { getUsableRpcUrls, getPublicFallbackUrls, rpcCall, getLogs } from "./lib
 import { createLogsFailover } from "./lib/logsFailover.js";
 import { scanStakeChangedCandidates, STAKING_DEPLOY_BLOCK } from "./lib/stakingDiscovery.js";
 import { STAKED_BY_SELECTOR, TOTAL_STAKED_SELECTOR, STAKE_CHANGED_TOPIC0, decodeUint256, parseStakeChangedAccount } from "./lib/staking.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("pull-staker-balances");
 
 await loadEnv();
 

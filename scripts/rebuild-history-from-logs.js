@@ -121,6 +121,11 @@ import {
   partitionLogsByBoundary,
   shardRange,
 } from "./lib/historicalReplay.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("rebuild-history-from-logs");
 
 await loadEnv();
 

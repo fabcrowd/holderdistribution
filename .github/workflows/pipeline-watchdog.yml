@@ -34,6 +34,11 @@ on:
     # minutes each, 2026-10-04..12).
     - cron: '23 12 * * 1'
   workflow_dispatch:
+    inputs:
+      project:
+        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        required: false
+        default: 'tel'
 
 permissions:
   contents: write
@@ -43,6 +48,11 @@ permissions:
 concurrency:
   group: holders-refresh
   cancel-in-progress: false
+
+# Every pipeline script reads HD_PROJECT as its default `--project` (see
+# scripts/lib/projects.js); scheduled runs have no inputs and stay on TEL.
+env:
+  HD_PROJECT: ${{ inputs.project || 'tel' }}
 
 jobs:
   watchdog:

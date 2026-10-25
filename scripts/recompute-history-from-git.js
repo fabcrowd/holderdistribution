@@ -100,6 +100,11 @@ import { computeChainMetrics, RETAIL_THRESHOLD } from "./lib/holderMetrics.js";
 import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS } from "./lib/holdersView.js";
 import { classifySnapshot, stakedAmountsByAddress } from "./lib/phantomStakers.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("recompute-history-from-git");
 
 const ROOT = process.cwd();
 const HOLDERS_SNAPSHOT_FILE = "public/data/tel-holders.json";

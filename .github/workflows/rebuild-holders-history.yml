@@ -23,6 +23,10 @@ name: Rebuild holders history from Transfer logs
 on:
   workflow_dispatch:
     inputs:
+      project:
+        description: 'Project slug from config/projects.json (scripts take --project; only TEL is pipeline-ready today)'
+        required: false
+        default: 'tel'
       chain:
         description: "Chain to rebuild (ethereum, polygon, base). Leave blank for all — only safe if you expect it to finish inside 6h."
         required: false
@@ -44,6 +48,11 @@ on:
 
 permissions:
   contents: write
+
+# Every pipeline script reads HD_PROJECT as its default `--project` (see
+# scripts/lib/projects.js); scheduled runs have no inputs and stay on TEL.
+env:
+  HD_PROJECT: ${{ inputs.project || 'tel' }}
 
 jobs:
   rebuild:

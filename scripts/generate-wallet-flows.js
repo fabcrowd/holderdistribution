@@ -50,6 +50,11 @@ import {
   telcoinSellTotals,
   validateWalletFlowsReport,
 } from "./lib/walletFlows.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("generate-wallet-flows");
 
 const TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");

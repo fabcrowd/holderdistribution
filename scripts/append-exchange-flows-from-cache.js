@@ -58,6 +58,11 @@ import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
 import { normalizeAddress } from "./lib/nonRetailSet.js";
 import { findBlockAtTime } from "./lib/historicalReplay.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("append-exchange-flows-from-cache");
 
 await loadEnv();
 

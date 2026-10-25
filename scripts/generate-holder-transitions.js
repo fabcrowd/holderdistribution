@@ -30,6 +30,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { loadNonRetailSet } from "./lib/nonRetailSet.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("generate-holder-transitions");
 
 const OUT_PATH = path.resolve(process.cwd(), "public/data/holder-transitions.json");
 const TEL_HOLDERS_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");

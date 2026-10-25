@@ -32,6 +32,11 @@ import process from "node:process";
 import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("detect-cex-candidates");
 
 await loadEnv();
 

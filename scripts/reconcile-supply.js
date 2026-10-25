@@ -36,6 +36,7 @@ import {
   COINGECKO_CIRCULATING,
   buildReconciliation,
 } from "./lib/reconcileSupply.js";
+import { selectPipelineProject } from "./lib/projects.js";
 
 export {
   TEL_TOTAL_SUPPLY,
@@ -142,6 +143,9 @@ const main = async () => {
 const isDirectRun =
   process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (isDirectRun) {
+  // `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+  // pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+  selectPipelineProject("reconcile-supply");
   main().catch((error) => {
     console.error(error);
     process.exit(1);

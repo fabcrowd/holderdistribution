@@ -48,6 +48,11 @@ import process from "node:process";
 import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
 import { fetchAllTransfers } from "./lib/alchemyTransfers.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("extend-transfer-caches");
 
 await loadEnv();
 
