@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { resolveDataUrl } from "@/lib/dataUrl";
+import { dataUrl } from "@/lib/dataUrl";
+import { useProject } from "@/hooks/useProject";
 import { FeedError } from "@/lib/fetchJson";
 
 export type TierOutflowCell = {
@@ -64,11 +65,7 @@ export type TierOutflows = {
   ranges: Record<string, TierOutflowRange>;
 };
 
-const resolveUrl = () => {
-  const base = import.meta.env.BASE_URL ?? "/";
-  const normalized = base.endsWith("/") ? base : `${base}/`;
-  return resolveDataUrl("tier-outflows.json", { base: normalized });
-};
+const resolveUrl = (slug: string) => dataUrl(slug, "tier-outflows.json");
 
 // Map a page rangeDays to the generator's window key. Covers the full
 // timeframe selector: 1/7/30/90/365 rolling windows plus calendar YTD.
@@ -82,8 +79,9 @@ export const outflowsKeyFor = (rangeDays: number, ytd: number): string => {
 };
 
 export const useTierOutflows = () => {
+  const { slug } = useProject();
   return useQuery({
-    queryKey: ["tier-outflows"],
+    queryKey: ["tier-outflows", slug],
     queryFn: async (): Promise<TierOutflows | null> => {
       // No Date.now() cache-buster: this data refreshes once a day, so a
       // stable URL lets Netlify's edge cache actually serve it (see
@@ -91,7 +89,7 @@ export const useTierOutflows = () => {
       // full-size origin fetch on every single page view. `no-store` still
       // stops the BROWSER's own disk cache from serving something stale
       // across visits — the edge cache is what's meant to absorb repeat load.
-      const res = await fetch(resolveUrl(), { cache: "no-store" });
+      const res = await fetch(resolveUrl(slug), { cache: "no-store" });
       if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       return (await res.json()) as TierOutflows;
     },

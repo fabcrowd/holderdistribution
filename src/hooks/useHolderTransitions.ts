@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { resolveDataUrl } from "@/lib/dataUrl";
+import { dataUrl } from "@/lib/dataUrl";
+import { useProject } from "@/hooks/useProject";
 import { FeedError } from "@/lib/fetchJson";
 
 export type TransitionCell = { count: number; tel: number };
@@ -12,11 +13,7 @@ export type HolderTransitions = {
   ranges: Record<string, TransitionRange>;
 };
 
-const resolveUrl = () => {
-  const base = import.meta.env.BASE_URL ?? "/";
-  const normalized = base.endsWith("/") ? base : `${base}/`;
-  return resolveDataUrl("holder-transitions.json", { base: normalized });
-};
+const resolveUrl = (slug: string) => dataUrl(slug, "holder-transitions.json");
 
 // Map a page rangeDays value to the transitions key (matches the generator).
 export const transitionsKeyFor = (rangeDays: number, ytdDays: number): string => {
@@ -35,10 +32,11 @@ export const transitionsKeyFor = (rangeDays: number, ytdDays: number): string =>
 };
 
 export const useHolderTransitions = () => {
+  const { slug } = useProject();
   return useQuery({
-    queryKey: ["holder-transitions"],
+    queryKey: ["holder-transitions", slug],
     queryFn: async (): Promise<HolderTransitions | null> => {
-      const res = await fetch(resolveUrl());
+      const res = await fetch(resolveUrl(slug));
       if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       return (await res.json()) as HolderTransitions;
     },

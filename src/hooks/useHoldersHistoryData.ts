@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { resolveDataUrl } from "@/lib/dataUrl";
+import { dataUrl } from "@/lib/dataUrl";
+import { useProject } from "@/hooks/useProject";
 
 export type HolderHistoryChainEntry = {
   holderCount: number;
@@ -53,7 +54,7 @@ const ensureLeadingSlash = (value: string) => {
   return value.startsWith("/") ? value : `/${value}`;
 };
 
-export const resolveHolderHistoryUrl = () => {
+export const resolveHolderHistoryUrl = (slug: string) => {
   const explicit = import.meta.env.VITE_HOLDER_HISTORY_URL?.trim();
   if (explicit) {
     return explicit;
@@ -61,7 +62,7 @@ export const resolveHolderHistoryUrl = () => {
 
   const base = import.meta.env.BASE_URL ?? "/";
   const normalizedBase = withTrailingSlash(ensureLeadingSlash(base));
-  return resolveDataUrl("holders-history.json", { base: normalizedBase });
+  return dataUrl(slug, "holders-history.json", { base: normalizedBase });
 };
 
 /**
@@ -71,10 +72,11 @@ export const resolveHolderHistoryUrl = () => {
  * hook only owns the network fetch and caching of the raw resource.
  */
 export const useHoldersHistoryData = () => {
+  const { slug } = useProject();
   return useQuery<HolderHistoryPayload>({
-    queryKey: ["holders-history"],
+    queryKey: ["holders-history", slug],
     queryFn: async () => {
-      const url = resolveHolderHistoryUrl();
+      const url = resolveHolderHistoryUrl(slug);
       const response = await fetch(url);
       if (!response.ok) {
         if (response.status === 404) {

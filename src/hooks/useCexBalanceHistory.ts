@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { resolveDataUrl } from "@/lib/dataUrl";
+import { dataUrl } from "@/lib/dataUrl";
+import { useProject } from "@/hooks/useProject";
 import { FeedError } from "@/lib/fetchJson";
 
 export type CexHistoryEntry = {
@@ -13,17 +14,14 @@ type CexHistoryPayload = {
   entries?: CexHistoryEntry[];
 };
 
-const resolveUrl = () => {
-  const base = import.meta.env.BASE_URL ?? "/";
-  const normalized = base.endsWith("/") ? base : `${base}/`;
-  return resolveDataUrl("cex-balance-history.json", { base: normalized });
-};
+const resolveUrl = (slug: string) => dataUrl(slug, "cex-balance-history.json");
 
 export const useCexBalanceHistory = () => {
+  const { slug } = useProject();
   return useQuery({
-    queryKey: ["cex-balance-history"],
+    queryKey: ["cex-balance-history", slug],
     queryFn: async (): Promise<CexHistoryEntry[]> => {
-      const res = await fetch(resolveUrl());
+      const res = await fetch(resolveUrl(slug));
       if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       const payload = (await res.json()) as CexHistoryPayload;
       return (payload.entries ?? [])

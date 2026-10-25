@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { resolveDataUrl } from "@/lib/dataUrl";
+import { dataUrl } from "@/lib/dataUrl";
+import { useProject } from "@/hooks/useProject";
 import { FeedError } from "@/lib/fetchJson";
 
 export type SupplyReconciliationItem = {
@@ -65,17 +66,14 @@ export type SupplyReconciliation = {
   items: SupplyReconciliationItem[];
 };
 
-const resolveUrl = () => {
-  const base = import.meta.env.BASE_URL ?? "/";
-  const normalized = base.endsWith("/") ? base : `${base}/`;
-  return resolveDataUrl("supply-reconciliation.json", { base: normalized });
-};
+const resolveUrl = (slug: string) => dataUrl(slug, "supply-reconciliation.json");
 
 export const useSupplyReconciliation = () => {
+  const { slug } = useProject();
   return useQuery({
-    queryKey: ["supply-reconciliation"],
+    queryKey: ["supply-reconciliation", slug],
     queryFn: async (): Promise<SupplyReconciliation | null> => {
-      const res = await fetch(resolveUrl());
+      const res = await fetch(resolveUrl(slug));
       if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       return (await res.json()) as SupplyReconciliation;
     },
