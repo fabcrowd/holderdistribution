@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import {
   Card,
   CardContent,
@@ -67,6 +68,7 @@ const DistributionAnalysisWidget = ({
   onRangeDaysChange,
   onViewChange,
 }: DistributionAnalysisWidgetProps) => {
+  const { ticker } = useProjectCopy();
   // Range-aware baseline: history distribution at the start of the selected
   // window (combined view only — chain views keep the snapshot baseline).
   const { data: historicalDelta } = useHolderHistoricalDelta({
@@ -157,7 +159,7 @@ const DistributionAnalysisWidget = ({
                 "Sub-1-TEL Dust Wallets Are Deliberately Excluded From
                 Buckets, Not Counts". */}
             <span className="text-[10px] sm:text-xs font-medium text-muted-foreground border border-border/60 rounded-full px-2 py-0.5">
-              Sub-1-TEL dust wallets counted in lowest tier
+              Sub-1-{ticker} dust wallets counted in lowest tier
             </span>
             {/* This tab has no chain selector of its own — `selectedView` is
                 set on the Holders tab and carries over silently, and picking
@@ -254,7 +256,7 @@ const DistributionAnalysisWidget = ({
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableHead className="text-center font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4">Range (TEL)</TableHead>
+                    <TableHead className="text-center font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4">Range ({ticker})</TableHead>
                     <TableHead className="text-center px-2 sm:px-4">
                       <span className="font-semibold text-muted-foreground text-xs sm:text-sm">Holders</span>
                     </TableHead>

@@ -1,4 +1,5 @@
 import { useMemo, useState, Fragment, type ReactNode } from "react";
+import { useProjectCopy, type UseProjectCopy } from "@/hooks/useProjectCopy";
 import {
   Card,
   CardContent,
@@ -124,6 +125,7 @@ const TILE_HOVER =
 
 
 const displayResults = (
+  copy: UseProjectCopy,
   snapshot: HolderLiteSnapshot | null,
   selection: DisplaySelection,
 ): DisplayResult | null => {
@@ -138,7 +140,7 @@ const displayResults = (
     return {
       key: selection,
       title: "All Wallets",
-      subtitle: "All wallets with >0 TEL across Ethereum, Polygon, and Base.",
+      subtitle: copy.t("All wallets with >0 {ticker} across {chains}."),
       metrics: view.metrics,
       previousMetrics: view.previousMetrics ?? null,
       concentration: view.concentration,
@@ -152,7 +154,7 @@ const displayResults = (
   return {
     key: selection,
     title: `${view.label} Wallets`,
-    subtitle: `All wallets with >0 TEL on ${view.label}.`,
+    subtitle: `All wallets with >0 ${copy.ticker} on ${view.label}.`,
     metrics: view.metrics,
     previousMetrics: view.previousMetrics ?? null,
     concentration: view.concentration,
@@ -187,6 +189,7 @@ type StatItem = {
 };
 
 const renderMetrics = (
+  copy: UseProjectCopy,
   result: DisplayResult,
   totals: HolderLiteSnapshot["totals"],
   cex?: CexFlowSnapshot | null,
@@ -230,12 +233,12 @@ const renderMetrics = (
     {
       label: "Retail Holders",
       value: formatInteger(result.metrics.holderCount),
-      description: holderCountIsAth ? "All-time high" : "Wallets >0 TEL, excl. exchanges",
+      description: holderCountIsAth ? "All-time high" : copy.t("Wallets >0 {ticker}, excl. exchanges"),
       badge: holderCountIsAth ? "ATH" : undefined,
       previous: previousHolderCount,
       rawValue: result.metrics.holderCount,
       icon: Users,
-      info: "Count of distinct on-chain wallets holding >0 TEL across Ethereum, Polygon and Base.\n\nNote: an exchange is a single wallet holding many customers' TEL, so its users aren't counted individually here — the true number of people holding TEL is higher than this figure.",
+      info: copy.t("Count of distinct on-chain wallets holding >0 {ticker} across {chains}.\n\nNote: an exchange is a single wallet holding many customers' {ticker}, so its users aren't counted individually here — the true number of people holding {ticker} is higher than this figure."),
       changelogEvents: holdersEvents,
     },
     {
@@ -246,7 +249,7 @@ const renderMetrics = (
       rawValue: result.metrics.totalBalance,
       icon: Database,
       formatter: formatTokenAmount,
-      info: "TEL held in ordinary wallets — everything except exchange custody, Association treasury, Telcoin Holdings, escrow, bridges and DEX liquidity.\n\nShown separately from CEX Balance rather than blended into one total, because the two moving in opposite directions is the signal: TEL leaving exchanges for self-custody is accumulation, the reverse is supply moving toward the market. A combined figure stays flat through both.\n\nStaked TEL, including the Staked (v3) StakingModule portion, is already inside this figure (credited to each staker's wallet), not added on top.",
+      info: copy.text("holders.retailHeld.info", "{ticker} held in ordinary wallets — everything except exchange custody, treasury and team wallets, escrow, bridges and DEX liquidity.\n\nShown separately from CEX Balance rather than blended into one total, because the two moving in opposite directions is the signal: {ticker} leaving exchanges for self-custody is accumulation, the reverse is supply moving toward the market. A combined figure stays flat through both.\n\nStaked {ticker} is already inside this figure (credited to each staker's wallet), not added on top."),
       changelogEvents: retailBalanceEvents,
     },
   ];
@@ -254,7 +257,7 @@ const renderMetrics = (
   if (selection === "combined" && result.stakingStats != null) {
     const stakedTotal = result.stakingStats.stakedTotal ?? 0;
     items.push({
-      label: "Staked TEL",
+      label: copy.t("Staked {ticker}"),
       value: formatTokenAmount(stakedTotal),
       description: v3Stats && result.stakingStats.legacy
         ? `Legacy ${formatCompactTokens(result.stakingStats.legacy.stakedTotal)} / v3 ${formatCompactTokens(v3Stats.stakedTotal)} · ${formatPercentage(percentOf(stakedTotal, totals.totalSupply))} of supply`
@@ -264,7 +267,7 @@ const renderMetrics = (
       icon: Layers,
       formatter: formatTokenAmount,
       changelogEvents: stakedEvents,
-      info: "TEL staked on Polygon: the legacy staking contract plus the v3 StakingModule (live since 1 Sep 2026), counted once per staker. It's a subset of Retail Held (already counted there, including the v3 portion), shown separately as a measure of long-term conviction. Staked TEL can't be sold until unstaked.",
+      info: copy.text("holders.staked.info", "{ticker} locked in staking, counted once per staker. It's a subset of Retail Held (already counted there), shown separately as a measure of long-term conviction. Staked {ticker} can't be sold until unstaked."),
     });
   }
 
@@ -283,7 +286,7 @@ const renderMetrics = (
       rawValue: currentBalance,
       icon: Building2,
       formatter: formatTokenAmount,
-      info: "TEL sitting in known exchange wallets. An exchange hot wallet is one commingled pool that backs all of that exchange's customers' TEL balances — it's mostly customer funds held in custody, not the exchange's own.\n\nTrading on an exchange happens in its private off-chain ledger, so on-chain we can't see whether any of this has been sold, nor how many people hold it. A rising balance means more TEL positioned near the market; a falling balance means TEL leaving exchanges (often to self-custody or staking).\n\nNote: a one-time ~8.7B step-up reflects re-labelling seven previously vault-held KuCoin wallets into CEX Custody — not an inflow.",
+      info: copy.text("holders.cex.info", "{ticker} sitting in known exchange wallets. An exchange hot wallet is one commingled pool that backs all of that exchange's customers' {ticker} balances — it's mostly customer funds held in custody, not the exchange's own.\n\nTrading on an exchange happens in its private off-chain ledger, so on-chain we can't see whether any of this has been sold, nor how many people hold it. A rising balance means more {ticker} positioned near the market; a falling balance means {ticker} leaving exchanges (often to self-custody or staking)."),
       changelogEvents: cexEvents,
     });
   }
@@ -334,6 +337,7 @@ const renderMetrics = (
 };
 
 const renderConcentration = (
+  copy: UseProjectCopy,
   result: DisplayResult,
   ctl: RangeCtl,
   rangeDays: number,
@@ -414,7 +418,7 @@ const renderConcentration = (
       {cohortChange !== null && (
         <div className="rounded-2xl border border-border/50 bg-muted/20 px-5 py-4 text-center">
           <div className="text-xl font-bold text-foreground">
-            Top 100 holders: {cohortChange >= 0 ? "+" : "−"}{formatTokenAmount(Math.abs(cohortChange))} TEL
+            Top 100 holders: {cohortChange >= 0 ? "+" : "−"}{formatTokenAmount(Math.abs(cohortChange))} {copy.ticker}
           </div>
           <div className="text-sm text-muted-foreground mt-1">
             Total retail holdings: {retailChange >= 0 ? "+" : "−"}{formatTokenAmount(Math.abs(retailChange))} over the same period
@@ -483,6 +487,7 @@ type HolderMomentum = {
 };
 
 const renderVelocity = (
+  copy: UseProjectCopy,
   momentum: HolderMomentum | null,
   selectionLabel: string,
   rangeLabel: string,
@@ -502,7 +507,7 @@ const renderVelocity = (
       sub: "first-time wallets",
       tone: emerald,
     });
-    items.push({ label: "Wallets Ever Held TEL", value: formatInteger(everHeld.total), sub: "cumulative — only grows", tone: "text-primary" });
+    items.push({ label: copy.t("Wallets Ever Held {ticker}"), value: formatInteger(everHeld.total), sub: "cumulative — only grows", tone: "text-primary" });
     items.push({ label: `Net Active Holders (${rangeLabel})`, value: formatSignedInteger(momentum.net), sub: `${momentum.pct >= 0 ? "+" : ""}${momentum.pct.toFixed(2)}% active base`, tone: netTone });
   } else {
     items.push({ label: `Net New Holders (${rangeLabel})`, value: formatSignedInteger(momentum.net), sub: `${formatSignedInteger(Math.round(momentum.perDay))} / day`, tone: netTone });
@@ -587,7 +592,7 @@ const balanceRangeDisplayLabel = (label: string): string => label;
  *  section just confirms which period its numbers reflect. */
 type RangeCtl = { rangeDays: number; onRangeDaysChange: (d: number) => void };
 
-const renderBalanceInsights = (stats: HolderLiteView["balanceStats"] | null, ctl: RangeCtl) => {
+const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["balanceStats"] | null, ctl: RangeCtl) => {
   if (!stats || stats.count === 0) return null;
 
   // Gini is a raw statistics term with no obvious meaning to most readers —
@@ -603,7 +608,7 @@ const renderBalanceInsights = (stats: HolderLiteView["balanceStats"] | null, ctl
     { label: "P99 Balance", value: formatTokenAmount(stats.p99), sub: null, info: null },
     {
       label: "Gini Coefficient", value: stats.gini.toFixed(3), sub: giniDescriptor,
-      info: "A standard measure of how unevenly TEL is spread across retail wallets. 0 would mean every wallet holds the same amount; 1 would mean a single wallet holds it all. Most tokens land well above 0.9, since a small number of long-term holders naturally accumulate more than a large number of small wallets.",
+      info: copy.t("A standard measure of how unevenly {ticker} is spread across retail wallets. 0 would mean every wallet holds the same amount; 1 would mean a single wallet holds it all. Most tokens land well above 0.9, since a small number of long-term holders naturally accumulate more than a large number of small wallets."),
     },
   ];
 
@@ -639,7 +644,7 @@ const renderBalanceInsights = (stats: HolderLiteView["balanceStats"] | null, ctl
           </CardTitle>
         </div>
         <CardDescription data-panel-desc className="text-sm sm:text-base text-muted-foreground">
-          Distribution stats and balance curve for retail wallets (&gt;0 TEL, excludes exchange &amp; hot wallets).
+          Distribution stats and balance curve for retail wallets (&gt;0 {copy.ticker}, excludes exchange &amp; hot wallets).
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-5 space-y-6">
@@ -673,7 +678,7 @@ const renderBalanceInsights = (stats: HolderLiteView["balanceStats"] | null, ctl
                   <div className="flex items-baseline justify-between gap-2 pb-1 sm:hidden">
                     <span className="text-muted-foreground">{p.label}</span>
                     <span className="font-semibold text-foreground tabular-nums">
-                      {formatTokenAmount(p.value)} TEL · {p.pct}th %
+                      {formatTokenAmount(p.value)} {copy.ticker} · {p.pct}th %
                     </span>
                   </div>
                   <span className="hidden sm:block w-28 shrink-0 text-right text-muted-foreground whitespace-nowrap">{p.label}</span>
@@ -684,7 +689,7 @@ const renderBalanceInsights = (stats: HolderLiteView["balanceStats"] | null, ctl
                     />
                   </div>
                   <span className="hidden sm:block w-24 shrink-0 text-right font-semibold text-foreground tabular-nums whitespace-nowrap">
-                    {formatTokenAmount(p.value)} TEL
+                    {formatTokenAmount(p.value)} {copy.ticker}
                   </span>
                   <span className="hidden sm:block w-14 shrink-0 text-muted-foreground whitespace-nowrap">{p.pct}th %</span>
                 </div>
@@ -692,7 +697,7 @@ const renderBalanceInsights = (stats: HolderLiteView["balanceStats"] | null, ctl
             })}
             {stats.average != null && (
               <p className="text-xs text-muted-foreground text-center pt-1">
-                Average: <span className="text-foreground font-medium">{formatTokenAmount(stats.average)} TEL</span>
+                Average: <span className="text-foreground font-medium">{formatTokenAmount(stats.average)} {copy.ticker}</span>
                 {" "}· the typical (median) wallet holds just {stats.average > 0 ? ((stats.median / stats.average) * 100).toFixed(0) : "—"}% of that — a few large holders pull the average up
               </p>
             )}
@@ -705,7 +710,7 @@ const renderBalanceInsights = (stats: HolderLiteView["balanceStats"] | null, ctl
             <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1 text-center">Balance distribution — holder count by range</p>
             <p data-panel-desc className="text-xs text-muted-foreground mb-3 text-center">
               Balance buckets are log-spaced; the count axis is linear. The curve is a log-normal fit.
-              Buckets exclude sub-1-TEL dust wallets, so bars sum to slightly fewer holders than the tiles above.
+              Buckets exclude sub-1-{copy.ticker} dust wallets, so bars sum to slightly fewer holders than the tiles above.
             </p>
             <ChartContainer
               config={{
@@ -751,6 +756,7 @@ const stakingInsightsChartConfig = {
 };
 
 const renderStakingInsights = (
+  copy: UseProjectCopy,
   stats: HolderLiteView["stakingStats"] | null,
   distribution: HolderLiteView["stakingDistribution"] | null,
   ctl: RangeCtl,
@@ -771,7 +777,7 @@ const renderStakingInsights = (
       value: formatTokenAmount(stats.stakedTotal),
       sub: stats.v3 && stats.legacy ? `Legacy ${formatCompactTokens(stats.legacy.stakedTotal)} / v3 ${formatCompactTokens(stats.v3.stakedTotal)}` : undefined,
     },
-    { label: "% of Retail TEL Staked", value: formatPercentage(stats.stakedShareOfRetail * 100, 2) },
+    { label: copy.t("% of Retail {ticker} Staked"), value: formatPercentage(stats.stakedShareOfRetail * 100, 2) },
     { label: "% of Wallets Staking", value: formatPercentage(stats.stakerShareOfHolders * 100, 2) },
     { label: "Avg Staked", value: formatTokenAmount(stats.averageStakedPerStaker) },
   ];
@@ -794,7 +800,7 @@ const renderStakingInsights = (
           </CardTitle>
         </div>
         <CardDescription data-panel-desc className="text-sm sm:text-base text-muted-foreground">
-          TEL staked by retail in the legacy staking contract and the v3 StakingModule, mapped back to holder wallets and counted once per staker (excludes exchange &amp; hot wallets).
+          {copy.text("staking.intro", "{ticker} staked by retail, mapped back to holder wallets and counted once per staker (excludes exchange & hot wallets).")}
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-5 space-y-6">
@@ -810,7 +816,7 @@ const renderStakingInsights = (
         {chartData.some((d) => d.count > 0) && (
           <div className="premium-surface-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1 text-center">Staked balance distribution (staker count by range)</p>
-            <p className="text-xs text-muted-foreground mb-3 text-center">Buckets exclude sub-1-TEL dust amounts, so bars sum to slightly fewer stakers than the tiles above.</p>
+            <p className="text-xs text-muted-foreground mb-3 text-center">Buckets exclude sub-1-{copy.ticker} dust amounts, so bars sum to slightly fewer stakers than the tiles above.</p>
             <ChartContainer config={stakingInsightsChartConfig} className="h-[260px] w-full sm:h-[360px]">
               <BarChart
                 data={chartData}
@@ -890,6 +896,7 @@ const renderOverlap = (stats: HolderLiteSnapshot["overlap"] | null, ctl: RangeCt
 const ETHERSCAN_ADDRESS = "https://etherscan.io/address/";
 
 const renderCexFlows = (
+  copy: UseProjectCopy,
   cex: CexFlowSnapshot | null | undefined,
   selection: DisplaySelection,
   expandedExchange: string | null,
@@ -981,12 +988,12 @@ const renderCexFlows = (
                 }
               />
             </div>
-            <div className="mt-1 text-xs text-muted-foreground">holding TEL, of {formatInteger(overall.walletCount)} tracked</div>
+            <div className="mt-1 text-xs text-muted-foreground">holding {copy.ticker}, of {formatInteger(overall.walletCount)} tracked</div>
           </div>
           <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
             <div className="flex items-center justify-center gap-1.5 mb-2">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">CEX Balance</div>
-              <InfoTooltip text={"TEL held in known exchange wallets. Additional balances may exist in untagged wallets, so treat this as a floor, not a total. A one-time ~8.7B step-up is a re-labelling of previously vault-held KuCoin wallets, not an inflow."} />
+              <InfoTooltip text={copy.text("cex.balance.info", "{ticker} held in known exchange wallets. Additional balances may exist in untagged wallets, so treat this as a floor, not a total.")} />
             </div>
             <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
               <div className="text-2xl font-semibold text-primary">{formatTokenAmount(overall.currentBalance)}</div>
@@ -1004,7 +1011,7 @@ const renderCexFlows = (
           <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
             <div className="flex items-center justify-center gap-1.5 mb-2">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Balance Change ({rangeLabel})</div>
-              <InfoTooltip text={"How much the tracked exchange balances moved over this window — a change in STOCK, not measured flow.\n\nIt also shifts when an exchange reshuffles TEL between tagged and untagged wallets, so it won't exactly equal deposits minus withdrawals.\n\nFor measured FLOW — actual deposits and withdrawals counted from on-chain Transfer logs — see Exchange Netflow below."} />
+              <InfoTooltip text={copy.t("How much the tracked exchange balances moved over this window — a change in STOCK, not measured flow.\n\nIt also shifts when an exchange reshuffles {ticker} between tagged and untagged wallets, so it won't exactly equal deposits minus withdrawals.\n\nFor measured FLOW — actual deposits and withdrawals counted from on-chain Transfer logs — see Exchange Netflow below.")} />
             </div>
             <div className="text-2xl font-semibold text-primary">{formatSignedTokenAmount(overallRange.net)}</div>
             <div className="text-xs text-muted-foreground">Gained {formatTokenAmount(overallRange.inflow)} • Declined {formatTokenAmount(overallRange.outflow)}</div>
@@ -1094,7 +1101,7 @@ const renderCexFlows = (
                                 <TableHeader>
                                   <TableRow className="border-0 hover:bg-transparent">
                                     <TableHead className="text-left font-semibold text-muted-foreground text-xs px-2 py-1">Wallet</TableHead>
-                                    <TableHead className="text-right font-semibold text-muted-foreground text-xs px-2 py-1">TEL</TableHead>
+                                    <TableHead className="text-right font-semibold text-muted-foreground text-xs px-2 py-1">{copy.ticker}</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1210,6 +1217,7 @@ const HOLDER_PANELS = [
 ];
 
 const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDaysChange, trendsPanel, flowsPanel, panel: panelProp, onPanelChange, compactHeader = false }: WalletHoldingsWidgetProps) => {
+  const copy = useProjectCopy();
   const [expandedCexExchange, setExpandedCexExchange] = useState<string | null>(null);
   const [panelState, setPanelState] = useState("overview");
   // Controlled when a panel is passed in, internal otherwise — so the existing
@@ -1307,8 +1315,8 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
   const error = queryError ? (queryError instanceof Error ? queryError.message : "Unable to load holder snapshot.") : null;
 
   const display = useMemo(
-    () => displayResults(snapshot ?? null, selectedView),
-    [snapshot, selectedView],
+    () => displayResults(copy, snapshot ?? null, selectedView),
+    [copy, snapshot, selectedView],
   );
 
   const generatedAt = snapshot?.generatedAt ?? null;
@@ -1358,7 +1366,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
             <MethodologyInfo section="holderSnapshot" />
           </CardTitle>
           <CardDescription className="text-base text-muted-foreground mt-2">
-            Retail distribution across Telcoin&apos;s supported chains sourced from the scheduled snapshot.
+            Retail distribution across {copy.name}&apos;s supported chains sourced from the scheduled snapshot.
           </CardDescription>
           <p className="text-xs text-muted-foreground/80 mt-1">
             * Data is updated weekly and may not reflect real-time changes. For the most accurate information, verify directly on-chain.
@@ -1414,6 +1422,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
               >
               <TabsContent value="overview" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>
                 {renderMetrics(
+                  copy,
                   display,
                   snapshot.totals,
                   snapshot.cex,
@@ -1430,6 +1439,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
 
               <TabsContent value="concentration" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>
                 {renderConcentration(
+                  copy,
                   display,
                   rangeCtl,
                   rangeDays,
@@ -1441,15 +1451,16 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
               </TabsContent>
 
               <TabsContent value="balances" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>
-                {renderBalanceInsights(display.balanceStats, rangeCtl)}
+                {renderBalanceInsights(copy, display.balanceStats, rangeCtl)}
               </TabsContent>
 
               <TabsContent value="staking" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>
-                {renderStakingInsights(display.stakingStats, display.stakingDistribution, rangeCtl)}
+                {renderStakingInsights(copy, display.stakingStats, display.stakingDistribution, rangeCtl)}
               </TabsContent>
 
               <TabsContent value="growth" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>
                 {renderVelocity(
+                  copy,
                   holderMomentum,
                   selectionLabel,
                   RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`,
@@ -1476,7 +1487,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
               </TabsContent>
 
               <TabsContent value="exchanges" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>
-                {renderCexFlows(snapshot.cex, selectedView, expandedCexExchange, (name) => setExpandedCexExchange((prev) => (prev === name ? null : name)), rangeDays, onRangeDaysChange, cexHistory)}
+                {renderCexFlows(copy, snapshot.cex, selectedView, expandedCexExchange, (name) => setExpandedCexExchange((prev) => (prev === name ? null : name)), rangeDays, onRangeDaysChange, cexHistory)}
                 <CexHistoryTiles rangeDays={rangeDays} />
               </TabsContent>
               </SubPanelTabs>

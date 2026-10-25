@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, useEffect, useLayoutEffect, useCallback, type ReactNode } from "react";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { AsOfBadge } from "@/components/AsOfBadge";
 import { useChartIntro } from "@/hooks/useMotion";
 import { createPortal } from "react-dom";
@@ -91,7 +92,7 @@ const fmtInt = (v: number) => new Intl.NumberFormat().format(Math.round(v));
 const INFO_WALLETS =
   "Each tile is a retail balance tier, sized by holder count. The two small ticks flanking a tile are gross migration counts over the selected period: on the left, in green, how many wallets ARRIVED into that tier; on the right, in red, how many LEFT it. The figure inside the bar is the tier's net change, taken from the balance snapshots themselves rather than from these two counts.\n\nClick a tier to see exactly which tiers its wallets came from (arriving on the left) and went to (leaving on the right) — the lines are the whole story: this mode answers \"why did the wallet COUNT change,\" using only real, tracked wallet movement between tiers.";
 const INFO_TEL =
-  "Each tile is a retail balance tier, sized by total TEL held. The lens is buy pressure vs sell pressure over the selected period: green on the left is TEL entering retail from the market or custody (Bought on DEX, From exchange); red on the right is TEL leaving toward a sale (Sold on DEX, To exchange). Yellow is redistribution — LP or wallet↔wallet — not market pressure.\n\nClick a tier to scope the top tiles and side columns to that tier; click off to restore period totals. Yellow To wallet / From wallet is a two-step drill: select a tier first, then that side tile to trace transfers tier-to-tier.\n\nOr click a side tile alone (Bought on DEX, From exchange, …) with no tier selected to see every tier’s share of that pressure.\n\nThe net change shown always comes from the real balance snapshots, never from adding up these flows.";
+  "Each tile is a retail balance tier, sized by total {ticker} held. The lens is buy pressure vs sell pressure over the selected period: green on the left is {ticker} entering retail from the market or custody (Bought on DEX, From exchange); red on the right is {ticker} leaving toward a sale (Sold on DEX, To exchange). Yellow is redistribution — LP or wallet↔wallet — not market pressure.\n\nClick a tier to scope the top tiles and side columns to that tier; click off to restore period totals. Yellow To wallet / From wallet is a two-step drill: select a tier first, then that side tile to trace transfers tier-to-tier.\n\nOr click a side tile alone (Bought on DEX, From exchange, …) with no tier selected to see every tier’s share of that pressure.\n\nThe net change shown always comes from the real balance snapshots, never from adding up these flows.";
 
 const SIDE_LABELS_IN = [
   { key: "dex" as const, label: "Bought on DEX", color: BUY_DEX },
@@ -108,9 +109,9 @@ const SIDE_LABELS_OUT = [
 
 // The color legend shown in the header: buy / sell pressure + redistribution.
 const LEGEND: { color: string; label: string; explanation: string }[] = [
-  { color: POSITIVE, label: "Buy pressure", explanation: "TEL entering retail from the market or custody — bought on a DEX, or withdrawn from an exchange into self-custody. In Wallets mode, also wallets ARRIVING into a tier (left-hand tick and inbound migration lines)." },
-  { color: NEGATIVE, label: "Sell pressure", explanation: "TEL leaving retail toward a sale — sold on a DEX, or deposited to an exchange (a common precursor to a sale). In Wallets mode, a tier's right-hand tick or outbound migration line uses this when that tier's outflow was dominated by real sales rather than wallet-to-wallet moves." },
-  { color: NEUTRAL, label: "Redistribution", explanation: "TEL moved to another wallet or added to / withdrawn from an LP pool — not market buy or sell pressure. In Wallets mode, used when a tier's outflow was mostly relocation, not a sale." },
+  { color: POSITIVE, label: "Buy pressure", explanation: "{ticker} entering retail from the market or custody — bought on a DEX, or withdrawn from an exchange into self-custody. In Wallets mode, also wallets ARRIVING into a tier (left-hand tick and inbound migration lines)." },
+  { color: NEGATIVE, label: "Sell pressure", explanation: "{ticker} leaving retail toward a sale — sold on a DEX, or deposited to an exchange (a common precursor to a sale). In Wallets mode, a tier's right-hand tick or outbound migration line uses this when that tier's outflow was dominated by real sales rather than wallet-to-wallet moves." },
+  { color: NEUTRAL, label: "Redistribution", explanation: "{ticker} moved to another wallet or added to / withdrawn from an LP pool — not market buy or sell pressure. In Wallets mode, used when a tier's outflow was mostly relocation, not a sale." },
 ];
 
 export const TierFlowDiagram = ({
@@ -128,6 +129,7 @@ export const TierFlowDiagram = ({
 }: Props) => {
   // One-shot: fades with the first load, not when a chain change reloads it.
   const canvasIntro = useChartIntro();
+  const { ticker, t } = useProjectCopy();
   // Chain is driven by the page-level chain selector (the in-diagram chain
   // buttons were a second, conflicting control). Uncontrolled = all chains.
   const chain: ChainKey = chainProp ?? "all";
@@ -480,16 +482,16 @@ export const TierFlowDiagram = ({
         // attributionLines) — skip the side-tile hop so the canvas doesn't
         // draw two competing yellow stories at once.
         if (c.key === "wallet") return;
-        if (c.inV > 0) out.push({ ...came(j, c.inV, inColor, `+${fmtTel(c.inV)}`, `${fmtTel(c.inV)} TEL ${c.inLabel}`), key: `came-${c.key}`, flowKey: c.key });
-        if (c.outV > 0) out.push({ ...went(j, c.outV, outColor, `−${fmtTel(c.outV)}`, `${fmtTel(c.outV)} TEL ${c.outLabel}`), key: `went-${c.key}`, flowKey: c.key });
+        if (c.inV > 0) out.push({ ...came(j, c.inV, inColor, `+${fmtTel(c.inV)}`, `${fmtTel(c.inV)} ${ticker} ${c.inLabel}`), key: `came-${c.key}`, flowKey: c.key });
+        if (c.outV > 0) out.push({ ...went(j, c.outV, outColor, `−${fmtTel(c.outV)}`, `${fmtTel(c.outV)} ${ticker} ${c.outLabel}`), key: `went-${c.key}`, flowKey: c.key });
       } else if (c.net !== 0) {
-        const netTooltip = c.net > 0 ? `Net ${fmtTel(c.net)} TEL in from ${c.label}` : `Net ${fmtTel(-c.net)} TEL out to ${c.label}`;
+        const netTooltip = c.net > 0 ? `Net ${fmtTel(c.net)} ${ticker} in from ${c.label}` : `Net ${fmtTel(-c.net)} ${ticker} out to ${c.label}`;
         const line = c.net > 0 ? came(j, c.net, colorForTone(c.tone), signed(c.net, fmtTel), netTooltip) : went(j, -c.net, colorForTone(c.tone), signed(c.net, fmtTel), netTooltip);
         out.push({ ...line, key: `net-${c.key}`, flowKey: c.key });
       }
     });
     return out;
-  }, [selectedField, isWallets, expandedFlow, scaledTileW]);
+  }, [selectedField, isWallets, expandedFlow, scaledTileW, ticker]);
 
   // Third level: once the "Other wallets" category is drilled into (path
   // click, panel row, OR the 2-step: tier selected → click To/From wallet),
@@ -534,7 +536,7 @@ export const TierFlowDiagram = ({
         key: `attr-in-${tier}`, tier, color: NEUTRAL, w: strokeWidth(v, inDenom),
         d: laneArcPath(theirX, theirY, selfLeft, myY, "left"),
         label: `+${fmtTel(v)}`, labelX: selfLeft - 40, labelY: (myY + theirY) / 2,
-        tooltip: `${fmtTel(v)} TEL arrived from ${tier} via wallet transfer`,
+        tooltip: `${fmtTel(v)} ${ticker} arrived from ${tier} via wallet transfer`,
       });
     });
     outEntries.forEach(([tier, v], k) => {
@@ -548,11 +550,11 @@ export const TierFlowDiagram = ({
         key: `attr-out-${tier}`, tier, color: NEUTRAL, w: strokeWidth(v, outDenom),
         d: laneArcPath(selfRight, myY, theirX, theirY, "right"),
         label: `−${fmtTel(v)}`, labelX: selfRight + 40, labelY: (myY + theirY) / 2,
-        tooltip: `${fmtTel(v)} TEL went to ${tier} via wallet transfer`,
+        tooltip: `${fmtTel(v)} ${ticker} went to ${tier} via wallet transfer`,
       });
     });
     return out;
-  }, [isWallets, selectedField, expandedFlow, selectedSideTile, chain, attributedDays, fields]);
+  }, [isWallets, selectedField, expandedFlow, selectedSideTile, chain, attributedDays, fields, ticker]);
 
   // Side-tile pivot: lines from the selected cause tile to every tier that
   // contributed (or from every tier to the selected sink). Skipped while a
@@ -582,8 +584,8 @@ export const TierFlowDiagram = ({
         ? bezierPath(sideX, sideY, tierEdgeX, tierY)
         : bezierPath(tierEdgeX, tierY, sideX, sideY);
       const tooltip = side === "in"
-        ? `${fmtTel(v)} TEL into ${f.label} via ${label}`
-        : `${fmtTel(v)} TEL from ${f.label} via ${label}`;
+        ? `${fmtTel(v)} ${ticker} into ${f.label} via ${label}`
+        : `${fmtTel(v)} ${ticker} from ${f.label} via ${label}`;
       return {
         key: `side-${side}-${key}-${f.label}`,
         tier: f.label,
@@ -596,7 +598,7 @@ export const TierFlowDiagram = ({
         tooltip,
       };
     });
-  }, [isWallets, selectedSideTile, selected, fields]);
+  }, [isWallets, selectedSideTile, selected, fields, ticker]);
 
   // Counterpart tiers drawn by the wallet 2-step drill — used to keep those
   // tiles lit while the rest of the column dims.
@@ -636,7 +638,7 @@ export const TierFlowDiagram = ({
   const hasAnySelection = !!(selected || selectedSideTile);
   const metricToggle = (
     <div role="group" aria-label="Measure tiers by" className="inline-flex rounded-full border border-border/60 bg-card/80 p-0.5">
-      {([["wallets", "Wallets"], ["tel", "TEL"]] as const).map(([key, label]) => (
+      {([["wallets", "Wallets"], ["tel", ticker]] as const).map(([key, label]) => (
         <button
           key={key}
           type="button"
@@ -668,7 +670,7 @@ export const TierFlowDiagram = ({
       {LEGEND.map((l) => (
         <span key={l.label} className="inline-flex items-center gap-1.5">
           <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ background: l.color }} />
-          <ExplainNumber value={l.label} explanation={l.explanation} ariaLabel={`${l.label}: what this colour means`} className="inline-flex min-h-6 items-center" />
+          <ExplainNumber value={l.label} explanation={t(l.explanation)} ariaLabel={`${l.label}: what this colour means`} className="inline-flex min-h-6 items-center" />
         </span>
       ))}
     </div>
@@ -683,7 +685,7 @@ export const TierFlowDiagram = ({
           <div className="ml-auto flex items-center gap-2">
             <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />
             {clearButton}
-            <InfoTooltip text={isWallets ? INFO_WALLETS : INFO_TEL} label="How to read the tier flows" />
+            <InfoTooltip text={isWallets ? INFO_WALLETS : t(INFO_TEL)} label="How to read the tier flows" />
           </div>
         </div>
       ) : (
@@ -691,7 +693,7 @@ export const TierFlowDiagram = ({
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-1.5">
               <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Retail distribution by tier</h3>
-              <InfoTooltip text={isWallets ? INFO_WALLETS : INFO_TEL} label="How to read the tier flows" />
+              <InfoTooltip text={isWallets ? INFO_WALLETS : t(INFO_TEL)} label="How to read the tier flows" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />
@@ -759,10 +761,10 @@ export const TierFlowDiagram = ({
                 <>
                   <div className={`text-xl font-bold ${scopedNetTel >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                     <ExplainNumber
-                      value={`${signed(scopedNetTel, fmtTel)} TEL`}
+                      value={`${signed(scopedNetTel, fmtTel)} ${ticker}`}
                       explanation={tierLabelShort
                         ? `Snapshot-to-snapshot change for the ${tierLabelShort} tier — includes buys, sells, exchange moves, and wallet relocation.`
-                        : "The real snapshot-to-snapshot change in retail TEL — includes everything: buys, sells, exchange moves, and wallets simply relocating funds to other wallets. Not the same as \"net demand\" below, which excludes wallet-to-wallet relocation."}
+                        : t("The real snapshot-to-snapshot change in retail {ticker} — includes everything: buys, sells, exchange moves, and wallets simply relocating funds to other wallets. Not the same as \"net demand\" below, which excludes wallet-to-wallet relocation.")}
                     />
                   </div>
                   {scopedPartialTel && <div className="text-xs text-muted-foreground mt-0.5">Some tiers have no baseline yet — this total only counts the ones that do.</div>}
@@ -777,7 +779,7 @@ export const TierFlowDiagram = ({
                 <>
                   <div className={`text-xl font-bold ${retailDemand.net >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                     <ExplainNumber
-                      value={`${signed(retailDemand.net, fmtTel)} TEL`}
+                      value={`${signed(retailDemand.net, fmtTel)} ${ticker}`}
                       explanation={`Buy pressure (${fmtTel(retailDemand.bought)}: DEX buys + exchange withdrawals) minus sell pressure (${fmtTel(retailDemand.sold)}: DEX sells + exchange deposits)${tierLabelShort ? ` for ${tierLabelShort}` : " across retail tiers"}. Excludes wallet-to-wallet relocation — that's redistribution, not market pressure.`}
                     />
                   </div>
@@ -812,7 +814,7 @@ export const TierFlowDiagram = ({
           </div>
 
           <div className={`text-muted-foreground text-center ${isTerminal ? "shrink-0 text-[11px]" : "text-xs"}`}>
-            Of the TEL that left retail tiers:{" "}
+            Of the {ticker} that left retail tiers:{" "}
             <span style={{ color: NEGATIVE }} className="font-semibold">
               <ExplainNumber value={`${fmtTel(grossExplainer.dex)}`} explanation="Sold on a DEX — a direct, unambiguous sale (sell pressure)." />
             </span> sold on DEX,{" "}
@@ -854,7 +856,7 @@ export const TierFlowDiagram = ({
       </div>
 
       {isPhone ? (
-        <ul className="space-y-1.5" aria-label={`Retail tiers by ${isWallets ? "wallet count" : "TEL held"}`}>
+        <ul className="space-y-1.5" aria-label={`Retail tiers by ${isWallets ? "wallet count" : `${ticker} held`}`}>
           {[...fields].sort((a, b) => a.index - b.index).map((f) => {
             const isSelected = selected === f.label;
             const cur = isWallets ? f.row?.count ?? 0 : f.row?.totalBalance ?? 0;
@@ -1011,7 +1013,7 @@ export const TierFlowDiagram = ({
           {/* Source/sink tiles are a TEL concept (DEX/exchange/wallet origin
               of TEL) — not rendered at all in Wallets mode, where nothing on
               the canvas would ever connect to them. */}
-          {!isWallets && <div role="group" aria-label="Where retail TEL came from" className="contents">{SIDE_LABELS_IN.map((s, j) => {
+          {!isWallets && <div role="group" aria-label={`Where retail ${ticker} came from`} className="contents">{SIDE_LABELS_IN.map((s, j) => {
             const aggregate = selectedField
               ? valueForSideTile(selectedField.cause, "in", s.key)
               : fields.reduce((sum, f) => sum + valueForSideTile(f.cause, "in", s.key), 0);
@@ -1031,7 +1033,7 @@ export const TierFlowDiagram = ({
                 type="button"
                 onClick={() => selectSideTile({ side: "in", key: s.key })}
                 aria-pressed={isSideSelected}
-                aria-label={`${s.label}: ${aggregate > 0 ? `${fmtTel(aggregate)} TEL` : "none"}${selectedField ? ` into ${tierDisplayLabel(selectedField.label)}` : ""}`}
+                aria-label={`${s.label}: ${aggregate > 0 ? `${fmtTel(aggregate)} ${ticker}` : "none"}${selectedField ? ` into ${tierDisplayLabel(selectedField.label)}` : ""}`}
                 className={`absolute rounded-xl border px-2 py-1.5 flex flex-col justify-center text-left transition-opacity duration-150 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${dimmed ? "opacity-30" : "opacity-100"} ${isSideSelected ? "ring-2 ring-offset-1 ring-offset-background" : ""}`}
                 style={{
                   left: 8, top: sideTop(j), width: 190, height: SIDE_H,
@@ -1045,7 +1047,7 @@ export const TierFlowDiagram = ({
               </button>
             );
           })}</div>}
-          {!isWallets && <div role="group" aria-label="Where retail TEL went" className="contents">{SIDE_LABELS_OUT.map((s, j) => {
+          {!isWallets && <div role="group" aria-label={`Where retail ${ticker} went`} className="contents">{SIDE_LABELS_OUT.map((s, j) => {
             const outKey: SideTileKey = s.key;
             const aggregate = selectedField
               ? valueForSideTile(selectedField.cause, "out", outKey)
@@ -1063,7 +1065,7 @@ export const TierFlowDiagram = ({
                 type="button"
                 onClick={() => selectSideTile({ side: "out", key: outKey })}
                 aria-pressed={isSideSelected}
-                aria-label={`${s.label}: ${aggregate > 0 ? `${fmtTel(aggregate)} TEL` : "none"}${selectedField ? ` from ${tierDisplayLabel(selectedField.label)}` : ""}`}
+                aria-label={`${s.label}: ${aggregate > 0 ? `${fmtTel(aggregate)} ${ticker}` : "none"}${selectedField ? ` from ${tierDisplayLabel(selectedField.label)}` : ""}`}
                 className={`absolute rounded-xl border px-2 py-1.5 flex flex-col justify-center text-left transition-opacity duration-150 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${dimmed ? "opacity-30" : "opacity-100"} ${isSideSelected ? "ring-2 ring-offset-1 ring-offset-background" : ""}`}
                 style={{
                   left: 738, top: sideTop(j), width: 190, height: SIDE_H,
@@ -1082,7 +1084,7 @@ export const TierFlowDiagram = ({
               horizontal center (TIER_COL_CENTER_X) and grows left/right by
               equal amounts as its value grows, instead of all starting flush
               left and only ever extending rightward. */}
-          <div role="group" aria-label={`Balance tiers, by ${isWallets ? "wallet count" : "TEL held"}`} className="contents">
+          <div role="group" aria-label={`Balance tiers, by ${isWallets ? "wallet count" : `${ticker} held`}`} className="contents">
           {fields.map((f) => {
             const isSelected = selected === f.label;
             // While hovering a flow line, the tile at its OTHER end highlights
@@ -1222,7 +1224,7 @@ export const TierFlowDiagram = ({
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full text-[13px] font-bold tabular-nums" style={{ color: POSITIVE }}>
                     <ExplainNumber
                       value={`+${fmtInt(f.addedCount)}`}
-                      explanation={addedTickExplanation(f)}
+                      explanation={t(addedTickExplanation(f))}
                       ariaLabel={`+${fmtInt(f.addedCount)} wallet${f.addedCount === 1 ? "" : "s"} arrived into ${tierDisplayLabel(f.label)}. Explain`}
                       className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center px-1"
                     />
@@ -1232,7 +1234,7 @@ export const TierFlowDiagram = ({
                   <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full text-[13px] font-bold tabular-nums" style={{ color: NEGATIVE }}>
                     <ExplainNumber
                       value={`−${fmtInt(f.removedCount)}`}
-                      explanation={removedTickExplanation(f)}
+                      explanation={t(removedTickExplanation(f))}
                       ariaLabel={`${fmtInt(f.removedCount)} wallet${f.removedCount === 1 ? "" : "s"} left ${tierDisplayLabel(f.label)}. Explain`}
                       className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center px-1"
                     />
@@ -1266,9 +1268,9 @@ export const TierFlowDiagram = ({
         <li>Retail distribution by balance tier, {rangeLabel}</li>
         {fields.map((f) => (
           <li key={f.label}>
-            {tierDisplayLabel(f.label)}: {f.row?.count ?? 0} holders, {f.row?.totalBalance ?? 0} TEL.{" "}
+            {tierDisplayLabel(f.label)}: {f.row?.count ?? 0} holders, {f.row?.totalBalance ?? 0} {ticker}.{" "}
             Holder change: {f.row?.previousCount != null ? (f.row.count - f.row.previousCount) : (suppressedNote?.count ?? "no baseline")}.{" "}
-            TEL change: {f.row?.previousTotalBalance != null ? (f.row.totalBalance - f.row.previousTotalBalance) : (suppressedNote?.balance ?? "no baseline")}.
+            {ticker} change: {f.row?.previousTotalBalance != null ? (f.row.totalBalance - f.row.previousTotalBalance) : (suppressedNote?.balance ?? "no baseline")}.
           </li>
         ))}
       </ul>
@@ -1385,6 +1387,7 @@ const SideTilePanel = ({
   hoveredTier: string | null;
   onHoverTier: (tier: string | null) => void;
 }) => {
+  const { ticker } = useProjectCopy();
   const label = SIDE_TILE_LABELS[selection.side][selection.key];
   const color = selection.key === "wallet" ? NEUTRAL : selection.side === "in" ? POSITIVE : NEGATIVE;
   const rows = sideTileContributions(fields, selection.side, selection.key);
@@ -1395,7 +1398,7 @@ const SideTilePanel = ({
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-bold text-foreground">{label}</span>
         <span className="text-sm font-semibold tabular-nums" style={{ color }}>
-          {total > 0 ? fmtTel(total) : "—"} TEL
+          {total > 0 ? fmtTel(total) : "—"} {ticker}
         </span>
       </div>
       <p className="text-center text-sm text-muted-foreground leading-relaxed">
@@ -1470,7 +1473,8 @@ const WalletsPanel = ({ field, baselineDate, noBaselineText = null, crossingsWin
   // that appeared or emptied out without crossing any boundary.
   const crossingNet = (gainedUp + gainedDown) - (lostUp + lostDown);
 
-  const narrative = walletNarrativeFor(
+  const { t } = useProjectCopy();
+  const rawNarrative = walletNarrativeFor(
     field.label,
     netWallets,
     { gainedUp, gainedDown, lostUp, lostDown },
@@ -1478,6 +1482,8 @@ const WalletsPanel = ({ field, baselineDate, noBaselineText = null, crossingsWin
     field.cause,
     { comparable, windowLabel },
   );
+  // Cause clauses carry {ticker} placeholders (see shrinkCauseClause).
+  const narrative = rawNarrative ? t(rawNarrative) : rawNarrative;
 
   return (
     <div className="mx-auto max-w-lg space-y-3 premium-surface-card p-4 animate-scale-in">
@@ -1596,6 +1602,7 @@ const TierAttributionBreakdown = ({
   totalDays: number;
   sourceTierSince: string | null;
 }) => {
+  const { ticker } = useProjectCopy();
   const renderList = (map: Record<string, number>, total: number) => {
     const entries = Object.entries(map)
       .filter(([, v]) => v !== 0)
@@ -1606,12 +1613,12 @@ const TierAttributionBreakdown = ({
         {entries.filter(([k]) => k !== "untracked").map(([tier, v]) => (
           <li key={tier} className="flex items-center justify-between gap-2 tabular-nums">
             <span>{tier}</span>
-            <span>{fmtTel(v)} TEL</span>
+            <span>{fmtTel(v)} {ticker}</span>
           </li>
         ))}
         <li className="flex items-center justify-between gap-2 tabular-nums text-muted-foreground">
           <span>Untracked (no tier on counterparty)</span>
-          <span>{fmtTel(untracked)} TEL</span>
+          <span>{fmtTel(untracked)} {ticker}</span>
         </li>
       </ul>
     );
@@ -1620,8 +1627,8 @@ const TierAttributionBreakdown = ({
   if (chain !== "all") {
     return (
       <span className="opacity-80">
-        Counterparty-tier attribution isn't available under a specific chain filter — switch to "All chains" to see which tiers this TEL came from or went to.
-        {" "}"Other wallets" also includes addresses that hold no TEL balance of their own.
+        Counterparty-tier attribution isn't available under a specific chain filter — switch to "All chains" to see which tiers this {ticker} came from or went to.
+        {" "}"Other wallets" also includes addresses that hold no {ticker} balance of their own.
       </span>
     );
   }
@@ -1630,7 +1637,7 @@ const TierAttributionBreakdown = ({
     <div className="opacity-90">
       {attributedDays === 0 ? (
         <span className="opacity-80">
-          No counterparty-tier attribution exists for this window yet — it's a new pipeline feature that accrues going forward, so every wallet-to-wallet TEL amount below currently reads as untracked.
+          No counterparty-tier attribution exists for this window yet — it's a new pipeline feature that accrues going forward, so every wallet-to-wallet {ticker} amount below currently reads as untracked.
         </span>
       ) : (
         <span className="opacity-80">
@@ -1649,7 +1656,7 @@ const TierAttributionBreakdown = ({
           {renderList(movedByDestTier, moved)}
         </div>
       )}
-      <span className="opacity-80 block mt-1">"Other wallets" also includes addresses that hold no TEL balance of their own.</span>
+      <span className="opacity-80 block mt-1">"Other wallets" also includes addresses that hold no {ticker} balance of their own.</span>
     </div>
   );
 };
@@ -1660,7 +1667,9 @@ const TelPanel = ({ field, baselineDate, noBaselineText = null, expandedFlow, on
 }) => {
   const { cause, row } = field;
   const netTel = row?.previousTotalBalance != null ? (row.totalBalance - row.previousTotalBalance) : null;
-  const narrative = telNarrativeFor(field.label, netTel, cause);
+  const { ticker, t } = useProjectCopy();
+  const rawNarrative = telNarrativeFor(field.label, netTel, cause);
+  const narrative = rawNarrative ? t(rawNarrative) : null;
   const nets = netCausesFor(cause);
   const hasAnyFlow = cause.hasData || cause.hasInData;
 
@@ -1668,13 +1677,13 @@ const TelPanel = ({ field, baselineDate, noBaselineText = null, expandedFlow, on
     <div className="mx-auto max-w-lg space-y-3 premium-surface-card p-4 animate-scale-in">
       <div className="flex items-baseline justify-between">
         <span className="font-bold text-foreground">{tierDisplayLabel(field.label)}</span>
-        <span className="text-xs text-muted-foreground">{row ? `${fmtTel(row.totalBalance)} TEL` : "—"}</span>
+        <span className="text-xs text-muted-foreground">{row ? `${fmtTel(row.totalBalance)} ${ticker}` : "—"}</span>
       </div>
 
       <div className="text-center text-sm text-muted-foreground">
         Net (vs {baselineLabel(baselineDate)}):{" "}
         {netTel != null
-          ? <span className={netTel >= 0 ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-red-700 dark:text-red-400 font-semibold"}>{signed(netTel, fmtTel)} TEL</span>
+          ? <span className={netTel >= 0 ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-red-700 dark:text-red-400 font-semibold"}>{signed(netTel, fmtTel)} {ticker}</span>
           : (noBaselineText ?? "no baseline")}
       </div>
 
@@ -1704,7 +1713,7 @@ const TelPanel = ({ field, baselineDate, noBaselineText = null, expandedFlow, on
                   >
                     <span className="text-muted-foreground">{c.label}</span>
                     <span className="font-semibold tabular-nums" style={{ color: colorForTone(c.tone) }}>
-                      {c.net === 0 ? <span className="text-muted-foreground">no net flow</span> : `${signed(c.net, fmtTel)} TEL`}
+                      {c.net === 0 ? <span className="text-muted-foreground">no net flow</span> : `${signed(c.net, fmtTel)} ${ticker}`}
                     </span>
                   </button>
                   {isOpen && (
@@ -1751,9 +1760,9 @@ const TelPanel = ({ field, baselineDate, noBaselineText = null, expandedFlow, on
 const shrinkCauseClause = (verdict: TierField["verdict"], hasOutflowData: boolean): string => {
   if (!hasOutflowData || verdict === "unknown") return "";
   if (verdict === "sold") {
-    return " — this tier's TEL outflows were mostly sales (DEX or exchange deposits)";
+    return " — this tier's {ticker} outflows were mostly sales (DEX or exchange deposits)";
   }
-  return " — this tier's TEL outflows were mostly wallet-to-wallet moves, not sales";
+  return " — this tier's {ticker} outflows were mostly wallet-to-wallet moves, not sales";
 };
 
 // The tile's flanking ticks report MEMBERSHIP change — wallets removed from
@@ -1805,10 +1814,10 @@ const growCauseClause = (cause: Cause): string => {
   if (!cause.hasInData || cause.inTotal <= 0) return "";
   const demandPct = ((cause.boughtDex + cause.boughtCex) / cause.inTotal) * 100;
   if (demandPct >= 50) {
-    return ` — this tier's TEL inflows were mostly real demand (${demandPct.toFixed(0)}% DEX buys or exchange withdrawals)`;
+    return ` — this tier's {ticker} inflows were mostly real demand (${demandPct.toFixed(0)}% DEX buys or exchange withdrawals)`;
   }
   const walletPct = (cause.receivedWallet / cause.inTotal) * 100;
-  return ` — this tier's TEL inflows were mostly wallet transfers (${walletPct.toFixed(0)}%), not fresh buys`;
+  return ` — this tier's {ticker} inflows were mostly wallet transfers (${walletPct.toFixed(0)}%), not fresh buys`;
 };
 
 // Plain-language analysis of tier-to-tier wallet crossings. Counts are still
@@ -1902,9 +1911,9 @@ const telNarrativeFor = (tier: string, netTel: number | null, cause: Cause): str
       const lede = demandPct >= 50
         ? `most of it real demand — ${demandPct.toFixed(0)}% was bought on a DEX or withdrawn from an exchange`
         : `mostly wallets repositioning — ${walletPct.toFixed(0)}% simply arrived from other wallets, only ${demandPct.toFixed(0)}% was a fresh DEX buy or exchange withdrawal`;
-      return `${tier} accumulated a net ${fmtTel(net)} TEL over this period, ${lede}.`;
+      return `${tier} accumulated a net ${fmtTel(net)} {ticker} over this period, ${lede}.`;
     }
-    return `${tier} accumulated a net ${fmtTel(net)} TEL over this period — the on-chain source breakdown is still backfilling.`;
+    return `${tier} accumulated a net ${fmtTel(net)} {ticker} over this period — the on-chain source breakdown is still backfilling.`;
   }
 
   if (cause.hasData && cause.total > 0) {
@@ -1912,9 +1921,9 @@ const telNarrativeFor = (tier: string, netTel: number | null, cause: Cause): str
     // when soldPct > 50, not on a 50/50 tie).
     const soldPct = cause.soldPct;
     return soldPct > 50
-      ? `${tier} had a net outflow of ${fmtTel(Math.abs(net))} TEL, and ${soldPct.toFixed(0)}% of what left actually reached the market — sold on a DEX or deposited to an exchange.`
-      : `${tier} had a net outflow of ${fmtTel(Math.abs(net))} TEL, but only ${soldPct.toFixed(0)}% of what left actually reached the market — the rest was just relocated to other wallets, still held.`;
+      ? `${tier} had a net outflow of ${fmtTel(Math.abs(net))} {ticker}, and ${soldPct.toFixed(0)}% of what left actually reached the market — sold on a DEX or deposited to an exchange.`
+      : `${tier} had a net outflow of ${fmtTel(Math.abs(net))} {ticker}, but only ${soldPct.toFixed(0)}% of what left actually reached the market — the rest was just relocated to other wallets, still held.`;
   }
 
-  return net < 0 ? `${tier} had a net outflow of ${fmtTel(Math.abs(net))} TEL over this period.` : null;
+  return net < 0 ? `${tier} had a net outflow of ${fmtTel(Math.abs(net))} {ticker} over this period.` : null;
 };

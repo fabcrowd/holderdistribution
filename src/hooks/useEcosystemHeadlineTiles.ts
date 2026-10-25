@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { Users, Database, Layers, Building2, type LucideIcon } from "lucide-react";
 import { useHolderLiteSnapshot, type HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
@@ -65,6 +66,7 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
   // four tiles can never show a different delta depending on which
   // component renders them — see useHeadlineTiles' doc comment.
   const { historicalDelta, cexPrevious, events } = useHeadlineTiles({ view: chain, rangeDays });
+  const { ticker } = useProjectCopy();
 
   const isAth = useMemo(() => {
     const series = fullHistory?.series;
@@ -142,7 +144,7 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
       {
         id: "holders",
         icon: Users, label: "Retail Holders", value: formatInteger(holders),
-        sub: isAth ? "All-time high" : "Wallets >0 TEL, excl. exchanges",
+        sub: isAth ? "All-time high" : `Wallets >0 ${ticker}, excl. exchanges`,
         ath: isAth, current: holders, previous: prevHolders, fmt: undefined, scope: perChain ? "chain" : "all",
         changelogEvents: events.holders,
         infoTooltip: cumulativeHoldersTooltip,
@@ -160,12 +162,12 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
         // Staked TEL is a subset of this, not an addition: v3 StakingModule
         // positions are credited to each staker's wallet at the source.
         infoTooltip: v3Stats && !perChain
-          ? `Includes ${formatTokenAmount(staked)} staked TEL, of which ${formatTokenAmount(v3Stats.stakedTotal)} is Staked (v3) in the StakingModule. Staked TEL is counted once, inside this figure.`
+          ? `Includes ${formatTokenAmount(staked)} staked ${ticker}, of which ${formatTokenAmount(v3Stats.stakedTotal)} is Staked (v3) in the StakingModule. Staked ${ticker} is counted once, inside this figure.`
           : null,
       },
       {
         id: "staked",
-        icon: Layers, label: "Staked TEL", value: formatTokenAmount(staked),
+        icon: Layers, label: `Staked ${ticker}`, value: formatTokenAmount(staked),
         sub: perChain && chain !== "polygon" ? "Staking runs on Polygon" : pctOfSupply(staked, supply),
         // ChangeIndicator only renders (and so only shows the "†") with a
         // baseline; with no v3 baseline, hand it the current value as one.
@@ -190,5 +192,5 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     ];
 
     return { tiles, isAth };
-  }, [snap, historicalDelta, cexPrevious, events, isAth, chain]);
+  }, [snap, historicalDelta, cexPrevious, events, isAth, chain, ticker]);
 };

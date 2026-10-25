@@ -8,6 +8,7 @@ const base = {
   cex: { current: 21_570_000_000, previous: 21_570_000_000 },
   totalSupply: 100_000_000_000,
   rangeLabel: "YTD",
+  ticker: "TEL",
 };
 
 describe("buildHolderSummary", () => {
@@ -35,6 +36,13 @@ describe("buildHolderSummary", () => {
       text: "Holder change over 30D not directly comparable (some wallets were reclassified)",
       trend: "unknown",
     });
+  });
+
+  it("uses the active project's ticker, never a hardcoded TEL", () => {
+    const s = buildHolderSummary({ ...base, ticker: "ABC" })!;
+    expect(s.headline).toBe("95,932 retail wallets hold 70.35B ABC — 70% of the 100B supply.");
+    expect(s.points.map((p) => p.text).join(" ")).not.toMatch(/\bTEL\b/);
+    expect(s.points[1].text).toBe("Staked ABC up 195.18M this year, now 4.17B");
   });
 
   it("returns null until the snapshot has loaded", () => {
