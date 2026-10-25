@@ -1,3 +1,4 @@
+import { normalizeAnyAddress } from "./address.js";
 // Sanity bound: the derived total must stay near the token's declared max supply.
 // If the assertion fires, the scan is incomplete or a bridge/mirror assumption has
 // changed — fail loudly rather than publish a wrong denominator.
@@ -180,6 +181,139 @@ export const computeSupplyTotals = (
       v3: v3Supply,
       retiredLegacy,
       strandedInUpgrade,
+    },
+  };
+};
+
+// ---------------------------------------------------------------------------
+// Generic bridge netting (docs/superpowers/specs/2026-10-25-wrapped-bridged-tokens-design.md).
+// One project total, CoinGecko style, driven by chains[].bridge:
+//   native | burn-mint  -> the chain's supply is real and unique: SUMMED
+//   lock-mint           -> a mirror backed by locks on the origin: adds 0
+// TEL never takes this path (supply.generationsSumOneToOne keeps
+// computeSupplyTotals above, byte-identical).
+// ---------------------------------------------------------------------------
+
+export const BACKING_RESIDUAL_TOLERANCE = 0.01; // 1% of total, same as TEL's mirrorResidual warning
+
+/** "tel-generations" when supply.generationsSumOneToOne is set, else "bridge-netting". */
+export const selectSupplyMethod = (projectConfig) =>
+  projectConfig?.supply?.generationsSumOneToOne === true ? "tel-generations" : "bridge-netting";
+
+const bridgeModeOf = (key, c) => {
+  const mode = c?.bridge ?? "native";
+  if (!["native", "lock-mint", "burn-mint"].includes(mode)) throw new Error(`chain ${key}: unknown bridge mode ${JSON.stringify(mode)}`);
+  return mode;
+};
+
+/**
+ * @param {{wallets: Array<Record<string, number|string>>}} output snapshot under construction
+ * @param {Record<string, {origin?: boolean, bridge?: string}>} chainConfig chain map (every vm)
+ * @param {Set<string>} lockSet origin-chain bridge/escrow addresses (normalized: hex lowercased, base58 as-is)
+ * @param {{warn?: Function, log?: Function}} logger
+ * @param {Record<string, {legacy?: number, v3?: number}>|null} tokenTotals per-chain token supply from the scan
+ * @param {{target?: number|null, tolerance?: number, symbol?: string}} [options]
+ */
+export const computeBridgeNettedSupply = (
+  output,
+  chainConfig,
+  lockSet = new Set(),
+  logger = console,
+  tokenTotals = null,
+  { target = null, tolerance = SUPPLY_TOLERANCE, symbol = "tokens" } = {}
+) => {
+  const keys = Object.keys(chainConfig);
+  if (keys.length === 0) throw new Error("No chains configured.");
+  const originKey = keys.find((key) => chainConfig[key]?.origin) ?? null;
+  const modes = Object.fromEntries(keys.map((key) => [key, key === originKey ? "origin" : bridgeModeOf(key, chainConfig[key])]));
+  const lockMintKeys = keys.filter((key) => modes[key] === "lock-mint");
+  if (lockMintKeys.length && !originKey) {
+    throw new Error(`Chains [${lockMintKeys.join(", ")}] use bridge "lock-mint" but no chain is marked origin: true.`);
+  }
+  const summedKeys = keys.filter((key) => modes[key] === "native" || modes[key] === "burn-mint");
+
+  const perChain = Object.fromEntries(
+    keys.map((key) => [key, output.wallets.reduce((acc, w) => acc + (Number(w[`${key}_balance`]) || 0), 0)])
+  );
+  const supplyOf = (key) => {
+    const t = tokenTotals?.[key];
+    if (t && (t.legacy !== undefined || t.v3 !== undefined)) return (Number(t.legacy) || 0) + (Number(t.v3) || 0);
+    return perChain[key];
+  };
+  const supply = Object.fromEntries(keys.map((key) => [key, supplyOf(key)]));
+  const sum = (list, map) => list.reduce((acc, key) => acc + map[key], 0);
+
+  const originSupply = originKey ? supply[originKey] : 0;
+  const totalSupply = originSupply + sum(summedKeys, supply);
+
+  const lockedOnOrigin = originKey
+    ? output.wallets.reduce(
+        (acc, w) => (lockSet.has(normalizeAnyAddress(w.address))
+          ? acc + (Number(w[`${originKey}_balance`]) || 0)
+          : acc),
+        0
+      )
+    : 0;
+  const mirroredLockMint = sum(lockMintKeys, supply);
+  const mirroredHeld = sum(lockMintKeys, perChain);
+  // Only lock-mint mirrors are backed by origin locks; with none, the lock
+  // balance is still non-circulating but there is nothing to back.
+  const backingResidual = lockMintKeys.length ? mirroredLockMint - lockedOnOrigin : 0;
+  const nonCirculating = lockedOnOrigin;
+  const circulatingSupply = totalSupply - nonCirculating;
+
+  // Parts sum to totalSupply: origin minus what its mirrors hold, mirrors as
+  // held, summed chains at their supply.
+  const byChain = {};
+  for (const key of keys) {
+    if (key === originKey) byChain[key] = originSupply - mirroredHeld;
+    else if (modes[key] === "lock-mint") byChain[key] = perChain[key];
+    else byChain[key] = supply[key];
+  }
+
+  if (target && Math.abs(totalSupply - target) > target * tolerance) {
+    throw new Error(
+      `Derived total supply ${Math.round(totalSupply).toLocaleString()} is more than ${tolerance * 100}% from ` +
+        `supply.target ${Number(target).toLocaleString()}. Refusing to publish a wrong denominator.`
+    );
+  }
+  if (lockMintKeys.length && Math.abs(backingResidual) > totalSupply * BACKING_RESIDUAL_TOLERANCE) {
+    logger.warn?.(
+      `WARNING: ${Math.round(backingResidual).toLocaleString()} ${symbol} of lock-mint supply on [${lockMintKeys.join(", ")}] ` +
+        `is not backed by a labelled bridge/escrow address on ${originKey}. Likely an unlabelled bridge contract, ` +
+        `or a mint that is really native (set bridge: "native" or "burn-mint").`
+    );
+  }
+  logger.log?.(
+    `Supply (bridge netting): ${Math.round(totalSupply).toLocaleString()} ${symbol} = ` +
+      [originKey ? `${originKey} ${Math.round(originSupply).toLocaleString()} (origin)` : null,
+        ...summedKeys.map((k) => `${k} ${Math.round(supply[k]).toLocaleString()} (${modes[k]})`)]
+        .filter(Boolean).join(" + ") +
+      (lockMintKeys.length ? `; lock-mint [${lockMintKeys.join(", ")}] add 0, ${Math.round(lockedOnOrigin).toLocaleString()} locked` : "")
+  );
+
+  return {
+    method: "bridge-netting",
+    totalSupply,
+    circulatingSupply,
+    nonCirculating,
+    originChain: originKey,
+    byChain,
+    bridgeModes: modes,
+    bridgeLocked: lockedOnOrigin,
+    lockAddresses: [...lockSet].sort(),
+    // Generalized mirrorResidual: Σ lock-mint supply − Σ origin lock balances.
+    mirrorResidual: backingResidual,
+    backingResidual,
+    v3Residual: 0,
+    // Independent of the supply calls: every holder balance, minus the origin
+    // locks that back the lock-mint mirrors (≈ totalSupply when complete).
+    crossCheckTotal: sum(keys, perChain) - lockedOnOrigin,
+    tokens: {
+      legacy: Object.fromEntries(keys.map((key) => [key, Number(tokenTotals?.[key]?.legacy ?? perChain[key]) || 0])),
+      v3: Object.fromEntries(keys.map((key) => [key, Number(tokenTotals?.[key]?.v3) || 0])),
+      retiredLegacy: Object.fromEntries(keys.map((key) => [key, 0])),
+      strandedInUpgrade: Object.fromEntries(keys.map((key) => [key, 0])),
     },
   };
 };

@@ -15,6 +15,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { configureProjectRpc } from "./rpc.js";
+import { isEvmAddress, isSolanaAddress } from "./address.js";
+import { BRIDGE_MODES, CHAIN_VMS, SOLANA_CLUSTERS, defaultExplorerTemplates, resolveChainBridge, resolveChainVm } from "./chainAdapters.js";
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
@@ -81,12 +83,143 @@ export function resolveProject(slug, root = process.cwd()) {
   if (!entry) {
     throw new Error(`unknown project "${slug}" (config/projects.json has: ${registry.map((p) => p.slug).join(", ")})`);
   }
+  const config = loadProjectConfig(slug, root);
+  const { errors, warnings } = validateProjectConfig(config);
+  if (errors.length) throw new Error(`config/projects/${slug}.json is invalid:\n  - ${errors.join("\n  - ")}`);
   return {
     slug,
-    config: loadProjectConfig(slug, root),
+    config,
     dataDir: projectDataDir(slug, root),
     isDefault: entry.default === true,
+    ...(warnings.length ? { warnings } : {}),
   };
+}
+
+// ---------------------------------------------------------------------------
+// chains[] validation: vm / bridge / Solana fields (Solana + wrapped/bridged
+// design specs, docs/superpowers/specs/2026-10-25-*). Only the NEW fields are
+// checked, so every existing EVM config (TEL) validates exactly as written.
+// ---------------------------------------------------------------------------
+
+const EVM_ONLY_CHAIN_FIELDS = ["chainId", "fromBlock"];
+const EVM_ONLY_TOKEN_FIELDS = ["deployBlock"];
+const SOLANA_PROGRAMS = ["spl-token", "token-2022"];
+const NON_RETAIL_ROLES = new Set(["bridge", "escrow", "cex", "dex", "staking"]);
+const TEMPLATE_KINDS = ["token", "address", "tx"];
+
+/**
+ * Validates a project config's chain fields. Returns `{ errors, warnings }`;
+ * resolveProject() throws on errors (before any network call) and the
+ * pipeline prints warnings.
+ */
+export function validateProjectConfig(config) {
+  const errors = [];
+  const warnings = [];
+  const chains = Array.isArray(config?.chains) ? config.chains : [];
+  const keys = new Set();
+  for (const c of chains) {
+    const where = `chains[${c?.key ?? "?"}]`;
+    if (!c?.key || typeof c.key !== "string") {
+      errors.push(`${where}: missing key`);
+      continue;
+    }
+    if (keys.has(c.key)) errors.push(`${where}: duplicate chain key`);
+    keys.add(c.key);
+    if (c.vm !== undefined && !CHAIN_VMS.includes(c.vm)) errors.push(`${where}: unknown vm ${JSON.stringify(c.vm)} (use ${CHAIN_VMS.join(" | ")})`);
+    if (c.bridge !== undefined && !BRIDGE_MODES.includes(c.bridge)) {
+      errors.push(`${where}: unknown bridge ${JSON.stringify(c.bridge)} (use ${BRIDGE_MODES.join(" | ")})`);
+    }
+    if (c.explorerTemplates !== undefined) {
+      if (!c.explorerTemplates || typeof c.explorerTemplates !== "object") errors.push(`${where}: explorerTemplates must be an object`);
+      else {
+        for (const [kind, t] of Object.entries(c.explorerTemplates)) {
+          if (!TEMPLATE_KINDS.includes(kind)) errors.push(`${where}: explorerTemplates.${kind} is not one of ${TEMPLATE_KINDS.join(", ")}`);
+          else if (typeof t !== "string" || !/^https:\/\//.test(t) || !t.includes(kind === "tx" ? "{tx}" : "{address}")) {
+            errors.push(`${where}: explorerTemplates.${kind} must be an https URL containing ${kind === "tx" ? "{tx}" : "{address}"}`);
+          }
+        }
+      }
+    }
+    const vm = resolveChainVm(c);
+    const tokens = Array.isArray(c.tokens) ? c.tokens : [];
+    if (vm === "solana") {
+      for (const f of EVM_ONLY_CHAIN_FIELDS) if (c[f] !== undefined) errors.push(`${where}: ${f} is EVM-only; remove it from a Solana chain`);
+      if (c.cluster !== undefined && !SOLANA_CLUSTERS.includes(c.cluster)) {
+        errors.push(`${where}: cluster ${JSON.stringify(c.cluster)} is not supported (only ${SOLANA_CLUSTERS.join(", ")})`);
+      }
+      if (tokens.length === 0) errors.push(`${where}: a Solana chain needs tokens[] with a mint address`);
+      for (const t of tokens) {
+        if (!isSolanaAddress(t?.address)) errors.push(`${where}: token ${JSON.stringify(t?.address)} is not a base58 Solana mint address`);
+        else if (t.address !== t.address.trim()) errors.push(`${where}: token ${JSON.stringify(t.address)} has surrounding whitespace`);
+        for (const f of EVM_ONLY_TOKEN_FIELDS) if (t?.[f] !== undefined) errors.push(`${where}: token ${t.address} ${f} is EVM-only`);
+        if (t?.program !== undefined && !SOLANA_PROGRAMS.includes(t.program)) errors.push(`${where}: token program must be ${SOLANA_PROGRAMS.join(" | ")}`);
+        if (t?.decimals !== undefined && !(Number.isInteger(t.decimals) && t.decimals >= 0 && t.decimals <= 18)) errors.push(`${where}: token decimals must be an integer 0-18`);
+      }
+      for (const [name, v] of Object.entries(c.contracts ?? {})) {
+        if (!isSolanaAddress(v?.address)) errors.push(`${where}: contracts.${name} is not a base58 Solana address`);
+      }
+    } else if (c.vm !== undefined || c.cluster !== undefined) {
+      if (c.cluster !== undefined) errors.push(`${where}: cluster is Solana-only`);
+      for (const t of tokens) if (t?.program !== undefined) errors.push(`${where}: token program is Solana-only`);
+    }
+    if (vm === "evm" && (c.vm !== undefined || c.bridge !== undefined)) {
+      // Only chains that opt into the new fields get address checks here, so
+      // TEL's existing config is never re-interpreted.
+      for (const t of tokens) if (!isEvmAddress(t?.address)) errors.push(`${where}: token ${JSON.stringify(t?.address)} is not a 0x address`);
+    }
+    for (const [name, v] of Object.entries(c.contracts ?? {})) {
+      if (v?.role !== undefined && typeof v.role !== "string") errors.push(`${where}: contracts.${name}.role must be a string`);
+    }
+  }
+  const origins = chains.filter((c) => c?.origin);
+  if (origins.length > 1) errors.push(`chains: more than one origin chain (${origins.map((c) => c.key).join(", ")})`);
+  const lockMint = chains.filter((c) => !c?.origin && resolveChainBridge(c) === "lock-mint");
+  if (lockMint.length) {
+    if (origins.length === 0) {
+      errors.push(`chains: ${lockMint.map((c) => c.key).join(", ")} use bridge "lock-mint" but no chain is marked origin: true`);
+    } else {
+      const origin = origins[0];
+      const hasLock = Object.values(origin.contracts ?? {}).some((v) => v?.role === "bridge" || v?.role === "escrow");
+      const exclusionsDeclared = Boolean(config?.classification?.exclusions) || config?.data?.legacyRoot === true;
+      if (!hasLock) {
+        warnings.push(
+          `chains: ${lockMint.map((c) => c.key).join(", ")} use bridge "lock-mint" but origin chain ${origin.key} lists no ` +
+            `contract with role "bridge" or "escrow"` + (exclusionsDeclared ? " (relying on exclusions bridge-lock labels)" : "") +
+            `; the lock balance cannot be netted out.`,
+        );
+      }
+    }
+  }
+  if (config?.supply?.generationsSumOneToOne && chains.some((c) => c?.bridge !== undefined)) {
+    warnings.push("supply.generationsSumOneToOne is set: chains[].bridge is ignored (the TEL-style supply path is used).");
+  }
+  return { errors, warnings };
+}
+
+/** chains[] entries with their resolved vm and bridge. */
+export function projectChainEntries(config) {
+  return (config?.chains ?? []).map((c) => ({ ...c, vm: resolveChainVm(c), bridge: resolveChainBridge(c) }));
+}
+
+/** Chain keys with this vm, in config order. */
+export const projectChainKeysByVm = (config, vm) => projectChainEntries(config).filter((c) => c.vm === vm).map((c) => c.key);
+
+/**
+ * Addresses a project's `contracts{}` mark as non-retail (role bridge, escrow,
+ * cex, dex, staking), per chain, case preserved for Solana and lowercased for
+ * EVM: `{ <chainKey>: [{ name, address, role }] }`.
+ */
+export function projectRoleAddresses(config, { roles = NON_RETAIL_ROLES } = {}) {
+  const wanted = roles instanceof Set ? roles : new Set(roles);
+  const out = {};
+  for (const c of projectChainEntries(config)) {
+    for (const [name, v] of Object.entries(c.contracts ?? {})) {
+      if (!v?.address || !wanted.has(v.role)) continue;
+      const address = c.vm === "solana" ? v.address.trim() : v.address.trim().toLowerCase();
+      (out[c.key] ??= []).push({ name, address, role: v.role });
+    }
+  }
+  return out;
 }
 
 /**
@@ -119,6 +252,7 @@ export function selectPipelineProject(script, { ported = false } = {}) {
     // public fallbacks registered (TEL declares none: built-ins unchanged).
     configureProjectRpc(project.config);
     console.error(`[${script}] project: ${project.slug} (${project.dataDir})`);
+    for (const w of project.warnings ?? []) console.error(`[${script}] config warning: ${w}`);
     return project;
   } catch (err) {
     console.error(`[${script}] ${err.message}`);
@@ -228,6 +362,10 @@ const lc = (v) => (typeof v === "string" ? v.trim().toLowerCase() : v);
 export function deriveChainsFromProject(config) {
   const out = {};
   for (const c of config?.chains ?? []) {
+    if (resolveChainVm(c) === "solana") {
+      out[c.key] = deriveSolanaChain(config, c);
+      continue;
+    }
     const tokens = c.tokens ?? [];
     const base = tokens.find((t) => t.generation === "legacy") ?? (tokens.length === 1 ? tokens[0] : null);
     if (!base) throw new Error(`project ${config.slug}: chain ${c.key} needs a "legacy" token or exactly one token`);
@@ -240,7 +378,7 @@ export function deriveChainsFromProject(config) {
       ...(t.status ? { status: t.status } : {}),
     });
     const contracts = {};
-    for (const [name, v] of Object.entries(c.contracts ?? {})) contracts[name] = { address: lc(v.address) };
+    for (const [name, v] of Object.entries(c.contracts ?? {})) contracts[name] = { address: lc(v.address), ...(v.role ? { role: v.role } : {}) };
     const modules = (config.staking ?? [])
       .filter((s) => s.chain === c.key && s.kind === "receiptModule")
       .map((s) => ({ address: lc(s.address), name: s.name, decimals: v3?.decimals, deployBlock: s.deployBlock }));
@@ -249,6 +387,8 @@ export function deriveChainsFromProject(config) {
       name: c.name,
       chainId: c.chainId,
       ...(c.origin ? { origin: true } : {}),
+      ...(c.vm ? { vm: c.vm } : {}),
+      ...(c.bridge ? { bridge: c.bridge } : {}),
       tokenAddress: lc(base.address),
       decimals: base.decimals,
       fromBlock: c.fromBlock ?? base.deployBlock ?? 0,
@@ -266,16 +406,67 @@ export function deriveChainsFromProject(config) {
 }
 
 /**
+ * Chain-map entry for a Solana chain: addresses kept EXACTLY as written
+ * (base58 is case-sensitive), no chainId / fromBlock, Solscan links by
+ * default. The scanned (base) token is the legacy / canonical / only token.
+ */
+function deriveSolanaChain(config, c) {
+  const tokens = c.tokens ?? [];
+  const base = tokens.find((t) => t.generation === "legacy") ?? tokens.find((t) => t.status === "canonical") ?? tokens[0];
+  if (!base) throw new Error(`project ${config?.slug}: Solana chain ${c.key} needs a mint in tokens[]`);
+  const address = base.address.trim();
+  const templates = { ...defaultExplorerTemplates({ ...c, vm: "solana" }), ...(c.explorerTemplates ?? {}) };
+  const contracts = {};
+  for (const [name, v] of Object.entries(c.contracts ?? {})) contracts[name] = { address: v.address.trim(), ...(v.role ? { role: v.role } : {}) };
+  return {
+    key: c.key,
+    name: c.name,
+    vm: "solana",
+    cluster: c.cluster ?? "mainnet-beta",
+    ...(c.origin ? { origin: true } : {}),
+    ...(c.bridge ? { bridge: c.bridge } : {}),
+    tokenAddress: address,
+    ...(base.decimals !== undefined ? { decimals: base.decimals } : {}),
+    explorer: {
+      address: templates.address.replaceAll("{address}", address),
+      token: templates.token.replaceAll("{address}", address),
+    },
+    explorerTemplates: templates,
+    tokens: {
+      legacy: {
+        address,
+        ...(base.decimals !== undefined ? { decimals: base.decimals } : {}),
+        ...(base.program ? { program: base.program } : {}),
+        ...(base.symbol ? { symbol: base.symbol } : {}),
+        ...(base.status ? { status: base.status } : {}),
+      },
+    },
+    contracts,
+  };
+}
+
+/**
  * The chain map a ported script scans. `pipeline.chainsConfig` (a repo path)
  * wins; a legacyRoot project without it keeps config/chains.json (TEL: every
  * byte the pipeline read before stays identical); otherwise it is derived from
  * the project's own `chains[]`.
+ *
+ * `vms` (default ["evm"]) filters by chain vm; pass "all" for every chain.
  */
-export function projectChains(project, root = process.cwd()) {
+export function projectChains(project, root = process.cwd(), { vms = ["evm"] } = {}) {
   const file = project.config?.pipeline?.chainsConfig ?? (project.config?.data?.legacyRoot === true ? "config/chains.json" : null);
-  if (file) return JSON.parse(fs.readFileSync(path.resolve(root, file), "utf8"));
-  return deriveChainsFromProject(project.config);
+  const all = file ? JSON.parse(fs.readFileSync(path.resolve(root, file), "utf8")) : deriveChainsFromProject(project.config);
+  if (vms === "all") return all;
+  // EVM-only consumers (log scanners, exchange/wallet flows, tier outflows)
+  // get the EVM chains only, so a Solana chain is never handed to an
+  // eth_getLogs loop. TEL is all-EVM, so this is the same map as before.
+  const keep = new Set(vms);
+  const filtered = Object.fromEntries(Object.entries(all).filter(([key, c]) => keep.has(resolveChainVm({ key, ...c }))));
+  return Object.keys(filtered).length === Object.keys(all).length ? all : filtered;
 }
+
+/** The full chain map, every vm (pull-holders-rpc's dispatcher). */
+export const projectChainsAllVms = (project, root = process.cwd()) => projectChains(project, root, { vms: "all" });
 
 /**
  * A project's staking contracts, optionally filtered by `kind`
@@ -307,9 +498,18 @@ export function loadProjectClassification(project, kind, fallback, root = proces
 
 /** loadNonRetailSet() paths for a project (null = none declared -> empty). */
 export function projectNonRetailPaths(project, root = process.cwd()) {
+  // Generic (bridge-netting) projects: contracts{} entries with a non-retail
+  // role (bridge, escrow, cex, dex, staking) are non-retail on every chain
+  // without having to repeat them in an exclusions file. TEL (generations
+  // path) keeps exactly its classification files.
+  const extra =
+    project.config?.supply?.generationsSumOneToOne === true
+      ? []
+      : Object.values(projectRoleAddresses(project.config)).flat().map((e) => e.address);
   return {
     exclusionsPath: projectClassificationPath(project, "exclusions", root),
     cexPath: projectClassificationPath(project, "cexWallets", root),
     dexPath: projectClassificationPath(project, "dexContracts", root),
+    ...(extra.length ? { extraAddresses: extra } : {}),
   };
 }

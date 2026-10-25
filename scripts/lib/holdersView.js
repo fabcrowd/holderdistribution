@@ -1,6 +1,7 @@
 import { buildChainHolders, buildMetrics, applyStaking } from "./stakingAttribution.js";
 import { reconcileDistributionCounts } from "./holderHistoryReconcile.js";
 import { applyV3Staking, summarizeStaking } from "./v3Staking.js";
+import { normalizeAnyAddress } from "./address.js";
 
 // TEL's historical values. They are also config/holder-tiers.default.json and
 // TEL's `holders` block (holderTiers.test.js pins all three together). A run
@@ -63,10 +64,8 @@ export const setHolderTiers = (tiers) => {
   DISTRIBUTION_RANGES = tiers?.distributionTiers ?? TEL_DISTRIBUTION_RANGES;
 };
 
-export const normalizeAddress = (value) => {
-  if (typeof value !== "string") return "";
-  return value.trim().toLowerCase();
-};
+// Hex lowercased; Solana base58 kept as written (case-sensitive).
+export const normalizeAddress = (value) => normalizeAnyAddress(value);
 
 export const createEmptyMetrics = () => ({
   holderCount: 0,

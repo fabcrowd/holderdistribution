@@ -7,17 +7,16 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
+import { normalizeValidAddress } from "./address.js";
 
 const ROOT = process.cwd();
 const EXCLUSIONS_PATH = path.resolve(ROOT, "config/exclusions.json");
 const CEX_CONFIG_PATH = path.resolve(ROOT, "config/cex-wallets.json");
 const DEX_CONFIG_PATH = path.resolve(ROOT, "config/dex-contracts.json");
 
-export const normalizeAddress = (value) => {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim().toLowerCase();
-  return /^0x[a-f0-9]{40}$/.test(trimmed) ? trimmed : null;
-};
+// EVM hex lowercased; Solana base58 kept exactly as written (case-sensitive).
+// Anything else -> null. TEL's lists are all hex, so its sets are unchanged.
+export const normalizeAddress = (value) => normalizeValidAddress(value);
 
 const readJson = async (absolutePath) => {
   const content = await fs.readFile(absolutePath, "utf8");
@@ -84,6 +83,8 @@ export const loadNonRetailSet = async (paths = {}) => {
   for (const chainInfo of Object.values(exclusions.chains ?? {})) {
     for (const address of chainInfo?.addresses ?? []) addAddress(set, address);
   }
+  // Project contracts{} role addresses (projectNonRetailPaths extraAddresses).
+  for (const address of paths.extraAddresses ?? []) addAddress(set, address);
   const afterExclusions = set.size;
 
   const cexSet = await loadCexAddressSet(cexPath);

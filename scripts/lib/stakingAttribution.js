@@ -1,7 +1,6 @@
-const normalizeAddress = (value) => {
-  if (typeof value !== "string") return "";
-  return value.trim().toLowerCase();
-};
+import { normalizeAnyAddress } from "./address.js";
+// Hex lowercased; Solana base58 kept as written.
+const normalizeAddress = (value) => normalizeAnyAddress(value);
 
 /**
  * Builds the per-chain retail holder list from a raw tel-holders.json

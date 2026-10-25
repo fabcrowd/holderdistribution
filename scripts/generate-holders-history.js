@@ -6,6 +6,7 @@ import process from "node:process";
 import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
 import { selectPipelineProject, projectPaths, projectClassificationPath, projectNonRetailPaths } from "./lib/projects.js";
+import { normalizeAnyAddress } from "./lib/address.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
 // the project's data dir (TEL: public/data/, others: public/data/<slug>/) and
@@ -29,22 +30,22 @@ const sumDexLiquidity = (snapshot, exclusions, dexConfig) => {
   const set = new Set();
   for (const [addr, meta] of Object.entries(exclusions?.labels ?? {})) {
     if (meta?.category === "dex") {
-      const a = typeof addr === "string" ? addr.trim().toLowerCase() : "";
+      const a = normalizeAnyAddress(addr);
       if (a) set.add(a);
     }
   }
   for (const p of dexConfig?.pools ?? []) {
-    const a = typeof p?.address === "string" ? p.address.trim().toLowerCase() : "";
+    const a = normalizeAnyAddress(p?.address);
     if (a) set.add(a);
   }
   for (const r of dexConfig?.routers ?? []) {
-    const a = typeof r?.address === "string" ? r.address.trim().toLowerCase() : "";
+    const a = normalizeAnyAddress(r?.address);
     if (a) set.add(a);
   }
   if (set.size === 0) return null;
   let sum = 0;
   for (const w of snapshot?.wallets ?? []) {
-    const a = typeof w?.address === "string" ? w.address.trim().toLowerCase() : "";
+    const a = normalizeAnyAddress(w?.address);
     if (!a || !set.has(a)) continue;
     // Per-chain columns follow the snapshot's own chainOrder (TEL: ethereum,
     // polygon, base), so another project's chains are summed too.

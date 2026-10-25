@@ -10,7 +10,8 @@ import { getUsableRpcUrls, rpcCall, getLogs } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
 import { residualCustodyBalance, attributeStakingReceipts } from "./lib/stakingCustody.js";
 import { ensureWindowCache, readCommittedJson, replayChainRawBalances } from "./lib/holdersAsOfReplay.js";
-import { computeSupplyTotals } from "./lib/supply.js";
+import { computeSupplyTotals, computeBridgeNettedSupply, selectSupplyMethod } from "./lib/supply.js";
+import { loadChainAdapter, resolveChainVm } from "./lib/chainAdapters.js";
 import { resolveChainTokens, combineChainBalances, v3StateToCheckpoint, legacyCheckpointUsable } from "./lib/telTokens.js";
 import { scanV3Chain } from "./lib/v3Scan.js";
 import { loadCexAddressSet, loadDexAddressSet, normalizeAddress as normalizeNonRetailAddress } from "./lib/nonRetailSet.js";
@@ -20,7 +21,7 @@ import {
   computeChainMetrics,
   buildSummary,
 } from "./lib/holderMetrics.js";
-import { selectPipelineProject, projectPaths, projectChains, projectClassificationPath, projectNonRetailPaths, projectWork, projectWorkDir } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChainsAllVms, projectRoleAddresses, projectClassificationPath, projectNonRetailPaths, projectWork, projectWorkDir } from "./lib/projects.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: chain/token
@@ -264,7 +265,9 @@ const readJson = async (absolutePath) => {
   return JSON.parse(content);
 };
 
-const loadChainConfig = async () => projectChains(project);
+// Every vm: EVM chains go to the log scan below, Solana chains (only present
+// when the project lists one) to the Solana adapter. TEL: config/chains.json.
+const loadChainConfig = async () => projectChainsAllVms(project);
 const loadExclusions = async () => {
   const p = projectClassificationPath(project, "exclusions");
   return p ? readJson(p) : { addresses: [], chains: {}, labels: {} };
@@ -577,6 +580,13 @@ async function main() {
   // One map per chain in the project's chain map (TEL: ethereum, polygon, base
   // — same keys and order as before).
   const chainKeys = Object.keys(chainConfig);
+  // Adapter dispatch (Approach A): chains[].vm, default "evm". The Solana module
+  // is imported lazily, so an all-EVM project (TEL) never loads it.
+  const vmOf = (chainKey) => resolveChainVm({ key: chainKey, ...chainConfig[chainKey] });
+  const solanaKeys = chainKeys.filter((k) => vmOf(k) === "solana");
+  // Solana token-account -> owner maps, to classify contracts{} entries that
+  // list a token account rather than its owner.
+  const tokenAccountOwnersByChain = {};
   const chainBalancesRaw = Object.fromEntries(chainKeys.map((k) => [k, new Map()]));
   // v3 (18-decimal) share of each wallet's balance, per chain, in TEL. Already
   // INCLUDED in chainBalancesRaw (which is legacy + v3 combined); kept separately
@@ -593,6 +603,13 @@ async function main() {
   // what's on disk), so if this started empty, one failed chain would erase
   // every other chain's un-related, already-scanned checkpoint on write.
   const newCheckpointChains = { ...(checkpoint?.chains ?? {}) };
+
+  if (ARG_AS_OF && solanaKeys.length > 0) {
+    throw new Error(
+      `--as-of is not supported for Solana chains (${solanaKeys.join(", ")}): history backfill is EVM-only. ` +
+        `Solana history starts at the first live snapshot.`
+    );
+  }
 
   if (ARG_AS_OF) {
     const blockMap = JSON.parse(await fs.readFile(AS_OF_BLOCKS_PATH, "utf8"))[ARG_AS_OF];
@@ -666,6 +683,17 @@ async function main() {
     const chainSettled = await Promise.allSettled(
       Object.keys(chainConfig)
         .map(async (chainKey) => {
+          if (vmOf(chainKey) === "solana") {
+            // Full snapshot each run (no log replay), same return shape as the
+            // EVM scan: balances, tokenTotals, checkpointData.
+            const adapter = await loadChainAdapter("solana");
+            try {
+              const result = await adapter.scanChain({ key: chainKey, ...chainConfig[chainKey] });
+              return { ...result, chainKey };
+            } catch (error) {
+              throw new Error(`${chainKey} (solana): ${error.message}`);
+            }
+          }
           const chainCheckpoint = checkpoint?.chains?.[chainKey] ?? null;
           const result = await fetchChainBalances(chainKey, chainConfig, topic0, chainCheckpoint);
           return { chainKey, ...result };
@@ -682,8 +710,9 @@ async function main() {
         failedChains.push(settled.reason);
         continue;
       }
-      const { chainKey, balances, checkpointData, v3ByAddress, tokenTotals, stakingReceipts } = settled.value;
+      const { chainKey, balances, checkpointData, v3ByAddress, tokenTotals, stakingReceipts, tokenAccountOwners } = settled.value;
       chainBalancesRaw[chainKey] = balances;
+      if (tokenAccountOwners) tokenAccountOwnersByChain[chainKey] = tokenAccountOwners;
       if (v3ByAddress) v3ByChain[chainKey] = v3ByAddress;
       if (stakingReceipts?.length) stakingReceiptsByChain[chainKey] = stakingReceipts;
       if (tokenTotals) tokenTotalsByChain[chainKey] = tokenTotals;
@@ -804,6 +833,27 @@ async function main() {
   const [cexSet, dexSet] = await Promise.all([loadCexAddressSet(nonRetailPaths.cexPath), loadDexAddressSet(nonRetailPaths.dexPath)]);
   console.log(`Exclusion extras: ${cexSet.size} CEX + ${dexSet.size} DEX addresses merged into global set.`);
   const { globalSet, chainSets, byCategory } = compileExclusionSets(exclusions, { cexSet, dexSet });
+  const supplyMethod = selectSupplyMethod(project.config);
+  // Generic (bridge-netting) projects: contracts{} with a non-retail role
+  // (bridge, escrow, cex, dex, staking) are excluded from retail on their chain,
+  // and origin bridge/escrow balances are the non-circulating lock. TEL keeps
+  // its own path: those addresses already live in its exclusions.json.
+  const lockSet = new Set([...(byCategory["bridge-lock"] ?? []), ...(byCategory.escrow ?? [])]);
+  if (supplyMethod === "bridge-netting") {
+    const originKey = chainKeys.find((k) => chainConfig[k]?.origin) ?? null;
+    for (const [chainKey, entries] of Object.entries(projectRoleAddresses(project.config))) {
+      if (!chainConfig[chainKey]) continue;
+      const owners = tokenAccountOwnersByChain[chainKey];
+      for (const { address, role } of entries) {
+        // A Solana contracts{} entry may name a token account; its owner is the holder row.
+        const ids = [address, owners?.get(address)].filter(Boolean);
+        for (const id of ids) {
+          (chainSets[chainKey] ??= new Set()).add(id);
+          if (chainKey === originKey && (role === "bridge" || role === "escrow")) lockSet.add(id);
+        }
+      }
+    }
+  }
   const output = buildOutputSkeleton(chainConfig);
   if (ARG_AS_OF) output.generatedAt = `${ARG_AS_OF}T23:59:59.000Z`;
 
@@ -887,15 +937,30 @@ async function main() {
 
   output.wallets.sort((a, b) => b.total_telcoin_balance - a.total_telcoin_balance);
 
-  output.totals = computeSupplyTotals(
-    output,
-    chainConfig,
-    byCategory["bridge-lock"] ?? new Set(),
-    console,
-    Object.keys(tokenTotalsByChain).length > 0 ? tokenTotalsByChain : null,
-    // The project's supply.target (TEL: 100B, same as the old constant).
-    Number(project.config?.supply?.target) > 0 ? { expectedMaxSupply: Number(project.config.supply.target) } : {}
-  );
+  output.totals =
+    supplyMethod === "tel-generations"
+      ? computeSupplyTotals(
+          output,
+          chainConfig,
+          byCategory["bridge-lock"] ?? new Set(),
+          console,
+          Object.keys(tokenTotalsByChain).length > 0 ? tokenTotalsByChain : null,
+          // The project's supply.target (TEL: 100B, same as the old constant).
+          Number(project.config?.supply?.target) > 0 ? { expectedMaxSupply: Number(project.config.supply.target) } : {}
+        )
+      : // Generic chains[].bridge netting (native / burn-mint summed, lock-mint
+        // adds 0). Tolerance check only when supply.target is set.
+        computeBridgeNettedSupply(
+          output,
+          chainConfig,
+          lockSet,
+          console,
+          Object.keys(tokenTotalsByChain).length > 0 ? tokenTotalsByChain : null,
+          {
+            target: Number(project.config?.supply?.target) > 0 ? Number(project.config.supply.target) : null,
+            symbol: project.config?.ticker ?? "tokens",
+          }
+        );
 
   output.source = {
     type: "rpc",
