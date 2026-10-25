@@ -1,6 +1,7 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadProjectConfig, validateProjectConfig, projectRoleAddresses } from "./projects.js";
+import { projectHolderTiers } from "./holderTiers.js";
 import { PROJECT_SLUGS, LEGACY_ROOT_SLUGS } from "../../netlify/functions/live-data.mjs";
 
 const root = path.resolve(".");
@@ -50,6 +51,17 @@ describe("zebec-network config (owner choices 2026-10-25)", () => {
     expect(t).toMatchObject({ address: "EkXEg6de172aoLvr7w86YzQ2rf5oEFD3iUt8uQsLQuQW", role: "treasury" });
     expect(t.$comment).toMatch(/G3shxzbgWZFLJZTFdysmsK42MTHrZduFuTxxYqwxtgox/);
     expect(JSON.stringify(c.chains)).not.toContain("zebeczgi5fSEtbpfQKVZKCJ3WgYXxjkMUkNNx7fLKAF");
+  });
+
+  it("per-project mega threshold 25B (top ~20.55B wallet stays in totalBalance) and treasury-only history", () => {
+    expect(c.holders.megaHolderThreshold).toBe(25e9);
+    expect(projectHolderTiers({ config: c }).megaHolderThreshold).toBe(25e9);
+    expect(c.treasury.categories).toEqual(["treasury"]);
+  });
+
+  it("buyback treasury is non-retail via contracts{} role", () => {
+    const sol = projectRoleAddresses(c).solana ?? [];
+    expect(sol).toContainEqual(expect.objectContaining({ address: "EkXEg6de172aoLvr7w86YzQ2rf5oEFD3iUt8uQsLQuQW", role: "treasury" }));
   });
 
   it("live-data serves it from public/data/zebec-network", () => {

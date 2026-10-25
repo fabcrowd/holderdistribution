@@ -86,6 +86,16 @@
       }
     }
   ],
+  "holders": {
+    "$comment": "Per-project mega cut: the top wallet 5rhms6jZ… holds ~20.55B (> TEL's 20B default), so 25B keeps it in totalBalance. Other tier fields fall back to config/holder-tiers.default.json.",
+    "megaHolderThreshold": 25000000000
+  },
+  "treasury": {
+    "$comment": "append-treasury-history reads only these supply-reconciliation categories (ZBCN has no council/holdings/escrow).",
+    "categories": [
+      "treasury"
+    ]
+  },
   "staking": [
     {
       "chain": "solana",
@@ -118,7 +128,8 @@
   "pipelineNotes": {
     "holderScan": "Full getProgramAccounts scan likely needs SOLANA_RPC_0; public RPC rate-limits.",
     "stakingAdapter": "Deferred — kind zebecStakeV1 recorded but no Solana staker pull yet.",
-    "cexWallets": "Not invented; discover later.",
-    "liveData": "Registered in PROJECT_SLUGS (netlify/functions/live-data.mjs)."
+    "cexWallets": "Not invented; discover later. public/data/zebec-network/cex-wallets.json is an empty static artifact (0 wallets) so check:feeds passes; wallet flows stay unpublished until real CEX wallets are supplied.",
+    "liveData": "Registered in PROJECT_SLUGS (netlify/functions/live-data.mjs).",
+    "supplyReconciliation": "reconcile-supply labels contracts{} role addresses (and Solana token-account owners persisted on the snapshot as tokenAccountOwnersByChain) as treasury/staking categories; no ZBCN-only exclusions file."
   }
 }
