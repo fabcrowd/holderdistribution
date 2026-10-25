@@ -82,6 +82,11 @@
           "address": "DGMT79t6tVGPHW8gLH29a6G1W8AnWhc5NzddvHiU9kCy",
           "role": "staking",
           "$comment": "Staking reward vault ATA (research brief)"
+        },
+        "orcaWhirlpoolWsolZbcn": {
+          "address": "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w",
+          "role": "dex",
+          "$comment": "Solscan name tag 'Orca (WSOL-ZBCN) Market' (https://solscan.io/account/FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w), checked 2026-10-25. Whirlpool account that owns the pool's ZBCN vault token account (~46.33M)."
         }
       }
     }
@@ -122,10 +127,10 @@
   },
   "copy": {
     "text": {
-      "holders.staked.info": "{ticker} locked in Zebec SuperApp staking: the raw sum of every unclaimed on-chain staking position (~4.795B at the Oct 2026 scan). Shown separately from Retail Held — staked is not merged into the retail holder total for this project.\n\nTwo staking totals, both intentional: the Supply view's Staking bucket is slightly larger (~4.808B) because it counts what the staking program's vault accounts hold — the stake vaults plus two reward vaults (~16.76M of rewards not yet paid out, which are nobody's stake). This tile counts stakers' positions instead. The ~12.37M difference is those reward vaults minus the ZBCN Lockup gap below; it is not a counting error.\n\nZBCN Lockup vault gap (2.42%): this one lockup (AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp) is exempt from our 0.5% position-vs-vault reconcile check. Its unclaimed positions add up to ~2.42% (~4.39M {ticker}) more than its stake-vault token account (ATA) currently holds. Published staked figures use the raw position sums as-is (not scaled down to the vault balance); the vault ATA balance is listed in the Supply view's Staking bucket for transparency.",
+      "holders.staked.info": "{ticker} locked in Zebec SuperApp staking: the raw sum of every unclaimed on-chain staking position (~4.79B at the 2026-10-25 scan). Shown separately from Retail Held — staked is not merged into the retail holder total for this project.\n\nTwo staking totals, both intentional: the Supply view's Staking bucket is slightly larger (~4.80B) because it counts what the staking program's vault accounts hold — the stake vaults plus two reward vaults (~16.65M of rewards not yet paid out, which are nobody's stake). This tile counts stakers' positions instead. The ~12.26M difference is those reward vaults minus the ZBCN Lockup gap below; it is not a counting error.\n\nZBCN Lockup vault gap (2.42%): this one lockup (AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp) is exempt from our 0.5% position-vs-vault reconcile check. Its unclaimed positions add up to ~2.42% (~4.39M {ticker}) more than its stake-vault token account (ATA) currently holds. Published staked figures use the raw position sums as-is (not scaled down to the vault balance); the vault ATA balance is listed in the Supply view's Staking bucket for transparency.",
       "staking.intro": "{ticker} staked in Zebec SuperApp staking, summed from unclaimed on-chain positions and counted once per staker. The Supply view's Staking bucket reads slightly higher because it counts vault balances, including reward vaults.",
       "supply.staking.bucketLabel": "Staking vaults",
-      "supply.staking.description": "{ticker} held by Zebec SuperApp staking vault accounts: the per-lockup stake vaults plus two reward vaults (~16.76M of undistributed rewards). Counted by vault token balance, so it differs slightly (~12.37M) from the Holders Staked tile, which sums stakers' positions — both figures are intentional.",
+      "supply.staking.description": "{ticker} held by Zebec SuperApp staking vault accounts: the per-lockup stake vaults plus two reward vaults (~16.65M of undistributed rewards). Counted by vault token balance, so it differs slightly (~12.26M) from the Holders Staked tile, which sums stakers' positions — both figures are intentional.",
       "supply.residual.bucketLabel": "Below {supply} max (buybacks / burns)",
       "supply.residual.title": "Below the {supply} max (buybacks / burns)",
       "supply.residual.body": "The ~{gap} gap between the fixed {total} max supply and every {ticker} balance we count on Solana. {name} keeps a fixed {supply} max while buybacks and burns shrink the on-chain supply, so this is a reconcile note — on-chain supply sitting slightly under the max — not missing wallets and not tokens in a bridge ({ticker} here is Solana-only).",
@@ -147,8 +152,11 @@
   "pipelineNotes": {
     "holderScan": "Full getProgramAccounts scan likely needs SOLANA_RPC_0; public RPC rate-limits.",
     "stakingAdapter": "scripts/pull-solana-staking.js (zebecStakeV1) -> public/data/zebec-network/solana-staking.json. Per-lockup 0.5% vault reconcile; ZBCN Lockup AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp exempt (~2.42% unclaimed-positions vs vault-ATA gap recorded with explainer in output; positions published unscaled).",
-    "cexWallets": "Not invented; discover later. public/data/zebec-network/cex-wallets.json is an empty static artifact (0 wallets) so check:feeds passes; wallet flows stay unpublished until real CEX wallets are supplied.",
+    "cexWallets": "2026-10-25: 44 Solana CEX/custody wallets in config/projects/zebec-network/cex-wallets.json — 11 owner-approved from the Dune spellbook cex_solana_addresses intersect, plus 33 Solscan name-tag-confirmed (Uphold, Crypto.com, Kraken, OKX, Gate, CoinSpot, Bitget, MEXC, KuCoin, Bitrue, Bitvavo, BingX, Bitunix, CoinDCX Fireblocks, Fireblocks Custody) applied under the owner explorer-confirmed auto-apply rule (docs/zbcn-wallet-candidates.md §3). UPHOLD CAVEAT: Zebec says buybacks are consolidated periodically with Uphold Institutional for custody (x.com/Zebec_HQ/status/2112911986245910804; zebec.io/blog/inside-the-zbcn-buyback-program), so part of the Uphold Hot Wallet 3/5 balances (~20.55B + ~128.6M) may be project custodial buybacks; it cannot be split on-chain and is counted as cex. Fireblocks Custody (Fcmiy/4yqgc/FxmR1) owner is unknown; classed cex as institutional custody. Scheduled sync still needs its own pipeline.duneCexQueryId (Solana query on cex.addresses WHERE blockchain=solana; never TEL 3761086).",
     "liveData": "Registered in PROJECT_SLUGS (netlify/functions/live-data.mjs).",
     "supplyReconciliation": "reconcile-supply labels contracts{} role addresses (and Solana token-account owners persisted on the snapshot as tokenAccountOwnersByChain) as treasury/staking categories; no ZBCN-only exclusions file."
+  },
+  "classification": {
+    "cexWallets": "config/projects/zebec-network/cex-wallets.json"
   }
 }
