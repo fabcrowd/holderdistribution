@@ -59,7 +59,7 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
 
           {/* Always visible, phone included: the jargon problem is worst for
               exactly the newcomer who has no other way to decode it. */}
-          {/* Master token switch (the desktop terminal carries it in its h1). */}
+          {/* Master token switch: the only interactive one, at every breakpoint. */}
           <TokenSwitcher variant="pill" className="ml-auto mr-1" />
           <GlossaryDialog />
           <ThemeToggle className="h-11 w-11" />
