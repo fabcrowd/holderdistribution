@@ -1,8 +1,8 @@
-# ZBCN CEX wallet candidates (owner review — NOT production)
+# ZBCN CEX wallet candidates (owner-approved 2026-10-25 — classified)
 
-> **Candidates only.** Nothing below is classified. `public/data/zebec-network/cex-wallets.json`
-> stays the empty static placeholder (0 wallets) and ZBCN has no `classification.cexWallets`
-> file, so these addresses are still counted as retail until the owner approves entries.
+> **Owner-approved 2026-10-25:** all 11 candidates below are approved and classified as CEX via `config/projects/zebec-network/cex-wallets.json` (`classification.cexWallets`). Scheduled sync still needs a Solana-only `pipeline.duneCexQueryId` (never TEL 3761086).
+
+> _Superseded:_ this list was candidates-only until owner approval on 2026-10-25; these 11 wallets now publish in `public/data/zebec-network/cex-wallets.json` and are excluded from retail.
 
 - Generated: 2026-10-25T18:19:32.906Z (UTC) by
   `node scripts/sync-cex-wallets-dune.js --project zebec-network --candidates --source spellbook`

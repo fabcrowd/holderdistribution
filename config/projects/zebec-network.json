@@ -147,8 +147,11 @@
   "pipelineNotes": {
     "holderScan": "Full getProgramAccounts scan likely needs SOLANA_RPC_0; public RPC rate-limits.",
     "stakingAdapter": "scripts/pull-solana-staking.js (zebecStakeV1) -> public/data/zebec-network/solana-staking.json. Per-lockup 0.5% vault reconcile; ZBCN Lockup AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp exempt (~2.42% unclaimed-positions vs vault-ATA gap recorded with explainer in output; positions published unscaled).",
-    "cexWallets": "Not invented; discover later. public/data/zebec-network/cex-wallets.json is an empty static artifact (0 wallets) so check:feeds passes; wallet flows stay unpublished until real CEX wallets are supplied.",
+    "cexWallets": "Owner-approved 2026-10-25: 11 Solana CEX wallets from Dune spellbook cex_solana_addresses labels (intersected with ZBCN holders) in config/projects/zebec-network/cex-wallets.json. Scheduled sync still needs its own pipeline.duneCexQueryId (Solana query on cex.addresses WHERE blockchain=solana; never TEL 3761086).",
     "liveData": "Registered in PROJECT_SLUGS (netlify/functions/live-data.mjs).",
     "supplyReconciliation": "reconcile-supply labels contracts{} role addresses (and Solana token-account owners persisted on the snapshot as tokenAccountOwnersByChain) as treasury/staking categories; no ZBCN-only exclusions file."
+  },
+  "classification": {
+    "cexWallets": "config/projects/zebec-network/cex-wallets.json"
   }
 }
