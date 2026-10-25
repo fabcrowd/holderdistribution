@@ -82,11 +82,17 @@ export const PROJECT_STORAGE_KEY = "ha:project";
  * choice remembered in localStorage, then the registry default. Unknown or
  * malformed values are ignored, never trusted.
  */
-export const resolveInitialSlug = (search: string, stored: string | null | undefined): string => {
+export const resolveInitialSlug = (
+  search: string,
+  stored: string | null | undefined,
+  known: readonly string[] = PROJECTS.map((p) => p.slug),
+  fallback: string = DEFAULT_PROJECT_SLUG,
+): string => {
+  const ok = (v: unknown): v is string => typeof v === "string" && known.includes(v);
   const fromUrl = new URLSearchParams(search).get(TOKEN_PARAM)?.trim().toLowerCase();
-  if (isProjectSlug(fromUrl)) return fromUrl;
-  if (isProjectSlug(stored)) return stored;
-  return DEFAULT_PROJECT_SLUG;
+  if (ok(fromUrl)) return fromUrl;
+  if (ok(stored)) return stored;
+  return fallback;
 };
 
 type LocLike = { pathname: string; search: string; hash: string };

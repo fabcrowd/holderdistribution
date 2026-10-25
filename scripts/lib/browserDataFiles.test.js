@@ -15,10 +15,14 @@ const walk = (dir) =>
 
 describe("browser data files", () => {
   const src = walk(path.resolve("src")).map((f) => fs.readFileSync(f, "utf8")).join("\n");
-  const fetched = [...src.matchAll(/resolveDataUrl\(\s*["'`]([^"'`]+)["'`]/g)].map((m) => m[1]);
+  // resolveDataUrl("feed") (default project) and dataUrl(slug, "feed").
+  const fetched = [
+    ...[...src.matchAll(/resolveDataUrl\(\s*["'`]([^"'`]+)["'`]/g)].map((m) => m[1]),
+    ...[...src.matchAll(/\bdataUrl\(\s*[\w.]+\s*,\s*["'`]([^"'`]+)["'`]/g)].map((m) => m[1]),
+  ];
 
   it("covers every feed the frontend fetches", () => {
-    expect(fetched.length).toBeGreaterThan(5);
+    expect(fetched.length).toBeGreaterThanOrEqual(10);
     for (const f of fetched) expect(BROWSER_DATA_FILES.has(f), f).toBe(true);
   });
 
@@ -40,5 +44,20 @@ describe("browser data files", () => {
     const { kept, removed } = await pruneDistData(dir);
     expect(kept).toEqual(["chain-status.json", "holders-lite.json"]);
     expect(removed).toEqual(["cex-wallets.json", "holders-checkpoint.json", "tel-holders.json", "wallet-analysis"]);
+  });
+
+  it("multi-token: copies a legacy-root project's feeds into /data/<slug>/ and prunes every project folder", async () => {
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "dist-data-"));
+    for (const f of ["holders-lite.json", "chain-status.json", "tel-holders.json"]) await fsp.writeFile(path.join(dir, f), `"${f}"`);
+    await fsp.mkdir(path.join(dir, "abc"));
+    for (const f of ["holders-lite.json", "holders-checkpoint.json"]) await fsp.writeFile(path.join(dir, "abc", f), "{}");
+    await fsp.mkdir(path.join(dir, "wallet-analysis"));
+    const out = await pruneDistData(dir, { slugs: ["tel", "abc"], legacySlugs: ["tel"] });
+    // Legacy root copies stay for old bundles / links.
+    expect(out.kept).toEqual(["chain-status.json", "holders-lite.json"]);
+    expect(out.removed).toEqual(["tel-holders.json", "wallet-analysis"]);
+    expect(out.projects.tel.kept).toEqual(["chain-status.json", "holders-lite.json"]);
+    expect(JSON.parse(await fsp.readFile(path.join(dir, "tel", "holders-lite.json"), "utf8"))).toBe("holders-lite.json");
+    expect(out.projects.abc).toEqual({ kept: ["holders-lite.json"], removed: ["holders-checkpoint.json"] });
   });
 });

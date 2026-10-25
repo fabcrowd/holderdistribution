@@ -75,6 +75,6 @@ export default defineConfig(() => ({
     // `scripts/` is included too: the pipeline generators hold real logic
     // (flow attribution, rounding, rollups) and previously could not be
     // covered at all — a test file added there was silently never run.
-    include: ["src/**/*.test.ts", "scripts/**/*.test.js", "netlify/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "scripts/**/*.test.js", "netlify/**/*.test.ts"],
   },
 }));

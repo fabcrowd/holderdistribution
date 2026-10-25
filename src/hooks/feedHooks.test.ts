@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // Each feed hook is a thin useQuery wrapper; capture its options and run the
 // queryFn directly so we can assert error behaviour without a DOM.
 vi.mock("@tanstack/react-query", () => ({ useQuery: (opts: unknown) => opts }));
+// Called as plain functions (no React renderer), so stub the active project.
+vi.mock("@/hooks/useProject", () => ({ useProject: () => ({ slug: "tel" }) }));
 
 import { useClassificationChangelog } from "./useClassificationChangelog";
 import { useTreasuryHistory } from "./useTreasuryHistory";
@@ -30,6 +32,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe("feed hooks are per project", () => {
+  it.each(hooks)("%s keys its query and URL by the active slug", async (_name, hook) => {
+    const f = vi.fn(async () => new Response("down", { status: 503 }));
+    vi.stubGlobal("fetch", f);
+    const opts = hook() as Opts & { queryKey: unknown[] };
+    expect(opts.queryKey.at(-1)).toBe("tel");
+    await opts.queryFn().catch(() => {});
+    expect(String((f.mock.calls[0] as unknown[])[0])).toMatch(/^\/data\/tel\/[a-z-]+\.json$/);
+  });
+});
+
 describe("feed hooks surface HTTP failures as query errors", () => {
   it.each(hooks)("%s throws on a non-2xx response (so Retry can recover)", async (_name, hook) => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("down", { status: 503 })));
@@ -44,7 +57,7 @@ describe("feed hooks surface HTTP failures as query errors", () => {
     vi.stubGlobal("fetch", f);
     const { queryFn } = useChainStatus() as unknown as Opts;
     const out = (await queryFn()) as { chains: Array<{ key: string; lastBlock: number }> };
-    expect(String((f.mock.calls[0] as unknown[])[0])).toMatch(/chain-status\.json$/);
+    expect(String((f.mock.calls[0] as unknown[])[0])).toMatch(/\/data\/tel\/chain-status\.json$/);
     expect(out.chains.map((c) => [c.key, c.lastBlock])).toEqual([["ethereum", 1], ["polygon", 2], ["base", 3]]);
   });
 });
