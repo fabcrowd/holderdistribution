@@ -21,7 +21,7 @@ export const LOWEST_DISTRIBUTION_LABEL = "1-250K";
  * @param {Array<{ label: string, count: number, totalBalance?: number }>|null|undefined} distribution
  * @returns {{ distribution: typeof distribution, gap: number, changed: boolean }}
  */
-export const reconcileDistributionCounts = (holderCount, distribution) => {
+export const reconcileDistributionCounts = (holderCount, distribution, lowestLabel = LOWEST_DISTRIBUTION_LABEL) => {
   if (!Array.isArray(distribution) || distribution.length === 0) {
     return { distribution, gap: 0, changed: false };
   }
@@ -36,9 +36,10 @@ export const reconcileDistributionCounts = (holderCount, distribution) => {
     return { distribution, gap: 0, changed: false };
   }
 
-  // Prefer the canonical lowest-tier label; fall back to the last row
-  // (DISTRIBUTION_RANGES is ordered largest→smallest).
-  let idx = distribution.findIndex((row) => row?.label === LOWEST_DISTRIBUTION_LABEL);
+  // Prefer the canonical lowest-tier label (TEL: "1-250K"; holdersView passes
+  // the active project's); fall back to the last row (DISTRIBUTION_RANGES is
+  // ordered largest→smallest, for every project).
+  let idx = distribution.findIndex((row) => row?.label === lowestLabel);
   if (idx < 0) idx = distribution.length - 1;
 
   const next = distribution.map((row, i) => {

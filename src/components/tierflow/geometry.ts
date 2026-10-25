@@ -17,6 +17,13 @@
  *                       on both sides)              left+right by value)
  */
 
+/**
+ * TEL's historical 10 tiers (config/holder-tiers.default.json
+ * `distributionTiers`). The diagram itself renders the ACTIVE project's tiers
+ * (useTierGeometry → holderTiersFor(project)); this constant is the default
+ * and what tests pin. Every row position below is index-based, so any tier
+ * count lays out the same way — only the canvas height grows/shrinks.
+ */
 export const TIERS = [
   "500M+", "250M-500M", "100M-250M", "50M-100M", "25M-50M",
   "10M-25M", "5M-10M", "1M-5M", "250K-1M", "1-250K",
@@ -24,7 +31,7 @@ export const TIERS = [
 
 export type TierLabel = (typeof TIERS)[number];
 
-export const tierIndex = (label: string): number => TIERS.indexOf(label as TierLabel);
+export const tierIndex = (label: string, tiers: readonly string[] = TIERS): number => tiers.indexOf(label);
 
 /**
  * Display-only overrides for tier labels.
@@ -54,7 +61,9 @@ export const PITCH = 66; // vertical distance between two tiers' row tops
 // height already reads as visual weight at the bottom edge, so it doesn't
 // need a full top-pad's worth of extra breathing room to feel balanced.
 const BOTTOM_PAD = 16;
-export const CANVAS_H = TOP_PAD + PITCH * (TIERS.length - 1) + TIER_H + BOTTOM_PAD; // 682
+/** Canvas height for `n` tier rows (TEL's 10 -> 682). */
+export const canvasHeight = (n: number): number => TOP_PAD + PITCH * (Math.max(1, n) - 1) + TIER_H + BOTTOM_PAD;
+export const CANVAS_H = canvasHeight(TIERS.length); // 682
 
 export const SRC_X = 8;
 export const SRC_W = 190; // right edge 198
@@ -95,8 +104,10 @@ export const SIDE_H = 56;
 export const SIDE_PITCH = 68;
 // Centered on the tier stack's vertical span, not pinned to the top —
 // 4 tiles at 68px pitch span 3*68+56 = 260px; center that within CANVAS_H.
-export const sideTop = (j: number): number => Math.round((CANVAS_H - (SIDE_H + SIDE_PITCH * (SIDE_COUNT - 1))) / 2) + SIDE_PITCH * j;
-export const sideCenterY = (j: number): number => sideTop(j) + SIDE_H / 2;
+// `canvasH` defaults to TEL's 682; the diagram passes the active project's.
+export const sideTop = (j: number, canvasH: number = CANVAS_H): number =>
+  Math.round((canvasH - (SIDE_H + SIDE_PITCH * (SIDE_COUNT - 1))) / 2) + SIDE_PITCH * j;
+export const sideCenterY = (j: number, canvasH: number = CANVAS_H): number => sideTop(j, canvasH) + SIDE_H / 2;
 
 // --- Bezier paths ---
 // BEND fans a bundle of lines through the lane instead of pinching every line

@@ -31,10 +31,12 @@ import path from "node:path";
 import process from "node:process";
 import { loadNonRetailSet } from "./lib/nonRetailSet.js";
 import { selectPipelineProject, projectPaths, projectNonRetailPaths } from "./lib/projects.js";
+import { projectHolderTiers, rangeLabelOf } from "./lib/holderTiers.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk and in git history) and its own non-retail lists. Tier
-// RANGES are still the shared (TEL-sized) buckets — see docs/MULTI-TOKEN.md.
+// RANGES are the project's `holders.distributionTiers` (TEL: the historical 10
+// buckets, unchanged) — see docs/MULTI-TOKEN.md.
 const project = selectPipelineProject("generate-holder-transitions", { ported: true });
 const data = projectPaths(project);
 
@@ -46,15 +48,8 @@ const HOLDERS_HISTORY_PATH = data("holders-history.json");
 const SNAP_REL = data.rel("tel-holders.json");
 const FUND_REL = data.rel("funding-wallets.json");
 
-const RANGES = [
-  ["500M+", 500e6, Infinity], ["250M-500M", 250e6, 500e6], ["100M-250M", 100e6, 250e6],
-  ["50M-100M", 50e6, 100e6], ["25M-50M", 25e6, 50e6], ["10M-25M", 10e6, 25e6],
-  ["5M-10M", 5e6, 10e6], ["1M-5M", 1e6, 5e6], ["250K-1M", 250e3, 1e6], ["1-250K", 1, 250e3],
-];
-const bucketOf = (v) => {
-  for (const [label, lo, hi] of RANGES) if (v >= lo && v < hi) return label;
-  return null;
-};
+const RANGES = projectHolderTiers(project).distributionTiers;
+const bucketOf = (v) => rangeLabelOf(RANGES, v);
 
 const git = (args) => execFileSync("git", args, { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 });
 

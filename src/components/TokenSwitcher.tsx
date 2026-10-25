@@ -50,7 +50,7 @@ export const TokenSwitcher = ({ variant = "pill", className = "" }: Props) => {
           className={`${trigger} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
         >
           <span>{project.ticker}</span>
-          <ChevronDown className={variant === "heading" ? "h-3.5 w-3.5 opacity-70" : "h-3 w-3 opacity-70"} aria-hidden="true" />
+          <ChevronDown className="h-3 w-3 opacity-70" aria-hidden="true" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-1" data-testid="token-switcher-menu">

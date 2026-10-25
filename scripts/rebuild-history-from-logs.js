@@ -108,8 +108,9 @@ import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
 import { fetchAllTransfers } from "./lib/alchemyTransfers.js";
 import { createEtherscanKeyPool, fetchContractLogs, keysFromEnv } from "./lib/etherscanMultiKey.js";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
-import { computeChainMetrics, RETAIL_THRESHOLD } from "./lib/holderMetrics.js";
-import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS } from "./lib/holdersView.js";
+import { computeChainMetrics } from "./lib/holderMetrics.js";
+import { projectHolderTiers } from "./lib/holderTiers.js";
+import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS, setHolderTiers } from "./lib/holdersView.js";
 import { STAKE_CHANGED_TOPIC0 } from "./lib/staking.js";
 import { residualCustodyBalance } from "./lib/stakingCustody.js";
 import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
@@ -128,6 +129,9 @@ import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 // data dir, work dir (transfer caches), chain map, non-retail lists and
 // StakeChanged staking contract (TEL: Polygon 0x92e4…6330, as before).
 const project = selectPipelineProject("rebuild-history-from-logs", { ported: true });
+const holderTiers = projectHolderTiers(project); // retail/mega thresholds + tier ranges (config/projects/<slug>.json `holders`)
+const RETAIL_THRESHOLD = holderTiers.retailThreshold;
+setHolderTiers(holderTiers);
 
 await loadEnv();
 

@@ -2,9 +2,14 @@ import { buildChainHolders, buildMetrics, applyStaking } from "./stakingAttribut
 import { reconcileDistributionCounts } from "./holderHistoryReconcile.js";
 import { applyV3Staking, summarizeStaking } from "./v3Staking.js";
 
-export const CONCENTRATION_BUCKETS = [10, 25, 50, 100, 250, 500, 1000];
+// TEL's historical values. They are also config/holder-tiers.default.json and
+// TEL's `holders` block (holderTiers.test.js pins all three together). A run
+// for another project swaps them via setHolderTiers(projectHolderTiers(p)) —
+// the exports below are `let` so every importer sees the active project's
+// tiers through the ES-module live binding.
+export const TEL_CONCENTRATION_BUCKETS = [10, 25, 50, 100, 250, 500, 1000];
 
-export const BALANCE_RANGES = [
+export const TEL_BALANCE_RANGES = [
   // Floor is 1 TEL, deliberately, by explicit product decision (2026-08-15):
   // sub-1-TEL dust wallets should not be counted in any breakdown/bucket,
   // even though metrics.holderCount and balanceStats.count still count them
@@ -23,7 +28,7 @@ export const BALANCE_RANGES = [
   { label: "10M+", min: 10_000_000, max: Number.POSITIVE_INFINITY },
 ];
 
-export const DISTRIBUTION_RANGES = [
+export const TEL_DISTRIBUTION_RANGES = [
   { label: "500M+", min: 500_000_000, max: Number.POSITIVE_INFINITY },
   { label: "250M-500M", min: 250_000_000, max: 500_000_000 },
   { label: "100M-250M", min: 100_000_000, max: 250_000_000 },
@@ -41,6 +46,22 @@ export const DISTRIBUTION_RANGES = [
   // fix up an inaccurate floor but is harmless to leave as-is).
   { label: "1-250K", min: 1, max: 250_000 },
 ];
+
+export let CONCENTRATION_BUCKETS = TEL_CONCENTRATION_BUCKETS;
+export let BALANCE_RANGES = TEL_BALANCE_RANGES;
+export let DISTRIBUTION_RANGES = TEL_DISTRIBUTION_RANGES;
+
+/**
+ * Point every builder in this module (and every importer of the three live
+ * bindings above) at one project's tiers — the output of
+ * holderTiers.projectHolderTiers(). Call once, right after the script picks
+ * its project. `null` restores TEL's values (tests).
+ */
+export const setHolderTiers = (tiers) => {
+  CONCENTRATION_BUCKETS = tiers?.concentrationBuckets ?? TEL_CONCENTRATION_BUCKETS;
+  BALANCE_RANGES = tiers?.balanceRanges ?? TEL_BALANCE_RANGES;
+  DISTRIBUTION_RANGES = tiers?.distributionTiers ?? TEL_DISTRIBUTION_RANGES;
+};
 
 export const normalizeAddress = (value) => {
   if (typeof value !== "string") return "";
@@ -414,6 +435,7 @@ export const buildViewData = (selection, current, previous) => {
   const { distribution: reconciledCurrent } = reconcileDistributionCounts(
     currentMetrics.holderCount,
     rawDistribution.map((r) => ({ label: r.label, count: r.count })),
+    DISTRIBUTION_RANGES[DISTRIBUTION_RANGES.length - 1].label,
   );
   const currentByLabel = new Map(reconciledCurrent.map((r) => [r.label, r.count]));
 
@@ -422,6 +444,7 @@ export const buildViewData = (selection, current, previous) => {
     const { distribution: reconciledPrevious } = reconcileDistributionCounts(
       previousMetrics.holderCount,
       rawDistribution.map((r) => ({ label: r.label, count: r.previousCount ?? 0 })),
+      DISTRIBUTION_RANGES[DISTRIBUTION_RANGES.length - 1].label,
     );
     previousByLabel = new Map(reconciledPrevious.map((r) => [r.label, r.count]));
   }

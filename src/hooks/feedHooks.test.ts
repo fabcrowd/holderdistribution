@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // queryFn directly so we can assert error behaviour without a DOM.
 vi.mock("@tanstack/react-query", () => ({ useQuery: (opts: unknown) => opts }));
 // Called as plain functions (no React renderer), so stub the active project.
-vi.mock("@/hooks/useProject", () => ({ useProject: () => ({ slug: "tel" }) }));
+vi.mock("@/hooks/useProject", async () => {
+  const { getProject } = await import("@/lib/projects");
+  return { useProject: () => ({ slug: "tel", project: getProject("tel") }) };
+});
 
 import { useClassificationChangelog } from "./useClassificationChangelog";
 import { useTreasuryHistory } from "./useTreasuryHistory";

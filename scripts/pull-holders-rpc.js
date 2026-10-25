@@ -14,9 +14,8 @@ import { computeSupplyTotals } from "./lib/supply.js";
 import { resolveChainTokens, combineChainBalances, v3StateToCheckpoint, legacyCheckpointUsable } from "./lib/telTokens.js";
 import { scanV3Chain } from "./lib/v3Scan.js";
 import { loadCexAddressSet, loadDexAddressSet, normalizeAddress as normalizeNonRetailAddress } from "./lib/nonRetailSet.js";
+import { projectHolderTiers } from "./lib/holderTiers.js";
 import {
-  RETAIL_THRESHOLD,
-  MEGA_HOLDER_THRESHOLD,
   createEmptyMetrics,
   computeChainMetrics,
   buildSummary,
@@ -30,6 +29,9 @@ import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 // contract from its `staking[]`, and every file is read/written in its data
 // dir (TEL: public/data/, others: public/data/<slug>/) — scripts/lib/projects.js.
 const project = selectPipelineProject("pull-holders-rpc", { ported: true });
+const holderTiers = projectHolderTiers(project); // retail/mega thresholds + tier ranges (config/projects/<slug>.json `holders`)
+const RETAIL_THRESHOLD = holderTiers.retailThreshold;
+const MEGA_HOLDER_THRESHOLD = holderTiers.megaHolderThreshold;
 const data = projectPaths(project);
 const stakeTarget = resolveStakeChangedTarget(project);
 
@@ -890,7 +892,9 @@ async function main() {
     chainConfig,
     byCategory["bridge-lock"] ?? new Set(),
     console,
-    Object.keys(tokenTotalsByChain).length > 0 ? tokenTotalsByChain : null
+    Object.keys(tokenTotalsByChain).length > 0 ? tokenTotalsByChain : null,
+    // The project's supply.target (TEL: 100B, same as the old constant).
+    Number(project.config?.supply?.target) > 0 ? { expectedMaxSupply: Number(project.config.supply.target) } : {}
   );
 
   output.source = {
