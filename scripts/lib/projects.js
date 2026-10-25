@@ -104,7 +104,26 @@ export function resolveProject(slug, root = process.cwd()) {
 const EVM_ONLY_CHAIN_FIELDS = ["chainId", "fromBlock"];
 const EVM_ONLY_TOKEN_FIELDS = ["deployBlock"];
 const SOLANA_PROGRAMS = ["spl-token", "token-2022"];
-const NON_RETAIL_ROLES = new Set(["bridge", "escrow", "cex", "dex", "staking"]);
+// treasury / council / holdings are project-controlled supply: never retail
+// (TEL lists the same kinds of wallets in config/exclusions.json). Only generic
+// (non-generationsSumOneToOne) projects read contracts{} roles for this, so
+// TEL's pipeline is unchanged.
+const NON_RETAIL_ROLES = new Set(["bridge", "escrow", "cex", "dex", "staking", "treasury", "council", "holdings"]);
+
+/**
+ * supply-reconciliation category for each contracts{} role
+ * (scripts/reconcile-supply.js labels role addresses with these).
+ */
+export const ROLE_SUPPLY_CATEGORIES = Object.freeze({
+  treasury: "treasury",
+  council: "council",
+  holdings: "holdings",
+  escrow: "escrow",
+  staking: "staking",
+  cex: "cex",
+  dex: "dex",
+  bridge: "bridge-lock",
+});
 const TEMPLATE_KINDS = ["token", "address", "tx"];
 
 /**
@@ -206,7 +225,7 @@ export const projectChainKeysByVm = (config, vm) => projectChainEntries(config).
 
 /**
  * Addresses a project's `contracts{}` mark as non-retail (role bridge, escrow,
- * cex, dex, staking), per chain, case preserved for Solana and lowercased for
+ * cex, dex, staking, treasury, council, holdings), per chain, case preserved for Solana and lowercased for
  * EVM: `{ <chainKey>: [{ name, address, role }] }`.
  */
 export function projectRoleAddresses(config, { roles = NON_RETAIL_ROLES } = {}) {
@@ -474,9 +493,10 @@ export const projectChainsAllVms = (project, root = process.cwd()) => projectCha
  * receipt StakingModule), `chain` or `token` generation. Addresses lowercased.
  */
 export function projectStakingContracts(project, { kind, chain, token } = {}) {
+  const vmOf = new Map((project.config?.chains ?? []).map((c) => [c.key, c.vm ?? "evm"]));
   return (project.config?.staking ?? [])
     .filter((s) => (kind ? s.kind === kind : true) && (chain ? s.chain === chain : true) && (token ? s.token === token : true))
-    .map((s) => ({ ...s, address: lc(s.address) }));
+    .map((s) => ({ ...s, address: vmOf.get(s.chain) === "solana" ? s.address.trim() : lc(s.address) }));
 }
 
 /** Token address for (chainKey, generation) from the project config, or null. */
@@ -499,7 +519,7 @@ export function loadProjectClassification(project, kind, fallback, root = proces
 /** loadNonRetailSet() paths for a project (null = none declared -> empty). */
 export function projectNonRetailPaths(project, root = process.cwd()) {
   // Generic (bridge-netting) projects: contracts{} entries with a non-retail
-  // role (bridge, escrow, cex, dex, staking) are non-retail on every chain
+  // role (bridge, escrow, cex, dex, staking, treasury, council, holdings) are non-retail on every chain
   // without having to repeat them in an exclusions file. TEL (generations
   // path) keeps exactly its classification files.
   const extra =

@@ -11,6 +11,7 @@ import {
 import { projectHolderTiers } from "./lib/holderTiers.js";
 import { loadNonRetailSet, createNonRetailChecker } from "./lib/nonRetailSet.js";
 import { loadV3StakingPositions } from "./lib/v3Staking.js";
+import { loadSolanaStakingPositions } from "./lib/solanaStaking.js";
 import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
@@ -79,6 +80,9 @@ const main = async () => {
     readJson(ASOF_BLOCKS_PATH),
   ]);
   let v3Staking = loadV3StakingPositions(checkpoint, chainConfig, asOfBlocks);
+  // Solana program staking (e.g. zebecStakeV1): same overlay channel, holder
+  // balances untouched (staked != retail). TEL has no such file.
+  if (!v3Staking) v3Staking = loadSolanaStakingPositions(await readJson(data("solana-staking.json")));
   // A rebuilt past day (pull-holders-rpc.js --as-of) from before the module
   // existed must not pick up today's positions from the live checkpoint.
   const snapshotDate = snapshot?.source?.snapshotDate ?? null;

@@ -67,15 +67,42 @@ const dailyCrons = (doc) =>
     return dom === "*" && (dow === "*" || dow === undefined);
   });
 
+/**
+ * Per-project daily refreshes (multi-token, docs/MULTI-TOKEN.md). TEL's
+ * schedule has no inputs, so it always runs HD_PROJECT=tel; each other mapped
+ * project needs its own once-a-day job. Allowed ONLY as a single cron, pinned
+ * to a non-TEL HD_PROJECT, in the holders-refresh concurrency group (never
+ * pushes at the same moment as TEL), and committing with [skip netlify] so
+ * refresh-tel-holders stays the one daily publisher (deployTriggers.test.js).
+ */
+const PER_PROJECT_DAILY = { "refresh-zebec-network.yml": "zebec-network" };
+
 describe("data pipeline workflow chain", () => {
-  it("only the consolidated daily workflow runs on a daily schedule", () => {
+  it("only the consolidated daily workflow (plus per-project refreshes) runs on a daily schedule", () => {
     const daily = fs
       .readdirSync(DIR)
       .filter((f) => f.endsWith(".yml"))
       .filter((f) => dailyCrons(load(f)).length > 0);
-    expect(daily).toEqual(["refresh-tel-holders.yml"]);
+    expect(daily.sort()).toEqual(["refresh-tel-holders.yml", ...Object.keys(PER_PROJECT_DAILY)].sort());
     expect(dailyCrons(load("refresh-tel-holders.yml"))).toHaveLength(1);
   });
+
+  for (const [file, slug] of Object.entries(PER_PROJECT_DAILY)) {
+    it(`${file} is one daily run of ${slug}, serialized with TEL, not a second publisher`, () => {
+      const doc = load(file);
+      expect(dailyCrons(doc)).toHaveLength(1);
+      expect(dailyCrons(load("refresh-tel-holders.yml"))[0].cron).not.toBe(dailyCrons(doc)[0].cron);
+      expect(doc.env.HD_PROJECT).toBe(slug);
+      expect(doc.concurrency).toEqual({ group: "holders-refresh", "cancel-in-progress": false });
+      const steps = doc.jobs.refresh.steps;
+      const runs = steps.map((s) => s.run ?? "").join("\n");
+      expect(runs).toMatch(/git commit -m "[^"]*\[skip netlify\]"/);
+      const gateIdx = steps.findIndex((s) => (s.run ?? "").includes("check-feed-consistency.js"));
+      const commitIdx = steps.findIndex((s) => (s.run ?? "").includes("git add"));
+      expect(gateIdx, "consistency gate must run BEFORE the commit step").toBeGreaterThanOrEqual(0);
+      expect(gateIdx).toBeLessThan(commitIdx);
+    });
+  }
 
   it("former chained stages are manual-only (no cron, no workflow_run)", () => {
     for (const file of FORMER_STAGES) {

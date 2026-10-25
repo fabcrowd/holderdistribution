@@ -35,8 +35,15 @@ import {
   RECONCILE_TOLERANCE,
   COINGECKO_CIRCULATING,
   buildReconciliation,
+  mergeRoleExclusions,
 } from "./lib/reconcileSupply.js";
-import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
+import {
+  selectPipelineProject,
+  projectPaths,
+  projectClassificationPath,
+  projectRoleAddresses,
+  ROLE_SUPPLY_CATEGORIES,
+} from "./lib/projects.js";
 
 export {
   TEL_TOTAL_SUPPLY,
@@ -83,6 +90,22 @@ const readJson = async (p, fallback = null) => {
 
 const fmt = (n) => Math.round(n).toLocaleString();
 
+/**
+ * Exclusions for one project. TEL (generationsSumOneToOne) uses its
+ * classification file as-is. Generic projects add their contracts{} role
+ * addresses (and the owners of Solana token accounts listed there) as labelled
+ * categories — same multi-token source pull-holders-rpc.js uses for retail.
+ */
+export const projectExclusions = (project, exclusions, snapshot) => {
+  if (project.config?.supply?.generationsSumOneToOne === true) return exclusions;
+  return mergeRoleExclusions(
+    exclusions,
+    projectRoleAddresses(project.config),
+    ROLE_SUPPLY_CATEGORIES,
+    snapshot?.tokenAccountOwnersByChain ?? {},
+  );
+};
+
 const main = async (project) => {
   const paths = reconcilePaths(project);
   const OUTPUT_PATH = paths.output;
@@ -93,7 +116,12 @@ const main = async (project) => {
   ]);
   if (!snapshot) throw new Error(`${paths.holders} not found`);
 
-  const r = buildReconciliation(snapshot, exclusions, cexWallets, reconcileOptions(project));
+  const r = buildReconciliation(
+    snapshot,
+    projectExclusions(project, exclusions, snapshot),
+    cexWallets,
+    reconcileOptions(project),
+  );
   const cgCirculating = r.coingeckoCirculating;
 
   console.log(`${project.config?.ticker ?? "TEL"} SUPPLY RECONCILIATION`);

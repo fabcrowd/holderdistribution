@@ -3,15 +3,17 @@
  * holders-page SupplyBreakdown chart.
  *
  * UX layers (progressive disclosure):
- * - Base layer: Retail, CEX, Association, Holdings, Other, In transit, …
- * - Deeper layers: click Association / Holdings / Other / In transit for
- *   address lists, bridge math, and explorer links.
+ * - Base layer: Retail, CEX, Staking, Association, Holdings, Other, In transit, …
+ * - Deeper layers: click Staking / Association / Holdings / Other / In transit
+ *   for address lists, bridge math, and explorer links.
  * - Analysis layer: gated deep-dive tiles (auth) for wallets with published
  *   analysis under public/data/wallet-analysis/.
  *
  * Buckets partition totalSupply (100B): counted categories + residual.
  * DEX Liquidity is retail-owned (LP receipts) but protocol-custodied.
  * Residual is bridge lock vs L2 mirrors / origin scan drift — not a wallet pool.
+ * Its bucket label is project copy (`supply.residual.bucketLabel`): TEL reads
+ * "In transit (bridges)"; a single-chain project (ZBCN) relabels it.
  */
 
 export type DisplayBucket = {
@@ -88,7 +90,27 @@ export const otherCategoryLabel = (category: string): string =>
   isOtherCategory(category) ? OTHER_CATEGORY_LABELS[category] : category;
 
 /** Bucket titles for the project-controlled entities (src/lib/projectCopy.ts projectEntities). */
-export type EntityBucketLabels = { association: string; holdings: string };
+export type EntityBucketLabels = {
+  association: string;
+  holdings: string;
+  /** Residual bucket title (copy.text `supply.residual.bucketLabel`); defaults to the bridge wording. */
+  residual?: string;
+  /** Staking bucket title (copy.text `supply.staking.bucketLabel`). */
+  staking?: string;
+};
+
+export const DEFAULT_RESIDUAL_BUCKET_LABEL = "In transit (bridges)";
+export const DEFAULT_STAKING_BUCKET_LABEL = "Staking";
+
+/**
+ * Raw category `staking`: tokens held by a staking program's vault accounts
+ * (ZBCN: stake-vault + reward-vault ATA owners). Distinct from TEL's
+ * `staking-contract`, which rolls into Association. Missing / zero → no bucket.
+ */
+export const STAKING_CATEGORY_KEYS = ["staking"] as const;
+
+export const isStakingCategory = (category: string): boolean =>
+  (STAKING_CATEGORY_KEYS as readonly string[]).includes(category);
 
 /** Project-agnostic fallbacks; the Supply view passes the active project's names. */
 export const DEFAULT_ENTITY_BUCKET_LABELS: EntityBucketLabels = {
@@ -105,6 +127,7 @@ export const groupSupplyCategories = (
   const association = ASSOCIATION_CATEGORY_KEYS.reduce((sum, k) => sum + (c[k] ?? 0), 0);
   const holdings = HOLDINGS_CATEGORY_KEYS.reduce((sum, k) => sum + (c[k] ?? 0), 0);
   const other = OTHER_CATEGORY_KEYS.reduce((sum, k) => sum + (c[k] ?? 0), 0);
+  const staking = STAKING_CATEGORY_KEYS.reduce((sum, k) => sum + (c[k] ?? 0), 0);
 
   const buckets: DisplayBucket[] = [
     {
@@ -127,6 +150,14 @@ export const groupSupplyCategories = (
       amount: c.cex ?? 0,
       alignment: "institutional",
       color: "hsl(32 90% 50%)",
+    },
+    {
+      key: "staking",
+      label: labels.staking ?? DEFAULT_STAKING_BUCKET_LABEL,
+      amount: staking,
+      // Mostly stakers' own positions, protocol-custodied (like DEX LP).
+      alignment: "retail",
+      color: "hsl(275 55% 58%)",
     },
     {
       key: "escrow",
@@ -158,7 +189,7 @@ export const groupSupplyCategories = (
     },
     {
       key: "residual",
-      label: "In transit (bridges)",
+      label: labels.residual ?? DEFAULT_RESIDUAL_BUCKET_LABEL,
       amount: residual,
       alignment: "residual",
       color: "hsl(0 0% 55%)",

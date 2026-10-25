@@ -34,7 +34,7 @@ export const config = { path: "/live-data/*" };
  * data.legacyRoot). Constants, not a JSON import, so the function bundle has no
  * build-time dependency; scripts/lib/projects.test.js fails if they drift.
  */
-export const PROJECT_SLUGS = new Set(["tel"]);
+export const PROJECT_SLUGS = new Set(["tel", "zebec-network"]);
 export const LEGACY_ROOT_SLUGS = new Set(["tel"]);
 /** Slug that legacy /live-data/<file> URLs (old bundles) resolve to. */
 export const LEGACY_URL_SLUG = "tel";

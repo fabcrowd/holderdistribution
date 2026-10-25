@@ -96,3 +96,20 @@ describe("v3 staking positions", () => {
     expect(buildViewData("ethereum", withV3, null).stakingStats.stakedTotal).toBe(0);
   });
 });
+
+const ALICE = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
+
+describe("v3Staking normalize keeps Solana base58 case", () => {
+  it("overlays a Solana position onto the case-exact holder row without changing balances", () => {
+    const chains = { solana: { holders: [{ address: ALICE, balance: 10, totalBalance: 10 }] } };
+    const v3 = { chain: "solana", modules: [], positions: new Map([[ALICE, 2.5]]) };
+    expect(applyV3Staking(chains, v3).solana.holders[0]).toEqual({ address: ALICE, balance: 10, totalBalance: 10, stakedV3Balance: 2.5 });
+  });
+
+  it("EVM stays lowercased (TEL unchanged)", () => {
+    const chains = { polygon: { holders: [{ address: "0xABCDEF0000000000000000000000000000000001", balance: 1 }] } };
+    const v3 = { chain: "polygon", modules: [], positions: new Map([["0xabcdef0000000000000000000000000000000001", 4]]) };
+    expect(applyV3Staking(chains, v3).polygon.holders[0].stakedV3Balance).toBe(4);
+    expect(summarizeStaking([], v3).v3.stakedTotal).toBe(4);
+  });
+});

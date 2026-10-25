@@ -7,6 +7,7 @@ import { buildReconciliation } from "./reconcileSupply.js";
 import { createNonRetailChecker, loadNonRetailSet, normalizeAddress } from "./nonRetailSet.js";
 import { buildOverlapStats, buildSnapshotData, buildViewData } from "./holdersView.js";
 import { projectNonRetailPaths, resolveProject } from "./projects.js";
+import { reconcileHistoryEntry } from "./holderHistoryReconcile.js";
 
 const SOL_A = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
 const SOL_B = "7dGbd2QZcCKcTndnHcTL8q7SMVXAkp688NTQYwrRCrar";
@@ -105,5 +106,37 @@ describe("supply reconciliation for a bridge-netting snapshot", () => {
     expect(r.residual).toBe(0);
     expect(r.derivedOriginTotal).toBe(1100);
     expect(r.categories.retail).toBe(1100);
+  });
+});
+
+describe("holders-history row for a Solana-only snapshot", () => {
+  it("history entry keeps chains.solana with matching holder counts through reconcileHistoryEntry", () => {
+    const snapshot = {
+      generatedAt: "2026-10-25T12:00:00.000Z",
+      chainOrder: ["solana"],
+      totals: { totalSupply: 300 },
+      chains: { solana: { holders: [{ address: SOL_A, balance: 200 }, { address: SOL_B, balance: 100 }] } },
+    };
+    const current = buildSnapshotData(snapshot, null, () => false);
+    const sol = buildViewData("solana", current, null);
+    const combined = buildViewData("combined", current, null);
+    const entry = reconcileHistoryEntry({
+      date: "2026-10-25",
+      combined: { holderCount: current.combined.holderCount, totalBalance: current.combined.totalBalance },
+      distribution: combined.distribution,
+      chains: {
+        solana: {
+          holderCount: current.chains.solana.metrics.holderCount,
+          totalBalance: current.chains.solana.metrics.totalBalance,
+          distribution: sol.distribution,
+        },
+      },
+    });
+    expect(Object.keys(entry.chains)).toEqual(["solana"]);
+    expect(entry.chains.solana.holderCount).toBe(2);
+    expect(entry.combined.holderCount).toBe(entry.chains.solana.holderCount);
+    const sum = (d) => (d ?? []).reduce((s, r) => s + (Number(r.count) || 0), 0);
+    if (Array.isArray(entry.chains.solana.distribution)) expect(sum(entry.chains.solana.distribution)).toBe(2);
+    if (Array.isArray(entry.distribution)) expect(sum(entry.distribution)).toBe(2);
   });
 });

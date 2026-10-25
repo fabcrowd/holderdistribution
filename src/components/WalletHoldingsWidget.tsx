@@ -62,6 +62,7 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, ReferenceLine, Line } from "recharts";
 import { chainViewOptions, type ChainView } from "@/lib/chainViews";
+import { stakingSplitSub } from "@/lib/stakingSplit";
 import "@/lib/rechartsMotion";
 
 const formatCompactTokens = (n: number) => formatCompact(n, 2);
@@ -777,12 +778,12 @@ const renderStakingInsights = (
     {
       label: "Stakers",
       value: formatInteger(stats.stakerCount),
-      sub: stats.v3 && stats.legacy ? `Legacy ${formatInteger(stats.legacy.stakerCount)} / v3 ${formatInteger(stats.v3.stakerCount)}` : undefined,
+      sub: stakingSplitSub(stats, "count", formatInteger),
     },
     {
       label: "Staked Total",
       value: formatTokenAmount(stats.stakedTotal),
-      sub: stats.v3 && stats.legacy ? `Legacy ${formatCompactTokens(stats.legacy.stakedTotal)} / v3 ${formatCompactTokens(stats.v3.stakedTotal)}` : undefined,
+      sub: stakingSplitSub(stats, "total", formatCompactTokens),
     },
     { label: copy.t("% of Retail {ticker} Staked"), value: formatPercentage(stats.stakedShareOfRetail * 100, 2) },
     { label: "% of Wallets Staking", value: formatPercentage(stats.stakerShareOfHolders * 100, 2) },
