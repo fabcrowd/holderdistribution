@@ -2,6 +2,7 @@ import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { type SummaryPoint } from "@/lib/holderSummary";
 import { useHeadlineSummary } from "@/hooks/useHeadlineSummary";
 import { DataFreshnessBadge, StaleDataBanner } from "@/components/DataFreshness";
+import { TokenSwitcher } from "@/components/TokenSwitcher";
 
 const TREND_STYLE: Record<SummaryPoint["trend"], { Icon: typeof Minus; cls: string }> = {
   up: { Icon: ArrowUpRight, cls: "text-emerald-700 dark:text-emerald-400" },
@@ -23,7 +24,7 @@ export const PageIntro = ({ rangeDays }: { rangeDays: number }) => {
     <section aria-labelledby="page-title" className="mb-5 sm:mb-6 space-y-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 id="page-title" className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-          TEL holder distribution
+          <TokenSwitcher variant="heading" /> holder distribution
         </h1>
         <DataFreshnessBadge generatedAt={snapshot?.generatedAt} />
       </div>

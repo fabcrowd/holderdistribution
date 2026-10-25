@@ -3,6 +3,8 @@ import { useIntro } from "@/hooks/useMotion";
 import { X } from "lucide-react";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton } from "./TerminalPanel";
 import { useForensicsAccess } from "@/hooks/useForensicsAccess";
+import { useProject } from "@/hooks/useProject";
+import { supplyTargetLabel } from "@/lib/projects";
 
 const TABS = [
   { id: "breakdown", label: "Category detail" },
@@ -54,6 +56,7 @@ export const SupplyTerminal = (p: Props) => {
 };
 
 const ReadySupply = (p: Props) => {
+  const { project } = useProject();
   const { unlocked } = useForensicsAccess();
   const intro = useIntro();
   // History is always on screen here (its own panel), so a #supply/history
@@ -81,8 +84,8 @@ const ReadySupply = (p: Props) => {
     >
       <TerminalPanel
         className="col-span-4 row-span-2"
-        title="Where all TEL sits"
-        info="Every TEL in the 100B total supply, by holder type. Select a category to see its wallets and notes."
+        title={`Where all ${project.ticker} sits`}
+        info={`Every ${project.ticker} in the ${supplyTargetLabel(project) ?? "total"} supply, by holder type. Select a category to see its wallets and notes.`}
         stat={<span className="font-semibold text-foreground">{p.totalSupplyLabel}</span>}
       >
         <div className="flex h-full min-h-0 flex-col gap-2">

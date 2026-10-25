@@ -9,6 +9,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ChangeIndicator } from "@/components/ChangeIndicator";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TokenSwitcher } from "@/components/TokenSwitcher";
+import { useProject } from "@/hooks/useProject";
 import { TimeRangeDropdown } from "@/components/TimeRangeDropdown";
 import { Footer } from "@/components/Footer";
 import { useHeadlineSummary } from "@/hooks/useHeadlineSummary";
@@ -24,11 +26,10 @@ const VIEWS: Array<{ id: ViewId; label: string; icon: typeof Users }> = [
   { id: "supply", label: "Supply", icon: Coins },
 ];
 
-const CHAINS: Array<{ key: DisplaySelection; label: string }> = [
+/** Chain picker options: "All chains" plus the active project's chains. */
+const chainOptions = (chains: Array<{ key: string; name: string }>): Array<{ key: DisplaySelection; label: string }> => [
   { key: "combined", label: "All chains" },
-  { key: "ethereum", label: "Ethereum" },
-  { key: "polygon", label: "Polygon" },
-  { key: "base", label: "Base" },
+  ...chains.map((c) => ({ key: c.key as DisplaySelection, label: c.name })),
 ];
 
 const TREND: Record<SummaryPoint["trend"], { Icon: typeof Minus; cls: string }> = {
@@ -54,7 +55,8 @@ type Props = {
 
 /**
  * Desktop (>=1280px) shell: one 56px title bar carrying the brand (eyebrow +
- * an always-visible "TEL Holder Distribution" h1, plus a stale-data pill),
+ * an always-visible "<TICKER> Holder Distribution" h1 whose ticker is the
+ * master token switch, plus a stale-data pill),
  * the view switch, the four headline KPIs and every control; a viewport-height grid
  * below it; a 24px status line. The document itself never scrolls; panels
  * scroll internally.
@@ -72,6 +74,8 @@ export const TerminalDashboard = ({
   children,
 }: Props) => {
   const { summary, snapshot, tiles, isError } = useHeadlineSummary(rangeDays, selectedView);
+  const { project } = useProject();
+  const CHAINS = chainOptions(project.chains);
   const qc = useQueryClient();
   const fresh = describeFreshness(snapshot?.generatedAt);
   const stale = fresh.status === "delayed" || fresh.status === "stale";
@@ -132,7 +136,7 @@ export const TerminalDashboard = ({
                 )}
               </div>
               <h1 className="mt-1 whitespace-nowrap text-base font-extrabold leading-none tracking-tight text-foreground min-[1400px]:text-lg 2xl:text-xl">
-                TEL Holder Distribution
+                <TokenSwitcher variant="heading" /> Holder Distribution
               </h1>
             </div>
           </div>

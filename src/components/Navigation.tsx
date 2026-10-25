@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/s
 import logo from "@/assets/holder-analytics-horizontal.svg";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TokenSwitcher } from "@/components/TokenSwitcher";
 
 type NavigationProps = {
   /** Optional page name shown beside the logo. The mobile nav is otherwise
@@ -58,7 +59,9 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
 
           {/* Always visible, phone included: the jargon problem is worst for
               exactly the newcomer who has no other way to decode it. */}
-          <GlossaryDialog className="ml-auto" />
+          {/* Master token switch (the desktop terminal carries it in its h1). */}
+          <TokenSwitcher variant="pill" className="ml-auto mr-1" />
+          <GlossaryDialog />
           <ThemeToggle className="h-11 w-11" />
 
           {/* Desktop Navigation Links */}

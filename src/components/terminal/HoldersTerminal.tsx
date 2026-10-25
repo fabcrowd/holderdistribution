@@ -1,3 +1,4 @@
+import { useProject } from "@/hooks/useProject";
 import { useMemo, useState } from "react";
 import { useIntro } from "@/hooks/useMotion";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
@@ -78,6 +79,9 @@ const LegendKey = ({
 const firstLast = <T,>(rows: T[]) => (rows.length ? { first: rows[0], last: rows[rows.length - 1] } : null);
 
 export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDays, onExplore }: Props) => {
+  const { project } = useProject();
+  const tk = project.ticker;
+  const pn = project.name;
   const growth = useHolderGrowth({ view: selectedView, days: rangeDays });
   const intro = useIntro();
   const flow = useExchangeFlow();
@@ -192,7 +196,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         className="col-span-4"
         title="Retail holders"
-        info="Wallets holding more than 0 TEL, excluding exchange, DEX, contract and Telcoin-controlled wallets."
+        info={`Wallets holding more than 0 ${tk}, excluding exchange, DEX, contract and ${pn}-controlled wallets.`}
         stat={
           h && (
             <>
@@ -217,9 +221,9 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
 
       <TerminalPanel
         className="col-span-4"
-        title="TEL held"
-        info={`TEL in retail wallets compared with TEL in custody at known exchange wallets. All chains combined.${
-          v3Staking ? ` Retail includes ${formatCompact(combinedStaking?.stakedTotal ?? 0)} staked TEL, of which ${formatCompact(v3Staking.stakedTotal)} is in the v3 StakingModule (credited to each staker's wallet, so it isn't counted twice).` : ""
+        title={`${tk} held`}
+        info={`${tk} in retail wallets compared with ${tk} in custody at known exchange wallets. All chains combined.${
+          v3Staking ? ` Retail includes ${formatCompact(combinedStaking?.stakedTotal ?? 0)} staked ${tk}, of which ${formatCompact(v3Staking.stakedTotal)} is in the v3 StakingModule (credited to each staker's wallet, so it isn't counted twice).` : ""
         }`}
         stat={
           b && (
@@ -236,7 +240,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             </>
           )
         }
-        actions={<DetailsButton onClick={() => onExplore("balances")} label="TEL held" />}
+        actions={<DetailsButton onClick={() => onExplore("balances")} label={`${tk} held`} />}
       >
         {!isCombined ? (
           <PanelMessage>Available for all chains combined only.</PanelMessage>
@@ -248,8 +252,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                 { key: "retail", label: "Retail", color: "hsl(var(--primary))" },
                 { key: "cex", label: "Exchanges", color: "hsl(var(--ha-accent))" },
               ]}
-              format={(n) => `${formatCompact(n)} TEL`}
-              label={b ? `Retail TEL ${formatCompact(b.last.retail)}, exchange TEL ${b.last.cex != null ? formatCompact(b.last.cex) : "unknown"} at the end of the period.` : "TEL held"}
+              format={(n) => `${formatCompact(n)} ${tk}`}
+              label={b ? `Retail ${tk} ${formatCompact(b.last.retail)}, exchange ${tk} ${b.last.cex != null ? formatCompact(b.last.cex) : "unknown"} at the end of the period.` : `${tk} held`}
               markers={balanceMarkers}
               highlight={balanceFocus}
             />,
@@ -261,7 +265,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         className="col-span-4"
         title="Exchange net flow"
-        info="Daily TEL deposited to minus withdrawn from known exchange wallets. A deposit is not necessarily a sale."
+        info={`Daily ${tk} deposited to minus withdrawn from known exchange wallets. A deposit is not necessarily a sale.`}
         stat={
           netflow.length > 0 && (
             <>
@@ -282,8 +286,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           <SignedBars
             data={netflow.map(({ t, value }) => ({ t, value }))}
             seriesLabel="Net to exchanges"
-            format={(n) => `${formatSignedCompact(n)} TEL`}
-            label={`Net exchange flow over the period: ${formatSignedCompact(flowTotals.in - flowTotals.out)} TEL.`}
+            format={(n) => `${formatSignedCompact(n)} ${tk}`}
+            label={`Net exchange flow over the period: ${formatSignedCompact(flowTotals.in - flowTotals.out)} ${tk}.`}
           />
         ) : (
           <PanelMessage>No flow data for this period.</PanelMessage>
@@ -292,11 +296,11 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
 
       <TerminalPanel
         className="col-span-3"
-        title="Staked TEL"
+        title={`Staked ${tk}`}
         info={
           v3Staking
-            ? `Retail TEL staked in the legacy staking contract plus the v3 StakingModule (Polygon, live ${v3DeployDate}), counted once per staker. v3 balances weren't recorded between its launch and the latest snapshot, so the total has a gap there rather than a guessed line.`
-            : "Retail TEL locked in staking contracts. All chains combined."
+            ? `Retail ${tk} staked in the legacy staking contract plus the v3 StakingModule (Polygon, live ${v3DeployDate}), counted once per staker. v3 balances weren't recorded between its launch and the latest snapshot, so the total has a gap there rather than a guessed line.`
+            : `Retail ${tk} locked in staking contracts. All chains combined.`
         }
         stat={
           s &&
@@ -346,8 +350,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                       { key: "stakingV3", label: "v3 StakingModule", color: "hsl(var(--ha-accent))", connectNulls: false },
                     ]}
                     markers={stakingMarkers}
-                    format={(n) => `${formatCompact(n)} TEL`}
-                    label={`Staked TEL ${stakedNow != null ? formatCompact(stakedNow) : ""} now${stakingSplit ? ` (${stakingSplit})` : ""}. The legacy contract fell as stakers moved to the v3 StakingModule; v3 balances before the latest snapshot weren't recorded.`}
+                    format={(n) => `${formatCompact(n)} ${tk}`}
+                    label={`Staked ${tk} ${stakedNow != null ? formatCompact(stakedNow) : ""} now${stakingSplit ? ` (${stakingSplit})` : ""}. The legacy contract fell as stakers moved to the v3 StakingModule; v3 balances before the latest snapshot weren't recorded.`}
                   />
                 </div>
               </div>
@@ -356,8 +360,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                 kind="area"
                 data={staking}
                 series={[{ key: "staking", label: "Staked", color: "hsl(var(--primary))" }]}
-                format={(n) => `${formatCompact(n)} TEL`}
-                label={s ? `Staked TEL ${formatCompact(s.last.staking)} at the end of the period.` : "Staked TEL"}
+                format={(n) => `${formatCompact(n)} ${tk}`}
+                label={s ? `Staked ${tk} ${formatCompact(s.last.staking)} at the end of the period.` : `Staked ${tk}`}
               />
             ),
             staking.length > 1,
@@ -368,7 +372,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         className="col-span-3"
         title="Wallet sizes"
-        info={`Retail wallets by balance (TEL). The gold bar contains the average balance${stats ? ` (${formatCompact(stats.average)} TEL)` : ""}.`}
+        info={`Retail wallets by balance (${tk}). The gold bar contains the average balance${stats ? ` (${formatCompact(stats.average)} ${tk})` : ""}.`}
         stat={
           stats && (
             <span className="text-[11px] text-muted-foreground">
@@ -399,7 +403,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         className="col-span-3"
         title="Concentration"
-        info="Share of retail TEL held by the largest N retail wallets. Change is against the previous snapshot."
+        info={`Share of retail ${tk} held by the largest N retail wallets. Change is against the previous snapshot.`}
         stat={stats && <span className="text-[11px] text-muted-foreground">Gini <span className="font-semibold text-foreground">{stats.gini.toFixed(3)}</span></span>}
         actions={<DetailsButton onClick={() => onExplore("concentration")} label="Concentration" />}
         flush
@@ -408,12 +412,12 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           <div className="h-full p-2">{snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />}</div>
         ) : (
           <table className="w-full text-xs tabular-nums">
-            <caption className="sr-only">Share of retail TEL held by the top wallets</caption>
+            <caption className="sr-only">Share of retail {tk} held by the top wallets</caption>
             <thead className="sticky top-0 bg-card text-[11px] text-muted-foreground">
               <tr>
                 <th scope="col" className="px-3 py-1 text-left font-medium">Top</th>
                 <th scope="col" className="px-2 py-1 text-left font-medium">Share</th>
-                <th scope="col" className="px-3 py-1 text-right font-medium">TEL</th>
+                <th scope="col" className="px-3 py-1 text-right font-medium">{tk}</th>
               </tr>
             </thead>
             <tbody>
@@ -448,7 +452,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         className="col-span-3"
         title="Exchange balances"
-        info="TEL held at each exchange's known wallets, with the change over the selected period."
+        info={`${tk} held at each exchange's known wallets, with the change over the selected period.`}
         stat={cexTotal > 0 && <span className="font-semibold text-foreground">{formatCompact(cexTotal)}</span>}
         actions={<DetailsButton onClick={() => onExplore("exchanges")} label="Exchange balances" />}
         flush
@@ -459,11 +463,11 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           <PanelError>Couldn't load exchange balances.</PanelError>
         ) : (
           <table className="w-full text-xs tabular-nums">
-            <caption className="sr-only">TEL held per exchange</caption>
+            <caption className="sr-only">{tk} held per exchange</caption>
             <thead className="sticky top-0 bg-card text-[11px] text-muted-foreground">
               <tr>
                 <th scope="col" className="px-3 py-1 text-left font-medium">Exchange</th>
-                <th scope="col" className="px-2 py-1 text-right font-medium">TEL</th>
+                <th scope="col" className="px-2 py-1 text-right font-medium">{tk}</th>
                 <th scope="col" className="px-3 py-1 text-right font-medium">Change</th>
               </tr>
             </thead>
