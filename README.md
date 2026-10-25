@@ -52,6 +52,8 @@ docs/TEL-CONTRACTS.md      TEL contract registry (legacy vs. v3) + supply accoun
 CLAUDE.md                  deeper architecture/handoff notes
 ```
 
+See [docs/MULTI-TOKEN.md](docs/MULTI-TOKEN.md) for the multi-token layout and how to map a new project.
+
 ## Deploying
 
 Production deploys are **manual** from the Netlify dashboard — git pushes (including branch
