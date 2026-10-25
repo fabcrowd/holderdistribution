@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
+import { useProject } from "@/hooks/useProject";
+import { chainViewLabel } from "@/lib/chainViews";
 import {
   Card,
   CardContent,
@@ -42,12 +44,6 @@ type DistributionAnalysisWidgetProps = {
   onViewChange?: (view: DisplaySelection) => void;
 };
 
-const CHAIN_LABEL: Record<DisplaySelection, string> = {
-  combined: "Combined",
-  ethereum: "Ethereum",
-  polygon: "Polygon",
-  base: "Base",
-};
 
 const formatTokenAmount = (value: number) => {
   const absolute = Math.abs(value);
@@ -70,6 +66,7 @@ const DistributionAnalysisWidget = ({
   onViewChange,
 }: DistributionAnalysisWidgetProps) => {
   const { ticker, tiers } = useProjectCopy();
+  const { project } = useProject();
   const dustFloor = new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(bucketFloor(tiers));
   // Range-aware baseline: history distribution at the start of the selected
   // window (combined view only — chain views keep the snapshot baseline).
@@ -178,7 +175,7 @@ const DistributionAnalysisWidget = ({
                 onClick={() => onViewChange?.("combined")}
                 className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-amber-700 dark:text-amber-400 border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 rounded-full px-2 py-0.5 min-h-[28px] hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
               >
-                Showing {CHAIN_LABEL[selectedView]} only
+                Showing {chainViewLabel(project, selectedView)} only
                 <span className="underline">View all chains</span>
               </button>
             )}

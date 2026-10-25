@@ -279,11 +279,75 @@ override both in its project config:
 - The UI's Chain Status card takes its labels, explorers and token links from
   `chains[]` (`projectChainMeta`).
 
+## Chain views (`chains[]` drives every chain picker)
+
+The Holders / Distribution / Supply widgets no longer use a fixed
+`"combined" | "ethereum" | "polygon" | "base"` union. `src/lib/chainViews.ts`
+derives the views from the active project's `chains[]`, in config order:
+
+- `ChainView` is `"combined"` or any project chain key (`DisplaySelection`,
+  `HeadlineView` and the hook `view` params are aliases of it; the tier-flow
+  diagram uses `"all"` or a chain key).
+- `chainViewOptions(project, combinedLabel)` feeds the terminal chain select
+  ("All chains"), the Wallet Holdings tabs ("Combined"), and the
+  HolderGrowth / Distribution labels.
+- `?chain=` in the URL (`historyNav.readSettings`) is validated against the
+  active project's chains. Switching to a project without the selected chain
+  falls back to Combined (`coerceChainView`).
+- The Staked tile's "Staking runs on …" note comes from `staking[].chain`
+  (`stakingElsewhereNote`). TEL still reads "Staking runs on Polygon".
+- `chain-status.json` covers the project's chain keys
+  (`buildChainStatus(checkpoint, chainKeys)`). It defaults to TEL's three chains.
+- Wallet-flow address links use the project's `chains[].explorer` for chains
+  without a built-in explorer.
+
+TEL resolves to exactly the old Combined / Ethereum / Polygon / Base views,
+labels and order (`src/lib/chainViews.test.ts`). The same test covers a demo
+project with an extra `arbitrum` chain and fails if a hard-coded union comes
+back. Feeds are already keyed by chain (`holders-lite.json` `views.<key>`,
+history `chains.<key>`), so a fourth chain needs no UI code changes.
+
+## Chain discovery (`detect-token-chains`)
+
+Use this during the onboarding questionnaire to find out whether a token is
+also deployed on EVM chains that its config does not list. It is advisory
+only: it never edits config.
+
+```
+node scripts/detect-token-chains.js --project <slug> [--coingecko] [--out report.json]
+node scripts/detect-token-chains.js --address 0x… --chain ethereum --ticker ABC [--coingecko]
+```
+
+- **Same-address probe:** runs free public RPCs only (`scripts/lib/rpc.js`
+  fallbacks or `chains[].rpc.publicUrls`). On each candidate chain that is not
+  already configured (ethereum, polygon, base, arbitrum, optimism, bsc and
+  avalanche), it runs `eth_getCode`, then `symbol()` and `decimals()` for every
+  known token address. This finds CREATE2 or multichain deployments at the
+  same address.
+- **`--coingecko` (optional):** calls CoinGecko's keyless public
+  `/coins/<platform>/contract/<address>` endpoint and reads its `platforms`
+  map. This finds bridged copies at different addresses. Each listed address is
+  then confirmed on-chain with the same probe. If CoinGecko rate-limits or does
+  not list the token, the report still uses the RPC results.
+- **Statuses:** each chain is marked `configured`, `candidate` (code plus a
+  matching symbol), `contract-other-symbol` (code exists but is a different
+  token, so do not add it), `not-found` or `rpc-error`.
+- **Before adding a candidate to `chains[]`:** confirm it from the project's
+  bridge docs or the explorer's token tracker. A matching symbol alone does not
+  prove anything.
+
+TEL result (2026-10-25): no candidates beyond ethereum, polygon and base.
+When run with only a Polygon seed, the probe finds TEL v3 on Ethereum and Base
+at the same address.
+
+Deferred: non-EVM chains, bridge-registry lookups (e.g. the Superchain token
+list, Axelar or Wormhole registries), and a scheduled discovery run. All of
+these can feed into `detectTokenChains` as further address sources.
+
 ## TEL-sized values left on purpose
 
 | Where | What | Why it stays |
 |---|---|---|
-| `src/hooks/useFlowField.ts`, `useHolderSnapshot`, `historyNav` `CHAIN_VALUES`, `HolderGrowthWidget` `VIEW_CONFIG`, `DistributionAnalysisWidget` `CHAIN_LABEL`, `useHeadlineTiles` | The chain-view union `"combined" \| "ethereum" \| "polygon" \| "base"` | These are TypeScript literal types and the feeds are keyed per chain. Widening them is a separate refactor and is needed only when a project ships a fourth chain. Wallet Holdings already filters its chain tabs to the project's chains, and Chain Status is fully project-driven. |
 | `scripts/lib/holderHistoryReconcile.js` | Default lowest label `"1-250K"` | This is only the default. `buildViewData` passes the project's lowest distribution tier. |
 | `scripts/lib/holderMetrics.js` | Exported `RETAIL_THRESHOLD` / `MEGA_HOLDER_THRESHOLD` | These are the TEL defaults, kept for existing imports. The scripts read the project values. |
 | `src/components/tierflow/geometry.ts` | `TIERS`, `CANVAS_H` | These are TEL defaults and test anchors. The live diagram uses `useTierGeometry()`. |
@@ -374,7 +438,10 @@ wording, and only render when a project has a ledger.
 1. Add `{ "slug": "<slug>", "name": "...", "ticker": "..." }` to `config/projects.json`.
    Slugs are lowercase `[a-z0-9-]`.
 2. Add `config/projects/<slug>.json` using `tel.json` as the template. Use only
-   verified addresses, never guessed ones.
+   verified addresses, never guessed ones. Run
+   `node scripts/detect-token-chains.js --address 0x… --chain <origin> --ticker <T> --coingecko`
+   first so `chains[]` includes every chain the token is on (see "Chain
+   discovery"). Each extra chain gets a picker view automatically.
 3. Put the browser feeds in `public/data/<slug>/` (same file names as TEL, see
    `BROWSER_DATA_FILES` in `scripts/lib/browserDataFiles.js`). Ported pipeline
    scripts write there when run with `--project <slug>`. Give the config

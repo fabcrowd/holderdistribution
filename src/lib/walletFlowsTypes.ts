@@ -94,5 +94,16 @@ const ADDRESS_EXPLORER: Record<string, string> = {
   base: "https://basescan.org/address/",
 };
 
-export const addressExplorerUrl = (chain: string, address: string) =>
-  `${ADDRESS_EXPLORER[chain] ?? ADDRESS_EXPLORER.ethereum}${address}`;
+/**
+ * Address page on the chain's explorer. Built-ins cover TEL's chains; any
+ * other chain uses the project's `chains[].explorer` root (passed as
+ * `explorers`, key -> root), so e.g. an arbitrum wallet links to Arbiscan
+ * instead of Etherscan.
+ */
+export const addressExplorerUrl = (chain: string, address: string, explorers?: Record<string, string>) => {
+  const builtIn = ADDRESS_EXPLORER[chain];
+  if (builtIn) return `${builtIn}${address}`;
+  const root = explorers?.[chain]?.replace(/\/+$/, "");
+  if (root) return `${root}/address/${address}`;
+  return `${ADDRESS_EXPLORER.ethereum}${address}`;
+};

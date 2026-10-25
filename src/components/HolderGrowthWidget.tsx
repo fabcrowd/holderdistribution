@@ -10,6 +10,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
 import { type DisplaySelection } from "@/hooks/useHolderSnapshot";
+import { useProject } from "@/hooks/useProject";
+import { chainViewLabel } from "@/lib/chainViews";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import "@/lib/rechartsMotion";
 import { Clock, Database, Layers, Loader2, TrendingDown, TrendingUp } from "lucide-react";
@@ -26,12 +28,6 @@ type HolderGrowthWidgetProps = {
   onRangeDaysChange: (days: number) => void;
 };
 
-const VIEW_CONFIG: Record<DisplaySelection, { label: string }> = {
-  combined: { label: "Combined" },
-  ethereum: { label: "Ethereum" },
-  polygon: { label: "Polygon" },
-  base: { label: "Base" },
-};
 
 
 const holdersChartConfig = (ticker: string) => ({
@@ -104,7 +100,9 @@ const signedAmount = (value: number, unit: string) => {
 type BalanceMode = "balance" | "change";
 
 const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: HolderGrowthWidgetProps) => {
-  const config = VIEW_CONFIG[selectedView];
+  const { project } = useProject();
+  // Label from the project's chains[] (TEL: Combined / Ethereum / Polygon / Base).
+  const config = { label: chainViewLabel(project, selectedView) };
   const { ticker } = useProjectCopy();
   const chartConfig = useMemo(() => holdersChartConfig(ticker), [ticker]);
   const formatCompactAmount = (value: number) => compactAmount(value, ticker);

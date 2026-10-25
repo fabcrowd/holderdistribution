@@ -61,18 +61,12 @@ import { ChainStatusBar } from "@/components/ChainStatusBar";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, ReferenceLine, Line } from "recharts";
+import { chainViewOptions, type ChainView } from "@/lib/chainViews";
 import "@/lib/rechartsMotion";
 
 const formatCompactTokens = (n: number) => formatCompact(n, 2);
 
-type DisplaySelection = "combined" | "ethereum" | "polygon" | "base";
-
-const VIEW_OPTIONS: Array<{ key: DisplaySelection; label: string }> = [
-  { key: "combined", label: "Combined" },
-  { key: "ethereum", label: "Ethereum" },
-  { key: "polygon", label: "Polygon" },
-  { key: "base", label: "Base" },
-];
+type DisplaySelection = ChainView;
 
 type DisplayResult = {
   key: DisplaySelection;
@@ -1231,11 +1225,8 @@ const HOLDER_PANELS = [
 
 const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDaysChange, trendsPanel, flowsPanel, panel: panelProp, onPanelChange, compactHeader = false }: WalletHoldingsWidgetProps) => {
   const { project } = useProject();
-  // Only the chains this project is actually on (TEL: all three, as before).
-  const viewOptions = useMemo(
-    () => VIEW_OPTIONS.filter((o) => o.key === "combined" || (project.chains ?? []).some((c) => c.key === o.key)),
-    [project],
-  );
+  // Combined + every chain in the project's chains[] (TEL: Ethereum, Polygon, Base, as before).
+  const viewOptions = useMemo(() => chainViewOptions(project), [project]);
   const copy = useProjectCopy();
   const [expandedCexExchange, setExpandedCexExchange] = useState<string | null>(null);
   const [panelState, setPanelState] = useState("overview");
@@ -1367,7 +1358,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
     return formatSourceLabel([provider, host, queryLabel]);
   }, [snapshot?.source]);
 
-  const selectionLabel = VIEW_OPTIONS.find((option) => option.key === selectedView)?.label ?? "Selected";
+  const selectionLabel = viewOptions.find((option) => option.key === selectedView)?.label ?? "Selected";
 
   const previewMetrics = display?.metrics;
 
