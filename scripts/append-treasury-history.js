@@ -24,25 +24,36 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("append-treasury-history");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
+// the project's data dir (TEL: public/data/, others: public/data/<slug>/).
+const project = selectPipelineProject("append-treasury-history", { ported: true });
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const RECONCILIATION_PATH = path.resolve(ROOT, "public/data/supply-reconciliation.json");
-const HISTORY_PATH = path.resolve(ROOT, "public/data/treasury-history.json");
-const HOLDERS_PATH = path.resolve(ROOT, "public/data/tel-holders.json");
+const data = projectPaths(project, ROOT);
+const RECONCILIATION_PATH = data("supply-reconciliation.json");
+const HISTORY_PATH = data("treasury-history.json");
+const HOLDERS_PATH = data("tel-holders.json");
 
-const CATEGORIES = ["treasury", "council", "holdings", "escrow"];
+// Same chart lines for every project (shared panel format). A project whose
+// exclusions label fewer entity categories lists its own in
+// `treasury.categories`; TEL uses all four.
+const CATEGORIES = project.config?.treasury?.categories ?? ["treasury", "council", "holdings", "escrow"];
+// A brand-new (non-legacy) project has no Transfer-log backfill yet, so its
+// series may start today; TEL's must never silently restart.
+const ALLOW_NEW_SERIES = project.config?.data?.legacyRoot !== true;
 const DRY_RUN = process.argv.includes("--dry-run");
 
 const readJson = async (p) => JSON.parse(await fs.readFile(p, "utf8"));
 
 const main = async () => {
-  const history = await readJson(HISTORY_PATH).catch(() => null);
-  if (!history?.entries?.length) {
+  let history = await readJson(HISTORY_PATH).catch(() => null);
+  if (!history?.entries?.length && ALLOW_NEW_SERIES) {
+    console.warn(`${HISTORY_PATH} is missing or empty — starting a new series for project "${project.slug}".`);
+    history = { entries: [] };
+  }
+  if (!history?.entries?.length && !ALLOW_NEW_SERIES) {
     console.error(
       `${HISTORY_PATH} is missing or empty. Run scripts/backfill-treasury-history.js first —\n` +
         `appending to nothing would create a series that starts today and looks like the\n` +
@@ -105,6 +116,7 @@ const main = async () => {
     console.log("--dry-run: nothing written.");
     return;
   }
+  await fs.mkdir(path.dirname(HISTORY_PATH), { recursive: true });
   await fs.writeFile(HISTORY_PATH, `${JSON.stringify(history, null, 2)}\n`, "utf8");
   console.log(`Wrote ${HISTORY_PATH} (${history.entries.length} entries).`);
 };

@@ -18,6 +18,7 @@ site serve more than one token.
 | Header switcher | `src/components/TokenSwitcher.tsx` |
 | Project-driven copy | `src/lib/projectCopy.ts`, `useProjectCopy()` (`src/hooks/useProjectCopy.ts`), `src/lib/glossary.ts` |
 | Pipeline `--project` | `parseProjectArg` / `pipelineProject` in `scripts/lib/projects.js` |
+| Pipeline data paths and addresses | `projectPaths`, `projectChains`, `projectClassificationPath` in `scripts/lib/projects.js`; `scripts/lib/stakerTarget.js`; `scripts/lib/exchangeFlowChains.js` |
 
 The active project comes from `?token=<slug>`, then localStorage (`ha:project`),
 then the registry default. The default slug is never written into the URL, so
@@ -101,11 +102,75 @@ node scripts/pull-holders-rpc.js --project tel
 gh workflow run refresh-tel-holders.yml -f project=tel
 ```
 
-Today the scripts still read token addresses from `config/chains.json` and
-write the `public/data/` root, so `pipelineProject()` only accepts
-`legacyRoot` projects and exits with code 2 for any other slug rather than
-writing one token's numbers under another project's name. Porting a script
-means reading tokens from the project config and writing under its data dir.
+### Data-path rules
+
+Every ported script resolves files through `projectPaths(project)` /
+`projectDataPath(project, file)` in `scripts/lib/projects.js`:
+
+| Project | Feeds, checkpoints, histories | Git-history reads (`readCommittedJson`) |
+| --- | --- | --- |
+| `data.legacyRoot: true` (TEL) | `public/data/<file>` (unchanged) | `public/data/<file>` |
+| any other project | `public/data/<slug>/<file>` | `public/data/<slug>/<file>` |
+
+File names are the same for every project (`tel-holders.json`,
+`holders-lite.json`, `supply-reconciliation.json`, …; see
+`BROWSER_DATA_FILES`). Absolute paths and `..` are refused. Ported scripts
+`mkdir -p` the data dir before writing. TEL's files are **not** moved into
+`public/data/tel/`.
+
+### Address resolution
+
+Ported scripts read every address from the project, never a literal:
+
+| What | Helper | TEL | Other projects |
+| --- | --- | --- | --- |
+| Chain map (token address, decimals, `fromBlock`, `tokens.legacy/v3`, upgrade contracts, v3 staking modules) | `projectChains(project)` | `pipeline.chainsConfig` = `config/chains.json` (byte-identical to before) | `pipeline.chainsConfig` if set, else derived from `chains[]` by `deriveChainsFromProject()` |
+| Exclusions / CEX / DEX / changelog | `projectClassificationPath(project, kind)`, `projectNonRetailPaths(project)` | `classification.*` (= the `config/` root files) | `classification.*`; **none declared = empty**, never TEL's lists |
+| StakeChanged staking contract (pull-staker-balances, staker merge in pull-holders-rpc) | `resolveStakeChangedTarget(project)` (`scripts/lib/stakerTarget.js`) | `staking[]` entry `kind: "stakeChanged"` (Polygon `0x92e4…6330`, legacy TEL, block 36,751,757) | same; no entry = staker script exits 0 and nothing is merged |
+| Receipt staking modules | `projectStakingContracts(project, { kind: "receiptModule" })` | `kind: "receiptModule"` | same |
+| Exchange-flow scan table | `exchangeFlowChains(project, chains)` (`scripts/lib/exchangeFlowChains.js`) | old table: same start blocks, chunks, env overrides, divisor 100 | every chain in the map, start = `fromBlock` (or token `deployBlock`), divisor = `10 ** decimals`, override `FLOW_START_BLOCK_<CHAIN>` / `FLOW_CHUNK_<CHAIN>` |
+| Supply target for reconciliation | `reconcileOptions(project)` (`scripts/reconcile-supply.js`) | 100B + CoinGecko comparison (unchanged) | `supply.target` (required); `supply.coingeckoCirculating` optional |
+
+Chain-map token slots: the scanner's base token is the `legacy` slot. A
+`generation: "legacy"` token fills it, or the only token of a
+single-generation project. A `v3` generation enables TEL-style upgrade
+netting through `tokenMigration` / `migrationVault` contracts. Per-chain wallet
+columns are `<chainKey>_balance` for every chain in the map (TEL: ethereum,
+polygon, base, in that order), and `reconcileSupply` treats every non-origin
+chain as a mirror.
+
+Optional per-project pipeline keys: `chains[].origin`, `chains[].fromBlock`,
+`staking[].kind`, `staking[].deployBlock`, `pipeline.chainsConfig`,
+`treasury.categories` (append-treasury-history lines; default TEL's four),
+`supply.coingeckoCirculating`.
+
+### Ported scripts vs the guard
+
+A ported script calls `selectPipelineProject(name, { ported: true })` and may
+run for any registered project. Ported:
+
+- `pull-holders-rpc`
+- `generate-holders-lite`
+- `generate-holders-history`
+- `reconcile-supply`
+- `pull-staker-balances`
+- `append-treasury-history`: a non-legacy project with no history yet starts a new series; TEL still refuses an empty history.
+- `scan-exchange-flows`
+
+Every other script still calls `selectPipelineProject(name)` without
+`ported`. It reads `config/chains.json` / the `public/data/` root directly, so
+it accepts only `legacyRoot` projects and **exits 2** for any other slug.
+A workflow dispatched with a non-TEL `project` therefore fails at the first
+un-ported step instead of writing the wrong token's numbers. To port a script,
+switch its paths to `projectPaths()` and its addresses to the helpers above,
+pass `{ ported: true }`, and add a TEL-unchanged test to
+`scripts/lib/projectPipeline.test.js`.
+
+Known limits for a second token (not yet needed by TEL):
+`scripts/lib/rpc.js` only has key/public RPC pools for ethereum, polygon and
+base. Holder metrics thresholds (`RETAIL_THRESHOLD`, `MEGA_HOLDER_THRESHOLD`)
+are TEL-sized constants. The workflows still commit `public/data/*.json` paths
+only.
 
 ## Adding the next project
 
@@ -114,7 +179,10 @@ means reading tokens from the project config and writing under its data dir.
 2. Add `config/projects/<slug>.json` using `tel.json` as the template. Use only
    verified addresses, never guessed ones.
 3. Put the browser feeds in `public/data/<slug>/` (same file names as TEL, see
-   `BROWSER_DATA_FILES` in `scripts/lib/browserDataFiles.js`).
+   `BROWSER_DATA_FILES` in `scripts/lib/browserDataFiles.js`). Ported pipeline
+   scripts write there when run with `--project <slug>`. Give the config
+   `supply.target`, `staking[].kind` / `deployBlock` and its own
+   `classification.*` files.
 4. Add the slug to `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`.
    A test fails if it is missing.
 5. Optional: add `copy` overrides for wording the generic templates get wrong.

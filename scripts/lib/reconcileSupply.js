@@ -24,12 +24,25 @@ const norm = (v) => (typeof v === "string" ? v.trim().toLowerCase() : "");
  * already represented by the mirrored tokens on Polygon/Base, so counting both
  * is the double-count this whole exercise exists to prevent.
  */
-export const buildReconciliation = (snapshot, exclusions, cexWallets) => {
+export const buildReconciliation = (
+  snapshot,
+  exclusions,
+  cexWallets,
+  // Per-project overrides (scripts/reconcile-supply.js passes the project's
+  // supply.target). Defaults are TEL's, so existing callers are unchanged.
+  // coingeckoCirculating: null = no third-party comparison for this project.
+  { totalSupply = TEL_TOTAL_SUPPLY, coingeckoCirculating = COINGECKO_CIRCULATING } = {},
+) => {
+  const TOTAL_SUPPLY = totalSupply;
   // Per-token ledger written by pull-holders-rpc.js (scripts/lib/supply.js).
   // Absent in pre-v3 snapshots, where every v3/retired term is zero and the
   // wallet sums ARE the legacy supply.
   const tokens = snapshot?.totals?.tokens ?? null;
   const originKey = snapshot?.totals?.originChain ?? "ethereum";
+  // Wallet columns are `<chainKey>_balance`; the snapshot's chainOrder names
+  // them (TEL: ethereum, polygon, base). Mirrors = every non-origin chain.
+  const chainKeys = snapshot?.chainOrder?.length ? snapshot.chainOrder : ["ethereum", "polygon", "base"];
+  const mirrorKeys = chainKeys.filter((k) => k !== originKey);
   const sumTokens = (map, keys) => keys.reduce((acc, k) => acc + (Number(map?.[k]) || 0), 0);
 
   const labels = exclusions?.labels ?? {};
@@ -67,15 +80,14 @@ export const buildReconciliation = (snapshot, exclusions, cexWallets) => {
 
   for (const wallet of snapshot?.wallets ?? []) {
     const address = norm(wallet?.address);
-    const eth = Number(wallet?.ethereum_balance) || 0;
-    const pol = Number(wallet?.polygon_balance) || 0;
-    const base = Number(wallet?.base_balance) || 0;
+    const eth = Number(wallet?.[`${originKey}_balance`]) || 0; // origin chain
+    const mirrorBalance = mirrorKeys.reduce((acc, k) => acc + (Number(wallet?.[`${k}_balance`]) || 0), 0);
     originTotal += eth;
-    mirrored += pol + base;
+    mirrored += mirrorBalance;
 
     if (bridgeSet.has(address)) {
       // Bridge locks hold legacy TEL only; a stray v3 balance is not backing.
-      bridgeLocked += eth - (Number(wallet?.ethereum_v3) || 0);
+      bridgeLocked += eth - (Number(wallet?.[`${originKey}_v3`]) || 0);
       items.push({
         address,
         category: "bridge-lock",
@@ -86,7 +98,7 @@ export const buildReconciliation = (snapshot, exclusions, cexWallets) => {
       continue;
     }
 
-    const balance = eth + pol + base;
+    const balance = eth + mirrorBalance;
 
     // nonCirculatingOverride is orthogonal to category: it says how much of
     // THIS address's balance is contractually committed elsewhere (e.g. a
@@ -154,14 +166,14 @@ export const buildReconciliation = (snapshot, exclusions, cexWallets) => {
   const mirroredLegacy = tokens
     ? sumTokens(tokens.legacy, Object.keys(tokens.legacy ?? {}).filter((k) => k !== originKey))
     : mirrored;
-  const originDrift = derivedOrigin - TEL_TOTAL_SUPPLY;
+  const originDrift = derivedOrigin - TOTAL_SUPPLY;
   const bridgeInFlight = bridgeLocked - mirroredLegacy;
   const upgradeUnbacked = retiredTotal - v3Total;
-  const residual = TEL_TOTAL_SUPPLY - counted;
+  const residual = TOTAL_SUPPLY - counted;
   items.sort((a, b) => b.balance - a.balance);
 
   return {
-    totalSupply: TEL_TOTAL_SUPPLY,
+    totalSupply: TOTAL_SUPPLY,
     derivedOriginTotal: derivedOrigin,
     bridgeLocked,
     mirrored: mirroredLegacy,
@@ -200,7 +212,7 @@ export const buildReconciliation = (snapshot, exclusions, cexWallets) => {
       items: circulatingExclusionItems,
     },
     warnings,
-    coingeckoCirculating: COINGECKO_CIRCULATING,
+    coingeckoCirculating,
     items,
   };
 };

@@ -34,50 +34,34 @@ import path from "node:path";
 import process from "node:process";
 import { getUsableRpcUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { loadEnv } from "./loadEnv.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChains, projectClassificationPath } from "./lib/projects.js";
+import { exchangeFlowChains } from "./lib/exchangeFlowChains.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("scan-exchange-flows");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: token addresses,
+// decimals and start blocks come from the project's chain map, CEX/DEX lists
+// from its classification config, and output goes to its data dir.
+const project = selectPipelineProject("scan-exchange-flows", { ported: true });
+const data = projectPaths(project);
 
 await loadEnv();
 
-const HISTORY_PATH = path.resolve(process.cwd(), "public/data/exchange-flow-history.json");
-const CHECKPOINT_PATH = path.resolve(process.cwd(), "public/data/exchange-flow-checkpoint.json");
-const CEX_CONFIG_PATH = path.resolve(process.cwd(), "config/cex-wallets.json");
-const DEX_CONFIG_PATH = path.resolve(process.cwd(), "config/dex-contracts.json");
+const HISTORY_PATH = data("exchange-flow-history.json");
+const CHECKPOINT_PATH = data("exchange-flow-checkpoint.json");
+const CEX_CONFIG_PATH = projectClassificationPath(project, "cexWallets");
+const DEX_CONFIG_PATH = projectClassificationPath(project, "dexContracts");
 
 const TRANSFER_TOPIC0 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-const TEL_DIVISOR = 100; // TEL has 2 decimals
-// Sanity ceiling: a single TEL transfer cannot exceed total supply (~100B).
-// Larger values are corrupt / non-standard logs and are skipped.
-const MAX_SANE_TEL = 200e9;
+// Sanity ceiling: a single transfer cannot exceed total supply (TEL ~100B ->
+// 200e9). Larger values are corrupt / non-standard logs and are skipped.
+const MAX_SANE_TEL = 2 * (Number(project.config?.supply?.target) || 100e9);
 
-// TEL token contract per chain + a default start block ≈ 1 year back, so the
-// history covers the full 1Y timeframe (matching the tier-outflow scan) rather
-// than only the recent months. Override via env to backfill deeper.
-// Token addresses come from config/chains.json, never a literal here. Base was
-// hardcoded to 0xc2106ca7… for months, which is NFTEarthOFT and not TEL, so the
-// Base leg of this feed silently matched nothing and Base never appeared in the
-// history at all. config/chains.json had the right address the whole time.
-const CHAIN_CONFIG = JSON.parse(
-  await fs.readFile(path.resolve(process.cwd(), "config/chains.json"), "utf8"),
-);
-const tokenFor = (chainKey) => {
-  const token = CHAIN_CONFIG[chainKey]?.tokenAddress;
-  if (typeof token !== "string" || !/^0x[0-9a-f]{40}$/i.test(token)) {
-    throw new Error(`config/chains.json is missing a valid tokenAddress for ${chainKey}`);
-  }
-  return token.toLowerCase();
-};
-
-const CHAINS = {
-  ethereum: { token: tokenFor("ethereum"), chunk: 800, defaultStart: Number(process.env.FLOW_START_BLOCK_ETH ?? 22_800_000) },
-  polygon: { token: tokenFor("polygon"), chunk: 1000, defaultStart: Number(process.env.FLOW_START_BLOCK_POLYGON ?? 74_400_000) },
-  // 25_614_028 is TEL's first Transfer on Base (verified via Blockscout getLogs
-  // from block 0). The previous 32_600_000 was picked for the wrong token.
-  base: { token: tokenFor("base"), chunk: Number(process.env.FLOW_CHUNK_BASE ?? 1000), defaultStart: Number(process.env.FLOW_START_BLOCK_BASE ?? 25_614_028) },
-};
+// Token contract per chain + a default start block (TEL: ≈ 1 year back, so the
+// history covers the full 1Y timeframe, matching the tier-outflow scan).
+// Token addresses come from the project's chain map (TEL: config/chains.json),
+// never a literal here. Base was once hardcoded to 0xc2106ca7… (NFTEarthOFT,
+// not TEL), so the Base leg silently matched nothing for months.
+// Per-chain divisor = 10 ** the scanned token's decimals (TEL legacy: 100).
+const CHAINS = exchangeFlowChains(project, projectChains(project), process.env);
 
 // `??` only falls back on null/undefined — GitHub Actions sets this env var to
 // an EMPTY STRING (not unset) on schedule-triggered runs, since
@@ -90,6 +74,7 @@ const CHAINS = {
 const MAX_BLOCKS_PER_RUN = Number(process.env.MAX_BLOCKS_PER_RUN) || 3_000_000;
 
 const readOptionalJson = async (p) => {
+  if (p === null) return null; // project declares no such list
   try {
     return JSON.parse(await fs.readFile(p, "utf8"));
   } catch (e) {
@@ -196,7 +181,7 @@ const scanChain = async (chainKey, cexSet, dexSet, checkpoint, dayBuckets) => {
         const fromDex = fromAddr && dexSet.has(fromAddr);
         const toDex = toAddr && dexSet.has(toAddr);
         if (!fromCex && !toCex && !fromDex && !toDex) continue;
-        const value = Number(BigInt(log.data ?? "0x0")) / TEL_DIVISOR;
+        const value = Number(BigInt(log.data ?? "0x0")) / cfg.divisor;
         if (!Number.isFinite(value) || value <= 0 || value > MAX_SANE_TEL) continue;
         const date = dateOf(Number(log.blockNumber ? hexToNumber(log.blockNumber) : batch[j][0]));
         const bucket = dayBuckets.get(date) ?? { in: 0, out: 0, dexIn: 0, dexOut: 0, chains: {} };
@@ -223,7 +208,7 @@ const scanChain = async (chainKey, cexSet, dexSet, checkpoint, dayBuckets) => {
 };
 
 const main = async () => {
-  const cexConfig = JSON.parse(await fs.readFile(CEX_CONFIG_PATH, "utf8"));
+  const cexConfig = (await readOptionalJson(CEX_CONFIG_PATH)) ?? { wallets: [] };
   const cexSet = new Set(
     (cexConfig.wallets ?? [])
       .map((w) => (typeof w.address === "string" ? w.address.trim().toLowerCase() : null))
@@ -285,6 +270,7 @@ const main = async () => {
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  await fs.mkdir(path.dirname(HISTORY_PATH), { recursive: true });
   await fs.writeFile(HISTORY_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, generatedAt: new Date().toISOString(), entries }, null, 2)}\n`, "utf8");
   await fs.writeFile(CHECKPOINT_PATH, `${JSON.stringify(checkpoint, null, 2)}\n`, "utf8");
   console.log(`Wrote ${entries.length} daily flow entries → ${HISTORY_PATH}`);

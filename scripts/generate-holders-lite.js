@@ -9,19 +9,20 @@ import {
 } from "./lib/holdersView.js";
 import { loadNonRetailSet, createNonRetailChecker } from "./lib/nonRetailSet.js";
 import { loadV3StakingPositions } from "./lib/v3Staking.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("generate-holders-lite");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
+// the project's data dir (TEL: public/data/, others: public/data/<slug>/) and
+// its own chain/classification config — see scripts/lib/projects.js.
+const project = selectPipelineProject("generate-holders-lite", { ported: true });
+const data = projectPaths(project);
 
-const INPUT_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
-const PREVIOUS_PATH = path.resolve(process.cwd(), "public/data/tel-holders-previous.json");
-const FUNDING_WALLETS_PATH = path.resolve(process.cwd(), "public/data/funding-wallets.json");
-const CEX_FLOWS_PATH = path.resolve(process.cwd(), "public/data/cex-flows.json");
-const OUTPUT_PATH = path.resolve(process.cwd(), "public/data/holders-lite.json");
-const CHECKPOINT_PATH = path.resolve(process.cwd(), "public/data/holders-checkpoint.json");
-const CHAINS_CONFIG_PATH = path.resolve(process.cwd(), "config/chains.json");
+const INPUT_PATH = data("tel-holders.json");
+const PREVIOUS_PATH = data("tel-holders-previous.json");
+const FUNDING_WALLETS_PATH = data("funding-wallets.json");
+const CEX_FLOWS_PATH = data("cex-flows.json");
+const OUTPUT_PATH = data("holders-lite.json");
+const CHECKPOINT_PATH = data("holders-checkpoint.json");
 const ASOF_BLOCKS_PATH = path.resolve(process.cwd(), "data/holders-asof-blocks.json");
 
 const readJson = async (absolutePath, fallback = null) => {
@@ -57,7 +58,7 @@ const main = async () => {
 
   const fundingWallets = await readJson(FUNDING_WALLETS_PATH);
   const cexFlows = await readJson(CEX_FLOWS_PATH);
-  const { set: nonRetailSet, sizes } = await loadNonRetailSet();
+  const { set: nonRetailSet, sizes } = await loadNonRetailSet(projectNonRetailPaths(project));
   console.log(
     `Non-retail set: ${sizes.total} addresses ` +
       `(exclusions ${sizes.exclusions}, CEX config ${sizes.cex}, DEX config ${sizes.dex}).`,
@@ -70,7 +71,7 @@ const main = async () => {
   // one predates this checkpoint, and staking stats have no "previous" side.
   const [checkpoint, chainConfig, asOfBlocks] = await Promise.all([
     readJson(CHECKPOINT_PATH),
-    readJson(CHAINS_CONFIG_PATH),
+    projectChains(project),
     readJson(ASOF_BLOCKS_PATH),
   ]);
   let v3Staking = loadV3StakingPositions(checkpoint, chainConfig, asOfBlocks);

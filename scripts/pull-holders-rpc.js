@@ -21,20 +21,26 @@ import {
   computeChainMetrics,
   buildSummary,
 } from "./lib/holderMetrics.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChains, projectClassificationPath, projectNonRetailPaths } from "./lib/projects.js";
+import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("pull-holders-rpc");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: chain/token
+// addresses come from the project's chain map (TEL: config/chains.json),
+// exclusions/CEX/DEX from its classification config, the StakeChanged staking
+// contract from its `staking[]`, and every file is read/written in its data
+// dir (TEL: public/data/, others: public/data/<slug>/) — scripts/lib/projects.js.
+const project = selectPipelineProject("pull-holders-rpc", { ported: true });
+const data = projectPaths(project);
+const stakeTarget = resolveStakeChangedTarget(project);
 
 await loadEnv();
 
-const OUTPUT_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
-const PREVIOUS_SNAPSHOT_PATH = path.resolve(process.cwd(), "public/data/tel-holders-previous.json");
-const SUMMARY_PATH = path.resolve(process.cwd(), "public/data/holders-summary.json");
+const OUTPUT_PATH = data("tel-holders.json");
+const PREVIOUS_SNAPSHOT_PATH = data("tel-holders-previous.json");
+const SUMMARY_PATH = data("holders-summary.json");
 // Checkpoint persists raw BigInt balances + last scanned block per chain so
 // subsequent runs only scan new blocks instead of replaying all history.
-const CHECKPOINT_PATH = path.resolve(process.cwd(), "public/data/holders-checkpoint.json");
+const CHECKPOINT_PATH = data("holders-checkpoint.json");
 
 // --as-of=YYYY-MM-DD rebuilds a PAST day's snapshot instead of scanning live,
 // so gaps in holders-history.json can be filled with rows measured exactly the
@@ -55,11 +61,13 @@ const AS_OF_BLOCKS_PATH = path.resolve(process.cwd(), "data/holders-asof-blocks.
 
 const MIN_TEL_RAW = 1; // any positive TEL balance — matches CMC/Etherscan methodology
 
-// Staking contract on Polygon. Its balance is excluded, then re-attributed to
-// individual stakers from funding-wallets.json; the sum of those attributions is
-// checked against this contract's real balance so we can't credit holders with
-// TEL that isn't there.
-const STAKING_CONTRACT_ADDRESS = "0x92e43aec69207755cb1e6a8dc589aae630476330";
+// StakeChanged staking contract (TEL: Polygon 0x92e43aec…6330, from project
+// config). Its balance is excluded, then re-attributed to individual stakers
+// from funding-wallets.json; the sum of those attributions is checked against
+// this contract's real balance so we can't credit holders with TEL that isn't
+// there. null for a project without one (no staker merge).
+const STAKING_CONTRACT_ADDRESS = stakeTarget?.contract ?? null;
+const STAKING_CHAIN = stakeTarget?.chain ?? null;
 const STAKING_TOLERANCE = 0.01; // 1%
 
 // Alchemy PAYG: Polygon max 2000 blocks per eth_getLogs; ETH/Base unlimited.
@@ -68,6 +76,11 @@ const CHAIN_RPC_SETTINGS = {
   polygon: { defaultChunkSize: 2_000, envChunkKey: "MATIC_GETLOGS_CHUNK_SIZE" },
   base: { defaultChunkSize: 10_000, envChunkKey: "BASE_GETLOGS_CHUNK_SIZE" },
 };
+
+// Chains outside the TEL table (another project's) get a conservative chunk
+// size, overridable with <CHAINKEY>_GETLOGS_CHUNK_SIZE.
+const rpcSettingsFor = (chainKey) =>
+  CHAIN_RPC_SETTINGS[chainKey] ?? { defaultChunkSize: 2_000, envChunkKey: `${chainKey.toUpperCase()}_GETLOGS_CHUNK_SIZE` };
 
 const DEFAULT_FROM_BLOCK = {
   ethereum: 4_600_000,
@@ -248,16 +261,19 @@ const readJson = async (absolutePath) => {
   return JSON.parse(content);
 };
 
-const loadChainConfig = async () => readJson(path.resolve(process.cwd(), "config/chains.json"));
-const loadExclusions = async () => readJson(path.resolve(process.cwd(), "config/exclusions.json"));
+const loadChainConfig = async () => projectChains(project);
+const loadExclusions = async () => {
+  const p = projectClassificationPath(project, "exclusions");
+  return p ? readJson(p) : { addresses: [], chains: {}, labels: {} };
+};
 
 const loadFundingWallets = async () => {
   try {
     // In --as-of mode use the staking snapshot committed on or before the
     // target date: today's staker set applied to a past balance sheet would
     // credit stakes that had not been made yet.
-    if (ARG_AS_OF) return readCommittedJson("public/data/funding-wallets.json", ARG_AS_OF);
-    return await readJson(path.resolve(process.cwd(), "public/data/funding-wallets.json"));
+    if (ARG_AS_OF) return readCommittedJson(data.rel("funding-wallets.json"), ARG_AS_OF);
+    return await readJson(data("funding-wallets.json"));
   } catch (error) {
     console.warn("Could not load funding-wallets.json:", error.message);
     return null;
@@ -339,10 +355,7 @@ const formatDate = (value) => {
  * @param {{ lastBlock: number, rawBalances: Record<string,string> } | null} checkpoint
  */
 async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = null) {
-  const settings = CHAIN_RPC_SETTINGS[chainKey];
-  if (!settings) {
-    return { chainKey, balances: new Map(), checkpointData: null };
-  }
+  const settings = rpcSettingsFor(chainKey);
   const rpcUrls = await getUsableRpcUrls(chainKey);
   if (rpcUrls.length === 0) {
     console.warn(`No RPC URLs for ${chainKey}; skipping.`);
@@ -558,11 +571,14 @@ async function main() {
   }
 
   const topic0 = getTransferTopic0();
-  const chainBalancesRaw = { ethereum: new Map(), polygon: new Map(), base: new Map() };
+  // One map per chain in the project's chain map (TEL: ethereum, polygon, base
+  // — same keys and order as before).
+  const chainKeys = Object.keys(chainConfig);
+  const chainBalancesRaw = Object.fromEntries(chainKeys.map((k) => [k, new Map()]));
   // v3 (18-decimal) share of each wallet's balance, per chain, in TEL. Already
   // INCLUDED in chainBalancesRaw (which is legacy + v3 combined); kept separately
   // only so the snapshot can show the split. Empty when v3 is not configured.
-  const v3ByChain = { ethereum: new Map(), polygon: new Map(), base: new Map() };
+  const v3ByChain = Object.fromEntries(chainKeys.map((k) => [k, new Map()]));
   // Per-chain token totals (legacy supply, v3 supply, retired legacy, stranded)
   // feeding the supply identity; null until a live scan fills them in.
   const tokenTotalsByChain = {};
@@ -578,7 +594,7 @@ async function main() {
   if (ARG_AS_OF) {
     const blockMap = JSON.parse(await fs.readFile(AS_OF_BLOCKS_PATH, "utf8"))[ARG_AS_OF];
     if (!blockMap) throw new Error(`No day-boundary blocks recorded for ${ARG_AS_OF} in ${AS_OF_BLOCKS_PATH}`);
-    const anchor = readCommittedJson("public/data/holders-checkpoint.json", ARG_ANCHOR_DATE);
+    const anchor = readCommittedJson(data.rel("holders-checkpoint.json"), ARG_ANCHOR_DATE);
     console.log(`Reconstructing ${ARG_AS_OF} from the ${ARG_ANCHOR_DATE} checkpoint + cached transfer logs.`);
     for (const chainKey of Object.keys(chainBalancesRaw)) {
       // A reconstructed day is legacy-only (the anchor checkpoint and the cached
@@ -645,7 +661,6 @@ async function main() {
     // a failure costs only that chain's unsaved progress, not everyone else's.
     const chainSettled = await Promise.allSettled(
       Object.keys(chainConfig)
-        .filter((chainKey) => CHAIN_RPC_SETTINGS[chainKey])
         .map(async (chainKey) => {
           const chainCheckpoint = checkpoint?.chains?.[chainKey] ?? null;
           const result = await fetchChainBalances(chainKey, chainConfig, topic0, chainCheckpoint);
@@ -703,18 +718,19 @@ async function main() {
   // balance reconstructs to 0 and they disappear from the holder list.  Re-add
   // each current staker's stakedAmount as a Polygon balance so they are counted
   // as holders.  If a staker also holds liquid TEL their total = liquid + staked.
-  if (fundingWallets?.wallets) {
+  if (fundingWallets?.wallets && STAKING_CHAIN && chainBalancesRaw[STAKING_CHAIN]) {
+    const stakingBalances = chainBalancesRaw[STAKING_CHAIN];
     let stakersMerged = 0;
     let stakedAttributed = 0;
     for (const { fundingWallet: addr, stakedAmount } of fundingWallets.wallets) {
       const normalized = normalizeAddress(addr);
       if (!normalized || !Number.isFinite(stakedAmount) || stakedAmount <= 0) continue;
-      const existing = chainBalancesRaw.polygon.get(normalized) ?? 0;
-      chainBalancesRaw.polygon.set(normalized, existing + stakedAmount);
+      const existing = stakingBalances.get(normalized) ?? 0;
+      stakingBalances.set(normalized, existing + stakedAmount);
       stakedAttributed += stakedAmount;
       stakersMerged++;
     }
-    console.log(`Merged ${stakersMerged} staker addresses into polygon balance map.`);
+    console.log(`Merged ${stakersMerged} staker addresses into ${STAKING_CHAIN} balance map.`);
 
     // The staking contract's own balance is excluded, then re-attributed to the
     // individual stakers above. Attributed staking must therefore never exceed
@@ -726,7 +742,7 @@ async function main() {
     // deduping Etherscan `tokentx` rows by `tx.hash` alone — one transaction can
     // carry several TEL transfers, so every transfer after the first in a batched
     // tx is dropped, skewing the net deposit/withdrawal maths.
-    const contractBalance = chainBalancesRaw.polygon.get(STAKING_CONTRACT_ADDRESS) ?? 0;
+    const contractBalance = stakingBalances.get(STAKING_CONTRACT_ADDRESS) ?? 0;
     if (contractBalance > 0 && stakedAttributed > contractBalance * (1 + STAKING_TOLERANCE)) {
       console.warn(
         `WARNING: attributed staking ${Math.round(stakedAttributed).toLocaleString()} TEL exceeds the ` +
@@ -750,7 +766,7 @@ async function main() {
     // is still counted exactly once instead of vanishing from supply.
     if (contractBalance > 0) {
       const residual = residualCustodyBalance(contractBalance, stakedAttributed);
-      chainBalancesRaw.polygon.set(STAKING_CONTRACT_ADDRESS, residual);
+      stakingBalances.set(STAKING_CONTRACT_ADDRESS, residual);
       console.log(
         `Staking contract balance ${Math.round(contractBalance).toLocaleString()} -> ` +
           `${Math.round(residual).toLocaleString()} TEL after attributing ` +
@@ -780,7 +796,8 @@ async function main() {
     }
   }
 
-  const [cexSet, dexSet] = await Promise.all([loadCexAddressSet(), loadDexAddressSet()]);
+  const nonRetailPaths = projectNonRetailPaths(project);
+  const [cexSet, dexSet] = await Promise.all([loadCexAddressSet(nonRetailPaths.cexPath), loadDexAddressSet(nonRetailPaths.dexPath)]);
   console.log(`Exclusion extras: ${cexSet.size} CEX + ${dexSet.size} DEX addresses merged into global set.`);
   const { globalSet, chainSets, byCategory } = compileExclusionSets(exclusions, { cexSet, dexSet });
   const output = buildOutputSkeleton(chainConfig);
@@ -792,12 +809,12 @@ async function main() {
   }
 
   for (const address of allAddresses) {
-    const chainBalances = {
-      ethereum: chainBalancesRaw.ethereum.get(address) ?? 0,
-      polygon: chainBalancesRaw.polygon.get(address) ?? 0,
-      base: chainBalancesRaw.base.get(address) ?? 0,
-    };
-    const totalBalance = chainBalances.ethereum + chainBalances.polygon + chainBalances.base;
+    const chainBalances = {};
+    let totalBalance = 0;
+    for (const chainKey of chainKeys) {
+      chainBalances[chainKey] = chainBalancesRaw[chainKey].get(address) ?? 0;
+      totalBalance += chainBalances[chainKey];
+    }
     if (totalBalance <= 0) continue;
 
     // `*_balance` is the wallet's TOTAL TEL on that chain (legacy + v3), so every
@@ -808,11 +825,11 @@ async function main() {
       const v3 = v3ByChain[chainKey].get(address) ?? 0;
       if (v3 > 0) v3Shares[`${chainKey}_v3`] = v3;
     }
+    const chainColumns = {};
+    for (const chainKey of chainKeys) chainColumns[`${chainKey}_balance`] = chainBalances[chainKey];
     output.wallets.push({
       address,
-      ethereum_balance: chainBalances.ethereum,
-      polygon_balance: chainBalances.polygon,
-      base_balance: chainBalances.base,
+      ...chainColumns,
       ...v3Shares,
       total_telcoin_balance: totalBalance,
     });

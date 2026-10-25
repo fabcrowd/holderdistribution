@@ -89,32 +89,187 @@ export function resolveProject(slug, root = process.cwd()) {
 }
 
 /**
- * Entry point for refresh/generate scripts. Today's pipeline reads its token
- * addresses from config/chains.json and writes the legacy public/data/ root,
- * i.e. it can only produce a `data.legacyRoot` project (TEL). Any other slug is
- * refused up front so a run can never write one token's numbers under another
- * project's name. Porting a script = read tokens from `config` and write under
- * `dataDir`, then drop it from this guard (docs/MULTI-TOKEN.md "Pipeline").
+ * Entry point for refresh/generate scripts.
+ *
+ * `ported: true` marks a script that reads every address through the helpers
+ * below (projectChains / projectClassificationPath / projectStakingContracts)
+ * and writes through projectPaths(): it may run for ANY registered project.
+ * A script that has not been ported yet still reads config/chains.json and the
+ * public/data/ root directly, i.e. it can only produce a `data.legacyRoot`
+ * project (TEL), so any other slug is refused up front and a run can never
+ * write one token's numbers under another project's name.
  */
-export function pipelineProject(script, { argv = process.argv.slice(2), env = process.env, root = process.cwd() } = {}) {
+export function pipelineProject(script, { argv = process.argv.slice(2), env = process.env, root = process.cwd(), ported = false } = {}) {
   const project = resolveProject(parseProjectArg(argv, env, root), root);
-  if (project.config?.data?.legacyRoot !== true) {
+  if (!ported && project.config?.data?.legacyRoot !== true) {
     throw new Error(
       `${script}: project "${project.slug}" is not wired into the data pipeline yet ` +
-        `(only legacyRoot projects are; see docs/MULTI-TOKEN.md "Pipeline").`,
+        `(this script is not ported; only legacyRoot projects are; see docs/MULTI-TOKEN.md "Pipeline").`,
     );
   }
   return project;
 }
 
 /** CLI wrapper: pipelineProject() that prints and exits 2 on a bad selection. */
-export function selectPipelineProject(script) {
+export function selectPipelineProject(script, { ported = false } = {}) {
   try {
-    const project = pipelineProject(script);
+    const project = pipelineProject(script, { ported });
     console.error(`[${script}] project: ${project.slug} (${project.dataDir})`);
     return project;
   } catch (err) {
     console.error(`[${script}] ${err.message}`);
     process.exit(2);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Ported-script helpers: data paths + address resolution from project config.
+// ---------------------------------------------------------------------------
+
+/**
+ * Absolute path of one feed/checkpoint file in a project's data dir.
+ * TEL (legacyRoot) -> <root>/public/data/<file>; others -> <root>/public/data/<slug>/<file>.
+ * Same file names for every project (BROWSER_DATA_FILES).
+ */
+export function projectDataPath(project, file, root = process.cwd()) {
+  if (typeof file !== "string" || !file || path.isAbsolute(file) || file.split(/[\\/]/).includes("..")) {
+    throw new Error(`projectDataPath: bad file name ${JSON.stringify(file)}`);
+  }
+  return path.resolve(root, project.dataDir, file);
+}
+
+/** Repo-relative form of projectDataPath() (for git-history reads such as readCommittedJson). */
+export function projectDataRelPath(project, file) {
+  return path.posix.join(project.dataDir, file);
+}
+
+/** Bind projectDataPath to one project: `const data = projectPaths(project); data("tel-holders.json")`. */
+export function projectPaths(project, root = process.cwd()) {
+  const fn = (file) => projectDataPath(project, file, root);
+  fn.rel = (file) => projectDataRelPath(project, file);
+  fn.dir = path.resolve(root, project.dataDir);
+  return fn;
+}
+
+/** Classification files every project may declare under `classification`. */
+export const CLASSIFICATION_KINDS = {
+  cexWallets: "config/cex-wallets.json",
+  dexContracts: "config/dex-contracts.json",
+  exclusions: "config/exclusions.json",
+  changelog: "config/classification-changelog.json",
+};
+
+/**
+ * Absolute path of a project's classification file (`classification.<kind>`).
+ * A legacyRoot project (TEL) falls back to the original config/ root file.
+ * Any other project gets null when it declares none: TEL's exclusions are
+ * TEL-specific and must never be applied to another token by accident.
+ */
+export function projectClassificationPath(project, kind, root = process.cwd()) {
+  if (!(kind in CLASSIFICATION_KINDS)) throw new Error(`unknown classification kind: ${kind}`);
+  const declared = project.config?.classification?.[kind];
+  if (declared) return path.resolve(root, declared);
+  return project.config?.data?.legacyRoot === true ? path.resolve(root, CLASSIFICATION_KINDS[kind]) : null;
+}
+
+const lc = (v) => (typeof v === "string" ? v.trim().toLowerCase() : v);
+
+/**
+ * Build the pipeline's chain map (the config/chains.json shape the scanners
+ * expect: { <chainKey>: { key, name, chainId, tokenAddress, decimals, fromBlock,
+ * explorer, tokens: { legacy, v3? }, contracts } }) from a project's `chains[]`.
+ *
+ * Token slots: the scanner's base token is the `legacy` slot. A project's token
+ * with `generation: "legacy"` fills it; a single-generation project's only
+ * token fills it. A `v3` generation fills the v3 slot (upgrade netting via
+ * tokenMigration / migrationVault escrow contracts, exactly as TEL). Staking
+ * entries with `kind: "receiptModule"` are attached to `tokens.v3.staking`.
+ */
+export function deriveChainsFromProject(config) {
+  const out = {};
+  for (const c of config?.chains ?? []) {
+    const tokens = c.tokens ?? [];
+    const base = tokens.find((t) => t.generation === "legacy") ?? (tokens.length === 1 ? tokens[0] : null);
+    if (!base) throw new Error(`project ${config.slug}: chain ${c.key} needs a "legacy" token or exactly one token`);
+    const v3 = tokens.find((t) => t.generation === "v3" && t !== base) ?? null;
+    const explorer = c.explorer ? c.explorer.replace(/\/$/, "") : null;
+    const tokenEntry = (t) => ({
+      address: lc(t.address),
+      decimals: t.decimals,
+      ...(t.deployBlock ? { deployBlock: t.deployBlock } : {}),
+      ...(t.status ? { status: t.status } : {}),
+    });
+    const contracts = {};
+    for (const [name, v] of Object.entries(c.contracts ?? {})) contracts[name] = { address: lc(v.address) };
+    const modules = (config.staking ?? [])
+      .filter((s) => s.chain === c.key && s.kind === "receiptModule")
+      .map((s) => ({ address: lc(s.address), name: s.name, decimals: v3?.decimals, deployBlock: s.deployBlock }));
+    out[c.key] = {
+      key: c.key,
+      name: c.name,
+      chainId: c.chainId,
+      ...(c.origin ? { origin: true } : {}),
+      tokenAddress: lc(base.address),
+      decimals: base.decimals,
+      fromBlock: c.fromBlock ?? base.deployBlock ?? 0,
+      ...(explorer
+        ? { explorer: { address: `${explorer}/address/${lc(base.address)}`, token: `${explorer}/token/${lc(base.address)}` } }
+        : {}),
+      tokens: {
+        legacy: tokenEntry(base),
+        ...(v3 ? { v3: { ...tokenEntry(v3), ...(modules.length ? { staking: modules } : {}) } } : {}),
+      },
+      contracts,
+    };
+  }
+  return out;
+}
+
+/**
+ * The chain map a ported script scans. `pipeline.chainsConfig` (a repo path)
+ * wins; a legacyRoot project without it keeps config/chains.json (TEL: every
+ * byte the pipeline read before stays identical); otherwise it is derived from
+ * the project's own `chains[]`.
+ */
+export function projectChains(project, root = process.cwd()) {
+  const file = project.config?.pipeline?.chainsConfig ?? (project.config?.data?.legacyRoot === true ? "config/chains.json" : null);
+  if (file) return JSON.parse(fs.readFileSync(path.resolve(root, file), "utf8"));
+  return deriveChainsFromProject(project.config);
+}
+
+/**
+ * A project's staking contracts, optionally filtered by `kind`
+ * ("stakeChanged" = StakeChanged events + stakedBy(); "receiptModule" = ERC-20
+ * receipt StakingModule), `chain` or `token` generation. Addresses lowercased.
+ */
+export function projectStakingContracts(project, { kind, chain, token } = {}) {
+  return (project.config?.staking ?? [])
+    .filter((s) => (kind ? s.kind === kind : true) && (chain ? s.chain === chain : true) && (token ? s.token === token : true))
+    .map((s) => ({ ...s, address: lc(s.address) }));
+}
+
+/** Token address for (chainKey, generation) from the project config, or null. */
+export function projectTokenAddress(project, chainKey, generation) {
+  const chain = (project.config?.chains ?? []).find((c) => c.key === chainKey);
+  const tok = (chain?.tokens ?? []).find((t) => t.generation === generation);
+  return tok ? lc(tok.address) : null;
+}
+
+/**
+ * Parsed classification file for a project, or `fallback` when the project
+ * declares none (non-legacy) or the file is missing.
+ */
+export function loadProjectClassification(project, kind, fallback, root = process.cwd()) {
+  const file = projectClassificationPath(project, kind, root);
+  if (!file || !fs.existsSync(file)) return fallback;
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
+/** loadNonRetailSet() paths for a project (null = none declared -> empty). */
+export function projectNonRetailPaths(project, root = process.cwd()) {
+  return {
+    exclusionsPath: projectClassificationPath(project, "exclusions", root),
+    cexPath: projectClassificationPath(project, "cexWallets", root),
+    dexPath: projectClassificationPath(project, "dexContracts", root),
+  };
 }

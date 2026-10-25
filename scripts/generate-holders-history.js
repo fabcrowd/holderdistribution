@@ -5,21 +5,24 @@ import process from "node:process";
 
 import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectClassificationPath, projectNonRetailPaths } from "./lib/projects.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("generate-holders-history");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
+// the project's data dir (TEL: public/data/, others: public/data/<slug>/) and
+// its own classification config — see scripts/lib/projects.js.
+const project = selectPipelineProject("generate-holders-history", { ported: true });
+const data = projectPaths(project);
 
-const HISTORY_PATH = path.resolve(process.cwd(), "public/data/holders-history.json");
-const SUMMARY_PATH = path.resolve(process.cwd(), "public/data/holders-summary.json");
-const SNAPSHOT_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
-const PREVIOUS_SNAPSHOT_PATH = path.resolve(process.cwd(), "public/data/tel-holders-previous.json");
-const FUNDING_WALLETS_PATH = path.resolve(process.cwd(), "public/data/funding-wallets.json");
-const LITE_PATH = path.resolve(process.cwd(), "public/data/holders-lite.json");
-const CEX_FLOWS_PATH = path.resolve(process.cwd(), "public/data/cex-flows.json");
-const EXCLUSIONS_PATH = path.resolve(process.cwd(), "config/exclusions.json");
-const DEX_CONFIG_PATH = path.resolve(process.cwd(), "config/dex-contracts.json");
+const HISTORY_PATH = data("holders-history.json");
+const SUMMARY_PATH = data("holders-summary.json");
+const SNAPSHOT_PATH = data("tel-holders.json");
+const PREVIOUS_SNAPSHOT_PATH = data("tel-holders-previous.json");
+const FUNDING_WALLETS_PATH = data("funding-wallets.json");
+const LITE_PATH = data("holders-lite.json");
+const CEX_FLOWS_PATH = data("cex-flows.json");
+// null when a non-TEL project declares no list (readOptionalJson -> null).
+const EXCLUSIONS_PATH = projectClassificationPath(project, "exclusions");
+const DEX_CONFIG_PATH = projectClassificationPath(project, "dexContracts");
 
 /** Sum TEL held by known DEX pool/router addresses in a snapshot. */
 const sumDexLiquidity = (snapshot, exclusions, dexConfig) => {
@@ -43,10 +46,11 @@ const sumDexLiquidity = (snapshot, exclusions, dexConfig) => {
   for (const w of snapshot?.wallets ?? []) {
     const a = typeof w?.address === "string" ? w.address.trim().toLowerCase() : "";
     if (!a || !set.has(a)) continue;
-    sum +=
-      (Number(w.ethereum_balance) || 0) +
-      (Number(w.polygon_balance) || 0) +
-      (Number(w.base_balance) || 0);
+    // Per-chain columns follow the snapshot's own chainOrder (TEL: ethereum,
+    // polygon, base), so another project's chains are summed too.
+    for (const chainKey of snapshot?.chainOrder ?? ["ethereum", "polygon", "base"]) {
+      sum += Number(w[`${chainKey}_balance`]) || 0;
+    }
   }
   return Number.isFinite(sum) ? sum : null;
 };
@@ -153,6 +157,7 @@ const upsertEntry = (map, entry, { skipIfExists = false } = {}) => {
 };
 
 const readOptionalJson = async (absolutePath) => {
+  if (absolutePath === null) return null;
   try {
     return await readJson(absolutePath);
   } catch (error) {
@@ -175,7 +180,7 @@ const main = async () => {
     readOptionalJson(DEX_CONFIG_PATH),
   ]);
   const cexFlows = await readOptionalJson(CEX_FLOWS_PATH);
-  const { set: nonRetailSet } = await loadNonRetailSet();
+  const { set: nonRetailSet } = await loadNonRetailSet(projectNonRetailPaths(project));
   const dexLiquidity = sumDexLiquidity(snapshot, exclusions, dexConfig);
   // Total TEL held across all tracked wallets, INCLUDING exchanges: exchange
   // deposits are custody moves, not sales, so they must not reduce the total.
@@ -289,7 +294,7 @@ const main = async () => {
   // in the historical recompute, fixed there the same way). Using the current
   // non-retail set here keeps the daily incremental checkpoint from drifting
   // back out of sync with a bulk recompute after the next reclassification.
-  const EVER_CHECKPOINT_PATH = path.resolve(process.cwd(), "public/data/holders-ever-checkpoint.json");
+  const EVER_CHECKPOINT_PATH = data("holders-ever-checkpoint.json");
   if (snapshot?.wallets && snapshotDate) {
     const everData = await readOptionalJson(EVER_CHECKPOINT_PATH);
     // Forward-only. A reconstructed past day (pull-holders-rpc.js --as-of, via

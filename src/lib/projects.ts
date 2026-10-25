@@ -20,6 +20,10 @@ export type ProjectChain = {
   key: string;
   name: string;
   chainId: number;
+  /** Pipeline: the supply-origin chain (bridged copies elsewhere are mirrors). */
+  origin?: boolean;
+  /** Pipeline: first block the base-token scan starts from. */
+  fromBlock?: number;
   explorer: string;
   tokens: Array<{ generation: string; address: string; decimals: number; status?: string; deployBlock?: number }>;
   contracts?: Record<string, { address: string; role: string }>;
@@ -31,7 +35,10 @@ export type ProjectConfig = ProjectEntry & {
   data?: { legacyRoot?: boolean; dir?: string };
   supply?: { target?: number; targetLabel?: string; generationsSumOneToOne?: boolean; note?: string };
   chains: ProjectChain[];
-  staking?: Array<{ chain: string; address: string; name: string; token?: string }>;
+  /** `kind`: "stakeChanged" (StakeChanged events + stakedBy()) or "receiptModule" (ERC-20 receipt module). */
+  staking?: Array<{ chain: string; address: string; name: string; token?: string; kind?: string; deployBlock?: number }>;
+  /** Pipeline wiring: `chainsConfig` = repo path of a config/chains.json-shaped map (else derived from `chains`). */
+  pipeline?: { chainsConfig?: string };
   classification?: Record<string, string>;
   gated?: { forensics?: boolean };
   /**
