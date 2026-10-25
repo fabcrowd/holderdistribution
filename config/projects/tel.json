@@ -4,7 +4,6 @@
   "name": "Telcoin",
   "ticker": "TEL",
   "description": "Telcoin: legacy TEL (2 decimals) and TEL v3 (18 decimals) on Ethereum, Polygon and Base, counted together against a fixed 100B supply.",
-  "website": "https://www.telcoin.network",
   "data": {
     "$comment": "legacyRoot: this project's pipelines still write to public/data/ (pre-multi-token layout). The site serves it at /data/tel/* and /live-data/tel/* regardless. Flip to false once the scripts write public/data/tel/ directly.",
     "legacyRoot": true,
@@ -162,5 +161,9 @@
   "gated": {
     "$comment": "Wallet-level forensics stay behind the forensics password (netlify/functions/forensics-gate.cjs).",
     "forensics": true
+  },
+  "links": {
+    "upgradePortal": "https://tel3.telcoin.network",
+    "docs": "https://www.telcoin.org/docs/telcoin"
   }
 }
