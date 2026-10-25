@@ -14,6 +14,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
+import { normalizeValidAddress } from "./lib/address.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads the
 // project's own `classification.cexWallets` list and writes its data dir
@@ -44,11 +45,8 @@ const readOptionalJson = async (absolutePath) => {
   }
 };
 
-const normalizeAddress = (value) => {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim().toLowerCase();
-  return /^0x[a-f0-9]{40}$/.test(trimmed) ? trimmed : null;
-};
+// EVM hex lowercased (TEL unchanged); Solana base58 kept exactly as written.
+const normalizeAddress = (value) => normalizeValidAddress(value);
 
 const coerceBalance = (value) => {
   if (value == null) return null;

@@ -177,7 +177,7 @@ run for any registered project. Ported:
 - `rebuild-history-from-logs`: the StakeChanged chain/contract come from `resolveStakeChangedTarget` instead of a hardcoded Polygon check.
 - `recompute-history-from-git`
 - `resync-chain-holders`
-- `sync-cex-wallets-dune`: needs `classification.cexWallets` and a query id (`DUNE_QUERY_ID` env, then `pipeline.duneCexQueryId`; TEL keeps its built-in query). Missing either = exit 2.
+- `sync-cex-wallets-dune`: needs `classification.cexWallets` and a query id (`DUNE_QUERY_ID` env, then `pipeline.duneCexQueryId`; TEL keeps its built-in query). Missing either = exit 2. Address handling follows the project's VM (`scripts/lib/duneCex.js`): EVM rows stay 0x-hex lowercased (TEL unchanged); a Solana-only project keeps base58 exactly as written and skips rows whose `blockchain` is not `solana`. `--candidates` (forced when the project has no `classification.cexWallets`) never writes a production list: it intersects the labels with the holder snapshot and writes `data/<slug>/cex-dune-candidates.json` for owner review. `--source spellbook` (candidates-only, Solana-only, no key) reads the public Dune spellbook model behind `cex_solana.addresses` instead of the API.
 - `sync-classification-changelog`: no `classification.changelog` = an empty events feed.
 - `validate-outputs`
 - `generate-wallet-flows` (gated; see "Gated forensics" below): inputs and
@@ -543,7 +543,7 @@ non-retail paths and feed outputs are byte-identical (`bridgeNetting.test.js`,
 | `scripts/generate-tier-outflows.js` | `CHAIN_TUNING` (log-window sizes per chain) | Unknown chains fall back to the chain's `blocksPerDay`. |
 | `MIN_TEL_RAW = 1` | Dust floor of 1 raw unit | This is a chain-level floor, not a value sized for TEL. |
 | `scripts/lib/stakingDiscovery.js` | `STAKE_SCAN_SPAN` | This is a block span, not a supply amount. |
-| CEX balance / Dune query | Per-project query | A new project needs its own Dune query id. The current Dune key keeps being used. |
+| CEX balance / Dune query | Per-project query | A new project needs its own Dune query id. The current Dune key keeps being used. Solana: see "Solana CEX wallets" below. |
 
 ## Gated forensics (wallet flows, ledger, write-ups)
 
@@ -646,3 +646,23 @@ wording, and only render when a project has a ledger.
 7. Run `npm run typecheck && npx vitest run && npm run build`.
 
 The switcher picks the new project up automatically.
+
+## Solana CEX wallets
+
+Dune's `cex.addresses` carries Solana rows (`blockchain = 'solana'`, base58
+`address`). A Solana project's Dune query must select only those:
+
+```sql
+SELECT blockchain, address, cex_name, distinct_name
+FROM cex.addresses
+WHERE blockchain = 'solana'
+```
+
+Save it in Dune and set its id as `pipeline.duneCexQueryId` (never TEL's
+3761086). Until a query exists, `sync-cex-wallets-dune --project <slug>
+--candidates --source spellbook` produces the same labels from the public
+spellbook model with no API key. Either way the output is a candidates file
+(`data/<slug>/cex-dune-candidates.json`); promotion into a
+`classification.cexWallets` file is an owner decision. ZBCN status:
+`docs/zbcn-cex-candidates.md`.
+
