@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { resolveDataUrl } from "@/lib/dataUrl";
+import { dataUrl } from "@/lib/dataUrl";
+import { useProject } from "@/hooks/useProject";
 import { FeedError } from "@/lib/fetchJson";
 
 export type ExchangeFlowEntry = {
@@ -20,11 +21,7 @@ type ExchangeFlowPayload = {
   entries?: ExchangeFlowEntry[];
 };
 
-const resolveUrl = () => {
-  const base = import.meta.env.BASE_URL ?? "/";
-  const normalized = base.endsWith("/") ? base : `${base}/`;
-  return resolveDataUrl("exchange-flow-history.json", { base: normalized });
-};
+const resolveUrl = (slug: string) => dataUrl(slug, "exchange-flow-history.json");
 
 /**
  * Daily exchange inflow / outflow / net, measured directly from TEL Transfer
@@ -33,10 +30,11 @@ const resolveUrl = () => {
  * market; a withdrawal is supply leaving it.
  */
 export const useExchangeFlow = () => {
+  const { slug } = useProject();
   return useQuery({
-    queryKey: ["exchange-flow-history"],
+    queryKey: ["exchange-flow-history", slug],
     queryFn: async (): Promise<ExchangeFlowEntry[]> => {
-      const res = await fetch(resolveUrl());
+      const res = await fetch(resolveUrl(slug));
       if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       const payload = (await res.json()) as ExchangeFlowPayload;
       return (payload.entries ?? [])

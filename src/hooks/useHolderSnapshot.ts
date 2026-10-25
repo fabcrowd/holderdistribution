@@ -6,7 +6,8 @@ import type {
   ChainOverlapStats,
 } from "@/lib/holderInsights";
 import type { WalletVelocity } from "@/lib/holderVelocity";
-import { resolveDataUrl } from "@/lib/dataUrl";
+import { dataUrl } from "@/lib/dataUrl";
+import { useProject } from "@/hooks/useProject";
 
 export type DisplaySelection = "combined" | "ethereum" | "polygon" | "base";
 
@@ -165,8 +166,8 @@ export const assertHolderLiteSnapshot = (value: unknown): HolderLiteSnapshot => 
   return value as HolderLiteSnapshot;
 };
 
-const fetchHolderLiteSnapshot = async (): Promise<HolderLiteSnapshot> => {
-  const response = await fetch(resolveDataUrl("holders-lite.json"));
+export const fetchHolderLiteSnapshot = async (slug: string): Promise<HolderLiteSnapshot> => {
+  const response = await fetch(dataUrl(slug, "holders-lite.json"));
 
   if (!response.ok) {
     throw new Error(
@@ -186,9 +187,10 @@ const sharedQueryOptions = {
 } as const;
 
 export function useHolderLiteSnapshot() {
+  const { slug } = useProject();
   return useQuery<HolderLiteSnapshot>({
-    queryKey: ["holder-lite"],
-    queryFn: fetchHolderLiteSnapshot,
+    queryKey: ["holder-lite", slug],
+    queryFn: () => fetchHolderLiteSnapshot(slug),
     ...sharedQueryOptions,
   });
 }

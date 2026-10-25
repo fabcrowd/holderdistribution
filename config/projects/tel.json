@@ -1,0 +1,169 @@
+{
+  "$comment": "Project config for Telcoin (TEL). Every address here is copied from config/chains.json / src/lib/telContracts.ts / scripts/lib/staking.js (verified in docs/TEL-CONTRACTS.md). Long wallet lists stay in their existing config files (classification.*). Pipelines still read config/chains.json directly; this file is the multi-token view of the same facts.",
+  "slug": "tel",
+  "name": "Telcoin",
+  "ticker": "TEL",
+  "description": "Telcoin: legacy TEL (2 decimals) and TEL v3 (18 decimals) on Ethereum, Polygon and Base, counted together against a fixed 100B supply.",
+  "data": {
+    "$comment": "legacyRoot: this project's pipelines still write to public/data/ (pre-multi-token layout). The site serves it at /data/tel/* and /live-data/tel/* regardless. Flip to false once the scripts write public/data/tel/ directly.",
+    "legacyRoot": true,
+    "dir": "public/data"
+  },
+  "supply": {
+    "target": 100000000000,
+    "targetLabel": "100B",
+    "generationsSumOneToOne": true,
+    "note": "legacy + v3 = 100B; legacy retired into v3 via TokenMigration/MigrationVault is netted out, Polygon/Base legacy mirrors are backed by Ethereum bridge locks (docs/TEL-CONTRACTS.md, Supply accounting)."
+  },
+  "chains": [
+    {
+      "key": "ethereum",
+      "name": "Ethereum",
+      "chainId": 1,
+      "explorer": "https://etherscan.io",
+      "tokens": [
+        {
+          "generation": "legacy",
+          "address": "0x467bccd9d29f223bce8043b84e8c8b282827790f",
+          "decimals": 2,
+          "status": "deprecated"
+        },
+        {
+          "generation": "v3",
+          "address": "0x7e13b43065380acdec1c2d138c579cbbbafa0731",
+          "decimals": 18,
+          "status": "canonical",
+          "deployBlock": 25698794
+        }
+      ],
+      "contracts": {
+        "tokenMigration": {
+          "address": "0x2703e00cae30a7707e4d18c38f8cb6a4a40c2703",
+          "role": "escrow"
+        },
+        "migrationVault": {
+          "address": "0x222213deb441c5a9f71df2942db431978a733333",
+          "role": "escrow"
+        },
+        "telcoinBridge": {
+          "address": "0x6a7e6616653e84eee0c70257ec2e3d79a4476a7e",
+          "role": "bridge"
+        },
+        "mintBurnWrapper": {
+          "address": "0x4a1c2ab0661651ee55c41db1239f292e00c3d149",
+          "role": "bridge"
+        }
+      }
+    },
+    {
+      "key": "polygon",
+      "name": "Polygon",
+      "chainId": 137,
+      "explorer": "https://polygonscan.com",
+      "tokens": [
+        {
+          "generation": "legacy",
+          "address": "0xdf7837de1f2fa4631d716cf2502f8b230f1dcc32",
+          "decimals": 2,
+          "status": "deprecated"
+        },
+        {
+          "generation": "v3",
+          "address": "0x7e13b43065380acdec1c2d138c579cbbbafa0731",
+          "decimals": 18,
+          "status": "canonical",
+          "deployBlock": 91565963
+        }
+      ],
+      "contracts": {
+        "tokenMigration": {
+          "address": "0x2703e00cae30a7707e4d18c38f8cb6a4a40c2703",
+          "role": "escrow"
+        },
+        "migrationVault": {
+          "address": "0x222213deb441c5a9f71df2942db431978a733333",
+          "role": "escrow"
+        },
+        "telcoinBridge": {
+          "address": "0x6a7e6616653e84eee0c70257ec2e3d79a4476a7e",
+          "role": "bridge"
+        },
+        "mintBurnWrapper": {
+          "address": "0x4a1c2ab0661651ee55c41db1239f292e00c3d149",
+          "role": "bridge"
+        }
+      }
+    },
+    {
+      "key": "base",
+      "name": "Base",
+      "chainId": 8453,
+      "explorer": "https://basescan.org",
+      "tokens": [
+        {
+          "generation": "legacy",
+          "address": "0x09be1692ca16e06f536f0038ff11d1da8524adb1",
+          "decimals": 2,
+          "status": "deprecated"
+        },
+        {
+          "generation": "v3",
+          "address": "0x7e13b43065380acdec1c2d138c579cbbbafa0731",
+          "decimals": 18,
+          "status": "canonical",
+          "deployBlock": 49632434
+        }
+      ],
+      "contracts": {
+        "tokenMigration": {
+          "address": "0x2703e00cae30a7707e4d18c38f8cb6a4a40c2703",
+          "role": "escrow"
+        },
+        "migrationVault": {
+          "address": "0x222213deb441c5a9f71df2942db431978a733333",
+          "role": "escrow"
+        },
+        "telcoinBridge": {
+          "address": "0x6a7e6616653e84eee0c70257ec2e3d79a4476a7e",
+          "role": "bridge"
+        },
+        "mintBurnWrapper": {
+          "address": "0x4a1c2ab0661651ee55c41db1239f292e00c3d149",
+          "role": "bridge"
+        }
+      }
+    }
+  ],
+  "staking": [
+    {
+      "chain": "polygon",
+      "address": "0x92e43aec69207755cb1e6a8dc589aae630476330",
+      "name": "Legacy TEL staking (proxy)",
+      "token": "legacy",
+      "attribution": "StakeChanged events -> stakedBy(address), scripts/pull-staker-balances.js"
+    },
+    {
+      "chain": "polygon",
+      "address": "0x573105be2148b8621f202a6d510016a2aa825731",
+      "name": "TEL v3 StakingModule",
+      "token": "v3",
+      "deployBlock": 93048895,
+      "implementation": "0xd12ba966cc3ebc87f1b8bcbf1fa3bfed397203ae",
+      "attribution": "receipt Transfer logs, scripts/lib/v3Staking.js"
+    }
+  ],
+  "classification": {
+    "cexWallets": "config/cex-wallets.json",
+    "dexContracts": "config/dex-contracts.json",
+    "exclusions": "config/exclusions.json",
+    "changelog": "config/classification-changelog.json"
+  },
+  "gated": {
+    "$comment": "Wallet-level forensics stay behind the forensics password (netlify/functions/forensics-gate.cjs).",
+    "forensics": true
+  },
+  "links": {
+    "upgradePortal": "https://tel3.telcoin.network",
+    "docs": "https://www.telcoin.org/docs/telcoin"
+  }
+}

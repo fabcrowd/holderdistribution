@@ -1,6 +1,32 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
+import type { Plugin } from "vite";
+import { legacyRootSlugs } from "./scripts/lib/projects.js";
+
+/**
+ * Dev/preview only: serve /data/<slug>/<feed> for "legacyRoot" projects (TEL),
+ * whose pipelines still write public/data/<feed>. Production gets the same
+ * layout from scripts/prune-dist-data.js (postbuild copies into dist/data/<slug>/).
+ */
+const legacyProjectData = (): Plugin => {
+  const slugs = new Set(legacyRootSlugs(__dirname));
+  const handler = (req: { url?: string }, res: import("http").ServerResponse, next: () => void) => {
+    const m = /^\/data\/([a-z0-9-]+)\/([a-z0-9.-]+\.json)(?:\?.*)?$/i.exec(req.url ?? "");
+    if (!m || !slugs.has(m[1])) return next();
+    const file = path.resolve(__dirname, "public/data", m[2]);
+    if (!fs.existsSync(file) || fs.existsSync(path.resolve(__dirname, "public/data", m[1], m[2]))) return next();
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    fs.createReadStream(file).pipe(res);
+  };
+  return {
+    name: "legacy-project-data",
+    configureServer(server) {
+      server.middlewares.use(handler);
+    },
+  };
+};
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
@@ -8,7 +34,7 @@ export default defineConfig(() => ({
     host: "::",
     port: 8080,
   },
-  plugins: [react()],
+  plugins: [react(), legacyProjectData()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -49,6 +75,6 @@ export default defineConfig(() => ({
     // `scripts/` is included too: the pipeline generators hold real logic
     // (flow attribution, rounding, rollups) and previously could not be
     // covered at all — a test file added there was silently never run.
-    include: ["src/**/*.test.ts", "scripts/**/*.test.js", "netlify/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "scripts/**/*.test.js", "netlify/**/*.test.ts"],
   },
 }));

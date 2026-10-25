@@ -1,3 +1,4 @@
+import { useProject } from "@/hooks/useProject";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useChartIntro, useIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
@@ -68,6 +69,8 @@ const chainKeyFor = (v: DisplaySelection): ChainKey => (v === "combined" ? "all"
  * detail (✕ / Esc to close). The chain comes from the header selector.
  */
 export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, rangeDays }: Props) => {
+  const { project } = useProject();
+  const tk = project.ticker;
   const { data: historicalDelta } = useHolderHistoricalDelta({ view: selectedView, days: rangeDays, enabled: rangeDays >= 1 });
   const intro = useIntro();
   const chartIntro = useChartIntro();
@@ -219,7 +222,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
       <TerminalPanel
         className="col-span-7 row-span-2"
         title="Tier flows"
-        info="Each bar is a retail balance tier. Select a tier (here, in the Tiers table or on the bars) to see where its wallets and TEL came from and went to over the period. Retail only; sub-1-TEL dust wallets are counted in the lowest tier."
+        info={`Each bar is a retail balance tier. Select a tier (here, in the Tiers table or on the bars) to see where its wallets and ${tk} came from and went to over the period. Retail only; sub-1-${tk} dust wallets are counted in the lowest tier.`}
         stat={
           growth.tiers > 0 && (
             <span className="text-xs text-muted-foreground">
@@ -355,7 +358,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
       <TerminalPanel
         className="col-span-5"
         title="Tiers"
-        info="Wallets and TEL per tier, with the change over the period, and each tier's share of retail TEL. Click a row to select that tier."
+        info={`Wallets and ${tk} per tier, with the change over the period, and each tier's share of retail ${tk}. Click a row to select that tier.`}
         flush
         testId="panel-tiers"
       >
@@ -363,13 +366,13 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
           <div className="h-full p-2">{placeholder}</div>
         ) : (
           <table className="w-full text-xs tabular-nums">
-            <caption className="sr-only">Retail wallets and TEL by balance tier. Select a tier to see its detail.</caption>
+            <caption className="sr-only">Retail wallets and {tk} by balance tier. Select a tier to see its detail.</caption>
             <thead className="sticky top-0 z-[1] bg-card text-[11px] text-muted-foreground">
               <tr>
-                <th scope="col" className="px-3 py-1 text-left font-medium">Tier (TEL)</th>
+                <th scope="col" className="px-3 py-1 text-left font-medium">Tier ({tk})</th>
                 <th scope="col" className="px-2 py-1 text-right font-medium">Wallets</th>
                 <th scope="col" className="px-2 py-1 text-right font-medium">Change</th>
-                <th scope="col" className="px-2 py-1 text-right font-medium">TEL</th>
+                <th scope="col" className="px-2 py-1 text-right font-medium">{tk}</th>
                 <th scope="col" className="px-2 py-1 text-right font-medium">Change</th>
                 <th scope="col" className="px-3 py-1 text-right font-medium">Share</th>
               </tr>

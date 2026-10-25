@@ -1,0 +1,6 @@
+{
+  "$comment": "Master registry of mapped projects. One entry per token; `slug` is the URL/data key (?token=<slug>, public/data/<slug>/). Exactly one entry has default: true. Per-project detail lives in config/projects/<slug>.json. See docs/MULTI-TOKEN.md.",
+  "projects": [
+    { "slug": "tel", "name": "Telcoin", "ticker": "TEL", "default": true }
+  ]
+}

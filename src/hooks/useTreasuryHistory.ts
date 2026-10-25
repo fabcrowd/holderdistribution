@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { resolveDataUrl } from "@/lib/dataUrl";
+import { dataUrl } from "@/lib/dataUrl";
+import { useProject } from "@/hooks/useProject";
 import { FeedError } from "@/lib/fetchJson";
 
 export type TreasuryHistoryEntry = {
@@ -22,11 +23,7 @@ export type TreasuryHistory = {
   entries: TreasuryHistoryEntry[];
 };
 
-const resolveUrl = () => {
-  const base = import.meta.env.BASE_URL ?? "/";
-  const normalized = base.endsWith("/") ? base : `${base}/`;
-  return resolveDataUrl("treasury-history.json", { base: normalized });
-};
+const resolveUrl = (slug: string) => dataUrl(slug, "treasury-history.json");
 
 /**
  * Per-date Association / Telcoin Holdings / escrow balances, reconstructed from
@@ -35,10 +32,11 @@ const resolveUrl = () => {
  * the chart instead of erroring.
  */
 export const useTreasuryHistory = () => {
+  const { slug } = useProject();
   return useQuery({
-    queryKey: ["treasury-history"],
+    queryKey: ["treasury-history", slug],
     queryFn: async (): Promise<TreasuryHistory | null> => {
-      const res = await fetch(resolveUrl());
+      const res = await fetch(resolveUrl(slug));
       if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       return (await res.json()) as TreasuryHistory;
     },

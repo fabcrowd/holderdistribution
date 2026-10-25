@@ -6,14 +6,18 @@
  * the Free plan's 300 a month). So the daily data commits to main never reached
  * the live site, which kept serving whatever was in the last manual deploy.
  *
- * GET /live-data/<file>.json
- *   1. Fetches public/data/<file> from the GitHub repo (private, so it needs a
- *      read-only token in the Netlify env var LIVE_DATA_GITHUB_TOKEN).
+ * GET /live-data/<slug>/<file>.json   (multi-token, docs/MULTI-TOKEN.md)
+ * GET /live-data/<file>.json          (legacy, = the default project "tel")
+ *   1. Fetches the project's feed from the GitHub repo: public/data/<slug>/<file>,
+ *      or public/data/<file> for "legacyRoot" projects (TEL, whose pipelines
+ *      still write the root). Needs a read-only token in the Netlify env var
+ *      LIVE_DATA_GITHUB_TOKEN.
  *   2. Returns it with a CDN cache header, so Netlify's durable edge cache
  *      answers almost every visit and this function runs about once per file
  *      per hour at most (stale-while-revalidate keeps responses instant).
  *   3. On ANY problem (no token, GitHub down, timeout, non-200) it 302s to the
- *      deployed static copy at /data/<file>, which is exactly what the site
+ *      deployed static copy (/data/<slug>/<file>; legacy URLs keep going to
+ *      /data/<file>), which is exactly what the site
  *      served before this function existed. So it can only add freshness,
  *      never take data away.
  *
@@ -23,6 +27,35 @@
  */
 
 export const config = { path: "/live-data/*" };
+
+/**
+ * Registered project slugs (config/projects.json) and which of them still keep
+ * their feeds at the public/data/ root (config/projects/<slug>.json
+ * data.legacyRoot). Constants, not a JSON import, so the function bundle has no
+ * build-time dependency; scripts/lib/projects.test.js fails if they drift.
+ */
+export const PROJECT_SLUGS = new Set(["tel"]);
+export const LEGACY_ROOT_SLUGS = new Set(["tel"]);
+/** Slug that legacy /live-data/<file> URLs (old bundles) resolve to. */
+export const LEGACY_URL_SLUG = "tel";
+
+/** Parses ".../live-data/<file>" or ".../live-data/<slug>/<file>". Null when invalid. */
+export const parseLiveDataPath = (pathname) => {
+  let rest;
+  try {
+    rest = decodeURIComponent(pathname.replace(/^.*?\/live-data\//, ""));
+  } catch {
+    return null;
+  }
+  const parts = rest.split("/");
+  if (parts.length === 1) return { slug: LEGACY_URL_SLUG, file: parts[0], legacyUrl: true };
+  if (parts.length === 2) return { slug: parts[0], file: parts[1], legacyUrl: false };
+  return null;
+};
+
+/** Repo path of a project's feed. */
+export const repoDataPath = (slug, file) =>
+  LEGACY_ROOT_SLUGS.has(slug) ? `public/data/${file}` : `public/data/${slug}/${file}`;
 
 /** Only files the frontend actually fetches. Everything else 404s. */
 export const LIVE_DATA_FILES = new Set([
@@ -68,11 +101,11 @@ export const slimCheckpoint = (data) => {
   return strip(data);
 };
 
-const staticFallback = (file, reason) =>
+const staticFallback = (location, reason) =>
   new Response(null, {
     status: 302,
     headers: {
-      Location: `/data/${file}`,
+      Location: location,
       "Cache-Control": "public, max-age=60",
       "Netlify-CDN-Cache-Control": "public, durable, max-age=300",
       "X-Live-Data": `fallback: ${reason}`,
@@ -81,17 +114,19 @@ const staticFallback = (file, reason) =>
 
 export async function handleLiveData(request, env = process.env, fetchImpl = fetch) {
   const { pathname } = new URL(request.url);
-  const file = decodeURIComponent(pathname.replace(/^.*\/live-data\//, ""));
-  if (!LIVE_DATA_FILES.has(file)) {
+  const parsed0 = parseLiveDataPath(pathname);
+  if (!parsed0 || !PROJECT_SLUGS.has(parsed0.slug) || !LIVE_DATA_FILES.has(parsed0.file)) {
     return new Response("Not found", { status: 404, headers: { "Cache-Control": "public, max-age=300" } });
   }
+  const { slug, file, legacyUrl } = parsed0;
+  const fallbackUrl = legacyUrl ? `/data/${file}` : `/data/${slug}/${file}`;
 
   const token = env.LIVE_DATA_GITHUB_TOKEN?.trim();
-  if (!token) return staticFallback(file, "not configured");
+  if (!token) return staticFallback(fallbackUrl, "not configured");
 
   const repo = env.LIVE_DATA_REPO?.trim() || "fabcrowd/holderdistribution";
   const ref = env.LIVE_DATA_REF?.trim() || "main";
-  const url = `https://api.github.com/repos/${repo}/contents/public/data/${encodeURIComponent(file)}?ref=${encodeURIComponent(ref)}`;
+  const url = `https://api.github.com/repos/${repo}/contents/${repoDataPath(slug, encodeURIComponent(file))}?ref=${encodeURIComponent(ref)}`;
 
   try {
     const upstream = await fetchImpl(url, {
@@ -104,8 +139,8 @@ export async function handleLiveData(request, env = process.env, fetchImpl = fet
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
     if (!upstream.ok) {
-      console.warn(`live-data: GitHub ${upstream.status} for ${file}`);
-      return staticFallback(file, `upstream ${upstream.status}`);
+      console.warn(`live-data: GitHub ${upstream.status} for ${slug}/${file}`);
+      return staticFallback(fallbackUrl, `upstream ${upstream.status}`);
     }
     let body = await upstream.text();
     // Never pass through something that is not JSON (an HTML error page, a
@@ -122,8 +157,8 @@ export async function handleLiveData(request, env = process.env, fetchImpl = fet
       },
     });
   } catch (error) {
-    console.warn(`live-data: ${file}: ${error?.message ?? error}`);
-    return staticFallback(file, "error");
+    console.warn(`live-data: ${slug}/${file}: ${error?.message ?? error}`);
+    return staticFallback(fallbackUrl, "error");
   }
 }
 

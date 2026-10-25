@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useReducer } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { useProject } from "@/hooks/useProject";
+import { supplyTargetLabel } from "@/lib/projects";
 import WalletHoldingsWidget from "@/components/WalletHoldingsWidget";
 import HolderGrowthWidget from "@/components/HolderGrowthWidget";
 import { ExchangeFlowWidget } from "@/components/ExchangeFlowWidget";
@@ -40,29 +42,32 @@ const TILE_DESTINATIONS = {
   cex: { tab: "holders", panel: "flows" },
 } as const satisfies Record<EcosystemHeadlineTileId, { tab: string; panel: string }>;
 
-const TABS = [
+type TabCopy = { ticker: string; name: string; supply: string | null };
+const TAB_DEFS = [
   {
     id: "holders",
     label: "Holders",
     icon: Users,
-    blurb: "How many wallets hold TEL, how much they hold and how that is changing.",
+    blurb: (t: TabCopy) => `How many wallets hold ${t.ticker}, how much they hold and how that is changing.`,
     accent: "data-[state=active]:text-primary",
   },
   {
     id: "distribution",
     label: "Distribution",
     icon: PieChart,
-    blurb: "Which balance tiers are gaining or losing wallets, and where their TEL went.",
+    blurb: (t: TabCopy) => `Which balance tiers are gaining or losing wallets, and where their ${t.ticker} went.`,
     accent: "data-[state=active]:text-violet-700 dark:data-[state=active]:text-violet-400",
   },
   {
     id: "supply",
     label: "Supply",
     icon: Coins,
-    blurb: "Where all 100B TEL sits: retail, exchanges, DEX pools, escrow and Telcoin wallets.",
+    blurb: (t: TabCopy) =>
+      `Where all ${t.supply ? `${t.supply} ` : ""}${t.ticker} sits: retail, exchanges, DEX pools, escrow and ${t.name} wallets.`,
     accent: "data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-400",
   },
 ] as const;
+const TABS = TAB_DEFS;
 type TabId = ViewId;
 const isTabId = (v: string): v is TabId => TABS.some((t) => t.id === v);
 
@@ -71,11 +76,13 @@ const initialRoute = () =>
 
 /** One plain sentence under the hero saying what the open tab answers. */
 const TabBlurb = ({ id, hidden }: { id: TabId; hidden: boolean }) => {
+  const { project } = useProject();
   if (hidden) return null;
   const tab = TABS.find((t) => t.id === id)!;
   return (
     <p className="mb-3 text-sm text-muted-foreground">
-      <span className="font-semibold text-foreground">{tab.label}:</span> {tab.blurb}
+      <span className="font-semibold text-foreground">{tab.label}:</span>{" "}
+      {tab.blurb({ ticker: project.ticker, name: project.name, supply: supplyTargetLabel(project) })}
     </p>
   );
 };
@@ -160,12 +167,13 @@ const Holders = () => {
     writeHash(value, null);
   };
   const isTerminal = useMediaQuery(TERMINAL_QUERY);
+  const { project } = useProject();
 
   // Per-view title so tabs, history and bookmarks say which view they are.
   // Canonical stays "/": the views are one page, not separate documents.
   usePageMeta({
-    title: `${VIEW_TITLES[activeTab]} · TEL Holder Distribution | Holder Analytics`,
-    description: 'TEL tokenomics: circulating supply breakdown, holder distribution and tiers, exchange flows, and historical growth from real-time on-chain data.',
+    title: `${VIEW_TITLES[activeTab]} · ${project.ticker} Holder Distribution | Holder Analytics`,
+    description: `${project.ticker} tokenomics: circulating supply breakdown, holder distribution and tiers, exchange flows, and historical growth from real-time on-chain data.`,
     canonicalPath: '/',
   });
 
