@@ -18,6 +18,8 @@ import { ForensicsUnlockGate, useForensicsUnlock } from "@/components/ForensicsG
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useProject } from "@/hooks/useProject";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { loadWalletFlows } from "@/lib/loadForensics";
 import {
   FLOW_WINDOWS,
@@ -27,11 +29,14 @@ import {
 } from "@/lib/walletFlowsTypes";
 
 /**
- * Gated "Wallet flows" view: supply by entity class, Telcoin-linked wallets and
+ * Gated "Wallet flows" view: supply by entity class, project-linked wallets and
  * their sell-venue outflows, the bot cluster, and recent large sellers.
  *
- * Nothing in this file is data: the report is fetched from the forensics gate
- * function only after a password (or admin session) unlocks it.
+ * Nothing in this file is data: the active project's report is fetched from the
+ * forensics gate function only after a password (or admin session) unlocks it
+ * (paywall later). Same panels for every project; a project with no report yet
+ * gets an empty state. Copy is templated ({ticker}/{name}); TEL's exact wording
+ * comes out of the same templates or its config overrides.
  */
 const formatTel = (value: number) => {
   const abs = Math.abs(value);
@@ -117,13 +122,14 @@ const Breakdown = ({ values }: { values: Record<string, number> }) => {
 
 const DistributionBars = ({ report }: { report: WalletFlowsReport }) => {
   const { distribution } = report;
+  const { ticker } = useProjectCopy();
   return (
     <section className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-distribution">
       <h4 id="wf-distribution" className="text-base font-semibold text-foreground">
         Supply distribution by entity
       </h4>
       <p className="mt-0.5 text-[11px] text-muted-foreground">
-        {`${formatTel(distribution.counted)} TEL counted${distribution.asOf ? ` · as of ${distribution.asOf}` : ""}. Tracked wallets the public reconciliation leaves in "retail" (staking contract, deposit relays, tracked bots and sellers) are moved to their class.`}
+        {`${formatTel(distribution.counted)} ${ticker} counted${distribution.asOf ? ` · as of ${distribution.asOf}` : ""}. Tracked wallets the public reconciliation leaves in "retail" (staking contract, deposit relays, tracked bots and sellers) are moved to their class.`}
       </p>
       <ul className="mt-3 space-y-2">
         {distribution.classes.map((c) => (
@@ -191,14 +197,15 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
     [report, query, onlySelling, sort],
   );
   const onSort = (k: WalletSortKey) => setSort((cur) => nextSort(cur, k));
+  const { t } = useProjectCopy();
   return (
     <section className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-known">
       <div>
         <h4 id="wf-known" className="text-base font-semibold text-foreground">
-          Telcoin-linked wallets
+          {t("{name}-linked wallets")}
         </h4>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          TEL sent to sell venues (exchanges, DEXs, the bot cluster) in each window. Expand a row for its label source, every outflow type and sample transactions.
+          {t("{ticker}")} sent to sell venues (exchanges, DEXs, the bot cluster) in each window. Expand a row for its label source, every outflow type and sample transactions.
         </p>
       </div>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -209,7 +216,7 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search name, group or address"
-            aria-label="Search Telcoin-linked wallets"
+            aria-label={t("Search {name}-linked wallets")}
             className="h-10 pl-9 text-sm"
           />
         </div>
@@ -343,6 +350,7 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
 
 const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
   const bot = report.botCluster;
+  const { ticker } = useProjectCopy();
   return (
     <section className="grid gap-3 lg:grid-cols-2">
       <div className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-bot">
@@ -379,7 +387,7 @@ const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
             <li key={i}>
               <p className="text-foreground">
                 <span className="font-medium">{f.from}</span> → <span className="font-medium">{f.to}</span>
-                {f.tel ? ` · ${formatTel(f.tel)} TEL` : ""}
+                {f.tel ? ` · ${formatTel(f.tel)} ${ticker}` : ""}
                 {f.when ? ` · ${f.when}` : ""}
               </p>
               <p className="text-muted-foreground">
@@ -400,13 +408,15 @@ const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
   );
 };
 
-const LargeSellers = ({ report }: { report: WalletFlowsReport }) => (
+const LargeSellers = ({ report }: { report: WalletFlowsReport }) => {
+  const { ticker } = useProjectCopy();
+  return (
   <section className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-sellers">
     <h4 id="wf-sellers" className="text-base font-semibold text-foreground">
       Recent large sellers ({report.largeSellersWindow ?? "last 72h"})
     </h4>
     <p className="mt-0.5 text-[11px] text-muted-foreground">
-      Net TEL sent to exchanges and DEXs. Upgrades, bridges and arbitrage bots that bought as much as they sold are excluded.
+      Net {ticker} sent to exchanges and DEXs. Upgrades, bridges and arbitrage bots that bought as much as they sold are excluded.
     </p>
     <div className="mt-2 overflow-x-auto">
       <Table className="text-xs">
@@ -416,7 +426,7 @@ const LargeSellers = ({ report }: { report: WalletFlowsReport }) => (
             <TableHead>Seller</TableHead>
             <TableHead>Addresses</TableHead>
             <TableHead>Destination</TableHead>
-            <TableHead className="text-right">TEL</TableHead>
+            <TableHead className="text-right">{ticker}</TableHead>
             <TableHead className="text-right">≈ USD</TableHead>
             <TableHead>Sample</TableHead>
           </TableRow>
@@ -454,13 +464,16 @@ const LargeSellers = ({ report }: { report: WalletFlowsReport }) => (
       </Table>
     </div>
   </section>
-);
+  );
+};
 
-const Summary = ({ report }: { report: WalletFlowsReport }) => (
+const Summary = ({ report }: { report: WalletFlowsReport }) => {
+  const { t, ticker } = useProjectCopy();
+  return (
   <section aria-labelledby="wf-summary" className="space-y-2">
     <div className="flex flex-wrap items-center gap-2">
       <h4 id="wf-summary" className="text-base font-semibold text-foreground">
-        Telcoin-linked TEL sent to sell venues
+        {t("{name}-linked {ticker} sent to sell venues")}
       </h4>
       <AsOfBadge iso={report.generated} testId="wallet-flows-asof" />
     </div>
@@ -472,31 +485,36 @@ const Summary = ({ report }: { report: WalletFlowsReport }) => (
             <span className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground">
               {formatTel(report.telcoinTotals[w]?.total ?? 0)}
             </span>{" "}
-            <span className="text-sm font-medium text-muted-foreground">TEL</span>
+            <span className="text-sm font-medium text-muted-foreground">{ticker}</span>
             <span className="block text-xs tabular-nums text-muted-foreground">≈ {formatUsd(report.telcoinTotals[w]?.usd ?? 0)}</span>
           </dd>
         </div>
       ))}
     </dl>
     <p className="text-[11px] text-muted-foreground">
-      {`Unique TEL (relays not double counted). Report generated ${new Date(report.generated).toLocaleString()} · price $${report.priceUsd} (${report.priceSource}) · chains: ${report.chains.join(", ")}`}
+      {`Unique ${ticker} (relays not double counted). Report generated ${new Date(report.generated).toLocaleString()} · price $${report.priceUsd} (${report.priceSource}) · chains: ${report.chains.join(", ")}`}
     </p>
   </section>
-);
+  );
+};
 
-const LOCKED_CONTENTS = [
-  "Supply split by entity: Telcoin treasury, Holdings and Association, escrow, exchanges, DEX pools and retail",
-  "Every Telcoin-linked wallet with address, balance and TEL sent to exchanges or DEXs over 72h, 30d and 90d",
-  "Recent large sellers and how the wallets behind them were funded",
+/** What the locked panel promises. Ids are copy.text keys (TEL overrides the supply line). */
+const LOCKED_CONTENTS: ReadonlyArray<readonly [string, string]> = [
+  ["walletFlows.locked.supply", "Supply split by entity: {name} treasury, team and foundation wallets, escrow, exchanges, DEX pools and retail"],
+  ["walletFlows.locked.wallets", "Every {name}-linked wallet with address, balance and {ticker} sent to exchanges or DEXs over 72h, 30d and 90d"],
+  ["walletFlows.locked.sellers", "Recent large sellers and how the wallets behind them were funded"],
 ];
 
 export const WalletFlowsPanel = () => {
   const { password, status, unlock, lock } = useForensicsUnlock();
   const { isAdmin } = useUserRole();
+  const { slug } = useProject();
+  const { t, text, name } = useProjectCopy();
   const unlocked = isAdmin || (status === "unlocked" && password !== null);
   const { data: report, isLoading, isError, refetch } = useQuery({
-    queryKey: ["wallet-flows", password, isAdmin],
-    queryFn: () => loadWalletFlows(password),
+    // Keyed by project: switching tokens loads that project's gated report.
+    queryKey: ["wallet-flows", slug, password, isAdmin],
+    queryFn: () => loadWalletFlows(password, slug),
     enabled: unlocked,
     staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -521,10 +539,10 @@ export const WalletFlowsPanel = () => {
             </div>
           </div>
           <ul className="mt-4 space-y-1.5 text-sm text-foreground/90">
-            {LOCKED_CONTENTS.map((item) => (
-              <li key={item} className="flex items-start gap-2">
+            {LOCKED_CONTENTS.map(([id, tpl]) => (
+              <li key={id} className="flex items-start gap-2">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                <span>{item}</span>
+                <span>{text(id, tpl)}</span>
               </li>
             ))}
           </ul>
@@ -545,7 +563,7 @@ export const WalletFlowsPanel = () => {
             Wallet flows
           </h3>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Supply by entity, Telcoin-linked wallets and their exchange/DEX outflows, and recent large sellers.
+            {t("Supply by entity, {name}-linked wallets and their exchange/DEX outflows, and recent large sellers.")}
           </p>
         </div>
         {!isAdmin && (
@@ -566,13 +584,20 @@ export const WalletFlowsPanel = () => {
           <div className="h-64 rounded-xl bg-muted/50 animate-pulse" />
           <span className="sr-only">Loading wallet flows…</span>
         </div>
-      ) : isError || !report ? (
+      ) : isError ? (
         <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
           <p className="font-medium text-destructive">Could not load wallet flows.</p>
           <p className="mt-1 text-muted-foreground">The server may be busy. Try again in a moment.</p>
           <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => void refetch()}>
             Try again
           </Button>
+        </div>
+      ) : !report ? (
+        <div className="rounded-xl border border-border/50 bg-card p-4 text-sm" data-testid="wallet-flows-empty">
+          <p className="font-medium text-foreground">No wallet-flows report for {name} yet.</p>
+          <p className="mt-1 text-muted-foreground">
+            This project has no wallet-level forensics mapped yet. The panels appear here once its report is generated.
+          </p>
         </div>
       ) : (
         <div className="space-y-4" data-testid="wallet-flows-report">

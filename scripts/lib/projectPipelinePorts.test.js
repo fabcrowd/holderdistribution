@@ -5,7 +5,7 @@
  *     under public/data/<slug>/ (never TEL's root files);
  *   - TEL constants the RPC scanners depend on are unchanged;
  *   - workflow commit paths: identical for TEL, public/data/<slug>/** otherwise;
- *   - the one deferred script still exits 2.
+ *   - the gated wallet-flows generator resolves under data/<slug>/forensics/.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import fs from "node:fs";
@@ -203,10 +203,12 @@ describe("ported scripts end to end for a non-legacy project (fixture repo, no n
     expect(r.status).toBe(2);
   });
 
-  it("generate-wallet-flows (TEL forensics, deferred) still exits 2", () => {
+  it("generate-wallet-flows runs for demo: no forensics registry = skip before any RPC (exit 0, nothing written)", () => {
     const r = run("generate-wallet-flows.js", ["--project", "demo"]);
-    expect(r.status).toBe(2);
-    expect(r.stderr).toMatch(/not wired into the data pipeline/);
+    expect(r.status, r.stderr).toBe(0);
+    expect(r.stderr).toMatch(/no registry at data\/demo\/forensics\/wallet-flows\.registry\.json/);
+    expect(exists("data/demo/forensics/wallet-flows.json")).toBe(false);
+    expect(exists("data/forensics")).toBe(false);
   });
 });
 
@@ -216,6 +218,7 @@ describe("ported scripts carry no TEL-root path literals", () => {
     "fill-history-gaps", "generate-holder-transitions", "generate-tier-outflows", "pull-cex-wallets",
     "rebuild-history-from-logs", "recompute-history-from-git", "resync-chain-holders", "sync-cex-wallets-dune",
     "sync-classification-changelog", "validate-outputs", "pull-holders-rpc", "generate-holders-lite",
+    "generate-wallet-flows",
   ];
   // Strip comments (block + line) so documentation may still name the TEL files.
   const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1");

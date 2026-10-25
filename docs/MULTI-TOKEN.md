@@ -83,9 +83,9 @@ trace, legacy→v3 methodology, staking module notes) lives in
 `config/projects/tel.json` under `copy`, and renders exactly as before.
 `src/lib/projectCopyCoverage.test.ts` fails if a bare `TEL`, `Telcoin`,
 `Anchorage`, `BitGo` or `KuCoin` reappears in the generalized files.
-Still TEL-specific on purpose: the gated forensics views (disposition ledger,
-P&L, wallet flows, burn forecast, forensics write-ups) and the v3
-StakingModule constants in `src/lib/staking.ts` (only TEL has that module).
+Still TEL-specific on purpose: the v3 StakingModule constants in
+`src/lib/staking.ts` (only TEL has that module). The gated forensics views are
+multi-token (see "Gated forensics" below).
 
 ## Pipeline: `--project <slug>`
 
@@ -180,20 +180,15 @@ run for any registered project. Ported:
 - `sync-cex-wallets-dune`: needs `classification.cexWallets` and a query id (`DUNE_QUERY_ID` env, then `pipeline.duneCexQueryId`; TEL keeps its built-in query). Missing either = exit 2.
 - `sync-classification-changelog`: no `classification.changelog` = an empty events feed.
 - `validate-outputs`
+- `generate-wallet-flows` (gated; see "Gated forensics" below): inputs and
+  output from `walletFlowsPlan()` (`scripts/lib/walletFlowsProject.js`). A
+  project with no forensics registry exits 0 before any RPC call.
 
-**Deferred (still exit 2):**
-
-- `generate-wallet-flows`: TEL forensics (CoinGecko `telcoin` price, TEL DEX
-  venues and bridge infrastructure, `data/forensics`, gated views). It stays
-  TEL-only like the other forensics views above; `refresh-wallet-flows.yml`
-  is TEL-only.
-
-Every script not listed as ported still calls `selectPipelineProject(name)`
-without `ported`. It reads `config/chains.json` / the `public/data/` root
-directly, so it accepts only `legacyRoot` projects and **exits 2** for any
-other slug.
-A workflow dispatched with a non-TEL `project` therefore fails at the first
-un-ported step instead of writing the wrong token's numbers. To port a script,
+Every workflow script is ported now. The guard stays: a future script that
+calls `selectPipelineProject(name)` without `ported` reads `config/chains.json` /
+the `public/data/` root directly, so it accepts only `legacyRoot` projects and
+**exits 2** for any other slug. A workflow dispatched with a non-TEL `project`
+then fails at that step instead of writing the wrong token's numbers. To port a script,
 switch its paths to `projectPaths()` and its addresses to the helpers above,
 pass `{ ported: true }`, and add a TEL-unchanged test to
 `scripts/lib/projectPipeline.test.js` / `projectPipelinePorts.test.js` (the
@@ -222,6 +217,81 @@ are TEL-sized constants, and so are the tier ranges in
 `generate-holder-transitions` / `generate-tier-outflows`. The
 `refresh-tel-holders` verify step requires the same feed set for every project
 (including `funding-wallets.json` and `treasury-history.json`).
+
+## Gated forensics (wallet flows, ledger, write-ups)
+
+Wallet-level analysis is multi-token and stays **gated**. Today the gate is the
+forensics password or an admin session; the plan is a **paywall** that replaces
+the password check. Nothing wallet-level is ever served from `public/`,
+`/data/` or `/live-data/`. Every project uses the same panels and the same gate
+keys.
+
+| Piece | TEL (`legacyRoot`) | Any other project |
+| --- | --- | --- |
+| Wallet-flows registry (labels, bot cluster, watched sellers; hand-edited) | `data/forensics/wallet-flows.registry.json` | `data/<slug>/forensics/wallet-flows.registry.json` |
+| Wallet-flows report (generated) | `data/forensics/wallet-flows.json` | `data/<slug>/forensics/wallet-flows.json` |
+| Reconciliation it starts from | `public/data/supply-reconciliation.json` | `public/data/<slug>/supply-reconciliation.json` |
+| CEX / DEX lists | `classification.*` (= `config/` root files) | `classification.*`, none declared = empty |
+| Price (USD columns) | `gated.walletFlows.coingeckoId` = `telcoin` | `gated.walletFlows.coingeckoId`; none = carried over / 0 |
+| Bridge infrastructure | TEL's `BRIDGE_INFRA` (`scripts/lib/telEndpoint.js`) | `gated.walletFlows.bridgeAddresses` only |
+| Disposition ledger, foundation stablecoin flows, wallet write-ups | bundled TEL files (unchanged) | none yet, so the gate returns `null` |
+
+Optional `gated.walletFlows` keys: `coingeckoId`, `chains` (default: every
+chain in the project's chain map), `bridgeAddresses`, `dexVenues` (on top of
+`classification.dexContracts`; the chain-wide aggregators CoW/1inch/Kyber/0x
+always apply), `logSpan.<chainKey>`.
+
+**Pipeline:** `node scripts/generate-wallet-flows.js --project <slug>`, or
+dispatch `refresh-wallet-flows.yml` with `project=<slug>` (the weekly schedule
+stays TEL). The commit step maps `data/forensics/wallet-flows.json` through
+`workflow-paths.js files`, so a TEL run stages exactly what it did before. To
+start a project's forensics, commit its registry under `data/<slug>/forensics/`.
+
+**Gate** (`netlify/functions/forensics-gate.cjs`, source in `netlify/functions-src/`):
+the POST body takes an optional `project` (a registry slug; missing = the
+default project, TEL, so old clients behave the same). The access check
+(password / session token / admin) comes **before** the project is read, and
+is the same for every project. Then:
+
+- `wallet-flows`: TEL serves the bundled report, or a newer committed copy when
+  `LIVE_DATA_GITHUB_TOKEN` is set. Other projects only get the committed copy
+  under `data/<slug>/forensics/`, fetched with that token; with no report,
+  `report: null` and `X-Wallet-Flows-Source: none`. Cached per project for 1 h.
+- `disposition-ledger` (old key `tel-disposition-ledger` still works),
+  `association-stablecoin-flows`, wallet write-ups: from `STATIC_GATED[slug]`.
+  Only TEL has entries, so other projects get `null`, never TEL's data.
+- An unregistered `project` returns `400`. `gatedProjects.ts` reads the
+  registry bundled into the function, so a new slug is accepted
+  automatically. Only `LEGACY_ROOT_SLUGS` has to match `data.legacyRoot`, and a
+  test checks that.
+
+**UI:** `WalletFlowsPanel`, `TelDispositionLedger`, `AssociationFlowAnalysis` and
+`useWalletAnalysis` key their queries by `useProject().slug` and pass it to
+the loaders in `src/lib/loadForensics.ts`. A `null` payload renders an empty
+"nothing mapped for <project> yet" state. Panel copy is templated
+(`{name}`/`{ticker}`; TEL's locked-panel supply line is the
+`walletFlows.locked.supply` override), so TEL reads exactly as before. The
+one unlock still covers every project.
+
+**Paywall (not built yet).** The intended replacement:
+1. Replace `passwordMatches` / `issueToken` in `gateAuth.ts` with a
+   subscription check (for example Stripe customer → entitlement) that issues
+   the same `hdg1.` session token, with the entitled project slugs (or "all")
+   in its payload.
+2. In `forensics-gate.ts`, after `resolveGatedProject`, refuse a project the
+   token is not entitled to (`402`/`403`). The data paths and keys above stay
+   the same.
+3. Replace `ForensicsUnlockGate`'s password form with sign-in / checkout. The
+   `useForensicsUnlock` session handling and every panel stay as they are.
+4. Keep the admin bypass. Retire `FORENSICS_PASSWORD*` once subscribers have
+   been moved over.
+
+Not yet generalized: the ledger and wallet write-up generators
+(`supabase/functions/wallet-analysis-gate/tel-disposition.generated.ts`,
+`src/data/forensicsWriteups.ts`) are TEL's hand-built sources; another
+project's equivalents get an entry in `STATIC_GATED` (or a committed
+`data/<slug>/forensics/` file). The ledger's inner tables still use TEL
+wording, and only render when a project has a ledger.
 
 ## Adding the next project
 

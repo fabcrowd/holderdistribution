@@ -1,5 +1,11 @@
 # Forensics section (password-gated)
 
+> Multi-token: every project gets the same gated panels and gate keys. The
+> request carries `project` (default TEL), and other projects' files live under
+> `data/<slug>/forensics/`. The password gate is temporary; a paywall will
+> replace it. See docs/MULTI-TOKEN.md "Gated forensics". The rest of this page
+> describes TEL, whose paths are unchanged.
+
 The Supply tab has gated content: the Reconciliation ledger, History, wallet
 drill-downs and **Wallet flows**. One password (or a Supabase admin session)
 unlocks all of it. The unlock is shared across Supply sub-tabs and remembered in

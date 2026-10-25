@@ -255,9 +255,10 @@ describe("scripts end to end (fixture repo, no network)", () => {
     expect(JSON.parse(fs.readFileSync(path.join(tmp, "public/data/supply-reconciliation.json"), "utf8")).totalSupply).toBe(TEL_TOTAL_SUPPLY);
   });
 
-  it("un-ported scripts still exit 2 for a non-legacy project", () => {
-    const r = run("generate-wallet-flows.js", ["--project", "demo"]);
-    expect(r.status).toBe(2);
-    expect(r.stderr).toMatch(/not wired into the data pipeline/);
+  it("un-ported scripts are still refused for a non-legacy project", () => {
+    // Every workflow script is ported now; the guard itself must keep refusing.
+    expect(() => pipelineProject("some-unported-script", { argv: ["--project", "demo"], env: {}, root: tmp })).toThrow(
+      /not wired into the data pipeline/,
+    );
   });
 });

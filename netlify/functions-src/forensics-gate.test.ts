@@ -234,3 +234,46 @@ describe("forensics gate: session tokens", () => {
     expect(Number(res.headers["Retry-After"])).toBeGreaterThan(0);
   });
 });
+
+describe("forensics gate: project scoping (multi-token)", () => {
+  it("an explicit project=tel returns the same TEL payloads as no project", async () => {
+    for (const address of ["wallet-flows", "association-stablecoin-flows", "tel-disposition-ledger"]) {
+      const a = JSON.parse((await post({ address, password: TEST_PASSWORD })).body);
+      const b = JSON.parse((await post({ address, password: TEST_PASSWORD, project: "tel" })).body);
+      expect(b.report).toEqual(a.report);
+      expect(b.project).toBe("tel");
+    }
+  });
+
+  it("the project-neutral disposition-ledger key is the same TEL ledger", async () => {
+    const a = JSON.parse((await post({ address: "tel-disposition-ledger", password: TEST_PASSWORD })).body);
+    const b = JSON.parse((await post({ address: "disposition-ledger", password: TEST_PASSWORD })).body);
+    expect(b.report).toEqual(a.report);
+  });
+
+  it("an unregistered project is refused (400) and still needs the password first", async () => {
+    expect((await post({ address: "wallet-flows", project: "nope" })).statusCode).toBe(401);
+    const res = await post({ address: "wallet-flows", password: TEST_PASSWORD, project: "nope" });
+    expect(res.statusCode).toBe(400);
+    expect(res.body).not.toMatch(/0x[0-9a-f]{40}/);
+    expect((await post({ address: "wallet-flows", password: TEST_PASSWORD, project: "../tel" })).statusCode).toBe(400);
+  });
+});
+
+describe("walletFlowsSource: per-project paths", () => {
+  it("a non-legacy project reads data/<slug>/forensics/ and never falls back to TEL's bundled report", async () => {
+    const fake = vi.fn(async () => new Response("missing", { status: 404 }));
+    const r = await loadWalletFlows({ LIVE_DATA_GITHUB_TOKEN: "t" }, fake as unknown as typeof fetch, 0, "demo");
+    expect(String((fake.mock.calls[0] as unknown[])[0])).toContain("/contents/data/demo/forensics/wallet-flows.json");
+    expect(r).toEqual({ report: null, source: "none" });
+    __resetWalletFlowsCache();
+    expect(await loadWalletFlows({}, fake as unknown as typeof fetch, 0, "demo")).toEqual({ report: null, source: "none" });
+  });
+
+  it("caches per project (TEL's cached report is not served for another slug)", async () => {
+    const tel = await loadWalletFlows({}, fetch, 0, "tel");
+    expect(tel.source).toBe("bundled");
+    const demo = await loadWalletFlows({}, fetch, 0, "demo");
+    expect(demo.report).toBeNull();
+  });
+});

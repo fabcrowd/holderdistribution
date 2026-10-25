@@ -1,5 +1,6 @@
 import { getSupabase } from "@/integrations/supabase/lazy";
 import { forensicsPasswordMatches } from "@/lib/forensicsPasswordHash";
+import { DEFAULT_PROJECT_SLUG } from "@/lib/projects";
 
 export const FORENSICS_GATE_URL = "/.netlify/functions/forensics-gate";
 
@@ -21,6 +22,10 @@ export const isGateToken = (credential: string | null | undefined): credential i
 
 export const SESSION_CHECK_KEY = "session-check";
 
+/** Gate keys whose payload is a project-level `report` (not a wallet write-up). */
+const PROJECT_REPORT_KEYS = new Set(["association-stablecoin-flows", "tel-disposition-ledger", "disposition-ledger"]);
+const isProjectReportKey = (key: string) => PROJECT_REPORT_KEYS.has(key);
+
 async function gateHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   const supabase = await getSupabase();
@@ -33,6 +38,8 @@ async function gateHeaders(): Promise<Record<string, string>> {
 type GateResponse = {
   analysis?: unknown;
   report?: unknown;
+  /** Project the payload belongs to (absent on session checks). */
+  project?: string;
   ok?: boolean;
   error?: string;
   /** Present when a password (not a token) authenticated the call. */
@@ -57,9 +64,14 @@ const gateUnavailable = (status: number) => status === 404 || status === 502 || 
  * build, so this branch (and the whole dev module behind it) is dropped.
  * Verified by grepping dist/assets after `npm run build`.
  */
-const loadLocalPayload = async (address: string): Promise<GateResponse> => {
+const loadLocalPayload = async (address: string, project?: string): Promise<GateResponse> => {
   if (!import.meta.env.DEV) {
     throw new ForensicsGateError("Could not load gated content", 503);
+  }
+  if (address === SESSION_CHECK_KEY) return { ok: true };
+  // Dev has local copies of the default project's (TEL's) gated files only.
+  if (project && project !== DEFAULT_PROJECT_SLUG) {
+    return address === "wallet-flows" || isProjectReportKey(address) ? { report: null, project } : { analysis: null, project };
   }
   const { loadWalletAnalysisDev, loadAssociationFlowReportDev, loadDispositionLedgerDev, loadWalletFlowsDev } =
     await import("@/lib/loadForensicsDev");
@@ -69,10 +81,9 @@ const loadLocalPayload = async (address: string): Promise<GateResponse> => {
   if (address === "association-stablecoin-flows") {
     return { report: await loadAssociationFlowReportDev() };
   }
-  if (address === "tel-disposition-ledger") {
+  if (address === "tel-disposition-ledger" || address === "disposition-ledger") {
     return { report: await loadDispositionLedgerDev() };
   }
-  if (address === SESSION_CHECK_KEY) return { ok: true };
   return { analysis: await loadWalletAnalysisDev(address) };
 };
 
@@ -85,6 +96,7 @@ const loadLocalPayload = async (address: string): Promise<GateResponse> => {
 const fallbackWithPassword = async (
   address: string,
   password: string | null | undefined,
+  project?: string,
 ): Promise<GateResponse> => {
   if (!import.meta.env.DEV) {
     throw new ForensicsGateError("Could not load gated content", 503);
@@ -92,17 +104,19 @@ const fallbackWithPassword = async (
   if (!password || !(await forensicsPasswordMatches(password))) {
     throw new ForensicsGateError("Invalid password", 401);
   }
-  return loadLocalPayload(address);
+  return loadLocalPayload(address, project);
 };
 
 /**
  * POST to the Netlify forensics gate. `credential` is a session token from a
  * previous unlock (preferred) or the typed password (only during unlock).
- * Admins may omit it (session header).
+ * Admins may omit it (session header). `project` is the active project slug
+ * (useProject()); omitted = the default project (TEL), as before multi-token.
  */
 export const fetchForensicsGate = async (
   address: string,
   credential?: string | null,
+  project?: string,
 ): Promise<GateResponse> => {
   const normalized = address.trim().toLowerCase();
   const headers = await gateHeaders();
@@ -114,15 +128,15 @@ export const fetchForensicsGate = async (
     res = await fetch(FORENSICS_GATE_URL, {
       method: "POST",
       headers,
-      body: JSON.stringify({ address: normalized, password, token }),
+      body: JSON.stringify({ address: normalized, password, token, ...(project ? { project } : {}) }),
     });
   } catch {
-    return fallbackWithPassword(normalized, password);
+    return fallbackWithPassword(normalized, password, project);
   }
 
   if (!res.ok) {
     if (gateUnavailable(res.status) && import.meta.env.DEV) {
-      return fallbackWithPassword(normalized, password);
+      return fallbackWithPassword(normalized, password, project);
     }
     const retryAfter = Number(res.headers.get("Retry-After"));
     const message =

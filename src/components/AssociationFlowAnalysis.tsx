@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
 import { ForensicsUnlockGate, useForensicsUnlock } from "@/components/ForensicsGate";
+import { useProject } from "@/hooks/useProject";
 import { loadAssociationFlowReport } from "@/lib/loadForensics";
 
 /**
  * Password-gated forensic reconciliation of stablecoin outflows linked to the
- * Association Safes. Loaded from the Netlify forensics gate after unlock.
+ * Association Safes. Loaded from the Netlify forensics gate after unlock, for
+ * the active project (null = that project has no such report yet).
  */
 type FlowReport = {
   key: string;
@@ -20,10 +22,10 @@ type FlowReport = {
   }>;
 };
 
-const useFlowReport = (password: string | null) =>
+const useFlowReport = (password: string | null, slug: string) =>
   useQuery({
-    queryKey: ["flow-report", "association-stablecoin-flows", password],
-    queryFn: (): Promise<FlowReport> => loadAssociationFlowReport(password),
+    queryKey: ["flow-report", "association-stablecoin-flows", slug, password],
+    queryFn: async (): Promise<FlowReport | null> => (await loadAssociationFlowReport(password, slug)) as FlowReport | null,
     enabled: password !== null,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -32,7 +34,8 @@ const useFlowReport = (password: string | null) =>
 
 export const AssociationFlowAnalysis = () => {
   const { password, status, unlock } = useForensicsUnlock();
-  const { data: report, isLoading } = useFlowReport(password);
+  const { slug } = useProject();
+  const { data: report, isLoading } = useFlowReport(password, slug);
 
   return (
     <section className="mt-4 rounded-xl border border-border/60 bg-muted/10 p-3 sm:p-4">
@@ -55,7 +58,7 @@ export const AssociationFlowAnalysis = () => {
       ) : isLoading ? (
         <p className="mt-3 text-xs text-muted-foreground">Loading analysis…</p>
       ) : !report ? (
-        <p className="mt-3 text-xs text-muted-foreground">Analysis unavailable.</p>
+        <p className="mt-3 text-xs text-muted-foreground">Analysis unavailable for this project.</p>
       ) : (
         <div className="mt-3 space-y-4">
           <div className="rounded-lg border border-border/50 bg-background/60 p-3">

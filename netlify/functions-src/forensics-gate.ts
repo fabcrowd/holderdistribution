@@ -10,14 +10,41 @@ import {
 import type { Handler } from "@netlify/functions";
 import { WindowLimiter, corsHeaders, issueToken, originAllowed, passwordMatches, verifyToken } from "./gateAuth.ts";
 import { loadWalletFlows } from "./walletFlowsSource.ts";
+import { resolveGatedProject } from "./gatedProjects.ts";
 
 /**
- * Password-gated forensics endpoint. POST {address, password}. Every gated
- * payload (write-ups, ledger, wallet flows) is bundled into THIS function only —
- * none of it is in public/ or the client bundle. See docs/FORENSICS.md.
+ * Gated forensics endpoint. POST {address, password | token, project?}. Every
+ * gated payload (write-ups, ledger, wallet flows) is bundled into THIS function
+ * only (or fetched by it from the repo's data/ tree) — none of it is in public/
+ * or the client bundle. See docs/FORENSICS.md.
+ *
+ * Multi-token: `project` (a registry slug, default = the default project, TEL)
+ * picks whose gated data is returned. Every project answers the same keys in
+ * the same shape; a project with nothing gated yet gets `null` payloads. The
+ * access check is project-independent today (one password / admin session);
+ * the planned paywall swaps that check for a per-project entitlement here.
  */
 const TEL_DISPOSITION_LEDGER_KEY = "tel-disposition-ledger";
+/** Project-neutral alias of the ledger key (same payload). */
+export const DISPOSITION_LEDGER_KEY = "disposition-ledger";
 export const WALLET_FLOWS_KEY = "wallet-flows";
+
+type StaticGated = {
+  dispositionLedger: unknown;
+  associationFlows: unknown;
+  writeups: Record<string, unknown>;
+};
+/**
+ * Hand-written / pre-generated gated content per project. Only TEL has any so
+ * far; a project missing here answers every static key with null.
+ */
+const STATIC_GATED: Record<string, StaticGated> = {
+  tel: {
+    dispositionLedger: TEL_DISPOSITION_LEDGER,
+    associationFlows: ASSOCIATION_STABLECOIN_FLOWS,
+    writeups: WALLET_ANALYSES as Record<string, unknown>,
+  },
+};
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "https://svvjdtmvmqdejjqxzclp.supabase.co";
@@ -95,7 +122,7 @@ export async function handler(event: GateEvent): ReturnType<Handler> {
     header(event, "client-ip") ||
     "unknown";
 
-  let body: { address?: string; password?: string; token?: string };
+  let body: { address?: string; password?: string; token?: string; project?: unknown };
   try {
     body = JSON.parse(event.body ?? "{}");
   } catch {
@@ -134,15 +161,23 @@ export async function handler(event: GateEvent): ReturnType<Handler> {
     const session = issued ? { token: issued.token, tokenExpiresAt: issued.expiresAt } : {};
 
     if (address === SESSION_CHECK_KEY) return json(200, { ok: true, ...session });
-    if (address === ASSOCIATION_FLOW_REPORT_KEY) return json(200, { report: ASSOCIATION_STABLECOIN_FLOWS, ...session });
-    if (address === TEL_DISPOSITION_LEDGER_KEY) return json(200, { report: TEL_DISPOSITION_LEDGER, ...session });
+
+    const project = resolveGatedProject(body.project);
+    if (!project) return json(400, { error: "Unknown project", ...session });
+    const gated = STATIC_GATED[project];
+    const scoped = { project, ...session };
+
+    if (address === ASSOCIATION_FLOW_REPORT_KEY) return json(200, { report: gated?.associationFlows ?? null, ...scoped });
+    if (address === TEL_DISPOSITION_LEDGER_KEY || address === DISPOSITION_LEDGER_KEY) {
+      return json(200, { report: gated?.dispositionLedger ?? null, ...scoped });
+    }
     if (address === WALLET_FLOWS_KEY) {
-      const { report, source } = await loadWalletFlows();
-      return json(200, { report, ...session }, { "X-Wallet-Flows-Source": source });
+      const { report, source } = await loadWalletFlows(process.env, fetch, Date.now(), project);
+      return json(200, { report, ...scoped }, { "X-Wallet-Flows-Source": source });
     }
 
-    const analysis = WALLET_ANALYSES[address] ?? null;
-    return json(200, { analysis, ...session });
+    const analysis = gated?.writeups[address] ?? null;
+    return json(200, { analysis, ...scoped });
   } catch (error) {
     console.error("forensics-gate error:", error);
     return json(500, { error: "Internal error" });

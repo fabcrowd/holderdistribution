@@ -2,13 +2,18 @@
 /**
  * generate-wallet-flows.js — refresh the GATED "Wallet flows" forensics report.
  *
- * Output: data/forensics/wallet-flows.json (NOT public/data — it is never part of
- * the static site or the client bundle; the forensics gate function serves it only
- * after password / admin verification). See docs/FORENSICS.md.
+ * Output (per project, scripts/lib/walletFlowsProject.js):
+ *   TEL (legacyRoot)  data/forensics/wallet-flows.json          (unchanged)
+ *   other projects    data/<slug>/forensics/wallet-flows.json
+ * NOT public/data — it is never part of the static site or the client bundle;
+ * the forensics gate function serves it only after password / admin
+ * verification (paywall later). See docs/FORENSICS.md and docs/MULTI-TOKEN.md.
+ * Input registry (labels, bot cluster, watched sellers) sits next to it as
+ * wallet-flows.registry.json; a project without one is skipped (exit 0).
  *
  * What it recomputes, from on-chain reads only (keyless public RPCs first, then
  * the configured keys — same pool logic as the rest of the pipeline):
- *   1. Every registry wallet's TEL outflows (legacy + v3) over 72h / 30d / 90d,
+ *   1. Every registry wallet's token outflows (legacy + v3) over 72h / 30d / 90d,
  *      classified as CEX / DEX / bot-cluster / upgrade / internal / bridge / ...
  *      (tx receipts are checked for DEX swap events when the destination is
  *      unlabelled), plus a verdict per wallet.
@@ -16,7 +21,7 @@
  *      bot cluster and the watched sellers.
  *   3. The bot cluster's DEX sales per window.
  *   4. 72h large-seller discovery over ALL TEL transfers (skip with --skip-sellers).
- *   5. Supply distribution by entity class, from public/data/supply-reconciliation.json
+ *   5. Supply distribution by entity class, from the project's supply-reconciliation.json
  *      plus the balances above.
  * Funding links are carried over from the previous report (they come from manual
  * inbound tracing and are not recomputed).
@@ -25,7 +30,7 @@
  * script exits 0 (use --strict to exit 1). It must never break the data pipeline.
  *
  * Usage:
- *   node scripts/generate-wallet-flows.js [--out <path>] [--recon <path>]
+ *   node scripts/generate-wallet-flows.js [--project <slug>] [--out <path>] [--recon <path>]
  *        [--skip-sellers] [--dry-run] [--strict] [--chains ethereum,polygon,base]
  * Env: RPC_PREFER_PUBLIC=1 recommended; PUBLIC_RPC_URLS_<CHAIN> to override.
  */
@@ -35,7 +40,6 @@ import process from "node:process";
 import { getUsableRpcUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
 import { resolveChainTokens, rawToTel } from "./lib/telTokens.js";
-import { BRIDGE_INFRA, DEX_VENUES } from "./lib/telEndpoint.js";
 import {
   SWAP_TOPICS,
   WINDOWS,
@@ -50,30 +54,35 @@ import {
   telcoinSellTotals,
   validateWalletFlowsReport,
 } from "./lib/walletFlows.js";
-import { selectPipelineProject } from "./lib/projects.js";
+import { loadProjectClassification, selectPipelineProject } from "./lib/projects.js";
+import { tokenSlots, walletFlowsNotes, walletFlowsPlan } from "./lib/walletFlowsProject.js";
 
-// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
-// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
-selectPipelineProject("generate-wallet-flows");
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Every path and address
+// comes from the project (walletFlowsPlan); TEL resolves to its original files.
+const PROJECT = selectPipelineProject("generate-wallet-flows", { ported: true });
 
 const TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const ROOT = process.cwd();
 
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(name);
-const opt = (name, fallback) => {
-  const i = argv.indexOf(name);
-  return i >= 0 && argv[i + 1] ? argv[i + 1] : fallback;
-};
-const OUT = path.resolve(ROOT, opt("--out", "data/forensics/wallet-flows.json"));
-const RECON = path.resolve(ROOT, opt("--recon", "public/data/supply-reconciliation.json"));
-const REGISTRY = path.resolve(ROOT, "data/forensics/wallet-flows.registry.json");
-const CHAINS = opt("--chains", "ethereum,polygon,base").split(",").map((c) => c.trim()).filter(Boolean);
+let PLAN;
+try {
+  PLAN = walletFlowsPlan(PROJECT, { root: ROOT, argv });
+} catch (error) {
+  // Non-fatal like the rest of this script (--strict exits 1).
+  console.warn(`generate-wallet-flows: skipped — ${error?.message ?? error}`);
+  process.exit(argv.includes("--strict") ? 1 : 0);
+}
+const OUT = PLAN.out;
+const RECON = PLAN.recon;
+const REGISTRY = PLAN.registry;
+const CHAINS = PLAN.chains;
 const STRICT = flag("--strict");
 const DRY = flag("--dry-run");
 const SKIP_SELLERS = flag("--skip-sellers");
 /** Initial getLogs span per chain; rpc.getLogs bisects automatically when a node refuses. */
-const SPAN = { ethereum: 20_000, polygon: 50_000, base: 50_000 };
+const SPAN = (chain) => PLAN.logSpan(chain);
 const MAX_RECEIPTS = Number(process.env.WALLET_FLOWS_MAX_RECEIPTS) || 2500;
 const MIN_SELLER_TEL = Number(process.env.WALLET_FLOWS_MIN_SELLER_TEL) || 5e6;
 
@@ -142,24 +151,26 @@ async function blockAtOrAfter(urls, target, head, headTs) {
 
 async function scanLogs(chain, urls, failover, filterBase, from, to) {
   const ranges = [];
-  for (let a = from; a <= to; a += SPAN[chain]) ranges.push([a, Math.min(a + SPAN[chain] - 1, to)]);
+  const span = SPAN(chain);
+  for (let a = from; a <= to; a += span) ranges.push([a, Math.min(a + span - 1, to)]);
   const parts = await pool(ranges, Math.min(4, urls.length * 2), ([a, b], i) =>
     failover(urls, i % urls.length, { ...filterBase, fromBlock: hex(a), toBlock: hex(b) }),
   );
   return parts.flat();
 }
 
-function toTransfers(chain, logs, decimalsByToken) {
+function toTransfers(chain, logs, slotByToken) {
   const out = [];
   for (const log of logs) {
     const topics = log.topics ?? [];
     if (topics.length < 3) continue;
-    const decimals = decimalsByToken.get(norm(log.address));
-    if (decimals == null) continue;
+    const slot = slotByToken.get(norm(log.address));
+    if (!slot) continue;
+    const { decimals } = slot;
     const raw = BigInt(log.data && log.data !== "0x" ? log.data.slice(0, 66) : "0x0");
     out.push({
       chain,
-      token: decimals === 2 ? "legacy" : "v3",
+      token: slot.slot,
       from: "0x" + topics[1].slice(-40).toLowerCase(),
       to: "0x" + topics[2].slice(-40).toLowerCase(),
       tel: rawToTel(raw, decimals),
@@ -192,28 +203,27 @@ async function balanceOf(urls, token, holder) {
 }
 
 async function fetchPrice(previous) {
-  try {
-    const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=telcoin&vs_currencies=usd", {
-      signal: AbortSignal.timeout(10_000),
-    });
-    const j = await res.json();
-    const p = Number(j?.telcoin?.usd);
-    if (p > 0) return { priceUsd: p, priceSource: "CoinGecko simple/price (telcoin)" };
-  } catch {
-    /* fall through */
+  const id = PLAN.coingeckoId;
+  if (id) {
+    try {
+      const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(id)}&vs_currencies=usd`, {
+        signal: AbortSignal.timeout(10_000),
+      });
+      const j = await res.json();
+      const p = Number(j?.[id]?.usd);
+      if (p > 0) return { priceUsd: p, priceSource: `CoinGecko simple/price (${id})` };
+    } catch {
+      /* fall through */
+    }
   }
   return { priceUsd: previous?.priceUsd ?? 0, priceSource: `${previous?.priceSource ?? "unknown"} (carried over)` };
 }
 
 async function main() {
-  const [registry, chainsCfg, cexCfg, dexCfg, recon, previous] = await Promise.all([
-    readJson(REGISTRY),
-    readJson(path.join(ROOT, "config/chains.json")),
-    readJson(path.join(ROOT, "config/cex-wallets.json")),
-    readJson(path.join(ROOT, "config/dex-contracts.json")),
-    readJson(RECON),
-    readJsonOr(OUT, null),
-  ]);
+  const chainsCfg = PLAN.chainsCfg;
+  const cexCfg = loadProjectClassification(PROJECT, "cexWallets", { wallets: [] }, ROOT);
+  const dexCfg = loadProjectClassification(PROJECT, "dexContracts", {}, ROOT);
+  const [registry, recon, previous] = await Promise.all([readJson(REGISTRY), readJson(RECON), readJsonOr(OUT, null)]);
   const { priceUsd, priceSource } = await fetchPrice(previous);
 
   const upgradeContracts = [];
@@ -221,7 +231,7 @@ async function main() {
   const dexAddresses = [
     ...(dexCfg.pools ?? []).map((p) => p.address),
     ...(dexCfg.routers ?? []).map((r) => r.address ?? r),
-    ...DEX_VENUES.keys(),
+    ...PLAN.dexVenues,
   ].filter(Boolean);
   const index = buildVenueIndex({
     registry,
@@ -229,7 +239,7 @@ async function main() {
     dexAddresses,
     recon,
     upgradeContracts,
-    bridgeAddresses: [...BRIDGE_INFRA],
+    bridgeAddresses: PLAN.bridgeAddresses,
   });
 
   const knownAddrs = (registry.knownWallets ?? []).map((w) => norm(w.address));
@@ -252,7 +262,7 @@ async function main() {
     if (urls.length === 0) throw new Error(`no RPC for ${chain}`);
     const tokens = resolveChainTokens(chainsCfg[chain]);
     const tokenList = [tokens.legacy, ...(tokens.v3 ? [tokens.v3] : [])];
-    const decimalsByToken = new Map(tokenList.map((t) => [t.address, t.decimals]));
+    const slotByToken = tokenSlots(tokens);
     const head = Number.parseInt(await viaPool(urls, (u) => rpcCall(u, "eth_blockNumber", [])), 16);
     const headTs = await blockTs(urls, head);
     startBlocks[chain] = {};
@@ -272,7 +282,7 @@ async function main() {
       startBlocks[chain]["90d"],
       head,
     );
-    const transfers = toTransfers(chain, logs, decimalsByToken);
+    const transfers = toTransfers(chain, logs, slotByToken);
     const unlabelled = transfers.filter(
       (t) => t.tel >= 1e6 && !index.bots.has(t.from) && classifyOutflow(t.from, t.to, index) === "unlabelled",
     );
@@ -286,7 +296,7 @@ async function main() {
         const all = toTransfers(
           chain,
           await scanLogs(chain, urls, failover, { address: tokenList.map((t) => t.address), topics: [TRANSFER] }, startBlocks[chain]["72h"], head),
-          decimalsByToken,
+          slotByToken,
         );
         const perSender = new Map();
         for (const t of all) {
@@ -308,7 +318,7 @@ async function main() {
       const detail = balances.get(a) ?? {};
       for (const t of tokenList) {
         const raw = await balanceOf(urls, t.address, a);
-        if (raw > 0n) detail[`${chain}_${t.decimals === 2 ? "legacy" : "v3"}`] = rawToTel(raw, t.decimals);
+        if (raw > 0n) detail[`${chain}_${slotByToken.get(t.address).slot}`] = rawToTel(raw, t.decimals);
       }
       balances.set(a, detail);
     });
@@ -330,17 +340,13 @@ async function main() {
     version: 1,
     generated: new Date().toISOString(),
     generator: "scripts/generate-wallet-flows.js",
+    ...(PLAN.legacy ? {} : { project: PLAN.slug }),
     priceUsd,
     priceSource,
     chains: CHAINS,
     windows,
-    notes: [
-      "Outflows are first-hop TEL transfers (legacy + v3) from each wallet, classified by destination; sends to known deposit relays count as CEX.",
-      "Reaching a sell venue is not proof of a market sale: it can be market making, OTC settlement or treasury operations.",
-      "Labels marked medium/low confidence come from this repo's own forensics, not from Telcoin.",
-      "USD values use the price above and are rough.",
-    ],
-    distribution: { ...buildDistribution(recon, tracked), source: path.relative(ROOT, RECON) },
+    notes: walletFlowsNotes(PLAN),
+    distribution: { ...buildDistribution(recon, tracked), source: path.relative(ROOT, RECON).split(path.sep).join("/") },
     telcoinTotals: telcoinSellTotals(knownWallets, priceUsd),
     knownWallets,
     fundingLinks: previous?.fundingLinks ?? [],
@@ -367,8 +373,25 @@ async function main() {
   console.log(`Wrote ${path.relative(ROOT, OUT)} (${knownWallets.length} wallets, ${largeSellers.length} sellers)`);
 }
 
-main().catch((error) => {
+async function exists(p) {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+(async () => {
+  // A project with no forensics registry yet has nothing to trace: skip before
+  // any RPC call (the gate then serves "no report" for that project).
+  if (!(await exists(REGISTRY))) {
+    console.warn(`generate-wallet-flows: no registry at ${path.relative(ROOT, REGISTRY)} for ${PLAN.slug}; nothing to do.`);
+    return;
+  }
+  await main();
+})().catch((error) => {
   console.warn(`generate-wallet-flows: skipped — ${error?.stack ?? error}`);
-  console.warn("Previous data/forensics/wallet-flows.json left unchanged.");
+  console.warn(`Previous ${path.relative(ROOT, OUT)} left unchanged.`);
   process.exitCode = STRICT ? 1 : 0;
 });
