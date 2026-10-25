@@ -21,7 +21,7 @@ export const usePageMeta = ({
   title, 
   description, 
   canonicalPath,
-  ogImage = '/og-image.png',
+  ogImage = '/og-image.png?v=20261025',
   ogType,
   jsonLd,
 }: PageMetaProps) => {
