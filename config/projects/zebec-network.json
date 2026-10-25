@@ -102,7 +102,7 @@
       "address": "zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv",
       "name": "Zebec SuperApp staking (zebec-stake-sdk)",
       "kind": "zebecStakeV1",
-      "attribution": "Program from Zebec stake SDK / npm @zebec-network/zebec-stake-sdk. Staked balances shown SEPARATELY from retail holders (not merged into retail). BLOCKER: Solana staking adapter not built yet (docs/MULTI-TOKEN.md deferred) — staked tile needs adapter before pipeline can fill it. Observed lockup vault ATAs (research brief): 3DC8cdCNKEZPapuPHTtkuw8XgbDtYarJojjpGgtF65Vo ~4.07B; 8bbygT4wHaR1vXQMCTK9uVnoDGBwWjNx9BUwjgLtkBvv ~544M; 7dvTVafoMm52sjyJCHkHZv119MecicqFCrgjq8RcLxJ6 ~182M; FnJhFWTiYTGSePJDKVNYQgf5XUFBJEk1rvPifj6hvb4Y; BcfMnwQMpv988qVCDMpJhXRyYiqchrYh9pcJPvjEypj4. ALT EoKjJejKr4XsBdtUuYwzZcYd6tpGNijxCGgQocxtxQ8t."
+      "attribution": "Program from Zebec stake SDK / npm @zebec-network/zebec-stake-sdk. Staked balances shown SEPARATELY from retail holders (not merged into retail). Observed lockup vault ATAs (research brief): 3DC8cdCNKEZPapuPHTtkuw8XgbDtYarJojjpGgtF65Vo ~4.07B; 8bbygT4wHaR1vXQMCTK9uVnoDGBwWjNx9BUwjgLtkBvv ~544M; 7dvTVafoMm52sjyJCHkHZv119MecicqFCrgjq8RcLxJ6 ~182M; FnJhFWTiYTGSePJDKVNYQgf5XUFBJEk1rvPifj6hvb4Y; BcfMnwQMpv988qVCDMpJhXRyYiqchrYh9pcJPvjEypj4. ALT EoKjJejKr4XsBdtUuYwzZcYd6tpGNijxCGgQocxtxQ8t."
     }
   ],
   "gated": {
@@ -127,7 +127,7 @@
   },
   "pipelineNotes": {
     "holderScan": "Full getProgramAccounts scan likely needs SOLANA_RPC_0; public RPC rate-limits.",
-    "stakingAdapter": "Deferred — kind zebecStakeV1 recorded but no Solana staker pull yet.",
+    "stakingAdapter": "scripts/pull-solana-staking.js (zebecStakeV1) -> public/data/zebec-network/solana-staking.json. Per-lockup 0.5% vault reconcile; ZBCN Lockup AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp exempt (~2.42% unclaimed-positions vs vault-ATA gap recorded with explainer in output; positions published unscaled).",
     "cexWallets": "Not invented; discover later. public/data/zebec-network/cex-wallets.json is an empty static artifact (0 wallets) so check:feeds passes; wallet flows stay unpublished until real CEX wallets are supplied.",
     "liveData": "Registered in PROJECT_SLUGS (netlify/functions/live-data.mjs).",
     "supplyReconciliation": "reconcile-supply labels contracts{} role addresses (and Solana token-account owners persisted on the snapshot as tokenAccountOwnersByChain) as treasury/staking categories; no ZBCN-only exclusions file."
