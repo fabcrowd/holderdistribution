@@ -41,7 +41,9 @@ beforeEach(() => {
   store.clear();
   vi.stubGlobal("localStorage", fakeStorage);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("active project store", () => {
   it("starts from ?token=, then localStorage, then the default", async () => {
