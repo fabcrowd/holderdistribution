@@ -10,8 +10,15 @@ describe("TokenSwitcher", () => {
     expect(html).toContain('aria-label="Token: Telcoin (TEL). Switch token"');
     expect(html).toContain('aria-haspopup="dialog"');
   });
+  it("heading variant hides its control on mobile, leaving a plain ticker label", () => {
+    const html = renderToStaticMarkup(<TokenSwitcher variant="heading" />);
+    expect(html).toMatch(/data-testid="token-ticker-label"[^>]*|class="text-primary md:hidden"/);
+    expect(html).toContain("hidden md:inline-flex");
+  });
   it("renders the compact pill for the mobile nav", () => {
     const html = renderToStaticMarkup(<TokenSwitcher variant="pill" />);
     expect(html).toMatch(/rounded-full/);
+    expect(html).not.toContain("hidden md:inline-flex");
+    expect(html).not.toContain("token-ticker-label");
   });
 });
