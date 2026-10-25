@@ -1,7 +1,7 @@
 import { type ReactNode, useId } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export type SubPanel = { id: string; label: string };
+export type SubPanel = { id: string; label: string; title?: string };
 
 type SubPanelTabsProps = {
   panels: SubPanel[];
@@ -70,7 +70,7 @@ export const SubPanelTabs = ({
               className="h-11 min-w-0 flex-1 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {panels.map((p) => (
-                <option key={p.id} value={p.id}>
+                <option key={p.id} value={p.id} title={p.title}>
                   {p.label}
                 </option>
               ))}
@@ -85,6 +85,7 @@ export const SubPanelTabs = ({
               <TabsTrigger
                 key={panel.id}
                 value={panel.id}
+                title={panel.title}
                 className="min-h-[32px] rounded px-3 text-xs font-semibold text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm"
               >
                 {panel.label}
@@ -98,6 +99,7 @@ export const SubPanelTabs = ({
                 <TabsTrigger
                   key={panel.id}
                   value={panel.id}
+                  title={panel.title}
                   className="min-h-[44px] whitespace-nowrap rounded-none border-b-2 border-transparent bg-transparent px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none sm:text-sm"
                 >
                   {panel.label}

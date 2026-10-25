@@ -1,5 +1,6 @@
 import { useProject } from "@/hooks/useProject";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useChartIntro, useIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
 import { signedInt } from "@/lib/format";
@@ -15,8 +16,11 @@ import { SIDE_TILE_LABELS } from "@/components/tierflow/netFlow";
 import type { ChainKey } from "@/components/tierflow/useFlowField";
 import { mergeDistributionBaseline, summarizeTierGrowth } from "@/lib/distributionRows";
 import {
-  EMPTY_SELECTION, hasSelection, reduceSelection, shouldClearOnEscape, type DistAction, type DistSelection,
+  EMPTY_SELECTION, defaultTierLabel, hasSelection, reduceSelection, shouldClearOnEscape, type DistAction, type DistSelection,
 } from "@/lib/distributionSelection";
+import { TIER_FLOWS_EXPLAINER } from "@/lib/terminalCopy";
+import { TABLE_PANEL_PX } from "@/lib/terminalLayout";
+import { useTierGeometry } from "@/components/tierflow/useTierGeometry";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { formatCompact } from "@/lib/format";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
@@ -63,25 +67,40 @@ type Props = {
 const chainKeyFor = (v: DisplaySelection): ChainKey => (v === "combined" ? "all" : v);
 
 /**
- * Desktop Distribution view. One selection drives all three panels: pick a
- * tier on the diagram, in the Tiers table or on the net-change bars and it
- * highlights everywhere, and the right-hand top panel turns into that tier's
- * detail (✕ / Esc to close). The chain comes from the header selector.
+ * Desktop Distribution view. The tier diagram is full width so its labels
+ * stay near 1:1 (the page scrolls). Under it, the selection's detail — or
+ * the net-change bars, once the reader clears — sits beside the Tiers table.
+ * One selection drives all three. With no `?tier=` in the URL, the first
+ * paint selects a band so the flow lines aren't blank. The chain comes from
+ * the header selector.
  */
 export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, rangeDays }: Props) => {
   const { project } = useProject();
+  const { t } = useProjectCopy();
+  const { tiers: tierOrder } = useTierGeometry();
   const tk = project.ticker;
   const { data: historicalDelta } = useHolderHistoricalDelta({ view: selectedView, days: rangeDays, enabled: rangeDays >= 1 });
   const intro = useIntro();
   const chartIntro = useChartIntro();
   const [metric, setMetric] = useState<TierMetric>("wallets");
   // The selected tier rides in the URL (?tier=, replaceState: shareable, but
-  // not a Back-button step per click).
+  // not a Back-button step per click). With no ?tier=, the first paint
+  // selects a band (see defaultTierLabel) so the flow lines aren't blank.
+  // "user" once the reader picks or clears — Clear must stay cleared.
+  const urlTier = () => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tier") : null);
   const [selection, setSelection] = useState<DistSelection>(() => {
-    const t = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tier") : null;
-    return t ? { ...EMPTY_SELECTION, tier: t } : EMPTY_SELECTION;
+    const initial = urlTier();
+    return initial ? { ...EMPTY_SELECTION, tier: initial } : EMPTY_SELECTION;
   });
-  const dispatch = (a: DistAction) => setSelection((s) => reduceSelection(s, a));
+  const choice = useRef<"auto" | "user">(urlTier() ? "user" : "auto");
+  const dispatch = (a: DistAction) => {
+    choice.current = "user";
+    setSelection((s) => reduceSelection(s, a));
+  };
+  const onSelectionChange = useCallback((next: DistSelection) => {
+    choice.current = "user";
+    setSelection(next);
+  }, []);
   const [detailEl, setDetailEl] = useState<HTMLDivElement | null>(null);
   const view = snapshot?.views[selectedView];
   // [] not null: with no history baseline for the range, drop the pipeline's
@@ -111,10 +130,21 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
   const selectedTier = selection.tier;
   const selected = hasSelection(selection);
 
-  // A tier that doesn't exist on the newly chosen chain can't stay selected.
-  useEffect(() => {
-    if (selectedTier && rows.length && !rows.some((r) => r.label === selectedTier)) dispatch({ type: "clear" });
-  }, [rows, selectedTier]);
+  // First paint: pick a band once rows exist, unless the URL or the reader
+  // already chose. A label the new chain doesn't have falls back the same way.
+  useLayoutEffect(() => {
+    if (!rows.length) return;
+    const known = selection.tier != null && rows.some((r) => r.label === selection.tier);
+    if (choice.current === "user" && (known || selection.tier == null)) return;
+    if (choice.current === "user" && selection.tier && !known) choice.current = "auto";
+    if (choice.current !== "auto") return;
+    const label = defaultTierLabel(
+      rows.map((r) => ({ label: r.label, count: r.count })),
+      tierOrder,
+    );
+    if (!label || label === selection.tier) return;
+    setSelection({ ...EMPTY_SELECTION, tier: label });
+  }, [rows, selection.tier, tierOrder]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -173,7 +203,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
   useEffect(() => {
     if (!selected) return;
     const onKey = (e: KeyboardEvent) => {
-      if (shouldClearOnEscape(e, document)) setSelection(EMPTY_SELECTION);
+      if (shouldClearOnEscape(e, document)) dispatch({ type: "clear" });
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -207,7 +237,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
   const closeButton = (
     <button
       type="button"
-      onClick={() => setSelection(EMPTY_SELECTION)}
+      onClick={() => dispatch({ type: "clear" })}
       aria-label="Close tier detail (Esc)"
       title="Close (Esc)"
       data-testid="tier-detail-close"
@@ -218,9 +248,10 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
   );
 
   return (
-    <div className={`grid h-full min-h-0 grid-cols-12 grid-rows-2 gap-2 ${intro ? "ha-stagger" : ""}`} data-testid="distribution-terminal">
+    <div className={`flex flex-col gap-2 ${intro ? "ha-stagger" : ""}`} data-testid="distribution-terminal">
       <TerminalPanel
-        className="col-span-7 row-span-2"
+        fit
+        className="min-h-[36rem]"
         title="Tier flows"
         info={`Each bar is a retail balance tier. Select a tier (here, in the Tiers table or on the bars) to see where its wallets and ${tk} came from and went to over the period. Retail only; sub-1-${tk} dust wallets are counted in the lowest tier.`}
         stat={
@@ -242,13 +273,17 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
         }
         testId="panel-tier-flows"
       >
-        {placeholder ??
-          (rangeDays >= 1 ? (
+        <p data-testid="tier-flows-explainer" className="mb-2 text-xs leading-snug text-muted-foreground">
+          {t(TIER_FLOWS_EXPLAINER)}
+        </p>
+        {placeholder ? (
+          <div className="min-h-[32rem]">{placeholder}</div>
+        ) : rangeDays >= 1 ? (
             <TierFlowDiagram
               layout="terminal"
               chain={chainKeyFor(selectedView)}
               selection={selection}
-              onSelectionChange={setSelection}
+              onSelectionChange={onSelectionChange}
               detailContainer={detailEl}
               rangeDays={rangeDays}
               metric={metric}
@@ -269,17 +304,18 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
                 previousTotalBalance: balanceSuppressed ? null : r.previousTotalBalance ?? null,
               }))}
             />
-          ) : (
+        ) : (
             <PanelMessage>Pick a range of at least one day to see tier flows.</PanelMessage>
-          ))}
+        )}
       </TerminalPanel>
 
       <p className="sr-only" aria-live="polite" data-testid="tier-live-summary">
         {liveSummary}
       </p>
+      <div className="grid shrink-0 grid-cols-2 gap-2" style={{ height: TABLE_PANEL_PX }} data-testid="distribution-detail-row">
       {selected ? (
         <TerminalPanel
-          className="col-span-5"
+          className="h-full min-h-0"
           title={detailTitle}
           info="Detail for the selection on the tier diagram. Close with ✕ or Esc."
           actions={closeButton}
@@ -289,7 +325,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
         </TerminalPanel>
       ) : (
         <TerminalPanel
-          className="col-span-5"
+          className="h-full min-h-0"
           title="Net wallet change by tier"
           info="Retail wallets in each tier now, minus at the start of the period. Click a bar to select that tier."
           testId="panel-net-change"
@@ -356,7 +392,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
       )}
 
       <TerminalPanel
-        className="col-span-5"
+        className="h-full min-h-0"
         title="Tiers"
         info={`Wallets and ${tk} per tier, with the change over the period, and each tier's share of retail ${tk}. Click a row to select that tier.`}
         flush
@@ -421,6 +457,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
           </table>
         )}
       </TerminalPanel>
+      </div>
     </div>
   );
 };

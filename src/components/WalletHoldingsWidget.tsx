@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SubPanelTabs } from "@/components/SubPanelTabs";
+import { HOLDER_EXPLORE_PANELS } from "@/lib/terminalCopy";
 import { formatSourceLabel, formatCompact } from "@/lib/format";
 import { v3StakingGapEvents } from "@/lib/staking";
 import { TabsContent } from "@/components/ui/tabs";
@@ -1201,28 +1202,12 @@ type WalletHoldingsWidgetProps = {
 // problem the Holder Growth charts had, one level down. It reads independently
 // (it is not a legend or an aggregate of the tiles above it), so it splits
 // cleanly.
-const HOLDER_PANELS = [
-  { id: "overview", label: "Overview" },
-  { id: "concentration", label: "Concentration" },
-  { id: "balances", label: "Balances" },
-  // Same split, same reason: "Balances" paired Balance Insights (2 charts)
-  // with Staking Overview (1 more), measuring 2641px — taller than the
-  // Concentration stack above. Two separately-headed analyses, so they
-  // separate cleanly.
-  { id: "staking", label: "Staking" },
-  // "Momentum", not "Growth": this panel is velocity and multi-chain overlap
-  // stats, and it now sits next to "Trends" (the actual growth-over-time
-  // charts). Two panels both called some flavour of growth would be a coin
-  // toss for the reader.
-  { id: "growth", label: "Momentum" },
-  // Trends and Flows arrived from the Overview tab, which is now the
-  // Ecosystem Headline alone and does not scroll. They are the historical
-  // charts and the measured netflow — both holder-section material, and both
-  // better as one-at-a-time panels than as extra cards to scroll past.
-  { id: "trends", label: "Trends" },
-  { id: "flows", label: "Flows" },
-  { id: "exchanges", label: "Exchanges" },
-];
+// Labels live in lib/terminalCopy so the desktop Dashboard and this
+// one-chart Explore list don't use the same words for different jobs
+// ("Overview" / "Trends" / "Flows" used to read as a second dashboard).
+// Ids are unchanged — hashes and the Dashboard "Explore" buttons still land
+// on the same panels. "Momentum" stays: velocity isn't a Dashboard cell.
+const HOLDER_PANELS = HOLDER_EXPLORE_PANELS.map(({ id, label, hint }) => ({ id, label, title: hint }));
 
 const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDaysChange, trendsPanel, flowsPanel, panel: panelProp, onPanelChange, compactHeader = false }: WalletHoldingsWidgetProps) => {
   const { project } = useProject();

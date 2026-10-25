@@ -19,6 +19,12 @@ type TerminalPanelProps = {
   className?: string;
   /** Body padding off for edge-to-edge tables. */
   flush?: boolean;
+  /**
+   * Size to the body instead of filling a fixed grid cell. Used when the
+   * terminal page itself scrolls (tier flows at 1:1) so the panel grows
+   * with the diagram rather than squeezing it.
+   */
+  fit?: boolean;
   children: ReactNode;
   testId?: string;
 };
@@ -28,13 +34,13 @@ type TerminalPanelProps = {
  * 32px line; the body takes the rest and scrolls INSIDE the panel, so a long
  * table never grows the page.
  */
-export const TerminalPanel = ({ title, titleText, info, stat, actions, className = "", flush = false, children, testId }: TerminalPanelProps) => {
+export const TerminalPanel = ({ title, titleText, info, stat, actions, className = "", flush = false, fit = false, children, testId }: TerminalPanelProps) => {
   const headingId = useId();
   return (
     <section
       aria-labelledby={headingId}
       data-testid={testId}
-      className={`relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card ${className}`}
+      className={`relative flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card ${fit ? "" : "min-h-0"} ${className}`}
     >
       <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border/70 px-3">
         <h2 id={headingId} className="shrink-0 whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -49,10 +55,16 @@ export const TerminalPanel = ({ title, titleText, info, stat, actions, className
           "region": the <section> around it is already the named landmark,
           and a second landmark with the same name fails landmark-unique. */}
       <div
-        className={`relative min-h-0 flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${flush ? "" : "p-2"}`}
-        tabIndex={flush ? 0 : undefined}
-        aria-labelledby={flush ? headingId : undefined}
-        role={flush ? "group" : undefined}
+        className={
+          fit
+            ? flush
+              ? ""
+              : "p-2"
+            : `relative min-h-0 flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${flush ? "" : "p-2"}`
+        }
+        tabIndex={!fit && flush ? 0 : undefined}
+        aria-labelledby={!fit && flush ? headingId : undefined}
+        role={!fit && flush ? "group" : undefined}
       >
         {children}
       </div>

@@ -13,7 +13,7 @@ export const useMediaQuery = (query: string): boolean =>
     () => false,
   );
 
-/** The dense, no-scroll terminal layout starts at Tailwind's `xl` (1280px). */
+/** The desktop terminal shell starts at Tailwind's `xl` (1280px). */
 export const TERMINAL_QUERY = "(min-width: 1280px)";
 
 /** Below Tailwind's `sm` — phones, where dense diagrams switch to lists. */

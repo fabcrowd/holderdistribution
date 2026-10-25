@@ -66,6 +66,33 @@ export const reduceSelection = (state: DistSelection, action: DistAction): DistS
 export const hasSelection = (s: DistSelection) => !!(s.tier || s.sideTile || s.expandedFlow);
 
 /**
+ * Share of the tier stack (top → bottom) treated as "on the first screen"
+ * when picking a default. The busiest band overall is often the bottom
+ * dust tier, which sits below the fold on the 1:1 diagram.
+ */
+export const DEFAULT_TIER_VISIBLE_FRACTION = 0.7;
+
+export type TierCountRow = { label: string; count: number };
+
+/**
+ * Tier to select on first paint so the diagram isn't an empty stack of
+ * bars. Prefers the busiest band that still sits in the top
+ * `DEFAULT_TIER_VISIBLE_FRACTION` of `order` (the diagram's top-to-bottom
+ * labels). With no order, or when that slice is empty, the busiest band.
+ * Ties break by label so the pick is stable.
+ */
+export const defaultTierLabel = (rows: readonly TierCountRow[], order?: readonly string[]): string | null => {
+  if (rows.length === 0) return null;
+  const byCount = [...rows].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  const best = byCount[0];
+  if (!order || order.length === 0 || best.count <= 0) return best.label;
+  const visibleCount = Math.max(1, Math.ceil(order.length * DEFAULT_TIER_VISIBLE_FRACTION));
+  const visible = new Set(order.slice(0, visibleCount));
+  const inView = byCount.find((r) => visible.has(r.label) && r.count > 0);
+  return (inView ?? best).label;
+};
+
+/**
  * Escape clears the selection — unless the key press belongs to something
  * that handles Escape itself: an open popover / tooltip / dialog / menu
  * (Radix closes those first), or a text field.

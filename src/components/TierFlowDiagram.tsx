@@ -15,6 +15,7 @@ import {
   SIDE_H, bezierPath, laneArcPath, fanY, strokeWidth, rankedStrokeWidths, TIER_H,
   tierDisplayLabel, CANVAS_H as DEFAULT_CANVAS_H,
 } from "@/components/tierflow/geometry";
+import { tierCanvasScale } from "@/lib/tierFlowScale";
 import { useTierGeometry } from "@/components/tierflow/useTierGeometry";
 import { useFlowField, type ChainKey, type TierRow, type Cause, type TierField } from "@/components/tierflow/useFlowField";
 import {
@@ -228,23 +229,24 @@ export const TierFlowDiagram = ({
   }, [scrollEl, ready, scale, isTerminal]);
 
   // Scale-to-fit. The canvas is a fixed 936×682 grid — every tile position is
-  // computed in those coordinates, so it cannot reflow. Shrinking the whole
-  // canvas keeps every element on screen and needs no second rendering path.
+  // computed in those coordinates, so it cannot reflow. The wrapper carries
+  // the scaled size because a transform does not affect layout.
   //
   // Stacked layout: fit the WIDTH (the page scrolls vertically anyway).
-  // Terminal layout: fit BOTH dimensions of the panel, so the whole diagram
-  // — both side-tile columns and the bottom tier — is visible with no
-  // internal scrolling. Scale is capped at 1.
-  //
-  // The wrapper carries the scaled size because a transform does not affect
-  // layout — without it the card would reserve the full 682px.
+  // Terminal layout: fit the WIDTH only, and never below the readable floor
+  // (lib/tierFlowScale). Fitting the height as well is what crushed 13px
+  // labels to ~8px in a short cell. Extra height scrolls with the page.
   useLayoutEffect(() => {
     const el = scrollEl;
     if (!el || typeof ResizeObserver === "undefined") return;
     const measure = () => {
-      const byW = el.clientWidth / CANVAS_W;
-      const byH = isTerminal && el.clientHeight > 0 ? el.clientHeight / CANVAS_H : Infinity;
-      const next = Math.max(0.2, Math.min(1, byW, byH));
+      const next = tierCanvasScale({
+        terminal: isTerminal,
+        clientWidth: el.clientWidth,
+        clientHeight: el.clientHeight,
+        canvasW: CANVAS_W,
+        canvasH: CANVAS_H,
+      });
       setScale((prev) => (Math.abs(prev - next) < 0.002 ? prev : next));
     };
     measure();
@@ -681,7 +683,7 @@ export const TierFlowDiagram = ({
   );
 
   return (
-    <div className={isTerminal ? "flex h-full min-h-0 flex-col gap-2" : "space-y-3"} data-testid="tier-flow">
+    <div className={isTerminal ? "flex flex-col gap-2" : "space-y-3"} data-testid="tier-flow">
       {isTerminal ? (
         <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
           {metricToggle}
@@ -910,9 +912,12 @@ export const TierFlowDiagram = ({
         ref={setScrollEl}
         data-testid="tier-flow-canvas"
         data-scale={scale.toFixed(3)}
-        className={isTerminal ? "relative flex min-h-0 flex-1 justify-center overflow-hidden" : "overflow-x-auto -webkit-overflow-scrolling-touch pb-1"}
+        className={isTerminal ? "relative overflow-x-auto" : "overflow-x-auto -webkit-overflow-scrolling-touch pb-1"}
       >
-        <div className="relative shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>
+        <div
+          className={`relative shrink-0 ${isTerminal && CANVAS_W * scale <= (scrollEl?.clientWidth ?? 0) ? "mx-auto" : ""}`}
+          style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}
+        >
         <div
           // Tier nodes and any arcs fade in once with the first load.
           className={`absolute left-0 top-0 ${canvasIntro ? "ha-fade-in" : ""}`}
@@ -1354,11 +1359,11 @@ const ExplainNumber = ({
 );
 
 const FlowSkeleton = ({ terminal = false, height = DEFAULT_CANVAS_H }: { terminal?: boolean; height?: number }) => (
-  <div role="status" aria-label="Loading tier flows" className={terminal ? "flex h-full flex-col gap-2" : "space-y-3"}>
+  <div role="status" aria-label="Loading tier flows" className={terminal ? "flex flex-col gap-2" : "space-y-3"}>
     <div className="h-4 w-40 rounded bg-muted/40 animate-pulse" />
     <div
-      className={`rounded-xl border border-border/50 bg-muted/20 animate-pulse mx-auto ${terminal ? "w-full flex-1" : ""}`}
-      style={terminal ? undefined : { width: CANVAS_W, maxWidth: "100%", height }}
+      className="mx-auto animate-pulse rounded-xl border border-border/50 bg-muted/20"
+      style={terminal ? { width: "100%", height: Math.round(height * 0.92) } : { width: CANVAS_W, maxWidth: "100%", height }}
     />
   </div>
 );
