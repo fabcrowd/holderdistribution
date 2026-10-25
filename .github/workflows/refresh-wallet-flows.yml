@@ -1,7 +1,9 @@
 name: Refresh gated wallet-flows report (optional)
 
-# Regenerates data/forensics/wallet-flows.json — the password-gated "Wallet flows"
-# view (served only by the forensics gate function, never from public/data).
+# Regenerates the gated "Wallet flows" report for one project — TEL:
+# data/forensics/wallet-flows.json, others: data/<slug>/forensics/wallet-flows.json
+# (served only by the forensics gate function, never from public/data). A project
+# without data/<slug>/forensics/wallet-flows.registry.json is skipped (exit 0).
 #
 # WEEKLY, NOT DAILY, on purpose: one run is ~15-20 billed minutes on the keyless
 # public RPCs (90-day log scans on three chains + a full 72h transfer scan). Daily
@@ -19,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (TEL only: generate-wallet-flows.js is TEL forensics and exits 2 for any other project)'
+        description: 'Project slug from config/projects.json (scheduled runs: tel). Needs that project''s forensics registry.'
         required: false
         default: 'tel'
 
@@ -47,6 +49,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - name: Project paths
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
       - name: Generate report (keeps previous file on failure)
         env:
           RPC_PREFER_PUBLIC: '1'
@@ -55,7 +59,10 @@ jobs:
         run: |
           git config user.email "action@github.com"
           git config user.name "github-actions[bot]"
-          git add data/forensics/wallet-flows.json
+          # TEL: data/forensics/wallet-flows.json (unchanged); others: data/<slug>/forensics/…
+          FILES=$(node scripts/workflow-paths.js files data/forensics/wallet-flows.json)
+          if [ -z "$FILES" ]; then echo "No report for $HD_PROJECT_SLUG"; exit 0; fi
+          git add $FILES
           if git diff --cached --quiet; then echo "No change"; exit 0; fi
           git commit -m "Refresh gated wallet-flows report [skip netlify]"
           git checkout -- .

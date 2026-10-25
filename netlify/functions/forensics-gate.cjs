@@ -13879,6 +13879,7 @@ var require_main3 = __commonJS({
 // netlify/functions-src/forensics-gate.ts
 var forensics_gate_exports = {};
 __export(forensics_gate_exports, {
+  DISPOSITION_LEDGER_KEY: () => DISPOSITION_LEDGER_KEY,
   SESSION_CHECK_KEY: () => SESSION_CHECK_KEY,
   WALLET_FLOWS_KEY: () => WALLET_FLOWS_KEY,
   handler: () => handler
@@ -107857,31 +107858,56 @@ var wallet_flows_default = {
   largeSellersWindow: "72h to 2026-10-19 ~10:00 ET"
 };
 
+// config/projects.json
+var projects_default = {
+  $comment: "Master registry of mapped projects. One entry per token; `slug` is the URL/data key (?token=<slug>, public/data/<slug>/). Exactly one entry has default: true. Per-project detail lives in config/projects/<slug>.json. See docs/MULTI-TOKEN.md.",
+  projects: [
+    { slug: "tel", name: "Telcoin", ticker: "TEL", default: true }
+  ]
+};
+
+// netlify/functions-src/gatedProjects.ts
+var ENTRIES = projects_default.projects;
+var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
+var GATED_PROJECT_SLUGS = new Set(ENTRIES.map((p) => p.slug).filter((s) => SLUG_RE.test(s)));
+var DEFAULT_GATED_PROJECT = ENTRIES.find((p) => p.default)?.slug ?? ENTRIES[0]?.slug ?? "tel";
+var LEGACY_ROOT_SLUGS = /* @__PURE__ */ new Set(["tel"]);
+function resolveGatedProject(raw) {
+  if (raw === void 0 || raw === null || raw === "") return DEFAULT_GATED_PROJECT;
+  if (typeof raw !== "string") return null;
+  const slug = raw.trim().toLowerCase();
+  return GATED_PROJECT_SLUGS.has(slug) ? slug : null;
+}
+var walletFlowsRepoPath = (slug) => LEGACY_ROOT_SLUGS.has(slug) ? "data/forensics/wallet-flows.json" : `data/${slug}/forensics/wallet-flows.json`;
+
 // netlify/functions-src/walletFlowsSource.ts
 var CACHE_MS = 60 * 60 * 1e3;
 var TIMEOUT_MS = 6e3;
-var PATH = "data/forensics/wallet-flows.json";
-var cache = null;
+var cache = /* @__PURE__ */ new Map();
 var isReport = (r) => !!r && typeof r === "object" && r.version === 1 && Array.isArray(r.knownWallets);
-var newer = (a, b) => Date.parse(a.generated ?? "") >= Date.parse(b.generated ?? "");
-async function loadWalletFlows(env = process.env, fetchImpl = fetch, now = Date.now()) {
-  const bundled = wallet_flows_default;
-  if (cache && now - cache.at < CACHE_MS) return cache;
+var newer = (a, b) => !b || Date.parse(a.generated ?? "") >= Date.parse(b.generated ?? "");
+async function loadWalletFlows(env = process.env, fetchImpl = fetch, now = Date.now(), slug = DEFAULT_GATED_PROJECT) {
+  const bundled = LEGACY_ROOT_SLUGS.has(slug) ? wallet_flows_default : null;
+  const hit = cache.get(slug);
+  if (hit && now - hit.at < CACHE_MS) return { report: hit.report, source: hit.source };
   const token = env.LIVE_DATA_GITHUB_TOKEN?.trim();
-  let result = { report: bundled, source: "bundled" };
+  let result = bundled ? { report: bundled, source: "bundled" } : { report: null, source: "none" };
   if (token) {
     const repo = env.LIVE_DATA_REPO?.trim() || "fabcrowd/holderdistribution";
     const ref = env.LIVE_DATA_REF?.trim() || "main";
     try {
-      const res = await fetchImpl(`https://api.github.com/repos/${repo}/contents/${PATH}?ref=${encodeURIComponent(ref)}`, {
-        headers: {
-          Accept: "application/vnd.github.raw+json",
-          Authorization: `Bearer ${token}`,
-          "User-Agent": "holderdistribution-forensics-gate",
-          "X-GitHub-Api-Version": "2022-11-28"
-        },
-        signal: AbortSignal.timeout(TIMEOUT_MS)
-      });
+      const res = await fetchImpl(
+        `https://api.github.com/repos/${repo}/contents/${walletFlowsRepoPath(slug)}?ref=${encodeURIComponent(ref)}`,
+        {
+          headers: {
+            Accept: "application/vnd.github.raw+json",
+            Authorization: `Bearer ${token}`,
+            "User-Agent": "holderdistribution-forensics-gate",
+            "X-GitHub-Api-Version": "2022-11-28"
+          },
+          signal: AbortSignal.timeout(TIMEOUT_MS)
+        }
+      );
       if (res.ok) {
         const remote = await res.json();
         if (isReport(remote) && newer(remote, bundled)) result = { report: remote, source: "github" };
@@ -107889,13 +107915,21 @@ async function loadWalletFlows(env = process.env, fetchImpl = fetch, now = Date.
     } catch {
     }
   }
-  cache = { at: now, ...result };
+  cache.set(slug, { at: now, ...result });
   return result;
 }
 
 // netlify/functions-src/forensics-gate.ts
 var TEL_DISPOSITION_LEDGER_KEY = "tel-disposition-ledger";
+var DISPOSITION_LEDGER_KEY = "disposition-ledger";
 var WALLET_FLOWS_KEY = "wallet-flows";
+var STATIC_GATED = {
+  tel: {
+    dispositionLedger: TEL_DISPOSITION_LEDGER,
+    associationFlows: ASSOCIATION_STABLECOIN_FLOWS,
+    writeups: WALLET_ANALYSES
+  }
+};
 var SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "https://svvjdtmvmqdejjqxzclp.supabase.co";
 var PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2dmpkdG12bXFkZWpqcXh6Y2xwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MjEyNDksImV4cCI6MjA3NTM5NzI0OX0.ENPC-zov9byGwSYIu11wMnz5r4FpdU85tBBKvIJdB14";
 var SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? PUBLIC_SUPABASE_ANON_KEY;
@@ -107970,14 +108004,20 @@ async function handler(event) {
     }
     const session = issued ? { token: issued.token, tokenExpiresAt: issued.expiresAt } : {};
     if (address === SESSION_CHECK_KEY) return json(200, { ok: true, ...session });
-    if (address === ASSOCIATION_FLOW_REPORT_KEY) return json(200, { report: ASSOCIATION_STABLECOIN_FLOWS, ...session });
-    if (address === TEL_DISPOSITION_LEDGER_KEY) return json(200, { report: TEL_DISPOSITION_LEDGER, ...session });
-    if (address === WALLET_FLOWS_KEY) {
-      const { report, source } = await loadWalletFlows();
-      return json(200, { report, ...session }, { "X-Wallet-Flows-Source": source });
+    const project = resolveGatedProject(body.project);
+    if (!project) return json(400, { error: "Unknown project", ...session });
+    const gated = STATIC_GATED[project];
+    const scoped = { project, ...session };
+    if (address === ASSOCIATION_FLOW_REPORT_KEY) return json(200, { report: gated?.associationFlows ?? null, ...scoped });
+    if (address === TEL_DISPOSITION_LEDGER_KEY || address === DISPOSITION_LEDGER_KEY) {
+      return json(200, { report: gated?.dispositionLedger ?? null, ...scoped });
     }
-    const analysis = WALLET_ANALYSES[address] ?? null;
-    return json(200, { analysis, ...session });
+    if (address === WALLET_FLOWS_KEY) {
+      const { report, source } = await loadWalletFlows(process.env, fetch, Date.now(), project);
+      return json(200, { report, ...scoped }, { "X-Wallet-Flows-Source": source });
+    }
+    const analysis = gated?.writeups[address] ?? null;
+    return json(200, { analysis, ...scoped });
   } catch (error) {
     console.error("forensics-gate error:", error);
     return json(500, { error: "Internal error" });
@@ -107985,6 +108025,7 @@ async function handler(event) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  DISPOSITION_LEDGER_KEY,
   SESSION_CHECK_KEY,
   WALLET_FLOWS_KEY,
   handler

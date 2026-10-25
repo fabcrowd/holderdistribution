@@ -7,38 +7,48 @@ export type { WalletAnalysis, FlowReport };
 
 export { ForensicsGateError };
 
+/**
+ * Gated forensics loaders. Every loader takes the active project slug
+ * (useProject().slug) and asks the gate for THAT project's payload; the gate
+ * answers the same keys for every project and returns null when a project has
+ * nothing gated yet (the panels then render an empty state). Omitting the slug
+ * means the default project (TEL), as before multi-token.
+ */
 const ASSOCIATION_FLOW_REPORT_KEY = "association-stablecoin-flows";
-const TEL_DISPOSITION_LEDGER_KEY = "tel-disposition-ledger";
+/** Project-neutral ledger key (the gate also accepts the old "tel-disposition-ledger"). */
+const DISPOSITION_LEDGER_KEY = "disposition-ledger";
 export const WALLET_FLOWS_KEY = "wallet-flows";
 
-/** Load one wallet write-up after the password gate (or admin session) has opened. */
+/** Load one wallet write-up after the gate (password / admin session) has opened. */
 export const loadWalletAnalysis = async (
   address: string,
   password: string | null,
+  project?: string,
 ): Promise<WalletAnalysis | null> => {
-  const { analysis } = await fetchForensicsGate(address, password);
+  const { analysis } = await fetchForensicsGate(address, password, project);
   return (analysis as WalletAnalysis | null | undefined) ?? null;
 };
 
-/** Load the Association stablecoin outflow narrative. */
-export const loadAssociationFlowReport = async (password: string | null): Promise<FlowReport> => {
-  const { report } = await fetchForensicsGate(ASSOCIATION_FLOW_REPORT_KEY, password);
-  if (!report) throw new ForensicsGateError("Missing flow report", 500);
-  return report as FlowReport;
+/** Load the foundation stablecoin outflow narrative (null = none for this project). */
+export const loadAssociationFlowReport = async (password: string | null, project?: string): Promise<FlowReport | null> => {
+  const res = await fetchForensicsGate(ASSOCIATION_FLOW_REPORT_KEY, password, project);
+  if (!("report" in res)) throw new ForensicsGateError("Missing flow report", 500);
+  return (res.report as FlowReport | null) ?? null;
 };
 
-/** Load the treasury ledger — served only by the Netlify gate, not the static bundle. */
+/** Load the treasury disposition ledger — gate only (null = none for this project). */
 export const loadDispositionLedger = async (
   password: string | null,
-): Promise<TelDispositionLedgerReport> => {
-  const { report } = await fetchForensicsGate(TEL_DISPOSITION_LEDGER_KEY, password);
-  if (!report) throw new ForensicsGateError("Missing disposition ledger", 500);
-  return report as TelDispositionLedgerReport;
+  project?: string,
+): Promise<TelDispositionLedgerReport | null> => {
+  const res = await fetchForensicsGate(DISPOSITION_LEDGER_KEY, password, project);
+  if (!("report" in res)) throw new ForensicsGateError("Missing disposition ledger", 500);
+  return (res.report as TelDispositionLedgerReport | null) ?? null;
 };
 
-/** Load the Wallet flows report (supply by entity, Telcoin-linked wallets, large sellers). Gate-only. */
-export const loadWalletFlows = async (password: string | null): Promise<WalletFlowsReport> => {
-  const { report } = await fetchForensicsGate(WALLET_FLOWS_KEY, password);
-  if (!report) throw new ForensicsGateError("Missing wallet flows report", 500);
-  return report as WalletFlowsReport;
+/** Load the Wallet flows report (supply by entity, linked wallets, large sellers). Gate only; null = none yet. */
+export const loadWalletFlows = async (password: string | null, project?: string): Promise<WalletFlowsReport | null> => {
+  const res = await fetchForensicsGate(WALLET_FLOWS_KEY, password, project);
+  if (!("report" in res)) throw new ForensicsGateError("Missing wallet flows report", 500);
+  return (res.report as WalletFlowsReport | null) ?? null;
 };

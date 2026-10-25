@@ -53,6 +53,8 @@ import {
 } from "@/lib/dispositionPeriod";
 import { cn } from "@/lib/utils";
 import { loadDispositionLedger } from "@/lib/loadForensics";
+import { useProject } from "@/hooks/useProject";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 
 const LEDGER_VIEWS = [
   { id: "ledger", label: "Sales journal" },
@@ -135,10 +137,11 @@ export type TelDispositionLedgerReport = {
   burnPlan?: BurnPlan | null;
 };
 
-const useTelDispositionLedger = (password: string | null, unlocked: boolean) =>
+const useTelDispositionLedger = (password: string | null, unlocked: boolean, slug: string) =>
   useQuery({
-    queryKey: ["tel-disposition-ledger", password, "local"],
-    queryFn: () => loadDispositionLedger(password),
+    // Keyed by project: the gate answers with the active project's ledger (null = none yet).
+    queryKey: ["disposition-ledger", slug, password, "local"],
+    queryFn: () => loadDispositionLedger(password, slug),
     enabled: unlocked && password !== null,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -556,7 +559,9 @@ const SortHead = ({
 export const TelDispositionLedger = () => {
   const { password, status, unlock } = useForensicsUnlock();
   const unlocked = status === "unlocked" && password !== null;
-  const { data: report, isLoading, isError } = useTelDispositionLedger(password, unlocked);
+  const { slug } = useProject();
+  const { ticker, name, entities } = useProjectCopy();
+  const { data: report, isLoading, isError } = useTelDispositionLedger(password, unlocked, slug);
   const [walletFilter, setWalletFilter] = useState<string>("all");
   const [view, setView] = useState("ledger");
   const [periodId, setPeriodId] = useState("all");
@@ -623,11 +628,11 @@ export const TelDispositionLedger = () => {
       <header className="flex items-start gap-2">
         <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-foreground">Association treasury ledger</h3>
+          <h3 className="text-sm font-semibold text-foreground">{`${entities.associationShort} treasury ledger`}</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {unlocked
-              ? "Sales of TEL for stablecoin, and where that stablecoin went — by council wallet."
-              : "Sales of TEL for stablecoin, and where that stablecoin went — by council wallet. Password required."}
+              ? `Sales of ${ticker} for stablecoin, and where that stablecoin went — by council wallet.`
+              : `Sales of ${ticker} for stablecoin, and where that stablecoin went — by council wallet. Password required.`}
           </p>
         </div>
       </header>
@@ -641,7 +646,9 @@ export const TelDispositionLedger = () => {
       ) : isError ? (
         <p className="mt-3 text-xs text-destructive">Could not load ledger.</p>
       ) : !report ? (
-        <p className="mt-3 text-xs text-muted-foreground">Ledger unavailable.</p>
+        <p className="mt-3 text-xs text-muted-foreground" data-testid="disposition-ledger-empty">
+          {`No treasury ledger mapped for ${name} yet.`}
+        </p>
       ) : (
         <div className="mt-3 space-y-4">
           <HowToRead />
