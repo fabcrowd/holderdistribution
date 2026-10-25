@@ -25,6 +25,12 @@ describe("chain-status.json", () => {
     expect(JSON.stringify(out)).not.toMatch(/rawBalances|0xa/);
   });
 
+  it("uses the project's chain keys when given (e.g. a fourth chain)", () => {
+    const cp = { generatedAt: "g", chains: { ethereum: { lastBlock: 1 }, arbitrum: { lastBlock: 2 }, base: { lastBlock: 3 } } };
+    expect(buildChainStatus(cp, ["ethereum", "arbitrum"]).chains).toEqual({ ethereum: { lastBlock: 1 }, arbitrum: { lastBlock: 2 } });
+    expect(buildChainStatus(cp, []).chains).toEqual({ ethereum: { lastBlock: 1 }, base: { lastBlock: 3 } });
+  });
+
   it("drops chains without a valid block", () => {
     expect(buildChainStatus({ chains: { ethereum: { lastBlock: "x" } } })).toEqual({ generatedAt: null, chains: {} });
   });

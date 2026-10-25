@@ -23,6 +23,7 @@ import { buildViewHash, DEFAULT_PANEL, parseViewHash, type ViewId } from "@/lib/
 import { navigate, readSettings, withHash, withSettings, type NavKind } from "@/lib/historyNav";
 
 import { useHolderLiteSnapshot, type DisplaySelection } from "@/hooks/useHolderSnapshot";
+import { coerceChainView } from "@/lib/chainViews";
 import { RANGE_OPTIONS, ytdDays } from "@/lib/timeRange";
 import { useHoldersHistoryData } from "@/hooks/useHoldersHistoryData";
 import { pickBaseline } from "@/lib/baseline";
@@ -178,6 +179,12 @@ const Holders = () => {
   });
 
   const [selectedView, setSelectedView] = useState<DisplaySelection>(settings0.chain ?? "combined");
+  // Chain views come from the active project's chains[]; switching to a
+  // project that lacks the selected chain falls back to Combined.
+  useEffect(() => {
+    const next = coerceChainView(project, selectedView);
+    if (next !== selectedView) setSelectedView(next);
+  }, [project, selectedView]);
 
   // Ecosystem Headline: the tiles themselves are the sticky, morphing
   // element. A sentinel at the hero's natural top edge (heroRef) reports

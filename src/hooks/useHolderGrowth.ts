@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { ChainView } from "@/lib/chainViews";
 import { combinedStaked, v3StakedOn } from "@/lib/staking";
 import { useHoldersHistoryData } from "./useHoldersHistoryData";
 
@@ -59,7 +60,7 @@ export type DexLiquidityGrowthPoint = {
 };
 
 export type HolderGrowthData = {
-  view: "combined" | "ethereum" | "polygon" | "base";
+  view: ChainView;
   days: number;
   updatedAt: string | null;
   feedError: boolean;

@@ -6,6 +6,8 @@ import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useHeadlineTiles } from "@/hooks/useHeadlineTiles";
 import type { ClassificationEvent } from "@/hooks/useClassificationChangelog";
 import { v3StakingGapEvents } from "@/lib/staking";
+import { stakingElsewhereNote, type ChainView } from "@/lib/chainViews";
+import { useProject } from "@/hooks/useProject";
 
 const formatInteger = (v: number) => new Intl.NumberFormat().format(v);
 const formatTokenAmount = (v: number) => {
@@ -42,7 +44,7 @@ export type EcosystemHeadlineTile = {
   scope: "chain" | "all";
 };
 
-export type HeadlineView = "combined" | "ethereum" | "polygon" | "base";
+export type HeadlineView = ChainView;
 
 /**
  * The four Ecosystem Headline numbers, extracted from HolderKpiHero so a
@@ -67,6 +69,9 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
   // component renders them — see useHeadlineTiles' doc comment.
   const { historicalDelta, cexPrevious, events } = useHeadlineTiles({ view: chain, rangeDays });
   const { ticker } = useProjectCopy();
+  const { project } = useProject();
+  // TEL on Ethereum/Base: "Staking runs on Polygon" (from config staking[]).
+  const stakingNote = stakingElsewhereNote(project, chain);
 
   const isAth = useMemo(() => {
     const series = fullHistory?.series;
@@ -168,7 +173,7 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
       {
         id: "staked",
         icon: Layers, label: `Staked ${ticker}`, value: formatTokenAmount(staked),
-        sub: perChain && chain !== "polygon" ? "Staking runs on Polygon" : pctOfSupply(staked, supply),
+        sub: perChain && stakingNote ? stakingNote : pctOfSupply(staked, supply),
         // ChangeIndicator only renders (and so only shows the "†") with a
         // baseline; with no v3 baseline, hand it the current value as one.
         ath: false, current: staked,
@@ -192,5 +197,5 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     ];
 
     return { tiles, isAth };
-  }, [snap, historicalDelta, cexPrevious, events, isAth, chain, ticker]);
+  }, [snap, historicalDelta, cexPrevious, events, isAth, chain, ticker, stakingNote]);
 };

@@ -11,6 +11,9 @@
  * Pure helpers take a location-like object so they are testable in node.
  */
 import type { DisplaySelection } from "@/hooks/useHolderSnapshot";
+import { chainViewKeys } from "@/lib/chainViews";
+import { getProject } from "@/lib/projects";
+import { getActiveSlug } from "@/lib/projectStore";
 
 export type NavKind = "push" | "replace";
 
@@ -20,7 +23,6 @@ type HistLike = {
   replaceState: (data: unknown, unused: string, url: string) => void;
 };
 
-const CHAIN_VALUES: readonly DisplaySelection[] = ["combined", "ethereum", "polygon", "base"];
 
 /** URL for `loc` with its hash swapped. Null when nothing would change. */
 export const withHash = (loc: LocLike, hash: string): string | null => {
@@ -31,14 +33,22 @@ export const withHash = (loc: LocLike, hash: string): string | null => {
 
 export type UrlSettings = { range: number | null; chain: DisplaySelection | null };
 
-/** Reads ?range=<days>&chain=<chain>. Unknown values read as null (default). */
-export const readSettings = (search: string, validRanges: readonly number[]): UrlSettings => {
+/**
+ * Reads ?range=<days>&chain=<chain>. Unknown values read as null (default).
+ * Valid chains are "combined" plus the active project's chain keys (TEL:
+ * ethereum, polygon, base), unless the caller passes its own list.
+ */
+export const readSettings = (
+  search: string,
+  validRanges: readonly number[],
+  validChains: readonly string[] = chainViewKeys(getProject(getActiveSlug())),
+): UrlSettings => {
   const q = new URLSearchParams(search);
   const r = Number(q.get("range"));
   const c = q.get("chain") as DisplaySelection | null;
   return {
     range: Number.isFinite(r) && validRanges.includes(r) ? r : null,
-    chain: c && CHAIN_VALUES.includes(c) ? c : null,
+    chain: c && validChains.includes(c) ? c : null,
   };
 };
 

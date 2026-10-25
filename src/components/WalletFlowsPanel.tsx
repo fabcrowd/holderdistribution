@@ -76,11 +76,16 @@ const VerdictBadge = ({ verdict }: { verdict: string }) => (
 );
 
 const AddressLinks = ({ address, chains }: { address: string; chains: string[] }) => {
-  const list = chains.length > 0 ? chains : ["ethereum"];
+  const { project } = useProject();
+  const explorers = useMemo(
+    () => Object.fromEntries((project.chains ?? []).map((c) => [c.key, c.explorer])),
+    [project],
+  );
+  const list = chains.length > 0 ? chains : [project.chains?.[0]?.key ?? "ethereum"];
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       <a
-        href={addressExplorerUrl(list[0], address)}
+        href={addressExplorerUrl(list[0], address, explorers)}
         target="_blank"
         rel="noopener noreferrer"
         className="font-mono text-[11px] text-primary hover:underline"
@@ -92,13 +97,13 @@ const AddressLinks = ({ address, chains }: { address: string; chains: string[] }
       {list.map((c) => (
         <a
           key={c}
-          href={addressExplorerUrl(c, address)}
+          href={addressExplorerUrl(c, address, explorers)}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground hover:border-primary/50 hover:text-foreground"
           aria-label={`${address} on ${c} explorer`}
         >
-          {CHAIN_SHORT[c] ?? c}
+          {CHAIN_SHORT[c] ?? c.toUpperCase()}
         </a>
       ))}
     </span>

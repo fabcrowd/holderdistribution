@@ -16,6 +16,7 @@ import { Footer } from "@/components/Footer";
 import { useHeadlineSummary } from "@/hooks/useHeadlineSummary";
 import { useCountUp, useIntro } from "@/hooks/useMotion";
 import type { DisplaySelection } from "@/hooks/useHolderSnapshot";
+import { chainViewOptions } from "@/lib/chainViews";
 import { describeFreshness } from "@/lib/format";
 import type { SummaryPoint } from "@/lib/holderSummary";
 import type { ViewId } from "@/lib/viewRoute";
@@ -26,11 +27,6 @@ const VIEWS: Array<{ id: ViewId; label: string; icon: typeof Users }> = [
   { id: "supply", label: "Supply", icon: Coins },
 ];
 
-/** Chain picker options: "All chains" plus the active project's chains. */
-const chainOptions = (chains: Array<{ key: string; name: string }>): Array<{ key: DisplaySelection; label: string }> => [
-  { key: "combined", label: "All chains" },
-  ...chains.map((c) => ({ key: c.key as DisplaySelection, label: c.name })),
-];
 
 const TREND: Record<SummaryPoint["trend"], { Icon: typeof Minus; cls: string }> = {
   up: { Icon: ArrowUpRight, cls: "text-positive" },
@@ -75,7 +71,8 @@ export const TerminalDashboard = ({
 }: Props) => {
   const { summary, snapshot, tiles, isError } = useHeadlineSummary(rangeDays, selectedView);
   const { project } = useProject();
-  const CHAINS = chainOptions(project.chains);
+  // Chain picker: "All chains" plus the active project's chains[] (src/lib/chainViews.ts).
+  const CHAINS = chainViewOptions(project, "All chains");
   const qc = useQueryClient();
   const fresh = describeFreshness(snapshot?.generatedAt);
   const stale = fresh.status === "delayed" || fresh.status === "stale";

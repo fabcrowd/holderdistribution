@@ -206,7 +206,7 @@ async function saveCheckpoint(chainCheckpoints) {
   // The browser reads this ~200-byte slice instead of the 5 MB checkpoint.
   await fs.writeFile(
     path.join(path.dirname(CHECKPOINT_PATH), "chain-status.json"),
-    `${JSON.stringify(buildChainStatus(payload), null, 2)}\n`,
+    `${JSON.stringify(buildChainStatus(payload, (project.config?.chains ?? []).map((c) => c.key)), null, 2)}\n`,
     "utf8",
   );
 }

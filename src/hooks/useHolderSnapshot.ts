@@ -9,7 +9,10 @@ import type { WalletVelocity } from "@/lib/holderVelocity";
 import { dataUrl } from "@/lib/dataUrl";
 import { useProject } from "@/hooks/useProject";
 
-export type DisplaySelection = "combined" | "ethereum" | "polygon" | "base";
+import type { ChainView } from "@/lib/chainViews";
+
+/** "combined" or one of the active project's chain keys (src/lib/chainViews.ts). */
+export type DisplaySelection = ChainView;
 
 export type SnapshotSource = {
   type?: string | null;
@@ -149,7 +152,8 @@ export type HolderLiteSnapshot = {
   };
   source: SnapshotSource | null;
   chainOrder: string[];
-  views: Record<DisplaySelection, HolderLiteView>;
+  /** "combined" plus one view per chain the project is on (keyed by chain key). */
+  views: { combined: HolderLiteView } & Record<string, HolderLiteView>;
   overlap: ChainOverlapStats | null;
   cex?: CexFlowSnapshot | null;
 };

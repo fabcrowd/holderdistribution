@@ -13,13 +13,8 @@ export type TierRow = {
   previousTotalBalance?: number | null;
 };
 
-export type ChainKey = "all" | "ethereum" | "polygon" | "base";
-export const CHAIN_OPTIONS: { key: ChainKey; label: string }[] = [
-  { key: "all", label: "All chains" },
-  { key: "ethereum", label: "Ethereum" },
-  { key: "polygon", label: "Polygon" },
-  { key: "base", label: "Base" },
-];
+/** "all" (every chain) or one of the active project's chain keys (src/lib/chainViews.ts). */
+export type ChainKey = "all" | (string & {});
 
 export type Cause = {
   dex: number; dexSwap: number; dexLp: number;

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { ChainView } from "@/lib/chainViews";
 import { useHoldersHistoryData } from "./useHoldersHistoryData";
 import { pickBaseline } from "@/lib/baseline";
 import { combinedStaked, v3StakedOn } from "@/lib/staking";
@@ -50,7 +51,7 @@ const EMPTY_DELTA: HistoricalDelta = {
 };
 
 type QueryParams = {
-  view: "combined" | "ethereum" | "polygon" | "base";
+  view: ChainView;
   days: number;
   enabled?: boolean;
 };

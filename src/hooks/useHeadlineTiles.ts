@@ -1,10 +1,11 @@
 import { useHolderHistoricalDelta } from "./useHolderHistoricalDelta";
+import type { ChainView } from "@/lib/chainViews";
 import { useCexBalanceHistory } from "./useCexBalanceHistory";
 import { useClassificationChangelog, getEventsAffecting, type ClassificationEvent } from "./useClassificationChangelog";
 import { pickBaseline } from "@/lib/baseline";
 
 type Params = {
-  view: "combined" | "ethereum" | "polygon" | "base";
+  view: ChainView;
   rangeDays: number;
 };
 
