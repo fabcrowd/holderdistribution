@@ -48,9 +48,9 @@ export const associationCategoryLabel = (category: string): string =>
   isAssociationCategory(category) ? ASSOCIATION_CATEGORY_LABELS[category] : category;
 
 /**
- * Confirmed Telcoin Holdings wallets (~1.65B). Kept as its own hero bucket —
- * same legal/ops cluster as the former safe-cluster set, distinct from
- * Association treasury/council/staking.
+ * Confirmed team / company wallets (TEL: Telcoin Holdings, ~1.65B). Kept as
+ * its own hero bucket, distinct from the foundation (TEL: Association)
+ * treasury/council/staking.
  */
 export const HOLDINGS_CATEGORY_KEYS = ["holdings"] as const;
 
@@ -87,9 +87,19 @@ export const OTHER_CATEGORY_LABELS: Record<OtherCategoryKey, string> = {
 export const otherCategoryLabel = (category: string): string =>
   isOtherCategory(category) ? OTHER_CATEGORY_LABELS[category] : category;
 
+/** Bucket titles for the project-controlled entities (src/lib/projectCopy.ts projectEntities). */
+export type EntityBucketLabels = { association: string; holdings: string };
+
+/** Project-agnostic fallbacks; the Supply view passes the active project's names. */
+export const DEFAULT_ENTITY_BUCKET_LABELS: EntityBucketLabels = {
+  association: "Foundation-Controlled Safes",
+  holdings: "Team Wallets",
+};
+
 export const groupSupplyCategories = (
   categories: Record<string, number> | undefined | null,
   residual = 0,
+  labels: EntityBucketLabels = DEFAULT_ENTITY_BUCKET_LABELS,
 ): DisplayBucket[] => {
   const c = categories ?? {};
   const association = ASSOCIATION_CATEGORY_KEYS.reduce((sum, k) => sum + (c[k] ?? 0), 0);
@@ -127,14 +137,14 @@ export const groupSupplyCategories = (
     },
     {
       key: "association",
-      label: "Telcoin Association-Controlled Safes",
+      label: labels.association,
       amount: association,
       alignment: "institutional",
       color: "hsl(250 45% 50%)",
     },
     {
       key: "holdings",
-      label: "Telcoin Holdings",
+      label: labels.holdings,
       amount: holdings,
       alignment: "institutional",
       color: "hsl(330 55% 48%)",

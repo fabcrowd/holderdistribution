@@ -69,14 +69,14 @@ type SupplyBreakdownProps = {
   layout?: "stacked" | "terminal";
 };
 
-const formatCompactTEL = (value: number) => {
+const formatCompactAmount = (value: number) => {
   if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
   if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
   if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
   return new Intl.NumberFormat().format(Math.round(value));
 };
 
-const formatFullTEL = (value: number) =>
+const formatFullAmount = (value: number) =>
   new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
 
 const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
@@ -101,7 +101,7 @@ const makeActivePieSector = (ticker: string) => (props: PieSectorDataItem) => {
     <Sector
       // recharts gives each sector role="img"; the redrawn active one needs
       // its own text alternative too (axe svg-img-alt).
-      aria-label={p?.label ? `${p.label}: ${formatCompactTEL(p.amount ?? 0)} ${ticker} (${(p.pct ?? 0).toFixed(1)}%), selected` : "Selected category"}
+      aria-label={p?.label ? `${p.label}: ${formatCompactAmount(p.amount ?? 0)} ${ticker} (${(p.pct ?? 0).toFixed(1)}%), selected` : "Selected category"}
       cx={cx}
       cy={cy}
       innerRadius={innerRadius}
@@ -168,7 +168,7 @@ const renderBucketDetail = (
 
 const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = "stacked" }: SupplyBreakdownProps) => {
   const pieIntro = useChartIntro();
-  const { ticker } = useProjectCopy();
+  const { ticker, entities, text } = useProjectCopy();
   const pieChartConfig = useMemo(() => supplyPieChartConfig(ticker), [ticker]);
   const activePieSector = useMemo(() => makeActivePieSector(ticker), [ticker]);
   // Controlled when the page owns the panel (so #supply/<panel> deep links
@@ -208,7 +208,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
       const residual = data?.residual ?? Math.max(0, total - (data?.counted ?? 0));
       // No reconciliation (loading / failed) → no buckets. Grouping an empty
       // payload used to put the whole 100B into "In transit".
-      const all = data ? groupSupplyCategories(data.categories, residual) : [];
+      const all = data ? groupSupplyCategories(data.categories, residual, entities) : [];
       const parts = partitionBuckets(all);
       const items = data?.items ?? [];
       return {
@@ -241,7 +241,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
           .slice()
           .sort((a, b) => b.balance - a.balance),
       };
-    }, [data]);
+    }, [data, entities]);
 
   // Largest category that has something to drill into. Retail is usually
   // bigger, but its "detail" is one sentence (there is no address list),
@@ -323,7 +323,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                             <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-md">
                               <p className="font-medium text-foreground">{entry.label}</p>
                               <p className="text-muted-foreground tabular-nums">
-                                {formatCompactTEL(entry.amount)} {ticker} ({entry.pct.toFixed(1)}%)
+                                {formatCompactAmount(entry.amount)} {ticker} ({entry.pct.toFixed(1)}%)
                               </p>
                             </div>
                           );
@@ -379,7 +379,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                               fill={b.color}
                               // Recharts hard-codes role="img" on each wedge;
                               // give it a text alternative (WCAG 1.1.1).
-                              aria-label={`${b.label}: ${formatCompactTEL(b.amount)} ${ticker} (${b.pct.toFixed(1)}%)`}
+                              aria-label={`${b.label}: ${formatCompactAmount(b.amount)} ${ticker} (${b.pct.toFixed(1)}%)`}
                               fillOpacity={anySelected ? (isRowActive ? 1 : 0.25) : baseOpacity}
                               stroke="hsl(var(--background))"
                               strokeWidth={isRowActive ? 3 : 0}
@@ -445,7 +445,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                             <span className="truncate text-sm font-medium text-foreground">{b.label}</span>
                           </span>
                           <span className="tabular-nums text-sm font-semibold shrink-0">
-                            {formatCompactTEL(b.amount)}
+                            {formatCompactAmount(b.amount)}
                             <span className="text-muted-foreground font-normal ml-1.5 text-xs">
                               {pct.toFixed(1)}%
                             </span>
@@ -483,7 +483,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
           <AlertTriangle aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0" />
           <span>
             <span className="font-semibold">Reconciling.</span> This snapshot's categories don't yet add up to the{" "}
-            {formatCompactTEL(totalSupply)} total supply, so individual amounts may shift slightly at the next
+            {formatCompactAmount(totalSupply)} total supply, so individual amounts may shift slightly at the next
             refresh.
           </span>
         </div>
@@ -499,25 +499,29 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                   <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground space-y-1">
                     <div>
                       <span className="font-semibold text-foreground">Circulating: </span>
-                      {formatCompactTEL(circulating)} {ticker}
+                      {formatCompactAmount(circulating)} {ticker}
                       <span className="text-muted-foreground">
                         {" "}
-                        (counted − treasury − council − Association-committed escrow;
-                        Holdings-sourced escrow included)
+                        (counted − treasury − council − {entities.associationShort}-committed escrow;
+                        {" "}{entities.holdingsShort}-sourced escrow included)
                       </span>
                     </div>
                     <div>
-                      CoinGecko reports {formatCompactTEL(coingeckoCirculating)}
+                      CoinGecko reports {formatCompactAmount(coingeckoCirculating)}
                       {cgDelta != null && (
                         <>
                           {" "}
                           (Δ {cgDelta >= 0 ? "+" : "−"}
-                          {formatCompactTEL(Math.abs(cgDelta))}). CoinGecko's figure isn't a
-                          different methodology — it's the main treasury wallet's exact on-chain balance
-                          right after its 2025-10-01 transfer to Anchorage, never refreshed since.
-                          Every treasury move after that date
-                          {data?.categories?.treasury != null ? `, down to today's ${formatCompactTEL(data.categories.treasury)} balance,` : ""} is
-                          invisible to their number.
+                          {formatCompactAmount(Math.abs(cgDelta))}).{" "}
+                          {text(
+                            "supply.coingecko.note",
+                            "CoinGecko's figure is the aggregator's own reported number, not reconstructed from on-chain balances.",
+                          ).replace(
+                            "{treasuryNow}",
+                            data?.categories?.treasury != null
+                              ? `, down to today's ${formatCompactAmount(data.categories.treasury)} balance,`
+                              : "",
+                          )}
                         </>
                       )}
                     </div>
@@ -531,7 +535,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                   minHeightClass="min-h-[18rem]"
                   compact={layout === "terminal"}
                   primary={layout === "terminal"}
-                  description="Association Safes, Telcoin Holdings and Escrow balance history. One password unlocks every protected panel."
+                  description={`${entities.associationShort} Safes, ${entities.holdings} and Escrow balance history. One password unlocks every protected panel.`}
                 >
                   <TreasuryHistoryChart rangeDays={rangeDays} compact={layout === "terminal"} />
                   <AssociationFlowAnalysis />
@@ -550,7 +554,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
         state={isLoading ? "loading" : error ? "error" : buckets.length === 0 ? "empty" : "ready"}
         panel={panel}
         onPanelChange={setPanel}
-        totalSupplyLabel={`${formatCompactTEL(totalSupply)} ${ticker}`}
+        totalSupplyLabel={`${formatCompactAmount(totalSupply)} ${ticker}`}
         donut={renderDonut("mx-auto h-[170px] w-[170px] shrink-0 2xl:h-[240px] 2xl:w-[240px]")}
         list={renderList(true)}
         footnote={footnote}
@@ -604,7 +608,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                       Total supply
                     </span>
                     <span className="text-sm font-semibold tabular-nums">
-                      {formatCompactTEL(totalSupply)} {ticker}
+                      {formatCompactAmount(totalSupply)} {ticker}
                     </span>
                   </div>
                   {/* Donut beside its list on desktop, stacked on mobile —
@@ -684,8 +688,8 @@ const ResidualPanel = ({
     <div className="space-y-3">
       <p className="font-semibold text-foreground text-sm">In transit (bridges)</p>
       <p className="text-muted-foreground">
-        Deeper look at the ~{formatCompactTEL(residual)} gap between wallets we can count and the
-        official {formatCompactTEL(data?.totalSupply ?? 1e11)} total. Most of this is {ticker} that is{" "}
+        Deeper look at the ~{formatCompactAmount(residual)} gap between wallets we can count and the
+        official {formatCompactAmount(data?.totalSupply ?? 1e11)} total. Most of this is {ticker} that is{" "}
         <span className="text-foreground font-medium">
           locked on Ethereum while it moves to Polygon or Base
         </span>
@@ -694,23 +698,23 @@ const ResidualPanel = ({
       <dl className="space-y-1.5 tabular-nums">
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">In transit</dt>
-          <dd className="font-medium text-foreground">{formatFullTEL(residual)} {ticker}</dd>
+          <dd className="font-medium text-foreground">{formatFullAmount(residual)} {ticker}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Locked on Ethereum (bridges)</dt>
-          <dd>{formatFullTEL(data?.bridgeLocked ?? 0)}</dd>
+          <dd>{formatFullAmount(data?.bridgeLocked ?? 0)}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Already showing on Polygon + Base</dt>
-          <dd>{formatFullTEL(data?.mirrored ?? 0)}</dd>
+          <dd>{formatFullAmount(data?.mirrored ?? 0)}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Still crossing bridges</dt>
-          <dd>{formatFullTEL(parts?.bridgeInFlight ?? 0)}</dd>
+          <dd>{formatFullAmount(parts?.bridgeInFlight ?? 0)}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Tiny scan difference</dt>
-          <dd>{formatFullTEL(parts?.originDrift ?? 0)}</dd>
+          <dd>{formatFullAmount(parts?.originDrift ?? 0)}</dd>
         </div>
       </dl>
       <p className="text-muted-foreground">
@@ -728,15 +732,15 @@ const ResidualPanel = ({
           <dl className="space-y-1.5 tabular-nums">
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">{ticker} v3 in existence (all chains)</dt>
-              <dd>{formatFullTEL(data.upgrade.v3Supply)}</dd>
+              <dd>{formatFullAmount(data.upgrade.v3Supply)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Legacy {ticker} locked for it (not double-counted)</dt>
-              <dd>{formatFullTEL(data.upgrade.retiredLegacy)}</dd>
+              <dd>{formatFullAmount(data.upgrade.retiredLegacy)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Sent to the upgrade contract without upgrading</dt>
-              <dd>{formatFullTEL(data.upgrade.strandedInUpgrade)}</dd>
+              <dd>{formatFullAmount(data.upgrade.strandedInUpgrade)}</dd>
             </div>
           </dl>
         </div>
@@ -796,7 +800,7 @@ const AddressRow = ({
           </>
         )}
       </div>
-      <span className="tabular-nums shrink-0 font-medium">{formatCompactTEL(item.balance)}</span>
+      <span className="tabular-nums shrink-0 font-medium">{formatCompactAmount(item.balance)}</span>
     </div>
     {password !== null ? (
       <LockedAnalysisTile address={item.address} password={password} />
@@ -887,7 +891,7 @@ const AddressListPanel = ({
                 >
                   <span className="truncate text-foreground">{item.name ?? subcategoryFor(item)}</span>
                   <span className="flex shrink-0 items-center gap-1.5 tabular-nums font-medium">
-                    {formatCompactTEL(item.balance)}
+                    {formatCompactAmount(item.balance)}
                     <span className="text-muted-foreground font-normal text-[11px]">{pct.toFixed(1)}%</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                   </span>
@@ -901,27 +905,39 @@ const AddressListPanel = ({
   );
 };
 
-const AssociationPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
-  <AddressListPanel
-    title="Telcoin Association-Controlled Safes"
-    description="Treasury and council / ops Safes — Association-controlled custody, listed together in the hero bucket. Balances checked on-chain."
-    items={items}
-    subcategoryFor={(item) => associationCategoryLabel(item.category)}
-    emptyLabel="No Association addresses itemised."
-  />
-);
+const AssociationPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
+  const { entities, text } = useProjectCopy();
+  return (
+    <AddressListPanel
+      title={entities.association}
+      description={text(
+        "supply.association.description",
+        "Treasury and council / ops Safes controlled by the {name} foundation, listed together in the hero bucket. Balances checked on-chain.",
+      )}
+      items={items}
+      subcategoryFor={(item) => associationCategoryLabel(item.category)}
+      emptyLabel={`No ${entities.associationShort} addresses itemised.`}
+    />
+  );
+};
 
 const sumBalances = (items: SupplyReconciliationItem[]) => items.reduce((s, i) => s + (Number.isFinite(i.balance) ? i.balance : 0), 0);
 
-const HoldingsPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
-  <AddressListPanel
-    title="Telcoin Holdings"
-    description={`Confirmed Holdings wallets (${formatCompactTEL(sumBalances(items))} {ticker}): reserves, shared Safes, bridge-hub, and Base ops/cold custody.`}
-    items={items}
-    subcategoryFor={() => "Telcoin Holdings"}
-    emptyLabel="No Holdings addresses itemised."
-  />
-);
+const HoldingsPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
+  const { entities, text } = useProjectCopy();
+  return (
+    <AddressListPanel
+      title={entities.holdings}
+      description={text(
+        "supply.holdings.description",
+        "Confirmed {name} team / company wallets ({amount} {ticker}), a separate entity from the foundation Safes.",
+      ).replace("{amount}", formatCompactAmount(sumBalances(items)))}
+      items={items}
+      subcategoryFor={() => entities.holdings}
+      emptyLabel={`No ${entities.holdingsShort} addresses itemised.`}
+    />
+  );
+};
 
 const OtherAddressPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   <AddressListPanel
@@ -954,7 +970,7 @@ const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
 );
 
 const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; committed: number | null }) => {
-  const { ticker } = useProjectCopy();
+  const { entities, text, hasText } = useProjectCopy();
   const total = sumBalances(items);
   const rest = committed != null ? Math.max(0, total - committed) : null;
   return (
@@ -962,14 +978,20 @@ const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; 
     title="Escrow"
     description={
       <>
-        {ticker} held by third-party custodians under a SAFE
+        {text("supply.escrow.description", "{ticker} held by third-party custodians")}
         {committed != null && rest != null ? (
           <>
-            {" "}— {formatCompactTEL(committed)} is contractually committed back to Association treasury and
-            excluded from circulating; the remaining {formatCompactTEL(rest)} stays circulating
+            {" "}— {formatCompactAmount(committed)} is contractually committed back to {entities.associationShort} treasury and
+            excluded from circulating; the remaining {formatCompactAmount(rest)} stays circulating
           </>
-        ) : null}{" "}
-        (traced on-chain in <code className="text-[11px]">data/escrow-safe-provenance.md</code>).
+        ) : null}
+        {hasText("supply.escrow.description") ? (
+          <>
+            {" "}(traced on-chain in <code className="text-[11px]">data/escrow-safe-provenance.md</code>).
+          </>
+        ) : (
+          "."
+        )}
       </>
     }
     items={items}
@@ -985,7 +1007,7 @@ const RetailPanel = ({ amount }: { amount: number }) => {
   <div className="space-y-3">
     <p className="font-semibold text-foreground text-sm">Retail (wallets)</p>
     <p className="text-muted-foreground">
-      {formatCompactTEL(amount)} {ticker} spread across every wallet holding {ticker} directly, outside
+      {formatCompactAmount(amount)} {ticker} spread across every wallet holding {ticker} directly, outside
       exchanges, DEX pools, and the addresses itemised elsewhere on this card — from the scheduled
       holders snapshot, not a fixed address list. There's no single "retail" address to link to;
       the Holders and Distribution tabs break it down by wallet size and tier.

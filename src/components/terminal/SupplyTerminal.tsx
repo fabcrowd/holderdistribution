@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton } from "./TerminalPanel";
 import { useForensicsAccess } from "@/hooks/useForensicsAccess";
 import { useProject } from "@/hooks/useProject";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { supplyTargetLabel } from "@/lib/projects";
 
 const TABS = [
@@ -57,6 +58,7 @@ export const SupplyTerminal = (p: Props) => {
 
 const ReadySupply = (p: Props) => {
   const { project } = useProject();
+  const { entities } = useProjectCopy();
   const { unlocked } = useForensicsAccess();
   const intro = useIntro();
   // History is always on screen here (its own panel), so a #supply/history
@@ -155,7 +157,7 @@ const ReadySupply = (p: Props) => {
       <TerminalPanel
         className="col-span-8"
         title="Treasury & escrow history"
-        info="Association Safes, Telcoin Holdings and escrow balances over the selected period. Password protected."
+        info={`${entities.associationShort} Safes, ${entities.holdings} and escrow balances over the selected period. Password protected.`}
         testId="panel-treasury-history"
       >
         <div className={unlocked ? "text-xs" : "h-full text-xs"}>{p.history}</div>

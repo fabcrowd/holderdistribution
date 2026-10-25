@@ -145,7 +145,7 @@ const useTelDispositionLedger = (password: string | null, unlocked: boolean) =>
     retry: false,
   });
 
-const formatCompactTEL = (value: number) => {
+const formatCompactAmount = (value: number) => {
   if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
   if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
   if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
@@ -420,7 +420,7 @@ const WhereTelWentBuckets = ({ buckets }: { buckets: WhereTelWentBucket[] }) => 
               {classificationLabel(bucket.cls)}
             </span>
             <span className="flex shrink-0 items-center gap-2 text-[11px] font-semibold tabular-nums text-foreground">
-              {formatCompactTEL(bucket.tel)} TEL
+              {formatCompactAmount(bucket.tel)} TEL
               <span className="font-normal text-muted-foreground">
                 {bucket.txCount} {bucket.txCount === 1 ? "tx" : "txs"}
               </span>
@@ -457,7 +457,7 @@ const WhereTelWentBuckets = ({ buckets }: { buckets: WhereTelWentBucket[] }) => 
                       </TableCell>
                       <TableCell className="text-right text-[10px] tabular-nums">{dest.txCount}</TableCell>
                       <TableCell className="text-right text-[10px] font-medium tabular-nums">
-                        {formatCompactTEL(dest.tel)}
+                        {formatCompactAmount(dest.tel)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -487,7 +487,7 @@ const ChainRail = ({
       </div>
       <div className="flex justify-between gap-2">
         <dt className="text-muted-foreground">TEL sold</dt>
-        <dd className="font-semibold tabular-nums">{formatCompactTEL(data.telSold)}</dd>
+        <dd className="font-semibold tabular-nums">{formatCompactAmount(data.telSold)}</dd>
       </div>
       <div className="flex justify-between gap-2">
         <dt className="text-muted-foreground">Stablecoin destination known</dt>
@@ -648,7 +648,7 @@ export const TelDispositionLedger = () => {
 
           <div className="rounded-lg border border-border/50 bg-background/60 p-3">
             <p className="text-sm font-medium text-foreground">
-              {`In this period, Association wallets sold ${formatCompactTEL(periodSummary.totalTelSold)} TEL for ${formatUsd(periodSummary.totalQuoteProceedsUsd)} in stablecoin${
+              {`In this period, Association wallets sold ${formatCompactAmount(periodSummary.totalTelSold)} TEL for ${formatUsd(periodSummary.totalQuoteProceedsUsd)} in stablecoin${
                 periodSummary.sellsRetained > 0
                   ? `. ${periodSummary.sellsRetained} of those sales still have the stablecoin sitting in the selling wallet.`
                   : "."
@@ -666,7 +666,7 @@ export const TelDispositionLedger = () => {
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <MetricTile
               label="TEL sold"
-              value={`${formatCompactTEL(periodSummary.totalTelSold)} TEL`}
+              value={`${formatCompactAmount(periodSummary.totalTelSold)} TEL`}
               hint="How many TEL tokens were converted into stablecoin in this period."
             />
             <MetricTile
@@ -782,7 +782,7 @@ export const TelDispositionLedger = () => {
                       </TableCell>
                       <TableCell className="max-w-[7rem] truncate text-[10px]">{s.fromName}</TableCell>
                       <TableCell className="text-right text-[10px] tabular-nums">
-                        {formatCompactTEL(s.telAmount)}
+                        {formatCompactAmount(s.telAmount)}
                       </TableCell>
                       <TableCell className="text-right text-[10px] tabular-nums">
                         {stableQuoteUsd(s.quoteToken, s.quoteAmount) ? (

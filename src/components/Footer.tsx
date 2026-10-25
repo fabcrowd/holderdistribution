@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Heart, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 
 export const Footer = () => {
   const [copied, setCopied] = useState(false);
+  const { text } = useProjectCopy();
   const donationAddress = "0xce98fE636e83D36EA64cafEfF4020317B8B718EA";
 
   const copyAddress = async () => {
@@ -58,7 +60,8 @@ export const Footer = () => {
           <p>Price data powered by CoinGecko</p>
           <p className="max-w-4xl mx-auto pt-2">
             *This website is an independent, community-run project. It is not operated by, endorsed by, or affiliated
-            with Telcoin Holdings, the Telcoin Association, or any of their subsidiaries. While every effort is made to
+            with {text("footer.affiliation", "the {name} team, its foundation, or any of their subsidiaries")}, or any
+            other project it tracks. While every effort is made to
             ensure the accuracy and timeliness of token data and related information, no guarantees are provided. All
             content is offered "as is" for informational purposes only and does not constitute financial advice.
           </p>

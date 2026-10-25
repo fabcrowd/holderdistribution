@@ -42,6 +42,11 @@ export type ProjectConfig = ProjectEntry & {
     glossary?: Record<string, { term?: string; definition?: string }>;
     /** Widget string overrides by id (src/lib/projectCopy.ts copyText). */
     text?: Record<string, string>;
+    /**
+     * Methodology hover-card overrides by section (src/lib/methodology.ts).
+     * Link hrefs may use {token:<chain>:<generation>} and {explorer:<chain>}.
+     */
+    methodology?: Record<string, { how?: string; verify?: string; links?: Array<{ label: string; href: string }> }>;
   };
 };
 

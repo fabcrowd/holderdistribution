@@ -29,7 +29,7 @@ import {
   type PnlTx,
 } from "@/lib/dispositionPnl";
 
-const formatCompactTEL = (value: number) => {
+const formatCompactAmount = (value: number) => {
   if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
   if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
   if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
@@ -100,7 +100,7 @@ const TxRows = ({ txs, counterpartLabel }: { txs: PnlTx[]; counterpartLabel: str
               {tx.to ? <AddrLink chain={tx.chain} address={tx.to} label={tx.toLabel} /> : "—"}
             </TableCell>
             <TableCell className="text-right text-[10px] tabular-nums">
-              {tx.telAmount ? formatCompactTEL(tx.telAmount) : "—"}
+              {tx.telAmount ? formatCompactAmount(tx.telAmount) : "—"}
             </TableCell>
             <TableCell className="text-right text-[10px] tabular-nums">
               {tx.usd != null ? formatUsd(tx.usd) : "—"}
@@ -123,7 +123,7 @@ const GlLineRow = ({ line }: { line: GlLine }) => (
         {line.name}
       </span>
       <span className="shrink-0 text-[11px] tabular-nums">
-        {line.side === "revenue" ? formatUsd(line.usd) : `${formatCompactTEL(line.tel)} TEL`}
+        {line.side === "revenue" ? formatUsd(line.usd) : `${formatCompactAmount(line.tel)} TEL`}
         <span className="ml-2 text-muted-foreground">
           {line.txs.length} {line.txs.length === 1 ? "receipt" : "receipts"}
         </span>
@@ -186,7 +186,7 @@ const CostCenterSection = ({ center }: { center: CostCenter }) => (
         <span className="min-w-0 truncate font-medium">{center.name}</span>
         <span className="flex shrink-0 gap-3 text-[11px] font-normal tabular-nums text-muted-foreground">
           <span>{formatUsd(center.usdProceeds)} stablecoin</span>
-          <span>{formatCompactTEL(center.telOut)} TEL moved</span>
+          <span>{formatCompactAmount(center.telOut)} TEL moved</span>
         </span>
       </span>
     </AccordionTrigger>
@@ -230,7 +230,7 @@ export const DispositionPnlView = ({
               TEL moved
               <InfoTooltip text="TEL that left Association wallets — sold for stablecoin or transferred. Transfers between Association wallets are not expenses." />
             </dt>
-            <dd className="font-semibold tabular-nums">{formatCompactTEL(pnl.totalTelOut)} TEL</dd>
+            <dd className="font-semibold tabular-nums">{formatCompactAmount(pnl.totalTelOut)} TEL</dd>
           </div>
         </dl>
         <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">

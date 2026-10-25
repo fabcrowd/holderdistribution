@@ -209,7 +209,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     // the Wallets `stats` comment above for why this matters. With v3 in the
     // total, a baseline inside the unmeasured v3 window has no honest delta.
     if (hasV3 && historicalDelta?.referenceDate) {
-      const gap = v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance);
+      const gap = v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance, undefined, ticker);
       if (gap.length) return { ...none, latest, gap };
     }
     const baseline = hasV3 ? historicalDelta?.stakingTotal ?? null : historicalDelta?.stakingBalance ?? null;
@@ -219,11 +219,11 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
       return { latest, change, changePct, gap: none.gap };
     }
     const first = hasV3 ? stakingChartData[0].stakingTotal : stakingChartData[0].staking;
-    if (first == null) return { ...none, latest, gap: v3StakingGapEvents(stakingChartData[0].timestamp, null) };
+    if (first == null) return { ...none, latest, gap: v3StakingGapEvents(stakingChartData[0].timestamp, null, undefined, ticker) };
     const change = latest - first;
     const changePct = first > 0 ? (change / first) * 100 : null;
     return { latest, change, changePct, gap: none.gap };
-  }, [stakingChartData, historicalDelta]);
+  }, [stakingChartData, historicalDelta, ticker]);
 
   const stakingYDomain = useMemo((): [number, number] | ["auto", "auto"] => {
     if (stakingChartData.length === 0) return ["auto", "auto"];

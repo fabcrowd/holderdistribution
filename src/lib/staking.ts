@@ -55,6 +55,8 @@ export const v3StakingGapEvents = (
   baselineDate: string | number | null | undefined,
   baselineV3: number | null | undefined,
   deployDate: string = V3_STAKING_DEPLOY_DATE,
+  /** Active project's ticker for the explainer; omitted → "The staked total". */
+  ticker?: string,
 ): ClassificationEvent[] => {
   if (!dayOf(baselineDate)) return [];
   if (v3StakedOn(baselineDate, baselineV3, deployDate) !== null) return [];
@@ -63,8 +65,7 @@ export const v3StakingGapEvents = (
       id: "v3-staking-module-history",
       date: deployDate,
       type: "other",
-      summary:
-        "Staked TEL now includes the v3 StakingModule, live since this date. Its balance wasn't recorded for this comparison's start date, so the change since then can't be computed.",
+      summary: `${ticker ? `Staked ${ticker}` : "The staked total"} now includes the v3 StakingModule, live since this date. Its balance wasn't recorded for this comparison's start date, so the change since then can't be computed.`,
       affects: { artifacts: ["holders-history.json"], metrics: ["stakingBalance"] },
       backfillStatus: "not-planned",
       backfillNote: "Archived snapshots predate the module's indexing; ranges that start before the deploy date compare normally.",

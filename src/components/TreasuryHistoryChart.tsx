@@ -8,6 +8,7 @@ import { computeSeriesDomain, activeKeys } from "@/lib/chartDomain";
 import { formatChartTimestamp } from "@/lib/chartDate";
 import { HOLDINGS_CATEGORY_KEYS } from "@/lib/supplyBreakdown";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { useProjectCopy, type UseProjectCopy } from "@/hooks/useProjectCopy";
 
 /**
  * Project-held balances over time, one line per group.
@@ -48,22 +49,18 @@ import { InfoTooltip } from "@/components/InfoTooltip";
  */
 const SERIES = {
   association: {
-    label: "Association — Treasury",
     color: "hsl(262 83% 58%)",
     keys: ["treasury"] as readonly string[],
   },
   council: {
-    label: "Association — TAO & Safes",
     color: "hsl(158 64% 42%)",
     keys: ["council"] as readonly string[],
   },
   holdings: {
-    label: "Telcoin Holdings",
     color: "hsl(217 91% 60%)",
     keys: HOLDINGS_CATEGORY_KEYS as readonly string[],
   },
   escrow: {
-    label: "Escrow",
     color: "hsl(28 90% 55%)",
     keys: ["escrow"] as readonly string[],
   },
@@ -75,19 +72,36 @@ const IGNORED_CATEGORY_KEYS: readonly string[] = ["staking-contract"];
 type SeriesKey = keyof typeof SERIES;
 type Mode = "balance" | "change";
 
-const chartConfig = Object.fromEntries(
-  (Object.keys(SERIES) as SeriesKey[]).map((k) => [k, { label: SERIES[k].label, color: SERIES[k].color }]),
-);
+/**
+ * Line labels for the active project. The two foundation lines share the
+ * entity prefix (TEL: "Association — ") and the team line is the separate
+ * entity's own name (TEL: "Telcoin Holdings"), so the split stays readable.
+ */
+const seriesLabels = (copy: Pick<UseProjectCopy, "entities" | "text">): Record<SeriesKey, string> => ({
+  association: `${copy.entities.associationShort} — Treasury`,
+  council: copy.text("treasury.series.council", `${copy.entities.associationShort} — Council & Safes`),
+  holdings: copy.entities.holdings,
+  escrow: "Escrow",
+});
 
-const formatCompactTEL = (value: number) => {
-  const abs = Math.abs(value);
-  if (abs >= 1e9) return `${(value / 1e9).toFixed(2)}B TEL`;
-  if (abs >= 1e6) return `${(value / 1e6).toFixed(1)}M TEL`;
-  return `${new Intl.NumberFormat().format(Math.round(value))} TEL`;
+/** Tooltip copy; TEL names its entities and custodians via copy.text "treasury.history.info". */
+const historyInfo = (copy: Pick<UseProjectCopy, "entities" | "text">): string => {
+  const { associationShort: a, holdings: h } = copy.entities;
+  return copy.text(
+    "treasury.history.info",
+    `Daily balances reconstructed from on-chain Transfer logs, one line per group.\n\nThe two "${a} —" lines are subsets of ONE entity: its Treasury address, and its council / ops Safes. The pie above combines them into a single bucket, so it shows one figure where this chart shows two.\n\n${h} is a SEPARATE entity, and the two are never combined into a single figure.\n\nEscrow is third-party custody — not discretionary supply, and hidden by default because it dwarfs the rest.`,
+  );
 };
-const formatSignedTEL = (value: number) => {
+
+const formatCompactAmount = (value: number, unit: string) => {
+  const abs = Math.abs(value);
+  if (abs >= 1e9) return `${(value / 1e9).toFixed(2)}B ${unit}`;
+  if (abs >= 1e6) return `${(value / 1e6).toFixed(1)}M ${unit}`;
+  return `${new Intl.NumberFormat().format(Math.round(value))} ${unit}`;
+};
+const formatSignedAmount = (value: number, unit: string) => {
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${sign}${formatCompactTEL(Math.abs(value))}`;
+  return `${sign}${formatCompactAmount(Math.abs(value), unit)}`;
 };
 
 /**
@@ -97,6 +111,15 @@ const formatSignedTEL = (value: number) => {
  */
 export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays: number; compact?: boolean }) => {
   const { data, isError } = useTreasuryHistory();
+  const copy = useProjectCopy();
+  const labels = useMemo(() => seriesLabels(copy), [copy]);
+  const chartConfig = useMemo(
+    () =>
+      Object.fromEntries(
+        (Object.keys(SERIES) as SeriesKey[]).map((k) => [k, { label: labels[k], color: SERIES[k].color }]),
+      ),
+    [labels],
+  );
   // Escrow off by default: at ~6.3B it is roughly two-thirds of the total and
   // flattens the other two, and it is third-party custody (BitGo, Anchorage)
   // rather than discretionary supply.
@@ -174,7 +197,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
   if (isError) return <div className="min-h-[8rem]"><PanelError>Couldn&apos;t load treasury history.</PanelError></div>;
   if (!data || points.length < 2) return null;
 
-  const fmt = mode === "change" ? formatSignedTEL : formatCompactTEL;
+  const fmt = (v: number) => (mode === "change" ? formatSignedAmount : formatCompactAmount)(v, copy.ticker);
   const dateFmt = new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric", timeZone: "UTC" });
   const tipFmt = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" });
 
@@ -182,7 +205,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
     <div className={compact ? "" : "pt-5 mt-5 border-t border-border/40"} data-testid="treasury-history-chart">
       <div className={`flex flex-wrap items-center gap-2 ${compact ? "mb-2" : "mb-3"}`}>
         <span className="font-medium text-foreground text-sm">Project-held balances over time</span>
-        <InfoTooltip text={`Daily balances reconstructed from on-chain Transfer logs, one line per group.\n\nThe two "Association —" lines are subsets of ONE entity, the Telcoin Association: its Treasury address, and its TAO / council / ops Safes. The pie above combines them into a single Association bucket, so it shows one figure where this chart shows two.\n\nTelcoin Holdings is a SEPARATE entity, not part of the Association, and the two are never combined into a single figure.\n\nEscrow is third-party custody (BitGo, Anchorage) plus five assumed Holdings-funded vaults — not discretionary supply, and hidden by default because it dwarfs the rest.`} />
+        <InfoTooltip text={historyInfo(copy)} />
         <div className="inline-flex rounded-full border border-border/60 bg-card/80 p-0.5 ml-auto">
           {(["balance", "change"] as const).map((m) => (
             <button
@@ -219,7 +242,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
                 className={`h-2 w-2 rounded-full ${on ? "" : "opacity-50"}`}
                 style={{ backgroundColor: SERIES[key].color }}
               />
-              {SERIES[key].label}
+              {labels[key]}
             </button>
           );
         })}
@@ -244,7 +267,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
                   labelFormatter={(_, payload) =>
                     formatChartTimestamp(payload?.[0]?.payload?.timestamp, tipFmt)
                   }
-                  formatter={(value, name) => [fmt(Number(value)), SERIES[name as SeriesKey]?.label ?? String(name)]}
+                  formatter={(value, name) => [fmt(Number(value)), labels[name as SeriesKey] ?? String(name)]}
                 />
               }
             />

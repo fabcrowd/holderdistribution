@@ -1,10 +1,12 @@
 import { ExternalLink } from "lucide-react";
 import { InfoTip } from "@/components/InfoTip";
-import { METHODOLOGY, type Methodology } from "@/lib/methodology";
+import { useMemo } from "react";
+import { useProject } from "@/hooks/useProject";
+import { methodologyFor, type Methodology, type MethodologyKey } from "@/lib/methodology";
 
 type MethodologyInfoProps = {
-  /** Key into METHODOLOGY, or an inline methodology object. */
-  section: keyof typeof METHODOLOGY | Methodology;
+  /** Methodology section key (filled for the active project), or an inline methodology object. */
+  section: MethodologyKey | Methodology;
   className?: string;
 };
 
@@ -16,7 +18,11 @@ type MethodologyInfoProps = {
  * stops propagation so parent collapsible headers don't toggle.
  */
 export const MethodologyInfo = ({ section, className }: MethodologyInfoProps) => {
-  const data = typeof section === "string" ? METHODOLOGY[section] : section;
+  const { project } = useProject();
+  const data = useMemo(
+    () => (typeof section === "string" ? methodologyFor(project, section) : section),
+    [project, section],
+  );
   if (!data) return null;
   return (
     <InfoTip
