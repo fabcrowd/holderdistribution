@@ -1,0 +1,136 @@
+name: Refresh zebec-network holders
+
+# ZBCN (Solana SPL). Same stage order as refresh-tel-holders.yml minus the EVM
+# and CEX-only stages (no CEX wallets are configured for ZBCN, so cex-flows and
+# the downstream exchange-flow / tier-outflow stages are not run). Staking is a
+# separate overlay (staked != retail) pulled before the lite feed.
+#
+# refresh-tel-holders.yml's schedule has no inputs, so it always runs HD_PROJECT
+# =tel; a non-TEL project needs its own scheduled workflow. It shares TEL's
+# `holders-refresh` concurrency group so the two never push at the same moment,
+# and its cron is offset 90 minutes after TEL's (01:30 UTC = 21:30 EDT).
+#
+# SOLANA_RPC_0 comes from the Actions secret. loadEnv (scripts/decrypt-env.js)
+# only overwrites keys that exist inside .env.enc, which has no SOLANA_RPC_*,
+# so the secret survives decryption.
+#
+# Delivery: like every data commit, this reaches the live site through the
+# live-data function, not a Netlify build (netlify.toml ignores git builds).
+# The commit still carries [skip netlify] so the deploy-frequency contract
+# (scripts/lib/deployTriggers.test.js: one unconditional daily publisher,
+# refresh-tel-holders) holds even if git builds are ever re-enabled.
+on:
+  schedule:
+    - cron: '30 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: holders-refresh
+  cancel-in-progress: false
+
+env:
+  HD_PROJECT: zebec-network
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve project data paths
+        # HD_DATA_DIR=public/data/zebec-network, HD_WORK_DIR=data/zebec-network.
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
+
+      - name: Pull Zebec staking positions
+        # Non-fatal: on failure the lite feed keeps the previous staking file's
+        # numbers (or none) and holders still publish.
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
+        run: node scripts/pull-solana-staking.js
+
+      - name: Refresh holders snapshot
+        timeout-minutes: 15
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
+        run: node scripts/pull-holders-rpc.js
+
+      - name: Generate feeds
+        run: |
+          node scripts/generate-holders-lite.js
+          node scripts/generate-holders-history.js
+          node scripts/generate-holder-transitions.js
+          node scripts/reconcile-supply.js
+          node scripts/append-treasury-history.js
+          node scripts/sync-classification-changelog.js
+
+      - name: Verify generated files
+        # TEL's list minus funding-wallets.json and cex-*.json (ZBCN has no EVM
+        # staker pull and no CEX wallets yet), plus the Solana staking overlay.
+        run: |
+          REQUIRED_FILES=(
+            "$HD_DATA_DIR/tel-holders.json"
+            "$HD_DATA_DIR/holders-summary.json"
+            "$HD_DATA_DIR/holders-history.json"
+            "$HD_DATA_DIR/holders-lite.json"
+            "$HD_DATA_DIR/holders-checkpoint.json"
+            "$HD_DATA_DIR/holder-transitions.json"
+            "$HD_DATA_DIR/holders-ever-checkpoint.json"
+            "$HD_DATA_DIR/supply-reconciliation.json"
+            "$HD_DATA_DIR/treasury-history.json"
+            "$HD_DATA_DIR/classification-changelog.json"
+            "$HD_DATA_DIR/solana-staking.json"
+          )
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "Error: Required file $file was not generated"
+              exit 1
+            fi
+          done
+          echo "All required files generated successfully"
+
+      - name: Check feeds
+        run: |
+          node scripts/validate-outputs.js
+          node scripts/check-feed-consistency.js
+
+      - name: Commit snapshot changes
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+          # files mode maps TEL-layout names onto public/data/zebec-network/ and
+          # appends that dir, so new feeds land too. tel-holders-previous.json
+          # (pull-holders-rpc.js's same-run scratch file) is gitignored for
+          # per-project dirs and is never staged.
+          FILES_TO_CHECK=$(node scripts/workflow-paths.js files public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/chain-status.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json public/data/solana-staking.json)
+          git add -A -- $FILES_TO_CHECK
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Refresh zebec-network holders snapshot [skip netlify]"
+            git checkout -- .
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

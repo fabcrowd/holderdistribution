@@ -212,7 +212,9 @@ after `npm ci`, which exports `HD_DATA_DIR` / `HD_WORK_DIR` (TEL:
 
 Known limit for a second token: the `refresh-tel-holders` verify step requires
 the same feed set for every project (including `funding-wallets.json` and
-`treasury-history.json`).
+`treasury-history.json`), and its schedule always runs TEL. A mapped project
+therefore gets its own daily workflow with its own verify list (see
+[zebec-network](#zebec-network-solana) below).
 
 ## Holder tiers and thresholds (`holders`)
 
@@ -418,9 +420,72 @@ lists a Solana chain. An EVM-only project like TEL never loads it
   Verified 2026-10-25 on public RPC: USDC (SPL, Metaplex metadata) and PYUSD
   (Token-2022 extension).
 
-Not built (deferred): Solana staking, flows/tier outflows, forensics, history
-back-fill before the first snapshot, historical `--as-of` snapshots, and other
-non-EVM chains.
+Solana staking is built for one program kind, `zebecStakeV1` (see
+[zebec-network](#zebec-network-solana)). Not built (deferred): other Solana
+staking programs, published flows/tier outflows (a dry-run
+`scan-solana-flows.js` scaffold exists), forensics, history back-fill before
+the first snapshot, historical `--as-of` snapshots, and other non-EVM chains.
+
+## zebec-network (Solana)
+
+The first non-TEL project, mapped 2026-10-25
+(`docs/superpowers/plans/2026-10-25-zbcn-mapping.md`).
+
+- **Identity:** slug `zebec-network` (`config/projects/zebec-network.json`,
+  `?token=zebec-network`, `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`).
+  Mint `ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU` (SPL, 6 decimals),
+  **Solana-only** (`origin: true`, `bridge: "native"`). The chain tabs are
+  Combined and Solana, and the explorer is Solscan. Feeds are in
+  `public/data/zebec-network/` and the work dir is `data/zebec-network/`.
+- **Daily refresh:** `.github/workflows/refresh-zebec-network.yml`, cron
+  `30 1 * * *` (01:30 UTC = 21:30 EDT / 20:30 EST), which is 90 min after TEL.
+  It is in the same `holders-refresh` concurrency group as
+  `refresh-tel-holders.yml`, so the two never push at once. It commits with
+  `[skip netlify]`, so `refresh-tel-holders` stays the one daily publisher
+  (`deployTriggers.test.js`). The data still goes live through the live-data
+  function. Stages: staking pull, then holders, lite, history, transitions,
+  supply, treasury and changelog, then the verify step and
+  `validate-outputs` + `check-feed-consistency`, then the commit. There are no
+  EVM, CEX or tier-outflow stages. `workflowChain.test.js` (`PER_PROJECT_DAILY`)
+  pins the workflow to a single cron, `HD_PROJECT=zebec-network`, the shared
+  group, and a gate that runs before the commit.
+  `public/data/*/tel-holders-previous.json` (a same-run scratch file) is
+  gitignored, so it is never staged.
+- **RPC:** `SOLANA_RPC_0` is an **Actions secret** (a Helius HTTPS URL). Locally
+  it lives in the gitignored `.env`. `loadEnv` only overwrites keys that exist
+  in `.env.enc`, and `.env.enc` has no `SOLANA_RPC_*`, so the secret survives.
+  Public mainnet RPC refuses `getProgramAccounts` for this mint, which is why
+  a key is required.
+- **Staking (`zebecStakeV1`):** `scripts/pull-solana-staking.js` →
+  `solana-staking.json` (`scripts/lib/solana/zebecStake.js`). Positions are
+  every unclaimed `UserStakeData`, summed per staker. The lockup stake-vault
+  ATAs and the reward vaults are `contracts{}` with role `staking`, so they are
+  non-retail. **Staked ≠ retail:** staked balances appear in a separate Staked
+  tile and are never merged into retail holders. The step is non-fatal in the
+  workflow, so holders still publish.
+- **Vault-gap rule (standing):** each lockup's position sum is reconciled
+  against its vault ATA (0.5% tolerance), and a mismatch refuses to publish.
+  When a gap is a real on-chain property, add an exemption
+  (`STAKE_VAULT_GAP_EXEMPTIONS`, keyed by exact lockup address) and an
+  explainer. The feed records `vaultGapRaw`, `vaultGapRatio`,
+  `vaultReconcile: "exempt"` and the explainer text. Positions are shown as
+  they are on-chain: never scale them to the vault, and never loosen every
+  lockup to an overall-only check. Today one lockup is exempt: ZBCN Lockup
+  `AYbW5cbZ…SJjp`, with a gap of about 2.42% between unclaimed positions and
+  the vault ATA.
+- **Holder tiers:** a per-project `holders.megaHolderThreshold` of 25B keeps
+  the ~20.55B top wallet in the lite `totalBalance`. TEL keeps its 20B.
+- **History is forward-only:** it starts at the first snapshot (2026-10-25).
+  `--as-of` is refused for Solana projects, so there is no back-fill.
+- **Flows are unpublished:** `cex-wallets.json` is `{ "wallets": [] }` until
+  the owner supplies real CEX wallets. Never invent them.
+  `scan-solana-flows.js` is a dry-run scaffold and is not in the workflow.
+- **Buyback treasury:** `buybackTreasury` (`EkXEg6de…QuQW`, off-curve PDA, role
+  `treasury`) is annotated in config with its source. Its ATA holds about
+  108.3M ZBCN, and the owner may reclassify it.
+- **Supply:** `reconcile-supply.js` classifies from `contracts{}` roles and
+  token-account owners (the multi-token path). There is no per-token
+  exclusions file.
 
 ## Wrapped / bridged tokens (`chains[].bridge`, `origin`)
 

@@ -280,7 +280,8 @@ describe("workflow commit paths (scripts/workflow-paths.js)", () => {
     const dir = path.join(repo, ".github/workflows");
     const COMMITTING = [
       "detect-cex-candidates", "fill-history-gaps", "generate-tier-outflows", "pipeline-watchdog", "rebuild-holders-history",
-      "recompute-holders-history", "refresh-staker-balances", "refresh-tel-holders", "scan-exchange-flows", "sync-cex-wallets",
+      "recompute-holders-history", "refresh-staker-balances", "refresh-tel-holders", "refresh-zebec-network", "scan-exchange-flows",
+      "sync-cex-wallets",
     ];
     for (const name of COMMITTING) {
       const src = fs.readFileSync(path.join(dir, `${name}.yml`), "utf8");

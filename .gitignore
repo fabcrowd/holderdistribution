@@ -48,3 +48,9 @@ data/rebuild-transfers-*.json
 data/*/rebuild-transfers-*.ndjson
 data/*/asof-window-*.ndjson
 data/*/rebuild-transfers-*.json
+
+# pull-holders-rpc.js's same-run "before this run" scratch snapshot. TEL's root
+# copy is untouched (refresh-tel-holders.yml names its files and never stages
+# it); per-project workflows stage public/data/<slug>/ as a whole dir, so the
+# (very large) scratch copy is ignored there.
+public/data/*/tel-holders-previous.json
