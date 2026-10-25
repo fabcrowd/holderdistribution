@@ -1,0 +1,124 @@
+{
+  "$comment": "Project config for Zebec Network (ZBCN). Phase 0 six-point checklist relayed by Orchestrator as widget answer confirm-all-six (2026-10-25). Solana-only; legacy ZBC ignored; no invented CEX wallets. Sources: /workspace/zbcn-findings.md, /workspace/zbcn-research-brief.md.",
+  "slug": "zebec-network",
+  "name": "Zebec Network",
+  "ticker": "ZBCN",
+  "description": "Zebec Network governance and utility token (real-time payments, cards, DePIN) on Solana.",
+  "data": {
+    "legacyRoot": false,
+    "dir": "public/data/zebec-network"
+  },
+  "supply": {
+    "target": 100000000000,
+    "targetLabel": "100B",
+    "generationsSumOneToOne": false,
+    "note": "Fixed 100B max; on-chain supply shrinks via buybacks/burns. Legacy ZBC mint (zebeczgi5fSEtbpfQKVZKCJ3WgYXxjkMUkNNx7fLKAF) is out of scope — do not map or net."
+  },
+  "chains": [
+    {
+      "key": "solana",
+      "name": "Solana",
+      "vm": "solana",
+      "cluster": "mainnet-beta",
+      "bridge": "native",
+      "origin": true,
+      "explorer": "https://solscan.io",
+      "rpc": {
+        "envPrefix": "SOLANA_RPC",
+        "publicUrls": [
+          "https://api.mainnet-beta.solana.com"
+        ]
+      },
+      "tokens": [
+        {
+          "address": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+          "program": "spl-token",
+          "decimals": 6,
+          "status": "canonical",
+          "symbol": "ZBCN"
+        }
+      ],
+      "contracts": {
+        "zebecStakeProgram": {
+          "address": "zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv",
+          "role": "staking"
+        },
+        "buybackTreasury": {
+          "address": "EkXEg6de172aoLvr7w86YzQ2rf5oEFD3iUt8uQsLQuQW",
+          "role": "treasury",
+          "$comment": "Candidate buyback/treasury owner (off-curve PDA). Source: research brief /workspace/zbcn-research-brief.md citing NullTX/on-chain observation 2026-10-25. Associated token account G3shxzbgWZFLJZTFdysmsK42MTHrZduFuTxxYqwxtgox ~108.3M ZBCN. Owner may reclassify later."
+        },
+        "stakeVaultLockup003": {
+          "address": "3DC8cdCNKEZPapuPHTtkuw8XgbDtYarJojjpGgtF65Vo",
+          "role": "staking",
+          "$comment": "Stake vault ATA of ZBCN_Lockup_003 6ucsPuczmg9uoq5i4SYDEEJ4ciKnuxW3za2sdBcKHwmw (vault PDA HJqK7re4GDSm4roQQS2iSLt5p7Gyb9MHBy9dHJw9obUp)"
+        },
+        "stakeVaultLockup005": {
+          "address": "8bbygT4wHaR1vXQMCTK9uVnoDGBwWjNx9BUwjgLtkBvv",
+          "role": "staking",
+          "$comment": "Stake vault ATA of ZBCN_Lockup_005 BkdevFCTJvSVXBhE8NEzPFpSFdTvn9pm4zVSsLvW9ZA (vault PDA 5Fe1JVUkaHVEAQ8sZ71xmQdyVahwfeuP4s9TGZ9mf8vk)"
+        },
+        "stakeVaultLockup": {
+          "address": "7dvTVafoMm52sjyJCHkHZv119MecicqFCrgjq8RcLxJ6",
+          "role": "staking",
+          "$comment": "Stake vault ATA of ZBCN Lockup AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp (vault PDA DWwty3vnpMWsJagibYWPNmJ2BGELHow4vKm5nK79btoC)"
+        },
+        "stakeVaultLockup002": {
+          "address": "FnJhFWTiYTGSePJDKVNYQgf5XUFBJEk1rvPifj6hvb4Y",
+          "role": "staking",
+          "$comment": "Stake vault ATA of ZBCN_Lockup_002 CuQBm9zdgMFw1BNcfNjb5FA1Di3z4W9AxmDuXfk8kGNU"
+        },
+        "stakeVaultLockup004": {
+          "address": "BcfMnwQMpv988qVCDMpJhXRyYiqchrYh9pcJPvjEypj4",
+          "role": "staking",
+          "$comment": "Stake vault ATA of ZBCN_Lockup_004 DxdP5pM5BSD38C7s43aYV2BHUfKLJZq1P5673AT87HPn"
+        },
+        "rewardVaultA": {
+          "address": "ErF9raeVUf1H7EgSDuApS1NYhBkAcnnVas9zmEK23sTE",
+          "role": "staking",
+          "$comment": "Staking reward vault ATA (research brief)"
+        },
+        "rewardVaultB": {
+          "address": "DGMT79t6tVGPHW8gLH29a6G1W8AnWhc5NzddvHiU9kCy",
+          "role": "staking",
+          "$comment": "Staking reward vault ATA (research brief)"
+        }
+      }
+    }
+  ],
+  "staking": [
+    {
+      "chain": "solana",
+      "address": "zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv",
+      "name": "Zebec SuperApp staking (zebec-stake-sdk)",
+      "kind": "zebecStakeV1",
+      "attribution": "Program from Zebec stake SDK / npm @zebec-network/zebec-stake-sdk. Staked balances shown SEPARATELY from retail holders (not merged into retail). BLOCKER: Solana staking adapter not built yet (docs/MULTI-TOKEN.md deferred) — staked tile needs adapter before pipeline can fill it. Observed lockup vault ATAs (research brief): 3DC8cdCNKEZPapuPHTtkuw8XgbDtYarJojjpGgtF65Vo ~4.07B; 8bbygT4wHaR1vXQMCTK9uVnoDGBwWjNx9BUwjgLtkBvv ~544M; 7dvTVafoMm52sjyJCHkHZv119MecicqFCrgjq8RcLxJ6 ~182M; FnJhFWTiYTGSePJDKVNYQgf5XUFBJEk1rvPifj6hvb4Y; BcfMnwQMpv988qVCDMpJhXRyYiqchrYh9pcJPvjEypj4. ALT EoKjJejKr4XsBdtUuYwzZcYd6tpGNijxCGgQocxtxQ8t."
+    }
+  ],
+  "gated": {
+    "forensics": true,
+    "walletFlows": {
+      "coingeckoId": "zebec-network",
+      "chains": [
+        "solana"
+      ]
+    }
+  },
+  "links": {
+    "website": "https://zebec.io/",
+    "docs": "https://docs.zebec.io/",
+    "coingecko": "https://www.coingecko.com/en/coins/zebec-network",
+    "solscan": "https://solscan.io/token/ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU"
+  },
+  "copy": {
+    "text": {
+      "holders.staked.info": "{ticker} locked in Zebec SuperApp staking. Shown separately from Retail Held — staked is not merged into the retail holder total for this project."
+    }
+  },
+  "pipelineNotes": {
+    "holderScan": "Full getProgramAccounts scan likely needs SOLANA_RPC_0; public RPC rate-limits.",
+    "stakingAdapter": "Deferred — kind zebecStakeV1 recorded but no Solana staker pull yet.",
+    "cexWallets": "Not invented; discover later.",
+    "liveData": "Registered in PROJECT_SLUGS (netlify/functions/live-data.mjs)."
+  }
+}
