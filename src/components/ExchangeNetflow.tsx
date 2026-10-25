@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import "@/lib/rechartsMotion";
@@ -19,11 +20,12 @@ const formatCompactTEL = (value: number) => {
 
 const chartConfig = { net: { label: "Net flow", color: "hsl(var(--primary))" } };
 
-const INFO =
-  "Measured directly from TEL Transfer logs: coins actually deposited to (inflow) or withdrawn from (outflow) known exchange wallets each day.\n\nA deposit is not a sale — it's TEL moving toward the market and available to be sold; a withdrawal is TEL leaving the market for self-custody or staking. Trading itself happens off-chain, so this shows supply positioning, not realized buys/sells.";
+const INFO_TEMPLATE =
+  "Measured directly from {ticker} Transfer logs: coins actually deposited to (inflow) or withdrawn from (outflow) known exchange wallets each day.\n\nA deposit is not a sale — it's {ticker} moving toward the market and available to be sold; a withdrawal is {ticker} leaving the market for self-custody or staking. Trading itself happens off-chain, so this shows supply positioning, not realized buys/sells.";
 
 export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
   const { data: entries } = useExchangeFlow();
+  const { ticker, t } = useProjectCopy();
 
   const view = useMemo(() => {
     if (!entries || entries.length === 0) return null;
@@ -45,21 +47,21 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
         <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
           Exchange Netflow — measured deposits &amp; withdrawals
         </div>
-        <InfoTooltip text={INFO} />
+        <InfoTooltip text={t(INFO_TEMPLATE)} />
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="premium-surface-card p-4 text-center">
           <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Deposits (in)</div>
-          <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.totalIn)} TEL</div>
+          <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.totalIn)} {ticker}</div>
         </div>
         <div className="premium-surface-card p-4 text-center">
           <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Withdrawals (out)</div>
-          <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.totalOut)} TEL</div>
+          <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.totalOut)} {ticker}</div>
         </div>
         <div className="premium-surface-card p-4 text-center">
           <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Net</div>
           <div className="text-xl font-bold text-foreground">
-            {view.net >= 0 ? "+" : "−"}{formatCompactTEL(Math.abs(view.net))} TEL
+            {view.net >= 0 ? "+" : "−"}{formatCompactTEL(Math.abs(view.net))} {ticker}
           </div>
           <div className="text-xs text-muted-foreground mt-0.5">
             {view.net >= 0 ? "toward exchanges" : "leaving exchanges"}
@@ -91,7 +93,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
                     const ts = p?.[0]?.payload?.timestamp;
                     return ts ? new Date(ts).toLocaleDateString(undefined, { timeZone: "UTC" }) : "";
                   }}
-                  formatter={(value) => [`${Number(value) >= 0 ? "+" : "−"}${formatCompactTEL(Math.abs(Number(value)))} TEL`, "Net flow"]}
+                  formatter={(value) => [`${Number(value) >= 0 ? "+" : "−"}${formatCompactTEL(Math.abs(Number(value)))} ${ticker}`, "Net flow"]}
                 />
               }
             />

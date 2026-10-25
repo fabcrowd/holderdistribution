@@ -1,7 +1,10 @@
 import { BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { GLOSSARY } from "@/lib/glossary";
+import { useMemo } from "react";
+import { buildGlossary } from "@/lib/glossary";
+import { useProject } from "@/hooks/useProject";
+import { getProject } from "@/lib/projects";
 
 /**
  * Header-level "Key terms" drawer. The page leans on crypto jargon (CEX, DEX,
@@ -16,7 +19,10 @@ export const GlossaryDialog = ({
   className?: string;
   /** e.g. "sr-only 2xl:not-sr-only" for an icon-only trigger on narrow desktops. */
   labelClassName?: string;
-}) => (
+}) => {
+  const { slug } = useProject();
+  const glossary = useMemo(() => buildGlossary(getProject(slug)), [slug]);
+  return (
   <Sheet>
     <SheetTrigger asChild>
       <Button
@@ -34,7 +40,7 @@ export const GlossaryDialog = ({
         <SheetDescription>What the labels on this dashboard mean, in plain language.</SheetDescription>
       </SheetHeader>
       <dl className="mt-6 space-y-5">
-        {GLOSSARY.map((t) => (
+        {glossary.map((t) => (
           <div key={t.id} id={`term-${t.id}`}>
             <dt className="text-sm font-semibold text-foreground">{t.term}</dt>
             <dd className="mt-1 text-sm leading-relaxed text-muted-foreground">{t.definition}</dd>
@@ -43,6 +49,7 @@ export const GlossaryDialog = ({
       </dl>
     </SheetContent>
   </Sheet>
-);
+  );
+};
 
 export default GlossaryDialog;

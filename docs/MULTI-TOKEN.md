@@ -16,6 +16,8 @@ site serve more than one token.
 | Frontend registry and URLs | `src/lib/projects.ts`, `src/lib/dataUrl.ts` (`dataUrl(slug, file)`) |
 | Active project | `src/lib/projectStore.ts` + `useProject()` (`src/hooks/useProject.ts`) |
 | Header switcher | `src/components/TokenSwitcher.tsx` |
+| Project-driven copy | `src/lib/projectCopy.ts`, `useProjectCopy()` (`src/hooks/useProjectCopy.ts`), `src/lib/glossary.ts` |
+| Pipeline `--project` | `parseProjectArg` / `pipelineProject` in `scripts/lib/projects.js` |
 
 The active project comes from `?token=<slug>`, then localStorage (`ha:project`),
 then the registry default. The default slug is never written into the URL, so
@@ -42,6 +44,51 @@ and the live function falls back to `/data/<file>` for legacy URLs and to
 Wallet-level data (e.g. `wallet-analysis/`) is still pruned from `dist` and
 stays behind the forensics gate.
 
+## Copy (labels, intros, glossary)
+
+Widget text is written once as a generic template with placeholders
+`{ticker}`, `{name}`, `{chains}` and `{supply}`, filled from the active
+project (`useProjectCopy()` → `t(template)` / `text(id, template)`). Chains are
+joined from `chains[].name`; supply is `supplyTarget` formatted (e.g. `100B`).
+
+A project that needs different wording overrides it in its own config, so a
+new project works with no `copy` section at all:
+
+- `copy.glossary.<termId>`: `{ "term"?, "definition"? }` for the glossary
+  (`retail`, `legacy-v3`, `supply`, `cex`, `dex`, `escrow`, `staked`, `tier`,
+  `snapshot`, `reclassified`). `legacy-v3` only shows for projects with more
+  than one token generation.
+- `copy.text.<id>`: replaces one widget string (ids are the first argument of
+  `text(...)`, e.g. `holders.cex.info`, `staking.intro`).
+
+TEL's KuCoin/BitGo/v3-migration wording lives in `config/projects/tel.json`
+under `copy`. `src/lib/projectCopyCoverage.test.ts` fails if a bare `TEL`
+reappears in the generalized widgets. Still TEL-specific on purpose: the
+methodology page, staking v3 event notes, Association/Holdings entity panels,
+the gated forensics views, the footer and the static `index.html` meta.
+
+## Pipeline: `--project <slug>`
+
+Every refresh/generate script that the workflows run takes `--project <slug>`
+(or `--project=<slug>`). Without the flag it reads `HD_PROJECT`, then the
+registry default (TEL), so existing commands behave exactly as before. The slug
+must be in `config/projects.json`; the script loads `config/projects/<slug>.json`
+and its data dir (`projectDataDir`).
+
+The data workflows have a `project` input on manual dispatch and export it as
+`HD_PROJECT` for every step (scheduled runs fall back to `tel`):
+
+```sh
+node scripts/pull-holders-rpc.js --project tel
+gh workflow run refresh-tel-holders.yml -f project=tel
+```
+
+Today the scripts still read token addresses from `config/chains.json` and
+write the `public/data/` root, so `pipelineProject()` only accepts
+`legacyRoot` projects and exits with code 2 for any other slug rather than
+writing one token's numbers under another project's name. Porting a script
+means reading tokens from the project config and writing under its data dir.
+
 ## Adding the next project
 
 1. Add `{ "slug": "<slug>", "name": "...", "ticker": "..." }` to `config/projects.json`.
@@ -52,6 +99,7 @@ stays behind the forensics gate.
    `BROWSER_DATA_FILES` in `scripts/lib/browserDataFiles.js`).
 4. Add the slug to `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`.
    A test fails if it is missing.
-5. Run `npm run typecheck && npx vitest run && npm run build`.
+5. Optional: add `copy` overrides for wording the generic templates get wrong.
+6. Run `npm run typecheck && npx vitest run && npm run build`.
 
 The switcher picks the new project up automatically.

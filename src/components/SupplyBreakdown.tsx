@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { PanelError } from "@/components/terminal/TerminalPanel";
 import { motion } from "framer-motion";
 import { TreasuryHistoryChart } from "@/components/TreasuryHistoryChart";
@@ -86,21 +87,21 @@ const BlurredLine = ({ widthClass = "w-32" }: { widthClass?: string }) => (
 );
 
 // Static shell — per-slice color/opacity comes from each bucket's own data, not this config.
-const supplyPieChartConfig = { amount: { label: "TEL" } };
+const supplyPieChartConfig = (ticker: string) => ({ amount: { label: ticker } });
 
 /** The selected wedge's "pop toward the viewer" — recharts' standard
  *  activeShape pattern: redraw just that one sector a few px further out
  *  than its siblings, which reads as it lifting off the ring rather than
  *  merely changing color. <Pie>'s own outerRadius leaves room for this (92%,
  *  not 100%) so the grown sector never clips against the chart box. */
-const renderActivePieSector = (props: PieSectorDataItem) => {
+const makeActivePieSector = (ticker: string) => (props: PieSectorDataItem) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
   const p = props.payload as { label?: string; amount?: number; pct?: number } | undefined;
   return (
     <Sector
       // recharts gives each sector role="img"; the redrawn active one needs
       // its own text alternative too (axe svg-img-alt).
-      aria-label={p?.label ? `${p.label}: ${formatCompactTEL(p.amount ?? 0)} TEL (${(p.pct ?? 0).toFixed(1)}%), selected` : "Selected category"}
+      aria-label={p?.label ? `${p.label}: ${formatCompactTEL(p.amount ?? 0)} ${ticker} (${(p.pct ?? 0).toFixed(1)}%), selected` : "Selected category"}
       cx={cx}
       cy={cy}
       innerRadius={innerRadius}
@@ -167,6 +168,9 @@ const renderBucketDetail = (
 
 const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = "stacked" }: SupplyBreakdownProps) => {
   const pieIntro = useChartIntro();
+  const { ticker } = useProjectCopy();
+  const pieChartConfig = useMemo(() => supplyPieChartConfig(ticker), [ticker]);
+  const activePieSector = useMemo(() => makeActivePieSector(ticker), [ticker]);
   // Controlled when the page owns the panel (so #supply/<panel> deep links
   // work), uncontrolled otherwise.
   const [panelState, setPanelState] = useState("breakdown");
@@ -295,7 +299,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
 
   const renderDonut = (className: string) => (
                   <ChartContainer
-                    config={supplyPieChartConfig}
+                    config={pieChartConfig}
                     // Explicit height rather than aspect-square + max-h: that
                     // combination let the box's reported size disagree with
                     // its rendered circle at some widths (w-full computes
@@ -305,7 +309,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                     // the donut instead of below it.
                     className={className}
                     role="img"
-                    aria-label="TEL total supply by category"
+                    aria-label={`${ticker} total supply by category`}
                   >
                     <RePieChart>
                       <ChartTooltip
@@ -319,7 +323,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                             <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-md">
                               <p className="font-medium text-foreground">{entry.label}</p>
                               <p className="text-muted-foreground tabular-nums">
-                                {formatCompactTEL(entry.amount)} TEL ({entry.pct.toFixed(1)}%)
+                                {formatCompactTEL(entry.amount)} {ticker} ({entry.pct.toFixed(1)}%)
                               </p>
                             </div>
                           );
@@ -332,7 +336,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                         // No gap between wedges — paddingAngle removed.
                         // outerRadius pulled in from 100% to 92%: the
                         // selected wedge grows past its own edge on click
-                        // (see renderActivePieSector), and needs that 8%
+                        // (see makeActivePieSector), and needs that 8%
                         // margin to do it without clipping against the box.
                         innerRadius="55%"
                         outerRadius="92%"
@@ -352,7 +356,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                           const i = pieSlices.findIndex((s) => s.key === openBucketKey);
                           return i === -1 ? undefined : i;
                         })()}
-                        activeShape={renderActivePieSector}
+                        activeShape={activePieSector}
                         onMouseEnter={(_, index) => setActiveIndex(index)}
                         onMouseLeave={() => setActiveIndex(null)}
                         onClick={(entry) => {
@@ -375,7 +379,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                               fill={b.color}
                               // Recharts hard-codes role="img" on each wedge;
                               // give it a text alternative (WCAG 1.1.1).
-                              aria-label={`${b.label}: ${formatCompactTEL(b.amount)} TEL (${b.pct.toFixed(1)}%)`}
+                              aria-label={`${b.label}: ${formatCompactTEL(b.amount)} ${ticker} (${b.pct.toFixed(1)}%)`}
                               fillOpacity={anySelected ? (isRowActive ? 1 : 0.25) : baseOpacity}
                               stroke="hsl(var(--background))"
                               strokeWidth={isRowActive ? 3 : 0}
@@ -495,7 +499,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                   <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground space-y-1">
                     <div>
                       <span className="font-semibold text-foreground">Circulating: </span>
-                      {formatCompactTEL(circulating)} TEL
+                      {formatCompactTEL(circulating)} {ticker}
                       <span className="text-muted-foreground">
                         {" "}
                         (counted − treasury − council − Association-committed escrow;
@@ -546,7 +550,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
         state={isLoading ? "loading" : error ? "error" : buckets.length === 0 ? "empty" : "ready"}
         panel={panel}
         onPanelChange={setPanel}
-        totalSupplyLabel={`${formatCompactTEL(totalSupply)} TEL`}
+        totalSupplyLabel={`${formatCompactTEL(totalSupply)} ${ticker}`}
         donut={renderDonut("mx-auto h-[170px] w-[170px] shrink-0 2xl:h-[240px] 2xl:w-[240px]")}
         list={renderList(true)}
         footnote={footnote}
@@ -578,7 +582,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
             <MethodologyInfo section="supplyBreakdown" />
           </CardTitle>
           <CardDescription className="text-sm sm:text-base text-muted-foreground mt-2">
-            Where every TEL sits — click any segment for more detail
+            Where every {ticker} sits — click any segment for more detail
           </CardDescription>
       </CardHeader>
           <CardContent className="space-y-5 pt-2">
@@ -600,7 +604,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                       Total supply
                     </span>
                     <span className="text-sm font-semibold tabular-nums">
-                      {formatCompactTEL(totalSupply)} TEL
+                      {formatCompactTEL(totalSupply)} {ticker}
                     </span>
                   </div>
                   {/* Donut beside its list on desktop, stacked on mobile —
@@ -673,6 +677,7 @@ const ResidualPanel = ({
   data: ReturnType<typeof useSupplyReconciliation>["data"];
   bridges: SupplyReconciliationItem[];
 }) => {
+  const { ticker, name } = useProjectCopy();
   const parts = data?.residualParts;
   const residual = data?.residual ?? 0;
   return (
@@ -680,7 +685,7 @@ const ResidualPanel = ({
       <p className="font-semibold text-foreground text-sm">In transit (bridges)</p>
       <p className="text-muted-foreground">
         Deeper look at the ~{formatCompactTEL(residual)} gap between wallets we can count and the
-        official {formatCompactTEL(data?.totalSupply ?? 1e11)} total. Most of this is TEL that is{" "}
+        official {formatCompactTEL(data?.totalSupply ?? 1e11)} total. Most of this is {ticker} that is{" "}
         <span className="text-foreground font-medium">
           locked on Ethereum while it moves to Polygon or Base
         </span>
@@ -689,7 +694,7 @@ const ResidualPanel = ({
       <dl className="space-y-1.5 tabular-nums">
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">In transit</dt>
-          <dd className="font-medium text-foreground">{formatFullTEL(residual)} TEL</dd>
+          <dd className="font-medium text-foreground">{formatFullTEL(residual)} {ticker}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Locked on Ethereum (bridges)</dt>
@@ -714,19 +719,19 @@ const ResidualPanel = ({
       </p>
       {data?.upgrade && (
         <div className="border-t border-border/50 pt-2 space-y-1.5">
-          <p className="font-semibold text-foreground">TEL v3 upgrade (legacy → v3, 1:1)</p>
+          <p className="font-semibold text-foreground">{ticker} v3 upgrade (legacy → v3, 1:1)</p>
           <p className="text-muted-foreground">
-            Every wallet balance is legacy TEL plus TEL v3. When a holder upgrades, the legacy TEL is
-            locked in Telcoin&apos;s upgrade contract and the same amount of v3 is minted to them — so
-            the locked legacy TEL is left out and the v3 is counted instead, never both.
+            Every wallet balance is legacy {ticker} plus {ticker} v3. When a holder upgrades, the legacy {ticker} is
+            locked in {name}&apos;s upgrade contract and the same amount of v3 is minted to them — so
+            the locked legacy {ticker} is left out and the v3 is counted instead, never both.
           </p>
           <dl className="space-y-1.5 tabular-nums">
             <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">TEL v3 in existence (all chains)</dt>
+              <dt className="text-muted-foreground">{ticker} v3 in existence (all chains)</dt>
               <dd>{formatFullTEL(data.upgrade.v3Supply)}</dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Legacy TEL locked for it (not double-counted)</dt>
+              <dt className="text-muted-foreground">Legacy {ticker} locked for it (not double-counted)</dt>
               <dd>{formatFullTEL(data.upgrade.retiredLegacy)}</dd>
             </div>
             <div className="flex justify-between gap-3">
@@ -837,6 +842,9 @@ const AddressListPanel = ({
   emptyLabel: string;
 }) => {
   const { password, status, unlock } = useForensicsUnlock();
+  const { t } = useProjectCopy();
+  // String descriptions are copy templates ({ticker}, {name}, …).
+  const desc = typeof description === "string" ? t(description) : description;
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const bucketTotal = items.reduce((s, i) => s + i.balance, 0);
   const selected = selectedAddress ? items.find((i) => i.address === selectedAddress) ?? null : null;
@@ -863,7 +871,7 @@ const AddressListPanel = ({
   return (
     <div className="space-y-3">
       <p className="font-semibold text-foreground text-sm">{title}</p>
-      <p className="text-muted-foreground">{description}</p>
+      <p className="text-muted-foreground">{desc}</p>
       {items.length === 0 ? (
         <p className="text-muted-foreground">{emptyLabel}</p>
       ) : (
@@ -908,7 +916,7 @@ const sumBalances = (items: SupplyReconciliationItem[]) => items.reduce((s, i) =
 const HoldingsPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   <AddressListPanel
     title="Telcoin Holdings"
-    description={`Confirmed Holdings wallets (${formatCompactTEL(sumBalances(items))} TEL): reserves, shared Safes, bridge-hub, and Base ops/cold custody.`}
+    description={`Confirmed Holdings wallets (${formatCompactTEL(sumBalances(items))} {ticker}): reserves, shared Safes, bridge-hub, and Base ops/cold custody.`}
     items={items}
     subcategoryFor={() => "Telcoin Holdings"}
     emptyLabel="No Holdings addresses itemised."
@@ -918,7 +926,7 @@ const HoldingsPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
 const OtherAddressPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   <AddressListPanel
     title="Other addresses"
-    description="Independent large wallets, temporary retail labels, burned TEL, and small special cases. Confirmed personal wallets move into Retail after a full holders re-scrape."
+    description="Independent large wallets, temporary retail labels, burned {ticker}, and small special cases. Confirmed personal wallets move into Retail after a full holders re-scrape."
     items={items}
     subcategoryFor={(item) => otherCategoryLabel(item.category)}
     emptyLabel="No itemised Other addresses."
@@ -928,7 +936,7 @@ const OtherAddressPanel = ({ items }: { items: SupplyReconciliationItem[] }) => 
 const DexLiquidityPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   <AddressListPanel
     title="DEX Liquidity"
-    description="TEL sitting in DEX pools and LP contracts — retail-owned (LP receipts) but protocol-custodied, not held directly by a wallet."
+    description="{ticker} sitting in DEX pools and LP contracts — retail-owned (LP receipts) but protocol-custodied, not held directly by a wallet."
     items={items}
     subcategoryFor={(item) => item.name ?? "DEX pool"}
     emptyLabel="No DEX pool addresses itemised."
@@ -938,7 +946,7 @@ const DexLiquidityPanel = ({ items }: { items: SupplyReconciliationItem[] }) => 
 const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   <AddressListPanel
     title="CEX Custody"
-    description="TEL held in known exchange deposit/custody wallets — user balances on that exchange, not project-controlled."
+    description="{ticker} held in known exchange deposit/custody wallets — user balances on that exchange, not project-controlled."
     items={items}
     subcategoryFor={(item) => item.name ?? "Exchange wallet"}
     emptyLabel="No CEX addresses itemised."
@@ -946,6 +954,7 @@ const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
 );
 
 const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; committed: number | null }) => {
+  const { ticker } = useProjectCopy();
   const total = sumBalances(items);
   const rest = committed != null ? Math.max(0, total - committed) : null;
   return (
@@ -953,7 +962,7 @@ const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; 
     title="Escrow"
     description={
       <>
-        TEL held by third-party custodians under a SAFE
+        {ticker} held by third-party custodians under a SAFE
         {committed != null && rest != null ? (
           <>
             {" "}— {formatCompactTEL(committed)} is contractually committed back to Association treasury and
@@ -970,16 +979,19 @@ const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; 
   );
 };
 
-const RetailPanel = ({ amount }: { amount: number }) => (
+const RetailPanel = ({ amount }: { amount: number }) => {
+  const { ticker } = useProjectCopy();
+  return (
   <div className="space-y-3">
     <p className="font-semibold text-foreground text-sm">Retail (wallets)</p>
     <p className="text-muted-foreground">
-      {formatCompactTEL(amount)} TEL spread across every wallet holding TEL directly, outside
+      {formatCompactTEL(amount)} {ticker} spread across every wallet holding {ticker} directly, outside
       exchanges, DEX pools, and the addresses itemised elsewhere on this card — from the scheduled
       holders snapshot, not a fixed address list. There's no single "retail" address to link to;
       the Holders and Distribution tabs break it down by wallet size and tier.
     </p>
   </div>
-);
+  );
+};
 
 export default SupplyBreakdown;

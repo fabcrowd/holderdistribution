@@ -56,6 +56,11 @@ import { reconcileParts } from "./lib/reconcileParts.js";
 import { coverageFor, firstAttributedDate } from "./lib/attributionCoverage.js";
 import { classifyReceiptLogs, dexSubClass, LP_EVENT_TOPICS } from "./lib/dexTransferClass.js";
 import { loadEnv } from "./loadEnv.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("generate-tier-outflows");
 
 // How DEX transfers are split into swap vs LP: "receipts" (default, one receipt
 // per DEX tx) or "logs" (bulk LP-event getLogs per chunk; for long backfills).

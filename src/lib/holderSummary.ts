@@ -1,7 +1,7 @@
 import { formatCompact } from "@/lib/format";
 
 /**
- * Plain-language "what is happening with TEL holders" summary for the page
+ * Plain-language "what is happening with <ticker> holders" summary for the page
  * intro. Built only from the same four headline numbers the KPI tiles show, so
  * the sentence and the tiles can never disagree. A metric whose comparison is
  * blocked by a classification change (see ChangeIndicator) contributes its
@@ -22,6 +22,8 @@ export type SummaryInput = {
   totalSupply: number;
   /** "YTD", "30D", … — the page's selected range. */
   rangeLabel: string;
+  /** Active project's ticker, e.g. "TEL" (config/projects/<slug>.json). */
+  ticker: string;
 };
 
 export type SummaryPoint = {
@@ -49,11 +51,11 @@ const change = (m: SummaryMetric): { diff: number; rel: number | null } | null =
 const rangePhrase = (label: string) => (label === "YTD" ? "this year" : `over ${label}`);
 
 export const buildHolderSummary = (input: SummaryInput): HolderSummary | null => {
-  const { holders, retailHeld, staked, cex, totalSupply, rangeLabel } = input;
+  const { holders, retailHeld, staked, cex, totalSupply, rangeLabel, ticker } = input;
   if (holders.current === null || retailHeld.current === null) return null;
 
   const retailShare = pct(retailHeld.current, totalSupply);
-  const headline = `${int.format(holders.current)} retail wallets hold ${formatCompact(retailHeld.current)} TEL — ${pctLabel(retailShare)} of the ${formatCompact(totalSupply, 0)} supply.`;
+  const headline = `${int.format(holders.current)} retail wallets hold ${formatCompact(retailHeld.current)} ${ticker} — ${pctLabel(retailShare)} of the ${formatCompact(totalSupply, 0)} supply.`;
 
   const points: SummaryPoint[] = [];
   const when = rangePhrase(rangeLabel);
@@ -80,10 +82,10 @@ export const buildHolderSummary = (input: SummaryInput): HolderSummary | null =>
       s && s.diff !== 0
         ? {
             id: "staked",
-            text: `Staked TEL ${s.diff > 0 ? "up" : "down"} ${formatCompact(Math.abs(s.diff))} ${when}, now ${formatCompact(staked.current)}`,
+            text: `Staked ${ticker} ${s.diff > 0 ? "up" : "down"} ${formatCompact(Math.abs(s.diff))} ${when}, now ${formatCompact(staked.current)}`,
             trend: s.diff > 0 ? "up" : "down",
           }
-        : { id: "staked", text: `${formatCompact(staked.current)} TEL staked`, trend: s ? "flat" : "unknown" },
+        : { id: "staked", text: `${formatCompact(staked.current)} ${ticker} staked`, trend: s ? "flat" : "unknown" },
     );
   }
 
@@ -92,7 +94,7 @@ export const buildHolderSummary = (input: SummaryInput): HolderSummary | null =>
     const dir = c && c.diff !== 0 ? `, ${c.diff > 0 ? "up" : "down"} ${formatCompact(Math.abs(c.diff))} ${when}` : "";
     points.push({
       id: "cex",
-      text: `${formatCompact(cex.current)} TEL (${pctLabel(pct(cex.current, totalSupply))}) sits on exchanges${dir}`,
+      text: `${formatCompact(cex.current)} ${ticker} (${pctLabel(pct(cex.current, totalSupply))}) sits on exchanges${dir}`,
       // Exchange balances are neither good nor bad on their own.
       trend: "flat",
     });

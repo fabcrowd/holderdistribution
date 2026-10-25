@@ -165,5 +165,36 @@
   "links": {
     "upgradePortal": "https://tel3.telcoin.network",
     "docs": "https://www.telcoin.org/docs/telcoin"
+  },
+  "copy": {
+    "$comment": "TEL-only facts for UI copy. Overrides the generic glossary template for a term id (src/lib/glossary.ts). Placeholders {ticker} {name} {chains} {supply} are filled from this file.",
+    "glossary": {
+      "legacy-v3": {
+        "term": "Legacy {ticker} vs {ticker} v3",
+        "definition": "{name} upgraded {ticker} to a new contract (v3, 18 decimals, same address on {chains}). Holders swap 1:1. Balances here add legacy + v3 so an upgrade never looks like a sale, and total supply stays at {supply}."
+      },
+      "supply": {
+        "definition": "The fixed {ticker} supply. Bridged copies on Polygon and Base are backed by tokens locked on Ethereum, and swapped legacy {ticker} is retired, so each token is counted once."
+      },
+      "cex": {
+        "definition": "Centralised exchange (e.g. KuCoin, MEXC). CEX balance is {ticker} sitting in exchange-controlled wallets. Moving {ticker} to an exchange is often, but not always, a step before selling."
+      },
+      "dex": {
+        "definition": "Decentralised exchange (e.g. Uniswap, Balancer, ParaSwap). {ticker} in DEX pools is liquidity that traders buy from and sell into."
+      },
+      "escrow": {
+        "definition": "{ticker} held by custodians (BitGo, Anchorage) or migration contracts. It is not circulating and is excluded from retail figures."
+      },
+      "staked": {
+        "definition": "{ticker} locked in the {name} staking contract. Stakers must unstake before upgrading to v3, so staking can fall during the migration."
+      }
+    },
+    "text": {
+      "cex.balance.info": "{ticker} held in known exchange wallets. Additional balances may exist in untagged wallets, so treat this as a floor, not a total. A one-time ~8.7B step-up is a re-labelling of previously vault-held KuCoin wallets, not an inflow.",
+      "holders.cex.info": "{ticker} sitting in known exchange wallets. An exchange hot wallet is one commingled pool that backs all of that exchange's customers' {ticker} balances — it's mostly customer funds held in custody, not the exchange's own.\n\nTrading on an exchange happens in its private off-chain ledger, so on-chain we can't see whether any of this has been sold, nor how many people hold it. A rising balance means more {ticker} positioned near the market; a falling balance means {ticker} leaving exchanges (often to self-custody or staking).\n\nNote: a one-time ~8.7B step-up reflects re-labelling seven previously vault-held KuCoin wallets into CEX Custody — not an inflow.",
+      "holders.retailHeld.info": "{ticker} held in ordinary wallets — everything except exchange custody, Association treasury, Telcoin Holdings, escrow, bridges and DEX liquidity.\n\nShown separately from CEX Balance rather than blended into one total, because the two moving in opposite directions is the signal: {ticker} leaving exchanges for self-custody is accumulation, the reverse is supply moving toward the market. A combined figure stays flat through both.\n\nStaked {ticker}, including the Staked (v3) StakingModule portion, is already inside this figure (credited to each staker's wallet), not added on top.",
+      "holders.staked.info": "{ticker} staked on Polygon: the legacy staking contract plus the v3 StakingModule (live since 1 Sep 2026), counted once per staker. It's a subset of Retail Held (already counted there, including the v3 portion), shown separately as a measure of long-term conviction. Staked {ticker} can't be sold until unstaked.",
+      "staking.intro": "{ticker} staked by retail in the legacy staking contract and the v3 StakingModule, mapped back to holder wallets and counted once per staker (excludes exchange & hot wallets)."
+    }
   }
 }

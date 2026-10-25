@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import {
   Area,
   AreaChart,
@@ -243,6 +244,7 @@ type CategoryBarsProps = {
 /** Vertical category bars for distributions (buckets on X). */
 export const CategoryBars = ({ data, format = (n) => formatCompact(n), label }: CategoryBarsProps) => {
   const anim = useChartIntro();
+  const { ticker } = useProjectCopy();
   return (
     <div role="img" aria-label={label} className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -255,7 +257,7 @@ export const CategoryBars = ({ data, format = (n) => formatCompact(n), label }: 
             formatter={(v: number) => [format(v), "Wallets"]}
             labelFormatter={(name: string) => {
               const row = data.find((d) => d.name === name);
-              return row?.full ? `${row.full} TEL` : name;
+              return row?.full ? `${row.full} ${ticker}` : name;
             }}
             contentStyle={{
               background: "hsl(var(--popover))",

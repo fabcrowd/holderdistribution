@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { useTierOutflows, outflowsKeyFor } from "@/hooks/useTierOutflows";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
@@ -25,6 +26,7 @@ const formatCompactTEL = (value: number) => {
 export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
   const { data: entries } = useExchangeFlow();
   const { data: outflows } = useTierOutflows();
+  const { ticker } = useProjectCopy();
   const ytd = ytdDays();
 
   const view = useMemo(() => {
@@ -69,18 +71,18 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Sold on DEX</div>
-              <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.dexSold)} TEL</div>
+              <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.dexSold)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">swapped for another coin</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Bought on DEX</div>
-              <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.dexBought)} TEL</div>
+              <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.dexBought)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">swapped in from another coin</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Net DEX</div>
               <div className={`text-xl font-bold ${view.dexNet >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
-                {view.dexNet >= 0 ? "+" : "−"}{formatCompactTEL(Math.abs(view.dexNet))} TEL
+                {view.dexNet >= 0 ? "+" : "−"}{formatCompactTEL(Math.abs(view.dexNet))} {ticker}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
                 {view.dexNet >= 0 ? "net bought from market" : "net sold to market"}
@@ -96,18 +98,18 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Added to LP</div>
-              <div className="text-xl font-bold text-foreground">{formatCompactTEL(lpView.added)} TEL</div>
+              <div className="text-xl font-bold text-foreground">{formatCompactTEL(lpView.added)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">deposited into pools</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Unstaked from LP</div>
-              <div className="text-xl font-bold text-foreground">{formatCompactTEL(lpView.removed)} TEL</div>
+              <div className="text-xl font-bold text-foreground">{formatCompactTEL(lpView.removed)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">withdrawn back to wallets</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Net LP</div>
               <div className="text-xl font-bold text-foreground">
-                {lpView.net >= 0 ? "+" : "−"}{formatCompactTEL(Math.abs(lpView.net))} TEL
+                {lpView.net >= 0 ? "+" : "−"}{formatCompactTEL(Math.abs(lpView.net))} {ticker}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
                 {lpView.net >= 0 ? "net withdrawn to wallets" : "net deposited into pools"}
@@ -128,7 +130,7 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
               <span className="inline-block w-2 h-2 rounded-full bg-muted-foreground" /> Moved to wallets
             </div>
             <div className="text-muted-foreground mt-1">
-              Sent to another wallet the holder controls (or a gift). The TEL is still held on-chain — not sold, just relocated or split.
+              Sent to another wallet the holder controls (or a gift). The {ticker} is still held on-chain — not sold, just relocated or split.
             </div>
           </div>
           <div>
@@ -157,7 +159,7 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
           </div>
         </div>
         <div className="text-xs text-muted-foreground/80 mt-3 text-center">
-          Hover a tier above to see how much of its outgoing TEL went each way.
+          Hover a tier above to see how much of its outgoing {ticker} went each way.
         </div>
       </div>
     </div>

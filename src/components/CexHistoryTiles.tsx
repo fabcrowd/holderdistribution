@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis } from "recharts";
 import "@/lib/rechartsMotion";
@@ -17,12 +18,12 @@ const formatCompactTEL = (value: number) => {
   return `${Math.round(value)}`;
 };
 
-const tileChartConfig = {
+const tileChartConfig = (ticker: string) => ({
   balance: {
-    label: "TEL Balance",
+    label: `${ticker} Balance`,
     color: "hsl(var(--primary))",
   },
-};
+});
 
 type CexHistoryTilesProps = {
   rangeDays: number;
@@ -41,6 +42,8 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
   const { data: entries } = useCexBalanceHistory();
   const { data: changelog } = useClassificationChangelog();
   const [showAll, setShowAll] = useState(false);
+  const { ticker } = useProjectCopy();
+  const chartConfig = useMemo(() => tileChartConfig(ticker), [ticker]);
 
   const tiles = useMemo(
     () => buildCexHistoryTiles(entries, rangeDays),
@@ -95,7 +98,7 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
             <div className="flex items-baseline justify-between gap-2 mb-2">
               <span className="text-sm font-medium text-foreground truncate">{tile.name}</span>
               <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
-                {formatCompactTEL(tile.current)} TEL
+                {formatCompactTEL(tile.current)} {ticker}
                 {tile.change !== null && events.length > 0 ? (
                   <span className="ml-1.5 inline-flex align-middle">
                     <ChangeIndicator
@@ -128,7 +131,7 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
               </span>
             </div>
             <div className="h-20 w-full">
-              <ChartContainer config={tileChartConfig} className="h-full w-full aspect-auto">
+              <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                 <LineChart data={tile.series} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
                   <XAxis dataKey="timestamp" type="number" domain={["dataMin", "dataMax"]} scale="time" hide />
                   <YAxis hide domain={["auto", "auto"]} />
@@ -139,7 +142,7 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
                           const ts = payload?.[0]?.payload?.timestamp;
                           return ts ? new Date(ts).toLocaleDateString(undefined, { timeZone: "UTC" }) : "";
                         }}
-                        formatter={(value) => [`${formatCompactTEL(Number(value))} TEL`, "Balance"]}
+                        formatter={(value) => [`${formatCompactTEL(Number(value))} ${ticker}`, "Balance"]}
                       />
                     }
                   />
@@ -178,11 +181,11 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
         </button>
       )}
       <p className="text-xs text-muted-foreground">
-        Daily TEL held in known wallets per exchange. History begins Jan 2026.
+        Daily {ticker} held in known wallets per exchange. History begins Jan 2026.
         {hidden > 0 && !showAll && shownShare !== null
           ? ` Showing the ${DEFAULT_VISIBLE_TILES} largest, ${shownShare.toFixed(1)}% of tracked exchange balance.`
           : ""}
-        Exchanges holding under {MIN_CEX_TILE_BALANCE.toLocaleString()} TEL are omitted here (still listed in the table above).
+        Exchanges holding under {MIN_CEX_TILE_BALANCE.toLocaleString()} {ticker} are omitted here (still listed in the table above).
       </p>
     </div>
   );

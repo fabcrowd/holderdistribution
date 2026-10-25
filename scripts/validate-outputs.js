@@ -9,6 +9,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("validate-outputs");
 
 const DATA_DIR = path.resolve(process.cwd(), "public/data");
 

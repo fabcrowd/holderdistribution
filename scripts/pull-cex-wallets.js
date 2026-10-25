@@ -13,6 +13,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("pull-cex-wallets");
 
 const CONFIG_PATH = path.resolve(process.cwd(), "config/cex-wallets.json");
 const OUTPUT_PATH = path.resolve(process.cwd(), "public/data/cex-wallets.json");

@@ -2,9 +2,11 @@ import { useHolderLiteSnapshot, type HolderLiteSnapshot } from "@/hooks/useHolde
 import { useEcosystemHeadlineTiles, type HeadlineView } from "@/hooks/useEcosystemHeadlineTiles";
 import { buildHolderSummary, type SummaryMetric } from "@/lib/holderSummary";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
+import { useProject } from "@/hooks/useProject";
 
 /** The plain-language headline + trend bullets, from the same tile values the KPIs show. */
 export const useHeadlineSummary = (rangeDays: number, chain: HeadlineView = "combined") => {
+  const { project } = useProject();
   const { data, isError } = useHolderLiteSnapshot();
   const snapshot = data as HolderLiteSnapshot | undefined;
   const result = useEcosystemHeadlineTiles(rangeDays, chain);
@@ -26,6 +28,7 @@ export const useHeadlineSummary = (rangeDays: number, chain: HeadlineView = "com
           cex: metric("cex"),
           totalSupply: snapshot.totals.totalSupply,
           rangeLabel,
+          ticker: project.ticker,
         })
       : null;
   return { summary, snapshot, isError, tiles: result?.tiles ?? [] };

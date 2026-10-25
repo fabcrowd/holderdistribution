@@ -19,6 +19,11 @@ import path from "node:path";
 import process from "node:process";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
 import { computeChainMetrics, buildSummary, RETAIL_THRESHOLD } from "./lib/holderMetrics.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("resync-chain-holders");
 
 const HOLDERS_PATH = path.resolve(process.cwd(), "public/data/tel-holders.json");
 const SUMMARY_PATH = path.resolve(process.cwd(), "public/data/holders-summary.json");

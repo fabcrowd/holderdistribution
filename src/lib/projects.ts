@@ -34,6 +34,15 @@ export type ProjectConfig = ProjectEntry & {
   staking?: Array<{ chain: string; address: string; name: string; token?: string }>;
   classification?: Record<string, string>;
   gated?: { forensics?: boolean };
+  /**
+   * Project-specific copy. `glossary` overrides the generic template for a
+   * term id (src/lib/glossary.ts); strings may use {ticker}/{name}/{chains}/{supply}.
+   */
+  copy?: {
+    glossary?: Record<string, { term?: string; definition?: string }>;
+    /** Widget string overrides by id (src/lib/projectCopy.ts copyText). */
+    text?: Record<string, string>;
+  };
 };
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;

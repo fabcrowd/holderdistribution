@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { SubPanelTabs } from "@/components/SubPanelTabs";
 import { TabsContent } from "@/components/ui/tabs";
 import { ChangeIndicator } from "@/components/ChangeIndicator";
@@ -33,12 +34,12 @@ const VIEW_CONFIG: Record<DisplaySelection, { label: string }> = {
 };
 
 
-const chartConfig = {
+const holdersChartConfig = (ticker: string) => ({
   holders: {
-    label: "Wallets with >0 TEL",
+    label: `Wallets with >0 ${ticker}`,
     color: "hsl(var(--primary))",
   },
-};
+});
 
 // No blended "Total" series here by design (removed 2026-08-22). Summing these
 // three is invariant to the movement this chart exists to show — 1B rotating
@@ -84,26 +85,30 @@ const isolatedDot = (rows: Array<Record<string, number | null>>, key: string, co
 const formatInteger = (value: number) => new Intl.NumberFormat().format(value);
 
 // Tier is picked from the MAGNITUDE while the printed number keeps its sign, so
-// a negative delta renders "-1.23B TEL". Testing `value >= 1e9` directly (as this
+// a negative delta renders "-1.23B <ticker>". Testing `value >= 1e9` directly (as this
 // did before the Change view existed) sends every negative straight to the
-// integer branch and prints "-1,234,567,890 TEL".
-const formatCompactTEL = (value: number) => {
+// integer branch and prints "-1,234,567,890 <ticker>".
+const compactAmount = (value: number, unit: string) => {
   const abs = Math.abs(value);
-  if (abs >= 1e9) return `${(value / 1e9).toFixed(2)}B TEL`;
-  if (abs >= 1e6) return `${(value / 1e6).toFixed(2)}M TEL`;
-  return `${new Intl.NumberFormat().format(Math.round(value))} TEL`;
+  if (abs >= 1e9) return `${(value / 1e9).toFixed(2)}B ${unit}`;
+  if (abs >= 1e6) return `${(value / 1e6).toFixed(2)}M ${unit}`;
+  return `${new Intl.NumberFormat().format(Math.round(value))} ${unit}`;
 };
 
 // Explicit +/- so a rebased delta reads as a direction, not just a quantity.
-const formatSignedTEL = (value: number) => {
+const signedAmount = (value: number, unit: string) => {
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${sign}${formatCompactTEL(Math.abs(value))}`;
+  return `${sign}${compactAmount(Math.abs(value), unit)}`;
 };
 
 type BalanceMode = "balance" | "change";
 
 const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: HolderGrowthWidgetProps) => {
   const config = VIEW_CONFIG[selectedView];
+  const { ticker } = useProjectCopy();
+  const chartConfig = useMemo(() => holdersChartConfig(ticker), [ticker]);
+  const formatCompactAmount = (value: number) => compactAmount(value, ticker);
+  const formatSignedAmount = (value: number) => signedAmount(value, ticker);
 
   const { data, isLoading, error } = useHolderGrowth({
     view: selectedView,
@@ -654,19 +659,19 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
             <div>
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-3">
                 <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">TEL Balance by Holder Type</span>
+                  <span className="font-medium text-foreground">{ticker} Balance by Holder Type</span>
                   {selectedView !== "combined" ? (
                     <span className="text-xs text-muted-foreground">(combined view only)</span>
                   ) : (
                     <>
                       {balanceStats.latest !== null && (
-                        <span>Retail {formatCompactTEL(balanceStats.latest)}</span>
+                        <span>Retail {formatCompactAmount(balanceStats.latest)}</span>
                       )}
                       {balanceStats.change !== null && balanceStats.changePct !== null && (
                         <span className={`inline-flex items-center gap-1 ${balanceStats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                           {balanceStats.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                           {balanceStats.change >= 0 ? "+" : ""}
-                          {formatCompactTEL(Math.abs(balanceStats.change))}
+                          {formatCompactAmount(Math.abs(balanceStats.change))}
                         </span>
                       )}
                       {balanceChangelogEvents.length > 0 && (
@@ -785,7 +790,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                           {...(balanceMode === "balance" && logScale
                             ? { scale: "log" as const, allowDataOverflow: true }
                             : {})}
-                          tickFormatter={(value) => (balanceMode === "change" ? formatSignedTEL(value) : formatCompactTEL(value))}
+                          tickFormatter={(value) => (balanceMode === "change" ? formatSignedAmount(value) : formatCompactAmount(value))}
                           domain={balanceYDomain}
                           tickMargin={8}
                           width={56}
@@ -795,7 +800,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                             <ChartTooltipContent
                               labelFormatter={(value) => formatDateValue(value, tooltipFormatter)}
                               formatter={(value, name) => [
-                                balanceMode === "change" ? formatSignedTEL(Number(value)) : formatCompactTEL(Number(value)),
+                                balanceMode === "change" ? formatSignedAmount(Number(value)) : formatCompactAmount(Number(value)),
                                 balanceChartConfig[name as BalanceSeriesKey]?.label ?? String(name),
                               ]}
                             />
@@ -861,19 +866,19 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
             <div>
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-3">
                 <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">Staked TEL</span>
+                  <span className="font-medium text-foreground">Staked {ticker}</span>
                   {selectedView !== "combined" ? (
                     <span className="text-xs text-muted-foreground">(combined view only)</span>
                   ) : stakingChartData.length === 0 ? null : (
                     <>
                       {stakingStats.latest !== null && (
-                        <span>{formatCompactTEL(stakingStats.latest)}</span>
+                        <span>{formatCompactAmount(stakingStats.latest)}</span>
                       )}
                       {(() => {
                         const last = stakingChartData[stakingChartData.length - 1];
                         return last && (last.stakingV3 ?? 0) > 0 ? (
                           <span className="text-xs tabular-nums" data-testid="staked-split">
-                            Legacy {formatCompactTEL(last.staking)} / v3 {formatCompactTEL(last.stakingV3 ?? 0)}
+                            Legacy {formatCompactAmount(last.staking)} / v3 {formatCompactAmount(last.stakingV3 ?? 0)}
                           </span>
                         ) : null;
                       })()}
@@ -884,7 +889,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         <span className={`inline-flex items-center gap-1 ${stakingStats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                           {stakingStats.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                           {stakingStats.change >= 0 ? "+" : ""}
-                          {formatCompactTEL(Math.abs(stakingStats.change))} ({stakingStats.changePct.toFixed(2)}%)
+                          {formatCompactAmount(Math.abs(stakingStats.change))} ({stakingStats.changePct.toFixed(2)}%)
                         </span>
                       )}
                     </>
@@ -921,7 +926,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                           tickMargin={8}
                         />
                         <YAxis
-                          tickFormatter={(value) => formatCompactTEL(value)}
+                          tickFormatter={(value) => formatCompactAmount(value)}
                           domain={stakingYDomain}
                           tickMargin={8}
                           width={64}
@@ -931,7 +936,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                             <ChartTooltipContent
                               labelFormatter={(value) => formatDateValue(value, tooltipFormatter)}
                               formatter={(value, name) => [
-                                formatCompactTEL(Number(value)),
+                                formatCompactAmount(Number(value)),
                                 stakingChartConfig[name as keyof typeof stakingChartConfig]?.label ?? "Staked",
                               ]}
                             />

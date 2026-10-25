@@ -5,6 +5,11 @@ import process from "node:process";
 
 import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
+import { selectPipelineProject } from "./lib/projects.js";
+
+// `--project <slug>` (or HD_PROJECT); defaults to TEL. Refuses projects the
+// pipeline cannot produce yet — see scripts/lib/projects.js pipelineProject().
+selectPipelineProject("generate-holders-history");
 
 const HISTORY_PATH = path.resolve(process.cwd(), "public/data/holders-history.json");
 const SUMMARY_PATH = path.resolve(process.cwd(), "public/data/holders-summary.json");
