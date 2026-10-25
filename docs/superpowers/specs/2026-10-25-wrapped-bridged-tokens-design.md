@@ -1,7 +1,7 @@
 # Wrapped / bridged tokens — design
 
 - **Date:** 2026-10-25
-- **Status:** Approved design (not implemented)
+- **Status:** Implemented (branch `feat/solana-and-bridge-netting`); see docs/MULTI-TOKEN.md
 - **Related:** [Solana chain support design](./2026-10-25-solana-chain-support-design.md), `docs/MULTI-TOKEN.md`, `docs/TEL-CONTRACTS.md`
 
 ## Goal

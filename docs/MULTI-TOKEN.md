@@ -340,9 +340,131 @@ TEL result (2026-10-25): no candidates beyond ethereum, polygon and base.
 When run with only a Polygon seed, the probe finds TEL v3 on Ethereum and Base
 at the same address.
 
-Deferred: non-EVM chains, bridge-registry lookups (e.g. the Superchain token
-list, Axelar or Wormhole registries), and a scheduled discovery run. All of
-these can feed into `detectTokenChains` as further address sources.
+- **Solana:** a Solana row appears only when the project already has a Solana
+  chain or CoinGecko's `platforms.solana` lists a mint. The mint is kept in its
+  base58 case and confirmed with free Solana RPC (mint owner program, decimals,
+  Token-2022 or Metaplex symbol). Statuses: `configured`, `candidate`,
+  `listed-unverified` (CoinGecko lists it but RPC could not confirm it),
+  `contract-other-symbol`, `rpc-error`. A base58 `--address` implies
+  `--chain solana`:
+  `node scripts/detect-token-chains.js --address <mint> --chain solana --ticker ABC --coingecko`.
+- **Bridge suggestion:** every candidate row carries `suggestedBridge: "native"`
+  and `bridgeNeedsConfirmation: true`. The `bridge` value you write into config
+  (`native` | `lock-mint` | `burn-mint`, see "Wrapped / bridged tokens") must
+  come from the project's bridge docs. Discovery never writes `chains[]`.
+
+Deferred: bridge-registry lookups (e.g. the Superchain token list, Axelar or
+Wormhole registries), non-EVM chains other than Solana, and a scheduled
+discovery run. All of these can feed into `detectTokenChains` as further
+address sources.
+
+## Solana chains (`chains[].vm: "solana"`)
+
+Chain support is pluggable by VM (`scripts/lib/chainAdapters.js`):
+`chains[].vm` is `"evm"` (the default) or `"solana"`; a chain keyed `solana`
+with no `vm` is treated as Solana. The Solana adapter
+(`scripts/lib/solana/adapter.js`) is imported lazily, and only when a project
+lists a Solana chain. An EVM-only project like TEL never loads it
+(`chainAdapters.test.js`).
+
+```json
+{ "key": "solana", "name": "Solana", "vm": "solana", "cluster": "mainnet-beta",
+  "bridge": "native",
+  "tokens": [{ "address": "<mint, base58>", "program": "spl-token", "decimals": 6, "status": "canonical" }],
+  "contracts": { "bridgeCustody": { "address": "<owner wallet/PDA, base58>", "role": "bridge" } } }
+```
+
+- **Validation** (`validateProjectConfig`, run by `resolveProject`; it fails
+  before any network call): mints and addresses must be base58 that decodes to
+  32 bytes. `chainId`, `fromBlock` and token `deployBlock` are rejected on
+  Solana chains. `program` must be `spl-token` or `token-2022`, `decimals` must
+  be 0–18, and `cluster` must be `mainnet-beta`. `cluster` and `program` are
+  rejected on EVM chains. `explorerTemplates` values must be https and contain
+  `{address}` / `{tx}`.
+- **Addresses:** hex is lowercased, base58 is **never** lowercased
+  (`scripts/lib/address.js`, `normalizeAnyAddress`). Every set and lookup
+  (non-retail sets, history, transitions, reconciliation, lock sets) goes
+  through it.
+- **RPC:** same pattern as EVM. Free public RPC first
+  (`https://api.mainnet-beta.solana.com`, or `PUBLIC_RPC_URLS_SOLANA` /
+  `chains[].rpc.publicUrls`), then optional `SOLANA_RPC_0..9` keys from
+  `.env.enc`. Every URL is probed with `getHealth`, and `PUBLIC_RPC_FALLBACK=0`
+  disables the public endpoints.
+- **Holder scan:** `getProgramAccounts` on the token's program (SPL: `dataSize
+  165` plus mint `memcmp`; Token-2022: mint `memcmp` only) with `jsonParsed`.
+  Balances are summed per **owner**, so ATAs collapse into one wallet, and zero
+  balances are dropped. If the scanned sum is more than 1% off the mint supply,
+  the scan refuses to publish, so a partial set is never shown as complete.
+  Public RPCs often refuse `getProgramAccounts` for large mints. If every URL
+  fails, the error says to set `SOLANA_RPC_0` (a free-tier key).
+- **Metadata:** Token-2022 metadata extension, then the Metaplex metadata PDA,
+  then `tokens[].symbol` / `ticker`. Decimals and program always come from the
+  mint. A config value that disagrees with the mint fails the run.
+- **Feeds:** same shapes as EVM (`views.solana`, history `chains.solana`).
+  Combined merges every configured chain. Overlap/dedup only works within one
+  address format, so a Solana owner never matches an EVM address.
+  `chain-status.json` writes `{ lastBlock: <slot>, vm: "solana", scannedAt }`
+  for Solana, and the Chain Status card marks the chain "(stale)" when its scan
+  is more than 1 h older than the feed. EVM entries stay `{ lastBlock }`.
+- **Explorers:** Solscan by default (`/token/`, `/account/`, `/tx/`).
+  `explorer` or `explorerTemplates` override it (`src/lib/explorerLinks.ts`,
+  mirrored in `chainAdapters.js`).
+- **Scope:** `projectChains()` returns EVM chains only by default, so the
+  EVM-only scripts (flows, tier outflows, staking discovery, forensics log
+  scans) skip Solana. Only `pull-holders-rpc` asks for every VM
+  (`projectChainsAllVms`). `--as-of` is refused for projects with a Solana
+  chain.
+- **Smoke test (read-only):** `node scripts/solana-smoke.js --mint <base58> [--scan]`.
+  Verified 2026-10-25 on public RPC: USDC (SPL, Metaplex metadata) and PYUSD
+  (Token-2022 extension).
+
+Not built (deferred): Solana staking, flows/tier outflows, forensics, history
+back-fill before the first snapshot, historical `--as-of` snapshots, and other
+non-EVM chains.
+
+## Wrapped / bridged tokens (`chains[].bridge`, `origin`)
+
+This follows CoinGecko and the other aggregators: a token has **one** total and
+circulating supply, and the per-chain figures add up to it. There is no
+separate "wrapped" product. Each non-origin chain declares how its supply
+exists:
+
+| `bridge` | Meaning | Counts toward total |
+|---|---|---|
+| `native` (default) | independently minted on that chain (e.g. native USDC) | yes, its full supply |
+| `burn-mint` | bridge burns on one side and mints on the other | yes, its full supply |
+| `lock-mint` | mirror of tokens locked on the origin chain | **no**, the locked origin balance backs it |
+
+Exactly one chain may set `"origin": true`. A `lock-mint` chain requires an
+origin, and the origin should list its lock contracts in `contracts{}` with
+`role: "bridge"` or `"escrow"` (validation warns otherwise).
+
+`scripts/lib/supply.js` `computeBridgeNettedSupply` (selected by
+`selectSupplyMethod`):
+
+- `total` = origin supply + Σ supply of `native` / `burn-mint` chains.
+- `nonCirculating` = the balance on the origin of the lock set (exclusion
+  labels `bridge-lock` / `escrow`, plus origin `contracts{}` with role
+  `bridge` / `escrow`); `circulating` = `total` − `nonCirculating`.
+- `byChain` shares add up to `total`. A lock-mint mirror's own supply is shown
+  on its chain, and the locked balance is taken off the origin.
+- `backingResidual` = Σ lock-mint supply − locked. Above 1% it logs a warning
+  (an unlabelled lock, or a bridge minting more than is locked).
+- The `supply.target` tolerance check runs only when `supply.target` is set.
+- No origin and only native chains (e.g. a Solana-only token): the chain
+  supplies are summed.
+
+`contracts{}` entries with role `bridge`, `escrow`, `cex`, `dex` or `staking`
+are non-retail on their chain for generic projects
+(`projectNonRetailPaths().extraAddresses`). On Solana, list the **owner**
+(wallet or PDA) address. `reconcileSupply` understands bridge-netting snapshots:
+only lock-mint chains are mirrors, and other non-origin chains count as their
+own supply.
+
+**TEL is untouched.** It keeps `supply.generationsSumOneToOne` and the
+generations path (`computeSupplyTotals`, method `tel-generations`), and its
+non-retail paths and feed outputs are byte-identical (`bridgeNetting.test.js`,
+`solanaFeeds.test.js`, `projectValidation.test.js`).
 
 ## TEL-sized values left on purpose
 
@@ -442,6 +564,9 @@ wording, and only render when a project has a ledger.
    `node scripts/detect-token-chains.js --address 0x… --chain <origin> --ticker <T> --coingecko`
    first so `chains[]` includes every chain the token is on (see "Chain
    discovery"). Each extra chain gets a picker view automatically.
+   For each extra chain, confirm `bridge` (`native` / `lock-mint` / `burn-mint`)
+   from the project's bridge docs and mark the `origin`. Add a Solana chain
+   only if the token is actually deployed there (see "Solana chains").
 3. Put the browser feeds in `public/data/<slug>/` (same file names as TEL, see
    `BROWSER_DATA_FILES` in `scripts/lib/browserDataFiles.js`). Ported pipeline
    scripts write there when run with `--project <slug>`. Give the config
@@ -450,7 +575,8 @@ wording, and only render when a project has a ledger.
 4. Add the slug to `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`.
    A test fails if it is missing.
 5. Optional: add a `holders` block if TEL's tier sizes don't fit the supply, and
-   `chains[].rpc` for chains other than ethereum, polygon and base.
+   `chains[].rpc` for chains other than ethereum, polygon and base (Solana:
+   `SOLANA_RPC_0..9` if public RPC refuses the holder scan).
 6. Optional: add `copy` overrides for wording the generic templates get wrong.
 7. Run `npm run typecheck && npx vitest run && npm run build`.
 
