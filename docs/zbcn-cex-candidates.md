@@ -1,5 +1,7 @@
 # ZBCN CEX wallet candidates (owner-approved 2026-10-25 — classified)
 
+> **Update 2026-10-25:** `cex-wallets.json` now has **44** wallets — these 11 plus 33 Solscan name-tag-confirmed exchange / Fireblocks custody wallets from `docs/zbcn-wallet-candidates.md` §3 (incl. Uphold Hot Wallet 3, the ~20.55B top holder), applied under the owner's explorer-confirmed auto-apply rule. The coverage gap noted below is closed for the top-300 holders.
+
 > **Owner-approved 2026-10-25:** all 11 candidates below are approved and classified as CEX via `config/projects/zebec-network/cex-wallets.json` (`classification.cexWallets`). Scheduled sync still needs a Solana-only `pipeline.duneCexQueryId` (never TEL 3761086).
 
 > _Superseded:_ this list was candidates-only until owner approval on 2026-10-25; these 11 wallets now publish in `public/data/zebec-network/cex-wallets.json` and are excluded from retail.

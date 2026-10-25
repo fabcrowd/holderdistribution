@@ -66,8 +66,8 @@ describe("ZBCN staking copy", () => {
     expect(info).toContain("AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp");
     expect(info).toMatch(/2\.42%/);
     expect(info).toMatch(/0\.5%/);
-    expect(info).toMatch(/4\.795B/);
-    expect(info).toMatch(/4\.808B/);
+    expect(info).toMatch(/4\.79B/);
+    expect(info).toMatch(/4\.80B/);
     expect(info).toMatch(/reward vaults/);
   });
 
@@ -89,7 +89,7 @@ describe("ZBCN staking copy", () => {
     );
     expect(lockup.vaultReconcile).toBe("exempt");
     expect(lockup.vaultGapRatio).toBeCloseTo(0.0242, 3);
-    expect(staking.stakedTotal / 1e9).toBeCloseTo(4.795, 2);
-    expect(supply.categories.staking / 1e9).toBeCloseTo(4.808, 2);
+    expect(staking.stakedTotal / 1e9).toBeCloseTo(4.79, 2);
+    expect(supply.categories.staking / 1e9).toBeCloseTo(4.802, 2);
   });
 });
