@@ -7,7 +7,9 @@
  * Positions = every UserStakeData with stake_claimed == false, summed per
  * staker. Each lockup's sum is reconciled against its stake-vault token
  * account (ATA of PDA ["stake_vault", lockup]); a gap above
- * STAKE_VAULT_TOLERANCE throws rather than publishing a partial staked total.
+ * STAKE_VAULT_TOLERANCE throws rather than publishing a partial staked total,
+ * except for lockups in STAKE_VAULT_GAP_EXEMPTIONS: those publish position sums
+ * as-is (never scaled to the vault) and record the gap + an explainer instead.
  */
 import { base58Decode, base58Encode } from "../address.js";
 import { findProgramAddress } from "./pda.js";
@@ -20,6 +22,28 @@ export const USER_STAKE_DATA_DISCRIMINATOR = Uint8Array.of(105, 207, 3, 141, 114
 export const USER_STAKE_DATA_MIN_SIZE = 113;
 export const USER_STAKE_LOCKUP_OFFSET = 81;
 export const STAKE_VAULT_TOLERANCE = 0.005;
+
+/**
+ * Lockups whose positions-vs-vault gap is a known on-chain property, not a
+ * decode error (owner decision 2026-10-25: exception + explainer). Keyed by
+ * exact base58 lockup address. Every other lockup keeps the per-lockup guard.
+ */
+export const STAKE_VAULT_GAP_EXEMPTIONS = Object.freeze({
+  AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp: { label: "ZBCN Lockup" },
+});
+
+export function vaultGapExplainer({ activeRaw, vaultRaw, ratio }) {
+  const pct = (ratio * 100).toFixed(2);
+  const side =
+    activeRaw > vaultRaw
+      ? "unclaimed positions sum to more than the stake-vault token account (ATA) currently holds"
+      : "the stake-vault token account (ATA) holds more than the unclaimed positions sum to";
+  return (
+    `On-chain, this lockup's ${side} (gap ${pct}%). Staked figures are the raw sum of every ` +
+    `unclaimed UserStakeData position, published as-is and not scaled to the vault balance; ` +
+    `the vault ATA balance is shown alongside for transparency.`
+  );
+}
 
 const hasDisc = (buf, disc) => buf.length >= 8 && disc.every((b, i) => buf[i] === b);
 const pubkeyAt = (buf, off) => base58Encode(new Uint8Array(buf.subarray(off, off + 32)));
@@ -81,7 +105,10 @@ export function associatedTokenAddress(owner, mint, tokenProgramId = PROGRAM_BY_
 const gpa = (call, programId, filters) =>
   call("getProgramAccounts", [programId, { encoding: "base64", commitment: "finalized", filters }]);
 
-export async function fetchZebecStakePositions(call, { programId = ZEBEC_STAKE_V1_PROGRAM, mint, decimals, logger = console }) {
+export async function fetchZebecStakePositions(
+  call,
+  { programId = ZEBEC_STAKE_V1_PROGRAM, mint, decimals, logger = console, vaultGapExemptions = STAKE_VAULT_GAP_EXEMPTIONS },
+) {
   const lockupRows = await gpa(call, programId, [{ memcmp: { offset: 0, bytes: base58Encode(LOCKUP_DISCRIMINATOR) } }]);
   const lockups = [];
   for (const r of lockupRows ?? []) {
@@ -115,12 +142,23 @@ export async function fetchZebecStakePositions(call, { programId = ZEBEC_STAKE_V
     }
     lk.activeRaw = active;
     lk.vaultRaw = null;
+    lk.vaultGap = null;
     if (active > 0n) {
       const bal = await call("getTokenAccountBalance", [lk.stakeVaultAta, { commitment: "finalized" }]);
       lk.vaultRaw = BigInt(bal?.value?.amount ?? "0");
       const gap = lk.vaultRaw > active ? lk.vaultRaw - active : active - lk.vaultRaw;
       const ratio = lk.vaultRaw > 0n ? Number(gap) / Number(lk.vaultRaw) : 1;
-      if (ratio > STAKE_VAULT_TOLERANCE) {
+      if (ratio > STAKE_VAULT_TOLERANCE && Object.hasOwn(vaultGapExemptions, lk.address)) {
+        lk.vaultGap = {
+          vaultGapRaw: (active - lk.vaultRaw).toString(),
+          vaultGapRatio: ratio,
+          vaultReconcile: "exempt",
+          explainer: vaultGapExplainer({ activeRaw: active, vaultRaw: lk.vaultRaw, ratio }),
+        };
+        logger.warn?.(
+          `  zebecStakeV1: lockup ${lk.address} (${lk.name}) vault gap ${(ratio * 100).toFixed(2)}% exempt; publishing positions as-is.`,
+        );
+      } else if (ratio > STAKE_VAULT_TOLERANCE) {
         throw new Error(
           `zebecStakeV1 lockup ${lk.address} (${lk.name}): vault ${lk.stakeVaultAta} holds ${lk.vaultRaw} raw but active ` +
             `positions sum ${active} raw; they disagree by ${(ratio * 100).toFixed(2)}%, refusing to publish.`,
@@ -145,6 +183,10 @@ export async function fetchZebecStakePositions(call, { programId = ZEBEC_STAKE_V
       activeRaw: l.activeRaw.toString(),
       vaultRaw: l.vaultRaw === null ? null : l.vaultRaw.toString(),
       totalStakedRaw: l.totalStakedRaw.toString(),
+      vaultReconcile: l.vaultGap ? "exempt" : l.vaultRaw === null ? "skipped-empty" : "ok",
+      ...(l.vaultGap
+        ? { vaultGapRaw: l.vaultGap.vaultGapRaw, vaultGapRatio: l.vaultGap.vaultGapRatio, explainer: l.vaultGap.explainer }
+        : {}),
     })),
     positions,
     stakerCount: positions.length,
