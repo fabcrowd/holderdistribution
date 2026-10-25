@@ -107,7 +107,7 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     const prevStaked = v3Stats ? historicalDelta?.stakingTotal ?? null : historicalDelta?.stakingBalance ?? null;
     const stakedEvents =
       v3Stats && !perChain && historicalDelta?.referenceDate
-        ? v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance, v3Stats.deployDate ?? undefined)
+        ? v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance, v3Stats.deployDate ?? undefined, ticker)
         : [];
     const prevCex = cexPrevious;
 

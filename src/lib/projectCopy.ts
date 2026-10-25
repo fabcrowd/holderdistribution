@@ -59,3 +59,40 @@ export const copyText = (
   id: string,
   template: string,
 ): string => fillCopy(project.copy?.text?.[id] ?? template, copyContext(project));
+
+/** True when the project overrides widget string `id` (for copy that only makes sense with project facts). */
+export const hasCopyText = (project: Pick<ProjectConfig, "copy">, id: string): boolean =>
+  typeof project.copy?.text?.[id] === "string";
+
+/**
+ * Names for the project-controlled entities on the Supply view. Generic
+ * defaults read as "the project's foundation / team"; a project names its own
+ * (TEL: Telcoin Association vs Telcoin Holdings, two DISTINCT entities that
+ * are never summed) via copy.text `entity.*`.
+ */
+export type ProjectEntities = {
+  /** Full bucket title for treasury + council Safes, e.g. "Telcoin Association-Controlled Safes". */
+  association: string;
+  /** Short prefix, e.g. "Association" ("Association Safes", "Association — Treasury"). */
+  associationShort: string;
+  /** The separate company / team entity, e.g. "Telcoin Holdings". */
+  holdings: string;
+  /** Short form, e.g. "Holdings" ("Holdings wallets", "Holdings-sourced escrow"). */
+  holdingsShort: string;
+};
+
+export const ENTITY_TEMPLATES: Record<keyof ProjectEntities, string> = {
+  association: "{name} Foundation-Controlled Safes",
+  associationShort: "Foundation",
+  holdings: "{name} Team Wallets",
+  holdingsShort: "Team",
+};
+
+export const projectEntities = (
+  project: Pick<ProjectConfig, "ticker" | "name" | "chains" | "supply" | "copy">,
+): ProjectEntities => ({
+  association: copyText(project, "entity.association", ENTITY_TEMPLATES.association),
+  associationShort: copyText(project, "entity.associationShort", ENTITY_TEMPLATES.associationShort),
+  holdings: copyText(project, "entity.holdings", ENTITY_TEMPLATES.holdings),
+  holdingsShort: copyText(project, "entity.holdingsShort", ENTITY_TEMPLATES.holdingsShort),
+});

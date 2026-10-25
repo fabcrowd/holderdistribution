@@ -10,7 +10,7 @@ type ExchangeNetflowProps = {
   rangeDays: number;
 };
 
-const formatCompactTEL = (value: number) => {
+const formatCompactAmount = (value: number) => {
   const a = Math.abs(value);
   if (a >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
   if (a >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
@@ -52,16 +52,16 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="premium-surface-card p-4 text-center">
           <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Deposits (in)</div>
-          <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.totalIn)} {ticker}</div>
+          <div className="text-xl font-bold text-foreground">{formatCompactAmount(view.totalIn)} {ticker}</div>
         </div>
         <div className="premium-surface-card p-4 text-center">
           <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Withdrawals (out)</div>
-          <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.totalOut)} {ticker}</div>
+          <div className="text-xl font-bold text-foreground">{formatCompactAmount(view.totalOut)} {ticker}</div>
         </div>
         <div className="premium-surface-card p-4 text-center">
           <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Net</div>
           <div className="text-xl font-bold text-foreground">
-            {view.net >= 0 ? "+" : "−"}{formatCompactTEL(Math.abs(view.net))} {ticker}
+            {view.net >= 0 ? "+" : "−"}{formatCompactAmount(Math.abs(view.net))} {ticker}
           </div>
           <div className="text-xs text-muted-foreground mt-0.5">
             {view.net >= 0 ? "toward exchanges" : "leaving exchanges"}
@@ -84,7 +84,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
               tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
               tickMargin={8}
             />
-            <YAxis tickFormatter={(v) => formatCompactTEL(v)} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={52} />
+            <YAxis tickFormatter={(v) => formatCompactAmount(v)} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={52} />
             <ReferenceLine y={0} className="stroke-border" />
             <ChartTooltip
               content={
@@ -93,7 +93,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
                     const ts = p?.[0]?.payload?.timestamp;
                     return ts ? new Date(ts).toLocaleDateString(undefined, { timeZone: "UTC" }) : "";
                   }}
-                  formatter={(value) => [`${Number(value) >= 0 ? "+" : "−"}${formatCompactTEL(Math.abs(Number(value)))} ${ticker}`, "Net flow"]}
+                  formatter={(value) => [`${Number(value) >= 0 ? "+" : "−"}${formatCompactAmount(Math.abs(Number(value)))} ${ticker}`, "Net flow"]}
                 />
               }
             />

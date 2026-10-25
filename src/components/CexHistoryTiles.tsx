@@ -11,7 +11,7 @@ import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClass
 
 export { MIN_CEX_TILE_BALANCE } from "@/components/buildCexHistoryTiles";
 
-const formatCompactTEL = (value: number) => {
+const formatCompactAmount = (value: number) => {
   if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
   if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
   if (value >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
@@ -98,7 +98,7 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
             <div className="flex items-baseline justify-between gap-2 mb-2">
               <span className="text-sm font-medium text-foreground truncate">{tile.name}</span>
               <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
-                {formatCompactTEL(tile.current)} {ticker}
+                {formatCompactAmount(tile.current)} {ticker}
                 {tile.change !== null && events.length > 0 ? (
                   <span className="ml-1.5 inline-flex align-middle">
                     <ChangeIndicator
@@ -124,7 +124,7 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
                       }`}
                     >
                       {tile.change >= 0 ? "+" : "-"}
-                      {formatCompactTEL(Math.abs(tile.change))}
+                      {formatCompactAmount(Math.abs(tile.change))}
                     </span>
                   )
                 )}
@@ -142,7 +142,7 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
                           const ts = payload?.[0]?.payload?.timestamp;
                           return ts ? new Date(ts).toLocaleDateString(undefined, { timeZone: "UTC" }) : "";
                         }}
-                        formatter={(value) => [`${formatCompactTEL(Number(value))} ${ticker}`, "Balance"]}
+                        formatter={(value) => [`${formatCompactAmount(Number(value))} ${ticker}`, "Balance"]}
                       />
                     }
                   />

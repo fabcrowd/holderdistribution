@@ -59,13 +59,31 @@ new project works with no `copy` section at all:
   `snapshot`, `reclassified`). `legacy-v3` only shows for projects with more
   than one token generation.
 - `copy.text.<id>`: replaces one widget string (ids are the first argument of
-  `text(...)`, e.g. `holders.cex.info`, `staking.intro`).
+  `text(...)`, e.g. `holders.cex.info`, `staking.intro`). Some also take a
+  runtime value the widget fills itself: `{amount}` (`supply.holdings.description`)
+  and `{treasuryNow}` (`supply.coingecko.note`).
+- Entity slots (Supply view): every project gets the same foundation /
+  team panels, treasury chart lines and footer disclaimer. Name them with
+  `copy.text` `entity.association`, `entity.associationShort`,
+  `entity.holdings`, `entity.holdingsShort` (generic: "{name}
+  Foundation-Controlled Safes" / "Foundation" / "{name} Team Wallets" /
+  "Team"), plus `supply.association.description`, `supply.holdings.description`,
+  `supply.escrow.description`, `treasury.series.council`,
+  `treasury.history.info`, `footer.affiliation`.
+- `copy.methodology.<section>`: `{ "how"?, "verify"?, "links"? }` replaces a
+  methodology hover card (`src/lib/methodology.ts`, sections in
+  `METHODOLOGY_KEYS`). Without it the generic text is used and links are
+  derived from `chains[].tokens` and `staking[]`. Override hrefs can use
+  `{token:<chainKey>:<generation>}` and `{explorer:<chainKey>}`.
 
-TEL's KuCoin/BitGo/v3-migration wording lives in `config/projects/tel.json`
-under `copy`. `src/lib/projectCopyCoverage.test.ts` fails if a bare `TEL`
-reappears in the generalized widgets. Still TEL-specific on purpose: the
-methodology page, staking v3 event notes, Association/Holdings entity panels,
-the gated forensics views, the footer and the static `index.html` meta.
+TEL's content (Association vs Holdings, KuCoin/BitGo/Anchorage, the CoinGecko
+trace, legacy→v3 methodology, staking module notes) lives in
+`config/projects/tel.json` under `copy`, and renders exactly as before.
+`src/lib/projectCopyCoverage.test.ts` fails if a bare `TEL`, `Telcoin`,
+`Anchorage`, `BitGo` or `KuCoin` reappears in the generalized files.
+Still TEL-specific on purpose: the gated forensics views (disposition ledger,
+P&L, wallet flows, burn forecast, forensics write-ups) and the v3
+StakingModule constants in `src/lib/staking.ts` (only TEL has that module).
 
 ## Pipeline: `--project <slug>`
 

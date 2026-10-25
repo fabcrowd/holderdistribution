@@ -174,7 +174,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   // stretch where v3 wasn't recorded (no baseline, so no honest delta).
   const stakedNow = combinedStaking?.stakedTotal ?? s?.last.stakingTotal ?? s?.last.staking ?? null;
   const stakedFirst = s ? (v3Staking ? s.first.stakingTotal : s.first.staking) : null;
-  const stakedRelabel = s && v3Staking ? v3StakingGapEvents(s.first.t, s.first.stakingTotal == null ? null : 0, v3DeployDate) : [];
+  const stakedRelabel = s && v3Staking ? v3StakingGapEvents(s.first.t, s.first.stakingTotal == null ? null : 0, v3DeployDate, tk) : [];
   const stakingSplit =
     v3Staking && combinedStaking?.legacy
       ? `Legacy ${formatCompact(combinedStaking.legacy.stakedTotal)} / v3 ${formatCompact(v3Staking.stakedTotal)}`

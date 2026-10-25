@@ -25,5 +25,7 @@ describe("staking (legacy + v3)", () => {
     const [e] = v3StakingGapEvents("2026-10-02", undefined);
     expect(e.affects.metrics).toContain("stakingBalance");
     expect(e.date).toBe("2026-09-01");
+    expect(e.summary).toMatch(/^The staked total now includes/);
+    expect(v3StakingGapEvents("2026-10-02", undefined, undefined, "TEL")[0].summary).toMatch(/^Staked TEL now includes the v3 StakingModule/);
   });
 });

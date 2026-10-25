@@ -222,7 +222,7 @@ const renderMetrics = (
     : null;
   const stakedEvents =
     v3Stats && historicalPrevious?.referenceDate
-      ? v3StakingGapEvents(historicalPrevious.referenceDate, historicalPrevious.stakingV3Balance, v3Stats.deployDate ?? undefined)
+      ? v3StakingGapEvents(historicalPrevious.referenceDate, historicalPrevious.stakingV3Balance, v3Stats.deployDate ?? undefined, copy.ticker)
       : [];
 
   // Exchange-held TEL, added into the "Total TEL Held" tile so it counts all

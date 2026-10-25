@@ -9,7 +9,7 @@ type DexSwapsProps = {
   rangeDays: number;
 };
 
-const formatCompactTEL = (value: number) => {
+const formatCompactAmount = (value: number) => {
   const a = Math.abs(value);
   if (a >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
   if (a >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
@@ -71,18 +71,18 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Sold on DEX</div>
-              <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.dexSold)} {ticker}</div>
+              <div className="text-xl font-bold text-foreground">{formatCompactAmount(view.dexSold)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">swapped for another coin</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Bought on DEX</div>
-              <div className="text-xl font-bold text-foreground">{formatCompactTEL(view.dexBought)} {ticker}</div>
+              <div className="text-xl font-bold text-foreground">{formatCompactAmount(view.dexBought)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">swapped in from another coin</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Net DEX</div>
               <div className={`text-xl font-bold ${view.dexNet >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
-                {view.dexNet >= 0 ? "+" : "−"}{formatCompactTEL(Math.abs(view.dexNet))} {ticker}
+                {view.dexNet >= 0 ? "+" : "−"}{formatCompactAmount(Math.abs(view.dexNet))} {ticker}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
                 {view.dexNet >= 0 ? "net bought from market" : "net sold to market"}
@@ -98,18 +98,18 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Added to LP</div>
-              <div className="text-xl font-bold text-foreground">{formatCompactTEL(lpView.added)} {ticker}</div>
+              <div className="text-xl font-bold text-foreground">{formatCompactAmount(lpView.added)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">deposited into pools</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Unstaked from LP</div>
-              <div className="text-xl font-bold text-foreground">{formatCompactTEL(lpView.removed)} {ticker}</div>
+              <div className="text-xl font-bold text-foreground">{formatCompactAmount(lpView.removed)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">withdrawn back to wallets</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Net LP</div>
               <div className="text-xl font-bold text-foreground">
-                {lpView.net >= 0 ? "+" : "−"}{formatCompactTEL(Math.abs(lpView.net))} {ticker}
+                {lpView.net >= 0 ? "+" : "−"}{formatCompactAmount(Math.abs(lpView.net))} {ticker}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
                 {lpView.net >= 0 ? "net withdrawn to wallets" : "net deposited into pools"}

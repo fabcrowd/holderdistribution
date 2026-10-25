@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useWalletAnalysis, type WalletAnalysis } from "@/hooks/useWalletAnalysis";
 
-const formatCompactTEL = (value: number | null | undefined) => {
+const formatCompactAmount = (value: number | null | undefined) => {
   if (value == null || !Number.isFinite(value)) return "—";
   if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
   if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
@@ -47,7 +47,7 @@ const AnalysisBody = ({ data }: { data: WalletAnalysis }) => (
                 {shortAddr(leg.from)}
                 <ExternalLink className="h-3 w-3 shrink-0" />
               </a>
-              <span className="tabular-nums shrink-0">{formatCompactTEL(leg.amountTel)}</span>
+              <span className="tabular-nums shrink-0">{formatCompactAmount(leg.amountTel)}</span>
             </div>
             <div className="text-muted-foreground">
               {leg.date} — {leg.note}
@@ -73,7 +73,7 @@ const AnalysisBody = ({ data }: { data: WalletAnalysis }) => (
               </a>{" "}
               <span className="text-muted-foreground">({c.role})</span>
             </span>
-            <span className="tabular-nums shrink-0">{formatCompactTEL(c.amountTel)}</span>
+            <span className="tabular-nums shrink-0">{formatCompactAmount(c.amountTel)}</span>
           </li>
         ))}
       </ul>
