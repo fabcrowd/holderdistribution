@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { useHolderTransitions, transitionsKeyFor } from "@/hooks/useHolderTransitions";
 import { useTierOutflows, outflowsKeyFor, type TierOutflowCell } from "@/hooks/useTierOutflows";
 import { ytdDays } from "@/lib/timeRange";
-import { TIERS, tierIndex, tileW } from "./geometry";
+import { tileW } from "./geometry";
+import { useTierGeometry } from "./useTierGeometry";
 
 export type TierRow = {
   label: string;
@@ -117,6 +118,8 @@ const chainCell = (c: TierOutflowCell | undefined, chain: ChainKey): TierOutflow
 export const useFlowField = (rows: TierRow[], chain: ChainKey, metric: "wallets" | "tel" = "wallets", rangeDays: number = ytdDays()) => {
   const { data: transitions, isLoading: transitionsLoading, isError: transitionsErrored } = useHolderTransitions();
   const { data: outflows, isLoading: outflowsLoading, isError: outflowsErrored } = useTierOutflows();
+  // The active project's distribution tiers (TEL: geometry.TIERS, unchanged).
+  const { tiers: TIERS, tierIndex } = useTierGeometry();
 
   // Resolve the SAME window key convention both generators use — matching
   // outflowsKeyFor/transitionsKeyFor exactly is what keeps a "7D" selection
@@ -144,7 +147,7 @@ export const useFlowField = (rows: TierRow[], chain: ChainKey, metric: "wallets"
     const map = new Map<string, number>();
     for (const t of TIERS) map.set(t, (Math.log10(valOf(t) + 1) / maxLog) * 100);
     return map;
-  }, [rowOf, metric]);
+  }, [rowOf, metric, TIERS]);
 
   const fields: TierField[] = useMemo(() => {
     return TIERS.map((label, index) => {
@@ -189,7 +192,7 @@ export const useFlowField = (rows: TierRow[], chain: ChainKey, metric: "wallets"
 
       return { label, index, row, pct: pctByTier.get(label) ?? 0, cause, verdict, addedCount, removedCount, migrations };
     });
-  }, [rowOf, pctByTier, outflowTiers, chain, rangeData]);
+  }, [rowOf, pctByTier, outflowTiers, chain, rangeData, TIERS, tierIndex]);
 
   // Aggregate net TEL and net wallets, from snapshot truth only — never
   // derived by summing the gross flow figures (see the plan's data-contract

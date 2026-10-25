@@ -11,10 +11,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { useMediaQuery, PHONE_QUERY } from "@/hooks/useMediaQuery";
 import {
-  TIERS, CANVAS_W, CANVAS_H, rowTop, rowCenterY, tileW, tierLeftX, TIER_COL_CENTER_X, tileEdgeX,
-  sideTop, sideCenterY, SIDE_H, bezierPath, laneArcPath, fanY, strokeWidth, rankedStrokeWidths, TIER_H,
-  tierDisplayLabel,
+  CANVAS_W, rowTop, rowCenterY, tileW, tierLeftX, TIER_COL_CENTER_X, tileEdgeX,
+  SIDE_H, bezierPath, laneArcPath, fanY, strokeWidth, rankedStrokeWidths, TIER_H,
+  tierDisplayLabel, CANVAS_H as DEFAULT_CANVAS_H,
 } from "@/components/tierflow/geometry";
+import { useTierGeometry } from "@/components/tierflow/useTierGeometry";
 import { useFlowField, type ChainKey, type TierRow, type Cause, type TierField } from "@/components/tierflow/useFlowField";
 import {
   netMigrationsFor, netCausesFor, valueForSideTile, sideTileContributions, sideTileRowIndex, SIDE_TILE_LABELS,
@@ -130,6 +131,9 @@ export const TierFlowDiagram = ({
   // One-shot: fades with the first load, not when a chain change reloads it.
   const canvasIntro = useChartIntro();
   const { ticker, t } = useProjectCopy();
+  // Active project's tier rows + the canvas height / side-tile positions they
+  // imply (TEL: the historical 10 tiers, 682px — unchanged).
+  const { tiers: TIERS, canvasH: CANVAS_H, sideTop, sideCenterY } = useTierGeometry();
   // Chain is driven by the page-level chain selector (the in-diagram chain
   // buttons were a second, conflicting control). Uncontrolled = all chains.
   const chain: ChainKey = chainProp ?? "all";
@@ -247,7 +251,7 @@ export const TierFlowDiagram = ({
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [scrollEl, isTerminal]);
+  }, [scrollEl, isTerminal, CANVAS_H]);
 
   // An expansion key is only meaningful within one mode (a counterpart tier
   // label in Wallets, a cause key in TEL), so switching modes must clear it
@@ -413,7 +417,7 @@ export const TierFlowDiagram = ({
     for (const side of ["left", "right"] as const) {
       const list = specs.filter((s) => s.side === side);
       list.forEach((s, k) => {
-        const cIdx = TIERS.indexOf(s.counterpart as (typeof TIERS)[number]);
+        const cIdx = TIERS.indexOf(s.counterpart);
         if (cIdx < 0) return;
         const counterpart = byLabel.get(s.counterpart);
         const theirY = rowCenterY(cIdx);
@@ -443,7 +447,7 @@ export const TierFlowDiagram = ({
       });
     }
     return out;
-  }, [selectedField, maxMigrationCount, fields, isWallets, expandedFlow]);
+  }, [selectedField, maxMigrationCount, fields, isWallets, expandedFlow, TIERS]);
 
   // TEL-mode equivalent of the above, on the same two-level model: level 1
   // draws ONE net line per cause category (three lines, not six), entering
@@ -491,7 +495,7 @@ export const TierFlowDiagram = ({
       }
     });
     return out;
-  }, [selectedField, isWallets, expandedFlow, scaledTileW, ticker]);
+  }, [selectedField, isWallets, expandedFlow, scaledTileW, ticker, sideCenterY]);
 
   // Third level: once the "Other wallets" category is drilled into (path
   // click, panel row, OR the 2-step: tier selected → click To/From wallet),
@@ -526,7 +530,7 @@ export const TierFlowDiagram = ({
 
     // Fan each side against its own neighbours so arcs don't stack on one y.
     inEntries.forEach(([tier, v], k) => {
-      const cIdx = TIERS.indexOf(tier as (typeof TIERS)[number]);
+      const cIdx = TIERS.indexOf(tier);
       if (cIdx < 0) return;
       const theirX = edgeX(byLabel.get(tier)?.pct ?? 0, "left");
       const theirY = rowCenterY(cIdx);
@@ -540,7 +544,7 @@ export const TierFlowDiagram = ({
       });
     });
     outEntries.forEach(([tier, v], k) => {
-      const cIdx = TIERS.indexOf(tier as (typeof TIERS)[number]);
+      const cIdx = TIERS.indexOf(tier);
       if (cIdx < 0) return;
       const theirX = edgeX(byLabel.get(tier)?.pct ?? 0, "right");
       const theirY = rowCenterY(cIdx);
@@ -554,7 +558,7 @@ export const TierFlowDiagram = ({
       });
     });
     return out;
-  }, [isWallets, selectedField, expandedFlow, selectedSideTile, chain, attributedDays, fields, ticker]);
+  }, [isWallets, selectedField, expandedFlow, selectedSideTile, chain, attributedDays, fields, ticker, TIERS]);
 
   // Side-tile pivot: lines from the selected cause tile to every tier that
   // contributed (or from every tier to the selected sink). Skipped while a
@@ -598,7 +602,7 @@ export const TierFlowDiagram = ({
         tooltip,
       };
     });
-  }, [isWallets, selectedSideTile, selected, fields, ticker]);
+  }, [isWallets, selectedSideTile, selected, fields, ticker, sideCenterY]);
 
   // Counterpart tiers drawn by the wallet 2-step drill — used to keep those
   // tiles lit while the rest of the column dims.
@@ -619,7 +623,7 @@ export const TierFlowDiagram = ({
     return s;
   }, [selectedField, expandedFlow, selectedSideTile]);
 
-  if (loading) return <FlowSkeleton terminal={isTerminal} />;
+  if (loading) return <FlowSkeleton terminal={isTerminal} height={CANVAS_H} />;
   if (errored || !ready) return <FlowError />;
 
   const detailNode: ReactNode = selectedField ? (
@@ -1349,12 +1353,12 @@ const ExplainNumber = ({
   </Popover>
 );
 
-const FlowSkeleton = ({ terminal = false }: { terminal?: boolean }) => (
+const FlowSkeleton = ({ terminal = false, height = DEFAULT_CANVAS_H }: { terminal?: boolean; height?: number }) => (
   <div role="status" aria-label="Loading tier flows" className={terminal ? "flex h-full flex-col gap-2" : "space-y-3"}>
     <div className="h-4 w-40 rounded bg-muted/40 animate-pulse" />
     <div
       className={`rounded-xl border border-border/50 bg-muted/20 animate-pulse mx-auto ${terminal ? "w-full flex-1" : ""}`}
-      style={terminal ? undefined : { width: CANVAS_W, maxWidth: "100%", height: CANVAS_H }}
+      style={terminal ? undefined : { width: CANVAS_W, maxWidth: "100%", height }}
     />
   </div>
 );

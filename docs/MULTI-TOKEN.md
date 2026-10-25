@@ -210,13 +210,89 @@ after `npm ci`, which exports `HD_DATA_DIR` / `HD_WORK_DIR` (TEL:
   dropped and `public/data/<slug>` itself is added, so the commit covers
   `public/data/<slug>/**`. A path with no per-project mapping is refused.
 
-Known limits for a second token (not yet needed by TEL):
-`scripts/lib/rpc.js` only has key/public RPC pools for ethereum, polygon and
-base. Holder metrics thresholds (`RETAIL_THRESHOLD`, `MEGA_HOLDER_THRESHOLD`)
-are TEL-sized constants, and so are the tier ranges in
-`generate-holder-transitions` / `generate-tier-outflows`. The
-`refresh-tel-holders` verify step requires the same feed set for every project
-(including `funding-wallets.json` and `treasury-history.json`).
+Known limit for a second token: the `refresh-tel-holders` verify step requires
+the same feed set for every project (including `funding-wallets.json` and
+`treasury-history.json`).
+
+## Holder tiers and thresholds (`holders`)
+
+Every holder-size number used to be sized for TEL. It now lives in the project
+config's `holders` block. Any field you leave out falls back to
+`config/holder-tiers.default.json` (the TEL values). `tel.json` carries an
+explicit copy, and `scripts/lib/holderTiers.test.js` pins it to the old literals.
+
+```json
+"holders": {
+  "retailThreshold": 1000,
+  "megaHolderThreshold": 20000000000,
+  "concentrationBuckets": [10, 25, 50, 100, 250, 500, 1000],
+  "balanceRanges":     [{ "label": "1–100", "min": 1, "max": 100 }, …, { "label": "10M+", "min": 10000000, "max": null }],
+  "distributionTiers": [{ "label": "500M+", "min": 500000000, "max": null }, …, { "label": "1-250K", "min": 1, "max": 250000 }]
+}
+```
+
+- Units are whole tokens. `min` is inclusive, `max` is exclusive, and
+  `max: null` means open-ended.
+- `balanceRanges` go smallest to largest and `distributionTiers` go largest to
+  smallest. Labels must be unique. The loader (`scripts/lib/holderTiers.js` and
+  `src/lib/holderTiers.ts`) throws on a bad order or a bad bound.
+- Who reads it:
+  - Pipeline: `pull-holders-rpc` and `resync-chain-holders` use the retail and
+    mega thresholds. `recompute-history-from-git` and `rebuild-history-from-logs`
+    use all of it through `setHolderTiers`. `generate-holders-lite`,
+    `generate-holder-transitions` and `generate-tier-outflows` use the tier
+    ranges.
+  - UI: `useProjectCopy().tiers` feeds the tier-flow diagram (rows and canvas
+    height through `useTierGeometry`), the Wallet Holdings curve and the
+    Distribution "Sub-N dust" pill.
+- Distribution tier labels are join keys between `holders.json`,
+  `holders-history.json`, `holder-transitions.json` and `tier-outflows.json`.
+  If you change a project's tiers, regenerate its history as well. Old
+  snapshots keep their old labels.
+- `pull-holders-rpc` now checks the supply sanity tolerance against
+  `supply.target` instead of the 100B TEL constant.
+
+## RPC pools for project chains (`chains[].rpc`)
+
+`scripts/lib/rpc.js` builds a key pool for every chain from `<PREFIX>_RPC_0..9`
+(from `.env.enc`). The built-in prefixes are `ETH`, `MATIC` and `BASE`. Any other
+chain defaults to its upper-cased key (`arbitrum` → `ARBITRUM_RPC_n`). After the
+key pool come free public endpoints, which are probed on every run. A chain can
+override both in its project config:
+
+```json
+{ "key": "arbitrum", "name": "Arbitrum One", "chainId": 42161, "explorer": "https://arbiscan.io",
+  "rpc": { "envPrefix": "ARB", "publicUrls": ["https://arbitrum-one-rpc.publicnode.com"] } }
+```
+
+- `selectPipelineProject` calls `configureProjectRpc(project.config)`, so every
+  ported script picks this up without extra code.
+- Public URL precedence: the `PUBLIC_RPC_URLS_<CHAIN>` env var, then
+  `chains[].rpc.publicUrls`, then the built-ins.
+- Built-in free starters exist for ethereum, polygon, base, arbitrum, optimism,
+  bsc and avalanche. The four newer ones are unverified, and TEL does not use
+  them.
+- Use free public RPCs only (no paid providers). Only add `<PREFIX>_RPC_n` keys
+  to `.env.enc` if a chain needs them.
+- TEL declares no `rpc` blocks, so its pools are unchanged
+  (`scripts/lib/rpcProjectChains.test.js`).
+- The UI's Chain Status card takes its labels, explorers and token links from
+  `chains[]` (`projectChainMeta`).
+
+## TEL-sized values left on purpose
+
+| Where | What | Why it stays |
+|---|---|---|
+| `src/hooks/useFlowField.ts`, `useHolderSnapshot`, `historyNav` `CHAIN_VALUES`, `HolderGrowthWidget` `VIEW_CONFIG`, `DistributionAnalysisWidget` `CHAIN_LABEL`, `useHeadlineTiles` | The chain-view union `"combined" \| "ethereum" \| "polygon" \| "base"` | These are TypeScript literal types and the feeds are keyed per chain. Widening them is a separate refactor and is needed only when a project ships a fourth chain. Wallet Holdings already filters its chain tabs to the project's chains, and Chain Status is fully project-driven. |
+| `scripts/lib/holderHistoryReconcile.js` | Default lowest label `"1-250K"` | This is only the default. `buildViewData` passes the project's lowest distribution tier. |
+| `scripts/lib/holderMetrics.js` | Exported `RETAIL_THRESHOLD` / `MEGA_HOLDER_THRESHOLD` | These are the TEL defaults, kept for existing imports. The scripts read the project values. |
+| `src/components/tierflow/geometry.ts` | `TIERS`, `CANVAS_H` | These are TEL defaults and test anchors. The live diagram uses `useTierGeometry()`. |
+| `scripts/lib/supply.js`, `reconcileSupply` | `EXPECTED_MAX_SUPPLY` / `TEL_TOTAL_SUPPLY` (100B) | These are defaults only. Callers pass `supply.target`. |
+| `scripts/verify-tel-supply.js` | 100B | This script only checks TEL. |
+| `scripts/generate-tier-outflows.js` | `CHAIN_TUNING` (log-window sizes per chain) | Unknown chains fall back to the chain's `blocksPerDay`. |
+| `MIN_TEL_RAW = 1` | Dust floor of 1 raw unit | This is a chain-level floor, not a value sized for TEL. |
+| `scripts/lib/stakingDiscovery.js` | `STAKE_SCAN_SPAN` | This is a block span, not a supply amount. |
+| CEX balance / Dune query | Per-project query | A new project needs its own Dune query id. The current Dune key keeps being used. |
 
 ## Gated forensics (wallet flows, ledger, write-ups)
 
@@ -306,7 +382,9 @@ wording, and only render when a project has a ledger.
    `classification.*` files.
 4. Add the slug to `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`.
    A test fails if it is missing.
-5. Optional: add `copy` overrides for wording the generic templates get wrong.
-6. Run `npm run typecheck && npx vitest run && npm run build`.
+5. Optional: add a `holders` block if TEL's tier sizes don't fit the supply, and
+   `chains[].rpc` for chains other than ethereum, polygon and base.
+6. Optional: add `copy` overrides for wording the generic templates get wrong.
+7. Run `npm run typecheck && npx vitest run && npm run build`.
 
 The switcher picks the new project up automatically.

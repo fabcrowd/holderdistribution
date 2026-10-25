@@ -10,6 +10,7 @@ import {
   type CopyContext,
   type ProjectEntities,
 } from "@/lib/projectCopy";
+import { holderTiersFor, type HolderTiers } from "@/lib/holderTiers";
 
 export type UseProjectCopy = CopyContext & {
   /** Fill a copy template ({ticker}, {name}, {chains}, {supply}) for the active project. */
@@ -20,6 +21,8 @@ export type UseProjectCopy = CopyContext & {
   hasText: (id: string) => boolean;
   /** Names of the project-controlled entities (foundation / team) on the Supply view. */
   entities: ProjectEntities;
+  /** Holder-tier settings (balance ranges, distribution tiers, thresholds) — src/lib/holderTiers.ts. */
+  tiers: HolderTiers;
 };
 
 /** Build the copy helpers for one project (also used outside React, e.g. tests). */
@@ -32,6 +35,7 @@ export const projectCopyFor = (slug: string): UseProjectCopy => {
     text: (id: string, tpl: string) => copyText(project, id, tpl),
     hasText: (id: string) => hasCopyText(project, id),
     entities: projectEntities(project),
+    tiers: holderTiersFor(project),
   };
 };
 

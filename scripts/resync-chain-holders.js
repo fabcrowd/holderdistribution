@@ -18,12 +18,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
-import { computeChainMetrics, buildSummary, RETAIL_THRESHOLD } from "./lib/holderMetrics.js";
+import { computeChainMetrics, buildSummary } from "./lib/holderMetrics.js";
+import { projectHolderTiers } from "./lib/holderTiers.js";
 import { selectPipelineProject, projectPaths, projectNonRetailPaths } from "./lib/projects.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir and its own exclusions/CEX/DEX lists — see scripts/lib/projects.js.
 const project = selectPipelineProject("resync-chain-holders", { ported: true });
+const RETAIL_THRESHOLD = projectHolderTiers(project).retailThreshold;
 const data = projectPaths(project);
 
 const HOLDERS_PATH = data("tel-holders.json");

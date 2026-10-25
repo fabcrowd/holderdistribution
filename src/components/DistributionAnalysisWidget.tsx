@@ -25,6 +25,7 @@ import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClass
 import { mergeDistributionBaseline, summarizeTierGrowth } from "@/lib/distributionRows";
 import { TierFlowDiagram, type TierMetric } from "@/components/TierFlowDiagram";
 import { tierDisplayLabel } from "@/components/tierflow/geometry";
+import { bucketFloor } from "@/lib/holderTiers";
 import { DexSwaps } from "@/components/DexSwaps";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
@@ -68,7 +69,8 @@ const DistributionAnalysisWidget = ({
   onRangeDaysChange,
   onViewChange,
 }: DistributionAnalysisWidgetProps) => {
-  const { ticker } = useProjectCopy();
+  const { ticker, tiers } = useProjectCopy();
+  const dustFloor = new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(bucketFloor(tiers));
   // Range-aware baseline: history distribution at the start of the selected
   // window (combined view only — chain views keep the snapshot baseline).
   const { data: historicalDelta } = useHolderHistoricalDelta({
@@ -151,7 +153,8 @@ const DistributionAnalysisWidget = ({
             {/* Buckets floor at 1 TEL by design — sub-1-TEL dust wallets
                 never land in their true tier by balance, since it can't be
                 determined without a full transfer replay. Their COUNT is
-                folded into the lowest tier ("1-250K") so tier counts still
+                folded into the lowest tier (TEL: "1-250K"; the project's last
+                `holders.distributionTiers` entry) so tier counts still
                 sum to the headline Retail Holders count above (see
                 scripts/lib/holdersView.js's buildViewData /
                 reconcileDistributionCounts); their balance is not reflected
@@ -159,7 +162,7 @@ const DistributionAnalysisWidget = ({
                 "Sub-1-TEL Dust Wallets Are Deliberately Excluded From
                 Buckets, Not Counts". */}
             <span className="text-[10px] sm:text-xs font-medium text-muted-foreground border border-border/60 rounded-full px-2 py-0.5">
-              Sub-1-{ticker} dust wallets counted in lowest tier
+              Sub-{dustFloor}-{ticker} dust wallets counted in lowest tier
             </span>
             {/* This tab has no chain selector of its own — `selectedView` is
                 set on the Holders tab and carries over silently, and picking

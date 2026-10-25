@@ -6,7 +6,9 @@ import {
   buildSnapshotData,
   buildViewData,
   buildOverlapStats,
+  setHolderTiers,
 } from "./lib/holdersView.js";
+import { projectHolderTiers } from "./lib/holderTiers.js";
 import { loadNonRetailSet, createNonRetailChecker } from "./lib/nonRetailSet.js";
 import { loadV3StakingPositions } from "./lib/v3Staking.js";
 import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
@@ -15,6 +17,8 @@ import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPat
 // the project's data dir (TEL: public/data/, others: public/data/<slug>/) and
 // its own chain/classification config — see scripts/lib/projects.js.
 const project = selectPipelineProject("generate-holders-lite", { ported: true });
+// Balance ranges / distribution tiers / concentration sizes for this project.
+setHolderTiers(projectHolderTiers(project));
 const data = projectPaths(project);
 
 const INPUT_PATH = data("tel-holders.json");

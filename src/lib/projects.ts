@@ -27,6 +27,8 @@ export type ProjectChain = {
   explorer: string;
   tokens: Array<{ generation: string; address: string; decimals: number; status?: string; deployBlock?: number }>;
   contracts?: Record<string, { address: string; role: string }>;
+  /** Pipeline RPC wiring (scripts/lib/rpc.js configureProjectRpc): key-pool env prefix + keyless public fallbacks. */
+  rpc?: { envPrefix?: string; publicUrls?: string[] };
 };
 
 export type ProjectConfig = ProjectEntry & {
@@ -34,6 +36,13 @@ export type ProjectConfig = ProjectEntry & {
   links?: Record<string, string>;
   data?: { legacyRoot?: boolean; dir?: string };
   supply?: { target?: number; targetLabel?: string; generationsSumOneToOne?: boolean; note?: string };
+  /**
+   * Holder-tier settings (src/lib/holderTiers.ts / scripts/lib/holderTiers.js):
+   * retail + mega thresholds, Wallet Holdings balance ranges, Distribution
+   * tiers (join keys) and top-N concentration sizes. Omitted fields fall back
+   * to config/holder-tiers.default.json (TEL's values).
+   */
+  holders?: import("@/lib/holderTiers").HolderTiersRaw;
   chains: ProjectChain[];
   /** `kind`: "stakeChanged" (StakeChanged events + stakedBy()) or "receiptModule" (ERC-20 receipt module). */
   staking?: Array<{ chain: string; address: string; name: string; token?: string; kind?: string; deployBlock?: number }>;
@@ -130,3 +139,24 @@ export const withToken = (loc: LocLike, slug: string, defaultSlug: string = DEFA
   if (search === loc.search) return null;
   return `${loc.pathname}${search}${loc.hash}`;
 };
+
+export type ProjectChainMeta = { key: string; label: string; explorerUrl: string; tokenUrl: string };
+
+/**
+ * Display metadata for each chain a project declares, in declaration order:
+ * label, explorer root and the canonical token's explorer page (status
+ * "canonical", else the last token listed). TEL resolves to exactly the old
+ * hard-coded Ethereum / Polygon / Base entries (projects.test.ts).
+ */
+export const projectChainMeta = (project: Pick<ProjectConfig, "chains">): ProjectChainMeta[] =>
+  (project.chains ?? []).map((c) => {
+    const explorer = (c.explorer ?? "").replace(/\/+$/, "");
+    const tokens = c.tokens ?? [];
+    const canonical = tokens.find((t) => t.status === "canonical") ?? tokens[tokens.length - 1];
+    return {
+      key: c.key,
+      label: c.name,
+      explorerUrl: explorer,
+      tokenUrl: canonical ? `${explorer}/token/${canonical.address.toLowerCase()}` : explorer,
+    };
+  });

@@ -14,6 +14,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { configureProjectRpc } from "./rpc.js";
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
@@ -114,6 +115,9 @@ export function pipelineProject(script, { argv = process.argv.slice(2), env = pr
 export function selectPipelineProject(script, { ported = false } = {}) {
   try {
     const project = pipelineProject(script, { ported });
+    // Chains the project declares an `rpc` block for get their key pool /
+    // public fallbacks registered (TEL declares none: built-ins unchanged).
+    configureProjectRpc(project.config);
     console.error(`[${script}] project: ${project.slug} (${project.dataDir})`);
     return project;
   } catch (err) {

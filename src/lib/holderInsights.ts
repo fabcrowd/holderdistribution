@@ -1,4 +1,5 @@
 import type { HolderEntry, HolderSnapshotBase } from "@/hooks/useHolderSnapshot";
+import { defaultHolderTiers } from "@/lib/holderTiers";
 
 export type DistributionBucket = {
   rangeLabel: string;
@@ -74,22 +75,17 @@ const calculateGini = (values: number[]) => {
   return (n + 1 - (2 * weightedSum) / total) / n;
 };
 
-const MIN_TEL_BALANCE_INSIGHTS = 1;
+// Ranges + dust floor come from the project's `holders.balanceRanges`
+// (src/lib/holderTiers.ts); TEL's defaults are the historical 1 / 1–100 … 10M+.
+type Range = { label: string; min: number; max: number };
+const DEFAULT_RANGES: Range[] = defaultHolderTiers().balanceRanges;
 
-const DISTRIBUTION_RANGES: { label: string; min: number; max: number }[] = [
-  { label: "1–100", min: 1, max: 100 },
-  { label: "100–1K", min: 100, max: 1_000 },
-  { label: "1K–10K", min: 1_000, max: 10_000 },
-  { label: "10K–100K", min: 10_000, max: 100_000 },
-  { label: "100K–1M", min: 100_000, max: 1_000_000 },
-  { label: "1M–10M", min: 1_000_000, max: 10_000_000 },
-  { label: "10M+", min: 10_000_000, max: Number.POSITIVE_INFINITY },
-];
-
-export const getBalanceStats = (holders: HolderEntry[]): BalanceStats => {
+export const getBalanceStats = (holders: HolderEntry[], ranges: Range[] = DEFAULT_RANGES): BalanceStats => {
+  const DISTRIBUTION_RANGES = ranges;
+  const floor = Math.min(...ranges.map((r) => r.min));
   const balances = holders
     .map(getBalanceValue)
-    .filter((value) => Number.isFinite(value) && value >= MIN_TEL_BALANCE_INSIGHTS);
+    .filter((value) => Number.isFinite(value) && value >= floor);
 
   const total = balances.reduce((sum, value) => sum + value, 0);
   const count = balances.length;
@@ -140,7 +136,8 @@ export const getStakingStats = (holders: HolderEntry[], retailSupply: number): S
   };
 };
 
-export const getStakingDistribution = (holders: HolderEntry[]): StakingDistribution | null => {
+export const getStakingDistribution = (holders: HolderEntry[], ranges: Range[] = DEFAULT_RANGES): StakingDistribution | null => {
+  const DISTRIBUTION_RANGES = ranges;
   const stakedAmounts = holders
     .map((h) => h.stakedBalance ?? 0)
     .filter((v) => Number.isFinite(v) && v > 0);

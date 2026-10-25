@@ -1,10 +1,24 @@
 import process from "node:process";
 
-const RPC_KEYS_BY_CHAIN = {
-  ethereum: ["ETH_RPC_0", "ETH_RPC_1", "ETH_RPC_2", "ETH_RPC_3", "ETH_RPC_4", "ETH_RPC_5", "ETH_RPC_6", "ETH_RPC_7", "ETH_RPC_8", "ETH_RPC_9"],
-  polygon: ["MATIC_RPC_0", "MATIC_RPC_1", "MATIC_RPC_2", "MATIC_RPC_3", "MATIC_RPC_4", "MATIC_RPC_5", "MATIC_RPC_6", "MATIC_RPC_7", "MATIC_RPC_8", "MATIC_RPC_9"],
-  base: ["BASE_RPC_0", "BASE_RPC_1", "BASE_RPC_2", "BASE_RPC_3", "BASE_RPC_4", "BASE_RPC_5", "BASE_RPC_6", "BASE_RPC_7", "BASE_RPC_8", "BASE_RPC_9"],
-};
+/**
+ * Key pools: chain `<key>` reads env vars `<PREFIX>_RPC_0` … `<PREFIX>_RPC_9`
+ * (from .env.enc). TEL's three chains keep their historical prefixes; any
+ * other chain a project declares gets `chains[].rpc.envPrefix` or, by default,
+ * its key upper-cased (`arbitrum` -> ARBITRUM_RPC_0…9). See
+ * configureProjectRpc() below and docs/MULTI-TOKEN.md "RPC".
+ */
+const RPC_KEY_SLOTS = 10;
+const BUILTIN_ENV_PREFIX = { ethereum: "ETH", polygon: "MATIC", base: "BASE" };
+/** chainKey -> { envPrefix?, publicUrls? } registered from project config. */
+const registeredChains = new Map();
+
+export const rpcEnvPrefix = (chainKey) =>
+  registeredChains.get(chainKey)?.envPrefix ??
+  BUILTIN_ENV_PREFIX[chainKey] ??
+  String(chainKey).toUpperCase().replace(/[^A-Z0-9]/g, "_");
+
+export const rpcEnvKeys = (chainKey) =>
+  Array.from({ length: RPC_KEY_SLOTS }, (_, i) => `${rpcEnvPrefix(chainKey)}_RPC_${i}`);
 
 /**
  * Keyless public endpoints, used ONLY when every configured (Alchemy) key is
@@ -16,7 +30,15 @@ const RPC_KEYS_BY_CHAIN = {
  * preference order. They are slower and rate-limited versus a paid key, so they
  * keep a daily incremental run alive; they are not meant for a full-history
  * rebuild. Set PUBLIC_RPC_FALLBACK=off to disable, or
- * PUBLIC_RPC_URLS_ETHEREUM / _POLYGON / _BASE (comma-separated) to override.
+ * PUBLIC_RPC_URLS_<CHAIN> (e.g. _ETHEREUM / _POLYGON / _BASE / _ARBITRUM;
+ * comma-separated) to override.
+ *
+ * Precedence: PUBLIC_RPC_URLS_<CHAIN> env > the project's
+ * `chains[].rpc.publicUrls` > this built-in table. TEL's three entries are
+ * the curated, log-probed lists above; the others are free keyless
+ * publicnode.com endpoints offered as a starting point for new projects (the
+ * per-run probe drops any that do not answer, and a project should replace
+ * them with its own probed list once it scans that chain). No paid providers.
  */
 const PUBLIC_RPC_FALLBACKS = {
   ethereum: ["https://gateway.tenderly.co/public/mainnet", "https://rpc.mevblocker.io"],
@@ -26,14 +48,52 @@ const PUBLIC_RPC_FALLBACKS = {
     "https://poly.api.pocket.network",
   ],
   base: ["https://base.gateway.tenderly.co", "https://base-rpc.polkachu.com", "https://base.rpc.blxrbdn.com"],
+  // Not used by TEL — starting points for other projects' chains (see above).
+  arbitrum: ["https://arbitrum-one-rpc.publicnode.com"],
+  optimism: ["https://optimism-rpc.publicnode.com"],
+  bsc: ["https://bsc-rpc.publicnode.com"],
+  avalanche: ["https://avalanche-c-chain-rpc.publicnode.com"],
 };
+
+/**
+ * Register a chain's RPC wiring from a project config: for every
+ * `chains[]` entry with an `rpc` block, `rpc.envPrefix` names its key pool
+ * and `rpc.publicUrls` its keyless fallbacks. Chains without an `rpc` block
+ * keep the built-ins (TEL declares none, so TEL is unchanged). Idempotent;
+ * call once per process after picking the project (selectPipelineProject
+ * does). Returns the chain keys that were registered.
+ */
+export function configureProjectRpc(projectConfig) {
+  const registered = [];
+  for (const chain of projectConfig?.chains ?? []) {
+    const rpc = chain?.rpc;
+    if (!chain?.key || !rpc || typeof rpc !== "object") continue;
+    const entry = {};
+    if (rpc.envPrefix !== undefined) {
+      if (typeof rpc.envPrefix !== "string" || !/^[A-Z][A-Z0-9_]*$/.test(rpc.envPrefix)) {
+        throw new Error(`chain ${chain.key}: rpc.envPrefix must be UPPER_SNAKE (got ${JSON.stringify(rpc.envPrefix)})`);
+      }
+      entry.envPrefix = rpc.envPrefix;
+    }
+    if (rpc.publicUrls !== undefined) {
+      if (!Array.isArray(rpc.publicUrls) || !rpc.publicUrls.every((u) => typeof u === "string" && /^https:\/\//.test(u))) {
+        throw new Error(`chain ${chain.key}: rpc.publicUrls must be an array of https URLs`);
+      }
+      entry.publicUrls = rpc.publicUrls;
+    }
+    registeredChains.set(chain.key, entry);
+    usableUrlCache.delete(chain.key);
+    registered.push(chain.key);
+  }
+  return registered;
+}
 
 export function getPublicFallbackUrls(chainKey) {
   if (/^(off|false|0|no)$/i.test(process.env.PUBLIC_RPC_FALLBACK ?? "")) return [];
   const override = process.env[`PUBLIC_RPC_URLS_${chainKey.toUpperCase()}`];
   const list = override
     ? override.split(",").map((u) => u.trim()).filter(Boolean)
-    : PUBLIC_RPC_FALLBACKS[chainKey] ?? [];
+    : registeredChains.get(chainKey)?.publicUrls ?? PUBLIC_RPC_FALLBACKS[chainKey] ?? [];
   return list.map((u) => u.replace(/\/+$/, ""));
 }
 
@@ -53,9 +113,8 @@ function getFirstRpcUrl(keys) {
  * @returns {string[]}
  */
 export function getAllRpcUrls(chainKey) {
-  const keys = RPC_KEYS_BY_CHAIN[chainKey];
-  if (!keys) return [];
-  return keys
+  if (!chainKey) return [];
+  return rpcEnvKeys(chainKey)
     .map((k) => process.env[k])
     .filter((url) => typeof url === "string" && url.trim().length > 0)
     .map((url) => url.trim().replace(/\/+$/, ""));
@@ -188,7 +247,7 @@ const PROBE_TIMEOUT_MS = Number(process.env.RPC_PROBE_TIMEOUT_MS) || 10000;
  * @returns {string|null} First available Polygon RPC URL from env. Alchemy PAYG: eth_getLogs max 2000 blocks.
  */
 export function getPolygonRpcUrl() {
-  return getFirstRpcUrl(RPC_KEYS_BY_CHAIN.polygon);
+  return getFirstRpcUrl(rpcEnvKeys("polygon"));
 }
 
 const MAX_RETRIES = 5;
@@ -390,4 +449,5 @@ async function getLogsInSpans(rpcUrl, filter, from, to, span) {
 export function __resetRpcCachesForTests() {
   learnedSpanByUrl.clear();
   usableUrlCache.clear();
+  registeredChains.clear();
 }

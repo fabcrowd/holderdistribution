@@ -1,0 +1,27 @@
+{
+  "$comment": "Default holder-tier settings for any project whose config/projects/<slug>.json has no `holders` block (or omits a field). These are TEL's historical values, sized for a 100B supply — a project with a very different supply should set its own `holders` block. Ranges: `max: null` means no upper bound. `distributionTiers` labels are JOIN KEYS into holder-transitions.json / tier-outflows.json / holders-history.json and must stay stable once a project has data; order is largest -> smallest. `balanceRanges` order is smallest -> largest. Read by scripts/lib/holderTiers.js (pipelines) and src/lib/holderTiers.ts (UI).",
+  "retailThreshold": 1000,
+  "megaHolderThreshold": 20000000000,
+  "concentrationBuckets": [10, 25, 50, 100, 250, 500, 1000],
+  "balanceRanges": [
+    { "label": "1–100", "min": 1, "max": 100 },
+    { "label": "100–1K", "min": 100, "max": 1000 },
+    { "label": "1K–10K", "min": 1000, "max": 10000 },
+    { "label": "10K–100K", "min": 10000, "max": 100000 },
+    { "label": "100K–1M", "min": 100000, "max": 1000000 },
+    { "label": "1M–10M", "min": 1000000, "max": 10000000 },
+    { "label": "10M+", "min": 10000000, "max": null }
+  ],
+  "distributionTiers": [
+    { "label": "500M+", "min": 500000000, "max": null },
+    { "label": "250M-500M", "min": 250000000, "max": 500000000 },
+    { "label": "100M-250M", "min": 100000000, "max": 250000000 },
+    { "label": "50M-100M", "min": 50000000, "max": 100000000 },
+    { "label": "25M-50M", "min": 25000000, "max": 50000000 },
+    { "label": "10M-25M", "min": 10000000, "max": 25000000 },
+    { "label": "5M-10M", "min": 5000000, "max": 10000000 },
+    { "label": "1M-5M", "min": 1000000, "max": 5000000 },
+    { "label": "250K-1M", "min": 250000, "max": 1000000 },
+    { "label": "1-250K", "min": 1, "max": 250000 }
+  ]
+}

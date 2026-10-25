@@ -59,13 +59,16 @@ export const V3_RESIDUAL_TOLERANCE = 0.0001;
  * @param {{warn?: Function, log?: Function}} logger injectable for tests
  * @param {Record<string, {legacy:number, v3:number, retiredLegacy:number, strandedInUpgrade?:number}>|null} tokenTotals
  *   per-chain token totals from the scan (see telTokens.combineChainBalances)
+ * @param {{expectedMaxSupply?: number}} [options] the project's `supply.target`
+ *   (default EXPECTED_MAX_SUPPLY = TEL's 100B)
  */
 export const computeSupplyTotals = (
   output,
   chainConfig,
   bridgeLockSet = new Set(),
   logger = console,
-  tokenTotals = null
+  tokenTotals = null,
+  { expectedMaxSupply = EXPECTED_MAX_SUPPLY } = {}
 ) => {
   const originKey = Object.keys(chainConfig).find((key) => chainConfig[key]?.origin);
   if (!originKey) {
@@ -123,11 +126,11 @@ export const computeSupplyTotals = (
   const v3Residual = sumOver(v3Supply) - sumOver(retiredLegacy);
   const crossCheckTotal = sumOver(perChain) - bridgeLocked;
 
-  if (Math.abs(totalSupply - EXPECTED_MAX_SUPPLY) > EXPECTED_MAX_SUPPLY * SUPPLY_TOLERANCE) {
+  if (Math.abs(totalSupply - expectedMaxSupply) > expectedMaxSupply * SUPPLY_TOLERANCE) {
     throw new Error(
       `Derived total supply ${Math.round(totalSupply).toLocaleString()} is more than ` +
         `${SUPPLY_TOLERANCE * 100}% from the expected max supply ` +
-        `${EXPECTED_MAX_SUPPLY.toLocaleString()}. Refusing to publish a wrong denominator.`
+        `${expectedMaxSupply.toLocaleString()}. Refusing to publish a wrong denominator.`
     );
   }
   if (Math.abs(mirrorResidual) > totalSupply * 0.01) {

@@ -96,9 +96,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
-import { computeChainMetrics, RETAIL_THRESHOLD } from "./lib/holderMetrics.js";
+import { computeChainMetrics } from "./lib/holderMetrics.js";
+import { projectHolderTiers } from "./lib/holderTiers.js";
 import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
-import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS } from "./lib/holdersView.js";
+import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS, setHolderTiers } from "./lib/holdersView.js";
 import { classifySnapshot, stakedAmountsByAddress } from "./lib/phantomStakers.js";
 import { selectPipelineProject, projectPaths, projectNonRetailPaths, projectClassificationPath } from "./lib/projects.js";
 
@@ -106,6 +107,9 @@ import { selectPipelineProject, projectPaths, projectNonRetailPaths, projectClas
 // data dir (on disk + git history) and its own classification lists (TEL:
 // public/data/ + config/ root files, exactly as before).
 const project = selectPipelineProject("recompute-history-from-git", { ported: true });
+const holderTiers = projectHolderTiers(project); // retail/mega thresholds + tier ranges (config/projects/<slug>.json `holders`)
+const RETAIL_THRESHOLD = holderTiers.retailThreshold;
+setHolderTiers(holderTiers);
 
 const ROOT = process.cwd();
 const data = projectPaths(project, ROOT);

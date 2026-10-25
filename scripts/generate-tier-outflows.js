@@ -58,6 +58,7 @@ import { classifyReceiptLogs, dexSubClass, LP_EVENT_TOPICS } from "./lib/dexTran
 import { loadEnv } from "./loadEnv.js";
 import { selectPipelineProject, projectPaths, projectChains, projectWork, projectClassificationPath } from "./lib/projects.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
+import { projectHolderTiers, rangeLabelOf } from "./lib/holderTiers.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk + git history), work dir (day store / checkpoint), chain
@@ -166,15 +167,9 @@ const CHAINS = IS_LEGACY
   ? { ethereum: chainEntry("ethereum"), polygon: chainEntry("polygon"), base: chainEntry("base") }
   : Object.fromEntries(Object.keys(CHAIN_CONFIG).map((k) => [k, chainEntry(k)]));
 
-const TIERS = [
-  ["500M+", 500e6, Infinity], ["250M-500M", 250e6, 500e6], ["100M-250M", 100e6, 250e6],
-  ["50M-100M", 50e6, 100e6], ["25M-50M", 25e6, 50e6], ["10M-25M", 10e6, 25e6],
-  ["5M-10M", 5e6, 10e6], ["1M-5M", 1e6, 5e6], ["250K-1M", 250e3, 1e6], ["1-250K", 1, 250e3],
-];
-const tierOf = (v) => {
-  for (const [label, lo, hi] of TIERS) if (v >= lo && v < hi) return label;
-  return null;
-};
+// The project's distribution tiers (TEL: the historical 10, unchanged).
+const TIERS = projectHolderTiers(project).distributionTiers;
+const tierOf = (v) => rangeLabelOf(TIERS, v);
 
 const git = (a) => execFileSync("git", a, { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 });
 const showJson = (commit, file) => JSON.parse(git(["show", `${commit}:${file}`]));

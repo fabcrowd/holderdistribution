@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
+import { useProject } from "@/hooks/useProject";
 import { PanelError } from "@/components/terminal/TerminalPanel";
 import { motion } from "framer-motion";
 import { TreasuryHistoryChart } from "@/components/TreasuryHistoryChart";
@@ -169,6 +170,9 @@ const renderBucketDetail = (
 const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = "stacked" }: SupplyBreakdownProps) => {
   const pieIntro = useChartIntro();
   const { ticker, entities, text } = useProjectCopy();
+  const { project } = useProject();
+  // Fallback denominator before reconciliation loads: the project's supply target (TEL: 100B).
+  const supplyTarget = project.supply?.target ?? 100_000_000_000;
   const pieChartConfig = useMemo(() => supplyPieChartConfig(ticker), [ticker]);
   const activePieSector = useMemo(() => makeActivePieSector(ticker), [ticker]);
   // Controlled when the page owns the panel (so #supply/<panel> deep links
@@ -204,7 +208,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
 
   const { buckets, totalSupply, circulating, residualItems, otherItems, associationItems, holdingsItems, dexItems, cexItems, escrowItems } =
     useMemo(() => {
-      const total = data?.totalSupply ?? 100_000_000_000;
+      const total = data?.totalSupply ?? supplyTarget;
       const residual = data?.residual ?? Math.max(0, total - (data?.counted ?? 0));
       // No reconciliation (loading / failed) → no buckets. Grouping an empty
       // payload used to put the whole 100B into "In transit".
@@ -241,7 +245,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
           .slice()
           .sort((a, b) => b.balance - a.balance),
       };
-    }, [data, entities]);
+    }, [data, entities, supplyTarget]);
 
   // Largest category that has something to drill into. Retail is usually
   // bigger, but its "detail" is one sentence (there is no address list),

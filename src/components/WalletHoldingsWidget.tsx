@@ -1,5 +1,7 @@
 import { useMemo, useState, Fragment, type ReactNode } from "react";
 import { useProjectCopy, type UseProjectCopy } from "@/hooks/useProjectCopy";
+import { useProject } from "@/hooks/useProject";
+import type { TierRange } from "@/lib/holderTiers";
 import {
   Card,
   CardContent,
@@ -568,7 +570,9 @@ const fitLogNormalCurve = (buckets: { count: number }[], logMidpoints: number[])
   return raw.map((v) => Math.round((v / rawSum) * total * 1.05));
 };
 
-// Approximate log-midpoint for each TEL range label
+// Approximate log-midpoint for each of TEL's range labels (kept verbatim so
+// TEL's curve is unchanged). Other projects' `holders.balanceRanges` get the
+// geometric midpoint of [min, max) (open top bucket: min·√10) — logMidFor.
 const BUCKET_LOG_MIDS: Record<string, number> = {
   "1–100": Math.log(10),
   "100–1K": Math.log(316),
@@ -577,6 +581,15 @@ const BUCKET_LOG_MIDS: Record<string, number> = {
   "100K–1M": Math.log(316228),
   "1M–10M": Math.log(3162278),
   "10M+": Math.log(31622776),
+};
+
+const logMidFor = (label: string, ranges: readonly TierRange[]): number => {
+  if (label in BUCKET_LOG_MIDS) return BUCKET_LOG_MIDS[label]!;
+  const r = ranges.find((x) => x.label === label);
+  if (!r) return 0;
+  const lo = Math.max(r.min, 1);
+  const hi = Number.isFinite(r.max) ? r.max : lo * 10;
+  return (Math.log(lo) + Math.log(hi)) / 2;
 };
 
 // Display-only override, currently a no-op: BALANCE_RANGES' bottom bucket
@@ -613,7 +626,7 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
   ];
 
   // Option A: bar + log-normal curve overlay
-  const logMids = stats.distributionBuckets.map((b) => BUCKET_LOG_MIDS[b.rangeLabel] ?? 0);
+  const logMids = stats.distributionBuckets.map((b) => logMidFor(b.rangeLabel, copy.tiers.balanceRanges));
   const curveValues = fitLogNormalCurve(stats.distributionBuckets, logMids);
   const chartData = stats.distributionBuckets.map((b, i) => ({
     range: b.rangeLabel,
@@ -1217,6 +1230,12 @@ const HOLDER_PANELS = [
 ];
 
 const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDaysChange, trendsPanel, flowsPanel, panel: panelProp, onPanelChange, compactHeader = false }: WalletHoldingsWidgetProps) => {
+  const { project } = useProject();
+  // Only the chains this project is actually on (TEL: all three, as before).
+  const viewOptions = useMemo(
+    () => VIEW_OPTIONS.filter((o) => o.key === "combined" || (project.chains ?? []).some((c) => c.key === o.key)),
+    [project],
+  );
   const copy = useProjectCopy();
   const [expandedCexExchange, setExpandedCexExchange] = useState<string | null>(null);
   const [panelState, setPanelState] = useState("overview");
@@ -1249,7 +1268,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
           : "inline-flex flex-wrap rounded-full border border-border/60 bg-card/80 p-0.5"
       }
     >
-      {VIEW_OPTIONS.map((option) => (
+      {viewOptions.map((option) => (
         <button
           key={option.key}
           type="button"
