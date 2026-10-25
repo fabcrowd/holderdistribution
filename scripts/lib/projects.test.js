@@ -10,6 +10,7 @@ import {
   parseProjectArg,
   pipelineProject,
   projectDataDir,
+  projectStakingContracts,
   resolveProject,
   SLUG_RE,
 } from "./projects.js";
@@ -114,4 +115,9 @@ describe("pipeline --project selection", () => {
     expect(pipelineProject("pull", { argv: [], env: {}, root: tmp }).dataDir).toBe("public/data");
     fs.rmSync(tmp, { recursive: true, force: true });
   });
+});
+
+it("projectStakingContracts keeps Solana base58 case", () => {
+  const zbcn = resolveProject("zebec-network", root);
+  expect(projectStakingContracts(zbcn, { kind: "zebecStakeV1" })[0].address).toBe("zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv");
 });

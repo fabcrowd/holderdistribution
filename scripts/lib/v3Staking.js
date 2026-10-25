@@ -1,3 +1,5 @@
+import { normalizeAnyAddress } from "./address.js";
+
 /**
  * TEL v3 StakingModule positions for the published staking stats.
  *
@@ -16,7 +18,8 @@
  * never be added to any balance again.
  */
 
-const normalize = (value) => (typeof value === "string" ? value.trim().toLowerCase() : "");
+// EVM lowercased (TEL unchanged); Solana base58 kept exact.
+const normalize = (value) => (typeof value === "string" ? normalizeAnyAddress(value.trim()) ?? "" : "");
 
 /** UTC date (YYYY-MM-DD) of the first day whose end block is at or after `block`. */
 export const dateForBlock = (asOfBlocks, chainKey, block) => {

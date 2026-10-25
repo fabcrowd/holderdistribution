@@ -493,9 +493,10 @@ export const projectChainsAllVms = (project, root = process.cwd()) => projectCha
  * receipt StakingModule), `chain` or `token` generation. Addresses lowercased.
  */
 export function projectStakingContracts(project, { kind, chain, token } = {}) {
+  const vmOf = new Map((project.config?.chains ?? []).map((c) => [c.key, c.vm ?? "evm"]));
   return (project.config?.staking ?? [])
     .filter((s) => (kind ? s.kind === kind : true) && (chain ? s.chain === chain : true) && (token ? s.token === token : true))
-    .map((s) => ({ ...s, address: lc(s.address) }));
+    .map((s) => ({ ...s, address: vmOf.get(s.chain) === "solana" ? s.address.trim() : lc(s.address) }));
 }
 
 /** Token address for (chainKey, generation) from the project config, or null. */
