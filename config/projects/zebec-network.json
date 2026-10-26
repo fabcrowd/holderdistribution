@@ -87,6 +87,56 @@
           "address": "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w",
           "role": "dex",
           "$comment": "Solscan name tag 'Orca (WSOL-ZBCN) Market' (https://solscan.io/account/FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w), checked 2026-10-25. Whirlpool account that owns the pool's ZBCN vault token account (~46.33M)."
+        },
+        "treasuryVaultH8Hr": {
+          "address": "H8Hr964ApEP3ie1rwRTT7wkSrgvUqJQb8oNAKspkDDfR",
+          "role": "treasury",
+          "$comment": "Owner-approved 2026-10-26 (medium confidence). Unlabeled Zebec-multisig vault (~7.0B ZBCN at 2026-10-25 scan): signer PDA of a b6ZPys… multisig whose owners overlap with the EkXEg buyback-treasury multisig; no public Zebec doc names it. https://solscan.io/account/H8Hr964ApEP3ie1rwRTT7wkSrgvUqJQb8oNAKspkDDfR · evidence docs/zbcn-wallet-candidates.md §1"
+        },
+        "treasuryVault3J7n5": {
+          "address": "3J7n5Usmei8BqgUHan5xuBiJkAx6M1AQQhGwbKiVdQ17",
+          "role": "treasury",
+          "$comment": "Owner-approved 2026-10-26 (medium confidence). Unlabeled Zebec-multisig vault (~5.5B ZBCN at 2026-10-25 scan): signer PDA of a b6ZPys… multisig whose owners overlap with the EkXEg buyback-treasury multisig; no public Zebec doc names it. https://solscan.io/account/3J7n5Usmei8BqgUHan5xuBiJkAx6M1AQQhGwbKiVdQ17 · evidence docs/zbcn-wallet-candidates.md §1"
+        },
+        "treasuryVault71LxiE": {
+          "address": "71LxiE4PvxdZxLmtGcoKAJEWKofPqYw5Wdn6PSpXHodV",
+          "role": "treasury",
+          "$comment": "Owner-approved 2026-10-26 (medium confidence). Unlabeled Zebec-multisig vault (~518.8M ZBCN at 2026-10-25 scan): signer PDA of a b6ZPys… multisig whose owners overlap with the EkXEg buyback-treasury multisig; no public Zebec doc names it. https://solscan.io/account/71LxiE4PvxdZxLmtGcoKAJEWKofPqYw5Wdn6PSpXHodV · evidence docs/zbcn-wallet-candidates.md §1"
+        },
+        "teamSigner9Sq2": {
+          "address": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+          "role": "holdings",
+          "$comment": "Owner-approved team cluster 2026-10-26 (high confidence). Ops/payout hot wallet (~7.39M ZBCN at 2026-10-25 scan). Signer on the EkXEg, 3J7n5 and 71LxiE multisigs; signed MintAdmin 2024-08-26 (program GaK9kh…) and minted 1.6B ZBCN via mint authority 8r8Qgw… — project admin key. https://solscan.io/account/9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine · evidence docs/zbcn-wallet-candidates.md §1"
+        },
+        "teamSignerEsDV3m": {
+          "address": "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+          "role": "holdings",
+          "$comment": "Owner-approved team cluster 2026-10-26 (medium confidence). Signer on the H8Hr, 3J7n5 and 71LxiE multisigs; funded 3J7n5, received from 71LxiE. https://solscan.io/account/EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k · evidence docs/zbcn-wallet-candidates.md §1"
+        },
+        "teamSignerFNuqK": {
+          "address": "FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM",
+          "role": "holdings",
+          "$comment": "Owner-approved team cluster 2026-10-26 (medium confidence). Signer on the H8Hr multisig; funded H8Hr via pass-through. https://solscan.io/account/FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM · evidence docs/zbcn-wallet-candidates.md §1"
+        },
+        "teamSignerG82t": {
+          "address": "G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7",
+          "role": "holdings",
+          "$comment": "Owner-approved team cluster 2026-10-26 (medium confidence). Signer on the EkXEg, H8Hr and 3J7n5 multisigs. https://solscan.io/account/G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7 · evidence docs/zbcn-wallet-candidates.md §1"
+        },
+        "teamSigner6enQZ": {
+          "address": "6enQZWHkQ5ayxyFbJXgrNdUwDZpcUon98SNCuVNSRbd2",
+          "role": "holdings",
+          "$comment": "Owner-approved team cluster 2026-10-26 (medium confidence). Signer on the EkXEg, H8Hr and 3J7n5 multisigs. https://solscan.io/account/6enQZWHkQ5ayxyFbJXgrNdUwDZpcUon98SNCuVNSRbd2 · evidence docs/zbcn-wallet-candidates.md §1"
+        },
+        "teamSigner8vKi": {
+          "address": "8vKiBgHFgR7BTUTwjNXj91P95GrRDCt3xNt6iLgHVMJw",
+          "role": "holdings",
+          "$comment": "Owner-approved team cluster 2026-10-26 (medium confidence). Signer on the EkXEg buyback-treasury multisig. https://solscan.io/account/8vKiBgHFgR7BTUTwjNXj91P95GrRDCt3xNt6iLgHVMJw · evidence docs/zbcn-wallet-candidates.md §1"
+        },
+        "teamSigner9jRR": {
+          "address": "9jRRKgb69WSMRLrqrPsk1byunMhD5tXxixYAdoESHdM3",
+          "role": "holdings",
+          "$comment": "Owner-approved team cluster 2026-10-26 (low confidence). LOW CONFIDENCE: signer on one multisig only (71LxiE). https://solscan.io/account/9jRRKgb69WSMRLrqrPsk1byunMhD5tXxixYAdoESHdM3 · evidence docs/zbcn-wallet-candidates.md §1"
         }
       }
     }
@@ -96,7 +146,7 @@
     "megaHolderThreshold": 25000000000
   },
   "treasury": {
-    "$comment": "append-treasury-history reads only these supply-reconciliation categories (ZBCN has no council/holdings/escrow).",
+    "$comment": "append-treasury-history reads only these supply-reconciliation categories. Kept treasury-only: the holdings (team) bucket is just the 9Sq2 ops hot wallet, and reconcile-supply omits a category whose balance is 0, which would make append-treasury-history abort the daily refresh (completeness guard) if 9Sq2 is ever emptied.",
     "categories": [
       "treasury"
     ]
@@ -136,7 +186,8 @@
       "supply.residual.body": "The ~{gap} gap between the fixed {total} max supply and every {ticker} balance we count on Solana. {name} keeps a fixed {supply} max while buybacks and burns shrink the on-chain supply, so this is a reconcile note — on-chain supply sitting slightly under the max — not missing wallets and not tokens in a bridge ({ticker} here is Solana-only).",
       "supply.residual.amountLabel": "Gap to {supply} max",
       "supply.residual.originDriftLabel": "On-chain supply below the {supply} max",
-      "supply.residual.note": "Counted wallets add up to the mint's current on-chain supply; the shortfall to {total} is consistent with buybacks/burns (not itemised burn-by-burn here). Recomputed on every refresh."
+      "supply.residual.note": "Counted wallets add up to the mint's current on-chain supply; the shortfall to {total} is consistent with buybacks/burns (not itemised burn-by-burn here). Recomputed on every refresh.",
+      "supply.holdings.description": "Zebec team cluster ({amount} {ticker}): signer wallets of the Zebec multisigs that control the buyback treasury and the three large treasury vaults. Only the ops/payout wallet currently holds {ticker}; the other signers are tagged for completeness. Identified from on-chain multisig ownership (no public Zebec doc names them)."
     },
     "methodology": {
       "supplyBreakdown": {
@@ -153,6 +204,7 @@
     "holderScan": "Full getProgramAccounts scan likely needs SOLANA_RPC_0; public RPC rate-limits.",
     "stakingAdapter": "scripts/pull-solana-staking.js (zebecStakeV1) -> public/data/zebec-network/solana-staking.json. Per-lockup 0.5% vault reconcile; ZBCN Lockup AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp exempt (~2.42% unclaimed-positions vs vault-ATA gap recorded with explainer in output; positions published unscaled).",
     "cexWallets": "2026-10-25: 44 Solana CEX/custody wallets in config/projects/zebec-network/cex-wallets.json — 11 owner-approved from the Dune spellbook cex_solana_addresses intersect, plus 33 Solscan name-tag-confirmed (Uphold, Crypto.com, Kraken, OKX, Gate, CoinSpot, Bitget, MEXC, KuCoin, Bitrue, Bitvavo, BingX, Bitunix, CoinDCX Fireblocks, Fireblocks Custody) applied under the owner explorer-confirmed auto-apply rule (docs/zbcn-wallet-candidates.md §3). UPHOLD CAVEAT: Zebec says buybacks are consolidated periodically with Uphold Institutional for custody (x.com/Zebec_HQ/status/2112911986245910804; zebec.io/blog/inside-the-zbcn-buyback-program), so part of the Uphold Hot Wallet 3/5 balances (~20.55B + ~128.6M) may be project custodial buybacks; it cannot be split on-chain and is counted as cex. Fireblocks Custody (Fcmiy/4yqgc/FxmR1) owner is unknown; classed cex as institutional custody. Scheduled sync still needs its own pipeline.duneCexQueryId (Solana query on cex.addresses WHERE blockchain=solana; never TEL 3761086).",
+    "treasuryTeam": "2026-10-26 owner-approved: contracts{} treasury vaults H8Hr964ApEP3ie1rwRTT7wkSrgvUqJQb8oNAKspkDDfR, 3J7n5Usmei8BqgUHan5xuBiJkAx6M1AQQhGwbKiVdQ17, 71LxiE4PvxdZxLmtGcoKAJEWKofPqYw5Wdn6PSpXHodV (role treasury, medium confidence: on-chain multisig overlap with EkXEg; no public doc names them) and team cluster (role holdings → Team Wallets). These seven wallets are the owners (signers) of four Zebec multisigs (program b6ZPysThkApNx2YDiGsPUiYPE7Ub1kTRdCWp7gBkzbr). One controls the officially published buyback treasury EkXEg6de172aoLvr7w86YzQ2rf5oEFD3iUt8uQsLQuQW; the other three control vaults H8Hr, 3J7n5, and 71LxiE (each vault is the signer PDA of its multisig; owner sets overlap). ZBCN moves between the vaults and these signers. Additionally, 9Sq2 signed MintAdmin on 2024-08-26 (program GaK9kh…) and minted 1.6B ZBCN via mint authority 8r8Qgw… — only a project admin key can do that (txs 4acjHJWHmsYNzAdrddjeGJqYQHCCG5GC2FZehgq4pYvcgkvrixbqKjVDLAHcWNodx7baFWZbQ6mPfFVKB1MbSC9a and 42j2ms2HTw2sSCGc5nmwAivrWaRmhcLr1LC6fbmP41DJfv9KT8kHsGwVT62qLu3gBWCGNdbtzs7QVYHk462P2G9t). Confidence: high for 9Sq2; medium for the rest; low for 9jRR (one multisig only). No public Zebec doc names these wallets. Excluded (still candidates): GXD2, 43wqg, 56veX. Evidence: docs/zbcn-wallet-candidates.md §1; official buyback seed https://x.com/Zebec_HQ/status/2112911986245910804.",
     "liveData": "Registered in PROJECT_SLUGS (netlify/functions/live-data.mjs).",
     "supplyReconciliation": "reconcile-supply labels contracts{} role addresses (and Solana token-account owners persisted on the snapshot as tokenAccountOwnersByChain) as treasury/staking categories; no ZBCN-only exclusions file."
   },

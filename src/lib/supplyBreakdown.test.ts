@@ -89,7 +89,8 @@ describe("ZBCN staking copy", () => {
     );
     expect(lockup.vaultReconcile).toBe("exempt");
     expect(lockup.vaultGapRatio).toBeCloseTo(0.0242, 3);
-    expect(staking.stakedTotal / 1e9).toBeCloseTo(4.79, 2);
-    expect(supply.categories.staking / 1e9).toBeCloseTo(4.802, 2);
+    // Positions drift with the daily refresh; copy says "~4.79B", so allow ±0.05B.
+    expect(staking.stakedTotal / 1e9).toBeCloseTo(4.79, 1);
+    expect(supply.categories.staking / 1e9).toBeCloseTo(4.8, 1);
   });
 });
