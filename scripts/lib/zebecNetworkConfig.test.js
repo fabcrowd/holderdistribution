@@ -15,6 +15,27 @@ const STAKE_VAULT_ATAS = [
   "BcfMnwQMpv988qVCDMpJhXRyYiqchrYh9pcJPvjEypj4",
 ];
 const REWARD_VAULT_ATAS = ["ErF9raeVUf1H7EgSDuApS1NYhBkAcnnVas9zmEK23sTE", "DGMT79t6tVGPHW8gLH29a6G1W8AnWhc5NzddvHiU9kCy"];
+// Owner-approved 2026-10-26 (docs/zbcn-wallet-candidates.md §1).
+const TREASURY_VAULTS = [
+  "H8Hr964ApEP3ie1rwRTT7wkSrgvUqJQb8oNAKspkDDfR",
+  "3J7n5Usmei8BqgUHan5xuBiJkAx6M1AQQhGwbKiVdQ17",
+  "71LxiE4PvxdZxLmtGcoKAJEWKofPqYw5Wdn6PSpXHodV",
+];
+const TEAM_SIGNERS = [
+  "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+  "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+  "FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM",
+  "G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7",
+  "6enQZWHkQ5ayxyFbJXgrNdUwDZpcUon98SNCuVNSRbd2",
+  "8vKiBgHFgR7BTUTwjNXj91P95GrRDCt3xNt6iLgHVMJw",
+  "9jRRKgb69WSMRLrqrPsk1byunMhD5tXxixYAdoESHdM3",
+];
+// Owner excluded these §1 candidates; they must stay out of config.
+const EXCLUDED = [
+  "GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J",
+  "43wqg9cUzGW42uLbMEKt3CE4Jzt9dxujrCMjgw7iVr8E",
+  "56veXoivcbZNwkN4MCvhdyromDrp6cp9EuJZ9arknGSF",
+];
 
 describe("zebec-network config (owner choices 2026-10-25)", () => {
   const c = loadProjectConfig("zebec-network", root);
@@ -62,6 +83,17 @@ describe("zebec-network config (owner choices 2026-10-25)", () => {
   it("buyback treasury is non-retail via contracts{} role", () => {
     const sol = projectRoleAddresses(c).solana ?? [];
     expect(sol).toContainEqual(expect.objectContaining({ address: "EkXEg6de172aoLvr7w86YzQ2rf5oEFD3iUt8uQsLQuQW", role: "treasury" }));
+  });
+
+  it("owner-approved treasury vaults (treasury) and team signers (holdings) are non-retail; exclusions stay out", () => {
+    const sol = projectRoleAddresses(c).solana ?? [];
+    const byRole = (role) => sol.filter((e) => e.role === role).map((e) => e.address);
+    for (const a of TREASURY_VAULTS) expect(byRole("treasury")).toContain(a);
+    expect(byRole("holdings").sort()).toEqual([...TEAM_SIGNERS].sort());
+    const text = JSON.stringify(c);
+    for (const a of EXCLUDED) expect(text).not.toContain(a);
+    expect(c.pipelineNotes.treasuryTeam).toMatch(/b6ZPysThkApNx2YDiGsPUiYPE7Ub1kTRdCWp7gBkzbr/);
+    expect(c.pipelineNotes.treasuryTeam).toMatch(/low for 9jRR/);
   });
 
   it("live-data serves it from public/data/zebec-network", () => {
