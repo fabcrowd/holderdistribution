@@ -5,11 +5,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { TokenRoute } from "@/components/routing/TokenRoute";
+import { LegacyRedirect } from "@/components/routing/LegacyRedirect";
 import { Loader2 } from "lucide-react";
 
-// Single-route extraction of the original hub's Holders/Tokenomics section.
-// The full hub had many pages; this repo deploys just this one, so there is
-// only one lazy-loaded route rather than the original app's route table.
+// "/" is the token picker; "/<slug>" is that token's terminal
+// (docs/superpowers/specs/2026-10-26-token-landing-header-design.md).
+// "/holders" and "/?token=" are legacy entry points that redirect.
+const Landing = lazy(() => import("./pages/Landing"));
 const Holders = lazy(() => import("./pages/Holders"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -42,8 +45,9 @@ const App = () => (
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/" element={<Holders />} />
-              <Route path="/holders" element={<Holders />} />
+              <Route path="/" element={<LegacyRedirect><Landing /></LegacyRedirect>} />
+              <Route path="/holders" element={<LegacyRedirect />} />
+              <Route path="/:slug" element={<TokenRoute notFound={<NotFound />}><Holders /></TokenRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
