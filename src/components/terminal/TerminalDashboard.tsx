@@ -10,7 +10,7 @@ import { ChangeIndicator } from "@/components/ChangeIndicator";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
 import { HeadlineBody } from "@/components/HeadlineBody";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { TokenSwitcher } from "@/components/TokenSwitcher";
+import { TokenIdentity } from "@/components/TokenIdentity";
 import { useProject } from "@/hooks/useProject";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { LAYOUT_MODES } from "@/lib/terminalCopy";
@@ -54,8 +54,8 @@ type Props = {
 
 /**
  * Desktop (>=1280px) shell: one 56px title bar carrying the brand (eyebrow +
- * an always-visible "<TICKER> Holder Distribution" h1 whose ticker is the
- * master token switch, plus a stale-data pill),
+ * an always-visible "<image> <Name> Holder Distribution" h1 whose token mark
+ * links home to the token picker, plus a stale-data pill),
  * the view switch, the four headline KPIs and every control; a plain-language
  * strip (the same sentence the phone shows under the title); then the view.
  * Holders dashboard and Distribution scroll this region so charts can be
@@ -142,7 +142,7 @@ export const TerminalDashboard = ({
                 )}
               </div>
               <h1 className="mt-1 whitespace-nowrap text-base font-extrabold leading-none tracking-tight text-foreground min-[1400px]:text-lg 2xl:text-xl">
-                <TokenSwitcher variant="heading" /> Holder Distribution
+                <TokenIdentity /> Holder Distribution
               </h1>
             </div>
           </div>

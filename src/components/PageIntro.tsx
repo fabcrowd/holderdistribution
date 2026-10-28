@@ -1,7 +1,7 @@
 import { useHeadlineSummary } from "@/hooks/useHeadlineSummary";
 import { DataFreshnessBadge, StaleDataBanner } from "@/components/DataFreshness";
 import { HeadlineBody } from "@/components/HeadlineBody";
-import { TokenSwitcher } from "@/components/TokenSwitcher";
+import { TokenIdentity } from "@/components/TokenIdentity";
 
 /**
  * First-screen answer to "what is happening with TEL holders?": a real page
@@ -16,7 +16,7 @@ export const PageIntro = ({ rangeDays }: { rangeDays: number }) => {
     <section aria-labelledby="page-title" className="mb-5 sm:mb-6 space-y-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 id="page-title" className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-          <TokenSwitcher variant="heading" /> holder distribution
+          <TokenIdentity size="lg" className="align-middle" /> holder distribution
         </h1>
         <DataFreshnessBadge generatedAt={snapshot?.generatedAt} />
       </div>
