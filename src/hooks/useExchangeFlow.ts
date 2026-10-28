@@ -35,6 +35,9 @@ export const useExchangeFlow = () => {
     queryKey: ["exchange-flow-history", slug],
     queryFn: async (): Promise<ExchangeFlowEntry[]> => {
       const res = await fetch(resolveUrl(slug));
+      // Missing feed: nothing measured yet. Same empty list as a published
+      // file with no days, so the panel says so instead of spinning.
+      if (res.status === 404) return [];
       if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       const payload = (await res.json()) as ExchangeFlowPayload;
       return (payload.entries ?? [])

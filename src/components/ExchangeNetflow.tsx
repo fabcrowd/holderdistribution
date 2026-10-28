@@ -24,7 +24,7 @@ const INFO_TEMPLATE =
   "Measured directly from {ticker} Transfer logs: coins actually deposited to (inflow) or withdrawn from (outflow) known exchange wallets each day.\n\nA deposit is not a sale — it's {ticker} moving toward the market and available to be sold; a withdrawal is {ticker} leaving the market for self-custody or staking. Trading itself happens off-chain, so this shows supply positioning, not realized buys/sells.";
 
 export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
-  const { data: entries } = useExchangeFlow();
+  const { data: entries, isPending, isError } = useExchangeFlow();
   const { ticker, t } = useProjectCopy();
 
   const view = useMemo(() => {
@@ -39,7 +39,16 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
     return { totalIn, totalOut, net: totalIn - totalOut, series };
   }, [entries, rangeDays]);
 
-  if (!view) return null;
+  // Still fetching, or a real failure (5xx): the terminal panel owns the
+  // skeleton and the retry. A settled empty feed is the empty state.
+  if (isPending || isError) return null;
+  if (!view) {
+    return (
+      <p className="py-6 text-center text-sm text-muted-foreground" data-testid="exchange-flow-empty">
+        No flow data for this period.
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-3">

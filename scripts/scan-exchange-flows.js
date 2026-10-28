@@ -253,6 +253,12 @@ const main = async () => {
     });
   }
 
+  if (Object.keys(CHAINS).length === 0) {
+    // Solana-only projects have no eth_getLogs chains. Publish an empty
+    // history so the exchange panel can show its empty state instead of
+    // loading a 404. TEL's chain table is never empty.
+    console.log(`No EVM chains for ${project.slug}; writing an empty exchange-flow history.`);
+  }
   for (const chainKey of Object.keys(CHAINS)) {
     await scanChain(chainKey, cexSet, dexSet, checkpoint, dayBuckets);
   }

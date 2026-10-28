@@ -110,9 +110,43 @@ const chainCell = (c: TierOutflowCell | undefined, chain: ChainKey): TierOutflow
   };
 };
 
+export type FlowLoad = "loading" | "error" | "empty" | "ready";
+
+/**
+ * What the tier-flow panel should show.
+ * A feed that 404s resolves as an empty payload (see useTierOutflows), which
+ * is "nothing measured yet", not a failure. Wallet moves still render when
+ * holder-transitions has this window. Both windows absent → empty state.
+ * TEL's published feeds have both, so they stay "ready".
+ */
+export const resolveFlowLoad = ({
+  outflowsLoading,
+  transitionsLoading,
+  outflowsErrored,
+  transitionsErrored,
+  hasTransitions,
+  hasOutflows,
+}: {
+  outflowsLoading: boolean;
+  transitionsLoading: boolean;
+  outflowsErrored: boolean;
+  transitionsErrored: boolean;
+  hasTransitions: boolean;
+  hasOutflows: boolean;
+}): FlowLoad => {
+  if (outflowsLoading || transitionsLoading) return "loading";
+  if (outflowsErrored || transitionsErrored) return "error";
+  if (!hasTransitions && !hasOutflows) return "empty";
+  return "ready";
+};
+
 export const useFlowField = (rows: TierRow[], chain: ChainKey, metric: "wallets" | "tel" = "wallets", rangeDays: number = ytdDays()) => {
-  const { data: transitions, isLoading: transitionsLoading, isError: transitionsErrored } = useHolderTransitions();
-  const { data: outflows, isLoading: outflowsLoading, isError: outflowsErrored } = useTierOutflows();
+  // isPending, not isLoading: isLoading is false in the gap before a fetch
+  // starts, which would flash the empty state. isPending stays true until the
+  // feed settles (data or error), so a 404 that returns an empty payload
+  // leaves the skeleton only for that one response.
+  const { data: transitions, isPending: transitionsLoading, isError: transitionsErrored } = useHolderTransitions();
+  const { data: outflows, isPending: outflowsLoading, isError: outflowsErrored } = useTierOutflows();
   // The active project's distribution tiers (TEL: geometry.TIERS, unchanged).
   const { tiers: TIERS, tierIndex } = useTierGeometry();
 
@@ -225,16 +259,25 @@ export const useFlowField = (rows: TierRow[], chain: ChainKey, metric: "wallets"
     () => Math.max(1, ...fields.flatMap((f) => f.migrations.map((m) => m.count))),
     [fields],
   );
-  const loading = outflowsLoading || transitionsLoading;
-  // A query that resolved successfully with a null payload (fetch !ok, or
-  // the file genuinely missing) is functionally the same failure as a thrown
-  // network error from the caller's perspective — both mean "no usable data".
-  const errored = !loading && (outflowsErrored || transitionsErrored || outflowTiers == null || !rangeData);
-  const ready = !loading && !errored && !!rangeData && !!outflowTiers;
+  const flowLoad = resolveFlowLoad({
+    outflowsLoading,
+    transitionsLoading,
+    outflowsErrored,
+    transitionsErrored,
+    hasTransitions: !!rangeData,
+    // A present window with an empty tier map is "measured, nothing moved",
+    // which is still a window. A missing key (unpublished / 404 empty
+    // document) is not.
+    hasOutflows: outflowTiers != null,
+  });
+  const loading = flowLoad === "loading";
+  const errored = flowLoad === "error";
+  const empty = flowLoad === "empty";
+  const ready = flowLoad === "ready";
 
   return {
     fields, tileW, netInfo, grossExplainer, maxMigrationCount,
-    loading, errored, ready,
+    loading, errored, empty, ready,
     complete: outflows?.complete ?? null,
     // Window-level counterparty-tier attribution coverage — same for every
     // tier/chain in this window, so it's surfaced once here rather than per

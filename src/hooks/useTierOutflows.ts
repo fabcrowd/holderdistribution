@@ -90,6 +90,11 @@ export const useTierOutflows = () => {
       // stops the BROWSER's own disk cache from serving something stale
       // across visits — the edge cache is what's meant to absorb repeat load.
       const res = await fetch(resolveUrl(slug), { cache: "no-store" });
+      // Not published yet (Solana projects have no EVM transfer scan). An empty
+      // document settles the query so the panel can show an empty state, or
+      // the wallet diagram from holder-transitions, instead of retrying the
+      // 404 and sitting on the loading skeleton.
+      if (res.status === 404) return { ranges: {}, complete: false };
       if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       return (await res.json()) as TierOutflows;
     },
