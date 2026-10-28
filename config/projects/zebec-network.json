@@ -178,10 +178,10 @@
   },
   "copy": {
     "text": {
-      "holders.staked.info": "{ticker} locked in Zebec SuperApp staking: the raw sum of every unclaimed on-chain staking position (~4.79B at the 2026-10-25 scan). Shown separately from Retail Held — staked is not merged into the retail holder total for this project.\n\nTwo staking totals, both intentional: the Supply view's Staking bucket is slightly larger (~4.80B) because it counts what the staking program's vault accounts hold — the stake vaults plus two reward vaults (~16.65M of rewards not yet paid out, which are nobody's stake). This tile counts stakers' positions instead. The ~12.26M difference is those reward vaults minus the ZBCN Lockup gap below; it is not a counting error.\n\nZBCN Lockup vault gap (2.42%): this one lockup (AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp) is exempt from our 0.5% position-vs-vault reconcile check. Its unclaimed positions add up to ~2.42% (~4.39M {ticker}) more than its stake-vault token account (ATA) currently holds. Published staked figures use the raw position sums as-is (not scaled down to the vault balance); the vault ATA balance is listed in the Supply view's Staking bucket for transparency.",
+      "holders.staked.info": "{ticker} locked in Zebec SuperApp staking: the raw sum of every unclaimed on-chain staking position (~4.75B at the 2026-10-28 scan). Shown separately from Retail Held — staked is not merged into the retail holder total for this project.\n\nDisclaimer — Super App \"Global Staked\" is not current TVL: Zebec's Super App shows a much larger \"Global Staked\" figure (~18.9B) that appears to sum each lockup's cumulative totalStaked counter, not live unclaimed positions. This site's Staked tile is live TVL — the sum of unclaimed UserStakeData positions (~4.75B). Open the (i) methodology tip on Staking Overview for Solscan links to the staking program, lockups, and stake vaults so you can verify both numbers on-chain.\n\nTwo staking totals on this site, both intentional: the Supply view's Staking bucket is slightly larger (~4.76B) because it counts what the staking program's vault accounts hold — the stake vaults plus two reward vaults (undistributed rewards, which are nobody's stake). This tile counts stakers' positions instead. The small difference is those reward vaults minus the ZBCN Lockup gap below; it is not a counting error.\n\nZBCN Lockup vault gap (2.42%): this one lockup (AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp) is exempt from our 0.5% position-vs-vault reconcile check. Its unclaimed positions add up to ~2.42% (~4.39M {ticker}) more than its stake-vault token account (ATA) currently holds. Published staked figures use the raw position sums as-is (not scaled down to the vault balance); the vault ATA balance is listed in the Supply view's Staking bucket for transparency.",
       "staking.intro": "{ticker} staked in Zebec SuperApp staking, summed from unclaimed on-chain positions and counted once per staker. The Supply view's Staking bucket reads slightly higher because it counts vault balances, including reward vaults.",
       "supply.staking.bucketLabel": "Staking vaults",
-      "supply.staking.description": "{ticker} held by Zebec SuperApp staking vault accounts: the per-lockup stake vaults plus two reward vaults (~16.65M of undistributed rewards). Counted by vault token balance, so it differs slightly (~12.26M) from the Holders Staked tile, which sums stakers' positions — both figures are intentional.",
+      "supply.staking.description": "{ticker} held by Zebec SuperApp staking vault accounts: the per-lockup stake vaults plus two reward vaults (undistributed rewards). Counted by vault token balance, so it differs slightly from the Holders Staked tile, which sums stakers' positions — both figures are intentional. Zebec Super App \"Global Staked\" (~18.9B) is a different, cumulative-looking metric and is not this vault TVL.",
       "supply.residual.bucketLabel": "Below {supply} max (buybacks / burns)",
       "supply.residual.title": "Below the {supply} max (buybacks / burns)",
       "supply.residual.body": "The ~{gap} gap between the fixed {total} max supply and every {ticker} balance we count on Solana. {name} keeps a fixed {supply} max while buybacks and burns shrink the on-chain supply, so this is a reconcile note — on-chain supply sitting slightly under the max — not missing wallets and not tokens in a bridge ({ticker} here is Solana-only).",
@@ -191,6 +191,64 @@
       "supply.holdings.description": "Zebec team cluster ({amount} {ticker}): signer wallets of the Zebec multisigs that control the buyback treasury and the three large treasury vaults. Only the ops/payout wallet currently holds {ticker}; the other signers are tagged for completeness. Identified from on-chain multisig ownership (no public Zebec doc names them)."
     },
     "methodology": {
+      "staking": {
+        "how": "Staked {ticker} is the live sum of every unclaimed UserStakeData position on Zebec SuperApp staking (program zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv), counted once per staker (~4.75B). It is shown separately from Retail Held for this project (not merged into the retail total). Zebec Super App's \"Global Staked\" (~18.9B) is a different metric — it tracks each lockup's cumulative totalStaked counter and is not current TVL; do not treat it as the live staked amount.",
+        "verify": "Open the staking program and each lockup / stake-vault ATA on Solscan. Live TVL matches the sum of unclaimed positions (~4.75B); summing lockup totalStaked counters reproduces the larger Super App-style figure (~18.9B).",
+        "links": [
+          {
+            "label": "Staking program (Solscan)",
+            "href": "{explorer:solana}/account/zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv"
+          },
+          {
+            "label": "ZBCN_Lockup_005",
+            "href": "{explorer:solana}/account/BkdevFCTJvSVXBhE8NEzPFpSFdTvn9pm4zVSsLvW9ZA"
+          },
+          {
+            "label": "ZBCN_Lockup_005 vault ATA",
+            "href": "{explorer:solana}/account/8bbygT4wHaR1vXQMCTK9uVnoDGBwWjNx9BUwjgLtkBvv"
+          },
+          {
+            "label": "ZBCN_Lockup_003",
+            "href": "{explorer:solana}/account/6ucsPuczmg9uoq5i4SYDEEJ4ciKnuxW3za2sdBcKHwmw"
+          },
+          {
+            "label": "ZBCN_Lockup_003 vault ATA",
+            "href": "{explorer:solana}/account/3DC8cdCNKEZPapuPHTtkuw8XgbDtYarJojjpGgtF65Vo"
+          },
+          {
+            "label": "ZBCN Lockup",
+            "href": "{explorer:solana}/account/AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp"
+          },
+          {
+            "label": "ZBCN Lockup vault ATA",
+            "href": "{explorer:solana}/account/7dvTVafoMm52sjyJCHkHZv119MecicqFCrgjq8RcLxJ6"
+          },
+          {
+            "label": "ZBCN_Lockup_002",
+            "href": "{explorer:solana}/account/CuQBm9zdgMFw1BNcfNjb5FA1Di3z4W9AxmDuXfk8kGNU"
+          },
+          {
+            "label": "ZBCN_Lockup_002 vault ATA",
+            "href": "{explorer:solana}/account/FnJhFWTiYTGSePJDKVNYQgf5XUFBJEk1rvPifj6hvb4Y"
+          },
+          {
+            "label": "ZBCN_Lockup_004",
+            "href": "{explorer:solana}/account/DxdP5pM5BSD38C7s43aYV2BHUfKLJZq1P5673AT87HPn"
+          },
+          {
+            "label": "ZBCN_Lockup_004 vault ATA",
+            "href": "{explorer:solana}/account/BcfMnwQMpv988qVCDMpJhXRyYiqchrYh9pcJPvjEypj4"
+          },
+          {
+            "label": "ZBCN_Lockup_UAT_001",
+            "href": "{explorer:solana}/account/J1gA6riaPzPKFonT6Fxuwcwz1nZ8QRBHAAmx9Hyx9RTn"
+          },
+          {
+            "label": "ZBCN_Lockup_UAT_001 vault ATA",
+            "href": "{explorer:solana}/account/D1AvWqnncqqvkVAE8f8ZtveswCU7LtqSSkMg5FfBAo9F"
+          }
+        ]
+      },
       "supplyBreakdown": {
         "how": "Total supply is the fixed {supply} max. We split it into simple buckets — retail wallets, staking vaults, project treasury, and a small gap below the max — so the pieces add to {supply}. Each bucket is built from on-chain Solana token-account balances of labelled addresses; the gap below the max reflects buybacks/burns shrinking on-chain supply, not bridges (ZBCN is Solana-only here)."
       }

@@ -8,9 +8,10 @@ import {
   projectTokenLinks,
   resolveHref,
 } from "./methodology";
-import { getProject, type ProjectConfig } from "./projects";
+import { getProject, PROJECTS, type ProjectConfig } from "./projects";
 import { TEL_V3_ADDRESS, legacyTokenUrl, v3TokenUrl } from "./telContracts";
 import { V3_STAKING_MODULE } from "./staking";
+import { copyText } from "./projectCopy";
 
 const abc: ProjectConfig = {
   slug: "abc",
@@ -84,5 +85,59 @@ describe("methodology", () => {
 
   it("has a generic entry for every section", () => {
     expect(Object.keys(GENERIC_METHODOLOGY).sort()).toEqual([...METHODOLOGY_KEYS].sort());
+  });
+
+  /**
+   * Product rule: methodology / dual-total staking disclaimers must ship
+   * evidence-backed explorer links — prose alone is not enough.
+   */
+  it("staking methodology overrides (and Super App dual-total disclaimers) require explorer links", () => {
+    for (const entry of PROJECTS) {
+      const p = getProject(entry.slug);
+      const override = p.copy?.methodology?.staking;
+      const stakedInfo = copyText(p, "holders.staked.info", "");
+      const needsProof =
+        Boolean(override) ||
+        /Global Staked|not current TVL|Super App/i.test(stakedInfo);
+      if (!needsProof) continue;
+
+      const links = override?.links ?? [];
+      expect(links.length, `${entry.slug}: methodology.staking.links`).toBeGreaterThan(0);
+      const resolved = methodologyFor(p, "staking");
+      expect(resolved.links.length, `${entry.slug}: resolved staking links`).toBeGreaterThan(0);
+      for (const l of resolved.links) {
+        expect(l.href, `${entry.slug}: ${l.label}`).toMatch(/^https:\/\/[^{}\s]+$/);
+        expect(l.href, `${entry.slug}: ${l.label} explorer path`).toMatch(
+          /\/(account|address|token)\//,
+        );
+      }
+    }
+  });
+
+  it("ZBCN staking methodology lists Solscan program + lockup + vault ATA proof links", () => {
+    const zbcn = getProject("zebec-network");
+    const staking = methodologyFor(zbcn, "staking");
+    expect(staking.how).toMatch(/Global Staked/);
+    expect(staking.how).toMatch(/not current TVL/);
+    expect(staking.verify).toMatch(/Solscan/);
+    const hrefs = staking.links.map((l) => l.href);
+    const required = [
+      "zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv",
+      "BkdevFCTJvSVXBhE8NEzPFpSFdTvn9pm4zVSsLvW9ZA",
+      "8bbygT4wHaR1vXQMCTK9uVnoDGBwWjNx9BUwjgLtkBvv",
+      "6ucsPuczmg9uoq5i4SYDEEJ4ciKnuxW3za2sdBcKHwmw",
+      "3DC8cdCNKEZPapuPHTtkuw8XgbDtYarJojjpGgtF65Vo",
+      "AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp",
+      "7dvTVafoMm52sjyJCHkHZv119MecicqFCrgjq8RcLxJ6",
+      "CuQBm9zdgMFw1BNcfNjb5FA1Di3z4W9AxmDuXfk8kGNU",
+      "FnJhFWTiYTGSePJDKVNYQgf5XUFBJEk1rvPifj6hvb4Y",
+      "DxdP5pM5BSD38C7s43aYV2BHUfKLJZq1P5673AT87HPn",
+      "BcfMnwQMpv988qVCDMpJhXRyYiqchrYh9pcJPvjEypj4",
+      "J1gA6riaPzPKFonT6Fxuwcwz1nZ8QRBHAAmx9Hyx9RTn",
+      "D1AvWqnncqqvkVAE8f8ZtveswCU7LtqSSkMg5FfBAo9F",
+    ];
+    for (const addr of required) {
+      expect(hrefs).toContain(`https://solscan.io/account/${addr}`);
+    }
   });
 });
