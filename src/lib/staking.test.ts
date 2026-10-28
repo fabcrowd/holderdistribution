@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { combinedStaked, v3StakedOn, v3StakingGapEvents } from "./staking";
+import { combinedStaked, historyStakingPoint, v3StakedOn, v3StakingGapEvents } from "./staking";
 
 describe("staking (legacy + v3)", () => {
   it("v3 is 0 before the deploy, unknown in the gap, measured when recorded", () => {
@@ -16,6 +16,22 @@ describe("staking (legacy + v3)", () => {
     expect(combinedStaked(3_980e6, 0)).toBe(3_980e6);
     expect(combinedStaked(727e6, null)).toBeNull();
     expect(combinedStaked(null, 0)).toBeNull();
+  });
+
+  it("plots a program-only stakingV3Balance without inventing a legacy balance", () => {
+    const zbcn = historyStakingPoint("2026-10-28", undefined, 4_751_393_844);
+    expect(zbcn).toEqual({ staking: null, stakingV3: 4_751_393_844, stakingTotal: 4_751_393_844 });
+    expect(historyStakingPoint("2026-10-28", null, null)).toBeNull();
+  });
+
+  it("keeps the TEL v3 gap as an unknown total", () => {
+    const gap = historyStakingPoint("2026-09-05", 4_184_588_760, undefined);
+    expect(gap?.staking).toBe(4_184_588_760);
+    expect(gap?.stakingV3).toBeNull();
+    expect(gap?.stakingTotal).toBeNull();
+    const before = historyStakingPoint("2026-08-01", 4_184_588_760, undefined);
+    expect(before?.stakingTotal).toBe(4_184_588_760);
+    expect(historyStakingPoint("2026-10-23", 727e6, 2_991e6)?.stakingTotal).toBe(727e6 + 2_991e6);
   });
 
   it("flags only baselines inside the unmeasured window", () => {

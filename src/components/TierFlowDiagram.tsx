@@ -625,9 +625,43 @@ export const TierFlowDiagram = ({
     return s;
   }, [selectedField, expandedFlow, selectedSideTile]);
 
-  if (loading) return <FlowSkeleton terminal={isTerminal} height={CANVAS_H} />;
-  if (empty) return <FlowEmpty />;
-  if (errored || !ready) return <FlowError />;
+  // The terminal detail panel is a separate frame. These early returns used to
+  // leave it as a titled blank box (the default tier, e.g. 5M–10M, is already
+  // selected) because nothing was portaled into it.
+  const detailFallback = (message: string) =>
+    isTerminal && detailContainer && (selected || selectedSideTile)
+      ? createPortal(
+          <div className="terminal-detail">
+            <DetailEmpty>{message}</DetailEmpty>
+          </div>,
+          detailContainer,
+        )
+      : null;
+
+  if (loading) {
+    return (
+      <>
+        {detailFallback("Loading tier detail…")}
+        <FlowSkeleton terminal={isTerminal} height={CANVAS_H} />
+      </>
+    );
+  }
+  if (empty) {
+    return (
+      <>
+        {detailFallback("No tier flows for this period yet.")}
+        <FlowEmpty />
+      </>
+    );
+  }
+  if (errored || !ready) {
+    return (
+      <>
+        {detailFallback("Couldn't load tier detail.")}
+        <FlowError />
+      </>
+    );
+  }
 
   const detailNode: ReactNode = selectedField ? (
     isWallets
@@ -640,6 +674,8 @@ export const TierFlowDiagram = ({
       hoveredTier={hoveredAttrTier}
       onHoverTier={setHoveredAttrTier}
     />
+  ) : (selected || selectedSideTile) ? (
+    <DetailEmpty>Nothing to show for this selection.</DetailEmpty>
   ) : null;
 
   const hasAnySelection = !!(selected || selectedSideTile);
@@ -1369,6 +1405,15 @@ const FlowSkeleton = ({ terminal = false, height = DEFAULT_CANVAS_H }: { termina
   </div>
 );
 
+const DetailEmpty = ({ children }: { children: ReactNode }) => (
+  <div
+    className="flex h-full min-h-[8rem] items-center justify-center p-4 text-center text-sm text-muted-foreground"
+    data-testid="tier-detail-empty"
+  >
+    {children}
+  </div>
+);
+
 const FlowEmpty = () => (
   <div
     className="flex min-h-[12rem] items-center justify-center rounded-xl border border-border/50 bg-muted/10 p-8 text-center text-sm text-muted-foreground"
@@ -1596,6 +1641,12 @@ const WalletsPanel = ({ field, baselineDate, noBaselineText = null, crossingsWin
           )}
         </div>
       )}
+
+      {nets.length === 0 && !narrative && (
+        <p className="text-sm text-muted-foreground" data-testid="tier-detail-empty">
+          No wallet moves into or out of this tier in this period.
+        </p>
+      )}
     </div>
   );
 };
@@ -1770,6 +1821,12 @@ const TelPanel = ({ field, baselineDate, noBaselineText = null, expandedFlow, on
       )}
 
       {narrative && <p className="text-center text-sm text-muted-foreground leading-relaxed">{narrative}</p>}
+
+      {!hasAnyFlow && !narrative && (
+        <p className="text-sm text-muted-foreground" data-testid="tier-detail-empty">
+          No on-chain flows recorded for this tier in this period.
+        </p>
+      )}
     </div>
   );
 };

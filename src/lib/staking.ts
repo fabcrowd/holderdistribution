@@ -44,6 +44,39 @@ export const combinedStaked = (legacy: number | null | undefined, v3: number | n
     ? legacy + v3
     : null;
 
+export type HistoryStakingPoint = {
+  /** Legacy contract. Null when that contract reported nothing (Solana program staking). */
+  staking: number | null;
+  /** v3 StakingModule, or Solana program staking recorded on that channel. */
+  stakingV3: number | null;
+  /** Sum, or the program total alone when there is no legacy figure. Null in the TEL v3 gap. */
+  stakingTotal: number | null;
+};
+
+/**
+ * One holders-history row for the Staked chart.
+ * A row with only `stakingV3Balance` (Solana program total from solana-staking.json,
+ * no funding-wallets legacy figure) still plots: the total is that measured number,
+ * not a sum with an invented legacy balance.
+ * A legacy row whose v3 side was not measured (after the module's deploy) keeps
+ * `stakingTotal` null so the total line breaks instead of treating v3 as 0.
+ */
+export const historyStakingPoint = (
+  date: string | number | null | undefined,
+  stakingBalance: number | null | undefined,
+  stakingV3Balance: number | null | undefined,
+): HistoryStakingPoint | null => {
+  const staking =
+    typeof stakingBalance === "number" && Number.isFinite(stakingBalance) && stakingBalance > 0
+      ? stakingBalance
+      : null;
+  const stakingV3 = v3StakedOn(date, stakingV3Balance);
+  const programOnly = staking == null && typeof stakingV3 === "number" && stakingV3 > 0;
+  if (staking == null && !programOnly) return null;
+  const stakingTotal = combinedStaked(staking ?? (programOnly ? 0 : null), stakingV3);
+  return { staking, stakingV3, stakingTotal };
+};
+
 /**
  * A synthetic changelog event for the staked metric when the comparison's
  * start date falls in the unmeasured v3 window: rendered as the same "†"

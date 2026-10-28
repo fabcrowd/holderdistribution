@@ -257,7 +257,7 @@ const renderMetrics = (
     items.push({
       label: copy.t("Staked {ticker}"),
       value: formatTokenAmount(stakedTotal),
-      description: v3Stats && result.stakingStats.legacy
+      description: v3Stats && result.stakingStats.legacy && result.stakingStats.legacy.stakedTotal > 0 && v3Stats.stakedTotal > 0
         ? `Legacy ${formatCompactTokens(result.stakingStats.legacy.stakedTotal)} / v3 ${formatCompactTokens(v3Stats.stakedTotal)} · ${formatPercentage(percentOf(stakedTotal, totals.totalSupply))} of supply`
         : `${formatPercentage(percentOf(stakedTotal, totals.totalSupply))} of total supply`,
       previous: stakedEvents.length ? stakedTotal : previousStakingBalance,

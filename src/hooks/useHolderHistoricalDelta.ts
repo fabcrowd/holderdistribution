@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type { ChainView } from "@/lib/chainViews";
 import { useHoldersHistoryData } from "./useHoldersHistoryData";
 import { pickBaseline } from "@/lib/baseline";
-import { combinedStaked, v3StakedOn } from "@/lib/staking";
+import { historyStakingPoint, v3StakedOn } from "@/lib/staking";
 
 export type HistoricalDistributionRow = {
   label: string;
@@ -113,10 +113,9 @@ export const useHolderHistoricalDelta = ({ view, days, enabled = true }: QueryPa
         totalHeld: closest.combined?.totalHeld ?? closest.combined?.totalBalance ?? null,
         stakingBalance: closest.combined?.stakingBalance ?? null,
         stakingV3Balance: v3StakedOn(closest.date, closest.combined?.stakingV3Balance),
-        stakingTotal: combinedStaked(
-          closest.combined?.stakingBalance ?? null,
-          v3StakedOn(closest.date, closest.combined?.stakingV3Balance),
-        ),
+        stakingTotal:
+          historyStakingPoint(closest.date, closest.combined?.stakingBalance, closest.combined?.stakingV3Balance)
+            ?.stakingTotal ?? null,
         concentrationTop: closest.concentration ?? null,
         distribution: closest.distribution ?? null,
         cumulativeHolders: closest.cumulativeHolders ?? null,

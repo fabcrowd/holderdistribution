@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { ChainView } from "@/lib/chainViews";
-import { combinedStaked, v3StakedOn } from "@/lib/staking";
+import { historyStakingPoint } from "@/lib/staking";
 import { useHoldersHistoryData } from "./useHoldersHistoryData";
 
 export type HolderGrowthPoint = {
@@ -46,11 +46,11 @@ export type BalanceGrowthPoint = {
 
 export type StakingGrowthPoint = {
   timestamp: string;
-  /** Legacy staking contract. */
-  staking: number;
-  /** v3 StakingModule: 0 before its deploy, null where it wasn't measured. */
+  /** Legacy staking contract. Null when the row is program staking only (no legacy figure). */
+  staking: number | null;
+  /** v3 StakingModule, or Solana program staking on that channel. 0 before the v3 deploy; null where unmeasured. */
   stakingV3: number | null;
-  /** Legacy + v3; null where v3 is unknown. Never interpolate across nulls. */
+  /** Legacy + v3, or the program total alone. Null where v3 is unknown. Never interpolate across nulls. */
   stakingTotal: number | null;
 };
 
@@ -130,17 +130,19 @@ export const useHolderGrowth = ({ view, days, enabled = true }: HolderGrowthQuer
         const cexRaw = entry?.combined?.cexBalance;
         const cex =
           view === "combined" && Number.isFinite(cexRaw) ? (cexRaw as number) : null;
-        const staking =
-          view === "combined" && Number.isFinite(entry?.combined?.stakingBalance) && (entry.combined.stakingBalance ?? 0) > 0
-            ? (entry.combined.stakingBalance as number)
+        const staked =
+          view === "combined"
+            ? historyStakingPoint(entry.date ?? timestamp, entry?.combined?.stakingBalance, entry?.combined?.stakingV3Balance)
             : null;
-        const stakingV3 = view === "combined" ? v3StakedOn(entry.date ?? timestamp, entry?.combined?.stakingV3Balance) : null;
+        const staking = staked?.staking ?? null;
+        const stakingV3 = staked?.stakingV3 ?? null;
+        const stakingTotal = staked?.stakingTotal ?? null;
         const dexLiqRaw = entry?.combined?.dexLiquidity;
         const dexLiquidity =
           view === "combined" && Number.isFinite(dexLiqRaw) && (dexLiqRaw ?? 0) > 0
             ? (dexLiqRaw as number)
             : null;
-        return { timestamp, holders: holderCount, cumulativeHolders, retail, cex, staking, stakingV3, dexLiquidity };
+        return { timestamp, holders: holderCount, cumulativeHolders, retail, cex, staking, stakingV3, stakingTotal, dexLiquidity };
       })
       .filter((entry): entry is {
         timestamp: number;
@@ -150,6 +152,7 @@ export const useHolderGrowth = ({ view, days, enabled = true }: HolderGrowthQuer
         cex: number | null;
         staking: number | null;
         stakingV3: number | null;
+        stakingTotal: number | null;
         dexLiquidity: number | null;
       } => !!entry)
       .sort((a, b) => a.timestamp - b.timestamp);
@@ -201,12 +204,12 @@ export const useHolderGrowth = ({ view, days, enabled = true }: HolderGrowthQuer
       }));
 
     const stakingSeries = filteredEntries
-      .filter((entry): entry is typeof entry & { staking: number } => entry.staking !== null)
+      .filter((entry) => entry.staking !== null || entry.stakingTotal !== null)
       .map((entry) => ({
         timestamp: new Date(entry.timestamp).toISOString(),
         staking: entry.staking,
         stakingV3: entry.stakingV3,
-        stakingTotal: combinedStaked(entry.staking, entry.stakingV3),
+        stakingTotal: entry.stakingTotal,
       }));
 
     const dexLiquiditySeries = filteredEntries

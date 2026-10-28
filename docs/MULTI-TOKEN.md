@@ -449,14 +449,16 @@ The first non-TEL project, mapped 2026-10-25
   `refresh-tel-holders.yml`, so the two never push at once. It commits with
   `[skip netlify]`, so `refresh-tel-holders` stays the one daily publisher
   (`deployTriggers.test.js`). The data still goes live through the live-data
-  function. Stages: staking pull, then holders, lite, history, transitions,
-  supply, treasury and changelog, then the verify step and
-  `validate-outputs` + `check-feed-consistency`, then the commit. There are no
-  EVM, CEX or tier-outflow stages. `workflowChain.test.js` (`PER_PROJECT_DAILY`)
-  pins the workflow to a single cron, `HD_PROJECT=zebec-network`, the shared
-  group, and a gate that runs before the commit.
-  `public/data/*/tel-holders-previous.json` (a same-run scratch file) is
-  gitignored, so it is never staged.
+  function. Stages: staking pull, then holders, then `pull-cex-wallets` (the
+  same CEX stage TEL runs once wallets exist — it stages `cex-wallets.json`,
+  `cex-flows.json` and `cex-balance-history.json`), then lite, history,
+  transitions, `scan-exchange-flows`, `generate-tier-outflows`, supply,
+  treasury and changelog, then the verify step and `validate-outputs` +
+  `check-feed-consistency`, then the commit. There is no EVM holder or staker
+  scan. `workflowChain.test.js` (`PER_PROJECT_DAILY`) pins the workflow to a
+  single cron, `HD_PROJECT=zebec-network`, the shared group, and a gate that
+  runs before the commit. `public/data/*/tel-holders-previous.json` (a same-run
+  scratch file) is gitignored, so it is never staged.
 - **RPC:** `SOLANA_RPC_0` is an **Actions secret** (a Helius HTTPS URL). Locally
   it lives in the gitignored `.env`. `loadEnv` only overwrites keys that exist
   in `.env.enc`, and `.env.enc` has no `SOLANA_RPC_*`, so the secret survives.
@@ -483,12 +485,32 @@ The first non-TEL project, mapped 2026-10-25
   the ~20.55B top wallet in the lite `totalBalance`. TEL keeps its 20B.
 - **History is forward-only:** it starts at the first snapshot (2026-10-25).
   `--as-of` is refused for Solana projects, so there is no back-fill.
-- **Flows are unpublished:** `cex-wallets.json` is `{ "wallets": [] }` until
-  the owner supplies real CEX wallets. Never invent them.
-  `scan-solana-flows.js` is a dry-run scaffold and is not in the workflow.
-- **Buyback treasury:** `buybackTreasury` (`EkXEg6de…QuQW`, off-curve PDA, role
-  `treasury`) is annotated in config with its source. Its ATA holds about
-  108.3M ZBCN, and the owner may reclassify it.
+  `generate-holders-history.js` writes `solana-staking.json`'s measured
+  `stakedTotal` onto `combined.stakingV3Balance` when there is no legacy
+  staking contract. It does not also copy that number onto `stakingBalance`
+  (the chart adds the two fields). The Staked chart plots that program-only
+  total as one series.
+- **CEX wallets:** 44 Solana addresses in
+  `config/projects/zebec-network/cex-wallets.json` (11 owner-approved Dune
+  spellbook rows plus 33 Solscan name-tag wallets, PR #43). The daily job
+  refreshes them with `pull-cex-wallets`. `pipeline.duneCexQueryId` is **not
+  set** — do not invent one, and do not reuse TEL's 3761086. Until the owner
+  supplies a Solana `cex.addresses` query id, the list stays the hand-applied
+  file.
+- **Exchange and tier flows are empty on purpose (PR #48):** `scan-exchange-flows`
+  and `generate-tier-outflows` run, but both scanners are `eth_getLogs`-only.
+  With no EVM chains they publish empty
+  `exchange-flow-history.json` and `tier-outflows.json` so the terminal shows
+  an empty state instead of a 404. A real Solana signature or indexer flow
+  scanner is still not built (`scan-solana-flows.js` remains a dry-run
+  scaffold and is not in the workflow). That scanner is the open follow-up.
+- **Treasury and team are live (PR #44):** `buybackTreasury`
+  (`EkXEg6de…QuQW`, off-curve PDA, role `treasury`) plus owner-approved vaults
+  `H8Hr…DDfR`, `3J7n5…dQ17` and `71LxiE…HodV` (role `treasury`) and the team
+  signer cluster (role `holdings`). GXD2, 43wqg and 56veX are still
+  candidates. Evidence: `docs/zbcn-wallet-candidates.md`. The classification
+  changelog records the #43 CEX list and the #44 treasury/team relabel
+  (`classification.changelog`).
 - **Supply:** `reconcile-supply.js` classifies from `contracts{}` roles and
   token-account owners (the multi-token path). There is no per-token
   exclusions file.
@@ -677,5 +699,6 @@ Save it in Dune and set its id as `pipeline.duneCexQueryId` (never TEL's
 spellbook model with no API key. Either way the output is a candidates file
 (`data/<slug>/cex-dune-candidates.json`); promotion into a
 `classification.cexWallets` file is an owner decision. ZBCN status:
-`docs/zbcn-cex-candidates.md`.
+`docs/zbcn-cex-candidates.md` and `docs/zbcn-wallet-candidates.md`. The 44
+wallets are applied. `pipeline.duneCexQueryId` is still unset.
 

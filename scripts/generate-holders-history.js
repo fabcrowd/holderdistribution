@@ -19,6 +19,7 @@ const SUMMARY_PATH = data("holders-summary.json");
 const SNAPSHOT_PATH = data("tel-holders.json");
 const PREVIOUS_SNAPSHOT_PATH = data("tel-holders-previous.json");
 const FUNDING_WALLETS_PATH = data("funding-wallets.json");
+const SOLANA_STAKING_PATH = data("solana-staking.json");
 const LITE_PATH = data("holders-lite.json");
 const CEX_FLOWS_PATH = data("cex-flows.json");
 // null when a non-TEL project declares no list (readOptionalJson -> null).
@@ -170,12 +171,13 @@ const readOptionalJson = async (absolutePath) => {
 };
 
 const main = async () => {
-  const [summary, snapshot, previousSnapshot, existingHistory, fundingWallets, lite, exclusions, dexConfig] = await Promise.all([
+  const [summary, snapshot, previousSnapshot, existingHistory, fundingWallets, solanaStaking, lite, exclusions, dexConfig] = await Promise.all([
     readOptionalJson(SUMMARY_PATH),
     readOptionalJson(SNAPSHOT_PATH),
     readOptionalJson(PREVIOUS_SNAPSHOT_PATH),
     readOptionalJson(HISTORY_PATH),
     readOptionalJson(FUNDING_WALLETS_PATH),
+    readOptionalJson(SOLANA_STAKING_PATH),
     readOptionalJson(LITE_PATH),
     readOptionalJson(EXCLUSIONS_PATH),
     readOptionalJson(DEX_CONFIG_PATH),
@@ -199,6 +201,13 @@ const main = async () => {
   // absent/non-numeric value should become null.
   const rawStaking = Number(fundingWallets?.totals?.stakedAmount);
   const currentStaking = Number.isFinite(rawStaking) ? rawStaking : null;
+  // solana-staking.json `stakedTotal` is the program's measured sum (pull-solana-staking.js).
+  // There is no legacy staking contract on these projects, so it is recorded on
+  // stakingV3Balance — the channel generate-holders-lite already uses for the
+  // positions overlay — and not also on stakingBalance. The Staked chart adds
+  // those two fields; copying the same total onto both would double it.
+  const solanaStakedRaw = Number(solanaStaking?.stakedTotal);
+  const solanaMeasured = Number.isFinite(solanaStakedRaw) ? Math.round(solanaStakedRaw) : null;
   // Use holders-lite combined totalBalance (staking-inclusive, per-holder sum) as the
   // authoritative figure for the current snapshot date. Falls back to raw+staking if
   // lite hasn't been generated yet (e.g. first run or manual execution).
@@ -261,7 +270,16 @@ const main = async () => {
     // carry it; the module did not exist before stakingStats.v3.deployDate,
     // so the frontend reads earlier dates as 0 and the gap in between as
     // unknown (no carry-forward: that would invent a history).
-    const v3Staked = Number(liteCombined.stakingStats?.v3?.stakedTotal);
+    const v3FromLite = Number(liteCombined.stakingStats?.v3?.stakedTotal);
+    // Prefer the staking file's own total when this project has no legacy
+    // contract figure. Fall back to lite's v3 total (TEL's StakingModule, or
+    // the same Solana overlay when the file's total is absent).
+    const v3Staked =
+      currentStaking === null && solanaMeasured !== null
+        ? solanaMeasured
+        : Number.isFinite(v3FromLite)
+          ? v3FromLite
+          : null;
     if (entry.combined && Number.isFinite(v3Staked)) entry.combined.stakingV3Balance = Math.round(v3Staked);
     if (liteCombined.concentration?.top) {
       entry.concentration = roundConcentration(liteCombined.concentration.top);
