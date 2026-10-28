@@ -24,6 +24,31 @@
 
 > ⚠ Uphold caveat: Zebec says buybacks are consolidated with Uphold Institutional for custody, so part of Uphold Hot Wallet 3/5 (~20.55B / ~128.6M) may be project custodial buybacks. Counted as cex (cannot split on-chain); recorded in `pipelineNotes.cexWallets`.
 
+## NEW vs known (Phase 4b scrape, 2026-10-25)
+
+Index of the scrape already recorded in the tables below. No address in this section is new; each one is copied from §1–§5 or from `docs/zbcn-cex-candidates.md`.
+
+**Already known before the Solscan pass**
+
+- Buyback treasury `EkXEg6de172aoLvr7w86YzQ2rf5oEFD3iUt8uQsLQuQW` (official X post; already `buybackTreasury`).
+- Staking program `zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv` and the stake-vault / reward-vault ATAs listed in §4.
+- 11 owner-approved Dune spellbook CEX wallets (`docs/zbcn-cex-candidates.md`, commit f131e02). The six that also appear in the Solscan top-300 table are marked **already in config** in §3: Crypto.com 1 `6FEVkH17…`, Gate `u6PJ8DtQ…`, MEXC `ASTyfSima4…`, KuCoin `BmFdpraQ…`, Crypto.com 2 `AobVSwdW9…`, Bitget `A77HErqtf…`.
+
+**New, and applied**
+
+- 33 Solscan name-tag exchange and Fireblocks custody wallets in §3 (rows marked **APPLIED 2026-10-25**). With the 11 above, `cex-wallets.json` holds 44 wallets. Uphold Hot Wallet 3/5 stay cex; buyback custody cannot be split on-chain.
+- Orca WSOL-ZBCN Whirlpool `FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w` as `dex` (also §3).
+- 2026-10-26 owner approval of the §1 treasury vaults `H8Hr964A…`, `3J7n5Usm…`, `71LxiE4P…` and team signers `9Sq2nZ48…`, `EsDV3m3x…`, `FNuqKqgJ…`, `G82tVZ6e…`, `6enQZWH…`, `8vKiBgHF…`, `9jRRKgb6…`.
+
+**Scraped, still not in config**
+
+- Pass-through vaults `GXD2FnXi…`, `43wqg9cU…` and unlabeled holder `56veXoiv…` (§1).
+- Squad vault `Eueeb9FK…` (§3).
+- §2 authorities, the staking fee vault, Wormhole custody `9cJBJyzj…`, and governance realm `7ngHDD5R…`.
+- Every unlabeled top holder in §5.
+
+Method and blocked lookups are § "Method" and §6. Solscan api-v2 was Cloudflare-blocked; labels are page titles only.
+
 - Mint: `ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU` · staking program: `zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv`
 - Holder snapshot: `public/data/zebec-network/tel-holders.json` (111,519 owners). Rank/balance column = owner rank / ZBCN in that snapshot.
 - Researched 2026-10-25 (America/New_York). Addresses are exact base58 as returned by RPC/Solscan (never case-altered).

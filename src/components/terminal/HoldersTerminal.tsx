@@ -94,6 +94,9 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const view = snapshot?.views[selectedView];
   const combinedStaking = snapshot?.views.combined?.stakingStats;
   const v3Staking = combinedStaking?.v3 ?? null;
+  // Legacy 0 / v3 N is the Solana program recorded on the v3 channel. One
+  // staked series, not a TEL-style split.
+  const splitStaking = (combinedStaking?.legacy?.stakedTotal ?? 0) > 0 && (v3Staking?.stakedTotal ?? 0) > 0;
   const v3DeployDate = v3Staking?.deployDate ?? V3_STAKING_DEPLOY_DATE;
   const v3DeployMs = Date.parse(v3DeployDate);
 
@@ -175,12 +178,11 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   // from the period's first point, and is a "†" when that point falls in the
   // stretch where v3 wasn't recorded (no baseline, so no honest delta).
   const stakedNow = combinedStaking?.stakedTotal ?? s?.last.stakingTotal ?? s?.last.staking ?? null;
-  const stakedFirst = s ? (v3Staking ? s.first.stakingTotal : s.first.staking) : null;
-  const stakedRelabel = s && v3Staking ? v3StakingGapEvents(s.first.t, s.first.stakingTotal == null ? null : 0, v3DeployDate, tk) : [];
-  const stakingSplit =
-    v3Staking && combinedStaking?.legacy
-      ? `Legacy ${formatCompact(combinedStaking.legacy.stakedTotal)} / v3 ${formatCompact(v3Staking.stakedTotal)}`
-      : null;
+  const stakedFirst = s ? (splitStaking ? s.first.stakingTotal : s.first.stakingTotal ?? s.first.staking) : null;
+  const stakedRelabel = s && splitStaking ? v3StakingGapEvents(s.first.t, s.first.stakingTotal == null ? null : 0, v3DeployDate, tk) : [];
+  const stakingSplit = splitStaking && v3Staking && combinedStaking?.legacy
+    ? `Legacy ${formatCompact(combinedStaking.legacy.stakedTotal)} / v3 ${formatCompact(v3Staking.stakedTotal)}`
+    : null;
   const loading = growth.isLoading;
   const growthFailed = !!growth.error && !growth.data;
 
@@ -330,7 +332,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           <PanelMessage>Available for all chains combined only.</PanelMessage>
         ) : (
           series(
-            v3Staking ? (
+            splitStaking ? (
               <div className="flex h-full min-h-0 flex-col">
                 {stakingSplit && combinedStaking?.legacy && (
                   // Doubles as the chart's legend (swatches match the series).
@@ -346,7 +348,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                     </span>
                     <span aria-hidden="true" className="inline-flex items-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-ha-accent" />
-                      v3 <span className="font-semibold text-foreground">{formatCompact(v3Staking.stakedTotal)}</span>
+                      v3 <span className="font-semibold text-foreground">{formatCompact(v3Staking?.stakedTotal ?? 0)}</span>
                     </span>
                   </p>
                 )}
@@ -367,10 +369,10 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             ) : (
               <TimeChart
                 kind="area"
-                data={staking}
+                data={staking.map((p) => ({ t: p.t, staking: p.stakingTotal ?? p.staking ?? p.stakingV3 }))}
                 series={[{ key: "staking", label: "Staked", color: "hsl(var(--primary))" }]}
                 format={(n) => `${formatCompact(n)} ${tk}`}
-                label={s ? `Staked ${tk} ${formatCompact(s.last.staking)} at the end of the period.` : `Staked ${tk}`}
+                label={s ? `Staked ${tk} ${formatCompact(s.last.stakingTotal ?? s.last.staking ?? s.last.stakingV3 ?? 0)} at the end of the period.` : `Staked ${tk}`}
               />
             ),
             staking.length > 1,

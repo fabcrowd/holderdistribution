@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "events": [
+    {
+      "id": "2026-10-25-zbcn-cex-wallets-44",
+      "date": "2026-10-25",
+      "type": "cex-relabel",
+      "summary": "44 Solana CEX and custody wallets classified for ZBCN (PR #43): 11 owner-approved Dune spellbook addresses plus 33 Solscan name-tag-confirmed exchange and Fireblocks custody wallets. Orca WSOL-ZBCN Whirlpool labelled dex. Uphold Hot Wallet balances may include project buyback custody and cannot be split on-chain, so they stay cex.",
+      "affects": {
+        "artifacts": [
+          "cex-wallets",
+          "cex-flows",
+          "cex-balance-history",
+          "holders-history",
+          "holders-lite",
+          "tel-holders",
+          "supply-reconciliation"
+        ],
+        "metrics": [
+          "cexBalance",
+          "retail.count",
+          "retail.balance",
+          "totalHeld"
+        ]
+      },
+      "backfillStatus": "not-possible",
+      "backfillNote": "ZBCN holder history starts 2026-10-25, the day these wallets were classified. There is no earlier archive row to rewrite. Rows from this date already exclude the 44 wallets from retail. pipeline.duneCexQueryId is still unset, so this list is the hand-applied config, not a Dune sync."
+    },
+    {
+      "id": "2026-10-26-zbcn-treasury-team",
+      "date": "2026-10-26",
+      "type": "reclassification",
+      "summary": "Owner-approved ZBCN treasury vaults and team signers (PR #44). Treasury: H8Hr964ApEP3ie1rwRTT7wkSrgvUqJQb8oNAKspkDDfR, 3J7n5Usmei8BqgUHan5xuBiJkAx6M1AQQhGwbKiVdQ17, 71LxiE4PvxdZxLmtGcoKAJEWKofPqYw5Wdn6PSpXHodV. Team holdings: 9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine, EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k, FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM, G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7, 6enQZWHkQ5ayxyFbJXgrNdUwDZpcUon98SNCuVNSRbd2, 8vKiBgHFgR7BTUTwjNXj91P95GrRDCt3xNt6iLgHVMJw, 9jRRKgb69WSMRLrqrPsk1byunMhD5tXxixYAdoESHdM3. GXD2, 43wqg and 56veX stayed unclassified.",
+      "addresses": [
+        "H8Hr964ApEP3ie1rwRTT7wkSrgvUqJQb8oNAKspkDDfR",
+        "3J7n5Usmei8BqgUHan5xuBiJkAx6M1AQQhGwbKiVdQ17",
+        "71LxiE4PvxdZxLmtGcoKAJEWKofPqYw5Wdn6PSpXHodV",
+        "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+        "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+        "FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM",
+        "G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7",
+        "6enQZWHkQ5ayxyFbJXgrNdUwDZpcUon98SNCuVNSRbd2",
+        "8vKiBgHFgR7BTUTwjNXj91P95GrRDCt3xNt6iLgHVMJw",
+        "9jRRKgb69WSMRLrqrPsk1byunMhD5tXxixYAdoESHdM3"
+      ],
+      "affects": {
+        "artifacts": [
+          "supply-reconciliation",
+          "holders-history",
+          "holders-lite",
+          "tel-holders",
+          "treasury-history"
+        ],
+        "metrics": [
+          "retail.count",
+          "retail.balance",
+          "totalHeld"
+        ]
+      },
+      "backfillStatus": "not-possible",
+      "backfillNote": "The 2026-10-25 snapshot was published before this approval. Later daily rows use the new treasury and team labels. Rewriting 2026-10-25 would require a full Solana replay of that slot; it was left as published, so the 2026-10-25 to 2026-10-26 retail change mixes this relabel with real movement."
+    }
+  ]
+}

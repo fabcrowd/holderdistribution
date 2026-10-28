@@ -178,20 +178,21 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
 
   const stakingChartData = useMemo(() => {
     const series = data?.stakingSeries ?? [];
+    const num = (v: number | null | undefined) => (v != null && Number.isFinite(v) ? v : null);
     return series
       .map((point) => {
         const timestamp = Date.parse(point.timestamp);
-        const staking = Number(point.staking);
-        if (!Number.isFinite(timestamp) || !Number.isFinite(staking)) return null;
-        return {
-          timestamp,
-          staking,
-          stakingV3: timestamp >= V3_DEPLOY_MS ? point.stakingV3 : null,
-          stakingTotal: point.stakingTotal,
-        };
+        if (!Number.isFinite(timestamp)) return null;
+        // Number(null) is 0. A program-only row has no legacy figure; turning
+        // that into 0 would pin the axis at zero and hide the staked total.
+        const staking = num(point.staking);
+        const stakingV3 = timestamp >= V3_DEPLOY_MS ? num(point.stakingV3) : null;
+        const stakingTotal = num(point.stakingTotal);
+        if (staking == null && stakingV3 == null && stakingTotal == null) return null;
+        return { timestamp, staking, stakingV3, stakingTotal };
       })
       .filter(
-        (entry): entry is { timestamp: number; staking: number; stakingV3: number | null; stakingTotal: number | null } => !!entry,
+        (entry): entry is { timestamp: number; staking: number | null; stakingV3: number | null; stakingTotal: number | null } => !!entry,
       )
       .sort((a, b) => a.timestamp - b.timestamp);
   }, [data?.stakingSeries]);
@@ -200,9 +201,10 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     const none = { latest: null, change: null, changePct: null, gap: [] as ReturnType<typeof v3StakingGapEvents> };
     if (stakingChartData.length === 0) return none;
     const last = stakingChartData[stakingChartData.length - 1];
-    // Staked = legacy + v3 StakingModule once v3 is measured.
-    const hasV3 = (last.stakingV3 ?? 0) > 0;
-    const latest = hasV3 ? last.stakingTotal ?? last.staking : last.staking;
+    // Split only when both channels were measured. A program-only series
+    // (Solana staking on stakingV3Balance, no legacy contract) is one total.
+    const hasV3 = (last.staking ?? 0) > 0 && (last.stakingV3 ?? 0) > 0;
+    const latest = last.stakingTotal ?? last.staking;
     // Same pickBaseline-sourced baseline as the hero's Staked TEL tile — see
     // the Wallets `stats` comment above for why this matters. With v3 in the
     // total, a baseline inside the unmeasured v3 window has no honest delta.
@@ -210,18 +212,22 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
       const gap = v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance, undefined, ticker);
       if (gap.length) return { ...none, latest, gap };
     }
-    const baseline = hasV3 ? historicalDelta?.stakingTotal ?? null : historicalDelta?.stakingBalance ?? null;
-    if (baseline !== null) {
+    const baseline = last.stakingTotal != null
+      ? historicalDelta?.stakingTotal ?? null
+      : historicalDelta?.stakingBalance ?? null;
+    if (baseline !== null && latest != null) {
       const change = latest - baseline;
       const changePct = baseline > 0 ? (change / baseline) * 100 : null;
       return { latest, change, changePct, gap: none.gap };
     }
-    const first = hasV3 ? stakingChartData[0].stakingTotal : stakingChartData[0].staking;
-    if (first == null) return { ...none, latest, gap: v3StakingGapEvents(stakingChartData[0].timestamp, null, undefined, ticker) };
+    const first = stakingChartData[0].stakingTotal ?? stakingChartData[0].staking;
+    if (first == null || latest == null) return { ...none, latest, gap: hasV3 ? v3StakingGapEvents(stakingChartData[0].timestamp, null, undefined, ticker) : none.gap };
     const change = latest - first;
     const changePct = first > 0 ? (change / first) * 100 : null;
     return { latest, change, changePct, gap: none.gap };
   }, [stakingChartData, historicalDelta, ticker]);
+
+  const showStakingSplit = stakingChartData.some((p) => (p.staking ?? 0) > 0 && (p.stakingV3 ?? 0) > 0);
 
   const stakingYDomain = useMemo((): [number, number] | ["auto", "auto"] => {
     if (stakingChartData.length === 0) return ["auto", "auto"];
@@ -874,9 +880,9 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                       )}
                       {(() => {
                         const last = stakingChartData[stakingChartData.length - 1];
-                        return last && (last.stakingV3 ?? 0) > 0 ? (
+                        return last && showStakingSplit ? (
                           <span className="text-xs tabular-nums" data-testid="staked-split">
-                            Legacy {formatCompactAmount(last.staking)} / v3 {formatCompactAmount(last.stakingV3 ?? 0)}
+                            Legacy {formatCompactAmount(last.staking ?? 0)} / v3 {formatCompactAmount(last.stakingV3 ?? 0)}
                           </span>
                         ) : null;
                       })()}
@@ -940,7 +946,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                             />
                           }
                         />
-                        {stakingChartData[0] && stakingChartData[0].timestamp <= V3_DEPLOY_MS && stakingChartData.some((p) => p.stakingV3 != null) && (
+                        {showStakingSplit && stakingChartData[0] && stakingChartData[0].timestamp <= V3_DEPLOY_MS && stakingChartData.some((p) => p.stakingV3 != null) && (
                           <ReferenceLine
                             x={V3_DEPLOY_MS}
                             stroke="hsl(var(--ha-accent))"
@@ -955,22 +961,26 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                           strokeWidth={2}
                           dot={isolatedDot(stakingChartData, "stakingTotal", "hsl(var(--primary))")}
                         />
-                        <Line
-                          dataKey="staking"
-                          type="monotone"
-                          stroke="var(--color-staking)"
-                          strokeWidth={1.5}
-                          strokeDasharray="4 3"
-                          dot={false}
-                          connectNulls
-                        />
-                        <Line
-                          dataKey="stakingV3"
-                          type="monotone"
-                          stroke="var(--color-stakingV3)"
-                          strokeWidth={2}
-                          dot={isolatedDot(stakingChartData, "stakingV3", "hsl(var(--ha-accent))")}
-                        />
+                        {showStakingSplit && (
+                          <Line
+                            dataKey="staking"
+                            type="monotone"
+                            stroke="var(--color-staking)"
+                            strokeWidth={1.5}
+                            strokeDasharray="4 3"
+                            dot={false}
+                            connectNulls
+                          />
+                        )}
+                        {showStakingSplit && (
+                          <Line
+                            dataKey="stakingV3"
+                            type="monotone"
+                            stroke="var(--color-stakingV3)"
+                            strokeWidth={2}
+                            dot={isolatedDot(stakingChartData, "stakingV3", "hsl(var(--ha-accent))")}
+                          />
+                        )}
                       </LineChart>
                     </ChartContainer>
                   </div>

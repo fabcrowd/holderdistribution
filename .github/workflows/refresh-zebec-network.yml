@@ -1,11 +1,17 @@
 name: Refresh zebec-network holders
 
 # ZBCN (Solana SPL). Same stage order as refresh-tel-holders.yml minus the EVM
-# holder/staking scans. CEX wallets exist, but exchange-flow and tier-outflow
-# scanners are eth_getLogs-only: with no EVM chains they publish empty feeds
+# holder/staking scans. CEX wallets are configured (44), so pull-cex-wallets
+# runs and the commit stages cex-wallets.json, cex-flows.json and
+# cex-balance-history.json — the same CEX stage TEL runs once wallets exist.
+# Exchange-flow and tier-outflow scanners are still eth_getLogs-only: with no
+# EVM chains they publish empty feeds
 # (public/data/zebec-network/exchange-flow-history.json and tier-outflows.json)
-# so the terminal shows an empty state instead of loading a 404. Staking is a
-# separate overlay (staked != retail) pulled before the lite feed.
+# so the terminal shows an empty state instead of loading a 404. A real Solana
+# signature/indexer flow scanner is not in this workflow (follow-up).
+# pipeline.duneCexQueryId is unset until the owner supplies a Solana query id
+# (never TEL's 3761086). Staking is a separate overlay (staked != retail)
+# pulled before the lite feed.
 #
 # refresh-tel-holders.yml's schedule has no inputs, so it always runs HD_PROJECT
 # =tel; a non-TEL project needs its own scheduled workflow. It shares TEL's
@@ -76,6 +82,12 @@ jobs:
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
         run: node scripts/pull-holders-rpc.js
 
+      - name: Refresh CEX wallets and flows
+        # Same stage as refresh-tel-holders.yml. Reads classification.cexWallets
+        # (no Dune query) and writes cex-wallets / cex-flows / cex-balance-history
+        # before history, which embeds cexBalance from cex-flows.json.
+        run: node scripts/pull-cex-wallets.js
+
       - name: Generate feeds
         run: |
           node scripts/generate-holders-lite.js
@@ -89,7 +101,8 @@ jobs:
 
       - name: Verify generated files
         # TEL's list minus funding-wallets.json (no EVM staker pull), plus the
-        # Solana staking overlay and the empty exchange-flow / tier-outflow feeds.
+        # Solana staking overlay, the CEX wallet feeds, and the empty
+        # exchange-flow / tier-outflow feeds.
         run: |
           REQUIRED_FILES=(
             "$HD_DATA_DIR/tel-holders.json"
@@ -103,6 +116,9 @@ jobs:
             "$HD_DATA_DIR/treasury-history.json"
             "$HD_DATA_DIR/classification-changelog.json"
             "$HD_DATA_DIR/solana-staking.json"
+            "$HD_DATA_DIR/cex-wallets.json"
+            "$HD_DATA_DIR/cex-flows.json"
+            "$HD_DATA_DIR/cex-balance-history.json"
             "$HD_DATA_DIR/tier-outflows.json"
             "$HD_DATA_DIR/exchange-flow-history.json"
           )
@@ -127,7 +143,7 @@ jobs:
           # appends that dir, so new feeds land too. tel-holders-previous.json
           # (pull-holders-rpc.js's same-run scratch file) is gitignored for
           # per-project dirs and is never staged.
-          FILES_TO_CHECK=$(node scripts/workflow-paths.js files public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/chain-status.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json public/data/solana-staking.json public/data/tier-outflows.json public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json)
+          FILES_TO_CHECK=$(node scripts/workflow-paths.js files public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/chain-status.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json public/data/solana-staking.json public/data/cex-wallets.json public/data/cex-flows.json public/data/cex-balance-history.json public/data/tier-outflows.json public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json)
           git add -A -- $FILES_TO_CHECK
           if git diff --cached --quiet; then
             echo "No changes to commit"

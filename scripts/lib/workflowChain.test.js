@@ -104,6 +104,19 @@ describe("data pipeline workflow chain", () => {
     });
   }
 
+  it("refresh-zebec-network refreshes CEX wallets once they exist and stages the three CEX feeds", () => {
+    const doc = load("refresh-zebec-network.yml");
+    const steps = doc.jobs.refresh.steps;
+    const runs = steps.map((s) => s.run ?? "").join("\n");
+    const cex = steps.findIndex((s) => (s.run ?? "").includes("pull-cex-wallets.js"));
+    const history = steps.findIndex((s) => (s.run ?? "").includes("generate-holders-history.js"));
+    expect(cex, "pull-cex-wallets must run").toBeGreaterThanOrEqual(0);
+    expect(cex).toBeLessThan(history);
+    for (const file of ["cex-wallets.json", "cex-flows.json", "cex-balance-history.json"]) {
+      expect(runs).toContain(file);
+    }
+  });
+
   it("former chained stages are manual-only (no cron, no workflow_run)", () => {
     for (const file of FORMER_STAGES) {
       const on = triggers(load(file));
