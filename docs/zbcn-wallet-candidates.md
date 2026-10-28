@@ -1,8 +1,26 @@
 # ZBCN — named + developer wallet candidates (Phase 4b)
 
-**Status (2026-10-26, America/New_York): §1 treasury/team cluster APPLIED (owner-approved exact list)** — treasury vaults H8Hr, 3J7n5, 71LxiE added to `config/projects/zebec-network.json` `contracts{}` as `role: "treasury"` (medium confidence); signers 9Sq2 (high), EsDV3m, FNuqK, G82t, 6enQZ, 8vKi (medium), 9jRRK (low) added as `role: "holdings"` (Team Wallets). Rationale in `pipelineNotes.treasuryTeam`. GXD2, 43wqg, 56veX are **excluded** and remain candidates.
+**Status (2026-10-28): two Solscan-labeled CEX wallets auto-applied** under the director explorer-confirmed auto-apply rule (no second review). Added to `config/projects/zebec-network/cex-wallets.json` (`classification.cexWallets`, now **46** wallets):
 
-**Earlier status (2026-10-25): §3 Solscan-confirmed exchange + Fireblocks custody wallets APPLIED** under the owner's explorer-confirmed auto-apply rule (no second owner review): 33 new rows added to `config/projects/zebec-network/cex-wallets.json` (`classification.cexWallets`, now 44 wallets incl. the 11 Dune-approved), and the Orca WSOL-ZBCN Whirlpool `FaoZEZ…` added as a `dex` contract role in `config/projects/zebec-network.json`. **Still candidates awaiting owner review (not in config):** §1 GXD2, 43wqg, 56veX, the §3 Squad Vault `Eueeb…`, §2 authorities/fee vault/Wormhole custody, the §2 governance realm `7ngHDD5…` (deferred: ZBCN has no escrow bucket/copy yet; ~0.46M), and all §5 unlabeled holders.
+| address | label / walletName | proof |
+|---|---|---|
+| `7Ci23i82UMa8RpfVbdMjTytiDi2VoZS8uLyHhZBV2Qy7` | Poloniex Hot Wallet | https://solscan.io/account/7Ci23i82UMa8RpfVbdMjTytiDi2VoZS8uLyHhZBV2Qy7 |
+| `9CKnC2kmqG9ZBtQXDfxR5H7Av7X878geV367DdYtybT4` | FalconX Hot Wallet | https://solscan.io/account/9CKnC2kmqG9ZBtQXDfxR5H7Av7X878geV367DdYtybT4 |
+
+`pipeline.duneCexQueryId` is still unset. Not added: further Fireblocks cluster wallets, Squad Vault `Eueeb9FKXpk7duw7jKeYm1NNWmTeFN7fGKYMmasY7C9x`, and `56veXoivcbZNwkN4MCvhdyromDrp6cp9EuJZ9arknGSF`.
+
+**Excluded — no bucket tags (0 ZBCN pass-through / ops / card vaults).** These are not in `contracts{}`, `cex-wallets.json`, or any other supply bucket. Tagging them would double-count balances that already sit on the destination wallet (or count an empty vault):
+
+| address | why excluded |
+|---|---|
+| `GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J` | Zebec stream (zbcKG) pass-through vault used by 9Sq2 → 71LxiE. 0 ZBCN. |
+| `43wqg9cUzGW42uLbMEKt3CE4Jzt9dxujrCMjgw7iVr8E` | Zebec stream pass-through used by FNuqK → H8Hr. 0 ZBCN. |
+| `BGfzhZmDybCYH1BuMcmZfWUj8GsL6W8cQVj2xcWr7cKd` | Unlabeled buyback supplier into EkXEg. 0 ZBCN. |
+| `75UeVz3WhiGU6D6e7ZJv8FKPU3oZghL17fr8j6fLTTzs` | Ops / card vault. 0 ZBCN. |
+
+**Status (2026-10-26, America/New_York): §1 treasury/team cluster APPLIED (owner-approved exact list)** — treasury vaults H8Hr, 3J7n5, 71LxiE added to `config/projects/zebec-network.json` `contracts{}` as `role: "treasury"` (medium confidence); signers 9Sq2 (high), EsDV3m, FNuqK, G82t, 6enQZ, 8vKi (medium), 9jRRK (low) added as `role: "holdings"` (Team Wallets). Rationale in `pipelineNotes.treasuryTeam`. GXD2 and 43wqg stay excluded (0 ZBCN pass-throughs, no bucket). 56veX stays a candidate and is not tagged.
+
+**Earlier status (2026-10-25): §3 Solscan-confirmed exchange + Fireblocks custody wallets APPLIED** under the owner's explorer-confirmed auto-apply rule (no second owner review): 33 new rows added to `config/projects/zebec-network/cex-wallets.json` (`classification.cexWallets`, now 44 wallets incl. the 11 Dune-approved), and the Orca WSOL-ZBCN Whirlpool `FaoZEZ…` added as a `dex` contract role in `config/projects/zebec-network.json`. **Still candidates awaiting owner review (not in config):** §1 56veX, the §3 Squad Vault `Eueeb…`, §2 authorities/fee vault/Wormhole custody, the §2 governance realm `7ngHDD5…` (deferred: ZBCN has no escrow bucket/copy yet; ~0.46M), and all §5 unlabeled holders. GXD2, 43wqg, BGfzh, and 75UeVz are excluded (0 ZBCN; no bucket), not candidates.
 
 > ⚠ Uphold caveat: Zebec says buybacks are consolidated with Uphold Institutional for custody, so part of Uphold Hot Wallet 3/5 (~20.55B / ~128.6M) may be project custodial buybacks. Counted as cex (cannot split on-chain); recorded in `pipelineNotes.cexWallets`.
 
@@ -34,13 +52,15 @@ All three large multisig vaults below are signer PDAs of Zebec-multisig accounts
 | `6enQZWHkQ5ayxyFbJXgrNdUwDZpcUon98SNCuVNSRbd2` | **APPLIED** holdings (team) | https://solscan.io/account/6enQZWHkQ5ayxyFbJXgrNdUwDZpcUon98SNCuVNSRbd2; owner on 2UrE7a47, EoqY5, GiiWg |  | medium | not a holder. Multisig signer only. |
 | `8vKiBgHFgR7BTUTwjNXj91P95GrRDCt3xNt6iLgHVMJw` | **APPLIED** holdings (team) | https://solscan.io/account/8vKiBgHFgR7BTUTwjNXj91P95GrRDCt3xNt6iLgHVMJw; owner on 2UrE7a47 (EkXEg multisig) |  | medium | not a holder. Multisig signer only. |
 | `9jRRKgb69WSMRLrqrPsk1byunMhD5tXxixYAdoESHdM3` | **APPLIED** holdings (team) | https://solscan.io/account/9jRRKgb69WSMRLrqrPsk1byunMhD5tXxixYAdoESHdM3; owner on GMeug |  | low | not a holder. Signer on one multisig only. |
-| `GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J` | other | https://solscan.io/account/GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J; zbcKG (Zebec stream) per-user vault PDA used by 9Sq2 | [3pAWKsq76M…](https://solscan.io/tx/3pAWKsq76M7qNEjduW5Cjy5pdFHz76WBHuxr5yKMvhHY2iSEa5AFMRe5rsDTcxut6WMGwiU7hKDSdsNGwSt6YHLw) | medium | not a holder. Pass-through vault (9Sq2 → 71LxiE). Tag with team cluster if desired. |
-| `43wqg9cUzGW42uLbMEKt3CE4Jzt9dxujrCMjgw7iVr8E` | other | https://solscan.io/account/43wqg9cUzGW42uLbMEKt3CE4Jzt9dxujrCMjgw7iVr8E; zbcKG vault pass-through for FNuqK | [36ZWSuNALb…](https://solscan.io/tx/36ZWSuNALbbusaGwWK7xFFeW1MFSXR68xyVRfTM16Qks6Yr3QiXwkyTzx3GfzadY2FzLp66e6mMy4DjWoXnyY9gX) | medium | not a holder. Pass-through vault (FNuqK → H8Hr). |
+| `GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J` | **EXCLUDED** (no bucket) | https://solscan.io/account/GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J; zbcKG (Zebec stream) per-user vault PDA used by 9Sq2 | [3pAWKsq76M…](https://solscan.io/tx/3pAWKsq76M7qNEjduW5Cjy5pdFHz76WBHuxr5yKMvhHY2iSEa5AFMRe5rsDTcxut6WMGwiU7hKDSdsNGwSt6YHLw) | medium | 0 ZBCN. Pass-through vault (9Sq2 → 71LxiE). **Excluded 2026-10-28** — no bucket tag; tagging would double-count. |
+| `43wqg9cUzGW42uLbMEKt3CE4Jzt9dxujrCMjgw7iVr8E` | **EXCLUDED** (no bucket) | https://solscan.io/account/43wqg9cUzGW42uLbMEKt3CE4Jzt9dxujrCMjgw7iVr8E; zbcKG vault pass-through for FNuqK | [36ZWSuNALb…](https://solscan.io/tx/36ZWSuNALbbusaGwWK7xFFeW1MFSXR68xyVRfTM16Qks6Yr3QiXwkyTzx3GfzadY2FzLp66e6mMy4DjWoXnyY9gX) | medium | 0 ZBCN. Pass-through vault (FNuqK → H8Hr). **Excluded 2026-10-28** — no bucket tag; tagging would double-count. |
 | `56veXoivcbZNwkN4MCvhdyromDrp6cp9EuJZ9arknGSF` | other | https://solscan.io/account/56veXoivcbZNwkN4MCvhdyromDrp6cp9EuJZ9arknGSF (unlabeled) | [cNQGEemMpJ…](https://solscan.io/tx/cNQGEemMpJjF8aEqVMUeHnD5rMYZSBQcYPnJ8L3LJhPRUYqEXSnvregZjiB9BoAHJ6s2y4hqEr3PRR9Qj3xSuAK) | low | #25 / 399.92M. Received 3×40M from ops wallet 9Sq2 (2026-06-15, [5xYj1uYhom…](https://solscan.io/tx/5xYj1uYhom77Dw9MsuuGZjvLsRAR5tB7h2hGWsLMGDkUfwMxBdt8WHZc5xSCvEhi2C367CCxdhMsAQ9fLRqcaV23) 2026-07-23, [5xo2565e9N…](https://solscan.io/tx/5xo2565e9NGt3J2iS5vWGuRTFL5ceoVP6WpeZtBp1DCCmrskSaexLhXdgSMkC5QmJF4MCnUus99z3hguaAbe5wC1) 2026-08-18). Rest of balance from elsewhere. Could be partner/MM/vesting recipient; do not classify as team without more evidence. |
 
 Multisig accounts (not token holders; for reference): `2UrE7a47Tuze41BYEp1bMYPtpnCzu9Ruv1p3JkdxUNza` (EkXEg, 3/4, nonce 252), `EoqY5nPYoL7zH1hWSh1T5Nsbq5q6hhtztU6JStDeVgjG` (H8Hr, 3/4), `GiiWgFNnkWbAGnKiDt7ohny1tTtb2pzxpJAXVZv3T1pt` (3J7n5, 3/4), `GMeugYRQbdBUsSkgVePSf4xaTQCmUcg26x6ie7U1woDX` (71LxiE, 2/3). Other `b6ZPys…` multisigs with tiny balances are unrelated third parties and are excluded.
 
-Earlier buyback suppliers into EkXEg (unlabeled, likely OTC/MM; **not proposed**): `CGeY5GbhUW31gfiSaM4BZyRLdcqz13etUza1aBH3oywb` (2024-10 → 2025-04, e.g. [3bLBbFYvw6…](https://solscan.io/tx/3bLBbFYvw6n7jvwWSsCormRMhkaZzeayb8THrptPuwpUYLBVswj7eMm9azFVYVEXBdF8g4E8AAFb2VdZH8cL6aHr) 45.7M; not a holder), `BGfzhZmDybCYH1BuMcmZfWUj8GsL6W8cQVj2xcWr7cKd` ([54u1yBP1xT…](https://solscan.io/tx/54u1yBP1xTotk82KRooDEX6tggNawp5Zm2FKvDpkZTWkyJBhHXcSmrRLhyJ87zDoNnuYhrpypv6yiDamZSeWWsZ) 43.76M, 2026-01-02; not a holder).
+Earlier buyback suppliers into EkXEg (unlabeled, likely OTC/MM; **not proposed**): `CGeY5GbhUW31gfiSaM4BZyRLdcqz13etUza1aBH3oywb` (2024-10 → 2025-04, e.g. [3bLBbFYvw6…](https://solscan.io/tx/3bLBbFYvw6n7jvwWSsCormRMhkaZzeayb8THrptPuwpUYLBVswj7eMm9azFVYVEXBdF8g4E8AAFb2VdZH8cL6aHr) 45.7M; not a holder), `BGfzhZmDybCYH1BuMcmZfWUj8GsL6W8cQVj2xcWr7cKd` ([54u1yBP1xT…](https://solscan.io/tx/54u1yBP1xTotk82KRooDEX6tggNawp5Zm2FKvDpkZTWkyJBhHXcSmrRLhyJ87zDoNnuYhrpypv6yiDamZSeWWsZ) 43.76M, 2026-01-02; not a holder). **BGfzh excluded 2026-10-28** — 0 ZBCN, no bucket tag.
+
+`75UeVz3WhiGU6D6e7ZJv8FKPU3oZghL17fr8j6fLTTzs` — ops/card vault, 0 ZBCN. **Excluded 2026-10-28** — no bucket tag (would double-count). Not a holder in the current snapshot.
 
 ## 2. Authorities, staking & governance
 
@@ -103,6 +123,8 @@ Evidence for every row is the Solscan account page `https://solscan.io/account/<
 | `DSFWxvJjgvLbVqoQ1Zwoe1iVHhwFgrfSiF3ZK1h7nd1K` | cex | Solscan: "CoinDCX: Fireblocks Custody (DSFWx)" (https://solscan.io/account/DSFWxvJjgvLbVqoQ1Zwoe1iVHhwFgrfSiF3ZK1h7nd1K) |  | high | #121 / 35.43M. **APPLIED 2026-10-25** → cex-wallets.json (Solscan auto-apply). |
 | `6xfPFKnwv48XvxpFf4athewqGFvSTKQcMmfzYapgZ2sG` | cex | Solscan: "BingX Cold Wallet 3" (https://solscan.io/account/6xfPFKnwv48XvxpFf4athewqGFvSTKQcMmfzYapgZ2sG) |  | high | #166 / 24.53M. **APPLIED 2026-10-25** → cex-wallets.json (Solscan auto-apply). |
 | `A77HErqtfN1hLLpvZ9pCtu66FEtM8BveoaKbbMoZ4RiR` | cex | Solscan: "Bitget Exchange" (https://solscan.io/account/A77HErqtfN1hLLpvZ9pCtu66FEtM8BveoaKbbMoZ4RiR) | [3HGBb6KL4u…](https://solscan.io/tx/3HGBb6KL4uhYvUtDe2Gf4nCP1teVq71b7AQj5PLn4vE5j88fBnaeS9KRQUvSDVr8iMx2NMA7BwmtYr39Ce381udS) | high | #238 / 17.69M. Source of a 2025-07-11 buyback delivery into EkXEg. **already in config** (`config/projects/zebec-network/cex-wallets.json`, commit f131e02). |
+| `7Ci23i82UMa8RpfVbdMjTytiDi2VoZS8uLyHhZBV2Qy7` | cex | Solscan: "Poloniex Hot Wallet" (https://solscan.io/account/7Ci23i82UMa8RpfVbdMjTytiDi2VoZS8uLyHhZBV2Qy7) |  | high | Snapshot 2026-10-28: 141,705.85 ZBCN. **APPLIED 2026-10-28** → cex-wallets.json (Solscan auto-apply). |
+| `9CKnC2kmqG9ZBtQXDfxR5H7Av7X878geV367DdYtybT4` | cex | Solscan: "FalconX Hot Wallet" (https://solscan.io/account/9CKnC2kmqG9ZBtQXDfxR5H7Av7X878geV367DdYtybT4) |  | high | Snapshot 2026-10-28: 19,781.91 ZBCN. **APPLIED 2026-10-28** → cex-wallets.json (Solscan auto-apply). |
 
 ## 4. Already in config (no change proposed)
 
@@ -111,6 +133,7 @@ Evidence for every row is the Solscan account page `https://solscan.io/account/<
 
 - 11 Solana CEX wallets in `config/projects/zebec-network/cex-wallets.json` (parallel CEX workstream, f131e02); the 6 that overlap §3 are marked there.
 - 2026-10-25: +33 §3 Solscan-confirmed exchange/Fireblocks wallets (44 total) and the Orca Whirlpool (`dex` role) applied under the owner auto-apply rule.
+- 2026-10-28: +2 Solscan-confirmed CEX wallets (Poloniex Hot Wallet, FalconX Hot Wallet; 46 total) applied under the same auto-apply rule. GXD2, 43wqg, BGfzh, and 75UeVz stay untagged (0 ZBCN pass-through/ops/card vaults).
 
 ## 5. Large unlabeled holders — no project link found (gaps, not proposed)
 
