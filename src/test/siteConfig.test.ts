@@ -59,6 +59,12 @@ describe("branding & SEO", () => {
     expect(read("public/robots.txt")).toContain("Sitemap: https://holderdistribution.com/sitemap.xml");
     expect(read("public/sitemap.xml")).toContain("<loc>https://holderdistribution.com/</loc>");
   });
+
+  it("sitemap lists every mapped token route", () => {
+    const sitemap = read("public/sitemap.xml");
+    const registry = JSON.parse(read("config/projects.json"));
+    for (const p of registry.projects) expect(sitemap).toContain(`<loc>https://holderdistribution.com/${p.slug}</loc>`);
+  });
 });
 
 describe("security headers (netlify.toml)", () => {
@@ -81,5 +87,22 @@ describe("security headers (netlify.toml)", () => {
   it("never exposes secrets through VITE_ variables", () => {
     const decl = read("src/vite-env.d.ts");
     expect(decl).not.toMatch(/VITE_[A-Z_]*(SECRET|API_KEY|TOKEN|PASSWORD|PRIVATE)/);
+  });
+
+  it("img-src stays same-origin only (token images are cached in public/tokens/)", () => {
+    expect(/img-src ([^;]+)/.exec(csp)?.[1]).toBe("'self' data: blob:");
+  });
+
+  it("no source file or project config loads an image from CoinGecko", () => {
+    const walk = (dir: string): string[] =>
+      fs.readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)],
+      );
+    const files = [...walk("src"), ...walk("config/projects")].filter((f) => /\.(tsx?|json|css)$/.test(f) && !/\.test\.tsx?$/.test(f));
+    for (const f of files) expect(read(f), f).not.toMatch(/coin-images\.coingecko\.com|assets\.coingecko\.com/);
+  });
+
+  it("a missing /tokens/* file is a real 404, not the SPA shell", () => {
+    expect(read("public/_redirects")).toMatch(/^\/tokens\/\*\s+\/404\.html\s+404$/m);
   });
 });

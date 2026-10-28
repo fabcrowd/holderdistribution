@@ -1,26 +1,14 @@
 import { writeFileSync } from "fs";
 import { resolve } from "path";
+import { buildSitemap } from "./lib/sitemap.js";
+import { loadRegistry } from "./lib/projects.js";
 
-// Single-route sitemap for the extracted Holders/Tokenomics site — the
-// original hub's generate-sitemap.ts listed every page in the full app and
-// pulled news-article dates from Supabase; neither applies here, since this
-// repo only ever serves one route.
+// Landing page + one /<slug> per mapped token (config/projects.json).
 const BASE_URL = "https://holderdistribution.com";
 
-function generateSitemap(): string {
-  const today = new Date().toISOString().split("T")[0];
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${BASE_URL}/</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>
-`;
-}
+const slugs = loadRegistry(process.cwd()).map((p: { slug: string }) => p.slug);
+const xml = buildSitemap({ baseUrl: BASE_URL, slugs, today: new Date().toISOString().split("T")[0] });
 
 const outputPath = resolve(process.cwd(), "public/sitemap.xml");
-writeFileSync(outputPath, generateSitemap());
-console.log(`Sitemap generated at ${outputPath}`);
+writeFileSync(outputPath, xml);
+console.log(`Sitemap generated at ${outputPath} (${slugs.length + 1} URLs)`);

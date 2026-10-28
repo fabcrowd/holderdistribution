@@ -5,6 +5,7 @@
 # missing /data feed fails its fetch instead of parsing HTML as JSON.
 /assets/*  /404.html  404
 /data/*    /404.html  404
+/tokens/*  /404.html  404
 
 # SPA fallback — every other path that isn't a static asset resolves to
 # index.html and the client router decides (unknown routes render NotFound,

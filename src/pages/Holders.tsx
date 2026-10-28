@@ -4,6 +4,8 @@ import { Footer } from "@/components/Footer";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useProject } from "@/hooks/useProject";
 import { supplyTargetLabel } from "@/lib/projects";
+import { tokenPageDescription, tokenPageTitle } from "@/lib/seo";
+import { tokenPath } from "@/lib/tokenRoutes";
 import WalletHoldingsWidget from "@/components/WalletHoldingsWidget";
 import HolderGrowthWidget from "@/components/HolderGrowthWidget";
 import { ExchangeFlowWidget } from "@/components/ExchangeFlowWidget";
@@ -34,8 +36,6 @@ import {
   isHeroCollapsed,
   reduceHeroCollapse,
 } from "@/lib/heroCollapse";
-
-const VIEW_TITLES: Record<string, string> = { holders: "Holders", distribution: "Distribution", supply: "Supply" };
 
 const TILE_DESTINATIONS = {
   holders: { tab: "holders", panel: "trends" },
@@ -90,9 +90,7 @@ const TabBlurb = ({ id, hidden }: { id: TabId; hidden: boolean }) => {
 };
 
 const Holders = () => {
-  // Route stays /holders deliberately — renaming the URL would reset the
-  // page's search history and break the homepage tile's stored route for no
-  // functional gain. Only the labels describe the page as a whole.
+  // Mounted at /<slug> by TokenRoute; /holders redirects there (lib/tokenRoutes).
 
   // One panel at a time rather than five stacked accordions. Every section
   // used to start collapsed, so a first-time visitor got the hero and five
@@ -169,14 +167,14 @@ const Holders = () => {
     writeHash(value, null);
   };
   const isTerminal = useMediaQuery(TERMINAL_QUERY);
-  const { project } = useProject();
+  const { slug, project } = useProject();
 
-  // Per-view title so tabs, history and bookmarks say which view they are.
-  // Canonical stays "/": the views are one page, not separate documents.
+  // One document per token: "/<slug>" is self-canonical and its title names
+  // the token. The views (#holders, #distribution, #supply) are the same page.
   usePageMeta({
-    title: `${VIEW_TITLES[activeTab]} · ${project.ticker} Holder Distribution | Holder Analytics`,
-    description: `${project.ticker} tokenomics: circulating supply breakdown, holder distribution and tiers, exchange flows, and historical growth from real-time on-chain data.`,
-    canonicalPath: '/',
+    title: tokenPageTitle(project),
+    description: tokenPageDescription(project),
+    canonicalPath: tokenPath(slug),
   });
 
   const [selectedView, setSelectedView] = useState<DisplaySelection>(settings0.chain ?? "combined");

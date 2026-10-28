@@ -54,6 +54,8 @@ export type ProjectChain = {
 
 export type ProjectConfig = ProjectEntry & {
   description?: string;
+  /** Cached CoinGecko coin image, served from public/tokens/ (e.g. "/tokens/tel.png"). Never a remote URL (CSP img-src is 'self'). */
+  image?: string;
   links?: Record<string, string>;
   data?: { legacyRoot?: boolean; dir?: string };
   supply?: { target?: number; targetLabel?: string; generationsSumOneToOne?: boolean; note?: string };
@@ -111,7 +113,7 @@ export const isProjectSlug = (v: unknown): v is string =>
 
 export const getProject = (slug: string): ProjectConfig => {
   const entry = PROJECTS.find((p) => p.slug === slug) ?? PROJECTS.find((p) => p.slug === DEFAULT_PROJECT_SLUG)!;
-  // Registry wins for the identity fields so the switcher and pages agree.
+  // Registry wins for the identity fields so landing cards and pages agree.
   return { ...CONFIGS[entry.slug], ...entry };
 };
 
@@ -125,41 +127,8 @@ export const supplyTargetLabel = (p: Pick<ProjectConfig, "supply">): string | nu
   return t.toLocaleString("en-US");
 };
 
+/** Legacy query param (`/?token=<slug>`), read only by lib/tokenRoutes legacyRedirect(). */
 export const TOKEN_PARAM = "token";
-export const PROJECT_STORAGE_KEY = "ha:project";
-
-/**
- * Active slug at load: a valid ?token= wins (shared links), then the last
- * choice remembered in localStorage, then the registry default. Unknown or
- * malformed values are ignored, never trusted.
- */
-export const resolveInitialSlug = (
-  search: string,
-  stored: string | null | undefined,
-  known: readonly string[] = PROJECTS.map((p) => p.slug),
-  fallback: string = DEFAULT_PROJECT_SLUG,
-): string => {
-  const ok = (v: unknown): v is string => typeof v === "string" && known.includes(v);
-  const fromUrl = new URLSearchParams(search).get(TOKEN_PARAM)?.trim().toLowerCase();
-  if (ok(fromUrl)) return fromUrl;
-  if (ok(stored)) return stored;
-  return fallback;
-};
-
-type LocLike = { pathname: string; search: string; hash: string };
-
-/**
- * URL for `loc` with ?token= set to `slug`. The default project is omitted so a
- * plain URL stays plain (same rule as range/chain). Null when nothing changes.
- */
-export const withToken = (loc: LocLike, slug: string, defaultSlug: string = DEFAULT_PROJECT_SLUG): string | null => {
-  const q = new URLSearchParams(loc.search);
-  if (slug === defaultSlug) q.delete(TOKEN_PARAM);
-  else q.set(TOKEN_PARAM, slug);
-  const search = q.toString() ? `?${q.toString()}` : "";
-  if (search === loc.search) return null;
-  return `${loc.pathname}${search}${loc.hash}`;
-};
 
 export type ProjectChainMeta = { key: string; label: string; explorerUrl: string; tokenUrl: string };
 
