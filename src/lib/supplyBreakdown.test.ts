@@ -61,14 +61,18 @@ describe("groupSupplyCategories — residual label", () => {
 
 describe("ZBCN staking copy", () => {
   const zbcn = getProject("zebec-network");
-  it("holders.staked.info carries the vault-gap explainer and the dual-totals note", () => {
+  it("holders.staked.info carries Super App disclaimer, vault-gap explainer, and dual-totals note", () => {
     const info = copyText(zbcn, "holders.staked.info", "generic");
     expect(info).toContain("AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp");
     expect(info).toMatch(/2\.42%/);
     expect(info).toMatch(/0\.5%/);
-    expect(info).toMatch(/4\.79B/);
-    expect(info).toMatch(/4\.80B/);
+    expect(info).toMatch(/4\.75B/);
+    expect(info).toMatch(/4\.76B/);
     expect(info).toMatch(/reward vaults/);
+    expect(info).toMatch(/Global Staked/);
+    expect(info).toMatch(/18\.9B/);
+    expect(info).toMatch(/not current TVL/i);
+    expect(info).toMatch(/methodology tip/i);
   });
 
   it("residual body does not claim Ethereum / Polygon / Base bridges", () => {
@@ -89,8 +93,8 @@ describe("ZBCN staking copy", () => {
     );
     expect(lockup.vaultReconcile).toBe("exempt");
     expect(lockup.vaultGapRatio).toBeCloseTo(0.0242, 3);
-    // Positions drift with the daily refresh; copy says "~4.79B", so allow ±0.05B.
-    expect(staking.stakedTotal / 1e9).toBeCloseTo(4.79, 1);
-    expect(supply.categories.staking / 1e9).toBeCloseTo(4.8, 1);
+    // Positions drift with the daily refresh; copy says "~4.75B", so allow ±0.05B.
+    expect(staking.stakedTotal / 1e9).toBeCloseTo(4.75, 1);
+    expect(supply.categories.staking / 1e9).toBeCloseTo(4.76, 1);
   });
 });
