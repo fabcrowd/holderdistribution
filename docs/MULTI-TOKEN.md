@@ -15,15 +15,21 @@ site serve more than one token.
 | Node helpers | `scripts/lib/projects.js` |
 | Frontend registry and URLs | `src/lib/projects.ts`, `src/lib/dataUrl.ts` (`dataUrl(slug, file)`) |
 | Active project | `src/lib/projectStore.ts` + `useProject()` (`src/hooks/useProject.ts`) |
-| Header switcher | `src/components/TokenSwitcher.tsx` |
+| Routes (`/` landing, `/<slug>` terminal, legacy redirects) | `src/App.tsx`, `src/lib/tokenRoutes.ts`, `src/components/routing/` |
+| Landing cards | `src/pages/Landing.tsx`, `src/components/TokenCard.tsx`, `src/lib/landingStats.ts` |
+| Token image + header mark | `public/tokens/<slug>.<png or jpg>` (config `image`), `src/components/TokenIdentity.tsx` |
 | Project-driven copy | `src/lib/projectCopy.ts`, `useProjectCopy()` (`src/hooks/useProjectCopy.ts`), `src/lib/glossary.ts` |
 | Pipeline `--project` | `parseProjectArg` / `pipelineProject` in `scripts/lib/projects.js` |
 | Pipeline data paths and addresses | `projectPaths`, `projectWork`, `projectChains`, `projectClassificationPath` in `scripts/lib/projects.js`; `scripts/lib/stakerTarget.js`; `scripts/lib/exchangeFlowChains.js` |
 | Workflow commit paths | `scripts/workflow-paths.js` |
 
-The active project comes from `?token=<slug>`, then localStorage (`ha:project`),
-then the registry default. The default slug is never written into the URL, so
-existing links stay clean. Every feed hook keys its query by slug.
+The active project is the URL path: `/<slug>` (e.g. `/tel`, `/zebec-network`).
+`/` is the landing page (one card per project) and never auto-redirects.
+Legacy `/?token=<slug>`, `/holders` and `/holders?token=<slug>` redirect to
+`/<slug>` (`legacyRedirect` in `src/lib/tokenRoutes.ts`); an unknown slug is a
+404. There is no token switcher: the header's token image + name link home.
+Every feed hook keys its query by slug. A slug must not be one of
+`RESERVED_ROOT_SEGMENTS` (a test enforces it).
 
 ## TEL and the legacy root (`data.legacyRoot`)
 
@@ -432,7 +438,7 @@ The first non-TEL project, mapped 2026-10-25
 (`docs/superpowers/plans/2026-10-25-zbcn-mapping.md`).
 
 - **Identity:** slug `zebec-network` (`config/projects/zebec-network.json`,
-  `?token=zebec-network`, `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`).
+  `/zebec-network`, `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`).
   Mint `ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU` (SPL, 6 decimals),
   **Solana-only** (`origin: true`, `bridge: "native"`). The chain tabs are
   Combined and Solana, and the explorer is Solscan. Feeds are in
@@ -632,20 +638,27 @@ wording, and only render when a project has a ledger.
    For each extra chain, confirm `bridge` (`native` / `lock-mint` / `burn-mint`)
    from the project's bridge docs and mark the `origin`. Add a Solana chain
    only if the token is actually deployed there (see "Solana chains").
-3. Put the browser feeds in `public/data/<slug>/` (same file names as TEL, see
+3. Cache the token's CoinGecko coin image (build time only, never fetched by
+   the browser): read `image.large` from
+   `https://api.coingecko.com/api/v3/coins/<coingecko-id>`, download it without
+   its `?…` query to `public/tokens/<slug>.<png|jpg>` in its original format,
+   and set `"image": "/tokens/<slug>.<ext>"` in `config/projects/<slug>.json`.
+   CSP `img-src` stays `'self'`. Then run `npx tsx scripts/generate-sitemap.ts`
+   so the sitemap lists `/<slug>`.
+4. Put the browser feeds in `public/data/<slug>/` (same file names as TEL, see
    `BROWSER_DATA_FILES` in `scripts/lib/browserDataFiles.js`). Ported pipeline
    scripts write there when run with `--project <slug>`. Give the config
    `supply.target`, `staking[].kind` / `deployBlock` and its own
    `classification.*` files.
-4. Add the slug to `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`.
+5. Add the slug to `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`.
    A test fails if it is missing.
-5. Optional: add a `holders` block if TEL's tier sizes don't fit the supply, and
+6. Optional: add a `holders` block if TEL's tier sizes don't fit the supply, and
    `chains[].rpc` for chains other than ethereum, polygon and base (Solana:
    `SOLANA_RPC_0..9` if public RPC refuses the holder scan).
-6. Optional: add `copy` overrides for wording the generic templates get wrong.
-7. Run `npm run typecheck && npx vitest run && npm run build`.
+7. Optional: add `copy` overrides for wording the generic templates get wrong.
+8. Run `npm run typecheck && npx vitest run && npm run build`.
 
-The switcher picks the new project up automatically.
+The landing page and the sitemap pick the new project up automatically.
 
 ## Solana CEX wallets
 

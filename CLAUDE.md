@@ -29,8 +29,9 @@ The site was originally extracted from a larger Telcoin Hub multi-page app. It i
 ```
 holderdistribution/
 ├── src/
-│   ├── App.tsx               — router; single route: / and /holders → Holders page
+│   ├── App.tsx               — router: / landing (token picker), /<slug> terminal (Holders), legacy /holders + ?token= redirect
 │   ├── pages/
+│   │   ├── Landing.tsx       — token picker cards
 │   │   └── Holders.tsx       — THE page. Three tabs: Holders, Distribution, Supply
 │   ├── components/           — all UI components (see below)
 │   ├── hooks/                — data-fetching hooks (all named use*.ts)
