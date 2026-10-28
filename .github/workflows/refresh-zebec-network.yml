@@ -1,8 +1,10 @@
 name: Refresh zebec-network holders
 
 # ZBCN (Solana SPL). Same stage order as refresh-tel-holders.yml minus the EVM
-# and CEX-only stages (no CEX wallets are configured for ZBCN, so cex-flows and
-# the downstream exchange-flow / tier-outflow stages are not run). Staking is a
+# holder/staking scans. CEX wallets exist, but exchange-flow and tier-outflow
+# scanners are eth_getLogs-only: with no EVM chains they publish empty feeds
+# (public/data/zebec-network/exchange-flow-history.json and tier-outflows.json)
+# so the terminal shows an empty state instead of loading a 404. Staking is a
 # separate overlay (staked != retail) pulled before the lite feed.
 #
 # refresh-tel-holders.yml's schedule has no inputs, so it always runs HD_PROJECT
@@ -79,13 +81,15 @@ jobs:
           node scripts/generate-holders-lite.js
           node scripts/generate-holders-history.js
           node scripts/generate-holder-transitions.js
+          node scripts/scan-exchange-flows.js
+          node scripts/generate-tier-outflows.js
           node scripts/reconcile-supply.js
           node scripts/append-treasury-history.js
           node scripts/sync-classification-changelog.js
 
       - name: Verify generated files
-        # TEL's list minus funding-wallets.json and cex-*.json (ZBCN has no EVM
-        # staker pull and no CEX wallets yet), plus the Solana staking overlay.
+        # TEL's list minus funding-wallets.json (no EVM staker pull), plus the
+        # Solana staking overlay and the empty exchange-flow / tier-outflow feeds.
         run: |
           REQUIRED_FILES=(
             "$HD_DATA_DIR/tel-holders.json"
@@ -99,6 +103,8 @@ jobs:
             "$HD_DATA_DIR/treasury-history.json"
             "$HD_DATA_DIR/classification-changelog.json"
             "$HD_DATA_DIR/solana-staking.json"
+            "$HD_DATA_DIR/tier-outflows.json"
+            "$HD_DATA_DIR/exchange-flow-history.json"
           )
           for file in "${REQUIRED_FILES[@]}"; do
             if [ ! -f "$file" ]; then
@@ -121,7 +127,7 @@ jobs:
           # appends that dir, so new feeds land too. tel-holders-previous.json
           # (pull-holders-rpc.js's same-run scratch file) is gitignored for
           # per-project dirs and is never staged.
-          FILES_TO_CHECK=$(node scripts/workflow-paths.js files public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/chain-status.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json public/data/solana-staking.json)
+          FILES_TO_CHECK=$(node scripts/workflow-paths.js files public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/chain-status.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json public/data/solana-staking.json public/data/tier-outflows.json public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json)
           git add -A -- $FILES_TO_CHECK
           if git diff --cached --quiet; then
             echo "No changes to commit"

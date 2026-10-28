@@ -640,7 +640,13 @@ const main = async () => {
 
   // Prune ancient days, then sort.
   const allDates = [...dayBuckets.keys()].sort();
-  const latestDate = allDates[allDates.length - 1];
+  const scannedLatest = allDates[allDates.length - 1];
+  // No EVM chains (Solana-only): scanChain never runs, so there are no day
+  // buckets. Still publish every window, including ytd, dated today with
+  // empty tiers. The UI then shows an empty state (or wallet moves from
+  // holder-transitions) instead of a missing-file skeleton. TEL always has
+  // EVM chains, so a TEL run that scanned nothing yet keeps latestDate unset.
+  const latestDate = scannedLatest ?? (Object.keys(CHAINS).length === 0 ? new Date().toISOString().slice(0, 10) : undefined);
   if (latestDate) {
     const cutoff = dayBefore(latestDate, KEEP_DAYS);
     for (const d of allDates) if (d < cutoff) dayBuckets.delete(d);
@@ -796,7 +802,10 @@ const main = async () => {
     chainComplete[chainKey] = !!c && c.latest != null && c.lastBlock != null
       && (c.latest - c.lastBlock) <= CHAINS[chainKey].blocksPerDay;
   }
-  const complete = Object.values(chainComplete).every(Boolean);
+  // Zero chains is vacuously "every chain caught up", which would mark an
+  // unscanned Solana project complete and present unmeasured flows as a
+  // finished zero. TEL always has its three chains, so this stays the same.
+  const complete = Object.keys(CHAINS).length > 0 && Object.values(chainComplete).every(Boolean);
 
   await fs.mkdir(path.dirname(DAYS_STORE_PATH), { recursive: true });
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });

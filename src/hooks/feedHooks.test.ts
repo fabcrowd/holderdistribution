@@ -53,6 +53,14 @@ describe("feed hooks surface HTTP failures as query errors", () => {
     await expect(queryFn()).rejects.toBeInstanceOf(FeedError);
   });
 
+  it("a missing tier-outflows or exchange-flow feed is an empty payload, not an error", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("missing", { status: 404 })));
+    const outflows = useTierOutflows() as unknown as Opts;
+    await expect(outflows.queryFn()).resolves.toEqual({ ranges: {}, complete: false });
+    const flows = useExchangeFlow() as unknown as Opts;
+    await expect(flows.queryFn()).resolves.toEqual([]);
+  });
+
   it("chain-status reads the small chain-status.json, never the 5 MB checkpoint", async () => {
     const f = vi.fn(async () =>
       new Response(JSON.stringify({ generatedAt: "2026-10-23T00:00:00Z", chains: { ethereum: { lastBlock: 1 }, polygon: { lastBlock: 2 }, base: { lastBlock: 3 } } }), { status: 200 }),

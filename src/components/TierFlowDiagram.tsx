@@ -186,7 +186,7 @@ export const TierFlowDiagram = ({
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   // 1 until measured, so the first paint is the unshrunken desktop layout.
   const [scale, setScale] = useState(1);
-  const { fields, netInfo, grossExplainer, maxMigrationCount, loading, errored, ready, complete, attributedDays, totalDays, sourceTierSince, outflowsAsOf, crossingsWindow } = useFlowField(rows, chain, metric, rangeDays);
+  const { fields, netInfo, grossExplainer, maxMigrationCount, loading, errored, empty, ready, complete, attributedDays, totalDays, sourceTierSince, outflowsAsOf, crossingsWindow } = useFlowField(rows, chain, metric, rangeDays);
   const { data: exchangeFlow } = useExchangeFlow();
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
   const isWallets = metric === "wallets";
@@ -626,6 +626,7 @@ export const TierFlowDiagram = ({
   }, [selectedField, expandedFlow, selectedSideTile]);
 
   if (loading) return <FlowSkeleton terminal={isTerminal} height={CANVAS_H} />;
+  if (empty) return <FlowEmpty />;
   if (errored || !ready) return <FlowError />;
 
   const detailNode: ReactNode = selectedField ? (
@@ -1365,6 +1366,15 @@ const FlowSkeleton = ({ terminal = false, height = DEFAULT_CANVAS_H }: { termina
       className="mx-auto animate-pulse rounded-xl border border-border/50 bg-muted/20"
       style={terminal ? { width: "100%", height: Math.round(height * 0.92) } : { width: CANVAS_W, maxWidth: "100%", height }}
     />
+  </div>
+);
+
+const FlowEmpty = () => (
+  <div
+    className="flex min-h-[12rem] items-center justify-center rounded-xl border border-border/50 bg-muted/10 p-8 text-center text-sm text-muted-foreground"
+    data-testid="tier-flows-empty"
+  >
+    No tier flows for this period yet.
   </div>
 );
 
