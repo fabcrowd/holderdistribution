@@ -54,6 +54,8 @@ export type ProjectChain = {
 
 export type ProjectConfig = ProjectEntry & {
   description?: string;
+  /** Cached CoinGecko coin image, served from public/tokens/ (e.g. "/tokens/tel.png"). Never a remote URL (CSP img-src is 'self'). */
+  image?: string;
   links?: Record<string, string>;
   data?: { legacyRoot?: boolean; dir?: string };
   supply?: { target?: number; targetLabel?: string; generationsSumOneToOne?: boolean; note?: string };

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import registry from "../../config/projects.json";
 import tel from "../../config/projects/tel.json";
 import {
@@ -73,6 +75,16 @@ describe("resolveInitialSlug (?token= > localStorage > default)", () => {
   it("uses the real registry by default", () => {
     expect(resolveInitialSlug("?token=tel", null)).toBe("tel");
     expect(resolveInitialSlug("?token=zzz", "zzz")).toBe("tel");
+  });
+});
+
+describe("token images", () => {
+  it("every mapped project has a cached image under public/tokens/<slug>.(png|jpg)", () => {
+    for (const p of PROJECTS) {
+      const img = getProject(p.slug).image;
+      expect(img, p.slug).toMatch(new RegExp(`^/tokens/${p.slug}\\.(png|jpg)$`));
+      expect(fs.existsSync(path.resolve(__dirname, "../../public", img!.slice(1))), img).toBe(true);
+    }
   });
 });
 
