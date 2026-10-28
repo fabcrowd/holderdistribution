@@ -10,8 +10,8 @@ type TerminalPanelProps = {
   title: ReactNode;
   /** Plain-text title for labels when `title` is not a string. */
   titleText?: string;
-  /** One-line explainer, shown in a tooltip rather than taking a row. */
-  info?: string;
+  /** Explainer shown in the (i) tip rather than taking a row. Strings keep line breaks; a node can include proof links. */
+  info?: ReactNode;
   /** Headline figure(s) beside the title, e.g. the current value + change. */
   stat?: ReactNode;
   /** Right-aligned header controls (toggles, "Details" link). */

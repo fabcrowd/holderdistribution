@@ -37,6 +37,8 @@ const PROJECT_AGNOSTIC_FILES = [
   "src/components/terminal/TerminalDashboard.tsx",
   "src/components/terminal/DistributionTerminal.tsx",
   "src/components/terminal/HoldersTerminal.tsx",
+  "src/components/terminal/StakedPanelTip.tsx",
+  "src/lib/stakedPanelTip.ts",
   "src/components/HeadlineBody.tsx",
   "src/components/LockedAnalysisTile.tsx",
 ];

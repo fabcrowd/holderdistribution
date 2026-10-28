@@ -12,6 +12,7 @@ import { HOLDERS_PRIMARY_ROW_HEIGHT, SECONDARY_CHART_ROW_PX, TABLE_PANEL_PX } fr
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
 import { TimeChart, SignedBars, CategoryBars, type ChartMarker } from "./MiniCharts";
 import { DetailsButton } from "./DetailsButton";
+import { StakedPanelTip } from "./StakedPanelTip";
 import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
 
 const int = new Intl.NumberFormat("en-US");
@@ -309,11 +310,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         className="h-full min-h-0"
         title={`Staked ${tk}`}
-        info={
-          v3Staking
-            ? `Retail ${tk} staked in the legacy staking contract plus the v3 StakingModule (Polygon, live ${v3DeployDate}), counted once per staker. v3 balances weren't recorded between its launch and the latest snapshot, so the total has a gap there rather than a guessed line.`
-            : `Retail ${tk} locked in staking contracts. All chains combined.`
-        }
+        info={<StakedPanelTip />}
         stat={
           s &&
           stakedNow != null && (
