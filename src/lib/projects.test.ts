@@ -9,9 +9,7 @@ import {
   SLUG_RE,
   getProject,
   isProjectSlug,
-  resolveInitialSlug,
   supplyTargetLabel,
-  withToken,
 } from "./projects";
 import { TEL_LEGACY_ADDRESS, TEL_UPGRADE_CONTRACTS, TEL_V3_ADDRESS } from "./telContracts";
 
@@ -60,24 +58,6 @@ describe("project registry", () => {
   });
 });
 
-describe("resolveInitialSlug (?token= > localStorage > default)", () => {
-  const known = ["tel", "abc"];
-  it("prefers a valid ?token=", () => {
-    expect(resolveInitialSlug("?token=abc", "tel", known, "tel")).toBe("abc");
-    expect(resolveInitialSlug("?range=30&token=ABC", null, known, "tel")).toBe("abc");
-  });
-  it("falls back to the remembered choice, then the default", () => {
-    expect(resolveInitialSlug("", "abc", known, "tel")).toBe("abc");
-    expect(resolveInitialSlug("?token=evil", "abc", known, "tel")).toBe("abc");
-    expect(resolveInitialSlug("?token=evil", "also-bad", known, "tel")).toBe("tel");
-    expect(resolveInitialSlug("", null, known, "tel")).toBe("tel");
-  });
-  it("uses the real registry by default", () => {
-    expect(resolveInitialSlug("?token=tel", null)).toBe("tel");
-    expect(resolveInitialSlug("?token=zzz", "zzz")).toBe("tel");
-  });
-});
-
 describe("token images", () => {
   it("every mapped project has a cached image under public/tokens/<slug>.(png|jpg)", () => {
     for (const p of PROJECTS) {
@@ -85,19 +65,5 @@ describe("token images", () => {
       expect(img, p.slug).toMatch(new RegExp(`^/tokens/${p.slug}\\.(png|jpg)$`));
       expect(fs.existsSync(path.resolve(__dirname, "../../public", img!.slice(1))), img).toBe(true);
     }
-  });
-});
-
-describe("withToken", () => {
-  const loc = (search: string) => ({ pathname: "/", search, hash: "#supply" });
-  it("writes ?token= for a non-default project and keeps other params + hash", () => {
-    expect(withToken(loc("?range=30"), "abc", "tel")).toBe("/?range=30&token=abc#supply");
-  });
-  it("omits the default project so plain URLs stay plain", () => {
-    expect(withToken(loc("?token=abc&range=30"), "tel", "tel")).toBe("/?range=30#supply");
-    expect(withToken(loc(""), "tel", "tel")).toBeNull();
-  });
-  it("returns null when nothing changes", () => {
-    expect(withToken(loc("?token=abc"), "abc", "tel")).toBeNull();
   });
 });
