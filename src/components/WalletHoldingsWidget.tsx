@@ -18,6 +18,7 @@ import { SubPanelTabs } from "@/components/SubPanelTabs";
 import { HOLDER_EXPLORE_PANELS } from "@/lib/terminalCopy";
 import { formatSourceLabel, formatCompact } from "@/lib/format";
 import { v3StakingGapEvents } from "@/lib/staking";
+import { barSizing, computeYAxisFromRows } from "@/lib/chartAxes";
 import { TabsContent } from "@/components/ui/tabs";
 import {
   Table,
@@ -394,6 +395,8 @@ const renderConcentration = (
     value: item.value,
     percent: supply > 0 ? (item.value / supply) * 100 : 0,
   }));
+  const concentrationY = computeYAxisFromRows(concentrationChartData, ["percent"], { kind: "bar" });
+  const concentrationSizing = barSizing(concentrationChartData.length);
   const concentrationChartConfig = {
     percent: { label: "% of retail", color: "hsl(var(--primary))" },
   };
@@ -470,12 +473,12 @@ const renderConcentration = (
         <div className="premium-surface-card p-4">
           <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 text-center">Top holders share of retail (% by tier)</p>
           <ChartContainer config={concentrationChartConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full`}>
-            <BarChart data={concentrationChartData} margin={{ top: 12, right: 12, bottom: 24, left: 12 }}>
+            <BarChart data={concentrationChartData} margin={{ top: 12, right: 12, bottom: 24, left: 12 }} barCategoryGap={concentrationSizing.barCategoryGap}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
               <XAxis dataKey="label" tick={CHART_TICK} />
-              <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} />
+              <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} domain={concentrationY.domain} ticks={concentrationY.ticks} />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="percent" fill="hsl(var(--primary) / 0.8)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="percent" fill="hsl(var(--primary) / 0.8)" radius={[4, 4, 0, 0]} maxBarSize={concentrationSizing.maxBarSize} minPointSize={concentrationSizing.minPointSize} />
             </BarChart>
           </ChartContainer>
         </div>
@@ -638,8 +641,7 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
     count: b.count,
     curve: curveValues[i],
   }));
-  const maxCount = chartData.length > 0 ? Math.max(...chartData.map((d) => Math.max(d.count, d.curve))) : 0;
-  const yDomainMax = maxCount > 0 ? Math.ceil(maxCount * 1.1) : 1;
+  const fitSizing = barSizing(chartData.length);
 
   // Option B: percentile ruler data
   const percentiles = [
@@ -731,7 +733,10 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
               Buckets exclude sub-1-{copy.ticker} dust wallets, so bars sum to slightly fewer holders than the tiles above.
             </p>
             <ToggleableSeries items={FIT_LEGEND} className="mb-2 justify-center">
-              {(isVisible) => (
+              {(isVisible) => {
+                // Fitted to whichever of bars / curve is switched on.
+                const fitY = computeYAxisFromRows(chartData, ["count", "curve"].filter((k) => isVisible(k)), { kind: "bar", integer: true });
+                return (
             <ChartContainer
               config={{
                 count: { label: "Wallets", color: "hsl(var(--primary))" },
@@ -739,12 +744,12 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
               }}
               className={`${CHART_HEIGHT_CLASS.standard} w-full`}
             >
-              <ComposedChart data={chartData} margin={{ top: 20, right: 24, bottom: 36, left: 24 }}>
+              <ComposedChart data={chartData} margin={{ top: 20, right: 24, bottom: 36, left: 24 }} barCategoryGap={fitSizing.barCategoryGap}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis dataKey="range" tickFormatter={balanceRangeDisplayLabel} tick={CHART_TICK} height={36} />
-                <YAxis tick={CHART_TICK} domain={isVisible("count") ? [0, yDomainMax] : [0, "auto"]} allowDataOverflow={false} />
+                <YAxis tick={CHART_TICK} domain={fitY.domain} ticks={fitY.ticks} allowDataOverflow={false} />
                 <ChartTooltip content={<ChartTooltipContent labelFormatter={(value) => balanceRangeDisplayLabel(String(value))} />} />
-                {isVisible("count") && <Bar dataKey="count" fill="hsl(var(--primary) / 0.35)" stroke="hsl(var(--primary))" strokeWidth={1} radius={[4, 4, 0, 0]} />}
+                {isVisible("count") && <Bar dataKey="count" fill="hsl(var(--primary) / 0.35)" stroke="hsl(var(--primary))" strokeWidth={1} radius={[4, 4, 0, 0]} maxBarSize={fitSizing.maxBarSize} minPointSize={fitSizing.minPointSize} />}
                 {isVisible("curve") && <Line
                   dataKey="curve"
                   type="monotone"
@@ -764,7 +769,8 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
                 )}
               </ComposedChart>
             </ChartContainer>
-              )}
+                );
+              }}
             </ToggleableSeries>
           </div>
         )}
@@ -813,8 +819,8 @@ const renderStakingInsights = (
     range: b.rangeLabel,
     count: b.count,
   })) ?? [];
-  const maxCount = chartData.length > 0 ? Math.max(...chartData.map((d) => d.count)) : 0;
-  const yDomainMax = maxCount > 0 ? Math.ceil(maxCount * 1.08) : 1;
+  const stakedY = computeYAxisFromRows(chartData, ["count"], { kind: "bar", integer: true });
+  const stakedSizing = barSizing(chartData.length);
 
   return (
     <Card className="premium-surface-card">
@@ -851,16 +857,18 @@ const renderStakingInsights = (
               <BarChart
                 data={chartData}
                 margin={{ top: 20, right: 24, bottom: 36, left: 24 }}
+                barCategoryGap={stakedSizing.barCategoryGap}
               >
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis dataKey="range" tickFormatter={balanceRangeDisplayLabel} tick={CHART_TICK} height={36} />
                 <YAxis
                   tick={CHART_TICK}
-                  domain={[0, yDomainMax]}
+                  domain={stakedY.domain}
+                  ticks={stakedY.ticks}
                   allowDataOverflow={false}
                 />
                 <ChartTooltip content={<ChartTooltipContent labelFormatter={(value) => balanceRangeDisplayLabel(String(value))} />} />
-                <Bar dataKey="count" fill="hsl(var(--primary) / 0.35)" stroke="hsl(var(--primary))" strokeWidth={1} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="hsl(var(--primary) / 0.35)" stroke="hsl(var(--primary))" strokeWidth={1} radius={[4, 4, 0, 0]} maxBarSize={stakedSizing.maxBarSize} minPointSize={stakedSizing.minPointSize} />
                 {distribution?.averageStakedRangeLabel && chartData.some((d) => d.range === distribution.averageStakedRangeLabel) && (
                   <ReferenceLine
                     x={distribution.averageStakedRangeLabel}

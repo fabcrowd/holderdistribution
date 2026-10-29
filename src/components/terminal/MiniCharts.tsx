@@ -19,7 +19,18 @@ import { formatCompact } from "@/lib/format";
 import { useChartIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
 import { computeBreakAwareDomain } from "@/lib/chartDomain";
-import { assignAxes, hasRightAxis, keysOnAxis, type AxisSide } from "@/lib/chartAxes";
+import {
+  assignAxes,
+  barSizing,
+  computeYAxis,
+  computeYAxisFromRows,
+  distinctTickFormatter,
+  hasRightAxis,
+  keysOnAxis,
+  type AxisSide,
+  type YAxisScale,
+} from "@/lib/chartAxes";
+import { AxisBaselineNote } from "@/components/chart/AxisBaselineNote";
 import { CHART_LABEL_FONT_PX, CHART_TICK } from "@/lib/terminalLayout";
 import { ZoomFrame } from "@/components/chart/ZoomFrame";
 import { ChartLegend, type LegendItem } from "@/components/chart/ChartLegend";
@@ -171,12 +182,19 @@ export const TimeChart = ({
   const chartData = useMemo(() => insertBreakSpacers(data, breakTs, "t", keys) as typeof data, [data, breakTs, keys]);
   const axes = useMemo(() => assignAxes(series), [series]);
   const dual = hasRightAxis(series);
-  // Each axis is scaled to its own series only (a break's jump stays out of
-  // the domain too). Single-axis, break-free charts keep Recharts' auto scale.
-  const domainFor = (side: AxisSide) =>
-    split || dual ? computeBreakAwareDomain(data, keysOnAxis(series, side), breakTs, "t") : (["auto", "auto"] as ["auto", "auto"]);
-  const domain = useMemo(() => domainFor("left"), [split, dual, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
-  const rightDomain = useMemo(() => (dual ? domainFor("right") : undefined), [split, dual, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Each axis is scaled to the visible rows and visible series on that side
+  // (zoom window and legend toggles already applied). A declared break's jump
+  // stays out of the domain: the break-aware bounds are what get scaled.
+  const scaleFor = (side: AxisSide): YAxisScale => {
+    const sideKeys = keysOnAxis(series, side);
+    if (!split) return computeYAxisFromRows(data, sideKeys, { kind: "line" });
+    const [lo, hi] = computeBreakAwareDomain(data, sideKeys, breakTs, "t", { allowNegative: true });
+    return typeof lo === "number" && typeof hi === "number" ? computeYAxis([lo, hi], { kind: "line" }) : computeYAxis([], { kind: "line" });
+  };
+  const leftScale = useMemo(() => scaleFor("left"), [split, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rightScale = useMemo(() => (dual ? scaleFor("right") : undefined), [split, dual, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const leftFmt = useMemo(() => distinctTickFormatter(leftScale.ticks, formatCompact), [leftScale]);
+  const rightFmt = useMemo(() => (rightScale ? distinctTickFormatter(rightScale.ticks, formatCompact) : undefined), [rightScale]);
   const breakNotes = useMemo(() => breakNotesByRow(data.map((d) => d.t), breaks), [data, breaks]);
   // Too few points to call a curve: straight segments, visible dots, a note.
   const limited = limitedHistoryCount(allData, keys);
@@ -222,6 +240,8 @@ export const TimeChart = ({
         />
       )}
       <ZoomFrame zoom={zoom} className="min-h-0 flex-1">
+      <AxisBaselineNote baseline={leftScale.baseline} />
+      {rightScale && <AxisBaselineNote baseline={rightScale.baseline} side="right" />}
       <div role="img" aria-label={fullLabel} className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
         <Chart data={chartData} margin={MARGIN}>
@@ -243,9 +263,10 @@ export const TimeChart = ({
             tickLine={false}
             axisLine={false}
             width={48}
-            domain={domain}
+            domain={leftScale.domain}
+            ticks={leftScale.ticks}
             allowDataOverflow={split}
-            tickFormatter={(v: number) => formatCompact(v, 1)}
+            tickFormatter={leftFmt}
           />
           {dual && (
             <YAxis
@@ -255,9 +276,10 @@ export const TimeChart = ({
               tickLine={false}
               axisLine={false}
               width={48}
-              domain={rightDomain}
+              domain={rightScale?.domain}
+              ticks={rightScale?.ticks}
               allowDataOverflow={split}
-              tickFormatter={(v: number) => formatCompact(v, 1)}
+              tickFormatter={rightFmt}
             />
           )}
           <Tooltip content={<TooltipBox series={series} format={format} breakNotes={breakNotes} />} />
@@ -348,19 +370,23 @@ export const SignedBars = ({ data: allData, format = (n) => formatCompact(n), la
   // Bars sit on a category axis, so the zoom window is in row-index units.
   const zoom = useChartZoom(allData, (_, i) => i);
   const data = zoom.rows;
+  const y = useMemo(() => computeYAxisFromRows(data, ["value"], { kind: "bar" }), [data]);
+  const yFmt = useMemo(() => distinctTickFormatter(y.ticks, formatCompact), [y]);
+  const sizing = barSizing(data.length);
   return (
     <ZoomFrame zoom={zoom} className="h-full w-full">
     <div role="img" aria-label={label} className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={MARGIN}>
+        <BarChart data={data} margin={MARGIN} barCategoryGap={sizing.barCategoryGap}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
           <XAxis dataKey="t" tickFormatter={(v) => fmtDate(v)} tick={TICK} tickLine={false} axisLine={false} minTickGap={40} />
-          <YAxis tick={TICK} tickLine={false} axisLine={false} width={48} tickFormatter={(v: number) => formatCompact(v, 1)} />
+          <YAxis tick={TICK} tickLine={false} axisLine={false} width={48} domain={y.domain} ticks={y.ticks} tickFormatter={yFmt} />
+          <ReferenceLine y={0} stroke="hsl(var(--border))" />
           <Tooltip
             cursor={{ fill: "hsl(var(--muted))" }}
             content={<TooltipBox series={[{ key: "value", label: seriesLabel, color: "hsl(var(--primary))" }]} format={format} />}
           />
-          <Bar dataKey="value" isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out">
+          <Bar dataKey="value" maxBarSize={sizing.maxBarSize} minPointSize={sizing.minPointSize} isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out">
             {data.map((d) => (
               <Cell key={d.t} fill={d.value >= 0 ? "hsl(var(--ha-positive))" : "hsl(var(--ha-negative))"} />
             ))}
@@ -383,13 +409,16 @@ type CategoryBarsProps = {
 export const CategoryBars = ({ data, format = (n) => formatCompact(n), label }: CategoryBarsProps) => {
   const anim = useChartIntro();
   const { ticker } = useProjectCopy();
+  const y = useMemo(() => computeYAxisFromRows(data, ["value"], { kind: "bar" }), [data]);
+  const yFmt = useMemo(() => distinctTickFormatter(y.ticks, formatCompact), [y]);
+  const sizing = barSizing(data.length);
   return (
     <div role="img" aria-label={label} className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={MARGIN}>
+        <BarChart data={data} margin={MARGIN} barCategoryGap={sizing.barCategoryGap}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
           <XAxis dataKey="name" tick={TICK} tickLine={false} axisLine={false} interval={0} />
-          <YAxis tick={TICK} tickLine={false} axisLine={false} width={48} tickFormatter={(v: number) => formatCompact(v, 1)} />
+          <YAxis tick={TICK} tickLine={false} axisLine={false} width={48} domain={y.domain} ticks={y.ticks} tickFormatter={yFmt} />
           <Tooltip
             cursor={{ fill: "hsl(var(--muted))" }}
             formatter={(v: number) => [format(v), "Wallets"]}
@@ -407,7 +436,7 @@ export const CategoryBars = ({ data, format = (n) => formatCompact(n), label }: 
             labelStyle={{ color: "hsl(var(--popover-foreground))" }}
             itemStyle={{ color: "hsl(var(--popover-foreground))" }}
           />
-          <Bar dataKey="value" radius={[2, 2, 0, 0]} isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out">
+          <Bar dataKey="value" radius={[2, 2, 0, 0]} maxBarSize={sizing.maxBarSize} minPointSize={sizing.minPointSize} isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out">
             {data.map((d) => (
               <Cell key={d.name} fill={d.highlight ? "hsl(var(--ha-accent))" : "hsl(var(--primary))"} />
             ))}

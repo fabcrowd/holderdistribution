@@ -3,6 +3,9 @@ import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import "@/lib/rechartsMotion";
+import { barSizing, computeYAxisFromRows, distinctTickFormatter } from "@/lib/chartAxes";
+import { formatCompact } from "@/lib/format";
+import { CHART_TICK } from "@/lib/terminalLayout";
 import { ZoomFrame } from "@/components/chart/ZoomFrame";
 import { useChartZoom } from "@/hooks/useChartZoom";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
@@ -52,6 +55,10 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
   }, [entries, rangeDays]);
 
   const zoom = useChartZoom(view?.series ?? NO_ROWS, (d) => d.timestamp);
+  // Signed daily bars: zero baseline fitted to the visible days only.
+  const netScale = computeYAxisFromRows(zoom.rows, ["net"], { kind: "bar" });
+  const netFmt = distinctTickFormatter(netScale.ticks, formatCompact);
+  const sizing = barSizing(zoom.rows.length);
 
   // Still fetching, or a real failure (5xx): the terminal panel owns the
   // skeleton and the retry. A settled empty feed is the empty state.
@@ -103,7 +110,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
         </p>
         <ZoomFrame zoom={zoom} className="h-[220px] w-full">
         <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
-          <BarChart data={zoom.rows} margin={{ top: 8, right: 8, bottom: 4, left: 8 }}>
+          <BarChart data={zoom.rows} margin={{ top: 8, right: 8, bottom: 4, left: 8 }} barCategoryGap={sizing.barCategoryGap}>
             <CartesianGrid vertical={false} className="stroke-border/40" />
             <XAxis
               dataKey="timestamp"
@@ -111,10 +118,10 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
               domain={["dataMin", "dataMax"]}
               scale="time"
               tickFormatter={(v) => new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })}
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+              tick={CHART_TICK}
               tickMargin={8}
             />
-            <YAxis tickFormatter={(v) => formatCompactAmount(v)} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={52} />
+            <YAxis tickFormatter={netFmt} tick={CHART_TICK} width={52} domain={netScale.domain} ticks={netScale.ticks} />
             <ReferenceLine y={0} className="stroke-border" />
             <ChartTooltip
               content={
@@ -127,7 +134,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
                 />
               }
             />
-            <Bar dataKey="net" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+            <Bar dataKey="net" radius={[2, 2, 0, 0]} maxBarSize={sizing.maxBarSize} minPointSize={sizing.minPointSize} isAnimationActive={false}>
               {zoom.rows.map((d) => (
                 <Cell key={d.timestamp} fill={d.net >= 0 ? "hsl(0 72% 55%)" : "hsl(142 71% 45%)"} />
               ))}

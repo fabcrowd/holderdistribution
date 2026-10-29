@@ -4,7 +4,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "rec
 import "@/lib/rechartsMotion";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { useTreasuryHistory } from "@/hooks/useTreasuryHistory";
-import { computeSeriesDomain, activeKeys } from "@/lib/chartDomain";
+import { activeKeys } from "@/lib/chartDomain";
+import { computeYAxisFromRows, distinctTickFormatter } from "@/lib/chartAxes";
+import { AxisBaselineNote } from "@/components/chart/AxisBaselineNote";
 import { formatChartTimestamp } from "@/lib/chartDate";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { ZoomFrame } from "@/components/chart/ZoomFrame";
@@ -95,10 +97,11 @@ const historyInfo = (copy: Pick<UseProjectCopy, "entities" | "text">): string =>
   );
 };
 
-const formatCompactAmount = (value: number, unit: string) => {
+/** `digits` is the precision the axis needs to keep neighbouring gridlines distinct. */
+const formatCompactAmount = (value: number, unit: string, digits = 1) => {
   const abs = Math.abs(value);
-  if (abs >= 1e9) return `${(value / 1e9).toFixed(2)}B ${unit}`;
-  if (abs >= 1e6) return `${(value / 1e6).toFixed(1)}M ${unit}`;
+  if (abs >= 1e9) return `${(value / 1e9).toFixed(Math.max(2, digits))}B ${unit}`;
+  if (abs >= 1e6) return `${(value / 1e6).toFixed(Math.max(1, digits))}M ${unit}`;
   return `${new Intl.NumberFormat().format(Math.round(value))} ${unit}`;
 };
 const formatSignedAmount = (value: number, unit: string) => {
@@ -199,8 +202,9 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
   }, [points, mode]);
 
   const zoom = useChartZoom(display, (d) => d.timestamp);
-  const domain = useMemo(
-    () => computeSeriesDomain(zoom.rows, activeKeys(visible), { allowNegative: mode === "change" }),
+  // Fitted to the visible rows and the lines switched on.
+  const yScale = useMemo(
+    () => computeYAxisFromRows(zoom.rows, activeKeys(visible), { kind: "line", allowNegative: mode === "change" }),
     [zoom.rows, visible, mode],
   );
 
@@ -208,6 +212,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
   if (!data || points.length < 2) return null;
 
   const fmt = (v: number) => (mode === "change" ? formatSignedAmount : formatCompactAmount)(v, copy.ticker);
+  const axisFmt = distinctTickFormatter(yScale.ticks, (v, d) => (mode === "change" ? formatSignedAmount : formatCompactAmount)(v, copy.ticker, d));
   const dateFmt = new Intl.DateTimeFormat(undefined, { month: "short", year: "numeric", timeZone: "UTC" });
   const tipFmt = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" });
 
@@ -259,6 +264,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
       </div>
 
       <ZoomFrame zoom={zoom} className={`${compact ? "h-44" : "h-56"} w-full`}>
+        <AxisBaselineNote baseline={yScale.baseline} format={fmt} />
         <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
           <LineChart data={zoom.rows} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} />
@@ -270,7 +276,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
               tickFormatter={(v) => formatChartTimestamp(v, dateFmt)}
               tickMargin={8}
             />
-            <YAxis tickFormatter={(v) => fmt(Number(v))} domain={domain} tickMargin={8} width={56} />
+            <YAxis tickFormatter={(v) => axisFmt(Number(v))} domain={yScale.domain} ticks={yScale.ticks} tickMargin={8} width={56} />
             <ChartTooltip
               content={
                 <ChartTooltipContent

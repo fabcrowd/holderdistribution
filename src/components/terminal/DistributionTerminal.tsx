@@ -23,8 +23,13 @@ import { CHART_TICK, TYPE_PX } from "@/lib/terminalLayout";
 import { useTierGeometry } from "@/components/tierflow/useTierGeometry";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { formatCompact } from "@/lib/format";
+import { barSizing, computeYAxisFromRows, distinctTickFormatter } from "@/lib/chartAxes";
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
+
+/** Room beyond the longest bar for its value label. */
+const NET_LABEL_HEADROOM = 0.3;
 
 const int = new Intl.NumberFormat("en-US");
 
@@ -216,6 +221,10 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
     value: r.previousCount != null ? r.count - r.previousCount : 0,
     has: r.previousCount != null,
   }));
+  // Signed bars: zero baseline, fitted to the net changes, with extra headroom for end labels.
+  const netScale = computeYAxisFromRows(netByTier, ["value"], { kind: "bar", headroom: NET_LABEL_HEADROOM });
+  const netFmt = distinctTickFormatter(netScale.ticks, formatCompact);
+  const netSizing = barSizing(netByTier.length);
 
   const placeholder = !snapshot ? (snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />) : null;
   const detailTitle = selectedTier
@@ -422,16 +431,17 @@ Select a tier here or in the Tiers table to see where its wallets and ${tk} came
                     className="h-full w-full [&_.recharts-bar-rectangle]:cursor-pointer"
                   >
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={netByTier} layout="vertical" margin={{ top: 2, right: 16, bottom: 0, left: 0 }}>
+                      <BarChart data={netByTier} layout="vertical" barCategoryGap={netSizing.barCategoryGap} margin={{ top: 2, right: 16, bottom: 0, left: 0 }}>
                         <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
                         <XAxis
                           type="number"
-                          // Headroom on both sides so the value labels at the bar ends fit.
-                          domain={[(min: number) => (min < 0 ? Math.floor(min * 1.3) : 0), (max: number) => (max > 0 ? Math.ceil(max * 1.3) : 0)]}
+                          // Fitted to the bars, with extra headroom so the value labels at the bar ends fit.
+                          domain={netScale.domain}
+                          ticks={netScale.ticks}
                           tick={CHART_TICK}
                           tickLine={false}
                           axisLine={false}
-                          tickFormatter={(v: number) => formatCompact(v, 1)}
+                          tickFormatter={netFmt}
                         />
                         <YAxis type="category" dataKey="name" width={84} tick={CHART_TICK} tickLine={false} axisLine={false} interval={0} />
                         <Tooltip
@@ -443,6 +453,8 @@ Select a tier here or in the Tiers table to see where its wallets and ${tk} came
                         />
                         <Bar
                           dataKey="value"
+                          maxBarSize={netSizing.maxBarSize}
+                          minPointSize={netSizing.minPointSize}
                           isAnimationActive={chartIntro}
                           animationDuration={CHART_DRAW_MS}
                           radius={2}

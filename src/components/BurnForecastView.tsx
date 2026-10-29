@@ -21,6 +21,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ZoomFrame } from "@/components/chart/ZoomFrame";
+import { AxisBaselineNote } from "@/components/chart/AxisBaselineNote";
+import { barSizing, computeYAxisFromRows, distinctTickFormatter, type YAxisScale } from "@/lib/chartAxes";
 import { ChartLegend, type LegendItem } from "@/components/chart/ChartLegend";
 import { useChartZoom } from "@/hooks/useChartZoom";
 import { useSeriesToggle } from "@/hooks/useSeriesToggle";
@@ -200,6 +202,14 @@ export const BurnForecastView = ({
   const spendZoom = useChartZoom(spendSeries, (_, i) => i);
   const spendToggle = useSeriesToggle(SPEND_KEYS);
   const actualsToggle = useSeriesToggle(ACTUALS_KEYS);
+  // Each chart's y-axis is fitted to its visible rows (zoom) and visible series (legend toggles).
+  const cashAxis = computeYAxisFromRows(cashZoom.rows, ["cashUsd"], { kind: "line" });
+  const spendAxis = computeYAxisFromRows(spendZoom.rows, SPEND_KEYS.filter((k) => spendToggle.isVisible(k)), { kind: "line" });
+  const actualsAxis = computeYAxisFromRows(actualsSeries, ACTUALS_KEYS.filter((k) => actualsToggle.isVisible(k)), { kind: "bar" });
+  const bridgeAxis = computeYAxisFromRows(bridgeSeries, ["usd"], { kind: "bar" });
+  const axisFmt = (axis: YAxisScale) => distinctTickFormatter(axis.ticks, formatCompactUsd);
+  const actualsSizing = barSizing(actualsSeries.length);
+  const bridgeSizing = barSizing(bridgeSeries.length);
   const mixTotal = mixSeries.reduce((sum, row) => sum + row.usd, 0);
   const depleteLabel =
     forecast.depletedIn && forecast.depletedIn !== "now"
@@ -295,6 +305,7 @@ export const BurnForecastView = ({
           above. TEL inventory is not in this series.
         </p>
         <ZoomFrame zoom={cashZoom}>
+        <AxisBaselineNote baseline={cashAxis.baseline} format={formatCompactUsd} />
         <ChartContainer config={runwayConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
           <AreaChart data={cashZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
@@ -306,10 +317,11 @@ export const BurnForecastView = ({
             <CartesianGrid vertical={false} className="stroke-border/40" />
             <XAxis dataKey="label" tickMargin={8} />
             <YAxis
-              tickFormatter={(value) => formatCompactUsd(Number(value))}
+              tickFormatter={axisFmt(cashAxis)}
               tickMargin={8}
               width={48}
-              domain={[(dataMin: number) => Math.min(0, dataMin), "auto"]}
+              domain={cashAxis.domain}
+              ticks={cashAxis.ticks}
             />
             <ChartTooltip
               content={
@@ -347,11 +359,12 @@ export const BurnForecastView = ({
             <ChartLegend items={SPEND_LEGEND} hidden={spendToggle.hidden} onToggle={spendToggle.toggle} />
           </div>
           <ZoomFrame zoom={spendZoom}>
+          <AxisBaselineNote baseline={spendAxis.baseline} format={formatCompactUsd} />
           <ChartContainer config={spendConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
             <LineChart data={spendZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid vertical={false} className="stroke-border/40" />
               <XAxis dataKey="label" tickMargin={8} />
-              <YAxis tickFormatter={(value) => formatCompactUsd(Number(value))} tickMargin={8} width={48} />
+              <YAxis tickFormatter={axisFmt(spendAxis)} domain={spendAxis.domain} ticks={spendAxis.ticks} tickMargin={8} width={48} />
               <ChartTooltip
                 content={
                   <ChartTooltipContent
@@ -407,10 +420,10 @@ export const BurnForecastView = ({
             Raised is stablecoin from TEL sales. Paid is that stablecoin sent to an outside payee.
           </p>
           <ChartContainer config={actualsConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
-            <BarChart data={actualsSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <BarChart data={actualsSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barCategoryGap={actualsSizing.barCategoryGap}>
               <CartesianGrid vertical={false} className="stroke-border/40" />
               <XAxis dataKey="label" tickMargin={8} />
-              <YAxis tickFormatter={(value) => formatCompactUsd(Number(value))} tickMargin={8} width={48} />
+              <YAxis tickFormatter={axisFmt(actualsAxis)} domain={actualsAxis.domain} ticks={actualsAxis.ticks} tickMargin={8} width={48} />
               <ChartTooltip
                 content={
                   <ChartTooltipContent
@@ -421,8 +434,8 @@ export const BurnForecastView = ({
                   />
                 }
               />
-              {actualsToggle.isVisible("raisedUsd") && <Bar dataKey="raisedUsd" fill={COLORS.raised} radius={[2, 2, 0, 0]} maxBarSize={28} />}
-              {actualsToggle.isVisible("paidUsd") && <Bar dataKey="paidUsd" fill={COLORS.paid} radius={[2, 2, 0, 0]} maxBarSize={28} />}
+              {actualsToggle.isVisible("raisedUsd") && <Bar dataKey="raisedUsd" fill={COLORS.raised} radius={[2, 2, 0, 0]} maxBarSize={actualsSizing.maxBarSize} minPointSize={actualsSizing.minPointSize} />}
+              {actualsToggle.isVisible("paidUsd") && <Bar dataKey="paidUsd" fill={COLORS.paid} radius={[2, 2, 0, 0]} maxBarSize={actualsSizing.maxBarSize} minPointSize={actualsSizing.minPointSize} />}
             </BarChart>
           </ChartContainer>
         </article>
@@ -434,17 +447,17 @@ export const BurnForecastView = ({
             Opening cash walk
           </h4>
           <ChartContainer config={bridgeConfig} className={`${CHART_HEIGHT_CLASS.compact} w-full aspect-auto`}>
-            <BarChart data={bridgeSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <BarChart data={bridgeSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barCategoryGap={bridgeSizing.barCategoryGap}>
               <CartesianGrid vertical={false} className="stroke-border/40" />
               <XAxis dataKey="label" tickMargin={8} interval={0} />
-              <YAxis tickFormatter={(value) => formatCompactUsd(Number(value))} tickMargin={8} width={48} />
+              <YAxis tickFormatter={axisFmt(bridgeAxis)} domain={bridgeAxis.domain} ticks={bridgeAxis.ticks} tickMargin={8} width={48} />
               <ChartTooltip
                 content={
                   <ChartTooltipContent formatter={(value) => [formatUsd(Number(value)), ""]} />
                 }
               />
               <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-              <Bar dataKey="usd" radius={[2, 2, 0, 0]} maxBarSize={36}>
+              <Bar dataKey="usd" radius={[2, 2, 0, 0]} maxBarSize={bridgeSizing.maxBarSize} minPointSize={bridgeSizing.minPointSize}>
                 {bridgeSeries.map((row) => (
                   <Cell key={row.key} fill={COLORS[row.key]} />
                 ))}

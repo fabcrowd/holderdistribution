@@ -26,6 +26,8 @@ import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClass
 import { insertGapBreaks } from "@/lib/seriesGaps";
 import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
 import { computeSeriesDomain, computeBreakAwareDomain, activeKeys } from "@/lib/chartDomain";
+import { computeYAxis, computeYAxisFromRows, distinctTickFormatter } from "@/lib/chartAxes";
+import { AxisBaselineNote } from "@/components/chart/AxisBaselineNote";
 import { getSeriesBreaks, insertBreakSpacers, SERIES_BREAK_LABEL } from "@/lib/seriesBreaks";
 import { CHART_LABEL_FONT_PX } from "@/lib/terminalLayout";
 
@@ -92,17 +94,18 @@ const formatInteger = (value: number) => new Intl.NumberFormat().format(value);
 // a negative delta renders "-1.23B <ticker>". Testing `value >= 1e9` directly (as this
 // did before the Change view existed) sends every negative straight to the
 // integer branch and prints "-1,234,567,890 <ticker>".
-const compactAmount = (value: number, unit: string) => {
+// `digits` lets a tight y-axis add precision so neighbouring gridlines stay distinct.
+const compactAmount = (value: number, unit: string, digits = 2) => {
   const abs = Math.abs(value);
-  if (abs >= 1e9) return `${(value / 1e9).toFixed(2)}B ${unit}`;
-  if (abs >= 1e6) return `${(value / 1e6).toFixed(2)}M ${unit}`;
+  if (abs >= 1e9) return `${(value / 1e9).toFixed(digits)}B ${unit}`;
+  if (abs >= 1e6) return `${(value / 1e6).toFixed(digits)}M ${unit}`;
   return `${new Intl.NumberFormat().format(Math.round(value))} ${unit}`;
 };
 
 // Explicit +/- so a rebased delta reads as a direction, not just a quantity.
-const signedAmount = (value: number, unit: string) => {
+const signedAmount = (value: number, unit: string, digits = 2) => {
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${sign}${compactAmount(Math.abs(value), unit)}`;
+  return `${sign}${compactAmount(Math.abs(value), unit, digits)}`;
 };
 
 type BalanceMode = "balance" | "change";
@@ -113,8 +116,8 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   const config = { label: chainViewLabel(project, selectedView) };
   const { ticker } = useProjectCopy();
   const chartConfig = useMemo(() => holdersChartConfig(ticker), [ticker]);
-  const formatCompactAmount = (value: number) => compactAmount(value, ticker);
-  const formatSignedAmount = (value: number) => signedAmount(value, ticker);
+  const formatCompactAmount = (value: number, digits?: number) => compactAmount(value, ticker, digits);
+  const formatSignedAmount = (value: number, digits?: number) => signedAmount(value, ticker, digits);
 
   const { data, isLoading, error } = useHolderGrowth({
     view: selectedView,
@@ -254,21 +257,12 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   const stakingZoom = useChartZoom(stakingChartData, (p) => p.timestamp);
   const stakingToggle = useSeriesToggle(STAKING_SERIES_KEYS);
   const stakingInView = useMemo(() => sliceWindow(stakingChartData, (p) => p.timestamp, stakingZoom.window), [stakingChartData, stakingZoom.window]);
-  const stakingYDomain = useMemo((): [number, number] | ["auto", "auto"] => {
-    if (stakingInView.length === 0) return ["auto", "auto"];
-    const values = stakingInView
-      .flatMap((p) => [
-        stakingToggle.isVisible("staking") ? p.staking : null,
-        stakingToggle.isVisible("stakingTotal") ? p.stakingTotal : null,
-        stakingToggle.isVisible("stakingV3") ? p.stakingV3 : null,
-      ])
-      .filter((v): v is number => v != null);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const range = Math.max(1, max - min);
-    const padding = range * 0.05;
-    return [Math.max(0, min - padding), max + padding];
-  }, [stakingInView, stakingToggle]);
+  // Fitted to the rows in the zoom window and the lines switched on.
+  const stakingY = useMemo(
+    () => computeYAxisFromRows(stakingInView, STAKING_SERIES_KEYS.filter((k) => stakingToggle.isVisible(k)), { kind: "line", allowNegative: false }),
+    [stakingInView, stakingToggle],
+  );
+  const stakingFmt = useMemo(() => distinctTickFormatter(stakingY.ticks, (v, d) => compactAmount(v, ticker, Math.max(2, d))), [stakingY, ticker]);
 
   const balanceChartData = useMemo(() => {
     const series = data?.balanceSeries ?? [];
@@ -455,28 +449,28 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   // renderedBalanceSeries, NOT visibleBalanceSeries — a series toggled on but
   // suppressed for sparseness draws no line, so it must not set a bound either.
   // See src/lib/chartDomain.ts (and its regression test) for the bug this fixes.
+  const balanceLog = balanceMode === "balance" && logScale;
+  const balanceY = useMemo(
+    () => computeYAxisFromRows(balanceInView, activeKeys(renderedBalanceSeries), { kind: "line", allowNegative: balanceMode === "change" }),
+    [balanceInView, renderedBalanceSeries, balanceMode],
+  );
+  // A log axis can't be zero-based or use linear ticks: it keeps its own padded bounds.
   const balanceYDomain = useMemo(
-    () =>
-      computeSeriesDomain(balanceInView, activeKeys(renderedBalanceSeries), {
-        allowNegative: balanceMode === "change",
-        log: balanceMode === "balance" && logScale,
-      }),
-    [balanceInView, renderedBalanceSeries, balanceMode, logScale],
+    () => (balanceLog ? computeSeriesDomain(balanceInView, activeKeys(renderedBalanceSeries), { log: true }) : balanceY.domain),
+    [balanceLog, balanceInView, renderedBalanceSeries, balanceY],
+  );
+  const balanceFmt = useMemo(
+    () => distinctTickFormatter(balanceY.ticks, (v, d) => (balanceMode === "change" ? signedAmount(v, ticker, d) : compactAmount(v, ticker, d))),
+    [balanceY, balanceMode, ticker],
   );
 
-  const yDomain = useMemo((): [number, number] | ["auto", "auto"] => {
-    if (holdersInView.length === 0) return ["auto", "auto"];
+  const holdersY = useMemo(() => {
     // A declared methodology break must not decide the axis (see seriesBreaks.ts).
     if (holdersBreaks.length > 0) {
-      const d = computeBreakAwareDomain(holdersInView, ["holders"], holdersBreaks.map((b) => b.t), "timestamp");
-      if (typeof d[0] === "number") return d as [number, number];
+      const [lo, hi] = computeBreakAwareDomain(holdersInView, ["holders"], holdersBreaks.map((b) => b.t), "timestamp");
+      if (typeof lo === "number" && typeof hi === "number") return computeYAxis([lo, hi], { kind: "line", allowNegative: false, integer: true });
     }
-    const holders = holdersInView.map((point) => point.holders);
-    const min = Math.min(...holders);
-    const max = Math.max(...holders);
-    const range = Math.max(1, max - min);
-    const padding = range * 0.05;
-    return [Math.max(0, min - padding), max + padding];
+    return computeYAxisFromRows(holdersInView, ["holders"], { kind: "line", allowNegative: false, integer: true });
   }, [holdersInView, holdersBreaks]);
 
   // Compute explicit tick timestamps so Recharts renders exactly what we want.
@@ -644,6 +638,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
 
               {!isLoading && !error && chartData.length > 0 && (
                 <ZoomFrame zoom={holdersZoom} className="h-56 w-full sm:h-64">
+                <AxisBaselineNote baseline={holdersY.baseline} format={(n) => formatInteger(Math.round(n))} />
                 <div className="h-full w-full" role="img" aria-label={holdersAriaSummary} data-testid="holder-growth-chart">
                   <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                     <LineChart data={holdersZoom.rows}>
@@ -662,7 +657,8 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         // (97,235.75) and, at the default 60px axis width, the
                         // leading digits were clipped off ("0,053.25").
                         tickFormatter={(value) => formatInteger(Math.round(value))}
-                        domain={yDomain}
+                        domain={holdersY.domain}
+                        ticks={holdersY.ticks}
                         allowDataOverflow={holdersBreaks.length > 0}
                         tickMargin={8}
                         width={64}
@@ -834,6 +830,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                   </div>
                 ) : (
                   <ZoomFrame zoom={balanceZoom} className="h-56 w-full sm:h-64">
+                  <AxisBaselineNote baseline={balanceLog ? null : balanceY.baseline} format={(n) => (balanceMode === "change" ? formatSignedAmount(n) : formatCompactAmount(n))} />
                     <ChartContainer config={balanceChartConfig} className="h-full w-full aspect-auto">
                       <LineChart data={balanceZoom.rows}>
                         <CartesianGrid vertical={false} />
@@ -850,8 +847,9 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                           {...(balanceMode === "balance" && logScale
                             ? { scale: "log" as const, allowDataOverflow: true }
                             : {})}
-                          tickFormatter={(value) => (balanceMode === "change" ? formatSignedAmount(value) : formatCompactAmount(value))}
+                          tickFormatter={balanceFmt}
                           domain={balanceYDomain}
+                          ticks={balanceLog ? undefined : balanceY.ticks}
                           tickMargin={8}
                           width={56}
                         />
@@ -987,6 +985,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                     />
                   )}
                   <ZoomFrame zoom={stakingZoom} className="h-56 w-full sm:h-64">
+                  <AxisBaselineNote baseline={stakingY.baseline} format={(n) => formatCompactAmount(n)} />
                     <ChartContainer config={stakingChartConfig} className="h-full w-full aspect-auto">
                       <LineChart data={stakingZoom.rows}>
                         <CartesianGrid vertical={false} />
@@ -1000,8 +999,9 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                           tickMargin={8}
                         />
                         <YAxis
-                          tickFormatter={(value) => formatCompactAmount(value)}
-                          domain={stakingYDomain}
+                          tickFormatter={stakingFmt}
+                          domain={stakingY.domain}
+                          ticks={stakingY.ticks}
                           tickMargin={8}
                           width={64}
                         />
