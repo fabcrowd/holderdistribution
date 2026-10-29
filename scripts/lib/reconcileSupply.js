@@ -9,11 +9,12 @@ export const TEL_TOTAL_SUPPLY = 100_000_000_000;
 // Tolerance for the derived total vs the contract's totalSupply(). Transfer-log
 // reconstruction misses sub-threshold dust, so exact equality is not expected.
 export const RECONCILE_TOLERANCE = 0.01; // 1%
-// CoinGecko's reported circulating supply, for comparison only. Traced
-// 2026-08: their implied non-circulating amount (100B - this) equals
-// treasury 0x2580…'s exact balance right after its 2025-10-01 transfer to
-// Anchorage (4,922,764,633, within 1,000 TEL) — a frozen snapshot from that
-// date, not a live read or a different methodology.
+// TEL-only traced CoinGecko snapshot, for comparison only. Traced 2026-08:
+// their implied non-circulating amount (100B - this) equals treasury
+// 0x2580…'s exact balance right after its 2025-10-01 transfer to Anchorage
+// (4,922,764,633, within 1,000 TEL). scripts/lib/coingeckoCirculating.js
+// applies it solely when slug is "tel" and CoinGecko has no positive live
+// circulating supply. It is not a default for any other project.
 export const COINGECKO_CIRCULATING = 95_077_236_367;
 
 // Hex lowercased, Solana base58 kept as written (case-sensitive).
@@ -31,9 +32,11 @@ export const buildReconciliation = (
   exclusions,
   cexWallets,
   // Per-project overrides (scripts/reconcile-supply.js passes the project's
-  // supply.target). Defaults are TEL's, so existing callers are unchanged.
-  // coingeckoCirculating: null = no third-party comparison for this project.
-  { totalSupply = TEL_TOTAL_SUPPLY, coingeckoCirculating = COINGECKO_CIRCULATING } = {},
+  // supply.target and a per-project CoinGecko read). totalSupply still
+  // defaults to TEL's 100B for callers that omit it. coingeckoCirculating
+  // defaults to null: omitting it hides the comparison rather than borrowing
+  // TEL's snapshot.
+  { totalSupply = TEL_TOTAL_SUPPLY, coingeckoCirculating = null } = {},
 ) => {
   const TOTAL_SUPPLY = totalSupply;
   // Per-token ledger written by pull-holders-rpc.js (scripts/lib/supply.js).

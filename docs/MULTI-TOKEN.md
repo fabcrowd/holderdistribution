@@ -145,7 +145,7 @@ Ported scripts read every address from the project, never a literal:
 | StakeChanged staking contract (pull-staker-balances, staker merge in pull-holders-rpc) | `resolveStakeChangedTarget(project)` (`scripts/lib/stakerTarget.js`) | `staking[]` entry `kind: "stakeChanged"` (Polygon `0x92e4…6330`, legacy TEL, block 36,751,757) | same; no entry = staker script exits 0 and nothing is merged |
 | Receipt staking modules | `projectStakingContracts(project, { kind: "receiptModule" })` | `kind: "receiptModule"` | same |
 | Exchange-flow scan table | `exchangeFlowChains(project, chains)` (`scripts/lib/exchangeFlowChains.js`) | old table: same start blocks, chunks, env overrides, divisor 100 | every chain in the map, start = `fromBlock` (or token `deployBlock`), divisor = `10 ** decimals`, override `FLOW_START_BLOCK_<CHAIN>` / `FLOW_CHUNK_<CHAIN>` |
-| Supply target for reconciliation | `reconcileOptions(project)` (`scripts/reconcile-supply.js`) | 100B + CoinGecko comparison (unchanged) | `supply.target` (required); `supply.coingeckoCirculating` optional |
+| Supply target for reconciliation | `reconcileOptions(project)` + `resolveCoingeckoCirculating` (`scripts/reconcile-supply.js`) | 100B. CoinGecko circulating is fetched for `supply.coingeckoId` (`telcoin`); a missing live read keeps TEL's traced snapshot | `supply.target` (required). CoinGecko circulating is fetched for `supply.coingeckoId` (else `gated.walletFlows.coingeckoId`). No id, or no positive read, publishes `null` and the UI hides the row |
 
 Chain-map token slots: the scanner's base token is the `legacy` slot. A
 `generation: "legacy"` token fills it, or the only token of a
@@ -158,7 +158,7 @@ chain as a mirror.
 Optional per-project pipeline keys: `chains[].origin`, `chains[].fromBlock`,
 `staking[].kind`, `staking[].deployBlock`, `pipeline.chainsConfig`,
 `treasury.categories` (append-treasury-history lines; default TEL's four),
-`supply.coingeckoCirculating`.
+`supply.coingeckoId` (CoinGecko coin id whose circulating supply reconcile-supply fetches; unset hides the comparison).
 
 ### Ported scripts vs the guard
 

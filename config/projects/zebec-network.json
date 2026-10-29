@@ -12,6 +12,7 @@
   "supply": {
     "target": 100000000000,
     "targetLabel": "100B",
+    "coingeckoId": "zebec-network",
     "generationsSumOneToOne": false,
     "note": "Fixed 100B max; on-chain supply shrinks via buybacks/burns. Legacy ZBC mint (zebeczgi5fSEtbpfQKVZKCJ3WgYXxjkMUkNNx7fLKAF) is out of scope — do not map or net."
   },
@@ -183,6 +184,7 @@
   },
   "copy": {
     "text": {
+      "holders.held.info": "{ticker} in retail wallets compared with {ticker} in custody at known exchange wallets. All chains combined. Staked {ticker} is counted in its own bucket and is not included in this Retail line.",
       "holders.staked.info": "{ticker} locked in Zebec SuperApp staking: the raw sum of every unclaimed on-chain staking position (~4.75B at the 2026-10-28 scan). Shown separately from Retail Held — staked is not merged into the retail holder total for this project.\n\nDisclaimer — Super App \"Global Staked\" is not current TVL: Zebec's Super App shows a much larger \"Global Staked\" figure (~18.9B) that appears to sum each lockup's cumulative totalStaked counter, not live unclaimed positions. This site's Staked tile is live TVL — the sum of unclaimed UserStakeData positions (~4.75B). Open the (i) methodology tip on Staking Overview for Solscan links to the staking program, lockups, and stake vaults so you can verify both numbers on-chain.\n\nTwo staking totals on this site, both intentional: the Supply view's Staking bucket is slightly larger (~4.76B) because it counts what the staking program's vault accounts hold — the stake vaults plus two reward vaults (undistributed rewards, which are nobody's stake). This tile counts stakers' positions instead. The small difference is those reward vaults minus the ZBCN Lockup gap below; it is not a counting error.\n\nZBCN Lockup vault gap (2.42%): this one lockup (AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp) is exempt from our 0.5% position-vs-vault reconcile check. Its unclaimed positions add up to ~2.42% (~4.39M {ticker}) more than its stake-vault token account (ATA) currently holds. Published staked figures use the raw position sums as-is (not scaled down to the vault balance); the vault ATA balance is listed in the Supply view's Staking bucket for transparency.",
       "staking.intro": "{ticker} staked in Zebec SuperApp staking, summed from unclaimed on-chain positions and counted once per staker. The Supply view's Staking bucket reads slightly higher because it counts vault balances, including reward vaults.",
       "supply.staking.bucketLabel": "Staking vaults",

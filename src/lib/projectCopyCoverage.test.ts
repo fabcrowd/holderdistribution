@@ -39,6 +39,8 @@ const PROJECT_AGNOSTIC_FILES = [
   "src/components/terminal/HoldersTerminal.tsx",
   "src/components/terminal/StakedPanelTip.tsx",
   "src/lib/stakedPanelTip.ts",
+  "src/lib/heldPanelTip.ts",
+  "src/lib/coingeckoComparison.ts",
   "src/components/HeadlineBody.tsx",
   "src/components/LockedAnalysisTile.tsx",
 ];
@@ -114,7 +116,7 @@ describe("project-driven copy coverage", () => {
     for (const [id, tpl] of Object.entries(tel.copy?.text ?? {})) {
       // {amount} / {treasuryNow} are runtime values the widget substitutes itself.
       const unknown = (tpl.match(/\{[a-zA-Z]+\}/g) ?? []).filter(
-        (p) => !["{ticker}", "{name}", "{chains}", "{supply}", "{amount}", "{treasuryNow}"].includes(p),
+        (p) => !["{ticker}", "{name}", "{chains}", "{supply}", "{amount}", "{treasuryNow}", "{stakedTotal}", "{stakedV3}"].includes(p),
       );
       expect(unknown, id).toEqual([]);
       expect(copyText(tel, id, "")).not.toMatch(/\{(ticker|name|chains|supply)\}/);

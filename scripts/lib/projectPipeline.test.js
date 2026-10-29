@@ -200,7 +200,7 @@ describe("reconcile-supply per project", () => {
     expect(reconcileOptions(tel)).toEqual({});
   });
 
-  it("buildReconciliation default == explicit TEL options on the live snapshot shape", () => {
+  it("buildReconciliation defaults to the TEL total supply and does not assume a CoinGecko figure", () => {
     const snapshot = {
       chainOrder: ["ethereum", "polygon", "base"],
       wallets: [
@@ -210,7 +210,14 @@ describe("reconcile-supply per project", () => {
     };
     const a = buildReconciliation(snapshot, { labels: {} }, { wallets: [] });
     const b = buildReconciliation(snapshot, { labels: {} }, { wallets: [] }, { totalSupply: TEL_TOTAL_SUPPLY, coingeckoCirculating: COINGECKO_CIRCULATING });
-    expect(a).toEqual(b);
+    expect(a.totalSupply).toBe(TEL_TOTAL_SUPPLY);
+    expect(a.coingeckoCirculating).toBeNull();
+    expect(b.coingeckoCirculating).toBe(COINGECKO_CIRCULATING);
+    const { coingeckoCirculating: droppedA, ...restA } = a;
+    const { coingeckoCirculating: droppedB, ...restB } = b;
+    expect(droppedA).toBeNull();
+    expect(droppedB).toBe(COINGECKO_CIRCULATING);
+    expect(restA).toEqual(restB);
     expect(a.counted).toBe(26);
     expect(a.mirrored).toBe(9);
   });

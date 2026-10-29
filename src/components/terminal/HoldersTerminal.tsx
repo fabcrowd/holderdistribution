@@ -12,6 +12,7 @@ import { HOLDERS_PRIMARY_ROW_HEIGHT, SECONDARY_CHART_ROW_PX, TABLE_PANEL_PX } fr
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
 import { TimeChart, SignedBars, CategoryBars, type ChartMarker } from "./MiniCharts";
 import { DetailsButton } from "./DetailsButton";
+import { heldPanelTip } from "@/lib/heldPanelTip";
 import { StakedPanelTip } from "./StakedPanelTip";
 import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
 
@@ -231,9 +232,10 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         className="h-full min-h-0"
         title={`${tk} held`}
-        info={`${tk} in retail wallets compared with ${tk} in custody at known exchange wallets. All chains combined.${
-          v3Staking ? ` Retail includes ${formatCompact(combinedStaking?.stakedTotal ?? 0)} staked ${tk}, of which ${formatCompact(v3Staking.stakedTotal)} is in the v3 StakingModule (credited to each staker's wallet, so it isn't counted twice).` : ""
-        }`}
+        info={heldPanelTip(project, {
+          stakedTotal: v3Staking ? (combinedStaking?.stakedTotal ?? 0) : (combinedStaking?.stakedTotal ?? null),
+          stakedV3: v3Staking?.stakedTotal ?? null,
+        })}
         stat={
           b && (
             <>
