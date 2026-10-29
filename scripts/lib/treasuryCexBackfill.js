@@ -68,6 +68,69 @@ export function nextEntry(entries, date) {
   return best;
 }
 
+const ANCHOR_TOLERANCE = 0.1;
+const ANCHOR_HISTORY_WINDOW = 5;
+
+const median = (values) => {
+  const v = values.filter(Number.isFinite).sort((x, y) => x - y);
+  if (!v.length) return NaN;
+  const mid = v.length >> 1;
+  return v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2;
+};
+
+/**
+ * Closest earlier row of `entries` that can be trusted as a replay anchor.
+ * A row is rejected when some category deviates by more than `tolerance`
+ * (fraction) from BOTH references: the first real row after `date`, and the
+ * per-category median of the `ANCHOR_HISTORY_WINDOW` rows before it. A genuine step
+ * change matches the later row; a snapshot taken without a known wallet (e.g.
+ * a missing Safe) matches neither, even when several such snapshots are
+ * adjacent. Rejected rows are walked past, so the anchor falls back to an
+ * older row.
+ *
+ * @returns {{anchor: ?object, rejected: string[]}}
+ */
+export function trustedAnchor(entries, date, categories, tolerance = ANCHOR_TOLERANCE) {
+  const sorted = (entries ?? []).filter((e) => e.date < date).sort((a, b) => b.date.localeCompare(a.date));
+  const next = nextEntry(entries, date);
+  const rejected = [];
+  const deviates = (row, reference) =>
+    categories.some((key) => {
+      const a = Number(row.categories?.[key]);
+      const b = reference(key);
+      return Number.isFinite(a) && Number.isFinite(b) && relativeDrift(a, b) > tolerance;
+    });
+  for (let i = 0; i < sorted.length; i++) {
+    const older = sorted.slice(i + 1, i + 1 + ANCHOR_HISTORY_WINDOW);
+    const references = [];
+    if (next) references.push((key) => Number(next.categories?.[key]));
+    if (older.length) references.push((key) => median(older.map((e) => Number(e.categories?.[key]))));
+    if (references.length && references.every((ref) => deviates(sorted[i], ref))) {
+      rejected.push(sorted[i].date);
+      continue;
+    }
+    return { anchor: sorted[i], rejected };
+  }
+  return { anchor: null, rejected };
+}
+
+/**
+ * Label eras: rows written before `before` used older category labels (e.g.
+ * TELx reward contracts were "council" until relabelled to "staking"). Returns
+ * the address -> category map in force for `date` and an `era` key so callers
+ * can refuse to mix eras inside one replay.
+ *
+ * @param {Map<string,string>} base current labels
+ * @param {Array<{before:string, categories:Record<string,string>}>} eras
+ */
+export function categoryMapForDate(base, eras, date) {
+  const era = [...(eras ?? [])].sort((a, b) => a.before.localeCompare(b.before)).find((e) => date < e.before);
+  if (!era) return { era: "current", map: base };
+  const map = new Map(base);
+  for (const [address, category] of Object.entries(era.categories ?? {})) map.set(lower(address), category);
+  return { era: `before ${era.before}`, map };
+}
+
 /**
  * address -> category from the project's exclusion labels, restricted to the
  * treasury categories (same source reconcile-supply buckets by).
@@ -218,6 +281,8 @@ const sortedUnique = (list) => [...new Set(list)].sort();
  * @param {string} args.to
  * @param {string[]} args.categories treasury category keys (chart lines)
  * @param {Map<string,string>} args.categoryByAddress
+ * @param {Array<{before:string, categories:Record<string,string>}>} [args.categoryEras] older labels for rows before a date
+ * @param {number} [args.anchorTolerance] max category deviation (fraction) before a treasury anchor is rejected
  * @param {Map<string,string>} args.exchangeByAddress
  * @param {Array<{key:string, tokens:Array<{address:string, decimals:number, generation:string, deployBlock?:?number}>, upgradeContracts?:string[]}>} args.chains
  * @param {Record<string, Record<string, number>>} [args.blockCache] date -> chain -> boundary block
@@ -232,6 +297,8 @@ export async function reconstructHistory({
   to,
   categories,
   categoryByAddress,
+  categoryEras = [],
+  anchorTolerance = ANCHOR_TOLERANCE,
   exchangeByAddress,
   chains,
   blockCache = {},
@@ -244,9 +311,16 @@ export async function reconstructHistory({
   const anchors = new Map(); // `${kind}:${date}` -> anchor entry
   for (const [kind, history] of [["treasury", treasuryHistory], ["cex", cexHistory]]) {
     for (const date of missingDates(history.entries, dates)) {
-      const anchor = priorEntry(history.entries, date);
+      let anchor;
+      if (kind === "treasury") {
+        const picked = trustedAnchor(history.entries, date, categories, anchorTolerance);
+        if (picked.rejected.length) log(`  treasury ${date}: skipped untrusted anchor row(s) ${picked.rejected.join(", ")}`);
+        anchor = picked.anchor;
+      } else {
+        anchor = priorEntry(history.entries, date);
+      }
       if (!anchor) {
-        skipped.push({ kind, date, reason: "no earlier existing row to anchor on" });
+        skipped.push({ kind, date, reason: "no trustworthy earlier existing row to anchor on" });
         continue;
       }
       anchors.set(`${kind}:${date}`, anchor);
@@ -285,7 +359,11 @@ export async function reconstructHistory({
     }
   }
 
-  const watched = new Set([...categoryByAddress.keys(), ...exchangeByAddress.keys()]);
+  const watched = new Set([
+    ...categoryByAddress.keys(),
+    ...exchangeByAddress.keys(),
+    ...categoryEras.flatMap((e) => Object.keys(e.categories ?? {}).map(lower)),
+  ]);
   const parts = [];
   for (const chain of chains) {
     const boundaries = needed.map((date) => ({ date, block: blocks[date][chain.key] }));
@@ -314,10 +392,15 @@ export async function reconstructHistory({
   }
   const cum = mergeCumulative(parts);
 
-  const categoryOf = (a) => categoryByAddress.get(a);
   const exchangeOf = (a) => exchangeByAddress.get(a);
-  const treasuryAt = (anchor, date) =>
-    buildTreasuryEntry({ date, anchor, delta: groupDelta(cum, anchor.date, date, categoryOf), categories });
+  const treasuryAt = (anchor, date) => {
+    const at = categoryMapForDate(categoryByAddress, categoryEras, date);
+    const anchorEra = categoryMapForDate(categoryByAddress, categoryEras, anchor.date).era;
+    if (at.era !== anchorEra) {
+      throw new Error(`treasury ${date} (labels ${at.era}) cannot be replayed from ${anchor.date} (labels ${anchorEra}): narrow --from/--to to one label era`);
+    }
+    return buildTreasuryEntry({ date, anchor, delta: groupDelta(cum, anchor.date, date, (a) => at.map.get(a)), categories });
+  };
   const cexAt = (anchor, date) => buildCexEntry({ date, anchor, delta: groupDelta(cum, anchor.date, date, exchangeOf) });
 
   for (const date of targets.treasury) result.treasuryRows.push(treasuryAt(anchors.get(`treasury:${date}`), date));
