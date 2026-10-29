@@ -6,12 +6,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../config/projects.json", () => ({
-  default: { projects: [{ slug: "tel", name: "Telcoin", ticker: "TEL", default: true }, { slug: "demo", name: "Demo", ticker: "DMO" }] },
+  default: { projects: [
+      { slug: "tel", name: "Telcoin", ticker: "TEL", default: true, legacyRoot: true },
+      { slug: "demo", name: "Demo", ticker: "DMO" },
+      { slug: "old", name: "Old", ticker: "OLD", legacyRoot: true },
+    ] },
 }));
 
 const { handler } = await import("./forensics-gate.ts");
 const { __resetWalletFlowsCache } = await import("./walletFlowsSource.ts");
-const { resolveGatedProject, walletFlowsRepoPath, DEFAULT_GATED_PROJECT } = await import("./gatedProjects.ts");
+const { resolveGatedProject, walletFlowsRepoPath, DEFAULT_GATED_PROJECT, LEGACY_ROOT_SLUGS } = await import("./gatedProjects.ts");
 
 const PW = "unit-test-password-not-real";
 let ip = 0;
@@ -43,6 +47,11 @@ describe("gatedProjects", () => {
     expect(resolveGatedProject(42)).toBeNull();
     expect(walletFlowsRepoPath("tel")).toBe("data/forensics/wallet-flows.json");
     expect(walletFlowsRepoPath("demo")).toBe("data/demo/forensics/wallet-flows.json");
+  });
+
+  it("derives legacy-root slugs from the registry legacyRoot flag, not a hardcoded list", () => {
+    expect([...LEGACY_ROOT_SLUGS].sort()).toEqual(["old", "tel"]);
+    expect(walletFlowsRepoPath("old")).toBe("data/forensics/wallet-flows.json");
   });
 });
 

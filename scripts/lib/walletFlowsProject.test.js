@@ -85,11 +85,13 @@ describe("walletFlowsPlan", () => {
 });
 
 describe("gate function project list", () => {
-  it("LEGACY_ROOT_SLUGS in netlify/functions-src/gatedProjects.ts matches data.legacyRoot", () => {
+  it("LEGACY_ROOT_SLUGS in gatedProjects.ts is derived from the registry legacyRoot flag, which matches data.legacyRoot", async () => {
     const src = fs.readFileSync(path.join(repo, "netlify/functions-src/gatedProjects.ts"), "utf8");
-    const m = src.match(/LEGACY_ROOT_SLUGS[^=]*=\s*new Set\(\[([^\]]*)\]\)/);
-    expect(m).toBeTruthy();
-    const listed = [...m[1].matchAll(/"([a-z0-9-]+)"/g)].map((x) => x[1]).sort();
-    expect(listed).toEqual(legacyRootSlugs(repo).sort());
+    expect(src).not.toMatch(/LEGACY_ROOT_SLUGS[^=]*=\s*new Set\(\[/);
+    const registry = JSON.parse(fs.readFileSync(path.join(repo, "config/projects.json"), "utf8"));
+    const flagged = registry.projects.filter((p) => p.legacyRoot === true).map((p) => p.slug).sort();
+    expect(flagged).toEqual(legacyRootSlugs(repo).sort());
+    const { LEGACY_ROOT_SLUGS } = await import("../../netlify/functions-src/gatedProjects.ts");
+    expect([...LEGACY_ROOT_SLUGS].sort()).toEqual(flagged);
   });
 });

@@ -1,7 +1,7 @@
 name: Refresh zebec-network holders
 
 # ZBCN (Solana SPL). Same stage order as refresh-tel-holders.yml minus the EVM
-# holder/staking scans. CEX wallets are configured (44), so pull-cex-wallets
+# holder/staking scans. CEX wallets are configured (51), so pull-cex-wallets
 # runs and the commit stages cex-wallets.json, cex-flows.json and
 # cex-balance-history.json — the same CEX stage TEL runs once wallets exist.
 # Exchange-flow and tier-outflow scanners are still eth_getLogs-only: with no

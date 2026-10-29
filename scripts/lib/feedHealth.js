@@ -216,6 +216,15 @@ export function holderDayChanges(entries, { maxPct = DEFAULT_HOLDER_CHANGE_PCT, 
   return out;
 }
 
+/**
+ * Dates of declared series breaks (changelog events with `breaksSeries`):
+ * `breaksSeries.at` when present, else the event date. The day-over-day holder
+ * check skips these so no per-project date list is needed.
+ */
+export function seriesBreakDates(events) {
+  return (events ?? []).filter((e) => e?.breaksSeries).map((e) => e.breaksSeries.at ?? e.date).filter(Boolean);
+}
+
 /** Consistency options from `health.consistency`; `extraAllowDates` are merged in (e.g. changelog event dates). */
 export function resolveConsistencyOptions(config, extraAllowDates = []) {
   const c = config?.health?.consistency ?? {};
