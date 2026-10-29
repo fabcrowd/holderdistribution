@@ -1,11 +1,14 @@
 # Holder Distribution
 
-On-chain holder analytics for the **TEL** token — holder distribution and tiers, supply
-breakdown, exchange flows and historical growth — published at
+On-chain holder analytics for multiple tokens — holder distribution and tiers, supply
+breakdown, exchange flows, staking and historical growth — published at
 [holderdistribution.com](https://holderdistribution.com) under the **Holder Analytics** brand.
+Mapped so far: **TEL** (Telcoin; Ethereum, Polygon, Base) and **ZBCN** (Zebec Network; Solana).
 
-A single-page React app (`/` and `/holders`) that reads static JSON feeds produced by a
-scheduled Node data pipeline. Independent, community-run; not affiliated with Telcoin.
+A single-page React app: `/` is the token picker and `/<slug>` (e.g. `/tel`,
+`/zebec-network`) is that token's terminal (Holders · Distribution · Supply tabs). It reads
+static JSON feeds produced by a scheduled Node data pipeline. Independent, community-run; not
+affiliated with any token or project.
 
 ## Stack
 
@@ -26,7 +29,7 @@ the public Supabase anon key baked in as a default. See [`.env.example`](.env.ex
 | Command | What it does |
 |---|---|
 | `npm run dev` | Vite dev server (regenerates the sitemap first) |
-| `npm run lint` | ESLint (0 errors expected; 4 shadcn fast-refresh warnings are known) |
+| `npm run lint` | ESLint (0 errors expected; warnings are known) |
 | `npm run typecheck` | `tsc` for app + node configs |
 | `npm test` | Vitest — UI/config tests in `src/`, pipeline logic tests in `scripts/` |
 | `npm run build` | Sitemap + forensics-gate bundle, then `vite build` → `dist/` |
@@ -36,23 +39,31 @@ the public Supabase anon key baked in as a default. See [`.env.example`](.env.ex
 ## Layout
 
 ```
-src/pages/Holders.tsx      the page (Holders · Distribution · Supply tabs)
-src/components/            widgets + ui/ (shadcn primitives)
-src/hooks/                 TanStack Query data hooks
-src/lib/                   pure helpers
+src/pages/                 Landing (token picker), Holders (the terminal), NotFound
+src/components/            widgets; chart/, terminal/, tierflow/, routing/, ui/ (shadcn primitives)
+src/hooks/                 TanStack Query data hooks (keyed by project slug)
+src/lib/                   pure helpers: project registry, chain views, charts, supply, staking
 src/index.css, tailwind.config.ts   design tokens (Holder Analytics palette)
-public/data/               JSON feeds served as /data/*
-scripts/                   data pipeline (RPC / Etherscan / Dune) + tests
-netlify/functions-src/     forensics gate (bundled to netlify/functions by prebuild)
+config/projects.json       token registry; config/projects/<slug>.json = per-token config
+config/*.json              shared classification (CEX / DEX / exclusions) and TEL chain map
+public/data/               generated feeds: TEL at the root, others in public/data/<slug>/
+data/                      pipeline caches and checkpoints (not served)
+scripts/                   data pipeline (RPC / Etherscan / Dune / Solana) + tests; lib/ = shared logic
+netlify/functions/         live-data.mjs (fresh feeds from GitHub) + bundled forensics-gate.cjs
+netlify/functions-src/     forensics gate source (bundled by prebuild)
 design-system/             brand spec, tokens, logos
-.github/workflows/         ci.yml + scheduled data-pipeline workflows
+.github/workflows/         ci.yml + scheduled data-pipeline workflows (nightly refresh runs per project)
 docs/DEPLOYMENT.md         deploy + production-readiness runbook
 docs/FORENSICS.md          password-gated forensics (Wallet flows), gate hardening, password rotation
+docs/PIPELINE-RECOVERY.md  recovering a stalled or broken data pipeline
 docs/TEL-CONTRACTS.md      TEL contract registry (legacy vs. v3) + supply accounting (legacy + v3 = 100B)
 CLAUDE.md                  deeper architecture/handoff notes
 ```
 
-See [docs/MULTI-TOKEN.md](docs/MULTI-TOKEN.md) for the multi-token layout and how to map a new project.
+Mapping a new token is config-only: register it in `config/projects.json`, add
+`config/projects/<slug>.json`, and the landing page, sitemap and nightly refresh pick it up.
+See [docs/MULTI-TOKEN.md](docs/MULTI-TOKEN.md) for the layout, the pipeline `--project <slug>`
+flag, Solana support and the onboarding checklist.
 
 ## Deploying
 
