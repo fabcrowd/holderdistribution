@@ -9,8 +9,10 @@ import {
   mergeBackfilledEntries,
   missingDates,
   priorEntry,
+  categoryMapForDate,
   reconstructHistory,
   relativeDrift,
+  trustedAnchor,
   worstDrift,
 } from "./treasuryCexBackfill.js";
 
@@ -274,5 +276,80 @@ describe("reconstructHistory (fake client)", () => {
   it("records newly resolved blocks for the cache", async () => {
     const result = await reconstructHistory({ ...base, client: makeClient(transfers) });
     expect(result.resolvedBlocks["2026-10-03"]).toEqual({ eth: 300 });
+  });
+});
+
+describe("trustedAnchor", () => {
+  const cats = ["treasury", "holdings"];
+  const row = (date, holdings) => ({ date, categories: { treasury: 100, holdings } });
+  const entries = [row("09-27", 1230), row("09-28", 1230), row("09-29", 1230), row("10-01", 955), row("10-02", 955), row("10-23", 1230)];
+
+  it("walks past snapshots missing a wallet (deviate from both neighbours)", () => {
+    const { anchor, rejected } = trustedAnchor(entries, "10-10", cats);
+    expect(anchor.date).toBe("09-29");
+    expect(rejected).toEqual(["10-02", "10-01"]);
+  });
+  it("keeps a genuine step change that matches the later neighbour", () => {
+    const stepped = [row("10-01", 1230), row("10-02", 955), row("10-23", 955)];
+    expect(trustedAnchor(stepped, "10-10", cats).anchor.date).toBe("10-02");
+  });
+  it("returns null when every earlier row is untrusted", () => {
+    expect(trustedAnchor([row("10-01", 955), row("10-23", 1230)], "10-10", cats).anchor).toBeNull();
+  });
+});
+
+describe("categoryMapForDate", () => {
+  const base = new Map([[T1, "treasury"]]);
+  const eras = [{ before: "2026-10-29", categories: { [T2.toUpperCase().replace("0X", "0x")]: "council" } }];
+  it("applies old labels only before the boundary", () => {
+    expect(categoryMapForDate(base, eras, "2026-10-28").map.get(T2)).toBe("council");
+    expect(categoryMapForDate(base, eras, "2026-10-29")).toEqual({ era: "current", map: base });
+  });
+});
+
+describe("reconstructHistory anchors and label eras", () => {
+  const blockOf = (date) => Number(date.slice(8)) * 100;
+  const client = (transfers) => ({
+    async blockAtEndOfDate(_c, date) {
+      return blockOf(date);
+    },
+    async fetchTransfers({ fromBlock }) {
+      return transfers.filter((t) => parseInt(t.blockNumber, 16) >= fromBlock);
+    },
+  });
+  const chains = [{ key: "eth", tokens: [{ address: LEGACY, decimals: 2, generation: "legacy" }] }];
+  const categories = ["treasury", "council"];
+  const REWARD = "0x" + "77".repeat(20); // relabelled council -> staking
+  const categoryByAddress = new Map([[T1, "treasury"], [T2, "council"], [REWARD, "staking"]]);
+  const row = (date, treasury, council) => ({ date, categories: { treasury, council } });
+  const args = {
+    cexHistory: { entries: [] },
+    from: "2026-10-05",
+    to: "2026-10-05",
+    categories,
+    categoryByAddress,
+    exchangeByAddress: new Map(),
+    chains,
+    categoryEras: [{ before: "2026-10-29", categories: { [REWARD]: "council" } }],
+  };
+  // 10-02 lacks 275 treasury (missing wallet); real 09-29 and 10-10 agree. REWARD pays T2 50.00 TEL on day 4.
+  const history = { entries: [row("2026-10-01", 1000, 500), row("2026-10-02", 725, 500), row("2026-10-10", 1000, 550)] };
+  const transfers = [tr(USER, REWARD, 3000, 350), tr(USER, T2, 1000, 650)]; // REWARD +30 (day 3.5), T2 +10 (day 6)
+
+  it("anchors on the trustworthy row and compares in the anchor era's labels", async () => {
+    const result = await reconstructHistory({ ...args, treasuryHistory: history, client: client([tr(USER, REWARD, 3000, 350), tr(USER, T2, 2000, 650)]) });
+    expect(result.treasuryRows[0].categories).toEqual({ treasury: 1000, council: 530 });
+    expect(worstDrift(result.drift)).toBeLessThan(0.02);
+  });
+  it("without era labels the reward contract is ignored and drift appears", async () => {
+    const result = await reconstructHistory({ ...args, categoryEras: [], treasuryHistory: history, client: client([tr(USER, REWARD, 3000, 350), tr(USER, T2, 2000, 650)]) });
+    expect(result.treasuryRows[0].categories.council).toBe(500);
+    expect(worstDrift(result.drift)).toBeGreaterThan(0.02);
+  });
+  it("refuses to replay across a label era boundary", async () => {
+    const crossing = { entries: [row("2026-10-27", 1000, 500), row("2026-10-30", 1000, 500)] };
+    await expect(
+      reconstructHistory({ ...args, from: "2026-10-29", to: "2026-10-29", treasuryHistory: crossing, client: client([]) }),
+    ).rejects.toThrow(/label era/);
   });
 });

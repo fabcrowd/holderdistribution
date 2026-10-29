@@ -185,6 +185,7 @@ chain as a mirror.
 Optional per-project pipeline keys: `chains[].origin`, `chains[].fromBlock`,
 `staking[].kind`, `staking[].deployBlock`, `pipeline.chainsConfig`,
 `treasury.categories` (append-treasury-history lines; default TEL's four),
+`treasury.labelEras` (`[{before, categories:{address: oldCategory}}]`: backfill-treasury-cex-history replays rows dated before `before` with the older labels),
 `supply.coingeckoId` (CoinGecko coin id whose circulating supply reconcile-supply fetches; unset hides the comparison).
 
 ### Ported scripts vs the guard

@@ -11,6 +11,9 @@
  *  - DRY RUN BY DEFAULT: reconstructs and prints rows; writes nothing.
  *  - Never overwrites an existing date; rows get `backfilled: true`.
  *  - Needs RPC (ENV_PASSPHRASE-decrypted keys); refuses without it, even in dry run.
+ *  - Treasury anchors are the nearest row that agrees with a real neighbour (a
+ *    snapshot missing a known wallet is skipped); rows before a
+ *    `treasury.labelEras[].before` date are replayed with that era's labels.
  *  - --write is refused when the replay disagrees with the next real row by more
  *    than --max-drift-pct (default 2) unless --allow-drift.
  *
@@ -138,6 +141,7 @@ const main = async () => {
     to,
     categories,
     categoryByAddress,
+    categoryEras: project.config?.treasury?.labelEras ?? [],
     exchangeByAddress,
     chains,
     blockCache,

@@ -10,6 +10,19 @@
     "legacyRoot": true,
     "dir": "public/data"
   },
+  "treasury": {
+    "$comment": "labelEras: treasury-history rows dated before `before` were written when these TELx reward contracts were category council (relabelled to staking in #78). The backfill replays such rows with the old label so anchor, target and validation rows agree.",
+    "labelEras": [
+      {
+        "before": "2026-10-29",
+        "categories": {
+          "0x79e5a6ffe2e6ba053a80e1b199c4f328938f40ca": "council",
+          "0x7feb8febddb66189417f732b4221a52e23b926c4": "council",
+          "0x8f702676830ddca2801a4a7cdb971cde4df697ae": "council"
+        }
+      }
+    ]
+  },
   "health": {
     "consistency": {
       "knownGapDates": ["2026-09-30"]
