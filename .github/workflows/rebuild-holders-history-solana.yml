@@ -30,7 +30,7 @@ on:
         required: false
         type: string
       max_tx:
-        description: "Transactions to replay in this run (oldest first). Blank uses the script default (10000). The rest resumes on the next dispatch."
+        description: "Transactions to replay in this run (oldest first). Blank uses the script default (50000). Each run re-lists every tracked account, so larger budgets cost less overall. The rest resumes on the next dispatch."
         required: false
         type: string
       dry_run:

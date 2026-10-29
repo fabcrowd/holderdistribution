@@ -44,7 +44,7 @@
  * Cost: printed before the replay starts, from a sample of retail owners.
  *
  * Env: SOLANA_RPC_0..9 (public endpoint first), SOLANA_FLOW_CONCURRENCY
- * (default 4), SOLANA_HOLDERS_REPLAY_MAX_TX (default 10000, overridden by --max-tx),
+ * (default 4), SOLANA_HOLDERS_REPLAY_MAX_TX (default 50000, overridden by --max-tx),
  * SOLANA_HOLDERS_REPLAY_RPS (assumed request rate for the time estimate, default 10).
  */
 import fs from "node:fs/promises";
@@ -95,7 +95,7 @@ if (SINCE !== null && !/^\d{4}-\d{2}-\d{2}$/.test(SINCE)) {
   console.error(`--since must be YYYY-MM-DD, got ${SINCE}`);
   process.exit(2);
 }
-const MAX_TX = Number(argValue("--max-tx") || process.env.SOLANA_HOLDERS_REPLAY_MAX_TX) || 10_000;
+const MAX_TX = Number(argValue("--max-tx") || process.env.SOLANA_HOLDERS_REPLAY_MAX_TX) || 50_000;
 if (!Number.isInteger(MAX_TX) || MAX_TX < 1) {
   console.error(`--max-tx must be a positive integer, got ${MAX_TX}`);
   process.exit(2);
