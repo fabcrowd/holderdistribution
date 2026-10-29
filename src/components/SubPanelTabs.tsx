@@ -86,7 +86,7 @@ export const SubPanelTabs = ({
                 key={panel.id}
                 value={panel.id}
                 title={panel.title}
-                className="min-h-[32px] rounded px-3 text-xs font-semibold text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                className="min-h-[32px] max-xl:min-h-10 rounded px-3 text-xs font-semibold text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm"
               >
                 {panel.label}
               </TabsTrigger>

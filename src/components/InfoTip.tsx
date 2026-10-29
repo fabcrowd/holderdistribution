@@ -85,7 +85,7 @@ export const InfoTip = ({
             if (e.pointerType !== "mouse") return;
             scheduleClose();
           }}
-          className={`relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
+          className={`relative inline-flex h-6 w-6 shrink-0 items-center before:absolute before:-inset-2 before:content-[''] before:xl:hidden justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
         >
           {children ?? <Info className={iconClassName} aria-hidden="true" />}
         </button>

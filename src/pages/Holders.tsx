@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useReducer } from "react";
+import { useState, useEffect } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -10,11 +10,9 @@ import WalletHoldingsWidget from "@/components/WalletHoldingsWidget";
 import HolderGrowthWidget from "@/components/HolderGrowthWidget";
 import { ExchangeFlowWidget } from "@/components/ExchangeFlowWidget";
 import DistributionAnalysisWidget from "@/components/DistributionAnalysisWidget";
-import { HolderKpiHero } from "@/components/HolderKpiHero";
-import type { EcosystemHeadlineTileId } from "@/hooks/useEcosystemHeadlineTiles";
+import { MobileHeadline } from "@/components/MobileHeadline";
 import SupplyBreakdown from "@/components/SupplyBreakdown";
 import { TimeRangeDropdown } from "@/components/TimeRangeDropdown";
-import { PageIntro } from "@/components/PageIntro";
 import { ArrowLeft, Coins, PieChart, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TerminalDashboard } from "@/components/terminal/TerminalDashboard";
@@ -30,19 +28,6 @@ import { coerceChainView } from "@/lib/chainViews";
 import { RANGE_OPTIONS, ytdDays } from "@/lib/timeRange";
 import { useHoldersHistoryData } from "@/hooks/useHoldersHistoryData";
 import { pickBaseline } from "@/lib/baseline";
-import { useScrolledPastElement } from "@/hooks/useScrolledPastElement";
-import {
-  HERO_COLLAPSE_INITIAL,
-  isHeroCollapsed,
-  reduceHeroCollapse,
-} from "@/lib/heroCollapse";
-
-const TILE_DESTINATIONS = {
-  holders: { tab: "holders", panel: "trends" },
-  retailHeld: { tab: "holders", panel: "balances" },
-  staked: { tab: "holders", panel: "staking" },
-  cex: { tab: "holders", panel: "flows" },
-} as const satisfies Record<EcosystemHeadlineTileId, { tab: string; panel: string }>;
 
 type TabCopy = { ticker: string; name: string; supply: string | null };
 const TAB_DEFS = [
@@ -185,26 +170,6 @@ const Holders = () => {
     if (next !== selectedView) setSelectedView(next);
   }, [project, selectedView]);
 
-  // Ecosystem Headline: the tiles themselves are the sticky, morphing
-  // element. A sentinel at the hero's natural top edge (heroRef) reports
-  // once it scrolls behind the sticky selector bar (stickyBarRef) — at that
-  // point the hero pins under the bar and its tiles collapse in place. See
-  // HolderKpiHero's `collapsed` prop for the per-tile morph.
-  //
-  // Collapse is latched for the rest of the visit: scrolling back to the
-  // top does not replay the expand animation. Click the collapsed strip
-  // (or its chevron) to reopen it. Scrolling past again re-collapses.
-  const stickyBarRef = useRef<HTMLDivElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
-  const { scrolledPast, stickyOffset } = useScrolledPastElement(heroRef, stickyBarRef);
-  const [heroCollapse, dispatchHeroCollapse] = useReducer(
-    reduceHeroCollapse,
-    HERO_COLLAPSE_INITIAL,
-  );
-  useEffect(() => {
-    dispatchHeroCollapse(scrolledPast ? "scroll-past" : "scroll-back");
-  }, [scrolledPast]);
-  const heroCollapsed = isHeroCollapsed(heroCollapse);
   // Lands on Trends, not the Holders card's own "Overview" sub-panel. With the
   // Overview TAB gone, Holders is what a fresh visit renders — and that
   // sub-panel opens with the same four metrics the Ecosystem Headline is
@@ -234,30 +199,6 @@ const Holders = () => {
     setExplore(on);
     writeHash("holders", on ? holderPanel : null);
   };
-  const [activeTileId, setActiveTileId] = useState<EcosystemHeadlineTileId | null>(null);
-
-  // Collapse first, then route. "select" puts the hero in exactly the state a
-  // scroll-past would have, so the charts open in the space the tiles just
-  // gave up rather than below a full-height hero the reader would have to
-  // scroll past to see what they clicked.
-  const handleTileSelect = (id: EcosystemHeadlineTileId) => {
-    const destination = TILE_DESTINATIONS[id];
-    dispatchHeroCollapse("select");
-    setActiveTileId(id);
-    setActiveTab(destination.tab);
-    changeHolderPanel(destination.panel);
-  };
-
-  // A tile stays lit only while its own destination is on screen; changing tab
-  // or sub-tab by any other control clears it, so the marker can never claim a
-  // view the reader has since navigated away from.
-  useEffect(() => {
-    if (!activeTileId) return;
-    const destination = TILE_DESTINATIONS[activeTileId];
-    if (activeTab !== destination.tab || holderPanel !== destination.panel) {
-      setActiveTileId(null);
-    }
-  }, [activeTab, holderPanel, activeTileId]);
   const [rangeDays, setRangeDays] = useState<number>(settings0.range ?? ytdDays());
   // Range and chain live in the query string (replaceState: shareable and
   // reload-safe without adding Back steps).
@@ -394,7 +335,6 @@ const Holders = () => {
           the two rows read as one header with a single hairline divider,
           not two stacked cards. */}
       <nav
-        ref={stickyBarRef}
         // A landmark so the section tabs + range picker aren't orphaned
         // outside every region (axe "region" on phone/tablet).
         aria-label="Dashboard sections"
@@ -441,9 +381,7 @@ const Holders = () => {
       <main
         id="main-content"
         tabIndex={-1}
-        className={`terminal-dense focus:outline-none container mx-auto px-4 py-4 sm:py-8 max-w-7xl min-h-[100svh] ${
-          activeTileId ? "terminal-focus" : ""
-        }`}
+        className="terminal-dense focus:outline-none container mx-auto px-4 py-4 sm:py-8 max-w-7xl min-h-[100svh]"
       >
         {/* Breadcrumb only — the page title now lives in the sticky selector
             bar above (see the title unit next to the tab pills). */}
@@ -452,47 +390,10 @@ const Holders = () => {
             viewport that the focus view is trying to hand to the chart. It
             returns the moment the reader leaves focus mode. */}
 
-        {/* KPI hero — the ecosystem headline. heroRef is a sentinel at its
-            natural top edge: once it scrolls behind the sticky bar, the
-            wrapper below pins in place (position: sticky, top = the sticky
-            bar's own live bottom edge — its CSS `top` offset plus its
-            height, NOT just its height, or the hero would sit under the
-            bar's own top-16/md:top-20 offset and get clipped by it) and
-            HolderKpiHero's tiles morph via its `collapsed` prop. Before
-            that point sticky positioning is a no-op, so the hero renders in
-            normal flow exactly as before. */}
-        {!activeTileId && <PageIntro rangeDays={rangeDays} />}
-        <div ref={heroRef} />
-        {/* `position: sticky` does NOT pull this box out of document flow —
-            unlike `fixed`, later siblings are laid out as if it were
-            `static`, so once it's pinned, page content scrolls up and
-            passes BEHIND it. Each tile card is opaque, but the grid gaps
-            between them are not, so without a background on the wrapper
-            itself, that scrolling content showed through those gaps —
-            visible text/pills bleeding through the tile row. The mask
-            follows `scrolledPast` (actually pinned), not the latched
-            collapsed morph: an expanded-but-still-pinned hero still needs
-            the background, and a latched-compact hero at the top of the
-            page does not. */}
-        <div
-          className={`sticky z-30 transition-[margin] duration-200 ${heroCollapsed ? "mb-2" : "mb-5 sm:mb-6"}${scrolledPast ? " bg-background/95 backdrop-blur-md pt-1.5 pb-2 sm:pt-2 sm:pb-3 -mx-4 px-4 sm:mx-0 sm:px-0" : ""}`}
-          style={{ top: stickyOffset }}
-        >
-          <div className="animate-fade-in" style={{ animationDelay: '0.15s' }}>
-            <HolderKpiHero
-              rangeDays={rangeDays}
-              view={selectedView}
-              collapsed={heroCollapsed}
-              onToggle={heroCollapse.latched ? () => dispatchHeroCollapse("toggle") : undefined}
-              onTileSelect={handleTileSelect}
-              activeTileId={activeTileId}
-            />
-          </div>
-        </div>
-
+        <MobileHeadline rangeDays={rangeDays} selectedView={selectedView} />
 
         <TabsContent value="holders" className="mt-0 focus-visible:outline-none">
-          <TabBlurb id="holders" hidden={!!activeTileId} />
+          <TabBlurb id="holders" hidden={false} />
           <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
             <WalletHoldingsWidget
               // Always, not just in focus mode. The card's title block reads
@@ -520,7 +421,7 @@ const Holders = () => {
         </TabsContent>
 
         <TabsContent value="distribution" className="mt-0 focus-visible:outline-none">
-          <TabBlurb id="distribution" hidden={!!activeTileId} />
+          <TabBlurb id="distribution" hidden={false} />
           <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
             <DistributionAnalysisWidget
               snapshot={snapshot ?? null}
@@ -533,7 +434,7 @@ const Holders = () => {
         </TabsContent>
 
         <TabsContent value="supply" className="mt-0 focus-visible:outline-none">
-          <TabBlurb id="supply" hidden={!!activeTileId} />
+          <TabBlurb id="supply" hidden={false} />
           <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
             <SupplyBreakdown rangeDays={rangeDays} panel={supplyPanel} onPanelChange={changeSupplyPanel} />
           </div>

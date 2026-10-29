@@ -1261,7 +1261,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
           type="button"
           onClick={() => onViewChange(option.key)}
           disabled={isLoading}
-          className={`${compactHeader ? "min-h-[32px] shrink-0 px-2.5 text-[11px]" : "min-h-[44px] px-3.5 text-xs sm:text-sm"} rounded-full font-semibold transition-colors disabled:opacity-50 ${
+          className={`${compactHeader ? "min-h-[32px] max-xl:min-h-10 shrink-0 px-2.5 text-[11px]" : "min-h-[44px] px-3.5 text-xs sm:text-sm"} rounded-full font-semibold transition-colors disabled:opacity-50 ${
             option.key === selectedView
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-primary"
