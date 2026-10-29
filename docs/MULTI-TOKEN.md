@@ -442,7 +442,7 @@ The first non-TEL project, mapped 2026-10-25
 (`docs/superpowers/plans/2026-10-25-zbcn-mapping.md`).
 
 - **Identity:** slug `zebec-network` (`config/projects/zebec-network.json`,
-  `/zebec-network`, `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`).
+  `/zebec-network`, registered in `config/projects.json`).
   Mint `ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU` (SPL, 6 decimals),
   **Solana-only** (`origin: true`, `bridge: "native"`). The chain tabs are
   Combined and Solana, and the explorer is Solscan. Feeds are in
@@ -686,7 +686,7 @@ wording, and only render when a project has a ledger.
    scripts write there when run with `--project <slug>`. Give the config
    `supply.target`, `staking[].kind` / `deployBlock` and its own
    `classification.*` files.
-5. Add the slug to `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`.
+5. Nothing to do for `netlify/functions/live-data.mjs`: it reads the slugs from `config/projects.json` (only a `legacyRoot` project needs `"legacyRoot": true` on its registry entry).
    A test fails if it is missing.
 6. Optional: add a `holders` block if TEL's tier sizes don't fit the supply, and
    `chains[].rpc` for chains other than ethereum, polygon and base (Solana:
