@@ -4,6 +4,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { LineChart, Line, XAxis, YAxis } from "recharts";
 import "@/lib/rechartsMotion";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { ZoomFrame } from "@/components/chart/ZoomFrame";
+import { useChartZoom } from "@/hooks/useChartZoom";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import { buildCexHistoryTiles, MIN_CEX_TILE_BALANCE } from "@/components/buildCexHistoryTiles";
 import { ChangeIndicator } from "@/components/ChangeIndicator";
@@ -38,12 +40,48 @@ type CexHistoryTilesProps = {
  */
 const DEFAULT_VISIBLE_TILES = 6;
 
+type TileRow = { timestamp: number; balance: number };
+
+/** One exchange's balance sparkline, with the shared zoom gestures. */
+const CexSparkline = ({ series, ticker }: { series: TileRow[]; ticker: string }) => {
+  const zoom = useChartZoom(series, (d) => d.timestamp);
+  const chartConfig = useMemo(() => tileChartConfig(ticker), [ticker]);
+  return (
+    <ZoomFrame zoom={zoom} className="h-20 w-full">
+      <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
+                <LineChart data={zoom.rows} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
+                  <XAxis dataKey="timestamp" type="number" domain={["dataMin", "dataMax"]} scale="time" hide />
+                  <YAxis hide domain={["auto", "auto"]} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(_, payload) => {
+                          const ts = payload?.[0]?.payload?.timestamp;
+                          return ts ? new Date(ts).toLocaleDateString(undefined, { timeZone: "UTC" }) : "";
+                        }}
+                        formatter={(value) => [`${formatCompactAmount(Number(value))} ${ticker}`, "Balance"]}
+                      />
+                    }
+                  />
+                  <Line
+                    dataKey="balance"
+                    type="monotone"
+                    stroke="var(--color-balance)"
+                    strokeWidth={2}
+                    dot={false}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ChartContainer>
+    </ZoomFrame>
+  );
+};
+
 export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
   const { data: entries } = useCexBalanceHistory();
   const { data: changelog } = useClassificationChangelog();
   const [showAll, setShowAll] = useState(false);
   const { ticker } = useProjectCopy();
-  const chartConfig = useMemo(() => tileChartConfig(ticker), [ticker]);
 
   const tiles = useMemo(
     () => buildCexHistoryTiles(entries, rangeDays),
@@ -130,33 +168,7 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
                 )}
               </span>
             </div>
-            <div className="h-20 w-full">
-              <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
-                <LineChart data={tile.series} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
-                  <XAxis dataKey="timestamp" type="number" domain={["dataMin", "dataMax"]} scale="time" hide />
-                  <YAxis hide domain={["auto", "auto"]} />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        labelFormatter={(_, payload) => {
-                          const ts = payload?.[0]?.payload?.timestamp;
-                          return ts ? new Date(ts).toLocaleDateString(undefined, { timeZone: "UTC" }) : "";
-                        }}
-                        formatter={(value) => [`${formatCompactAmount(Number(value))} ${ticker}`, "Balance"]}
-                      />
-                    }
-                  />
-                  <Line
-                    dataKey="balance"
-                    type="monotone"
-                    stroke="var(--color-balance)"
-                    strokeWidth={2}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ChartContainer>
-            </div>
+            <CexSparkline series={tile.series} ticker={ticker} />
           </div>
           );
         })}

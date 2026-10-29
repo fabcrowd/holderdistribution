@@ -20,6 +20,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { ZoomFrame } from "@/components/chart/ZoomFrame";
+import { ChartLegend, type LegendItem } from "@/components/chart/ChartLegend";
+import { useChartZoom } from "@/hooks/useChartZoom";
+import { useSeriesToggle } from "@/hooks/useSeriesToggle";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import {
   Table,
@@ -92,6 +96,17 @@ const actualsConfig = {
   raisedUsd: { label: "Raised", color: COLORS.raised },
   paidUsd: { label: "Paid", color: COLORS.paid },
 };
+const SPEND_LEGEND: LegendItem[] = [
+  { key: "burnUsd", label: "Measured", color: COLORS.burn, dashed: true },
+  { key: "scheduledUsd", label: "Scheduled", color: COLORS.scheduled, dashed: true },
+  { key: "spendUsd", label: "Used (max)", color: COLORS.spend },
+];
+const ACTUALS_LEGEND: LegendItem[] = [
+  { key: "raisedUsd", label: "Raised", color: COLORS.raised },
+  { key: "paidUsd", label: "Paid out", color: COLORS.paid },
+];
+const SPEND_KEYS = SPEND_LEGEND.map((i) => i.key);
+const ACTUALS_KEYS = ACTUALS_LEGEND.map((i) => i.key);
 const bridgeConfig = { usd: { label: "USD", color: COLORS.cash } };
 
 const BILL_KIND: Record<OutstandingCategory, string> = {
@@ -180,6 +195,11 @@ export const BurnForecastView = ({
   const actualsSeries = useMemo(() => measuredActualsSeries(forecast), [forecast]);
   const mixSeries = useMemo(() => billMixSeries(forecast), [forecast]);
   const bridgeSeries = useMemo(() => cashBridgeSeries(forecast), [forecast]);
+  // Month axes are categories: zoom windows are in row-index units.
+  const cashZoom = useChartZoom(cashSeries, (_, i) => i);
+  const spendZoom = useChartZoom(spendSeries, (_, i) => i);
+  const spendToggle = useSeriesToggle(SPEND_KEYS);
+  const actualsToggle = useSeriesToggle(ACTUALS_KEYS);
   const mixTotal = mixSeries.reduce((sum, row) => sum + row.usd, 0);
   const depleteLabel =
     forecast.depletedIn && forecast.depletedIn !== "now"
@@ -274,8 +294,9 @@ export const BurnForecastView = ({
           Starts at stablecoin left after invoices due now. Each month subtracts the spend used
           above. TEL inventory is not in this series.
         </p>
+        <ZoomFrame zoom={cashZoom}>
         <ChartContainer config={runwayConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
-          <AreaChart data={cashSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <AreaChart data={cashZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="burn-cash-fill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={COLORS.cash} stopOpacity={0.35} />
@@ -314,6 +335,7 @@ export const BurnForecastView = ({
             />
           </AreaChart>
         </ChartContainer>
+        </ZoomFrame>
       </article>
 
       <div className="grid gap-3 lg:grid-cols-2">
@@ -322,14 +344,11 @@ export const BurnForecastView = ({
             <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
               Monthly spend
             </h4>
-            <div className="flex flex-wrap gap-3">
-              <LegendDot color={COLORS.burn} label="Measured" />
-              <LegendDot color={COLORS.scheduled} label="Scheduled" />
-              <LegendDot color={COLORS.spend} label="Used (max)" />
-            </div>
+            <ChartLegend items={SPEND_LEGEND} hidden={spendToggle.hidden} onToggle={spendToggle.toggle} />
           </div>
+          <ZoomFrame zoom={spendZoom}>
           <ChartContainer config={spendConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
-            <LineChart data={spendSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <LineChart data={spendZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid vertical={false} className="stroke-border/40" />
               <XAxis dataKey="label" tickMargin={8} />
               <YAxis tickFormatter={(value) => formatCompactUsd(Number(value))} tickMargin={8} width={48} />
@@ -343,6 +362,7 @@ export const BurnForecastView = ({
                   />
                 }
               />
+              {spendToggle.isVisible("burnUsd") && (
               <Line
                 type="monotone"
                 dataKey="burnUsd"
@@ -351,6 +371,8 @@ export const BurnForecastView = ({
                 strokeDasharray="4 3"
                 dot={false}
               />
+              )}
+              {spendToggle.isVisible("scheduledUsd") && (
               <Line
                 type="monotone"
                 dataKey="scheduledUsd"
@@ -359,6 +381,8 @@ export const BurnForecastView = ({
                 strokeDasharray="2 2"
                 dot={false}
               />
+              )}
+              {spendToggle.isVisible("spendUsd") && (
               <Line
                 type="monotone"
                 dataKey="spendUsd"
@@ -366,8 +390,10 @@ export const BurnForecastView = ({
                 strokeWidth={2}
                 dot={{ r: 3 }}
               />
+              )}
             </LineChart>
           </ChartContainer>
+          </ZoomFrame>
         </article>
 
         <article className="space-y-2 rounded-lg border border-border/40 px-3 py-2.5">
@@ -375,10 +401,7 @@ export const BurnForecastView = ({
             <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
               Last three months
             </h4>
-            <div className="flex flex-wrap gap-3">
-              <LegendDot color={COLORS.raised} label="Raised" />
-              <LegendDot color={COLORS.paid} label="Paid out" />
-            </div>
+            <ChartLegend items={ACTUALS_LEGEND} hidden={actualsToggle.hidden} onToggle={actualsToggle.toggle} />
           </div>
           <p className="text-[10px] text-muted-foreground">
             Raised is stablecoin from TEL sales. Paid is that stablecoin sent to an outside payee.
@@ -398,8 +421,8 @@ export const BurnForecastView = ({
                   />
                 }
               />
-              <Bar dataKey="raisedUsd" fill={COLORS.raised} radius={[2, 2, 0, 0]} maxBarSize={28} />
-              <Bar dataKey="paidUsd" fill={COLORS.paid} radius={[2, 2, 0, 0]} maxBarSize={28} />
+              {actualsToggle.isVisible("raisedUsd") && <Bar dataKey="raisedUsd" fill={COLORS.raised} radius={[2, 2, 0, 0]} maxBarSize={28} />}
+              {actualsToggle.isVisible("paidUsd") && <Bar dataKey="paidUsd" fill={COLORS.paid} radius={[2, 2, 0, 0]} maxBarSize={28} />}
             </BarChart>
           </ChartContainer>
         </article>

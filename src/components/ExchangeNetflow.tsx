@@ -3,6 +3,8 @@ import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import "@/lib/rechartsMotion";
+import { ZoomFrame } from "@/components/chart/ZoomFrame";
+import { useChartZoom } from "@/hooks/useChartZoom";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { useProject } from "@/hooks/useProject";
@@ -19,6 +21,8 @@ const formatCompactAmount = (value: number) => {
   if (a >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
   return `${Math.round(value)}`;
 };
+
+const NO_ROWS: Array<{ timestamp: number; net: number }> = [];
 
 const chartConfig = { net: { label: "Net flow", color: "hsl(var(--primary))" } };
 
@@ -46,6 +50,8 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
     const series = inRange.map((e) => ({ timestamp: Date.parse(e.date), net: (e.in ?? 0) - (e.out ?? 0) }));
     return { totalIn, totalOut, net: totalIn - totalOut, series, partialOnly, excludesToday: !partialOnly && settled.length < entries.length };
   }, [entries, rangeDays]);
+
+  const zoom = useChartZoom(view?.series ?? NO_ROWS, (d) => d.timestamp);
 
   // Still fetching, or a real failure (5xx): the terminal panel owns the
   // skeleton and the retry. A settled empty feed is the empty state.
@@ -95,8 +101,9 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
         <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 text-center">
           Daily net flow (▲ toward exchanges · ▼ leaving)
         </p>
-        <ChartContainer config={chartConfig} className="h-[220px] w-full aspect-auto">
-          <BarChart data={view.series} margin={{ top: 8, right: 8, bottom: 4, left: 8 }}>
+        <ZoomFrame zoom={zoom} className="h-[220px] w-full">
+        <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
+          <BarChart data={zoom.rows} margin={{ top: 8, right: 8, bottom: 4, left: 8 }}>
             <CartesianGrid vertical={false} className="stroke-border/40" />
             <XAxis
               dataKey="timestamp"
@@ -121,12 +128,13 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
               }
             />
             <Bar dataKey="net" radius={[2, 2, 0, 0]} isAnimationActive={false}>
-              {view.series.map((d) => (
+              {zoom.rows.map((d) => (
                 <Cell key={d.timestamp} fill={d.net >= 0 ? "hsl(0 72% 55%)" : "hsl(142 71% 45%)"} />
               ))}
             </Bar>
           </BarChart>
         </ChartContainer>
+        </ZoomFrame>
       </div>
     </div>
   );

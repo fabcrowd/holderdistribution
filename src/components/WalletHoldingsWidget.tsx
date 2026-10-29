@@ -1,3 +1,5 @@
+import { ToggleableSeries } from "@/components/chart/ToggleableSeries";
+import type { LegendItem } from "@/components/chart/ChartLegend";
 import { useMemo, useState, Fragment, type ReactNode } from "react";
 import { useProjectCopy, type UseProjectCopy } from "@/hooks/useProjectCopy";
 import { useProject } from "@/hooks/useProject";
@@ -728,6 +730,8 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
               Balance buckets are log-spaced; the count axis is linear. The curve is a log-normal fit.
               Buckets exclude sub-1-{copy.ticker} dust wallets, so bars sum to slightly fewer holders than the tiles above.
             </p>
+            <ToggleableSeries items={FIT_LEGEND} className="mb-2 justify-center">
+              {(isVisible) => (
             <ChartContainer
               config={{
                 count: { label: "Wallets", color: "hsl(var(--primary))" },
@@ -738,17 +742,17 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
               <ComposedChart data={chartData} margin={{ top: 20, right: 24, bottom: 36, left: 24 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis dataKey="range" tickFormatter={balanceRangeDisplayLabel} tick={CHART_TICK} height={36} />
-                <YAxis tick={CHART_TICK} domain={[0, yDomainMax]} allowDataOverflow={false} />
+                <YAxis tick={CHART_TICK} domain={isVisible("count") ? [0, yDomainMax] : [0, "auto"]} allowDataOverflow={false} />
                 <ChartTooltip content={<ChartTooltipContent labelFormatter={(value) => balanceRangeDisplayLabel(String(value))} />} />
-                <Bar dataKey="count" fill="hsl(var(--primary) / 0.35)" stroke="hsl(var(--primary))" strokeWidth={1} radius={[4, 4, 0, 0]} />
-                <Line
+                {isVisible("count") && <Bar dataKey="count" fill="hsl(var(--primary) / 0.35)" stroke="hsl(var(--primary))" strokeWidth={1} radius={[4, 4, 0, 0]} />}
+                {isVisible("curve") && <Line
                   dataKey="curve"
                   type="monotone"
                   stroke="hsl(188 95% 55%)"
                   strokeWidth={2.5}
                   dot={false}
                   strokeDasharray="0"
-                />
+                />}
                 {stats.averageRangeLabel && chartData.some((d) => d.range === stats.averageRangeLabel) && (
                   <ReferenceLine
                     x={stats.averageRangeLabel}
@@ -760,12 +764,19 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
                 )}
               </ComposedChart>
             </ChartContainer>
+              )}
+            </ToggleableSeries>
           </div>
         )}
       </CardContent>
     </Card>
   );
 };
+
+const FIT_LEGEND: LegendItem[] = [
+  { key: "count", label: "Wallets", color: "hsl(var(--primary))" },
+  { key: "curve", label: "Log-normal fit", color: "hsl(188 95% 55%)" },
+];
 
 const stakingInsightsChartConfig = {
   count: { label: "Stakers", color: "hsl(var(--primary))" },
