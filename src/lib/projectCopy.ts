@@ -65,27 +65,28 @@ export const hasCopyText = (project: Pick<ProjectConfig, "copy">, id: string): b
   typeof project.copy?.text?.[id] === "string";
 
 /**
- * Names for the project-controlled entities on the Supply view. Generic
- * defaults read as "the project's foundation / team"; a project names its own
- * (TEL: Telcoin Association vs Telcoin Holdings, two DISTINCT entities that
- * are never summed) via copy.text `entity.*`.
+ * Names for the project-controlled entities on the Supply view. The pie uses
+ * one bucket set (Treasury, Team, Holdings, …). These slots are the display
+ * names for Treasury (`entity.association`) and Holdings (`entity.holdings`).
+ * Defaults are the canonical words; a project overrides them (TEL: Association
+ * safes vs Telcoin Holdings — two entities that are never summed).
  */
 export type ProjectEntities = {
-  /** Full bucket title for treasury + council Safes, e.g. "Telcoin Association-Controlled Safes". */
+  /** Treasury slice title, e.g. "Telcoin Association-Controlled Safes". */
   association: string;
   /** Short prefix, e.g. "Association" ("Association Safes", "Association — Treasury"). */
   associationShort: string;
-  /** The separate company / team entity, e.g. "Telcoin Holdings". */
+  /** Holdings slice title, e.g. "Telcoin Holdings". */
   holdings: string;
-  /** Short form, e.g. "Holdings" ("Holdings wallets", "Holdings-sourced escrow"). */
+  /** Short form, e.g. "Holdings". */
   holdingsShort: string;
 };
 
 export const ENTITY_TEMPLATES: Record<keyof ProjectEntities, string> = {
-  association: "{name} Foundation-Controlled Safes",
-  associationShort: "Foundation",
-  holdings: "{name} Team Wallets",
-  holdingsShort: "Team",
+  association: "Treasury",
+  associationShort: "Treasury",
+  holdings: "Holdings",
+  holdingsShort: "Holdings",
 };
 
 export const projectEntities = (

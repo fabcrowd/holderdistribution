@@ -70,12 +70,17 @@ new project works with no `copy` section at all:
   `text(...)`, e.g. `holders.cex.info`, `staking.intro`). Some also take a
   runtime value the widget fills itself: `{amount}` (`supply.holdings.description`)
   and `{treasuryNow}` (`supply.coingecko.note`).
-- Entity slots (Supply view): every project gets the same foundation /
-  team panels and treasury chart lines. Name them with
-  `copy.text` `entity.association`, `entity.associationShort`,
-  `entity.holdings`, `entity.holdingsShort` (generic: "{name}
-  Foundation-Controlled Safes" / "Foundation" / "{name} Team Wallets" /
-  "Team"), plus `supply.association.description`, `supply.holdings.description`,
+- Entity slots (Supply view): the pie uses one bucket set for every project
+  — Retail, DEX, CEX, Treasury, Team, Holdings, Escrow, Other, Supply gap —
+  and hides empty slices. Staked tokens stay inside Retail; staking reward
+  vaults / reward contracts are developer-controlled, so give them category
+  `staking` (a contracts{} role `staking`, or an exclusions label) and they
+  count in Team (`TEAM_CATEGORY_KEYS` in `src/lib/supplyBreakdown.ts`).
+  Treasury's label is `copy.text` `entity.association`
+  (generic: "Treasury"; TEL keeps "Telcoin Association-Controlled Safes";
+  ZBCN is "Zebec Treasury & Buyback Vaults"). Holdings is `entity.holdings`
+  (generic: "Holdings"). Also `entity.associationShort` /
+  `entity.holdingsShort`, plus `supply.association.description`, `supply.holdings.description`,
   `supply.escrow.description`, `treasury.series.council`,
   `treasury.history.info`.
 - The site footer disclaimer is shared legal copy in `src/components/Footer.tsx`
@@ -479,8 +484,8 @@ The first non-TEL project, mapped 2026-10-25
   (`stakingV3Balance` / the v3 overlay) and is not added on top. Positions
   above vault custody are scaled down in that credit so supply is not
   invented; the tile still shows the raw sum. Reward vaults are not custody
-  for those positions and stay in the supply staking slice. The staking pull
-  is non-fatal in the workflow, so holders still publish; if the feed is
+  for those positions and fold into Other on the supply pie (not their own
+  slice). The staking pull is non-fatal in the workflow, so holders still publish; if the feed is
   missing, vault balances stay uncredited and a warning is logged.
 - **Vault-gap rule (standing):** each lockup's position sum is reconciled
   against its vault ATA (0.5% tolerance), and a mismatch refuses to publish.
