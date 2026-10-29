@@ -2,6 +2,7 @@
  * Pure supply reconciliation helpers — buckets every wallet's TEL once.
  */
 import { normalizeAnyAddress } from "./address.js";
+import { DEFAULT_CIRCULATING_SUBTRACT, subtractedTotal } from "./circulatingSubtract.js";
 
 // The token's own totalSupply() on the origin chain. Not a guess and not a
 // third-party figure — read from the contract. CoinGecko reports the same.
@@ -39,7 +40,16 @@ export const buildReconciliation = (
   // TEL's snapshot. `chains` (ordered keys) and `origin` come from the
   // project's chains[] when the snapshot does not name them; `upgrade`
   // ({ generation }) names the upgraded-token generation (default "v3").
-  { totalSupply = TEL_TOTAL_SUPPLY, coingeckoCirculating = null, chains = null, origin = null, upgrade = null } = {},
+  // `circulatingSubtract` = category keys held out of circulating (project
+  // config supply.circulating.subtract; see circulatingSubtract.js).
+  {
+    totalSupply = TEL_TOTAL_SUPPLY,
+    coingeckoCirculating = null,
+    chains = null,
+    origin = null,
+    upgrade = null,
+    circulatingSubtract = DEFAULT_CIRCULATING_SUBTRACT,
+  } = {},
 ) => {
   const TOTAL_SUPPLY = totalSupply;
   const upgradeGeneration = upgrade?.generation ?? "v3";
@@ -168,13 +178,13 @@ export const buildReconciliation = (
   }
 
   const counted = Object.values(categories).reduce((sum, v) => sum + v, 0);
-  // Escrow (Anchorage / BitGo) stays in circulating by default — matches
-  // market-data convention (CoinGecko only carves treasury). Council and
-  // treasury stay out, and any address with a nonCirculatingOverride (TEL
+  // Which categories leave circulating is per-project config
+  // (supply.circulating.subtract). Escrow (Anchorage / BitGo) stays in
+  // circulating unless listed — matches market-data convention (CoinGecko
+  // only carves treasury). Any address with a nonCirculatingOverride (TEL
   // contractually committed elsewhere, e.g. a SAFE's return-to-treasury
   // clause) is carved out too, regardless of its category.
-  const circulating =
-    counted - (categories.treasury ?? 0) - (categories.council ?? 0) - nonCirculatingExclusions;
+  const circulating = counted - subtractedTotal(categories, circulatingSubtract) - nonCirculatingExclusions;
 
   // Identity: counted + residual === totalSupply.
   // residual ≈ bridgeInFlight − originDrift, where bridgeInFlight is L1 lock

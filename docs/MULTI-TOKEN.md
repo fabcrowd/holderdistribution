@@ -187,7 +187,8 @@ Optional per-project pipeline keys: `chains[].origin`, `chains[].fromBlock`,
 `treasury.categories` (append-treasury-history lines; default TEL's four),
 `treasury.labelEras` (`[{before, categories:{address: oldCategory}}]`: backfill-treasury-cex-history replays rows dated before `before` with the older labels),
 `treasury.anchorAdjustments` (`[{date, category, add, address, note}]`: in-memory corrections to real rows known to omit a wallet, applied when the backfill anchors on or validates against that row),
-`supply.coingeckoId` (CoinGecko coin id whose circulating supply reconcile-supply fetches; unset hides the comparison).
+`supply.coingeckoId` (CoinGecko coin id whose circulating supply reconcile-supply fetches; unset hides the comparison),
+`supply.circulating.subtract` (reconciliation category keys held out of the reconciled circulating figure; default `["treasury","council"]`; TEL `["treasury","council"]`, ZBCN `["treasury"]`. Per-label `nonCirculatingOverride` is applied on top. The Supply view's Circulating formula and tooltip are generated from this list; categories not listed, e.g. TEL Holdings or ZBCN Uphold CEX wallets, stay circulating. Not to be confused with the bridge-netting `nonCirculating` below).
 
 ### Ported scripts vs the guard
 

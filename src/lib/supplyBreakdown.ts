@@ -1,3 +1,5 @@
+import { DEFAULT_CIRCULATING_SUBTRACT, subtractTerms } from "@/lib/circulatingSubtract";
+
 /**
  * Groups raw supply-reconciliation categories into display buckets for the
  * holders-page SupplyBreakdown chart.
@@ -199,17 +201,17 @@ export const groupSupplyCategories = (
  * actually subtracts, using the Treasury slice's display name when that
  * slice is present. Escrow stays in circulating except the committed
  * override. Holdings and Team (including reward vaults) are not carved out.
- * Unchanged by the Developer holdings grouping (see the open item above).
+ * `subtract` is the project's supply.circulating.subtract list.
  */
 export const circulatingFormula = (
   categories: Record<string, number> | undefined | null,
   labels: { association: string } = { association: "Treasury" },
   escrowCommitted = 0,
+  subtract: readonly string[] = DEFAULT_CIRCULATING_SUBTRACT,
 ): string => {
   const c = categories ?? {};
-  const treasuryOut = (c.treasury ?? 0) + (c.council ?? 0);
-  const terms: string[] = [];
-  if (treasuryOut > 0) terms.push(labels.association || "Treasury");
+  const present = subtract.filter((k) => (c[k] ?? 0) > 0);
+  const terms: string[] = subtractTerms(present, labels.association);
   if (escrowCommitted > 0) terms.push("committed escrow");
   const formula = terms.length ? `counted − ${terms.join(" − ")}` : "counted";
   const escrowLeft = (c.escrow ?? 0) - escrowCommitted;

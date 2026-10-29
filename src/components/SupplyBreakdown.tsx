@@ -33,6 +33,7 @@ import { useHolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { StakingAddressList } from "@/components/StakingAddressList";
 import { stakingAddressLinks, supplyRetailStakeModel } from "@/lib/stakingAddresses";
 import { buildViewHash } from "@/lib/viewRoute";
+import { circulatingDefinition, resolveCirculatingSubtract } from "@/lib/circulatingSubtract";
 import {
   circulatingFormula,
   developerCategoryLabel,
@@ -192,6 +193,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
   );
   // Fallback denominator before reconciliation loads: the project's supply target (TEL: 100B).
   const supplyTarget = project.supply?.target ?? 100_000_000_000;
+  const circulatingSubtract = useMemo(() => resolveCirculatingSubtract(project.supply), [project.supply]);
   const pieChartConfig = useMemo(() => supplyPieChartConfig(ticker), [ticker]);
   const activePieSector = useMemo(() => makeActivePieSector(ticker), [ticker]);
   // Controlled when the page owns the panel (so #supply/<panel> deep links
@@ -616,12 +618,17 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                     <div>
                       <span className="font-semibold text-foreground">Circulating: </span>
                       {formatCompactAmount(circulating)} {ticker}
-                      <span className="text-muted-foreground" data-testid="circulating-formula">
+                      <span
+                        className="text-muted-foreground"
+                        data-testid="circulating-formula"
+                        title={text("supply.circulating.definition", circulatingDefinition(circulatingSubtract, entities.association))}
+                      >
                         {" "}
                         ({circulatingFormula(
                           data?.categories,
                           { association: entities.association },
                           data?.circulatingExclusions?.total ?? 0,
+                          circulatingSubtract,
                         )})
                       </span>
                     </div>
