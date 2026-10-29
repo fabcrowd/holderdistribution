@@ -203,8 +203,10 @@ export const BurnForecastView = ({
   const spendToggle = useSeriesToggle(SPEND_KEYS);
   const actualsToggle = useSeriesToggle(ACTUALS_KEYS);
   // Each chart's y-axis is fitted to its visible rows (zoom) and visible series (legend toggles).
-  const cashAxis = computeYAxisFromRows(cashZoom.rows, ["cashUsd"], { kind: "line" });
-  const spendAxis = computeYAxisFromRows(spendZoom.rows, SPEND_KEYS.filter((k) => spendToggle.isVisible(k)), { kind: "line" });
+  const cashAxisAuto = computeYAxisFromRows(cashZoom.rows, ["cashUsd"], { kind: "line" });
+  const cashAxis = cashZoom.yScale("left", cashAxisAuto);
+  const spendAxisAuto = computeYAxisFromRows(spendZoom.rows, SPEND_KEYS.filter((k) => spendToggle.isVisible(k)), { kind: "line" });
+  const spendAxis = spendZoom.yScale("left", spendAxisAuto);
   const actualsAxis = computeYAxisFromRows(actualsSeries, ACTUALS_KEYS.filter((k) => actualsToggle.isVisible(k)), { kind: "bar" });
   const bridgeAxis = computeYAxisFromRows(bridgeSeries, ["usd"], { kind: "bar" });
   const axisFmt = (axis: YAxisScale) => distinctTickFormatter(axis.ticks, formatCompactUsd);
@@ -304,7 +306,7 @@ export const BurnForecastView = ({
           Starts at stablecoin left after invoices due now. Each month subtracts the spend used
           above. TEL inventory is not in this series.
         </p>
-        <ZoomFrame zoom={cashZoom} notes={<AxisBaselineNote baseline={cashAxis.baseline} format={formatCompactUsd} />}>
+        <ZoomFrame zoom={cashZoom} yAxes={{ left: cashAxisAuto.domain }} notes={<AxisBaselineNote baseline={cashAxis.baseline} format={formatCompactUsd} />}>
         <ChartContainer config={runwayConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
           <AreaChart data={cashZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
@@ -321,6 +323,7 @@ export const BurnForecastView = ({
               width={48}
               domain={cashAxis.domain}
               ticks={cashAxis.ticks}
+              allowDataOverflow={cashZoom.yRanges.left != null}
             />
             <ChartTooltip
               content={
@@ -357,12 +360,12 @@ export const BurnForecastView = ({
             </h4>
             <ChartLegend items={SPEND_LEGEND} hidden={spendToggle.hidden} onToggle={spendToggle.toggle} />
           </div>
-          <ZoomFrame zoom={spendZoom} notes={<AxisBaselineNote baseline={spendAxis.baseline} format={formatCompactUsd} />}>
+          <ZoomFrame zoom={spendZoom} yAxes={{ left: spendAxisAuto.domain }} notes={<AxisBaselineNote baseline={spendAxis.baseline} format={formatCompactUsd} />}>
           <ChartContainer config={spendConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
             <LineChart data={spendZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid vertical={false} className="stroke-border/40" />
               <XAxis dataKey="label" tickMargin={8} />
-              <YAxis tickFormatter={axisFmt(spendAxis)} domain={spendAxis.domain} ticks={spendAxis.ticks} tickMargin={8} width={48} />
+              <YAxis tickFormatter={axisFmt(spendAxis)} domain={spendAxis.domain} ticks={spendAxis.ticks} allowDataOverflow={spendZoom.yRanges.left != null} tickMargin={8} width={48} />
               <ChartTooltip
                 content={
                   <ChartTooltipContent
