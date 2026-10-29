@@ -22,9 +22,9 @@ afterEach(() => {
 
 // Verbatim copies of rpc.js's pre-multi-chain tables.
 const OLD_KEYS = {
-  ethereum: Array.from({ length: 10 }, (_, i) => `ETH_RPC_${i}`),
-  polygon: Array.from({ length: 10 }, (_, i) => `MATIC_RPC_${i}`),
-  base: Array.from({ length: 10 }, (_, i) => `BASE_RPC_${i}`),
+  ethereum: Array.from({ length: 16 }, (_, i) => `ETH_RPC_${i}`),
+  polygon: Array.from({ length: 16 }, (_, i) => `MATIC_RPC_${i}`),
+  base: Array.from({ length: 16 }, (_, i) => `BASE_RPC_${i}`),
 };
 const OLD_PUBLIC = {
   ethereum: ["https://gateway.tenderly.co/public/mainnet", "https://rpc.mevblocker.io"],
