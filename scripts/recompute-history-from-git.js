@@ -102,6 +102,7 @@ import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS, setHolderTiers } from "./lib/holdersView.js";
 import { classifySnapshot, stakedAmountsByAddress } from "./lib/phantomStakers.js";
 import { readJsonOptional } from "./lib/readJsonOptional.js";
+import { extractHeldAddresses, advanceEverHeld } from "./lib/everHeldReplay.js";
 import { selectPipelineProject, projectPaths, projectNonRetailPaths, projectClassificationPath } from "./lib/projects.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
@@ -220,31 +221,6 @@ const buildConcentrationTop = (holders) => {
     top[bucket] = Math.round(slice.reduce((sum, h) => sum + h.balance, 0));
   }
   return top;
-};
-
-/** Every address currently classified as a retail holder in this snapshot
- *  (balance > 0 on any chain, not in the CURRENT non-retail set) — used to
- *  rebuild newHolders/cumulativeHolders chronologically. Schema-tolerant:
- *  snapshots from 2025-12-31 onward have a top-level `wallets[]` (used
- *  elsewhere in this file); snapshots before that (back to 2025-10-12) only
- *  have `combined.holders[]` with `{address, balance, chain}` — no
- *  per-chain-balance breakdown, but sufficient to know an address held TEL. */
-const extractHeldAddresses = (snapshot, excluded, dropped = EMPTY_SET) => {
-  const addrs = new Set();
-  if (Array.isArray(snapshot?.wallets) && snapshot.wallets.length) {
-    const chainKeys = Object.keys(snapshot?.chains ?? {});
-    for (const w of snapshot.wallets) {
-      const a = normalizeAddress(w?.address);
-      if (!a || excluded.has(a) || dropped.has(a)) continue;
-      if (chainKeys.some((k) => Number(w?.[`${k}_balance`]) > 0)) addrs.add(a);
-    }
-  } else {
-    for (const h of snapshot?.combined?.holders ?? []) {
-      const a = normalizeAddress(h?.address);
-      if (a && !excluded.has(a) && !dropped.has(a) && Number(h?.balance) > 0) addrs.add(a);
-    }
-  }
-  return addrs;
 };
 
 /** Sum of every wallet's total_telcoin_balance grouped by CEX label, using
@@ -372,6 +348,10 @@ const main = async () => {
   }
   console.log(`Ever-held set seeded: ${everSeen.size} addresses as of ${archiveStart ?? "n/a"}.`);
   let latestEverDate = seedDates[seedDates.length - 1] ?? null;
+  // No snapshot predates the archive (a project whose tracking began with its first
+  // history row): the first dated snapshot is the baseline, not a day of new holders.
+  const baselineMode = seedDates.length === 0;
+  if (baselineMode) console.log("No pre-archive snapshots: ever-held count is relative to the first snapshot date (baseline mode).");
 
   // Each tel-holders.json snapshot is ~30MB+ parsed. The previous version of
   // this script cached every distinct date's snapshot in a Map and only
@@ -534,23 +514,23 @@ const main = async () => {
       // "wallets that have ever held TEL" running count (see file header) —
       // same bidirectional-correction requirement as every other field above,
       // applied uniformly to every date instead of only going forward.
-      if (holdersEntry.newHolders != null || holdersEntry.cumulativeHolders != null) {
+      // Normally only rows that already carry the fields: a row without them is a
+      // reconstructed day (pull-holders-rpc.js --as-of) that a single snapshot cannot
+      // place. In baseline mode (no pre-archive seed — see advanceEverHeld) the archive
+      // IS the continuous sequence, so rows awaiting a recompute are filled too.
+      const hasEverFields = holdersEntry.newHolders != null || holdersEntry.cumulativeHolders != null;
+      if (hasEverFields || baselineMode) {
         const beforeNew = holdersEntry.newHolders;
         const beforeCumulative = holdersEntry.cumulativeHolders;
-        const heldAddrs = extractHeldAddresses(snap, excluded, phantoms);
-        let newCount = 0;
-        for (const a of heldAddrs) {
-          if (!everSeen.has(a)) {
-            everSeen.add(a);
-            newCount++;
-          }
-        }
-        holdersEntry.newHolders = newCount;
-        holdersEntry.cumulativeHolders = everSeen.size;
+        const isBaselineDay = baselineMode && everSeen.size === 0;
+        const { newHolders, cumulativeHolders } = advanceEverHeld(everSeen, extractHeldAddresses(snap, excluded, phantoms), { baseline: isBaselineDay });
+        if (newHolders === null) delete holdersEntry.newHolders;
+        else holdersEntry.newHolders = newHolders;
+        holdersEntry.cumulativeHolders = cumulativeHolders;
         latestEverDate = date;
-        if (beforeNew !== newCount || beforeCumulative !== everSeen.size) {
+        if (beforeNew !== newHolders || beforeCumulative !== cumulativeHolders) {
           everChanged++;
-          console.log(`  ${date}: newHolders ${beforeNew} -> ${newCount}, cumulativeHolders ${beforeCumulative} -> ${everSeen.size}`);
+          console.log(`  ${date}: newHolders ${beforeNew} -> ${newHolders}, cumulativeHolders ${beforeCumulative} -> ${cumulativeHolders}${isBaselineDay ? " (baseline day)" : ""}`);
         }
       }
     }
