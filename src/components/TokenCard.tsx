@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import type { CardStats } from "@/lib/landingStats";
+import type { CardConcentration, CardTrend } from "@/lib/cardTrend";
+import { CardSparkline } from "@/components/CardSparkline";
 import { tokenPath } from "@/lib/tokenRoutes";
 
 type Props = {
@@ -10,6 +12,12 @@ type Props = {
   image?: string;
   /** null while the feed is loading. */
   stats: CardStats | null;
+  /** Top-10 / top-100 share of retail-held supply; null while loading. */
+  concentration?: CardConcentration | null;
+  /** 30-day retail-wallet series; null when the feed is missing or has <2 rows. */
+  trend?: CardTrend | null;
+  /** True while holders-history.json is loading. */
+  trendLoading?: boolean;
 };
 
 const Stat = ({ label, value }: { label: string; value: string | null }) => (
@@ -24,11 +32,11 @@ const Stat = ({ label, value }: { label: string; value: string | null }) => (
 );
 
 /** One landing card. The whole card is a single link to the token's terminal. */
-export const TokenCard = ({ slug, name, ticker, image, stats }: Props) => (
+export const TokenCard = ({ slug, name, ticker, image, stats, concentration = null, trendLoading = false, trend = null }: Props) => (
   <Link
     to={tokenPath(slug)}
     data-testid={`token-card-${slug}`}
-    className="group flex flex-col gap-4 rounded-lg border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    className="group flex h-full flex-col gap-4 rounded-lg border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
   >
     <div className="flex items-center gap-3">
       {image && <img src={image} alt="" width={40} height={40} decoding="async" className="h-10 w-10 shrink-0 rounded-full" />}
@@ -40,7 +48,14 @@ export const TokenCard = ({ slug, name, ticker, image, stats }: Props) => (
     <dl className="grid grid-cols-2 gap-3">
       <Stat label="Unique wallets" value={stats ? stats.holders : null} />
       <Stat label="Retail share of supply" value={stats ? stats.retailShare : null} />
+      <Stat label="Top 10 holders" value={concentration ? concentration.top10 : null} />
+      <Stat label="Top 100 holders" value={concentration ? concentration.top100 : null} />
     </dl>
+    {trendLoading ? (
+      <div data-loading="true" aria-label="Loading holder trend" className="h-[72px] rounded-md bg-muted/70 animate-pulse" />
+    ) : (
+      <CardSparkline name={name} trend={trend} />
+    )}
   </Link>
 );
 

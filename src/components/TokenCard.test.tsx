@@ -32,3 +32,31 @@ describe("TokenCard", () => {
     expect(render(null)).toContain('data-loading="true"');
   });
 });
+
+describe("TokenCard summary", () => {
+  const stats = { holders: "1", retailShare: "2%" };
+  const trend = {
+    points: [{ t: 0, v: 1 }, { t: 86_400_000, v: 3 }],
+    first: { t: 0, v: 1 },
+    last: { t: 86_400_000, v: 3 },
+    spanDays: 1,
+  };
+  const html = (props: Record<string, unknown>) =>
+    renderToStaticMarkup(
+      <MemoryRouter>
+        <TokenCard slug="a" name="A" ticker="A" stats={stats} {...props} />
+      </MemoryRouter>,
+    );
+  it("shows concentration and a labelled sparkline", () => {
+    const out = html({ concentration: { top10: "12.0%", top100: "34.5%" }, trend });
+    expect(out).toContain(">12.0%<");
+    expect(out).toContain(">34.5%<");
+    expect(out).toContain('role="img"');
+    expect(out).toContain("aria-label=\"A retail wallets,");
+  });
+  it("shows a same-size placeholder when the trend is missing", () => {
+    const out = html({ concentration: { top10: "—", top100: "—" }, trend: null });
+    expect(out).toContain("card-sparkline-empty");
+    expect(out).not.toContain('role="img"');
+  });
+});
