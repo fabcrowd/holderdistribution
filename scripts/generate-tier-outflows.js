@@ -56,7 +56,9 @@ import { reconcileParts } from "./lib/reconcileParts.js";
 import { coverageFor, firstAttributedDate } from "./lib/attributionCoverage.js";
 import { classifyReceiptLogs, dexSubClass, LP_EVENT_TOPICS } from "./lib/dexTransferClass.js";
 import { loadEnv } from "./loadEnv.js";
-import { selectPipelineProject, projectPaths, projectChains, projectWork, projectClassificationPath } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChains, projectWork, projectClassificationPath, projectRoleAddresses } from "./lib/projects.js";
+import { solanaFlowChains, solanaFlowVenues } from "./lib/solana/flowConfig.js";
+import { buildSolanaTierDays } from "./lib/solana/flowFeeds.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 import { projectHolderTiers, rangeLabelOf } from "./lib/holderTiers.js";
 import { partialDateFor } from "./lib/partialDay.js";
@@ -533,6 +535,52 @@ const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
   console.log(`  ${chainKey}: advanced to ${lastGood} (${matched} attributed outflow legs)`);
 };
 
+// Solana-only projects (no EVM chains): the tier buckets come from the venue
+// flow store written by scan-solana-flows.js, with each retail counterparty's
+// tier read from the latest holder snapshot on/before the day (addresses are
+// case-sensitive base58; the snapshot already credits staked balances).
+// Returns whether every Solana venue cursor has caught up, or null when this
+// project has no Solana chain (or EVM chains handle it).
+const applySolanaFlows = async (dayBuckets, snapCommits, snapDates) => {
+  const chains = solanaFlowChains(project.config);
+  if (Object.keys(CHAINS).length > 0 || chains.length === 0) return null;
+  const store = await readOptionalJson(work("solana-flow-days.json"));
+  if (!store) return false;
+  const excl = new Set();
+  const addAll = (list) => { for (const a of list ?? []) { const v = (typeof a === "string" ? a : a?.address)?.trim(); if (v) excl.add(v); } };
+  addAll((EXCLUSIONS_PATH ? await readOptionalJson(EXCLUSIONS_PATH) : null)?.addresses);
+  for (const c of chains) {
+    const v = solanaFlowVenues(project, c.key, { stakingFeedPath: data("solana-staking.json") });
+    addAll(v.cexWallets.map((w) => w.address)); addAll(v.dexOwners); addAll(v.stakingAddresses);
+    addAll((projectRoleAddresses(project.config)[c.key] ?? []).map((r) => r.address));
+  }
+  const cache = new Map();
+  const mapFor = (snapDate) => {
+    if (cache.has(snapDate)) return cache.get(snapDate);
+    const snap = showJson(snapCommits.get(snapDate), SNAP_REL);
+    const bal = new Map();
+    for (const c of chains) for (const h of snap.chains?.[c.key]?.holders ?? []) {
+      const a = (h.address ?? "").trim();
+      if (a && !excl.has(a)) bal.set(a, (bal.get(a) ?? 0) + Number(h.balance ?? 0));
+    }
+    const tiers = new Map();
+    for (const [a, v] of bal) { const t = tierOf(v); if (t) tiers.set(a, t); }
+    cache.set(snapDate, tiers);
+    return tiers;
+  };
+  const tierAt = (date) => {
+    let best = null;
+    for (const d of snapDates) { if (d <= date) best = d; else break; }
+    return best ? mapFor(best) : new Map();
+  };
+  const decimals = Object.fromEntries(chains.map((c) => [c.key, c.decimals]));
+  const solDays = buildSolanaTierDays(store, { decimals, firstSnapshotDate: snapDates[0], tierAt });
+  for (const [date, tiers] of solDays) dayBuckets.set(date, tiers);
+  const cp = await readOptionalJson(data("exchange-flow-checkpoint.json"));
+  console.log(`Solana flows: ${solDays.size} tier day(s) from the venue store.`);
+  return chains.every((c) => cp?.chains?.[c.key]?.complete === true);
+};
+
 const main = async () => {
   const ex = EXCLUSIONS_PATH ? JSON.parse(await fs.readFile(EXCLUSIONS_PATH, "utf8")) : {};
   const excl = new Set();
@@ -614,6 +662,7 @@ const main = async () => {
   for (const chainKey of Object.keys(CHAINS)) {
     await scanChain(chainKey, ctx, checkpoint, dayBuckets);
   }
+  const solanaComplete = await applySolanaFlows(dayBuckets, snapCommits, snapDates);
 
   // Fold this run's fan-out into split counts: a sender that moved TEL to >=2
   // distinct wallets on a day is one split EVENT for its tier that day.
@@ -806,7 +855,7 @@ const main = async () => {
   // Zero chains is vacuously "every chain caught up", which would mark an
   // unscanned Solana project complete and present unmeasured flows as a
   // finished zero. TEL always has its three chains, so this stays the same.
-  const complete = Object.keys(CHAINS).length > 0 && Object.values(chainComplete).every(Boolean);
+  const complete = solanaComplete !== null ? solanaComplete : Object.keys(CHAINS).length > 0 && Object.values(chainComplete).every(Boolean);
 
   await fs.mkdir(path.dirname(DAYS_STORE_PATH), { recursive: true });
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });

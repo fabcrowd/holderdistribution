@@ -39,19 +39,20 @@ export function applyFlowEvents(store, chainKey, events) {
   return store;
 }
 
+/** `decimals`: one number, or { <chainKey>: number }. */
+const decimalsOf = (decimals, chainKey) => (typeof decimals === "number" ? decimals : decimals[chainKey]);
+
 const KINDS = ["cexIn", "cexOut", "dexIn", "dexOut"];
 
 /**
- * exchange-flow-history entries (schema 3) from completed UTC days only
- * (`date < today`): the open day is still accumulating and the feed has no
- * `partial` marker, so it is not published until it closes.
+ * exchange-flow-history entries (schema 3), every day with venue flow. The
+ * caller flags the still-open UTC day with partialDay.markPartialDay.
  */
-export function buildExchangeHistory(store, { decimals, today }) {
+export function buildExchangeHistory(store, { decimals }) {
   const byDate = new Map();
   for (const [chainKey, chain] of Object.entries(store.chains ?? {})) {
     for (const [date, d] of Object.entries(chain.days ?? {})) {
-      if (date >= today) continue;
-      const leg = Object.fromEntries(KINDS.map((k) => [k, rawToNumber(d.totals?.[k] ?? "0", decimals)]));
+      const leg = Object.fromEntries(KINDS.map((k) => [k, rawToNumber(d.totals?.[k] ?? "0", decimalsOf(decimals, chainKey))]));
       if (KINDS.every((k) => leg[k] === 0)) continue;
       const row = byDate.get(date) ?? { date, chains: {}, in: 0, out: 0, dexIn: 0, dexOut: 0 };
       row.chains[chainKey] = { in: leg.cexIn, out: leg.cexOut, dexIn: leg.dexIn, dexOut: leg.dexOut };
@@ -99,17 +100,17 @@ const emptyBucket = () => ({
  *
  * @returns {Map<string, Record<string, object>>} date -> tier -> bucket
  */
-export function buildSolanaTierDays(store, { decimals, today, firstSnapshotDate, tierAt }) {
+export function buildSolanaTierDays(store, { decimals, firstSnapshotDate, tierAt }) {
   const out = new Map();
   for (const [chainKey, chain] of Object.entries(store.chains ?? {})) {
     for (const [date, d] of Object.entries(chain.days ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
-      if (date >= today || !firstSnapshotDate || date < firstSnapshotDate) continue;
+      if (!firstSnapshotDate || date < firstSnapshotDate) continue;
       const tiers = tierAt(date);
       for (const [key, raw] of Object.entries(d.counterparties ?? {})) {
         const [kind, venue, owner] = key.split("|");
         const tier = tiers.get(owner);
         if (!tier) continue;
-        const amt = rawToNumber(raw, decimals);
+        const amt = rawToNumber(raw, decimalsOf(decimals, chainKey));
         const day = out.get(date) ?? {};
         const t = (day[tier] ??= emptyBucket());
         const leg = (t.byChain[chainKey] ??= emptyLeg());

@@ -437,8 +437,7 @@ lists a Solana chain. An EVM-only project like TEL never loads it
 
 Solana staking is built for one program kind, `zebecStakeV1` (see
 [zebec-network](#zebec-network-solana)). Not built (deferred): other Solana
-staking programs, published flows/tier outflows (a dry-run
-`scan-solana-flows.js` scaffold exists), forensics, history back-fill before
+staking programs, wallet-to-wallet (non-venue) flows, forensics, history back-fill before
 the first snapshot, historical `--as-of` snapshots, and other non-EVM chains.
 
 ## zebec-network (Solana)
@@ -516,13 +515,10 @@ The first non-TEL project, mapped 2026-10-25
   set** — do not invent one, and do not reuse TEL's 3761086. Until the owner
   supplies a Solana `cex.addresses` query id, the list stays the hand-applied
   file.
-- **Exchange and tier flows are empty on purpose (PR #48):** `scan-exchange-flows`
-  and `generate-tier-outflows` run, but both scanners are `eth_getLogs`-only.
-  With no EVM chains they publish empty
-  `exchange-flow-history.json` and `tier-outflows.json` so the terminal shows
-  an empty state instead of a 404. A real Solana signature or indexer flow
-  scanner is still not built (`scan-solana-flows.js` remains a dry-run
-  scaffold and is not in the workflow). That scanner is the open follow-up.
+- **Exchange and tier flows come from `scan-solana-flows.js`:** see
+  [Solana venue flows](#solana-venue-flows) below. Until that script has run,
+  `exchange-flow-history.json` and `tier-outflows.json` stay empty
+  (`complete: false`) so the terminal shows an empty state instead of a 404.
 - **Treasury and team are live (PR #44):** `buybackTreasury`
   (`EkXEg6de…QuQW`, off-curve PDA, role `treasury`) plus owner-approved vaults
   `H8Hr…DDfR`, `3J7n5…dQ17` and `71LxiE…HodV` (role `treasury`) and the team
@@ -753,3 +749,56 @@ spellbook model with no API key. Either way the output is a candidates file
 `docs/zbcn-cex-candidates.md` and `docs/zbcn-wallet-candidates.md`. The 44
 wallets are applied. `pipeline.duneCexQueryId` is still unset.
 
+## Solana venue flows
+
+Solana has no Transfer-log range scan, so flows are **venue-anchored**.
+`node scripts/scan-solana-flows.js --project <slug>` needs only config: every
+`chains[].vm "solana"` chain (mint and `decimals` from `tokens[]`), the CEX list
+`classification.cexWallets`, `contracts{}` entries with role `dex` /
+`staking` (plus optional `classification.dexContracts` pools and the
+`solana-staking.json` vaults). A second Solana token needs a project config and
+nothing else.
+
+- **Discovery:** for each CEX/DEX owner, `getTokenAccountsByOwner(mint)` then
+  `getSignaturesForAddress` per token account (paged with `before`, stopped by
+  `until` = the account cursor) then `getTransaction` (`jsonParsed`). Per-owner
+  mint deltas (`tokenFlows.js`) are paired into transfers and classified:
+  `cexIn` / `cexOut` (against the named exchange), `dexIn` / `dexOut` (pool vs
+  a non-CEX), `internal` (CEX to CEX, never in net) and `staking` (either side
+  is a staking or reward vault, matched by owner or by listed token account;
+  classified, not an exchange flow).
+- **Resume and budget:** signatures from all accounts are merged and processed
+  oldest first in whole-slot steps, at most `--max-tx` / `SOLANA_FLOW_MAX_TX`
+  (default 3000) per run; each account cursor advances to its newest processed
+  signature, a transaction touching two venue accounts is counted once, and a
+  re-run with nothing new changes no file. `SOLANA_FLOW_CONCURRENCY` (default 4)
+  bounds parallel `getTransaction`; 429s use the shared `rpcCall` backoff. The
+  floor is `--since` / `SOLANA_FLOWS_SINCE` / the first committed holder
+  snapshot date (ZBCN: 2026-10-25); nothing earlier is ever invented.
+- **Files:** `public/data/<slug>/exchange-flow-checkpoint.json`
+  (`chains.<key>`: `mint`, `since`, `accounts{tokenAccount:{owner,until}}`,
+  `complete`, `missingTx`) and the unserved day store
+  `data/<slug>/solana-flow-days.json` (exact raw sums per day, kind, exchange
+  and counterparty). A cursor whose day store is missing is discarded and
+  re-scanned, never trusted.
+- **Feeds:** `scan-exchange-flows.js` (no EVM chains) writes
+  `exchange-flow-history.json` (schema 3, same fields as TEL) from the store;
+  `generate-tier-outflows.js` (no EVM chains) writes the Solana legs of
+  `tier-outflows.json` (schema 9). Both publish **completed UTC days only**
+  (the feed has no `partial` marker, so the open day waits) and only days on or
+  after the first snapshot. A retail counterparty's tier is its balance bucket
+  in the latest snapshot on/before the day (staked balances already credited).
+- **What is and is not measured:** CEX deposits and withdrawals, pool sales and
+  purchases. Wallet-to-wallet moves that touch no tracked venue (`moved`,
+  `inflows.wallet`, source/destination tier) are **not** measured and stay 0,
+  so `sourceTierSince` is `null`; all pool flow is reported as `dexSwap` (LP
+  adds are not told apart). `complete` is `true` once every venue cursor has
+  caught up to the tip from the floor, which means the venue legs only.
+- **Run order:** `scan-solana-flows.js`, then `scan-exchange-flows.js` and
+  `generate-tier-outflows.js`.
+- **Not wired yet (workflow follow-up):** in `refresh-zebec-network.yml`
+  "Generate feeds", add `node scripts/scan-solana-flows.js` before
+  `scan-exchange-flows.js`, give that step `SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}`
+  (and `ENV_PASSPHRASE`), and add `data/solana-flow-days.json` to the
+  `workflow-paths.js files` list (the checkpoint is already staged). The public
+  RPC rate-limits `getTransaction`; use a keyed endpoint for the first backfill.
