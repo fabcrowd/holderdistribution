@@ -74,6 +74,14 @@ export type ProjectConfig = ProjectEntry & {
     note?: string;
     /** CoinGecko coin id. reconcile-supply fetches this coin's circulating supply. */
     coingeckoId?: string;
+    /**
+     * Supply view: which reconciliation categories make up the one
+     * "Developer holdings" bucket (held by the project's creators, not public
+     * hands), and the sub-category label shown for each. Absent = the generic
+     * default list in src/lib/supplyBreakdown.ts. Display-only: says nothing
+     * about circulating supply.
+     */
+    developerHoldings?: { subcategories: Array<{ category: string; label: string }> };
   };
   /**
    * Holder-tier settings (src/lib/holderTiers.ts / scripts/lib/holderTiers.js):

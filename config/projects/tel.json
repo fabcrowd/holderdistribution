@@ -46,6 +46,17 @@
     "dispositionLedger": true
   },
   "supply": {
+    "developerHoldings": {
+      "subcategories": [
+        { "category": "treasury", "label": "Treasury" },
+        { "category": "council", "label": "Council / ops Safes" },
+        { "category": "staking-contract", "label": "Staking contract" },
+        { "category": "holdings", "label": "Telcoin Holdings" },
+        { "category": "team", "label": "Team wallets" },
+        { "category": "staking", "label": "Team / reward contracts" },
+        { "category": "escrow", "label": "Escrow" }
+      ]
+    },
     "target": 100000000000,
     "targetLabel": "100B",
     "coingeckoId": "telcoin",

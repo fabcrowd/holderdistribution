@@ -92,7 +92,7 @@ export const GENERIC_METHODOLOGY: Record<MethodologyKey, GenericMethodology> = {
     links: ["tokens"],
   },
   supplyBreakdown: {
-    how: "Total supply is {supply}. We split it into one fixed set — Retail, DEX, CEX, Treasury, Team, Holdings, Escrow, Other, and Supply gap — and hide any bucket that is empty, so the pieces add to the total. Staked balances stay inside Retail. Each bucket is built from on-chain balances of labelled addresses; click a bucket for address-level drill-down.",
+    how: "Total supply is {supply}. We split it into one fixed set — Retail, DEX, CEX, Developer holdings, Other, and Supply gap — and hide any bucket that is empty, so the pieces add to the total. Developer holdings is everything held by the project creators and not in public hands (treasury, team, reward vaults, escrow and similar); hover or tap it for the sub-category breakdown. Staked balances stay inside Retail. Each bucket is built from on-chain balances of labelled addresses; click a bucket for address-level drill-down.",
     verify: "Base layer: the chart and bucket list. Click a bucket for its address list and explorer links.",
     links: ["tokens", "staking"],
   },

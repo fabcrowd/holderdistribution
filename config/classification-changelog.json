@@ -497,6 +497,23 @@
       "backfillNote": "The residual balance is under 0.0002% of supply; earlier history rows are left as published.",
       "uiNote": "Retail holder count drops by one on the next refresh; that is a relabel, not selling.",
       "dateNote": "Dated the day the label was added."
+    },
+    {
+      "id": "2026-10-29-developer-holdings-bucket",
+      "date": "2026-10-29",
+      "type": "other",
+      "summary": "Supply Breakdown now shows one top-level bucket, Developer holdings, for every project. It holds the developer-controlled categories as sub-categories (TEL: treasury, council, Telcoin Holdings, team / reward contracts, escrow; ZBCN: treasury and buyback vaults, team and allocation wallets, reward vaults). The pie previously showed Treasury, Team, Holdings and Escrow as separate slices.",
+      "affects": {
+        "artifacts": [
+          "supply-reconciliation"
+        ],
+        "metrics": [
+          "totalHeld"
+        ]
+      },
+      "backfillStatus": "not-planned",
+      "backfillNote": "Display-level only. The supply-reconciliation and treasury-history feeds keep their original category keys (treasury, council, holdings, team, staking, escrow), so no historical row changes and nothing needs a backfill; only how the Supply view groups them changed. Whether developer holdings circulate is not asserted by this grouping; the circulating figure is computed exactly as before.",
+      "uiNote": "Four slices (Treasury, Team, Holdings, Escrow) merge into one Developer holdings slice. Hover or tap it for the sub-category breakdown with wallet addresses. Classification display change, not a transfer of tokens."
     }
   ]
 }
