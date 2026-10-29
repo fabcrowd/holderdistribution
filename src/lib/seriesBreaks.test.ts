@@ -151,7 +151,9 @@ describe("committed feeds", () => {
     const telBreaks = getSeriesBreaks(tel, ["retail.balance", "holderCount"], day("2026-09-01"));
     expect(telBreaks.map((b) => b.t)).toEqual([day("2026-09-29"), day("2026-10-03")]);
     const zbcn = load("public/data/zebec-network/classification-changelog.json");
-    expect(getSeriesBreaks(zbcn, ["retail.balance"], day("2026-10-01")).map((b) => b.t)).toEqual([day("2026-10-26")]);
+    expect(getSeriesBreaks(zbcn, ["retail.balance"], day("2026-10-01")).map((b) => b.t)).toEqual([day("2026-10-26"), day("2026-10-28")]);
+    expect(getSeriesBreaks(zbcn, ["retail.count"], day("2026-10-01")).map((b) => b.t)).toEqual([day("2026-10-28")]);
+    expect(getSeriesBreaks(zbcn, ["cexBalance"], day("2026-10-01")).map((b) => b.t)).toEqual([day("2026-10-28")]);
     expect(tel.events.filter((e) => !e.breaksSeries).length).toBeGreaterThan(10);
   });
 });
