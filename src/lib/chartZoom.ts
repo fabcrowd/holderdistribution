@@ -5,7 +5,11 @@
  * time charts, row index for category charts). `null` means "full range".
  */
 
+import { niceTicks, type YAxisScale } from "@/lib/chartAxes";
+
 export type XRange = readonly [number, number];
+/** A manual Y range in value units (same shape as XRange). */
+export type YRange = readonly [number, number];
 
 /** Rows needed before zoom is worth offering. */
 export const MIN_ZOOMABLE_ROWS = 8;
@@ -17,6 +21,12 @@ export const WHEEL_ZOOM_RATE = 0.0015;
 export const KEY_ZOOM_FACTOR = 0.7;
 /** Keyboard pan step as a fraction of the visible span. */
 export const KEY_PAN_FRACTION = 0.2;
+/** Axis-strip drag: exp(RATE) span change per full axis length dragged. */
+export const AXIS_DRAG_RATE = 1.5;
+/** A manual Y range may shrink to this share of the auto-fit span... */
+export const Y_MIN_SPAN_RATIO = 0.1;
+/** ...or stretch to this multiple of it, so the axis cannot vanish or run away. */
+export const Y_MAX_SPAN_RATIO = 4;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -135,4 +145,41 @@ export const toggleHidden = (hidden: ReadonlySet<string>, key: string, allKeys: 
 export const normalizeHidden = (hidden: ReadonlySet<string>, allKeys: readonly string[]): ReadonlySet<string> => {
   const kept = allKeys.filter((k) => hidden.has(k));
   return kept.length >= allKeys.length ? new Set() : kept.length === hidden.size ? hidden : new Set(kept);
+};
+
+// --- Axis strips (drag along an axis to stretch or shrink its range) --------
+
+/**
+ * Span multiplier for an axis-strip drag. `towardEndPx` is the drag distance in
+ * the direction of the axis end (right on X, up on Y): positive shrinks the
+ * range (zoom in), negative stretches it (zoom out). `lengthPx` is the plot
+ * extent along that axis.
+ */
+export const axisDragSpanFactor = (towardEndPx: number, lengthPx: number): number => {
+  if (!(lengthPx > 0) || !Number.isFinite(towardEndPx)) return 1;
+  return Math.exp(-clamp(towardEndPx / lengthPx, -1, 1) * AXIS_DRAG_RATE);
+};
+
+/**
+ * Scale a manual Y range around its midpoint by `spanFactor`, keeping the span
+ * within Y_MIN/MAX_SPAN_RATIO of the auto-fit `base` range.
+ */
+export const scaleYRange = (current: YRange, spanFactor: number, base: YRange): YRange => {
+  const baseSpan = base[1] - base[0] > 0 ? base[1] - base[0] : 1;
+  const span = current[1] - current[0] > 0 ? current[1] - current[0] : baseSpan;
+  const newSpan = clamp(span * (Number.isFinite(spanFactor) ? spanFactor : 1), baseSpan * Y_MIN_SPAN_RATIO, baseSpan * Y_MAX_SPAN_RATIO);
+  const mid = (current[0] + current[1]) / 2;
+  return [mid - newSpan / 2, mid + newSpan / 2];
+};
+
+/**
+ * The axis as drawn: the auto-fit scale, or the manual range when one is set.
+ * A manual range keeps its own nice ticks and reports a baseline whenever it
+ * does not start at zero, so the "axis starts at" note stays honest.
+ */
+export const applyYRange = (scale: YAxisScale, override: YRange | undefined): YAxisScale => {
+  if (!override) return scale;
+  const [lo, hi] = override;
+  const ticks = niceTicks(lo, hi).filter((t) => t >= lo - 1e-9 && t <= hi + 1e-9);
+  return { domain: [lo, hi], ticks, baseline: lo === 0 ? null : lo };
 };

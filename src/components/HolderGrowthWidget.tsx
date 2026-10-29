@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { NotedTooltip, markerLines } from "@/components/chart/ChartMarkers";
+import { groupMarkers, markerCollapseGap, markerNotesByRow, reclassMarkers } from "@/lib/chartMarkers";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
 import { type DisplaySelection } from "@/hooks/useHolderSnapshot";
@@ -28,8 +30,7 @@ import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
 import { computeSeriesDomain, computeBreakAwareDomain, activeKeys } from "@/lib/chartDomain";
 import { computeYAxis, computeYAxisFromRows, distinctTickFormatter } from "@/lib/chartAxes";
 import { AxisBaselineNote } from "@/components/chart/AxisBaselineNote";
-import { getSeriesBreaks, insertBreakSpacers, SERIES_BREAK_LABEL } from "@/lib/seriesBreaks";
-import { CHART_LABEL_FONT_PX } from "@/lib/terminalLayout";
+import { getSeriesBreaks, insertBreakSpacers } from "@/lib/seriesBreaks";
 
 type HolderGrowthWidgetProps = {
   selectedView: DisplaySelection;
@@ -253,15 +254,22 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   }, [stakingChartData, historicalDelta, ticker]);
 
   const showStakingSplit = stakingChartData.some((p) => (p.staking ?? 0) > 0 && (p.stakingV3 ?? 0) > 0);
+  const showV3Marker = showStakingSplit && stakingChartData[0] != null && stakingChartData[0].timestamp <= V3_DEPLOY_MS && stakingChartData.some((p) => p.stakingV3 != null);
+  const stakingMarkers = useMemo(
+    () => (showV3Marker ? groupMarkers([{ t: V3_DEPLOY_MS, text: "v3 migration", tone: "accent" as const }], 0) : []),
+    [showV3Marker],
+  );
+  const stakingNotes = useMemo(() => markerNotesByRow(stakingChartData.map((p) => p.timestamp), stakingMarkers), [stakingChartData, stakingMarkers]);
 
   const stakingZoom = useChartZoom(stakingChartData, (p) => p.timestamp);
   const stakingToggle = useSeriesToggle(STAKING_SERIES_KEYS);
   const stakingInView = useMemo(() => sliceWindow(stakingChartData, (p) => p.timestamp, stakingZoom.window), [stakingChartData, stakingZoom.window]);
   // Fitted to the rows in the zoom window and the lines switched on.
-  const stakingY = useMemo(
+  const stakingYAuto = useMemo(
     () => computeYAxisFromRows(stakingInView, STAKING_SERIES_KEYS.filter((k) => stakingToggle.isVisible(k)), { kind: "line", allowNegative: false }),
     [stakingInView, stakingToggle],
   );
+  const stakingY = stakingZoom.yScale("left", stakingYAuto);
   const stakingFmt = useMemo(() => distinctTickFormatter(stakingY.ticks, (v, d) => compactAmount(v, ticker, Math.max(2, d))), [stakingY, ticker]);
 
   const balanceChartData = useMemo(() => {
@@ -374,10 +382,30 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     return getEventsAffecting(changelog, "retail.count", chartData[0].timestamp, chartData[chartData.length - 1].timestamp);
   }, [changelog, chartData]);
 
+  // Methodology breaks and reclassifications: one marker per collapsed group on the
+  // line, their wording listed in the tooltip (see ChartMarkers).
+  const holdersMarkers = useMemo(
+    () =>
+      groupMarkers(
+        [
+          ...holdersBreaks.map((b) => ({ t: b.t, text: b.description, tone: "warning" as const })),
+          ...reclassMarkers(holdersChangelogEvents.filter((e) => !e.breaksSeries)),
+        ],
+        markerCollapseGap(holdersZoom.rows.map((p) => p.timestamp)),
+      ),
+    [holdersBreaks, holdersChangelogEvents, holdersZoom.rows],
+  );
+  const holdersNotes = useMemo(() => markerNotesByRow(holdersZoom.rows.map((p) => p.timestamp), holdersMarkers), [holdersZoom.rows, holdersMarkers]);
+
   const balanceChangelogEvents = useMemo(() => {
     if (balanceChartData.length === 0) return [];
     return getEventsAffecting(changelog, "totalHeld", balanceChartData[0].timestamp, balanceChartData[balanceChartData.length - 1].timestamp);
   }, [changelog, balanceChartData]);
+  const balanceMarkers = useMemo(
+    () => groupMarkers(reclassMarkers(balanceChangelogEvents), markerCollapseGap(balanceZoom.rows.map((p) => p.timestamp))),
+    [balanceChangelogEvents, balanceZoom.rows],
+  );
+  const balanceNotes = useMemo(() => markerNotesByRow(balanceZoom.rows.map((p) => p.timestamp), balanceMarkers), [balanceZoom.rows, balanceMarkers]);
 
   const stats = useMemo(() => {
     if (chartData.length === 0) {
@@ -450,10 +478,11 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   // suppressed for sparseness draws no line, so it must not set a bound either.
   // See src/lib/chartDomain.ts (and its regression test) for the bug this fixes.
   const balanceLog = balanceMode === "balance" && logScale;
-  const balanceY = useMemo(
+  const balanceYAuto = useMemo(
     () => computeYAxisFromRows(balanceInView, activeKeys(renderedBalanceSeries), { kind: "line", allowNegative: balanceMode === "change" }),
     [balanceInView, renderedBalanceSeries, balanceMode],
   );
+  const balanceY = balanceZoom.yScale("left", balanceYAuto);
   // A log axis can't be zero-based or use linear ticks: it keeps its own padded bounds.
   const balanceYDomain = useMemo(
     () => (balanceLog ? computeSeriesDomain(balanceInView, activeKeys(renderedBalanceSeries), { log: true }) : balanceY.domain),
@@ -464,7 +493,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     [balanceY, balanceMode, ticker],
   );
 
-  const holdersY = useMemo(() => {
+  const holdersYAuto = useMemo(() => {
     // A declared methodology break must not decide the axis (see seriesBreaks.ts).
     if (holdersBreaks.length > 0) {
       const [lo, hi] = computeBreakAwareDomain(holdersInView, ["holders"], holdersBreaks.map((b) => b.t), "timestamp");
@@ -472,6 +501,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     }
     return computeYAxisFromRows(holdersInView, ["holders"], { kind: "line", allowNegative: false, integer: true });
   }, [holdersInView, holdersBreaks]);
+  const holdersY = holdersZoom.yScale("left", holdersYAuto);
 
   // Compute explicit tick timestamps so Recharts renders exactly what we want.
   // 7D → daily; 30D → weekly (every 7 days); 90D → biweekly; YTD/1Y → 1st of each month.
@@ -637,8 +667,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
               )}
 
               {!isLoading && !error && chartData.length > 0 && (
-                <ZoomFrame zoom={holdersZoom} className="h-56 w-full sm:h-64">
-                <AxisBaselineNote baseline={holdersY.baseline} format={(n) => formatInteger(Math.round(n))} />
+                <ZoomFrame zoom={holdersZoom} className="h-56 w-full sm:h-64" yAxes={{ left: holdersYAuto.domain }} notes={<AxisBaselineNote baseline={holdersY.baseline} format={(n) => formatInteger(Math.round(n))} />}>
                 <div className="h-full w-full" role="img" aria-label={holdersAriaSummary} data-testid="holder-growth-chart">
                   <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                     <LineChart data={holdersZoom.rows}>
@@ -659,16 +688,20 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         tickFormatter={(value) => formatInteger(Math.round(value))}
                         domain={holdersY.domain}
                         ticks={holdersY.ticks}
-                        allowDataOverflow={holdersBreaks.length > 0}
+                        allowDataOverflow={holdersBreaks.length > 0 || holdersZoom.yRanges.left != null}
                         tickMargin={8}
                         width={64}
                       />
                       <ChartTooltip
+                        position={{ y: 0 }}
                         content={
-                          <ChartTooltipContent
+                          <NotedTooltip notes={holdersNotes} base={
+                            <ChartTooltipContent
+                              className="min-w-0 px-2 py-1 text-xs"
                             labelFormatter={(value) => formatDateValue(value, tooltipFormatter)}
-                          />
-                        }
+                            />
+                          } />
+                          }
                       />
                       <Line
                         dataKey="holders"
@@ -677,28 +710,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         strokeWidth={2}
                         dot={false}
                       />
-                      {holdersBreaks.map((b) => (
-                        <ReferenceLine
-                          key={`break-${b.t}`}
-                          x={b.t}
-                          stroke="hsl(var(--ha-warning))"
-                          strokeDasharray="2 3"
-                          label={{ value: SERIES_BREAK_LABEL, position: "insideTopRight", fill: "hsl(var(--ha-warning))", fontSize: CHART_LABEL_FONT_PX }}
-                        />
-                      ))}
-                      {holdersChangelogEvents.filter((e) => !e.breaksSeries).map((event) => {
-                        const eventMs = Date.parse(event.date);
-                        if (!Number.isFinite(eventMs)) return null;
-                        return (
-                          <ReferenceLine
-                            key={event.id}
-                            x={eventMs}
-                            stroke="hsl(var(--muted-foreground))"
-                            strokeDasharray="4 4"
-                            label={{ value: "Reclassified", position: "insideTopRight", fill: "hsl(var(--muted-foreground))", fontSize: CHART_LABEL_FONT_PX }}
-                          />
-                        );
-                      })}
+                      {markerLines(holdersMarkers, "holders")}
                     </LineChart>
                   </ChartContainer>
                 </div>
@@ -829,8 +841,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                     No balance history available for this range.
                   </div>
                 ) : (
-                  <ZoomFrame zoom={balanceZoom} className="h-56 w-full sm:h-64">
-                  <AxisBaselineNote baseline={balanceLog ? null : balanceY.baseline} format={(n) => (balanceMode === "change" ? formatSignedAmount(n) : formatCompactAmount(n))} />
+                  <ZoomFrame zoom={balanceZoom} className="h-56 w-full sm:h-64" yAxes={balanceLog ? undefined : { left: balanceYAuto.domain }} notes={<AxisBaselineNote baseline={balanceLog ? null : balanceY.baseline} format={(n) => (balanceMode === "change" ? formatSignedAmount(n) : formatCompactAmount(n))} />}>
                     <ChartContainer config={balanceChartConfig} className="h-full w-full aspect-auto">
                       <LineChart data={balanceZoom.rows}>
                         <CartesianGrid vertical={false} />
@@ -854,15 +865,19 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                           width={56}
                         />
                         <ChartTooltip
+                        position={{ y: 0 }}
                           content={
-                            <ChartTooltipContent
+                            <NotedTooltip notes={balanceNotes} base={
+                              <ChartTooltipContent
+                                className="min-w-0 px-2 py-1 text-xs"
                               labelFormatter={(value) => formatDateValue(value, tooltipFormatter)}
                               formatter={(value, name) => [
                                 balanceMode === "change" ? formatSignedAmount(Number(value)) : formatCompactAmount(Number(value)),
                                 balanceChartConfig[name as BalanceSeriesKey]?.label ?? String(name),
                               ]}
-                            />
-                          }
+                              />
+                            } />
+                            }
                         />
                         {/* Zero baseline: in Change mode every series starts here, so
                             the line is the read-off point for accumulation vs selling. */}
@@ -897,19 +912,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                             connectNulls
                           />
                         )}
-                        {balanceChangelogEvents.map((event) => {
-                          const eventMs = Date.parse(event.date);
-                          if (!Number.isFinite(eventMs)) return null;
-                          return (
-                            <ReferenceLine
-                              key={event.id}
-                              x={eventMs}
-                              stroke="hsl(var(--muted-foreground))"
-                              strokeDasharray="4 4"
-                              label={{ value: "Reclassified", position: "insideTopRight", fill: "hsl(var(--muted-foreground))", fontSize: CHART_LABEL_FONT_PX }}
-                            />
-                          );
-                        })}
+                        {markerLines(balanceMarkers, "balance")}
                       </LineChart>
                     </ChartContainer>
                   </ZoomFrame>
@@ -984,8 +987,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                       }))}
                     />
                   )}
-                  <ZoomFrame zoom={stakingZoom} className="h-56 w-full sm:h-64">
-                  <AxisBaselineNote baseline={stakingY.baseline} format={(n) => formatCompactAmount(n)} />
+                  <ZoomFrame zoom={stakingZoom} className="h-56 w-full sm:h-64" yAxes={{ left: stakingYAuto.domain }} notes={<AxisBaselineNote baseline={stakingY.baseline} format={(n) => formatCompactAmount(n)} />}>
                     <ChartContainer config={stakingChartConfig} className="h-full w-full aspect-auto">
                       <LineChart data={stakingZoom.rows}>
                         <CartesianGrid vertical={false} />
@@ -1006,24 +1008,21 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                           width={64}
                         />
                         <ChartTooltip
+                        position={{ y: 0 }}
                           content={
-                            <ChartTooltipContent
+                            <NotedTooltip notes={stakingNotes} base={
+                              <ChartTooltipContent
+                                className="min-w-0 px-2 py-1 text-xs"
                               labelFormatter={(value) => formatDateValue(value, tooltipFormatter)}
                               formatter={(value, name) => [
                                 formatCompactAmount(Number(value)),
                                 stakingChartConfig[name as keyof typeof stakingChartConfig]?.label ?? "Staked",
                               ]}
-                            />
-                          }
+                              />
+                            } />
+                            }
                         />
-                        {showStakingSplit && stakingChartData[0] && stakingChartData[0].timestamp <= V3_DEPLOY_MS && stakingChartData.some((p) => p.stakingV3 != null) && (
-                          <ReferenceLine
-                            x={V3_DEPLOY_MS}
-                            stroke="hsl(var(--ha-accent))"
-                            strokeDasharray="3 3"
-                            label={{ value: "v3 migration", position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 12, fontWeight: 600 }}
-                          />
-                        )}
+                        {markerLines(stakingMarkers, "staking")}
                         {stakingToggle.isVisible("stakingTotal") && <Line
                           dataKey="stakingTotal"
                           type="monotone"

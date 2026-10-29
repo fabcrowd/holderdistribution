@@ -31,12 +31,14 @@ import {
   type YAxisScale,
 } from "@/lib/chartAxes";
 import { AxisBaselineNote } from "@/components/chart/AxisBaselineNote";
-import { CHART_LABEL_FONT_PX, CHART_TICK } from "@/lib/terminalLayout";
+import { CHART_TICK } from "@/lib/terminalLayout";
 import { ZoomFrame } from "@/components/chart/ZoomFrame";
 import { ChartLegend, type LegendItem } from "@/components/chart/ChartLegend";
 import { useChartZoom } from "@/hooks/useChartZoom";
 import { useSeriesToggle } from "@/hooks/useSeriesToggle";
-import { breakNotesByRow, insertBreakSpacers, limitedHistoryCount, type SeriesBreak } from "@/lib/seriesBreaks";
+import { insertBreakSpacers, limitedHistoryCount, type SeriesBreak } from "@/lib/seriesBreaks";
+import { groupMarkers, markerCollapseGap, markerNotesByRow } from "@/lib/chartMarkers";
+import { markerLines } from "@/components/chart/ChartMarkers";
 
 /** Dense defaults: shared 12px ticks, hairline grid. */
 const TICK = CHART_TICK;
@@ -90,32 +92,36 @@ const TooltipBox = ({
   label,
   series,
   format,
-  breakNotes,
+  notes,
 }: {
   active?: boolean;
   payload?: Array<{ dataKey?: string | number; value?: number }>;
   label?: unknown;
   series: SeriesDef[];
   format: (n: number) => string;
-  breakNotes?: Map<number, string>;
+  notes?: ReadonlyMap<number, readonly string[]>;
 }) => {
   if (!active || !payload?.length) return null;
-  const breakNote = typeof label === "number" ? breakNotes?.get(label) : undefined;
+  const rowNotes = typeof label === "number" ? notes?.get(label) : undefined;
   return (
-    <div className="rounded-md border border-border bg-popover px-2 py-1.5 text-sm text-popover-foreground shadow-md">
-      <div className="mb-0.5 font-medium">{fmtDate(label, dateFull)}</div>
+    <div className="max-w-[12rem] rounded border border-border bg-popover px-1.5 py-1 text-xs text-popover-foreground shadow-md">
+      <div className="font-medium">{fmtDate(label, dateFull)}</div>
       {payload.map((p) => {
         const s = series.find((x) => x.key === p.dataKey);
         if (!s || p.value == null) return null;
         return (
-          <div key={s.key} className="flex items-center gap-1.5 tabular-nums">
-            <span className="h-2 w-2 rounded-sm" style={{ background: s.color }} aria-hidden="true" />
-            <span className="text-muted-foreground">{s.label}</span>
-            <span className="ml-auto pl-3 font-semibold">{format(p.value)}</span>
+          <div key={s.key} className="flex items-center gap-1 tabular-nums">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-sm" style={{ background: s.color }} aria-hidden="true" />
+            <span className="truncate text-muted-foreground">{s.label}</span>
+            <span className="ml-auto pl-2 font-semibold">{format(p.value)}</span>
           </div>
         );
       })}
-      {breakNote && <div className="mt-0.5 max-w-[16rem] text-xs text-warning">{breakNote}</div>}
+      {rowNotes?.map((n) => (
+        <div key={n} className="mt-0.5 text-warning">
+          {n}
+        </div>
+      ))}
     </div>
   );
 };
@@ -155,26 +161,19 @@ export const TimeChart = ({
   // Draw in on first mount only; range/chain changes then update instantly.
   const anim = useChartIntro();
   const fade = (key: string) => highlight != null && highlight !== key;
-  // A break near the left edge has no room for its label on the left of the rule.
-  const breakNearStart = (t: number) => {
-    const ts = data.map((d) => Number(d.t)).filter(Number.isFinite);
-    const lo = Math.min(...ts);
-    const hi = Math.max(...ts);
-    return hi > lo && (t - lo) / (hi - lo) < 0.3;
-  };
-  const labelled = useMemo(() => {
-    const ts = data.map((d) => Number(d.t)).filter(Number.isFinite);
-    const span = ts.length ? Math.max(...ts) - Math.min(...ts) : 0;
-    const gap = span * 0.12;
-    const sorted = markers.map((m) => m.t);
-    // A break's label wins: reclass labels yield to a break within `gap`.
-    const reclass = markers.map(
-      (m) => !sorted.some((t) => t > m.t && t - m.t < gap) && !breaks.some((b) => Math.abs(b.t - m.t) < gap),
-    );
-    const breakTimes = breaks.map((b) => b.t);
-    const breakLabels = breaks.map((b) => !breakTimes.some((t) => t > b.t && t - b.t < gap));
-    return { reclass, breakLabels };
-  }, [data, markers, breaks]);
+  // Breaks and reclass markers share one marker per collapsed group; wording goes to the tooltip.
+  const markerGroups = useMemo(
+    () =>
+      groupMarkers(
+        [
+          ...breaks.map((b) => ({ t: b.t, text: b.description, tone: "warning" as const })),
+          ...markers.map((m) => ({ t: m.t, text: m.description, tone: "accent" as const })),
+        ],
+        markerCollapseGap(data.map((d) => Number(d.t))),
+      ),
+    [data, markers, breaks],
+  );
+  const markerNotes = useMemo(() => markerNotesByRow(data.map((d) => Number(d.t)), markerGroups), [data, markerGroups]);
   const keys = useMemo(() => series.map((s) => s.key), [series]);
   const breakTs = useMemo(() => breaks.map((b) => b.t), [breaks]);
   // A break splits every series, so nulls must not be bridged while one is drawn.
@@ -191,11 +190,13 @@ export const TimeChart = ({
     const [lo, hi] = computeBreakAwareDomain(data, sideKeys, breakTs, "t", { allowNegative: true });
     return typeof lo === "number" && typeof hi === "number" ? computeYAxis([lo, hi], { kind: "line" }) : computeYAxis([], { kind: "line" });
   };
-  const leftScale = useMemo(() => scaleFor("left"), [split, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
-  const rightScale = useMemo(() => (dual ? scaleFor("right") : undefined), [split, dual, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Auto-fit scales are the drag base; the zoom hook swaps in a manual range once the user drags an axis.
+  const leftAuto = useMemo(() => scaleFor("left"), [split, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rightAuto = useMemo(() => (dual ? scaleFor("right") : undefined), [split, dual, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const leftScale = zoom.yScale("left", leftAuto);
+  const rightScale = rightAuto && zoom.yScale("right", rightAuto);
   const leftFmt = useMemo(() => distinctTickFormatter(leftScale.ticks, formatCompact), [leftScale]);
   const rightFmt = useMemo(() => (rightScale ? distinctTickFormatter(rightScale.ticks, formatCompact) : undefined), [rightScale]);
-  const breakNotes = useMemo(() => breakNotesByRow(data.map((d) => d.t), breaks), [data, breaks]);
   // Too few points to call a curve: straight segments, visible dots, a note.
   const limited = limitedHistoryCount(allData, keys);
   const curve = limited != null ? "linear" : "monotone";
@@ -239,9 +240,17 @@ export const TimeChart = ({
           data-testid={dualAll ? "axis-legend" : "series-legend"}
         />
       )}
-      <ZoomFrame zoom={zoom} className="min-h-0 flex-1">
-      <AxisBaselineNote baseline={leftScale.baseline} />
-      {rightScale && <AxisBaselineNote baseline={rightScale.baseline} side="right" />}
+      <ZoomFrame
+        zoom={zoom}
+        className="min-h-0 flex-1"
+        yAxes={rightAuto ? { left: leftAuto.domain, right: rightAuto.domain } : { left: leftAuto.domain }}
+        notes={
+          <>
+            <AxisBaselineNote baseline={leftScale.baseline} />
+            {rightScale && <AxisBaselineNote baseline={rightScale.baseline} side="right" />}
+          </>
+        }
+      >
       <div role="img" aria-label={fullLabel} className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
         <Chart data={chartData} margin={MARGIN}>
@@ -265,7 +274,7 @@ export const TimeChart = ({
             width={48}
             domain={leftScale.domain}
             ticks={leftScale.ticks}
-            allowDataOverflow={split}
+            allowDataOverflow={split || zoom.yRanges.left != null}
             tickFormatter={leftFmt}
           />
           {dual && (
@@ -278,44 +287,12 @@ export const TimeChart = ({
               width={48}
               domain={rightScale?.domain}
               ticks={rightScale?.ticks}
-              allowDataOverflow={split}
+              allowDataOverflow={split || zoom.yRanges.right != null}
               tickFormatter={rightFmt}
             />
           )}
-          <Tooltip content={<TooltipBox series={series} format={format} breakNotes={breakNotes} />} />
-          {breaks.map((b, i) => (
-            <ReferenceLine
-              key={`break-${b.t}`}
-              x={b.t}
-              yAxisId="left"
-              stroke="hsl(var(--ha-warning))"
-              strokeDasharray="2 3"
-              strokeWidth={1}
-              label={
-                labelled.breakLabels[i]
-                  ? { value: b.label, position: breakNearStart(b.t) ? "insideTopLeft" : "insideTopRight", fill: "hsl(var(--ha-warning))", fontSize: CHART_LABEL_FONT_PX, fontWeight: 600 }
-                  : undefined
-              }
-            />
-          ))}
-          {markers.map((m, i) => (
-            <ReferenceLine
-              key={`${m.t}-${m.label}`}
-              x={m.t}
-              yAxisId="left"
-              ifOverflow="extendDomain"
-              stroke="hsl(var(--ha-accent))"
-              strokeDasharray="3 3"
-              strokeWidth={1}
-              // Close-together markers share one label (on the latest) so
-              // their text doesn't overprint.
-              label={
-                labelled.reclass[i]
-                  ? { value: m.label, position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: CHART_LABEL_FONT_PX, fontWeight: 600 }
-                  : undefined
-              }
-            />
-          ))}
+          <Tooltip position={{ y: 0 }} content={<TooltipBox series={series} format={format} notes={markerNotes} />} />
+          {markerLines(markerGroups, "mk", "left")}
           {series.map((s) =>
             kind === "area" ? (
               <Area
