@@ -254,7 +254,7 @@ describe("workflow commit paths (scripts/workflow-paths.js)", () => {
     expect(mapWorkflowFiles(tel, TEL_FILES, repo)).toEqual(TEL_FILES);
     expect(workflowPaths(tel, repo)).toEqual({
       HD_PROJECT_SLUG: "tel", HD_LEGACY_ROOT: "true", HD_DATA_DIR: "public/data", HD_WORK_DIR: "data",
-      HD_CEX_CONFIG: "config/cex-wallets.json",
+      HD_CEX_CONFIG: "config/cex-wallets.json", HD_SOLANA_FLOWS: "false",
     });
   });
 
@@ -268,7 +268,7 @@ describe("workflow commit paths (scripts/workflow-paths.js)", () => {
       "config/projects/demo/cex-wallets.json",
       "public/data/demo",
     ]);
-    expect(workflowPaths(demo, tmp)).toMatchObject({ HD_DATA_DIR: "public/data/demo", HD_WORK_DIR: "data/demo", HD_LEGACY_ROOT: "false" });
+    expect(workflowPaths(demo, tmp)).toMatchObject({ HD_DATA_DIR: "public/data/demo", HD_WORK_DIR: "data/demo", HD_LEGACY_ROOT: "false", HD_SOLANA_FLOWS: "false" });
     const bare = resolveProject("bare", tmp);
     expect(mapWorkflowFiles(bare, ["config/cex-wallets.json"], tmp)).toEqual(["public/data/bare"]);
     expect(() => mapWorkflowFiles(demo, ["netlify.toml"], tmp)).toThrow(/shared with TEL/);

@@ -10,6 +10,7 @@
  *   HD_DATA_DIR=public/data          (others: public/data/<slug>)
  *   HD_WORK_DIR=data                 (others: data/<slug>)
  *   HD_CEX_CONFIG=config/cex-wallets.json   (empty when the project declares none)
+ *   HD_SOLANA_FLOWS=false            ("true" when the project declares a Solana chain: gates scan-solana-flows.js)
  *
  * The data workflows' commit steps name files as "$HD_DATA_DIR/<file>" and
  * "$HD_WORK_DIR/<file>", so a TEL run commits exactly the paths it always did
@@ -41,6 +42,7 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
+import { solanaFlowChains } from "./lib/solana/flowConfig.js";
 import {
   pipelineProject,
   projectWorkDir,
@@ -55,6 +57,7 @@ export function workflowPaths(project, root = process.cwd()) {
     HD_DATA_DIR: project.dataDir,
     HD_WORK_DIR: projectWorkDir(project),
     HD_CEX_CONFIG: projectClassificationRelPath(project, "cexWallets", root) ?? "",
+    HD_SOLANA_FLOWS: solanaFlowChains(project.config).length > 0 ? "true" : "false",
   };
 }
 

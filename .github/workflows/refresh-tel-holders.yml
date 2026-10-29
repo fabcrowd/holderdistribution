@@ -245,6 +245,20 @@ jobs:
       # is non-fatal and time-boxed: a slow scan must not eat the minute budget,
       # and its checkpoint simply resumes tomorrow.
 
+      - name: Scan Solana flows
+        # Writes the per-day store (data/<slug>/solana-flow-days.json) and the
+        # chain checkpoint that scan-exchange-flows.js and generate-tier-outflows.js
+        # publish from, so it must run first. Gated on the registry (the project
+        # declares a Solana chain), not on a slug. SOLANA_RPC_* come from the
+        # decrypted .env.enc. Non-fatal: it resumes from its checkpoint tomorrow.
+        if: ${{ env.HD_SOLANA_FLOWS == 'true' }}
+        id: solana
+        continue-on-error: true
+        timeout-minutes: 25
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: node scripts/scan-solana-flows.js
+
       - name: Scan exchange flows
         id: flows
         continue-on-error: true
@@ -281,7 +295,7 @@ jobs:
 
       - name: Commit downstream feeds
         run: |
-          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json public/data/holders-history.json data/holders-asof-blocks.json)
+          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json data/solana-flow-days.json public/data/holders-history.json data/holders-asof-blocks.json)
           for f in $FILES; do [ -e "$f" ] && git add "$f"; done
           if git diff --cached --quiet; then
             echo "No downstream changes to commit"
@@ -292,7 +306,7 @@ jobs:
             git rebase origin/main
             git push origin HEAD:main
           fi
-          echo "flows=${{ steps.flows.outcome }} tiers=${{ steps.tiers.outcome }} gaps=${{ steps.gaps.outcome }}"
+          echo "solana=${{ steps.solana.outcome }} flows=${{ steps.flows.outcome }} tiers=${{ steps.tiers.outcome }} gaps=${{ steps.gaps.outcome }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
