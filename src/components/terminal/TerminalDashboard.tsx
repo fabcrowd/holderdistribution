@@ -1,23 +1,21 @@
 import { useRef, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowDownRight, ArrowUpRight, Clock, Coins, Info, LayoutGrid, Minus, PanelsTopLeft, PieChart, Users } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Clock, Coins, Info, Minus, PieChart, Users } from "lucide-react";
 import logoIcon from "@/assets/holder-analytics-icon.svg";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ChangeIndicator } from "@/components/ChangeIndicator";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
-import { HeadlineBody } from "@/components/HeadlineBody";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TokenIdentity } from "@/components/TokenIdentity";
 import { useProject } from "@/hooks/useProject";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
-import { LAYOUT_MODES } from "@/lib/terminalCopy";
+import { AnswerCards } from "./AnswerCards";
 import { TimeRangeDropdown } from "@/components/TimeRangeDropdown";
 import { Footer, SITE_DISCLAIMER } from "@/components/Footer";
 import { useHeadlineSummary } from "@/hooks/useHeadlineSummary";
-import { useCountUp, useIntro } from "@/hooks/useMotion";
+import { useIntro } from "@/hooks/useMotion";
 import type { DisplaySelection } from "@/hooks/useHolderSnapshot";
 import { chainViewOptions } from "@/lib/chainViews";
 import { describeFreshness } from "@/lib/format";
@@ -42,8 +40,6 @@ type Props = {
   view: ViewId;
   onViewChange: (v: ViewId) => void;
   explore: boolean;
-  /** Present only for views that have an Explore mode. */
-  onExploreChange?: (explore: boolean) => void;
   rangeDays: number;
   onRangeDaysChange: (d: number) => void;
   rangeOptions: Array<{ label: string; days: number }>;
@@ -56,8 +52,8 @@ type Props = {
  * Desktop (>=1280px) shell: one 56px title bar carrying the brand (eyebrow +
  * an always-visible "<image> <Name> Holder Distribution" h1 whose token mark
  * links home to the token picker, plus a stale-data pill),
- * the view switch, the four headline KPIs and every control; a plain-language
- * strip (the same sentence the phone shows under the title); then the view.
+ * the view switch, and every control; then three answer cards (holders, held, on
+ * exchanges); then the view.
  * Holders dashboard and Distribution scroll this region so charts can be
  * taller than the fold. Supply and Explore still fill the viewport and
  * scroll inside their panels. A 24px status line stays pinned, with the
@@ -67,7 +63,6 @@ export const TerminalDashboard = ({
   view,
   onViewChange,
   explore,
-  onExploreChange,
   rangeDays,
   onRangeDaysChange,
   rangeOptions,
@@ -171,66 +166,7 @@ export const TerminalDashboard = ({
             })}
           </nav>
 
-          <dl className="flex min-w-0 flex-1 items-center justify-[safe_center] gap-3 min-[1400px]:gap-6 2xl:gap-10" aria-label="Headline numbers" data-testid="headline-numbers">
-            {tiles.map((t) => (
-              <div key={t.id} className="flex shrink-0 flex-col gap-0.5 leading-tight" data-testid={`kpi-${t.id}`}>
-                <dt className="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {t.label}
-                  {/* A chain is picked but this figure can't be split by
-                      chain: say so rather than pass it off as that chain's. */}
-                  {selectedView !== "combined" && t.scope === "all" && (
-                    <span className="ml-1 rounded-sm bg-muted px-1 text-[11px] normal-case tracking-normal" title="Not split by chain: this figure covers all chains" data-testid={`kpi-${t.id}-scope`}>
-                      All chains
-                    </span>
-                  )}
-                </dt>
-                <dd className="flex items-center gap-1.5 whitespace-nowrap">
-                  <KpiValue value={t.value} current={t.current} fmt={t.fmt} />
-                  {t.current !== null && (
-                    // Numeric deltas (e.g. "+195.18M") need room the 1280 bar
-                    // doesn't have, so they appear from 1400px; the † reclass
-                    // markers are narrow and always show.
-                    <span className={t.changelogEvents?.length ? "inline-flex" : "hidden min-[1400px]:inline-flex"}>
-                    <ChangeIndicator
-                      variant="plain"
-                      current={t.current}
-                      previous={t.previous}
-                      formatter={t.fmt}
-                      tone={t.tone ?? "auto"}
-                      changelogEvents={t.changelogEvents}
-                    />
-                    </span>
-                  )}
-                </dd>
-              </div>
-            ))}
-          </dl>
-
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            {onExploreChange && (
-              <div role="group" aria-label="Layout" className="flex items-center rounded-md border border-border p-0.5">
-                {LAYOUT_MODES.map(({ explore: on, label, hint }) => {
-                  const Icon = on ? PanelsTopLeft : LayoutGrid;
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      aria-pressed={explore === on}
-                      onClick={() => onExploreChange(on)}
-                      title={hint}
-                      aria-label={hint}
-                      data-testid={on ? "layout-explore" : "layout-dashboard"}
-                      className={`inline-flex h-7 items-center justify-center gap-1 rounded px-1.5 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                        explore === on ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
             <label className="sr-only" htmlFor="terminal-chain">
               Chain
             </label>
@@ -284,21 +220,11 @@ export const TerminalDashboard = ({
           </div>
         </header>
 
-        <div
-          data-testid="terminal-headline"
-          className="shrink-0 border-b border-border bg-card px-3 py-1.5"
-        >
-          {summary ? (
-            <HeadlineBody summary={summary} dense />
-          ) : isError ? (
-            <p className="text-xs text-muted-foreground">Headline numbers are unavailable right now. The panels below explain what failed and let you retry.</p>
-          ) : (
-            <div className="space-y-1" aria-hidden="true">
-              <div className="h-4 w-full max-w-xl rounded bg-muted/70 animate-pulse" />
-              <div className="h-3 w-2/3 max-w-md rounded bg-muted/60 animate-pulse" />
-            </div>
-          )}
-        </div>
+        {!explore && (
+          <div data-testid="terminal-headline" className="shrink-0 border-b border-border bg-background px-3 py-3">
+            <AnswerCards tiles={tiles} selectedView={selectedView} isError={isError} />
+          </div>
+        )}
 
         <main
           id="main-content"
@@ -352,15 +278,4 @@ export const TerminalDashboard = ({
       </div>
     </TooltipProvider>
   );
-};
-
-
-/**
- * Headline value. Values fade in with the header rather than counting up (a
- * count-up read as the numbers "changing" on every visit); `useCountUp` with a
- * zero duration returns the target immediately.
- */
-const KpiValue = ({ value, current }: { value: string; current: number | null; fmt?: (v: number) => string }) => {
-  useCountUp(current, 0);
-  return <span className="relative text-base font-semibold tabular-nums text-foreground min-[1400px]:text-lg">{value}</span>;
 };

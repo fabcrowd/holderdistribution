@@ -12,6 +12,7 @@ import { formatCompact, formatSignedCompact } from "@/lib/format";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
 import { TimeChart, SignedBars, CategoryBars, type ChartMarker } from "./MiniCharts";
 import { DetailsButton } from "./DetailsButton";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { heldPanelTip } from "@/lib/heldPanelTip";
 import { StakedPanelTip } from "./StakedPanelTip";
 import { getSeriesBreaks } from "@/lib/seriesBreaks";
@@ -282,10 +283,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       </TerminalPanel>
 
       </div>
-      <div
-        className="grid shrink-0 grid-cols-3 gap-3"
-        data-testid="holders-secondary"
-      >
+      <div className="grid shrink-0 grid-cols-2 gap-3" data-testid="holders-secondary">
       <TerminalPanel
         chart="standard"
         title="Exchange net flow"
@@ -320,6 +318,62 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         )}
       </TerminalPanel>
 
+      <TerminalPanel
+        fit
+        title="Concentration"
+        info={`Share of retail ${tk} held by the largest N retail wallets. Change is against the previous snapshot.`}
+        stat={stats && <span className="text-xs text-muted-foreground">Gini <span className="font-semibold text-foreground">{stats.gini.toFixed(3)}</span></span>}
+        actions={<DetailsButton onClick={() => onExplore("concentration")} label="Concentration" />}
+        flush
+      >
+        {!snapshot ? (
+          <div className="p-3">{snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />}</div>
+        ) : (
+          <table className="w-full text-sm tabular-nums">
+            <caption className="sr-only">Share of retail {tk} held by the top wallets</caption>
+            <thead className="sticky top-0 bg-card text-xs text-muted-foreground">
+              <tr>
+                <th scope="col" className="px-3 py-1 text-left font-medium">Top</th>
+                <th scope="col" className="px-2 py-1 text-left font-medium">Share</th>
+                <th scope="col" className="px-3 py-1 text-right font-medium">{tk}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(top)
+                .sort((a, z) => Number(a[0]) - Number(z[0]))
+                .map(([n, bal]) => {
+                  const share = retailTotal > 0 ? (bal / retailTotal) * 100 : 0;
+                  const prev = prevTop[n];
+                  return (
+                    <tr key={n} className="border-t border-border/50">
+                      <th scope="row" className="px-3 py-1 text-left font-medium">{int.format(Number(n))}</th>
+                      <td className="px-2 py-1">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-full min-w-[3rem] overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(share, 100)}%` }} />
+                          </div>
+                          <span className="w-12 shrink-0 text-right">{pct(share)}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-1 text-right">
+                        <span className="mr-1.5">{formatCompact(bal)}</span>
+                        <Delta value={prev != null ? bal - prev : null} format={(x) => formatCompact(x, 1)} />
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        )}
+      </TerminalPanel>
+      </div>
+      <Accordion type="single" collapsible className="shrink-0" data-testid="holders-details">
+        <AccordionItem value="details" className="rounded-lg border border-border bg-card px-4">
+          <AccordionTrigger className="py-3 text-sm font-semibold">
+            Details: staked, wallet sizes, exchange balances
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-3 gap-3" data-testid="holders-tables">
       <TerminalPanel
         chart="standard"
         title={`Staked ${tk}`}
@@ -392,7 +446,6 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           )
         )}
       </TerminalPanel>
-
       <TerminalPanel
         chart="standard"
         title="Wallet sizes"
@@ -423,61 +476,6 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           <PanelMessage>No balance data.</PanelMessage>
         )}
       </TerminalPanel>
-
-      </div>
-      <div
-        className="grid shrink-0 grid-cols-2 gap-3"
-        data-testid="holders-tables"
-      >
-      <TerminalPanel
-        fit
-        title="Concentration"
-        info={`Share of retail ${tk} held by the largest N retail wallets. Change is against the previous snapshot.`}
-        stat={stats && <span className="text-xs text-muted-foreground">Gini <span className="font-semibold text-foreground">{stats.gini.toFixed(3)}</span></span>}
-        actions={<DetailsButton onClick={() => onExplore("concentration")} label="Concentration" />}
-        flush
-      >
-        {!snapshot ? (
-          <div className="p-3">{snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />}</div>
-        ) : (
-          <table className="w-full text-sm tabular-nums">
-            <caption className="sr-only">Share of retail {tk} held by the top wallets</caption>
-            <thead className="sticky top-0 bg-card text-xs text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-3 py-1 text-left font-medium">Top</th>
-                <th scope="col" className="px-2 py-1 text-left font-medium">Share</th>
-                <th scope="col" className="px-3 py-1 text-right font-medium">{tk}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(top)
-                .sort((a, z) => Number(a[0]) - Number(z[0]))
-                .map(([n, bal]) => {
-                  const share = retailTotal > 0 ? (bal / retailTotal) * 100 : 0;
-                  const prev = prevTop[n];
-                  return (
-                    <tr key={n} className="border-t border-border/50">
-                      <th scope="row" className="px-3 py-1 text-left font-medium">{int.format(Number(n))}</th>
-                      <td className="px-2 py-1">
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-full min-w-[3rem] overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(share, 100)}%` }} />
-                          </div>
-                          <span className="w-12 shrink-0 text-right">{pct(share)}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-1 text-right">
-                        <span className="mr-1.5">{formatCompact(bal)}</span>
-                        <Delta value={prev != null ? bal - prev : null} format={(x) => formatCompact(x, 1)} />
-                      </td>
-                    </tr>
-                  );
-                })}
-            </tbody>
-          </table>
-        )}
-      </TerminalPanel>
-
       <TerminalPanel
         fit
         title="Exchange balances"
@@ -512,7 +510,10 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           </table>
         )}
       </TerminalPanel>
-      </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };
