@@ -64,6 +64,7 @@ import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, ReferenceLine, Line } from "recharts";
 import { chainViewOptions, type ChainView } from "@/lib/chainViews";
 import { stakingSplitSub } from "@/lib/stakingSplit";
+import { StakingSupplyTie } from "@/components/StakingSupplyTie";
 import "@/lib/rechartsMotion";
 
 const formatCompactTokens = (n: number) => formatCompact(n, 2);
@@ -822,6 +823,7 @@ const renderStakingInsights = (
             </div>
           ))}
         </div>
+        <StakingSupplyTie />
         {chartData.some((d) => d.count > 0) && (
           <div className="premium-surface-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1 text-center">Staked balance distribution (staker count by range)</p>

@@ -94,7 +94,15 @@ describe("ZBCN staking copy", () => {
     expect(info).not.toMatch(/own bucket|not included in this Retail/);
     expect(copyText(zbcn, "supply.staking.bucketLabel", "Staking")).toBe("Reward vaults");
     expect(copyText(zbcn, "supply.staking.description", "")).toMatch(/included in Retail/);
+    expect(copyText(zbcn, "supply.staking.description", "")).toMatch(/not staker principal/i);
     expect(copyText(zbcn, "supply.staking.description", "")).toMatch(/Global Staked/);
+    expect(copyText(zbcn, "supply.retail.stakedNote", "")).toBe("of which {staked} is staked");
+    expect(copyText(zbcn, "staking.intro", "")).toMatch(/credited into Retail on Supply/);
+    expect(copyText(zbcn, "staking.intro", "")).toMatch(/not staker principal/i);
+    expect(copyText(zbcn, "staking.intro", "")).toMatch(/Global Staked/);
+    expect(copyText(zbcn, "staking.addresses.note", "")).toMatch(/not staker principal/i);
+    const text = JSON.stringify(zbcn.copy?.text ?? {});
+    expect(text).not.toMatch(/Staking vaults/i);
   });
 
   it("residual body does not claim Ethereum / Polygon / Base bridges", () => {
