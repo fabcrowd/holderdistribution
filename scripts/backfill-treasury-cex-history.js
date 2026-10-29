@@ -142,6 +142,7 @@ const main = async () => {
     categories,
     categoryByAddress,
     categoryEras: project.config?.treasury?.labelEras ?? [],
+    anchorAdjustments: project.config?.treasury?.anchorAdjustments ?? [],
     exchangeByAddress,
     chains,
     blockCache,

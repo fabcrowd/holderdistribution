@@ -115,6 +115,27 @@ export function trustedAnchor(entries, date, categories, tolerance = ANCHOR_TOLE
 }
 
 /**
+ * Returns `entry` with documented corrections added to its category totals
+ * (the stored row is never modified). Used for real rows known to omit a
+ * wallet, so a replay anchored on / validated against them is not skewed.
+ *
+ * @param {object} entry
+ * @param {Array<{date:string, category:string, add:number}>} adjustments
+ */
+export function applyAnchorAdjustments(entry, adjustments) {
+  const mine = (adjustments ?? []).filter((a) => a.date === entry?.date);
+  if (!mine.length) return entry;
+  const categories = { ...entry.categories };
+  for (const { category, add } of mine) {
+    if (!Number.isFinite(Number(add)) || !Number.isFinite(Number(categories[category]))) {
+      throw new Error(`anchorAdjustment ${entry.date} ${category}: needs a finite "add" and an existing category`);
+    }
+    categories[category] = Number(categories[category]) + Number(add);
+  }
+  return { ...entry, categories };
+}
+
+/**
  * Label eras: rows written before `before` used older category labels (e.g.
  * TELx reward contracts were "council" until relabelled to "staking"). Returns
  * the address -> category map in force for `date` and an `era` key so callers
@@ -282,6 +303,7 @@ const sortedUnique = (list) => [...new Set(list)].sort();
  * @param {string[]} args.categories treasury category keys (chart lines)
  * @param {Map<string,string>} args.categoryByAddress
  * @param {Array<{before:string, categories:Record<string,string>}>} [args.categoryEras] older labels for rows before a date
+ * @param {Array<{date:string, category:string, add:number}>} [args.anchorAdjustments] corrections for real rows that omit a wallet
  * @param {number} [args.anchorTolerance] max category deviation (fraction) before a treasury anchor is rejected
  * @param {Map<string,string>} args.exchangeByAddress
  * @param {Array<{key:string, tokens:Array<{address:string, decimals:number, generation:string, deployBlock?:?number}>, upgradeContracts?:string[]}>} args.chains
@@ -298,6 +320,7 @@ export async function reconstructHistory({
   categories,
   categoryByAddress,
   categoryEras = [],
+  anchorAdjustments = [],
   anchorTolerance = ANCHOR_TOLERANCE,
   exchangeByAddress,
   chains,
@@ -315,7 +338,7 @@ export async function reconstructHistory({
       if (kind === "treasury") {
         const picked = trustedAnchor(history.entries, date, categories, anchorTolerance);
         if (picked.rejected.length) log(`  treasury ${date}: skipped untrusted anchor row(s) ${picked.rejected.join(", ")}`);
-        anchor = picked.anchor;
+        anchor = picked.anchor && applyAnchorAdjustments(picked.anchor, anchorAdjustments);
       } else {
         anchor = priorEntry(history.entries, date);
       }
@@ -333,7 +356,7 @@ export async function reconstructHistory({
   // The first EXISTING row after the range validates the replay.
   const lastTarget = [...targets.treasury, ...targets.cex].sort().at(-1);
   const validation = {
-    treasury: nextEntry(treasuryHistory.entries, lastTarget),
+    treasury: applyAnchorAdjustments(nextEntry(treasuryHistory.entries, lastTarget), anchorAdjustments),
     cex: nextEntry(cexHistory.entries, lastTarget),
   };
   const needed = sortedUnique([
