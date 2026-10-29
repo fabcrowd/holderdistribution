@@ -25,6 +25,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { selectPipelineProject, projectPaths } from "./lib/projects.js";
+import { projectExclusions, reconcilePaths } from "./reconcile-supply.js";
+import { vanishedLabelledWallets } from "./lib/labelledWalletGuard.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
 // the project's data dir (TEL: public/data/, others: public/data/<slug>/).
@@ -35,11 +37,14 @@ const data = projectPaths(project, ROOT);
 const RECONCILIATION_PATH = data("supply-reconciliation.json");
 const HISTORY_PATH = data("treasury-history.json");
 const HOLDERS_PATH = data("tel-holders.json");
+const PREVIOUS_HOLDERS_PATH = data("tel-holders-previous.json");
 
 // Same chart lines for every project (shared panel format). A project whose
 // exclusions label fewer entity categories lists its own in
 // `treasury.categories`; TEL uses all four.
 const CATEGORIES = project.config?.treasury?.categories ?? ["treasury", "council", "holdings", "escrow"];
+// Labelled wallets whose disappearance is a real full drain (addresses).
+const ALLOW_VANISHED = project.config?.treasury?.allowVanished ?? [];
 // A brand-new (non-legacy) project has no Transfer-log backfill yet, so its
 // series may start today; TEL's must never silently restart.
 const ALLOW_NEW_SERIES = project.config?.data?.legacyRoot !== true;
@@ -85,6 +90,37 @@ const main = async () => {
   const existingIndex = history.entries.findIndex((e) => e.date === date);
   const isUpdate = existingIndex >= 0;
   const previous = isUpdate ? history.entries[existingIndex] : history.entries[history.entries.length - 1];
+
+  // A labelled treasury wallet missing from today's snapshot reads as 0 and
+  // silently undercounts its category, so refuse to write instead.
+  const previousHolders = await readJson(PREVIOUS_HOLDERS_PATH).catch(() => null);
+  if (!previousHolders || !holders) {
+    console.log("Vanished-wallet guard skipped: no previous snapshot.");
+  } else {
+    const exclusions = await readJson(reconcilePaths(project, ROOT).exclusions).catch(() => ({ labels: {} }));
+    const labels = projectExclusions(project, exclusions, holders).labels ?? {};
+    const vanished = vanishedLabelledWallets({
+      previous: previousHolders,
+      current: holders,
+      labels,
+      categories: CATEGORIES,
+      previousCategoryTotals: previous?.categories,
+      allow: ALLOW_VANISHED,
+    });
+    if (vanished.length) {
+      for (const w of vanished) {
+        console.error(
+          `  ${w.address}  ${w.category}  ${w.name ?? "(unnamed)"}  previous balance ${(w.previousBalance / 1e6).toFixed(3)}M`,
+        );
+      }
+      console.error(
+        `${vanished.length} labelled wallet(s) absent from today's snapshot — an absent wallet reads as 0 and would ` +
+          `undercount ${[...new Set(vanished.map((w) => w.category))].join(", ")}. Refusing to write.\n` +
+          `If this is a real full drain, add the address to treasury.allowVanished in config/projects/${project.slug}.json.`,
+      );
+      process.exit(1);
+    }
+  }
 
   // Loud on implausible single-day swings. Not a hard failure — the treasury
   // genuinely does move in large steps (it is down 900M across 2026) — but a
