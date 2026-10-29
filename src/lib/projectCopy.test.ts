@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { copyContext, fillCopy, hasTokenGenerations, joinList } from "./projectCopy";
+import { copyContext, copyTextsByPrefix, fillCopy, hasTokenGenerations, joinList } from "./projectCopy";
 import { getProject } from "./projects";
 
 describe("projectCopy", () => {
@@ -37,5 +37,24 @@ describe("projectCopy", () => {
     expect(
       hasTokenGenerations({ chains: [{ key: "e", name: "E", chainId: 1, explorer: "", tokens: [{ generation: "v1", address: "0x", decimals: 18 }] }] }),
     ).toBe(false);
+  });
+
+  it("copyTextsByPrefix returns filled entries under the prefix, sorted, ignoring other ids", () => {
+    const project = {
+      ticker: "ABC",
+      name: "Abacus",
+      chains: [],
+      copy: {
+        text: {
+          "treasury.note.2026-10-02": "second {ticker}",
+          "treasury.note.2026-09-29": "first {ticker}",
+          "treasury.history.info": "unrelated",
+        },
+      },
+    };
+    expect(copyTextsByPrefix(project, "treasury.note.")).toEqual([
+      { suffix: "2026-09-29", text: "first ABC" },
+      { suffix: "2026-10-02", text: "second ABC" },
+    ]);
   });
 });

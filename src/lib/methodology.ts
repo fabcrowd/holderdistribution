@@ -17,6 +17,7 @@
 import type { ProjectConfig } from "@/lib/projects";
 import { copyContext, fillCopy } from "@/lib/projectCopy";
 import { chainExplorerLink, explorerRoot } from "@/lib/explorerLinks";
+import { resolveCirculatingSubtract } from "@/lib/circulatingSubtract";
 
 export type MethodologyLink = { label: string; href: string };
 export type Methodology = { how: string; verify: string; links: MethodologyLink[] };
@@ -143,12 +144,14 @@ export const methodologyFor = (p: MethodologyProject, key: MethodologyKey): Meth
   const ctx = copyContext(p);
   const generic = GENERIC_METHODOLOGY[key];
   const override = p.copy?.methodology?.[key];
+  const fillMethod = (s: string) =>
+    fillCopy(s, ctx).split("{circulatingSubtract}").join(resolveCirculatingSubtract(p.supply).join(" + "));
   const links = override?.links
     ? override.links.map((l) => ({ label: fillCopy(l.label, ctx), href: resolveHref(p, l.href) }))
     : generic.links.flatMap((set) => (set === "tokens" ? projectTokenLinks(p) : projectStakingLinks(p)));
   return {
-    how: fillCopy(override?.how ?? generic.how, ctx),
-    verify: fillCopy(override?.verify ?? generic.verify, ctx),
+    how: fillMethod(override?.how ?? generic.how),
+    verify: fillMethod(override?.verify ?? generic.verify),
     links,
   };
 };

@@ -48,6 +48,13 @@ export const markerNotesByRow = (
   return notes;
 };
 
+/** Date-keyed notes (suffix "YYYY-MM-DD") as warning chart notes; unparseable dates are skipped. */
+export const datedNotes = (entries: readonly { suffix: string; text: string }[]): ChartNote[] =>
+  entries.flatMap((e) => {
+    const t = Date.parse(e.suffix);
+    return Number.isFinite(t) && e.text ? [{ t, text: e.text, tone: "warning" as const }] : [];
+  });
+
 /** Reclassification events as chart notes (muted; the summary is the note). */
 export const reclassMarkers = (events: readonly { date: string; summary: string }[]): ChartNote[] =>
   events.flatMap((e) => {

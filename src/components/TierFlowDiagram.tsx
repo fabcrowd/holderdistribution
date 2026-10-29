@@ -720,11 +720,11 @@ export const TierFlowDiagram = ({
   // Color legend — the same green/red/yellow meaning applies to every figure
   // in this diagram, so it's stated once. Each label opens its explainer.
   const legend = (
-    <div className={`flex items-center gap-x-4 gap-y-1 flex-wrap text-muted-foreground ${isTerminal ? "text-xs" : "justify-center text-sm"}`}>
+    <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-muted-foreground">
       {LEGEND.map((l) => (
         <span key={l.label} className="inline-flex items-center gap-1.5">
           <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ background: l.color }} />
-          <ExplainNumber value={compact ? l.short : l.label} explanation={t(l.explanation)} ariaLabel={`${l.label}: what this colour means`} className="inline-flex min-h-6 items-center" />
+          <ExplainNumber value={l.short}explanation={t(l.explanation)} ariaLabel={`${l.label}: what this colour means`} className="inline-flex min-h-6 items-center" />
         </span>
       ))}
     </div>
@@ -826,12 +826,12 @@ export const TierFlowDiagram = ({
               />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              {legend}
               {!(compact && asOf.status === "fresh") && <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />}
               {clearButton}
               {metricToggle}
             </div>
           </div>
-          {legend}
         </>
       )}
 

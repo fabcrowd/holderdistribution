@@ -53,6 +53,21 @@ describe("methodology", () => {
     expect(methodologyFor(tel, "supplyBreakdown").how).toMatch(/Telcoin Association-Controlled Safes/);
   });
 
+  it("fills {circulatingSubtract} in methodology copy from supply.circulating.subtract", () => {
+    const tel = getProject("tel");
+    const how = methodologyFor(tel, "supplyBreakdown").how;
+    expect(how).toContain("Circulating excludes treasury + council,");
+    expect(how).not.toContain("{circulatingSubtract}");
+
+    const narrowed: ProjectConfig = {
+      ...tel,
+      supply: { ...tel.supply, circulating: { subtract: ["treasury"] } },
+    };
+    const narrowedHow = methodologyFor(narrowed, "supplyBreakdown").how;
+    expect(narrowedHow).toContain("Circulating excludes treasury,");
+    expect(narrowedHow).not.toContain("{circulatingSubtract}");
+  });
+
   it("every TEL override is a known section and every link resolves", () => {
     const tel = getProject("tel");
     for (const key of Object.keys(tel.copy?.methodology ?? {})) {

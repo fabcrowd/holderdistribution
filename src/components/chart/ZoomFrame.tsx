@@ -30,8 +30,8 @@ type StripDrag = { id: number; axis: "x" | "y"; side?: AxisSide; last: number };
  * Gestures: pinch / wheel / drag over the plot; drag the X strip (under the plot)
  * to stretch or shrink the time range; drag a Y strip (beside the plot) to
  * stretch or shrink that axis. Dragging right or up zooms in, left or down out.
- * The plot keeps `touch-action: pan-y` so a vertical swipe still scrolls the page;
- * only the Y strip takes vertical drags.
+ * The plot is always `touch-action: pan-y` so a vertical swipe still scrolls the page,
+ * whether or not the chart is zoomable; only the Y strip takes vertical drags.
  */
 export function ZoomFrame<T>({ zoom, children, className, notes, yAxes }: Props<T>) {
   const { zoomable } = zoom;
@@ -86,7 +86,7 @@ export function ZoomFrame<T>({ zoom, children, className, notes, yAxes }: Props<
       <div
         ref={zoom.containerRef}
         className="relative min-h-0 w-full flex-1 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        style={zoomable ? { touchAction: "pan-y" } : undefined}
+        style={{ touchAction: "pan-y" }}
         tabIndex={zoomable ? 0 : undefined}
         role={zoomable ? "group" : undefined}
         aria-label={zoomable ? "Chart. Scroll to zoom, drag to pan, plus and minus keys zoom, Escape resets." : undefined}
@@ -116,7 +116,7 @@ export function ZoomFrame<T>({ zoom, children, className, notes, yAxes }: Props<
             onDoubleClick={stopAndIgnore}
           />
         )}
-        {sides.map((side) => (
+        {zoomable && sides.map((side) => (
           <div
             key={side}
             aria-hidden="true"

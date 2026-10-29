@@ -46,9 +46,15 @@ describe("ZoomFrame", () => {
     expect(html).not.toContain('data-testid="axis-strip-y-right"');
   });
 
-  it("adds no strips for a chart too short to zoom", () => {
-    const html = renderToStaticMarkup(<ZoomFrame zoom={zoomFake({ zoomable: false })}>plot</ZoomFrame>);
+  it("adds no strips for a chart too short to zoom, and keeps the plot pan-y", () => {
+    const html = renderToStaticMarkup(
+      <ZoomFrame zoom={zoomFake({ zoomable: false })} yAxes={{ left: [0, 10] }}>
+        plot
+      </ZoomFrame>,
+    );
     expect(html).not.toContain("axis-strip-x");
+    expect(html).not.toContain("axis-strip-y-left");
+    expect(html).toMatch(/<div class="relative[^"]*" style="touch-action:pan-y"/);
   });
 
   it("keeps the vertical Y strip out of page-scroll reach and leaves the plot pan-y", () => {

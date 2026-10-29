@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupMarkers, markerCollapseGap, markerNotesByRow } from "./chartMarkers";
+import { datedNotes, groupMarkers, markerCollapseGap, markerNotesByRow } from "./chartMarkers";
 import { reclassMarkers } from "./chartMarkers";
 
 const DAY = 86_400_000;
@@ -51,5 +51,16 @@ describe("reclassMarkers", () => {
       { date: "not-a-date", summary: "ignored" },
     ]);
     expect(notes).toEqual([{ t: Date.UTC(2026, 9, 3), text: "Reclassified: wallets moved", tone: "muted" }]);
+  });
+});
+
+describe("datedNotes", () => {
+  it("parses date suffixes into warning notes and skips unparseable or empty entries", () => {
+    const notes = datedNotes([
+      { suffix: "2026-10-01", text: "gap" },
+      { suffix: "bad", text: "ignored" },
+      { suffix: "2026-10-02", text: "" },
+    ]);
+    expect(notes).toEqual([{ t: Date.parse("2026-10-01"), text: "gap", tone: "warning" }]);
   });
 });
