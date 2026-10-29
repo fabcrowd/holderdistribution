@@ -73,6 +73,12 @@ export function configureProjectRpc(projectConfig) {
       if (typeof rpc.envPrefix !== "string" || !/^[A-Z][A-Z0-9_]*$/.test(rpc.envPrefix)) {
         throw new Error(`chain ${chain.key}: rpc.envPrefix must be UPPER_SNAKE (got ${JSON.stringify(rpc.envPrefix)})`);
       }
+      if (rpc.envPrefix.endsWith("_RPC")) {
+        throw new Error(
+          `chain ${chain.key}: rpc.envPrefix ${JSON.stringify(rpc.envPrefix)} would read ${rpc.envPrefix}_RPC_0; ` +
+            `the pool appends _RPC_<n> itself, so use ${JSON.stringify(rpc.envPrefix.slice(0, -4))}`,
+        );
+      }
       entry.envPrefix = rpc.envPrefix;
     }
     if (rpc.publicUrls !== undefined) {
