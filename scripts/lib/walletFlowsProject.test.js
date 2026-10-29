@@ -15,6 +15,7 @@ import { BRIDGE_INFRA } from "./telEndpoint.js";
 import { TEL_LOG_SPAN, tokenSlots, walletFlowsNotes, walletFlowsPlan } from "./walletFlowsProject.js";
 
 const repo = path.resolve(".");
+const rel = (from, to) => path.relative(from, to).split(path.sep).join("/");
 const X = (c) => `0x${c.repeat(40)}`;
 let tmp;
 
@@ -42,11 +43,11 @@ afterAll(() => fs.rmSync(tmp, { recursive: true, force: true }));
 describe("walletFlowsPlan", () => {
   it("TEL resolves to the original files, chains, price id and bridge set", () => {
     const plan = walletFlowsPlan(resolveProject("tel", repo), { root: repo });
-    expect(path.relative(repo, plan.out)).toBe("data/forensics/wallet-flows.json");
-    expect(path.relative(repo, plan.registry)).toBe("data/forensics/wallet-flows.registry.json");
-    expect(path.relative(repo, plan.recon)).toBe("public/data/supply-reconciliation.json");
-    expect(path.relative(repo, plan.cexPath)).toBe("config/cex-wallets.json");
-    expect(path.relative(repo, plan.dexPath)).toBe("config/dex-contracts.json");
+    expect(rel(repo, plan.out)).toBe("data/forensics/wallet-flows.json");
+    expect(rel(repo, plan.registry)).toBe("data/forensics/wallet-flows.registry.json");
+    expect(rel(repo, plan.recon)).toBe("public/data/supply-reconciliation.json");
+    expect(rel(repo, plan.cexPath)).toBe("config/cex-wallets.json");
+    expect(rel(repo, plan.dexPath)).toBe("config/dex-contracts.json");
     expect(plan.chains).toEqual(["ethereum", "polygon", "base"]);
     expect(plan.coingeckoId).toBe("telcoin");
     expect(new Set(plan.bridgeAddresses)).toEqual(BRIDGE_INFRA);
@@ -64,10 +65,10 @@ describe("walletFlowsPlan", () => {
 
   it("a non-TEL project resolves every gated path under its slug, with its own addresses only", () => {
     const plan = walletFlowsPlan(resolveProject("demo", tmp), { root: tmp });
-    expect(path.relative(tmp, plan.out)).toBe("data/demo/forensics/wallet-flows.json");
-    expect(path.relative(tmp, plan.registry)).toBe("data/demo/forensics/wallet-flows.registry.json");
-    expect(path.relative(tmp, plan.recon)).toBe("public/data/demo/supply-reconciliation.json");
-    expect(path.relative(tmp, plan.cexPath)).toBe("config/projects/demo/cex-wallets.json");
+    expect(rel(tmp, plan.out)).toBe("data/demo/forensics/wallet-flows.json");
+    expect(rel(tmp, plan.registry)).toBe("data/demo/forensics/wallet-flows.registry.json");
+    expect(rel(tmp, plan.recon)).toBe("public/data/demo/supply-reconciliation.json");
+    expect(rel(tmp, plan.cexPath)).toBe("config/projects/demo/cex-wallets.json");
     expect(plan.dexPath).toBeNull(); // never TEL's DEX list
     expect(plan.chains).toEqual(["arbitrum"]);
     expect(plan.coingeckoId).toBe("demo-coin");
