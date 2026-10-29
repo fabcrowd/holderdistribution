@@ -1,0 +1,110 @@
+name: Rebuild holders history from Solana token transactions
+
+# Opt-in replay of a Solana SPL token's transaction history into the project's
+# holders-history.json (per-day holderCount / newHolders / cumulativeHolders).
+# Solana counterpart of rebuild-holders-history.yml, which replays EVM Transfer
+# logs and builds nothing for Solana tokens.
+#
+# workflow_dispatch only: nothing schedules it. Defaults to a dry run, which
+# costs the RPC budget and writes the checkpoint on the runner, but publishes
+# nothing and commits nothing. A real run (dry_run=false) publishes and commits
+# public/data/<slug>/** only once the replay has caught up with the chain tip.
+#
+# Needs ENV_PASSPHRASE: decrypts .env.enc into SOLANA_RPC_0..9 (the public
+# endpoint in config/projects/<slug>.json is used first). Each run re-lists
+# every tracked token account, so a full catch-up is several runs; the
+# checkpoint is committed on real runs so the next dispatch resumes from it.
+# See scripts/rebuild-holders-history-solana.js for the cost estimate printed
+# at the top of every run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Project slug from config/projects/ (must declare a Solana chain with a token). Non-TEL runs commit public/data/<slug>/** and data/<slug>/**."
+        required: true
+        default: "zebec-network"
+        type: string
+      since:
+        description: "First date to publish (YYYY-MM-DD). Blank publishes every replayed date. Trims output only: the replay still starts at the token's first transaction."
+        required: false
+        type: string
+      max_tx:
+        description: "Transactions to replay in this run (oldest first). Blank uses the script default (10000). The rest resumes on the next dispatch."
+        required: false
+        type: string
+      dry_run:
+        description: "Replay and print without publishing or committing (default). Uncheck to publish and commit once caught up."
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+# Shares the holders-refresh group so this run never races the nightly holder
+# pipeline (or the EVM rebuild) on the same data files or main branch.
+concurrency:
+  group: holders-refresh
+  cancel-in-progress: false
+
+env:
+  HD_PROJECT: ${{ inputs.project }}
+
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    # Below GitHub's 6h ceiling so a stall fails visibly rather than being
+    # killed at the platform limit before the checkpoint is committed.
+    timeout-minutes: 330
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve project data paths
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
+
+      - name: Replay Solana token transactions
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          INPUT_SINCE: ${{ inputs.since }}
+          INPUT_MAX_TX: ${{ inputs.max_tx }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          ARGS=""
+          if [ -n "$INPUT_SINCE" ]; then ARGS="$ARGS --since $INPUT_SINCE"; fi
+          if [ -n "$INPUT_MAX_TX" ]; then ARGS="$ARGS --max-tx $INPUT_MAX_TX"; fi
+          if [ "$INPUT_DRY_RUN" != "true" ]; then ARGS="$ARGS --write"; fi
+          echo "Running: node scripts/rebuild-holders-history-solana.js --project $HD_PROJECT $ARGS"
+          node --max-old-space-size=6144 scripts/rebuild-holders-history-solana.js --project "$HD_PROJECT" $ARGS
+
+      - name: Configure git user
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Commit replayed history and checkpoint
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git add $(node scripts/workflow-paths.js files public/data/holders-history.json \
+                  public/data/holders-ever-checkpoint.json \
+                  data/holders-replay-solana.checkpoint.json)
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "data(${HD_PROJECT}): replay Solana holders history [skip netlify]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
