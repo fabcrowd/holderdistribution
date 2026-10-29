@@ -7,7 +7,7 @@ import process from "node:process";
  * its key upper-cased (`arbitrum` -> ARBITRUM_RPC_0…9). See
  * configureProjectRpc() below and docs/MULTI-TOKEN.md "RPC".
  */
-const RPC_KEY_SLOTS = 10;
+const RPC_KEY_SLOTS = 16;
 const BUILTIN_ENV_PREFIX = { ethereum: "ETH", polygon: "MATIC", base: "BASE" };
 /** chainKey -> { envPrefix?, publicUrls? } registered from project config. */
 const registeredChains = new Map();
