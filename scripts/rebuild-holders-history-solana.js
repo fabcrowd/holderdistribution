@@ -153,8 +153,12 @@ async function sampleSignatureCount(account, maxPages = 3) {
   return count;
 }
 
-/** Cost estimate from a sample of retail owners of the latest snapshot. */
-async function printCostEstimate(snapshot) {
+/**
+ * Cost estimate. Signatures per account come from a sample of retail owners of the
+ * latest snapshot; the account count is the discovered one, because discovery
+ * includes zero-balance accounts that the snapshot (current balances) never lists.
+ */
+async function printCostEstimate(snapshot, trackedAccounts) {
   const owners = (snapshot?.wallets ?? []).map((w) => w.address).filter((a) => a && !nonRetail.has(a));
   const step = Math.max(1, Math.floor(owners.length / COST_SAMPLE_OWNERS));
   const sample = owners.filter((_, i) => i % step === 0).slice(0, COST_SAMPLE_OWNERS);
@@ -172,7 +176,7 @@ async function printCostEstimate(snapshot) {
     return;
   }
   const estimate = estimateReplayCost({
-    trackedAccounts: Math.round(owners.length * (accounts / sample.length)),
+    trackedAccounts,
     meanSignaturesPerAccount: signatures / accounts,
     maxTx: MAX_TX,
     requestsPerSecond: REQUESTS_PER_SECOND,
@@ -229,7 +233,6 @@ function countMismatches(ledgerBalances, discovered) {
 async function main() {
   console.log(`Replaying ${project.slug} ${chainKey} ${mint} (${program}, ${decimals} decimals).`);
   const snapshot = await readOptionalJson(data("tel-holders.json"));
-  await printCostEstimate(snapshot);
 
   const prev = await readOptionalJson(CHECKPOINT_PATH);
   const compatible =
@@ -246,6 +249,7 @@ async function main() {
   const tracked = new Map(Object.entries(priorAccounts).map(([account, c]) => [account, c]));
   for (const { account, owner } of discovered) tracked.set(account, { owner, until: priorAccounts[account]?.until ?? null });
   console.log(`Discovered ${discovered.length.toLocaleString()} retail token accounts (${tracked.size.toLocaleString()} tracked incl. checkpoint).`);
+  await printCostEstimate(snapshot, tracked.size);
 
   const lists = await listAccounts(tracked);
   const bySig = new Map();
