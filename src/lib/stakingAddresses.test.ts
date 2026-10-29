@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { formatCompact } from "./format";
 import { getProject } from "./projects";
 import { V3_STAKING_MODULE } from "./staking";
-import { stakingAddressKind, stakingAddressLinks, supplyRetailStakeModel } from "./stakingAddresses";
+import { groupStakingAccounts, stakingAddressKind, stakingAddressLinks, supplyRetailStakeModel } from "./stakingAddresses";
 
 const PROGRAM = "zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv";
 const LOCKUPS = [
@@ -56,6 +56,21 @@ describe("stakingAddressLinks", () => {
 
     const model = supplyRetailStakeModel(tel, 12e9, formatCompact);
     expect(model).toEqual({ note: null, body: null, principalLinks: [], rewardLinks: [] });
+  });
+
+  it("pairs production lockups with vault ATAs and hides UAT from the public group", () => {
+    const grouped = groupStakingAccounts(stakingAddressLinks(getProject("zebec-network")));
+    expect(grouped.program?.address).toBe(PROGRAM);
+    expect(grouped.lockups.map((row) => row.name)).toEqual([
+      "ZBCN_Lockup_005",
+      "ZBCN_Lockup_003",
+      "ZBCN Lockup",
+      "ZBCN_Lockup_002",
+      "ZBCN_Lockup_004",
+    ]);
+    expect(grouped.lockups.map((row) => row.vault?.address)).toEqual(STAKE_VAULT_ATAS.slice(0, 5));
+    expect(grouped.rewardVaults.map((link) => link.address)).toEqual(REWARD_VAULT_ATAS);
+    expect(JSON.stringify(grouped)).not.toMatch(/UAT/);
   });
 
   it("classifies vault labels before lockup labels", () => {
