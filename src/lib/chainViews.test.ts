@@ -62,7 +62,8 @@ describe("chain views: TEL unchanged", () => {
 
   it("wallet-flow explorer links are unchanged for TEL chains", () => {
     expect(addressExplorerUrl("polygon", "0xa")).toBe("https://polygonscan.com/address/0xa");
-    expect(addressExplorerUrl("base", "0xa", { base: "https://other" })).toBe("https://basescan.org/address/0xa");
+    expect(addressExplorerUrl("base", "0xa", { base: "https://other" })).toBe("https://other/address/0xa");
+    expect(addressExplorerUrl("base", "0xa")).toBe("https://basescan.org/address/0xa");
   });
 });
 
