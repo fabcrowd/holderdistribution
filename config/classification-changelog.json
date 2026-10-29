@@ -468,6 +468,35 @@
       "backfillNote": "NOT BACKFILLED (not-possible: earlier supply-reconciliation categories cannot be recomputed from historical snapshots): a display-level step of ~11.46M TEL between Treasury and Team on the first pipeline run after this change; total supply and counted supply are unchanged.",
       "uiNote": "The Treasury slice shrinks and the Team slice appears on the first refresh after this change. That is a classification change, not a transfer of tokens.",
       "dateNote": "Dated the day the classification changed; the first data point carrying it is the next pipeline run."
+    },
+    {
+      "id": "2026-10-29-ta-sale-wallet-label",
+      "date": "2026-10-29",
+      "type": "reclassification",
+      "summary": "The Telcoin Association sale wallet 0x11cb903d\u20260741fc3 (TA Sale Wallet 'Conduit'), previously an unlabelled retail-counted wallet, is now labelled Treasury (Association-controlled). It received 433.7M TEL from the treasury on 2026-10-27 and forwarded 265.7M to the TAO Safe and ~167M to the Polygon hubs the next day.",
+      "addresses": [
+        "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3"
+      ],
+      "affects": {
+        "artifacts": [
+          "tel-holders",
+          "holders-summary",
+          "holders-history",
+          "holders-lite",
+          "supply-reconciliation"
+        ],
+        "metrics": [
+          "retail.count",
+          "retail.balance"
+        ]
+      },
+      "evidence": "Listed as TA Sale Wallet ('Conduit'), Association operational EOA, in data/forensics/wallet-flows.registry.json; on-chain funding from Association Safes; owner-directed label 2026-10-29.",
+      "limitation": "Only the wallet's current residual balance (about 135K TEL on Polygon plus about 378 on Base) leaves the retail tier; the 433.7M pass-through itself never sat in a retail balance in the published snapshots.",
+      "circulatingImpact": "No change to total supply. Circulating supply falls by about 135K TEL (0.0002%) because the wallet's residual balance (135,450.70 TEL) moves from retail to Treasury, which is excluded from circulating.",
+      "backfillStatus": "not-possible",
+      "backfillNote": "The residual balance is under 0.0002% of supply; earlier history rows are left as published.",
+      "uiNote": "Retail holder count drops by one on the next refresh; that is a relabel, not selling.",
+      "dateNote": "Dated the day the label was added."
     }
   ]
 }

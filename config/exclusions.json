@@ -12,6 +12,7 @@
     "0x0681d8db095565fe8a346fa0277bffde9c0edbbf",
     "0x06a0abdb7e5c4fe0aa61eb9f09e222beaccd0e2a",
     "0x0b07f64abc342b68aec57c0936e4b6fd4452967e",
+    "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
     "0x11111112542d85b3ef69ae05771c2dccff4faa26",
     "0x1111111254fb6c44bac0bed2854e76f90643097d",
     "0x1692e170361cefd1eb7240ec13d048fd9af6d667",
@@ -238,6 +239,13 @@
       "name": "1inch v4 Router",
       "evidenceTier": "contract-analysis",
       "confidence": "confirmed"
+    },
+    "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3": {
+      "category": "treasury",
+      "name": "TA Sale Wallet (Conduit)",
+      "evidenceTier": "owner-supplied",
+      "confidence": "confirmed",
+      "note": "Telcoin Association sale / pass-through wallet (listed as TA Sale Wallet 'Conduit' in data/forensics/wallet-flows.registry.json). Received 433.7M TEL from the Association treasury on 2026-10-27 and forwarded 265.7M to the TAO Safe (Council) and ~167M to the Polygon hubs 0x17fc\u20264143 and 0xe71e\u20265105 on 2026-10-28. Association-controlled pass-through, so it counts in Treasury (Association bucket), not Team or Holdings. Owner-directed label 2026-10-29. Not to be confused with lookalike 0x11cbca31\u20260741fc3-suffix address 0x11cbca313347d3705901384ecc483541a0741fc3 (unrelated)."
     },
     "0x1692e170361cefd1eb7240ec13d048fd9af6d667": {
       "category": "cex",
