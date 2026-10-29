@@ -144,6 +144,8 @@ describe("zebec-network config (owner choices 2026-10-25)", () => {
     ]) {
       expect(blob).not.toContain(left);
     }
+    expect(c.copy.text["entity.association"]).toBe("Zebec Treasury & Buyback Vaults");
+    expect(c.copy.text["entity.association"]).not.toMatch(/Foundation-Controlled/);
     expect(c.copy.text["supply.holdings.description"]).toMatch(/56veXoivcbZNwkN4MCvhdyromDrp6cp9EuJZ9arknGSF/);
     expect(c.copy.text["supply.holdings.description"]).toMatch(/not Team/);
     expect(c.copy.text["supply.cex.description"]).toMatch(/Uphold custody \(Fireblocks\)/);

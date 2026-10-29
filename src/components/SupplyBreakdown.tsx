@@ -34,15 +34,14 @@ import { stakingAddressLinks, supplyRetailStakeModel } from "@/lib/stakingAddres
 import { buildViewHash } from "@/lib/viewRoute";
 import {
   associationCategoryLabel,
+  circulatingFormula,
   groupSupplyCategories,
   isAssociationCategory,
   isHoldingsCategory,
   isOtherCategory,
-  isStakingCategory,
   otherCategoryLabel,
   partitionBuckets,
-  DEFAULT_RESIDUAL_BUCKET_LABEL,
-  DEFAULT_STAKING_BUCKET_LABEL,
+  SUPPLY_GAP_LABEL,
 } from "@/lib/supplyBreakdown";
 import { chainExplorerLink, resolveChainVm } from "@/lib/explorerLinks";
 import { AlertTriangle, ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
@@ -136,28 +135,28 @@ const renderBucketDetail = (
     otherItems: SupplyReconciliationItem[];
     associationItems: SupplyReconciliationItem[];
     holdingsItems: SupplyReconciliationItem[];
+    teamItems: SupplyReconciliationItem[];
     dexItems: SupplyReconciliationItem[];
     cexItems: SupplyReconciliationItem[];
     escrowItems: SupplyReconciliationItem[];
-    stakingItems: SupplyReconciliationItem[];
     retailAmount: number;
   },
 ): ReactNode => {
   switch (key) {
-    case "residual":
+    case "supplyGap":
       return <ResidualPanel data={ctx.data} bridges={ctx.residualItems} />;
     case "other":
       return <OtherAddressPanel items={ctx.otherItems} />;
-    case "association":
+    case "treasury":
       return <AssociationPanel items={ctx.associationItems} />;
     case "holdings":
       return <HoldingsPanel items={ctx.holdingsItems} />;
+    case "team":
+      return <TeamPanel items={ctx.teamItems} />;
     case "dex":
       return <DexLiquidityPanel items={ctx.dexItems} />;
     case "cex":
       return <CexCustodyPanel items={ctx.cexItems} />;
-    case "staking":
-      return <StakingPanel items={ctx.stakingItems} />;
     case "escrow":
       return <EscrowPanel items={ctx.escrowItems} committed={ctx.data?.circulatingExclusions?.total ?? null} />;
     case "retail":
@@ -191,15 +190,14 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
     onPanelChange?.(next);
   };
   const { data, isLoading, error } = useSupplyReconciliation();
-  // Bucket titles: project entity names + project-copy residual/staking labels
-  // (TEL keeps "In transit (bridges)"; ZBCN relabels its single-chain residual).
+  // Treasury / Holdings titles come from project entity copy. Slice names
+  // otherwise stay the fixed set (Retail, DEX, CEX, Team, Escrow, Other, Supply gap).
   const bucketLabels = useMemo(
     () => ({
-      ...entities,
-      residual: text("supply.residual.bucketLabel", DEFAULT_RESIDUAL_BUCKET_LABEL),
-      staking: text("supply.staking.bucketLabel", DEFAULT_STAKING_BUCKET_LABEL),
+      association: entities.association,
+      holdings: entities.holdings,
     }),
-    [entities, text],
+    [entities.association, entities.holdings],
   );
   // Hovered slice — highlights the wedge and its list row together, in
   // either direction.
@@ -223,7 +221,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickedBucketKey, layout]);
 
-  const { buckets, totalSupply, circulating, residualItems, otherItems, associationItems, holdingsItems, dexItems, cexItems, escrowItems, stakingItems } =
+  const { buckets, totalSupply, circulating, residualItems, otherItems, associationItems, holdingsItems, teamItems, dexItems, cexItems, escrowItems } =
     useMemo(() => {
       const total = data?.totalSupply ?? supplyTarget;
       const residual = data?.residual ?? Math.max(0, total - (data?.counted ?? 0));
@@ -249,6 +247,10 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
           .filter((i) => isHoldingsCategory(i.category))
           .slice()
           .sort((a, b) => b.balance - a.balance),
+        teamItems: items
+          .filter((i) => i.category === "team")
+          .slice()
+          .sort((a, b) => b.balance - a.balance),
         dexItems: items
           .filter((i) => i.category === "dex")
           .slice()
@@ -259,10 +261,6 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
           .sort((a, b) => b.balance - a.balance),
         escrowItems: items
           .filter((i) => i.category === "escrow")
-          .slice()
-          .sort((a, b) => b.balance - a.balance),
-        stakingItems: items
-          .filter((i) => isStakingCategory(i.category))
           .slice()
           .sort((a, b) => b.balance - a.balance),
       };
@@ -312,10 +310,10 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
       otherItems,
       associationItems,
       holdingsItems,
+      teamItems,
       dexItems,
       cexItems,
       escrowItems,
-      stakingItems,
       retailAmount: pieSlices.find((s) => s.key === "retail")?.amount ?? 0,
     });
   const cg = coingeckoComparison(circulating, data?.coingeckoCirculating);
@@ -444,6 +442,8 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                           transition={{ layout: { duration: 0.3, ease: "easeOut" } }}
                           animate={{ scale: isRowActive && !compact ? 1.035 : 1 }}
                           type="button"
+                          data-testid="supply-bucket"
+                          data-bucket-key={b.key}
                           onMouseEnter={() => pieIndex !== -1 && setActiveIndex(pieIndex)}
                           onMouseLeave={() => setActiveIndex(null)}
                           // Toggle, not open-only: clicking the already-open
@@ -528,7 +528,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
         </div>
       )}
       <p className="mt-3 text-xs text-muted-foreground text-center">
-        Solid = retail wallets / DEX LP; muted = exchanges &amp; project; grey = in transit.
+        Solid = retail wallets / DEX LP; muted = exchanges &amp; project; grey = supply gap.
       </p>
     </>
   );
@@ -539,10 +539,13 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                     <div>
                       <span className="font-semibold text-foreground">Circulating: </span>
                       {formatCompactAmount(circulating)} {ticker}
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground" data-testid="circulating-formula">
                         {" "}
-                        (counted − treasury − council − {entities.associationShort}-committed escrow;
-                        {" "}{entities.holdingsShort}-sourced escrow included)
+                        ({circulatingFormula(
+                          data?.categories,
+                          { association: entities.association },
+                          data?.circulatingExclusions?.total ?? 0,
+                        )})
                       </span>
                     </div>
                     {cg && (
@@ -737,7 +740,7 @@ const ResidualPanel = ({
   return (
     <div className="space-y-3">
       <p className="font-semibold text-foreground text-sm">
-        {text("supply.residual.title", DEFAULT_RESIDUAL_BUCKET_LABEL)}
+        {text("supply.residual.title", SUPPLY_GAP_LABEL)}
       </p>
       {projectBody ? (
         <p className="text-muted-foreground">{fill(text("supply.residual.body", ""))}</p>
@@ -753,7 +756,7 @@ const ResidualPanel = ({
       )}
       <dl className="space-y-1.5 tabular-nums">
         <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">{text("supply.residual.amountLabel", "In transit")}</dt>
+          <dt className="text-muted-foreground">{text("supply.residual.amountLabel", SUPPLY_GAP_LABEL)}</dt>
           <dd className="font-medium text-foreground">{formatFullAmount(residual)} {ticker}</dd>
         </div>
         {showBridgeRows && (
@@ -1014,15 +1017,33 @@ const HoldingsPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
   );
 };
 
-const OtherAddressPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
-  <AddressListPanel
-    title="Other addresses"
-    description="Independent large wallets, temporary retail labels, burned {ticker}, and small special cases. Confirmed personal wallets move into Retail after a full holders re-scrape."
-    items={items}
-    subcategoryFor={(item) => otherCategoryLabel(item.category)}
-    emptyLabel="No itemised Other addresses."
-  />
-);
+const OtherAddressPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
+  const { text, hasText } = useProjectCopy();
+  const { project } = useProject();
+  // Reward vaults are not their own slice. When a project publishes them,
+  // the Solscan list #55 added still sits here, under Other.
+  const rewardLinks = hasText("supply.staking.addresses")
+    ? stakingAddressLinks(project).filter((link) => link.kind === "reward-vault")
+    : [];
+  return (
+    <div className="space-y-3">
+      <AddressListPanel
+        title="Other addresses"
+        description="Independent large wallets, temporary retail labels, burned {ticker}, and small special cases. Confirmed personal wallets move into Retail after a full holders re-scrape."
+        items={items}
+        subcategoryFor={(item) => otherCategoryLabel(item.category)}
+        emptyLabel="No itemised Other addresses."
+      />
+      {rewardLinks.length > 0 ? (
+        <div className="space-y-2 border-t border-border/50 pt-2">
+          <p className="text-muted-foreground">{text("supply.staking.description", "")}</p>
+          <p className="text-muted-foreground">{text("supply.staking.addresses", "")}</p>
+          <StakingAddressList links={rewardLinks} />
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
 const DexLiquidityPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   <AddressListPanel
@@ -1050,33 +1071,15 @@ const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
   );
 };
 
-const StakingPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
-  const { text, hasText } = useProjectCopy();
-  const { project } = useProject();
-  const rewardLinks = hasText("supply.staking.addresses")
-    ? stakingAddressLinks(project).filter((link) => link.kind === "reward-vault")
-    : [];
-  return (
-    <div className="space-y-3">
-      <AddressListPanel
-        title={text("supply.staking.bucketLabel", DEFAULT_STAKING_BUCKET_LABEL)}
-        description={text(
-          "supply.staking.description",
-          "Undistributed {ticker} still held by staking-program accounts after staked balances are credited to each staker. These balances are not staker principal. Staked {ticker} is inside Retail, not this slice.",
-        )}
-        items={items}
-        subcategoryFor={(item) => item.name ?? text("supply.staking.addressFallback", "Staking program")}
-        emptyLabel={text("supply.staking.empty", "No staking-program addresses itemised.")}
-      />
-      {rewardLinks.length > 0 ? (
-        <div className="space-y-2 border-t border-border/50 pt-2">
-          <p className="text-muted-foreground">{text("supply.staking.addresses", "")}</p>
-          <StakingAddressList links={rewardLinks} />
-        </div>
-      ) : null}
-    </div>
-  );
-};
+const TeamPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
+  <AddressListPanel
+    title="Team"
+    description="Confirmed {name} team wallets, listed apart from Treasury and Holdings."
+    items={items}
+    subcategoryFor={(item) => item.name ?? "Team wallet"}
+    emptyLabel="No team addresses itemised."
+  />
+);
 
 const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; committed: number | null }) => {
   const { entities, text, hasText } = useProjectCopy();
@@ -1121,7 +1124,7 @@ const RetailPanel = ({ amount }: { amount: number }) => {
   );
   return (
   <div className="space-y-3">
-    <p className="font-semibold text-foreground text-sm">Retail (wallets)</p>
+    <p className="font-semibold text-foreground text-sm">Retail</p>
     <p className="text-muted-foreground">
       {formatCompactAmount(amount)} {ticker} spread across every wallet holding {ticker} directly, outside
       exchanges, DEX pools, and the addresses itemised elsewhere on this card — from the scheduled

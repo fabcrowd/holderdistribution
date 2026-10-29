@@ -117,6 +117,8 @@ describe("methodology", () => {
   it("ZBCN staking methodology lists Solscan program + lockup + vault ATA proof links", () => {
     const zbcn = getProject("zebec-network");
     const staking = methodologyFor(zbcn, "staking");
+    expect(staking.how).toMatch(/of which/);
+    expect(staking.how).toMatch(/sit in Other/);
     expect(staking.how).toMatch(/Global Staked/);
     expect(staking.how).toMatch(/not current TVL/);
     expect(staking.verify).toMatch(/Solscan/);
