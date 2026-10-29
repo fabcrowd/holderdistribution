@@ -1,17 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { HOLDER_PANEL_IDS } from "./viewRoute";
-import { EXPLORE_HINT, HOLDER_EXPLORE_PANELS, LAYOUT_MODES, TIER_FLOWS_EXPLAINER } from "./terminalCopy";
+import * as terminalCopy from "./terminalCopy";
+import { EXPLORE_HINT, HOLDER_EXPLORE_PANELS, TIER_FLOWS_EXPLAINER } from "./terminalCopy";
 import { TIERS } from "@/components/tierflow/geometry";
 import { defaultTierLabel } from "./distributionSelection";
 
 describe("terminal nav copy", () => {
-  it("names Dashboard and Explore by what each one shows", () => {
-    expect(LAYOUT_MODES.map((m) => m.label)).toEqual(["Dashboard", "Explore"]);
-    expect(LAYOUT_MODES[0].hint).toMatch(/key charts together/i);
-    expect(LAYOUT_MODES[1].hint).toMatch(/one chart at a time/i);
-    expect(LAYOUT_MODES[1].hint).toMatch(/Dashboard/);
-    expect(EXPLORE_HINT).toMatch(/Dashboard charts at full size/);
-    expect(EXPLORE_HINT).toMatch(/Momentum is only in Explore/);
+  it("has no layout toggle copy; Explore is reached from a panel's expand icon", () => {
+    expect(terminalCopy).not.toHaveProperty("LAYOUT_MODES");
+    expect(EXPLORE_HINT).toMatch(/one chart at a time/i);
+    expect(EXPLORE_HINT).toMatch(/Momentum is only here/);
   });
 
   it("Explore sections keep their ids and drop the labels that duplicated Dashboard", () => {
