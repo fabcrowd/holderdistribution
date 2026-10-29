@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis } from "recharts";
+import { computeYAxisFromRows } from "@/lib/chartAxes";
 import "@/lib/rechartsMotion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { ZoomFrame } from "@/components/chart/ZoomFrame";
@@ -46,12 +47,14 @@ type TileRow = { timestamp: number; balance: number };
 const CexSparkline = ({ series, ticker }: { series: TileRow[]; ticker: string }) => {
   const zoom = useChartZoom(series, (d) => d.timestamp);
   const chartConfig = useMemo(() => tileChartConfig(ticker), [ticker]);
+  // Hidden axis, but still fitted to the visible window so a flat balance isn't drawn as a cliff or a void.
+  const yScale = useMemo(() => computeYAxisFromRows(zoom.rows, ["balance"], { kind: "line", allowNegative: false }), [zoom.rows]);
   return (
     <ZoomFrame zoom={zoom} className="h-20 w-full">
       <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                 <LineChart data={zoom.rows} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
                   <XAxis dataKey="timestamp" type="number" domain={["dataMin", "dataMax"]} scale="time" hide />
-                  <YAxis hide domain={["auto", "auto"]} />
+                  <YAxis hide domain={yScale.domain} />
                   <ChartTooltip
                     content={
                       <ChartTooltipContent

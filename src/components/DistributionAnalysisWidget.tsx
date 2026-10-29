@@ -34,6 +34,7 @@ import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid } from "recharts";
 import "@/lib/rechartsMotion";
 import { CHART_HEIGHT_CLASS, CHART_TICK } from "@/lib/terminalLayout";
+import { barSizing, computeYAxisFromRows } from "@/lib/chartAxes";
 
 type DistributionAnalysisWidgetProps = {
   snapshot: HolderLiteSnapshot | null;
@@ -121,6 +122,8 @@ const DistributionAnalysisWidget = ({
     gained: (row.previousCount ?? null) !== null ? row.count > (row.previousCount ?? 0) : null,
   }));
 
+  const percentY = computeYAxisFromRows(chartData, ["percent"], { kind: "bar" });
+  const percentSizing = barSizing(chartData.length);
   const distributionChartConfig = {
     percent: { label: "% of Retail", color: "hsl(var(--primary))" },
     count: { label: "Wallets", color: "hsl(var(--muted-foreground))" },
@@ -211,12 +214,12 @@ const DistributionAnalysisWidget = ({
               <div className="px-4 pt-4 sm:px-6">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 text-center">% of retail by balance range</p>
                 <ChartContainer config={distributionChartConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full`}>
-                  <BarChart data={chartData} margin={{ top: 12, right: 12, bottom: 24, left: 12 }}>
+                  <BarChart data={chartData} margin={{ top: 12, right: 12, bottom: 24, left: 12 }} barCategoryGap={percentSizing.barCategoryGap}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                     <XAxis dataKey="range" tick={CHART_TICK} />
-                    <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} />
+                    <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} domain={percentY.domain} ticks={percentY.ticks} />
                     <ChartTooltip content={<ChartTooltipContent />} formatter={(value: number) => [`${value.toFixed(2)}%`, "% of retail"]} />
-                    <Bar dataKey="percent" radius={[4, 4, 0, 0]}>
+                    <Bar dataKey="percent" radius={[4, 4, 0, 0]} maxBarSize={percentSizing.maxBarSize} minPointSize={percentSizing.minPointSize}>
                       {chartData.map((entry) => (
                         <Cell
                           key={entry.range}
