@@ -152,6 +152,9 @@ describe("ZBCN staking copy", () => {
     expect(info).toMatch(/Global Staked/);
     expect(info).toMatch(/18\.9B/);
     expect(info).toMatch(/not current TVL/i);
+    expect(info).toMatch(/never decrease when a position is claimed/);
+    expect(info).toMatch(/14\.2B/);
+    expect(info).not.toMatch(/appears to sum/);
     expect(info).toMatch(/methodology tip/i);
   });
 
@@ -200,6 +203,18 @@ describe("ZBCN staking copy", () => {
     expect(lockup.vaultGapRatio).toBeCloseTo(0.0242, 3);
     // Positions drift with the daily refresh; copy says "~4.75B", so allow ±0.05B.
     expect(staking.stakedTotal / 1e9).toBeCloseTo(4.75, 1);
+    // Cumulative lockup counters never decrease on claim: Global Staked (~18.9B) = unclaimed + claimed.
+    const lockupTotals = (staking.lockups as Array<{ totalStakedRaw: string; activeRaw: string }>).reduce(
+      (acc, l) => ({
+        total: acc.total + Number(l.totalStakedRaw) / 1e6,
+        active: acc.active + Number(l.activeRaw) / 1e6,
+      }),
+      { total: 0, active: 0 },
+    );
+    expect(lockupTotals.total / 1e9).toBeCloseTo(18.9, 1);
+    expect(lockupTotals.active / 1e9).toBeCloseTo(staking.stakedTotal / 1e9, 2);
+    // Copy says ~14.2B already claimed; the snapshot drifts daily, so allow +-0.1B.
+    expect(Math.abs((lockupTotals.total - lockupTotals.active) / 1e9 - 14.2)).toBeLessThan(0.1);
     // Stake-vault principal is credited to stakers. The staking category is
     // only the reward-vault remainder, not a ~4.76B sibling of retail.
     const stakeItems = (supply.items as Array<{ category: string; name: string | null }>).filter(

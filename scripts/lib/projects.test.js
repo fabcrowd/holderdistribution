@@ -122,3 +122,19 @@ it("projectStakingContracts keeps Solana base58 case", () => {
   const zbcn = resolveProject("zebec-network", root);
   expect(projectStakingContracts(zbcn, { kind: "zebecStakeV1" })[0].address).toBe("zSTKzGLiN6T6EVzhBiL6sjULXMahDavAS2p4R62afGv");
 });
+
+it("ZBCN AMM pool custody accounts are dex-role contracts keyed by the token-account owner", () => {
+  const orca = "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w";
+  const cfg = loadProjectConfig("zebec-network", root);
+  const addresses = Object.values(cfg.chains[0].contracts)
+    .filter((c) => c.role === "dex")
+    .map((c) => c.address);
+  expect(new Set(addresses).size).toBe(addresses.length);
+  // Orca WSOL-ZBCN plus Meteora DLMM/DAMM, Raydium CLMM, extra Orca and Boop custody found 2026-10-28.
+  expect(addresses).toHaveLength(13);
+  expect(addresses).toContain(orca);
+  // Every newly labelled dex address is itemised in the reclassification changelog.
+  const log = read("config/projects/zebec-network/classification-changelog.json");
+  const event = log.events.find((e) => e.id === "2026-10-28-zbcn-dex-pools");
+  expect([...event.addresses].sort()).toEqual(addresses.filter((a) => a !== orca).sort());
+});
