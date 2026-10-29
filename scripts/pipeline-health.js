@@ -97,6 +97,9 @@ const printProject = (p, heading) => {
     console.log(`         missing: ${gaps.missing.join(", ")}`);
     console.log('         fix: node scripts/fill-history-gaps.js   (workflow: "Fill holders-history gaps")');
   }
+  if (gaps.known?.length) {
+    console.log(`         known gap (declared unfillable): ${gaps.known.join(", ")}`);
+  }
   if (gaps.withoutCumulative.length) {
     console.log(
       `         ${gaps.withoutCumulative.length} row(s) await a continuous recompute for ` +

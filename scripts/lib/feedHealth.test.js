@@ -105,6 +105,17 @@ describe("findHistoryGaps", () => {
     expect(gaps.withoutCumulative).toEqual(["2026-10-28"]);
   });
 
+  it("reports declared knownGapDates separately and does not count them as missing", () => {
+    const entries = [{ date: "2026-10-24" }, { date: "2026-10-27" }];
+    const gaps = findHistoryGaps(entries, {
+      today: new Date("2026-10-28T08:00:00Z"),
+      windowDays: 5,
+      knownGapDates: ["2026-10-25"],
+    });
+    expect(gaps.missing).toEqual(["2026-10-26"]);
+    expect(gaps.known).toEqual(["2026-10-25"]);
+  });
+
   it("returns null for an empty history", () => {
     expect(findHistoryGaps([], { today: new Date(NOW) })).toBeNull();
     expect(findHistoryGaps(undefined, { today: new Date(NOW) })).toBeNull();

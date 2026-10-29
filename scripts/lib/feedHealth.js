@@ -12,7 +12,8 @@
  *       "funding-wallets.json": { "disabled": true },           // feed does not exist here
  *       "solana-staking.json":  { "maxAgeHours": 30, "label": "Staking", "workflow": "..." }
  *     },
- *     "consistency": { "maxHolderChangePct": 2, "knownHolderChangeDates": ["YYYY-MM-DD"] }
+ *     "consistency": { "maxHolderChangePct": 2, "knownHolderChangeDates": ["YYYY-MM-DD"],
+ *                       "knownGapDates": ["YYYY-MM-DD"] }   // history days that cannot be filled
  *   }
  *
  * See docs/MULTI-TOKEN.md "Feed health".
@@ -172,24 +173,28 @@ export const isUnhealthy = (result) => result.status !== "healthy" && result.sta
  * no staleness check can see. Anchored on `today`, not the latest row, so a
  * TRAILING gap (pipeline stopped entirely) is visible. Days before the
  * project's first history row are not gaps — it did not exist yet.
+ * `knownGapDates` are days declared unfillable: reported in `known`, not `missing`.
  */
-export function findHistoryGaps(entries, { today = new Date(), windowDays = 30 } = {}) {
+export function findHistoryGaps(entries, { today = new Date(), windowDays = 30, knownGapDates = [] } = {}) {
   if (!Array.isArray(entries) || entries.length === 0) return null;
   const present = new Set(entries.map((e) => e.date));
   const first = entries[0].date;
   const latest = entries[entries.length - 1].date;
+  const known = new Set(knownGapDates);
   const missing = [];
+  const knownMissing = [];
   for (let back = 1; back <= windowDays; back++) {
     const day = new Date(`${today.toISOString().slice(0, 10)}T00:00:00Z`);
     day.setUTCDate(day.getUTCDate() - back);
     const date = day.toISOString().slice(0, 10);
-    if (date >= first && !present.has(date)) missing.push(date);
+    if (date < first || present.has(date)) continue;
+    (known.has(date) ? knownMissing : missing).push(date);
   }
   const windowStart = new Date(`${latest}T00:00:00Z`);
   windowStart.setUTCDate(windowStart.getUTCDate() - windowDays);
   const start = windowStart.toISOString().slice(0, 10);
   const withoutCumulative = entries.filter((e) => e.date >= start && typeof e.cumulativeHolders !== "number");
-  return { latest, windowDays, missing: missing.sort(), withoutCumulative: withoutCumulative.map((e) => e.date) };
+  return { latest, windowDays, missing: missing.sort(), known: knownMissing.sort(), withoutCumulative: withoutCumulative.map((e) => e.date) };
 }
 
 /**
@@ -264,7 +269,10 @@ export function evaluateProjectHealth(project, { root = process.cwd(), now = Dat
   const results = resolveFeedHealth(project.config).map((feed) =>
     evaluateFeed(feed, feed.placeholder ? null : readJsonSync(data(feed.file)), now),
   );
-  const gaps = findHistoryGaps(readJsonSync(data("holders-history.json"))?.entries, { today: new Date(now) });
+  const gaps = findHistoryGaps(readJsonSync(data("holders-history.json"))?.entries, {
+    today: new Date(now),
+    knownGapDates: project.config?.health?.consistency?.knownGapDates ?? [],
+  });
   return { slug: project.slug, results, gaps, healthy: !results.some(isUnhealthy) };
 }
 
