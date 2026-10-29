@@ -76,10 +76,10 @@ describe("project-driven copy coverage", () => {
     });
     const abc: ProjectConfig = { slug: "abc", name: "Abacus", ticker: "ABC", chains: [] };
     expect(projectEntities(abc)).toEqual({
-      association: "Abacus Foundation-Controlled Safes",
-      associationShort: "Foundation",
-      holdings: "Abacus Team Wallets",
-      holdingsShort: "Team",
+      association: "Treasury",
+      associationShort: "Treasury",
+      holdings: "Holdings",
+      holdingsShort: "Holdings",
     });
   });
 
