@@ -1,0 +1,101 @@
+name: Backfill treasury + CEX history
+
+# MANUAL ONLY. Reconstructs dates missing from treasury-history.json and
+# cex-balance-history.json (the daily scripts are forward-only) from Transfer
+# logs anchored on the nearest existing row. Never overwrites an existing date;
+# new rows carry `backfilled: true`. See scripts/backfill-treasury-cex-history.js
+# and scripts/lib/treasuryCexBackfill.js for the method and its limits.
+#
+# Leave `write` off first: a dry run prints the rows and the drift against the
+# next real row without committing anything.
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Project slug from config/projects.json'
+        required: false
+        default: 'tel'
+      from:
+        description: 'First date to backfill (YYYY-MM-DD)'
+        required: true
+      to:
+        description: 'Last date to backfill (YYYY-MM-DD, before today UTC)'
+        required: true
+      write:
+        description: 'Commit the reconstructed rows (false = dry run)'
+        type: boolean
+        required: false
+        default: false
+      allow_drift:
+        description: 'Write even if the replay disagrees with the next real row by more than 2%'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+# Shared with the nightly refresh (and watchdog / wallet flows) so this never
+# races them on treasury-history.json / cex-balance-history.json.
+concurrency:
+  group: holders-refresh
+  cancel-in-progress: false
+
+env:
+  HD_PROJECT: ${{ inputs.project || 'tel' }}
+
+jobs:
+  backfill:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve project data paths
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
+
+      - name: Backfill
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+          WRITE: ${{ inputs.write }}
+          ALLOW_DRIFT: ${{ inputs.allow_drift }}
+        run: |
+          ARGS=(--from "$FROM" --to "$TO")
+          if [ "$WRITE" = "true" ]; then ARGS+=(--write); fi
+          if [ "$ALLOW_DRIFT" = "true" ]; then ARGS+=(--allow-drift); fi
+          node scripts/backfill-treasury-cex-history.js "${ARGS[@]}"
+
+      - name: Verify feed consistency
+        if: ${{ inputs.write }}
+        run: |
+          node scripts/validate-outputs.js
+          node scripts/check-feed-consistency.js
+
+      - name: Commit results
+        if: ${{ inputs.write }}
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+          FILES=$(node scripts/workflow-paths.js files public/data/treasury-history.json public/data/cex-balance-history.json data/holders-asof-blocks.json)
+          git add $FILES
+          if git diff --cached --quiet -- $FILES; then
+            echo "Nothing to commit"
+          else
+            git commit -m "Backfill treasury + CEX history ${{ inputs.from }}..${{ inputs.to }} [skip netlify]"
+            bash scripts/push-main.sh
+          fi
