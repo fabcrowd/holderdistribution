@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-29T02:31:15.196Z",
+  "generatedAt": "2026-10-29T03:12:27.882Z",
   "source": {
     "type": "static",
     "configPath": "config/projects/zebec-network/classification-changelog.json"
@@ -101,6 +101,41 @@
       },
       "backfillStatus": "not-possible",
       "backfillNote": "Applied against the 2026-10-28 holder snapshot already on disk. Earlier ZBCN history rows still count these wallets as retail. A full Solana replay was not run. pipeline.duneCexQueryId stays unset."
+    },
+    {
+      "id": "2026-10-28-zbcn-dex-pools",
+      "date": "2026-10-28",
+      "type": "reclassification",
+      "summary": "ZBCN AMM pool and bonding-curve custody moved from Retail to DEX (~59.5M ZBCN, 0.06% of supply). An on-chain sweep of every ZBCN token account of 1M or more found twelve token accounts whose owner is a program-owned account of an AMM program: Meteora DLMM (LBUZKh) 7Xd5a9fsCzM83TW4y1kMh6VmcoLB1y88i96uR6oRJh7h, 6Mo8W6b67brHWokLNeXPdfwH7B1ir3xYCGd4EcBen6eM, 5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M, 7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz (~35.8M); Meteora DAMM (defAh9) 3rA99Bib9YWFsnC4zASByqmzcAVqKzP3hnM1Ny21crfg, 6VHxQ4A4wu4eHLJHh72TKbpqBxzB2F7ohQvtmFmA3mW2, C3NHP1nM1zfKHkVn6JeSNh4ddPacDGA5VqK5UbtwGfuD (~7.7M); Raydium CLMM (CAMMCz) 5vxw75PuckPLLkhfgUggLbAugj6LubgxjiYU7wc7gQLP, FkggXKXmxaQ8tT46NnpcTW3tWjtSerJ7YdGuqGF9FbjX (~7.2M); Orca Whirlpool (whirLb) HgDNQD5VAzQdh79vG3knUwzBYSq68X8cCGcitxu4k4Cr, 7b5YUnMkQiD575bJ7BZDoZbgvmNfFn5VkXSE7xmbyi9Q (~6.9M, in addition to the WSOL-ZBCN pool already labelled dex); Boop bonding curve (Boobs) CsVdJ8WH8Q9eHSTRpwtwN3TYApm24QnLKYUMNxJ3DaED (~1.9M). Pools holding under 1M ZBCN were not swept and stay retail until found.",
+      "addresses": [
+        "7Xd5a9fsCzM83TW4y1kMh6VmcoLB1y88i96uR6oRJh7h",
+        "6Mo8W6b67brHWokLNeXPdfwH7B1ir3xYCGd4EcBen6eM",
+        "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
+        "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
+        "3rA99Bib9YWFsnC4zASByqmzcAVqKzP3hnM1Ny21crfg",
+        "6VHxQ4A4wu4eHLJHh72TKbpqBxzB2F7ohQvtmFmA3mW2",
+        "C3NHP1nM1zfKHkVn6JeSNh4ddPacDGA5VqK5UbtwGfuD",
+        "5vxw75PuckPLLkhfgUggLbAugj6LubgxjiYU7wc7gQLP",
+        "FkggXKXmxaQ8tT46NnpcTW3tWjtSerJ7YdGuqGF9FbjX",
+        "HgDNQD5VAzQdh79vG3knUwzBYSq68X8cCGcitxu4k4Cr",
+        "7b5YUnMkQiD575bJ7BZDoZbgvmNfFn5VkXSE7xmbyi9Q",
+        "CsVdJ8WH8Q9eHSTRpwtwN3TYApm24QnLKYUMNxJ3DaED"
+      ],
+      "affects": {
+        "artifacts": [
+          "supply-reconciliation",
+          "holders-history",
+          "holders-lite",
+          "tel-holders"
+        ],
+        "metrics": [
+          "retail.count",
+          "retail.balance",
+          "totalHeld"
+        ]
+      },
+      "backfillStatus": "not-possible",
+      "backfillNote": "ZBCN holder history only starts 2026-10-25 and earlier rows were published without a per-pool replay. Rewriting 2026-10-25 to 2026-10-27 would need a full Solana replay of those slots; rows from the next pipeline refresh onward use the new DEX labels, so the retail change at that refresh mixes this relabel (~59.5M, 0.06% of supply) with real movement."
     }
   ]
 }
