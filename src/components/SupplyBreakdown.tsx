@@ -1023,15 +1023,21 @@ const DexLiquidityPanel = ({ items }: { items: SupplyReconciliationItem[] }) => 
   />
 );
 
-const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
-  <AddressListPanel
-    title="CEX Custody"
-    description="{ticker} held in known exchange deposit/custody wallets — user balances on that exchange, not project-controlled."
-    items={items}
-    subcategoryFor={(item) => item.name ?? "Exchange wallet"}
-    emptyLabel="No CEX addresses itemised."
-  />
-);
+const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
+  const { text } = useProjectCopy();
+  return (
+    <AddressListPanel
+      title="CEX Custody"
+      description={text(
+        "supply.cex.description",
+        "{ticker} held in known exchange deposit/custody wallets — user balances on that exchange, not project-controlled.",
+      )}
+      items={items}
+      subcategoryFor={(item) => item.name ?? "Exchange wallet"}
+      emptyLabel="No CEX addresses itemised."
+    />
+  );
+};
 
 const StakingPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
   const { text } = useProjectCopy();

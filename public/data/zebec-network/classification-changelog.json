@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-28T23:22:04.365Z",
+  "generatedAt": "2026-10-29T00:03:50.050Z",
   "source": {
     "type": "static",
     "configPath": "config/projects/zebec-network/classification-changelog.json"
@@ -64,6 +64,37 @@
       },
       "backfillStatus": "not-possible",
       "backfillNote": "The 2026-10-25 snapshot was published before this approval. Later daily rows use the new treasury and team labels. Rewriting 2026-10-25 would require a full Solana replay of that slot; it was left as published, so the 2026-10-25 to 2026-10-26 retail change mixes this relabel with real movement."
+    },
+    {
+      "id": "2026-10-28-zbcn-leftover-wallets",
+      "date": "2026-10-28",
+      "type": "reclassification",
+      "summary": "Owner-approved leftover ZBCN wallets. CEX: Uphold custody (Fireblocks) 8gQjn3qPAcKXpDpcGSLKXetTSG4zFgeWcAVnNAy9ru2f, J8FNbQnRGmgHaPrmUsjJ7sdM7gaJVbcvEfYGCmVs69bE, 82P4QkJ3rdXVeEduue29H19EHvuQG1r2dA4ndup1Ahya, 6XHzigwW96CXM98L19CMfphFfnW1e7Yn9JLFjtkdoGLh, and Poloniex custody Squad Vault SOL-P Eueeb9FKXpk7duw7jKeYm1NNWmTeFN7fGKYMmasY7C9x. Holdings, not Team: 56veXoivcbZNwkN4MCvhdyromDrp6cp9EuJZ9arknGSF (~400M from team ops 9Sq2 at 40M/month past the Mar 2026 vesting end; recipient unknown). Uphold caveat matches Hot Wallet 3/5: ~545M of buybacks may sit inside the omnibus Fireblocks/Uphold wallets and is not split out. Gas station EbsUZE is flow-tracking only (0 ZBCN). CsF6fs, 2Ejnns, the rest of the unlabeled large holders, and governance 7ngHDD5 stay retail.",
+      "addresses": [
+        "8gQjn3qPAcKXpDpcGSLKXetTSG4zFgeWcAVnNAy9ru2f",
+        "J8FNbQnRGmgHaPrmUsjJ7sdM7gaJVbcvEfYGCmVs69bE",
+        "82P4QkJ3rdXVeEduue29H19EHvuQG1r2dA4ndup1Ahya",
+        "6XHzigwW96CXM98L19CMfphFfnW1e7Yn9JLFjtkdoGLh",
+        "Eueeb9FKXpk7duw7jKeYm1NNWmTeFN7fGKYMmasY7C9x",
+        "56veXoivcbZNwkN4MCvhdyromDrp6cp9EuJZ9arknGSF"
+      ],
+      "affects": {
+        "artifacts": [
+          "cex-wallets",
+          "cex-flows",
+          "cex-balance-history",
+          "holders-lite",
+          "supply-reconciliation"
+        ],
+        "metrics": [
+          "cexBalance",
+          "retail.count",
+          "retail.balance",
+          "totalHeld"
+        ]
+      },
+      "backfillStatus": "not-possible",
+      "backfillNote": "Applied against the 2026-10-28 holder snapshot already on disk. Earlier ZBCN history rows still count these wallets as retail. A full Solana replay was not run. pipeline.duneCexQueryId stays unset."
     }
   ]
 }
