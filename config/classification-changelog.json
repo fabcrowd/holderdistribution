@@ -413,6 +413,34 @@
       "backfillNote": "Published history after the v3 launch cannot be rebuilt (as-of reconstruction is legacy-only), so earlier rows keep the module as one wallet.",
       "uiNote": "Tier counts shift on the first refresh after this fix; that is a data correction, not buying or selling.",
       "dateNote": "Dated the day the correction shipped."
+    },
+    {
+      "id": "2026-09-29-history-basis-change",
+      "date": "2026-09-29",
+      "type": "other",
+      "summary": "The holder history changes basis across a 12-day archive gap (2026-09-17 to 2026-09-29): retail holders fall by 2,955 while retail balance rises 5.0%. The two sides were produced under different methodology and are not comparable; the move is a measurement change, not wallets selling.",
+      "affects": {
+        "artifacts": [
+          "holders-history",
+          "holders-lite"
+        ],
+        "metrics": [
+          "retail.count",
+          "holderCount",
+          "retail.balance",
+          "totalBalance"
+        ]
+      },
+      "breaksSeries": {
+        "metrics": [
+          "retail.count",
+          "holderCount",
+          "retail.balance",
+          "totalBalance"
+        ]
+      },
+      "backfillStatus": "not-possible",
+      "backfillNote": "The archive holds no snapshots between 2026-09-17 and 2026-09-29, so the two bases cannot be reconciled. Charts split the series at 2026-09-29 instead of joining them."
     }
   ]
 }
