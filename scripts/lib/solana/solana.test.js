@@ -8,6 +8,7 @@ import { aggregateTokenAccounts, holderScanParams, scanMintHolders } from "./spl
 import {
   __resetSolanaRpcForTests,
   getUsableSolanaRpcUrls,
+  requireKeyedSolanaRpc,
   solanaCallWithFailover,
   solanaPublicUrls,
   solanaRpcCandidates,
@@ -166,6 +167,12 @@ describe("Solana RPC pool (matches the EVM pattern)", () => {
     await expect(getUsableSolanaRpcUrls("solana", { logger: silent, call: async () => { throw new Error("down"); } })).rejects.toThrow(
       /RPC pool solana: no usable endpoint/,
     );
+  });
+
+  it("requireKeyedSolanaRpc rejects a public-only pool and passes once a key is usable", () => {
+    const urls = [...SOLANA_PUBLIC_RPC];
+    expect(() => requireKeyedSolanaRpc(urls, "solana")).toThrow(/SOLANA_RPC_0/);
+    expect(requireKeyedSolanaRpc([...urls, "https://key-a.example/rpc"], "solana")).toEqual([...urls, "https://key-a.example/rpc"]);
   });
 
   it("fails over between endpoints and hints at a key for getProgramAccounts", async () => {

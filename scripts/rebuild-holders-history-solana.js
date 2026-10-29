@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * rebuild-holders-history-solana.js [--project <slug>] [--since YYYY-MM-DD]
- *                                   [--max-tx N] [--write]
+ *                                   [--max-tx N] [--write] [--allow-public]
  *
  * Replays a Solana SPL token's transaction history into holders-history
  * entries for a project whose Solana chain declares the token
@@ -90,6 +90,7 @@ const argValue = (flag) => {
   return i > 0 ? process.argv[i + 1] : undefined;
 };
 const WRITE = process.argv.includes("--write");
+const ALLOW_PUBLIC = process.argv.includes("--allow-public");
 const SINCE = argValue("--since") ?? null;
 if (SINCE !== null && !/^\d{4}-\d{2}-\d{2}$/.test(SINCE)) {
   console.error(`--since must be YYYY-MM-DD, got ${SINCE}`);
@@ -131,9 +132,10 @@ const readOptionalJson = async (p) => {
   }
 };
 
-const { configureSolanaChain, getUsableSolanaRpcUrls, solanaCallWithFailover } = await import("./lib/solana/rpc.js");
+const { configureSolanaChain, getUsableSolanaRpcUrls, requireKeyedSolanaRpc, solanaCallWithFailover } = await import("./lib/solana/rpc.js");
 configureSolanaChain(chain.chain);
 const urls = await getUsableSolanaRpcUrls(chainKey);
+if (!ALLOW_PUBLIC) requireKeyedSolanaRpc(urls, chainKey);
 const call = (method, params) => solanaCallWithFailover(urls, method, params, { chainKey });
 
 /** Signatures of one account, up to `maxPages` pages of 1000. */

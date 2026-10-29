@@ -100,6 +100,20 @@ export async function getUsableSolanaRpcUrls(chainKey = "solana", { logger = con
 }
 
 /**
+ * Throws unless at least one URL is a keyed endpoint. Public mainnet-beta
+ * cannot serve getSignaturesForAddress history, so a public-only pool would
+ * silently produce an incomplete replay.
+ */
+export function requireKeyedSolanaRpc(urls, chainKey = "solana") {
+  const publicUrls = new Set(solanaPublicUrls(chainKey));
+  if (urls.some((u) => !publicUrls.has(u))) return urls;
+  throw new Error(
+    `RPC pool ${chainKey}: no keyed endpoint reached the RPC pool. Public Solana RPC cannot serve getSignaturesForAddress history. ` +
+      `Check that the repo secret ${chainKey.toUpperCase()}_RPC_0 is set and non-empty.`,
+  );
+}
+
+/**
  * Runs `method` on each URL in turn until one succeeds. Every URL failing
  * throws with all reasons, plus a hint to set SOLANA_RPC_* for heavy calls.
  */
