@@ -71,13 +71,17 @@ new project works with no `copy` section at all:
   runtime value the widget fills itself: `{amount}` (`supply.holdings.description`)
   and `{treasuryNow}` (`supply.coingecko.note`).
 - Entity slots (Supply view): every project gets the same foundation /
-  team panels, treasury chart lines and footer disclaimer. Name them with
+  team panels and treasury chart lines. Name them with
   `copy.text` `entity.association`, `entity.associationShort`,
   `entity.holdings`, `entity.holdingsShort` (generic: "{name}
   Foundation-Controlled Safes" / "Foundation" / "{name} Team Wallets" /
   "Team"), plus `supply.association.description`, `supply.holdings.description`,
   `supply.escrow.description`, `treasury.series.council`,
-  `treasury.history.info`, `footer.affiliation`.
+  `treasury.history.info`.
+- The site footer disclaimer is shared legal copy in `src/components/Footer.tsx`
+  (independent platform; not endorsed, paid, or affiliated with any token or
+  project; not advice; not an offer or solicitation; no warranty). It is not
+  a per-project slot.
 - `copy.methodology.<section>`: `{ "how"?, "verify"?, "links"? }` replaces a
   methodology hover card (`src/lib/methodology.ts`, sections in
   `METHODOLOGY_KEYS`). Without it the generic text is used and links are

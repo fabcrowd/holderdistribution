@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { Heart, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { useProjectCopy } from "@/hooks/useProjectCopy";
+
+/** EVM tip address. Same wallet on every route that renders this footer. */
+export const TIP_ADDRESS = "0x82C2Bca9d6a3ad4611eA5b8FAEAd789ad59a0542";
+
+/** Shared legal disclaimer. Landing, the phone layout, and the desktop terminal all use this wording. */
+export const SITE_DISCLAIMER =
+  "Holder Analytics is an independent on-chain analytics platform and is not endorsed by, paid by, or affiliated with any cryptocurrency token or project. Content is informational and educational only: it is not financial, investment, legal, or tax advice, and it is not an offer or solicitation to buy or sell any security or token. Data may be incomplete or delayed and is provided without warranty of accuracy or completeness; users should verify it on-chain.";
 
 export const Footer = () => {
   const [copied, setCopied] = useState(false);
-  const { text } = useProjectCopy();
-  const donationAddress = "0xce98fE636e83D36EA64cafEfF4020317B8B718EA";
+  const donationAddress = TIP_ADDRESS;
 
   const copyAddress = async () => {
     try {
@@ -58,12 +63,8 @@ export const Footer = () => {
         <div className="mt-4 pt-4 border-t border-border/30 text-center text-[13px] text-muted-foreground space-y-0.5">
           <p>© {new Date().getFullYear()} Holder Analytics. All rights reserved.</p>
           <p>Price data powered by CoinGecko</p>
-          <p className="max-w-4xl mx-auto pt-2">
-            *This website is an independent, community-run project. It is not operated by, endorsed by, or affiliated
-            with {text("footer.affiliation", "the {name} team, its foundation, or any of their subsidiaries")}, or any
-            other project it tracks. While every effort is made to
-            ensure the accuracy and timeliness of token data and related information, no guarantees are provided. All
-            content is offered "as is" for informational purposes only and does not constitute financial advice.
+          <p className="max-w-4xl mx-auto pt-2" data-testid="site-disclaimer">
+            {SITE_DISCLAIMER}
           </p>
         </div>
       </div>

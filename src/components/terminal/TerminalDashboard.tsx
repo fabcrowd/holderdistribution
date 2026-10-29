@@ -15,7 +15,7 @@ import { useProject } from "@/hooks/useProject";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { LAYOUT_MODES } from "@/lib/terminalCopy";
 import { TimeRangeDropdown } from "@/components/TimeRangeDropdown";
-import { Footer } from "@/components/Footer";
+import { Footer, SITE_DISCLAIMER } from "@/components/Footer";
 import { useHeadlineSummary } from "@/hooks/useHeadlineSummary";
 import { useCountUp, useIntro } from "@/hooks/useMotion";
 import type { DisplaySelection } from "@/hooks/useHolderSnapshot";
@@ -60,7 +60,8 @@ type Props = {
  * strip (the same sentence the phone shows under the title); then the view.
  * Holders dashboard and Distribution scroll this region so charts can be
  * taller than the fold. Supply and Explore still fill the viewport and
- * scroll inside their panels. A 24px status line stays pinned.
+ * scroll inside their panels. A 24px status line stays pinned, with the
+ * shared legal disclaimer directly under it.
  */
 export const TerminalDashboard = ({
   view,
@@ -309,40 +310,44 @@ export const TerminalDashboard = ({
           </div>
         </main>
 
-        <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-card px-3 text-xs text-muted-foreground">
-          {fresh.status === "unknown" && isError ? (
-            <span role="alert" className="inline-flex items-center gap-2 font-semibold text-destructive">
-              Couldn&apos;t load the holder snapshot.
-              <button
-                type="button"
-                onClick={() => void qc.refetchQueries({ predicate: (q) => q.state.status === "error" })}
-                className="rounded border border-border px-1.5 font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Retry
-              </button>
-            </span>
-          ) : (
-            <span className={fresh.status === "stale" ? "font-semibold text-destructive" : stale ? "font-semibold text-[hsl(var(--ha-warning))]" : undefined}>
-              {fresh.status === "unknown" ? "Loading data…" : fresh.status === "fresh" ? `Updated ${fresh.relative}` : fresh.status === "stale" ? `Stale: data from ${fresh.date} (${fresh.ageDays} days old)` : `Data from ${fresh.date} · daily refresh delayed`}
-            </span>
-          )}
-          <span aria-hidden="true">·</span>
-          <span>On-chain data for {t("{chains}")}. Prices by CoinGecko.</span>
-          <span className="ml-auto">Independent community project. Not financial advice.</span>
-          <Sheet>
-            <SheetTrigger asChild>
-              <button type="button" className="font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                About &amp; support
-              </button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
-              <SheetHeader className="text-left">
-                <SheetTitle>About Holder Analytics</SheetTitle>
-                <SheetDescription>Support the project, and the disclaimer.</SheetDescription>
-              </SheetHeader>
-              <Footer />
-            </SheetContent>
-          </Sheet>
+        <footer className="shrink-0 border-t border-border bg-card text-xs text-muted-foreground">
+          <div className="flex h-6 items-center gap-3 px-3">
+            {fresh.status === "unknown" && isError ? (
+              <span role="alert" className="inline-flex items-center gap-2 font-semibold text-destructive">
+                Couldn&apos;t load the holder snapshot.
+                <button
+                  type="button"
+                  onClick={() => void qc.refetchQueries({ predicate: (q) => q.state.status === "error" })}
+                  className="rounded border border-border px-1.5 font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  Retry
+                </button>
+              </span>
+            ) : (
+              <span className={fresh.status === "stale" ? "font-semibold text-destructive" : stale ? "font-semibold text-[hsl(var(--ha-warning))]" : undefined}>
+                {fresh.status === "unknown" ? "Loading data…" : fresh.status === "fresh" ? `Updated ${fresh.relative}` : fresh.status === "stale" ? `Stale: data from ${fresh.date} (${fresh.ageDays} days old)` : `Data from ${fresh.date} · daily refresh delayed`}
+              </span>
+            )}
+            <span aria-hidden="true">·</span>
+            <span>On-chain data for {t("{chains}")}. Prices by CoinGecko.</span>
+            <Sheet>
+              <SheetTrigger asChild>
+                <button type="button" className="ml-auto font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  About &amp; support
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
+                <SheetHeader className="text-left">
+                  <SheetTitle>About Holder Analytics</SheetTitle>
+                  <SheetDescription>Support the project, and the disclaimer.</SheetDescription>
+                </SheetHeader>
+                <Footer />
+              </SheetContent>
+            </Sheet>
+          </div>
+          <p className="px-3 pb-2 text-center leading-snug" data-testid="terminal-disclaimer">
+            {SITE_DISCLAIMER}
+          </p>
         </footer>
       </div>
     </TooltipProvider>
