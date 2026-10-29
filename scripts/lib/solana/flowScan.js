@@ -20,7 +20,7 @@ import { mintDeltasByOwner } from "./tokenFlows.js";
 export const SIGNATURE_PAGE = 1000;
 const MAX_PAGES = 500;
 
-const bySlotThenSig = (a, b) => (a.slot !== b.slot ? a.slot - b.slot : a.signature < b.signature ? -1 : 1);
+export const bySlotThenSig = (a, b) => (a.slot !== b.slot ? a.slot - b.slot : a.signature < b.signature ? -1 : 1);
 
 export const utcDay = (blockTime) => new Date(blockTime * 1000).toISOString().slice(0, 10);
 
@@ -128,7 +128,7 @@ export async function listSignatures(call, account, { until = null, sinceSec = 0
   throw new Error(`getSignaturesForAddress ${account}: more than ${MAX_PAGES} pages; refusing a partial list`);
 }
 
-async function mapLimit(items, limit, fn) {
+export async function mapLimit(items, limit, fn) {
   const out = new Array(items.length);
   let next = 0;
   const worker = async () => {
