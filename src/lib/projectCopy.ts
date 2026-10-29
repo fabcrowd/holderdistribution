@@ -64,6 +64,16 @@ export const copyText = (
 export const hasCopyText = (project: Pick<ProjectConfig, "copy">, id: string): boolean =>
   typeof project.copy?.text?.[id] === "string";
 
+/** `copy.text` entries whose id starts with `prefix`, filled; `suffix` is the id after the prefix. Sorted by suffix. */
+export const copyTextsByPrefix = (
+  project: Pick<ProjectConfig, "ticker" | "name" | "chains" | "supply" | "copy">,
+  prefix: string,
+): { suffix: string; text: string }[] =>
+  Object.keys(project.copy?.text ?? {})
+    .filter((id) => id.startsWith(prefix))
+    .sort()
+    .map((id) => ({ suffix: id.slice(prefix.length), text: copyText(project, id, "") }));
+
 /**
  * Names for the project-controlled entities on the Supply view. The pie uses
  * one bucket set (Treasury, Team, Holdings, …). These slots are the display

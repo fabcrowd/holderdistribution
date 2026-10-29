@@ -13,6 +13,10 @@ import { ZoomFrame } from "@/components/chart/ZoomFrame";
 import { useChartZoom } from "@/hooks/useChartZoom";
 import { toggleHidden } from "@/lib/chartZoom";
 import { useProjectCopy, type UseProjectCopy } from "@/hooks/useProjectCopy";
+import { useProject } from "@/hooks/useProject";
+import { copyTextsByPrefix } from "@/lib/projectCopy";
+import { datedNotes, groupMarkers, markerCollapseGap, markerNotesByRow } from "@/lib/chartMarkers";
+import { NotedTooltip, markerLines } from "@/components/chart/ChartMarkers";
 
 /**
  * Project-held balances over time, one line per group.
@@ -208,6 +212,17 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
     [zoom.rows, visible, mode],
   );
 
+  const { project } = useProject();
+  const notes = useMemo(() => datedNotes(copyTextsByPrefix(project, "treasury.note.")), [project]);
+  const rowTimes = useMemo(() => zoom.rows.map((r) => r.timestamp), [zoom.rows]);
+  const visibleNotes = useMemo(
+    () => notes.filter((n) => rowTimes.length > 0 && n.t >= rowTimes[0] && n.t <= rowTimes[rowTimes.length - 1]),
+    [notes, rowTimes],
+  );
+  const markers = useMemo(() => groupMarkers(visibleNotes, markerCollapseGap(rowTimes)), [visibleNotes, rowTimes]);
+  // gap 0: each note stays on its own date's row, so hovering 10-01 shows the 10-01 note.
+  const notesByRow = useMemo(() => markerNotesByRow(rowTimes, groupMarkers(visibleNotes, 0)), [visibleNotes, rowTimes]);
+
   if (isError) return <div className="min-h-[8rem]"><PanelError>Couldn&apos;t load treasury history.</PanelError></div>;
   if (!data || points.length < 2) return null;
 
@@ -278,11 +293,16 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
             <YAxis tickFormatter={(v) => axisFmt(Number(v))} domain={yScale.domain} ticks={yScale.ticks} tickMargin={8} width={56} />
             <ChartTooltip
               content={
-                <ChartTooltipContent
-                  labelFormatter={(_, payload) =>
-                    formatChartTimestamp(payload?.[0]?.payload?.timestamp, tipFmt)
+                <NotedTooltip
+                  notes={notesByRow}
+                  base={
+                    <ChartTooltipContent
+                      labelFormatter={(_, payload) =>
+                        formatChartTimestamp(payload?.[0]?.payload?.timestamp, tipFmt)
+                      }
+                      formatter={(value, name) => [fmt(Number(value)), labels[name as SeriesKey] ?? String(name)]}
+                    />
                   }
-                  formatter={(value, name) => [fmt(Number(value)), labels[name as SeriesKey] ?? String(name)]}
                 />
               }
             />
@@ -300,6 +320,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
                 />
               ) : null,
             )}
+            {markerLines(markers, "treasury-note")}
           </LineChart>
         </ChartContainer>
       </ZoomFrame>

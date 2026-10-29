@@ -121,4 +121,14 @@ describe("project-driven copy coverage", () => {
       expect(copyText(tel, id, "")).not.toMatch(/\{(ticker|name|chains|supply)\}/);
     }
   });
+
+  it("TEL has exactly the three treasury.note dates; zebec-network has none", () => {
+    const noteDates = (slug: string) =>
+      Object.keys(getProject(slug).copy?.text ?? {})
+        .filter((id) => id.startsWith("treasury.note."))
+        .map((id) => id.slice("treasury.note.".length))
+        .sort();
+    expect(noteDates("tel")).toEqual(["2026-09-29", "2026-10-01", "2026-10-02"]);
+    expect(noteDates("zebec-network")).toEqual([]);
+  });
 });
