@@ -34,7 +34,7 @@ import path from "node:path";
 import process from "node:process";
 import { getUsableRpcUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { loadEnv } from "./loadEnv.js";
-import { selectPipelineProject, projectPaths, projectChains, projectClassificationPath } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectWork, projectChains, projectClassificationPath } from "./lib/projects.js";
 import { exchangeFlowChains } from "./lib/exchangeFlowChains.js";
 import { markPartialDay } from "./lib/partialDay.js";
 
@@ -208,6 +208,18 @@ const scanChain = async (chainKey, cexSet, dexSet, checkpoint, dayBuckets) => {
   console.log(`  ${chainKey}: done to block ${lastGood} (${matched} CEX transfers matched)`);
 };
 
+// Solana-only project: the day store written by scan-solana-flows.js, completed
+// UTC days (the open day included; markPartialDay flags it). Without Solana chains (or a store) the history stays empty.
+const solanaEntries = async () => {
+  const { solanaFlowChains } = await import("./lib/solana/flowConfig.js");
+  const { buildExchangeHistory } = await import("./lib/solana/flowFeeds.js");
+  const chains = solanaFlowChains(project.config);
+  if (chains.length === 0) return null;
+  const store = await readOptionalJson(projectWork(project)("solana-flow-days.json"));
+  if (!store) return [];
+  return buildExchangeHistory(store, { decimals: Object.fromEntries(chains.map((c) => [c.key, c.decimals])) });
+};
+
 const main = async () => {
   const cexConfig = (await readOptionalJson(CEX_CONFIG_PATH)) ?? { wallets: [] };
   const cexSet = new Set(
@@ -258,7 +270,7 @@ const main = async () => {
     // Solana-only projects have no eth_getLogs chains. Publish an empty
     // history so the exchange panel can show its empty state instead of
     // loading a 404. TEL's chain table is never empty.
-    console.log(`No EVM chains for ${project.slug}; writing an empty exchange-flow history.`);
+    console.log(`No EVM chains for ${project.slug}; publishing Solana venue flows (empty until scan-solana-flows.js has run).`);
   }
   for (const chainKey of Object.keys(CHAINS)) {
     await scanChain(chainKey, cexSet, dexSet, checkpoint, dayBuckets);
@@ -266,7 +278,7 @@ const main = async () => {
 
   // The final row is today's hours so far; flag it so the UI can label it
   // instead of drawing a collapse (see scripts/lib/partialDay.js).
-  const entries = markPartialDay(Array.from(dayBuckets.entries())
+  const entries = markPartialDay((Object.keys(CHAINS).length === 0 ? await solanaEntries() : null) ?? Array.from(dayBuckets.entries())
     .map(([date, b]) => ({
       date,
       chains: b.chains,
