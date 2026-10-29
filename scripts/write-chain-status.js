@@ -8,10 +8,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { buildChainStatus } from "./lib/chainStatus.js";
+import { loadProjectConfig, parseProjectArg, projectDataDir } from "./lib/projects.js";
 
 const DATA_DIR = path.resolve(process.cwd(), "public/data");
 
-export async function writeChainStatus(dataDir = DATA_DIR) {
+export async function writeChainStatus(dataDir = DATA_DIR, chainKeys = undefined) {
   let checkpoint;
   try {
     checkpoint = JSON.parse(await fs.readFile(path.join(dataDir, "holders-checkpoint.json"), "utf8"));
@@ -19,12 +20,15 @@ export async function writeChainStatus(dataDir = DATA_DIR) {
     console.warn(`write-chain-status: no readable holders-checkpoint.json (${err?.code ?? err?.message}); leaving chain-status.json as is.`);
     return null;
   }
-  const status = buildChainStatus(checkpoint);
+  const status = buildChainStatus(checkpoint, chainKeys);
   await fs.writeFile(path.join(dataDir, "chain-status.json"), `${JSON.stringify(status, null, 2)}\n`, "utf8");
   return status;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const s = await writeChainStatus();
+  // `--project <slug>` / HD_PROJECT / the registry default (TEL: public/data, ethereum+polygon+base).
+  const slug = parseProjectArg();
+  const keys = (loadProjectConfig(slug).chains ?? []).map((c) => c.key);
+  const s = await writeChainStatus(path.resolve(process.cwd(), projectDataDir(slug)), keys);
   if (s) console.log(`chain-status.json: ${Object.entries(s.chains).map(([k, v]) => `${k}@${v.lastBlock}`).join(", ")}`);
 }

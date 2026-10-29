@@ -4,17 +4,15 @@
  * block N" links). The full checkpoint is ~5 MB of per-address balances and is
  * never fetched by the site.
  */
-/** TEL's chains: the default when a caller does not pass the project's keys. */
-export const CHAIN_STATUS_CHAINS = ["ethereum", "polygon", "base"];
-
 /**
  * @param {object} checkpoint holders-checkpoint.json payload
  * @param {string[]} [chainKeys] the project's chains[].key, in config order
- *   (pull-holders-rpc passes them, so a project with e.g. arbitrum gets it).
+ *   (the callers pass them from the registry). Omitted/empty: every chain the
+ *   checkpoint itself carries, in its own order.
  */
-export function buildChainStatus(checkpoint, chainKeys = CHAIN_STATUS_CHAINS) {
+export function buildChainStatus(checkpoint, chainKeys) {
   const chains = {};
-  for (const key of chainKeys?.length ? chainKeys : CHAIN_STATUS_CHAINS) {
+  for (const key of chainKeys?.length ? chainKeys : Object.keys(checkpoint?.chains ?? {})) {
     const entry = checkpoint?.chains?.[key];
     const lastBlock = Number(entry?.lastBlock);
     if (!(Number.isFinite(lastBlock) && lastBlock > 0)) continue;

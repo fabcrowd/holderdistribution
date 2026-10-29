@@ -20,6 +20,8 @@ export type ProjectEntry = {
 export type ProjectChain = {
   key: string;
   name: string;
+  /** Compact badge label (e.g. "ETH"); falls back to the upper-cased key. */
+  shortName?: string;
   /** EVM only (a Solana chain has none; validation rejects it there). */
   chainId?: number;
   /** Adapter: "evm" (default) or "solana". A chain keyed "solana" without vm is Solana. */

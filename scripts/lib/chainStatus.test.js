@@ -17,7 +17,7 @@ describe("chain-status.json", () => {
         bogus: { lastBlock: 5 },
       },
     };
-    const out = buildChainStatus(cp);
+    const out = buildChainStatus(cp, ["ethereum", "polygon", "base"]);
     expect(out).toEqual({
       generatedAt: "2026-10-23T15:24:59Z",
       chains: { ethereum: { lastBlock: 26256205 }, polygon: { lastBlock: 96042482 }, base: { lastBlock: 52989873 } },
@@ -28,7 +28,9 @@ describe("chain-status.json", () => {
   it("uses the project's chain keys when given (e.g. a fourth chain)", () => {
     const cp = { generatedAt: "g", chains: { ethereum: { lastBlock: 1 }, arbitrum: { lastBlock: 2 }, base: { lastBlock: 3 } } };
     expect(buildChainStatus(cp, ["ethereum", "arbitrum"]).chains).toEqual({ ethereum: { lastBlock: 1 }, arbitrum: { lastBlock: 2 } });
-    expect(buildChainStatus(cp, []).chains).toEqual({ ethereum: { lastBlock: 1 }, base: { lastBlock: 3 } });
+    // No keys: the checkpoint's own chains, never a baked-in TEL list.
+    expect(buildChainStatus(cp, []).chains).toEqual({ ethereum: { lastBlock: 1 }, arbitrum: { lastBlock: 2 }, base: { lastBlock: 3 } });
+    expect(buildChainStatus({ chains: { zeta: { lastBlock: 7 } } }).chains).toEqual({ zeta: { lastBlock: 7 } });
   });
 
   it("drops chains without a valid block", () => {
@@ -41,5 +43,7 @@ describe("chain-status.json", () => {
     await fs.writeFile(path.join(dir, "holders-checkpoint.json"), JSON.stringify({ generatedAt: "g", chains: { base: { lastBlock: 9, rawBalances: {} } } }));
     await writeChainStatus(dir);
     expect(JSON.parse(await fs.readFile(path.join(dir, "chain-status.json"), "utf8"))).toEqual({ generatedAt: "g", chains: { base: { lastBlock: 9 } } });
+    await writeChainStatus(dir, ["arbitrum"]);
+    expect(JSON.parse(await fs.readFile(path.join(dir, "chain-status.json"), "utf8")).chains).toEqual({});
   });
 });

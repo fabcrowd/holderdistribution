@@ -168,6 +168,8 @@ describe("address resolution reads project config", () => {
       base: { token: "0x09be1692ca16e06f536f0038ff11d1da8524adb1", chunk: 1000, defaultStart: 25_614_028, divisor: 100 },
     });
     expect(exchangeFlowChains(tel, chainsJson, { FLOW_START_BLOCK_BASE: "5", FLOW_CHUNK_BASE: "9" }).base).toMatchObject({ defaultStart: 5, chunk: 9 });
+    expect(exchangeFlowChains(tel, chainsJson, { FLOW_START_BLOCK_ETH: "7" }).ethereum.defaultStart).toBe(7);
+    expect(exchangeFlowChains(tel, chainsJson, { FLOW_START_BLOCK_ETHEREUM: "8" }).ethereum.defaultStart).toBe(8);
   });
 
   it("non-legacy: chains, staking and flow table come from the project's own config", () => {

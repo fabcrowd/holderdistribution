@@ -5,7 +5,7 @@ import process from "node:process";
 
 import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
-import { selectPipelineProject, projectPaths, projectClassificationPath, projectNonRetailPaths } from "./lib/projects.js";
+import { selectPipelineProject, projectChainEntries, projectPaths, projectClassificationPath, projectNonRetailPaths } from "./lib/projects.js";
 import { normalizeAnyAddress } from "./lib/address.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
@@ -48,9 +48,9 @@ const sumDexLiquidity = (snapshot, exclusions, dexConfig) => {
   for (const w of snapshot?.wallets ?? []) {
     const a = normalizeAnyAddress(w?.address);
     if (!a || !set.has(a)) continue;
-    // Per-chain columns follow the snapshot's own chainOrder (TEL: ethereum,
-    // polygon, base), so another project's chains are summed too.
-    for (const chainKey of snapshot?.chainOrder ?? ["ethereum", "polygon", "base"]) {
+    // Per-chain columns follow the snapshot's own chainOrder, else the
+    // project's registry chains (TEL: ethereum, polygon, base).
+    for (const chainKey of snapshot?.chainOrder ?? projectChainEntries(project.config).map((c) => c.key)) {
       sum += Number(w[`${chainKey}_balance`]) || 0;
     }
   }

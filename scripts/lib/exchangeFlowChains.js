@@ -12,7 +12,8 @@
 // Ethereum: 800-block chunks; Polygon/Base: 1000 (public endpoints' getLogs caps).
 const CHUNK = { ethereum: 800, polygon: 1000, base: 1000 };
 
-const TEL_START_DEFAULT = { ethereum: 22_800_000, polygon: 74_400_000, base: 25_614_028 };
+// Tuned first-scan blocks for legacyRoot (TEL) chains, keyed by chain key.
+const LEGACY_START_DEFAULT = { ethereum: 22_800_000, polygon: 74_400_000, base: 25_614_028 };
 
 const tokenFor = (chainMap, chainKey) => {
   const token = chainMap[chainKey]?.tokenAddress;
@@ -30,21 +31,16 @@ const divisorFor = (chainMap, chainKey) => {
 
 /** @returns {Record<string, {token:string, chunk:number, defaultStart:number, divisor:number}>} */
 export function exchangeFlowChains(project, chainMap, env = process.env) {
-  if (project.config?.data?.legacyRoot === true) {
-    return {
-      ethereum: { token: tokenFor(chainMap, "ethereum"), chunk: 800, defaultStart: Number(env.FLOW_START_BLOCK_ETH ?? TEL_START_DEFAULT.ethereum), divisor: divisorFor(chainMap, "ethereum") },
-      polygon: { token: tokenFor(chainMap, "polygon"), chunk: 1000, defaultStart: Number(env.FLOW_START_BLOCK_POLYGON ?? TEL_START_DEFAULT.polygon), divisor: divisorFor(chainMap, "polygon") },
-      base: { token: tokenFor(chainMap, "base"), chunk: Number(env.FLOW_CHUNK_BASE ?? 1000), defaultStart: Number(env.FLOW_START_BLOCK_BASE ?? TEL_START_DEFAULT.base), divisor: divisorFor(chainMap, "base") },
-    };
-  }
+  const legacy = project.config?.data?.legacyRoot === true;
   const out = {};
   for (const chainKey of Object.keys(chainMap)) {
     const meta = chainMap[chainKey];
-    const envStart = env[`FLOW_START_BLOCK_${chainKey.toUpperCase()}`];
+    // Legacy TEL kept FLOW_START_BLOCK_ETH for Ethereum; both spellings work.
+    const envStart = env[`FLOW_START_BLOCK_${chainKey.toUpperCase()}`] ?? (chainKey === "ethereum" ? env.FLOW_START_BLOCK_ETH : undefined);
     out[chainKey] = {
       token: tokenFor(chainMap, chainKey),
       chunk: Number(env[`FLOW_CHUNK_${chainKey.toUpperCase()}`] ?? CHUNK[chainKey] ?? 1000),
-      defaultStart: Number(envStart ?? meta.fromBlock ?? meta.tokens?.legacy?.deployBlock ?? 0),
+      defaultStart: Number(envStart ?? (legacy ? LEGACY_START_DEFAULT[chainKey] : undefined) ?? meta.fromBlock ?? meta.tokens?.legacy?.deployBlock ?? 0),
       divisor: divisorFor(chainMap, chainKey),
     };
   }
