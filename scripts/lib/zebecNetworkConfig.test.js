@@ -101,8 +101,8 @@ describe("zebec-network config (owner choices 2026-10-25)", () => {
     const alloc = c.chains[0].contracts.allocation56veX;
     expect(alloc).toMatchObject({ address: ALLOCATION_56VEX, role: "holdings" });
     expect(alloc.$comment).toMatch(/not Team/);
-    expect(alloc.$comment).toMatch(/https:\/\/solscan.io\/account\/56veXoivcbZNwkN4MCvhdyromDrp6cp9EuJZ9arknGSF/);
-    expect(alloc.$comment).toMatch(/https:\/\/zebec.io\/blog\/zebec-network-zbcn-tokenomics/);
+    expect(alloc.$comment).toMatch(/https:\/\/solscan\.io\/account\/56veXoivcbZNwkN4MCvhdyromDrp6cp9EuJZ9arknGSF/);
+    expect(alloc.$comment).toMatch(/https:\/\/zebec\.io\/blog\/zebec-network-zbcn-tokenomics/);
     const text = JSON.stringify(c);
     for (const a of EXCLUDED) expect(text).not.toContain(a);
     expect(c.pipelineNotes.treasuryTeam).toMatch(/b6ZPysThkApNx2YDiGsPUiYPE7Ub1kTRdCWp7gBkzbr/);
@@ -116,15 +116,15 @@ describe("zebec-network config (owner choices 2026-10-25)", () => {
     for (const [address, walletName] of UPHOLD_CLUSTER) {
       const row = cex.wallets.find((w) => w.address === address);
       expect(row).toMatchObject({ address, label: "Uphold custody (Fireblocks)", walletName });
-      expect(row.$comment).toMatch(new RegExp(`https://solscan.io/account/${address}`));
-      expect(row.$comment).toMatch(/https:\/\/uphold.com\/en-us\/legal\/platform-risk-statement-canada/);
+      expect(row.$comment).toMatch(new RegExp(`https://solscan\\.io/account/${address}`));
+      expect(row.$comment).toMatch(/https:\/\/uphold\.com\/en-us\/legal\/platform-risk-statement-canada/);
     }
     const polo = cex.wallets.find((w) => w.address === "Eueeb9FKXpk7duw7jKeYm1NNWmTeFN7fGKYMmasY7C9x");
     expect(polo).toMatchObject({
       label: "Poloniex custody",
       walletName: "Squad Vault SOL-P (Poloniex)",
     });
-    expect(polo.$comment).toMatch(/https:\/\/www.poloniex.com\/trade\/ZBCN_USDT/);
+    expect(polo.$comment).toMatch(/https:\/\/www\.poloniex\.com\/trade\/ZBCN_USDT/);
     const addresses = cex.wallets.map((w) => w.address);
     expect(addresses).not.toContain("EbsUZEFAU23Z2SgAymFtU2hADLiyNLzaPLKiJfvpKnE7");
     expect(addresses).not.toContain("6xhzigww96cxm98l19cmfphffnw1e7yn9jlfjtkdoglh");
