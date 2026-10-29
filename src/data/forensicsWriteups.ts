@@ -337,7 +337,20 @@ export const ASSOCIATION_STABLECOIN_FLOWS: FlowReport = {
       ],
     },
     {
-      heading: "7. Caveats and open items",
+      heading: "7. Update 2026-10-26 to 2026-10-28: 433.7M TEL from the Treasury through the Conduit",
+      body: "Traced from token transfers on Ethereum, Polygon and Base (legacy and v3 TEL) for every wallet in the treasury, council, holdings and escrow categories. On 2026-10-26 the TEL Treasury (0x2580ccb2…) sent 433,700,000 TEL to the TA Sale Wallet / Conduit (0x11cb903d…) on Ethereum. On 2026-10-27 the Conduit sent the same 433,700,000 TEL to the Polygon ERC20 bridge (0x40ec5b33…), and the same amount was minted to the Conduit on Polygon. The Conduit then split it that day: 265.72M to TAO Safe (council), 122.78M to the Settlement hub (0x17fcc1f3…, which routes to KuCoin) and 45.20M to Recipient (0xe71e5bb3…, the CoW seller). The three parts sum to 433.70M. On the dashboard the Treasury line falls by 433.7M and the Council line rises by 265.7M one night later, because the nightly snapshot trails the transfers by a day. The two legs that left the tracked wallets, 122.78M and 45.20M, are why Treasury plus Council falls by about 168.0M over the period. Both destinations are already tracked in this report as Association-linked wallets, so this is the same Safe-to-Conduit-to-hub pattern as section 1b, not a new destination. On 2026-10-28 TELx Council also sent 15.46M TEL v3 on Polygon to an address that is not labelled anywhere (0x7e1c409d…); council shows -15.5M the next night. That address is not attributed here.",
+      rows: [
+        { label: "TEL Treasury → Conduit (Ethereum, 10-26)", value: "433,700,000 TEL" },
+        { label: "Conduit → Polygon bridge, minted to Conduit (10-27)", value: "433,700,000 TEL" },
+        { label: "Conduit → TAO Safe (council), Polygon", value: "~265,720,000 TEL" },
+        { label: "Conduit → Settlement hub, Polygon", value: "~122,780,000 TEL" },
+        { label: "Conduit → Recipient, Polygon", value: "~45,200,000 TEL" },
+        { label: "TELx Council → unlabelled 0x7e1c409d… (10-28, v3)", value: "~15,460,000 TEL" },
+        { label: "Net change, Treasury + Council combined", value: "~-168,000,000 TEL" },
+      ],
+    },
+    {
+      heading: "8. Caveats and open items",
       body: "Base is not covered — Blockscout's Base API was down during this trace and no Etherscan/Alchemy key was available as a fallback, so any Base-side stablecoin activity is invisible here. The destination Safe's history was pulled to a 4,000-transfer cap, covering 2025-08-01 onward; its lifetime totals are therefore floors, not exact. One earlier hypothesis was checked and discarded: a contract that appeared to pay both Conduit and the Holdings controller turned out to be a KyberSwap aggregator executor, i.e. shared public DEX infrastructure and not evidence of any relationship. Finally, neither Conduit nor Recipient appears in config/exclusions.json, so both are still counted as ordinary retail holders on the live site — the same unresolved classification issue already logged in data/association-payment-mapping.md.",
       rows: [],
     },

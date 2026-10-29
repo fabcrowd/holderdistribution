@@ -94,4 +94,8 @@ describe("chains a project declares beyond ethereum/polygon/base", () => {
     expect(() => configureProjectRpc({ chains: [{ key: "x", rpc: { envPrefix: "lower" } }] })).toThrow(/UPPER_SNAKE/);
     expect(() => configureProjectRpc({ chains: [{ key: "x", rpc: { publicUrls: ["http://insecure"] } }] })).toThrow(/https/);
   });
+
+  it("rejects an envPrefix that already ends in _RPC (the pool appends _RPC_<n> itself)", () => {
+    expect(() => configureProjectRpc({ chains: [{ key: "solana", rpc: { envPrefix: "SOLANA_RPC" } }] })).toThrow(/SOLANA_RPC_RPC_0/);
+  });
 });

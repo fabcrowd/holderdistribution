@@ -30,6 +30,7 @@ import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
 import { computeSeriesDomain, computeBreakAwareDomain, activeKeys } from "@/lib/chartDomain";
 import { computeYAxis, computeYAxisFromRows, distinctTickFormatter } from "@/lib/chartAxes";
 import { AxisBaselineNote } from "@/components/chart/AxisBaselineNote";
+import { HistoryStartNote } from "@/components/chart/HistoryStartNote";
 import { getSeriesBreaks, insertBreakSpacers } from "@/lib/seriesBreaks";
 
 type HolderGrowthWidgetProps = {
@@ -662,7 +663,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
               )}
 
               {!isLoading && !error && chartData.length > 0 && (
-                <ZoomFrame zoom={holdersZoom} className="h-56 w-full sm:h-64" yAxes={{ left: holdersYAuto.domain }} notes={<AxisBaselineNote baseline={holdersY.baseline} format={(n) => formatInteger(Math.round(n))} />}>
+                <ZoomFrame zoom={holdersZoom} className="h-56 w-full sm:h-64" yAxes={{ left: holdersYAuto.domain }} notes={<><HistoryStartNote firstTimestamp={chartData[0]?.timestamp} rangeDays={rangeDays} /><AxisBaselineNote baseline={holdersY.baseline} format={(n) => formatInteger(Math.round(n))} /></>}>
                 <div className="h-full w-full" role="img" aria-label={holdersAriaSummary} data-testid="holder-growth-chart">
                   <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                     <LineChart data={holdersZoom.rows}>
