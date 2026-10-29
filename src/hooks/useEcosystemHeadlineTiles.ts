@@ -8,6 +8,7 @@ import type { ClassificationEvent } from "@/hooks/useClassificationChangelog";
 import { v3StakingGapEvents } from "@/lib/staking";
 import { stakingElsewhereNote, type ChainView } from "@/lib/chainViews";
 import { useProject } from "@/hooks/useProject";
+import { RETAIL_WALLETS_LABEL, retailWalletsInfo, uniqueWalletCount } from "@/lib/holderCounts";
 
 const formatInteger = (v: number) => new Intl.NumberFormat().format(v);
 const formatTokenAmount = (v: number) => {
@@ -68,7 +69,7 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
   // four tiles can never show a different delta depending on which
   // component renders them — see useHeadlineTiles' doc comment.
   const { historicalDelta, cexPrevious, events } = useHeadlineTiles({ view: chain, rangeDays });
-  const { ticker } = useProjectCopy();
+  const { ticker, chains } = useProjectCopy();
   const { project } = useProject();
   // TEL on Ethereum/Base: "Staking runs on Polygon" (from config staking[]).
   const stakingNote = stakingElsewhereNote(project, chain);
@@ -148,11 +149,15 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     const tiles: EcosystemHeadlineTile[] = [
       {
         id: "holders",
-        icon: Users, label: "Retail Holders", value: formatInteger(holders),
+        icon: Users, label: RETAIL_WALLETS_LABEL, value: formatInteger(holders),
         sub: isAth ? "All-time high" : `Wallets >0 ${ticker}, excl. exchanges`,
         ath: isAth, current: holders, previous: prevHolders, fmt: undefined, scope: perChain ? "chain" : "all",
         changelogEvents: events.holders,
-        infoTooltip: cumulativeHoldersTooltip,
+        // Per-chain wallet count: say so (and give the unique figure) in the combined view.
+        infoTooltip: [
+          retailWalletsInfo({ ticker, chains, walletCount: holders, uniqueWallets: perChain ? null : uniqueWalletCount(snap) }),
+          cumulativeHoldersTooltip,
+        ].filter(Boolean).join("\n\n"),
       },
       {
         id: "retailHeld",
@@ -201,5 +206,5 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     ];
 
     return { tiles, isAth };
-  }, [snap, historicalDelta, cexPrevious, events, isAth, chain, ticker, stakingNote]);
+  }, [snap, historicalDelta, cexPrevious, events, isAth, chain, ticker, chains, stakingNote]);
 };

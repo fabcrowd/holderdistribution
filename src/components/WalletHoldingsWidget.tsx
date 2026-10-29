@@ -64,6 +64,7 @@ import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, ReferenceLine, Line } from "recharts";
 import { chainViewOptions, type ChainView } from "@/lib/chainViews";
 import { stakingSplitSub } from "@/lib/stakingSplit";
+import { RETAIL_WALLETS_LABEL, retailWalletsInfo, uniqueWalletCount } from "@/lib/holderCounts";
 import { StakingSupplyTie } from "@/components/StakingSupplyTie";
 import "@/lib/rechartsMotion";
 
@@ -82,6 +83,8 @@ type DisplayResult = {
   stakingStats: HolderLiteView["stakingStats"];
   stakingDistribution: HolderLiteView["stakingDistribution"];
   velocity: HolderLiteView["velocity"];
+  /** Distinct wallets across chains (combined view only); metrics.holderCount is the per-chain sum. */
+  uniqueWallets: number | null;
 };
 
 const formatTokenAmount = (value: number) => {
@@ -147,6 +150,7 @@ const displayResults = (
       stakingStats: view.stakingStats,
       stakingDistribution: view.stakingDistribution,
       velocity: view.velocity,
+      uniqueWallets: uniqueWalletCount(snapshot),
     };
   }
 
@@ -161,6 +165,7 @@ const displayResults = (
     stakingStats: view.stakingStats,
     stakingDistribution: view.stakingDistribution,
     velocity: view.velocity,
+    uniqueWallets: null,
   };
 };
 
@@ -230,14 +235,14 @@ const renderMetrics = (
 
   const items: StatItem[] = [
     {
-      label: "Retail Holders",
+      label: RETAIL_WALLETS_LABEL,
       value: formatInteger(result.metrics.holderCount),
       description: holderCountIsAth ? "All-time high" : copy.t("Wallets >0 {ticker}, excl. exchanges"),
       badge: holderCountIsAth ? "ATH" : undefined,
       previous: previousHolderCount,
       rawValue: result.metrics.holderCount,
       icon: Users,
-      info: copy.t("Count of distinct on-chain wallets holding >0 {ticker} across {chains}.\n\nNote: an exchange is a single wallet holding many customers' {ticker}, so its users aren't counted individually here — the true number of people holding {ticker} is higher than this figure."),
+      info: retailWalletsInfo({ ticker: copy.ticker, chains: copy.chains, walletCount: result.metrics.holderCount, uniqueWallets: result.uniqueWallets }),
       changelogEvents: holdersEvents,
     },
     {
@@ -501,17 +506,17 @@ const renderVelocity = (
   if (everHeld?.total != null) {
     // Adoption framing first: first-time holders never subtract churn.
     items.push({
-      label: `New Holders (${rangeLabel})`,
+      label: `New Wallets (${rangeLabel})`,
       value: everHeld.newInRange != null ? `+${formatInteger(everHeld.newInRange)}` : "—",
       sub: "first-time wallets",
       tone: emerald,
     });
     items.push({ label: copy.t("Wallets Ever Held {ticker}"), value: formatInteger(everHeld.total), sub: "cumulative — only grows", tone: "text-primary" });
-    items.push({ label: `Net Active Holders (${rangeLabel})`, value: formatSignedInteger(momentum.net), sub: `${momentum.pct >= 0 ? "+" : ""}${momentum.pct.toFixed(2)}% active base`, tone: netTone });
+    items.push({ label: `Net Active Wallets (${rangeLabel})`, value: formatSignedInteger(momentum.net), sub: `${momentum.pct >= 0 ? "+" : ""}${momentum.pct.toFixed(2)}% active base`, tone: netTone });
   } else {
-    items.push({ label: `Net New Holders (${rangeLabel})`, value: formatSignedInteger(momentum.net), sub: `${formatSignedInteger(Math.round(momentum.perDay))} / day`, tone: netTone });
+    items.push({ label: `Net New Wallets (${rangeLabel})`, value: formatSignedInteger(momentum.net), sub: `${formatSignedInteger(Math.round(momentum.perDay))} / day`, tone: netTone });
     items.push({ label: "Growth", value: `${momentum.pct >= 0 ? "+" : ""}${momentum.pct.toFixed(2)}%`, sub: `over ${Math.round(momentum.days)} days`, tone: netTone });
-    items.push({ label: "Total Holders", value: formatInteger(momentum.current), sub: `from ${formatInteger(momentum.baseline)}`, tone: "text-primary" });
+    items.push({ label: "Total Retail Wallets", value: formatInteger(momentum.current), sub: `from ${formatInteger(momentum.baseline)}`, tone: "text-primary" });
   }
 
   return (
@@ -544,7 +549,7 @@ const renderVelocity = (
 };
 
 const balanceInsightsChartConfig = {
-  count: { label: "Holders", color: "hsl(var(--primary))" },
+  count: { label: "Wallets", color: "hsl(var(--primary))" },
 };
 
 // Fit a log-normal curve over the bucket midpoints and scale it to match bar heights.
@@ -724,7 +729,7 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
             </p>
             <ChartContainer
               config={{
-                count: { label: "Holders", color: "hsl(var(--primary))" },
+                count: { label: "Wallets", color: "hsl(var(--primary))" },
                 curve: { label: "Log-normal fit", color: "hsl(188 95% 55%)" },
               }}
               className="h-[240px] w-full sm:h-[300px]"
@@ -876,17 +881,17 @@ const renderOverlap = (stats: HolderLiteSnapshot["overlap"] | null, ctl: RangeCt
           </CardTitle>
         </div>
         <CardDescription className="text-sm sm:text-base text-muted-foreground">
-          Unique holders across chains in the combined view.
+          Unique wallets across chains in the combined view (a wallet on several chains counts once).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-5">
         <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3">
           <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Unique Holders</div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Unique Wallets</div>
             <div className="text-xl font-semibold text-primary">{formatInteger(stats.uniqueCount)}</div>
           </div>
           <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Multi-chain Holders</div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Multi-chain Wallets</div>
             <div className="text-xl font-semibold text-primary">{formatInteger(stats.multiChainCount)}</div>
           </div>
           <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>

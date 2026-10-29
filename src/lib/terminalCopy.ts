@@ -57,7 +57,7 @@ export const HOLDER_EXPLORE_PANELS: readonly ExplorePanelCopy[] = [
   {
     id: "trends",
     label: "Holder history",
-    hint: "Holder count and balance over time — the Dashboard's Retail holders and balance charts, full size.",
+    hint: "Holder count and balance over time — the Dashboard's Retail wallets and balance charts, full size.",
   },
   {
     id: "flows",

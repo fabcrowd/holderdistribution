@@ -57,6 +57,7 @@ import process from "node:process";
 import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
 import { normalizeAddress } from "./lib/nonRetailSet.js";
+import { markPartialDay } from "./lib/partialDay.js";
 import { findBlockAtTime } from "./lib/historicalReplay.js";
 import {
   selectPipelineProject,
@@ -252,8 +253,8 @@ const main = async () => {
 
   // Replace any existing entry for a derived date (the partial tail), then append.
   const derivedDates = new Set(newEntries.map((e) => e.date));
-  history.entries = [...entries.filter((e) => !derivedDates.has(e.date)), ...newEntries]
-    .sort((a, b) => a.date.localeCompare(b.date));
+  history.entries = markPartialDay([...entries.filter((e) => !derivedDates.has(e.date)), ...newEntries]
+    .sort((a, b) => a.date.localeCompare(b.date)));
   history.generatedAt = new Date().toISOString();
   // Records how the tail was produced, so a later reader can tell these dates
   // came from the cached replay rather than the live scan.

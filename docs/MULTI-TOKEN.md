@@ -685,7 +685,13 @@ its config, so onboarding a token needs no code change:
 ```
 
 * `placeholder: true` marks an intentional stub (e.g. a flow scanner not built for that chain): reported
-  as PLACEHOLDER, never stale, and checked only to be no older than the holders snapshot.
+  as PLACEHOLDER, never stale, and checked only to be no older than the holders snapshot. The
+  exchange-flow and tier-flow panels read the same flag: a placeholder `exchange-flow-history.json` /
+  `tier-outflows.json` shows "flow tracking isn't available for {ticker} yet" (override with
+  `copy.text["flows.unavailable"]`) instead of "no data for this period".
+* Flow feeds mark the in-progress UTC day: `partial: true` on the last `exchange-flow-history.json`
+  entry and `partialDate` in `tier-outflows.json`. The UI keeps it out of totals/charts (exchange net
+  flow) or labels the 1D window "so far today"; feeds without the field read as settled.
 * `disabled: true` drops a default feed the project does not produce.
 * `check-feed-consistency` WARNs (never fails) when the combined holder count moves more than
   `maxHolderChangePct` day over day within 30 days; changelog event dates are allowed automatically.

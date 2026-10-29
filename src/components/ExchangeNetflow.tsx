@@ -5,6 +5,8 @@ import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, ReferenceLine } from 
 import "@/lib/rechartsMotion";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { useProject } from "@/hooks/useProject";
+import { EXCHANGE_FLOW_FEED, PARTIAL_DAY_LABEL, flowUnavailableText, isFlowPlaceholder, settledEntries } from "@/lib/flowFeeds";
 
 type ExchangeNetflowProps = {
   rangeDays: number;
@@ -26,26 +28,33 @@ const INFO_TEMPLATE =
 export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
   const { data: entries, isPending, isError } = useExchangeFlow();
   const { ticker, t } = useProjectCopy();
+  const { project } = useProject();
 
   const view = useMemo(() => {
     if (!entries || entries.length === 0) return null;
-    const latestTs = Date.parse(entries[entries.length - 1].date);
+    // Today's hours-so-far are not totalled beside full days; they only show
+    // (labelled) when no finished day exists yet.
+    const settled = settledEntries(entries);
+    const rows = settled.length > 0 ? settled : entries;
+    const partialOnly = settled.length === 0;
+    const latestTs = Date.parse(rows[rows.length - 1].date);
     const cutoff = latestTs - rangeDays * 86400000;
-    const inRange = entries.filter((e) => Date.parse(e.date) >= cutoff);
+    const inRange = rows.filter((e) => Date.parse(e.date) >= cutoff);
     if (inRange.length === 0) return null;
     const totalIn = inRange.reduce((s, e) => s + (e.in ?? 0), 0);
     const totalOut = inRange.reduce((s, e) => s + (e.out ?? 0), 0);
     const series = inRange.map((e) => ({ timestamp: Date.parse(e.date), net: (e.in ?? 0) - (e.out ?? 0) }));
-    return { totalIn, totalOut, net: totalIn - totalOut, series };
+    return { totalIn, totalOut, net: totalIn - totalOut, series, partialOnly, excludesToday: !partialOnly && settled.length < entries.length };
   }, [entries, rangeDays]);
 
   // Still fetching, or a real failure (5xx): the terminal panel owns the
   // skeleton and the retry. A settled empty feed is the empty state.
   if (isPending || isError) return null;
   if (!view) {
+    const unavailable = isFlowPlaceholder(project, EXCHANGE_FLOW_FEED);
     return (
       <p className="py-6 text-center text-sm text-muted-foreground" data-testid="exchange-flow-empty">
-        No flow data for this period.
+        {unavailable ? flowUnavailableText(project) : "No flow data for this period."}
       </p>
     );
   }
@@ -57,6 +66,11 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
           Exchange Netflow — measured deposits &amp; withdrawals
         </div>
         <InfoTooltip text={t(INFO_TEMPLATE)} />
+        {(view.partialOnly || view.excludesToday) && (
+          <span className="text-xs text-muted-foreground" data-testid="exchange-flow-partial">
+            {view.partialOnly ? `(${PARTIAL_DAY_LABEL})` : "(finished days only; today is still in progress)"}
+          </span>
+        )}
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="premium-surface-card p-4 text-center">

@@ -122,7 +122,7 @@ const DistributionAnalysisWidget = ({
 
   const distributionChartConfig = {
     percent: { label: "% of Retail", color: "hsl(var(--primary))" },
-    count: { label: "Holders", color: "hsl(var(--muted-foreground))" },
+    count: { label: "Wallets", color: "hsl(var(--muted-foreground))" },
   };
 
   // Broad-accumulation signal: how many tiers gained holders over the window.
@@ -188,7 +188,7 @@ const DistributionAnalysisWidget = ({
                   {tiersGrew} of {tiersWithBaselineCount} tiers gained holders
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  {netNewHolders >= 0 ? "+" : ""}{formatInteger(netNewHolders)} net retail holders across all tiers over {rangeLabel}
+                  {netNewHolders >= 0 ? "+" : ""}{formatInteger(netNewHolders)} net retail wallets across all tiers over {rangeLabel}
                 </div>
               </div>
             )}
