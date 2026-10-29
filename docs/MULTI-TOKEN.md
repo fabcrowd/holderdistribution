@@ -784,8 +784,8 @@ nothing else.
 - **Feeds:** `scan-exchange-flows.js` (no EVM chains) writes
   `exchange-flow-history.json` (schema 3, same fields as TEL) from the store;
   `generate-tier-outflows.js` (no EVM chains) writes the Solana legs of
-  `tier-outflows.json` (schema 9). Both publish **completed UTC days only**
-  (the feed has no `partial` marker, so the open day waits) and only days on or
+  `tier-outflows.json` (schema 9). Both publish the still-open UTC day flagged like TEL (`partial: true` on the last exchange row, top-level `partialDate`, via `lib/partialDay.js`),
+  and only days on or
   after the first snapshot. A retail counterparty's tier is its balance bucket
   in the latest snapshot on/before the day (staked balances already credited).
 - **What is and is not measured:** CEX deposits and withdrawals, pool sales and
