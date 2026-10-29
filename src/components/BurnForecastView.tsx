@@ -304,8 +304,7 @@ export const BurnForecastView = ({
           Starts at stablecoin left after invoices due now. Each month subtracts the spend used
           above. TEL inventory is not in this series.
         </p>
-        <ZoomFrame zoom={cashZoom}>
-        <AxisBaselineNote baseline={cashAxis.baseline} format={formatCompactUsd} />
+        <ZoomFrame zoom={cashZoom} notes={<AxisBaselineNote baseline={cashAxis.baseline} format={formatCompactUsd} />}>
         <ChartContainer config={runwayConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
           <AreaChart data={cashZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
@@ -358,8 +357,7 @@ export const BurnForecastView = ({
             </h4>
             <ChartLegend items={SPEND_LEGEND} hidden={spendToggle.hidden} onToggle={spendToggle.toggle} />
           </div>
-          <ZoomFrame zoom={spendZoom}>
-          <AxisBaselineNote baseline={spendAxis.baseline} format={formatCompactUsd} />
+          <ZoomFrame zoom={spendZoom} notes={<AxisBaselineNote baseline={spendAxis.baseline} format={formatCompactUsd} />}>
           <ChartContainer config={spendConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
             <LineChart data={spendZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid vertical={false} className="stroke-border/40" />

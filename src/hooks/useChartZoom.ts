@@ -4,6 +4,7 @@ import {
   KEY_PAN_FRACTION,
   KEY_ZOOM_FACTOR,
   MIN_ZOOMABLE_ROWS,
+  applyYRange,
   clampWindow,
   fullExtent,
   insideRect,
@@ -11,12 +12,15 @@ import {
   panWindow,
   pinchSpanFactor,
   plotFraction,
+  scaleYRange,
   shouldCaptureWheel,
   sliceWindow,
   wheelSpanFactor,
   zoomWindow,
   type XRange,
+  type YRange,
 } from "@/lib/chartZoom";
+import type { AxisSide, YAxisScale } from "@/lib/chartAxes";
 
 const DRAG_THRESHOLD_PX = 4;
 /** Sideways trackpad swipe step, as a fraction of the visible span. */
@@ -26,16 +30,25 @@ const PLOT_SELECTOR = ".recharts-cartesian-grid";
 
 type Point = { x: number; y: number };
 
+/** Manual Y ranges set by axis-strip drags; a side missing here is auto-fitted. */
+export type YRanges = Partial<Record<AxisSide, YRange>>;
+
 export type ChartZoom<T> = {
   /** Rows inside the zoom window (all rows when not zoomed). */
   rows: T[];
   /** Enough rows for zoom to mean something. */
   zoomable: boolean;
+  /** True when the X window or any manual Y range is set. */
   zoomed: boolean;
   window: XRange | null;
+  yRanges: YRanges;
   reset: () => void;
   zoomBy: (spanFactor: number, anchorFrac?: number) => void;
   panBy: (deltaFrac: number) => void;
+  /** Stretch or shrink one Y axis around its midpoint; `base` is its auto-fit range. */
+  dragY: (side: AxisSide, spanFactor: number, base: YRange) => void;
+  /** The auto-fit Y scale, replaced by a manual range when the user dragged that axis. */
+  yScale: (side: AxisSide, scale: YAxisScale) => YAxisScale;
   /** Callback ref: the frame can mount later than the hook (loading states). */
   containerRef: (node: HTMLDivElement | null) => void;
   onPointerDown: (e: ReactPointerEvent<HTMLElement>) => void;
@@ -44,7 +57,7 @@ export type ChartZoom<T> = {
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
 };
 
-const plotRect = (node: HTMLElement): DOMRect => {
+export const plotRect = (node: HTMLElement): DOMRect => {
   const grid = node.querySelector(PLOT_SELECTOR);
   return (grid ?? node).getBoundingClientRect();
 };
@@ -69,6 +82,8 @@ export const useChartZoom = <T,>(rowsIn: readonly T[], getX: (row: T, index: num
     setNode(n);
   }, []);
   const [win, setWin] = useState<XRange | null>(null);
+  const [yRanges, setYRanges] = useState<YRanges>({});
+  const yRef = useRef<YRanges>(yRanges);
 
   const full = useMemo(() => fullExtent(rowsIn.map((r, i) => getXRef.current(r, i))), [rowsIn]);
   const fullKey = full ? `${full[0]}:${full[1]}` : "";
@@ -80,18 +95,38 @@ export const useChartZoom = <T,>(rowsIn: readonly T[], getX: (row: T, index: num
   live.current = { full, win, zoomable, minSpan };
 
   // A new data extent (range change, chain switch) starts from the full view.
-  useEffect(() => setWin(null), [fullKey]);
+  useEffect(() => {
+    setWin(null);
+    yRef.current = {};
+    setYRanges({});
+  }, [fullKey]);
 
   const zoomBy = useCallback((spanFactor: number, anchorFrac = 0.5) => {
     const { full: f, win: w, zoomable: z, minSpan: m } = live.current;
     if (!f || !z) return;
-    setWin(zoomWindow(f, w, anchorFrac, spanFactor, m));
+    // Written through immediately: several pointer moves can land before a render.
+    const next = zoomWindow(f, w, anchorFrac, spanFactor, m);
+    live.current.win = next;
+    setWin(next);
   }, []);
   const panBy = useCallback((deltaFrac: number) => {
     const { full: f, win: w } = live.current;
-    if (f) setWin(panWindow(f, w, deltaFrac));
+    if (!f) return;
+    const next = panWindow(f, w, deltaFrac);
+    live.current.win = next;
+    setWin(next);
   }, []);
-  const reset = useCallback(() => setWin(null), []);
+  const dragY = useCallback((side: AxisSide, spanFactor: number, base: YRange) => {
+    const next = scaleYRange(yRef.current[side] ?? base, spanFactor, base);
+    yRef.current = { ...yRef.current, [side]: next };
+    setYRanges(yRef.current);
+  }, []);
+  const yScale = useCallback((side: AxisSide, scale: YAxisScale) => applyYRange(scale, yRanges[side]), [yRanges]);
+  const reset = useCallback(() => {
+    setWin(null);
+    yRef.current = {};
+    setYRanges({});
+  }, []);
 
   // Native non-passive wheel listener: React's onWheel is passive and cannot preventDefault.
   useEffect(() => {
@@ -188,5 +223,7 @@ export const useChartZoom = <T,>(rowsIn: readonly T[], getX: (row: T, index: num
 
   const rows = useMemo(() => sliceWindow(rowsIn, (r, i) => getXRef.current(r, i), win), [rowsIn, win]);
 
-  return { rows, zoomable, zoomed: win != null, window: win, reset, zoomBy, panBy, containerRef, onPointerDown, onPointerMove, onPointerUp, onKeyDown };
+  const zoomed = win != null || Object.keys(yRanges).length > 0;
+
+  return { rows, zoomable, zoomed, window: win, yRanges, reset, zoomBy, panBy, dragY, yScale, containerRef, onPointerDown, onPointerMove, onPointerUp, onKeyDown };
 };

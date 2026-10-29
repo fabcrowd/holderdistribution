@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
+import type { YAxisScale } from "./chartAxes";
 import {
+  Y_MAX_SPAN_RATIO,
+  Y_MIN_SPAN_RATIO,
+  applyYRange,
+  axisDragSpanFactor,
+  scaleYRange,
+  type YRange,
   clampWindow,
   fullExtent,
   insideRect,
@@ -157,5 +164,77 @@ describe("normalizeHidden", () => {
   it("drops keys that no longer exist and never hides everything", () => {
     expect([...normalizeHidden(new Set(["a", "gone"]), ["a", "b"])]).toEqual(["a"]);
     expect(normalizeHidden(new Set(["a", "b"]), ["a", "b"]).size).toBe(0);
+  });
+});
+
+describe("axisDragSpanFactor", () => {
+  it("shrinks the range when dragged toward the axis end and stretches it when dragged back", () => {
+    expect(axisDragSpanFactor(100, 200)).toBeLessThan(1);
+    expect(axisDragSpanFactor(-100, 200)).toBeGreaterThan(1);
+    expect(axisDragSpanFactor(0, 200)).toBe(1);
+  });
+
+  it("is symmetric around zero drag and bounded to one full axis length per gesture", () => {
+    expect(axisDragSpanFactor(50, 200) * axisDragSpanFactor(-50, 200)).toBeCloseTo(1);
+    expect(axisDragSpanFactor(10_000, 200)).toBeCloseTo(axisDragSpanFactor(200, 200));
+  });
+
+  it("ignores a degenerate plot or a bad delta", () => {
+    expect(axisDragSpanFactor(50, 0)).toBe(1);
+    expect(axisDragSpanFactor(Number.NaN, 200)).toBe(1);
+  });
+
+  it("drives the X window: a right drag narrows the range around its centre", () => {
+    const narrowed = zoomWindow(FULL, null, 0.5, axisDragSpanFactor(100, 200), 1)!;
+    expect(narrowed[1] - narrowed[0]).toBeLessThan(100);
+    expect((narrowed[0] + narrowed[1]) / 2).toBeCloseTo(50);
+    expect(zoomWindow(FULL, narrowed, 0.5, axisDragSpanFactor(-200, 200), 1)).toBeNull();
+  });
+});
+
+describe("scaleYRange", () => {
+  const BASE: YRange = [100, 200];
+
+  it("keeps the midpoint and scales the span", () => {
+    expect(scaleYRange(BASE, 0.5, BASE)).toEqual([125, 175]);
+    expect(scaleYRange([125, 175], 2, BASE)).toEqual([100, 200]);
+  });
+
+  it("clamps the span to the auto-fit range times the min and max ratios", () => {
+    const [lo, hi] = scaleYRange(BASE, 0.0001, BASE);
+    expect(hi - lo).toBeCloseTo(100 * Y_MIN_SPAN_RATIO);
+    const [lo2, hi2] = scaleYRange(BASE, 1000, BASE);
+    expect(hi2 - lo2).toBeCloseTo(100 * Y_MAX_SPAN_RATIO);
+  });
+
+  it("leaves the range alone for a neutral or invalid factor", () => {
+    expect(scaleYRange([120, 180], 1, BASE)).toEqual([120, 180]);
+    expect(scaleYRange([120, 180], Number.NaN, BASE)).toEqual([120, 180]);
+  });
+
+  it("can stretch past the data so the axis shows headroom", () => {
+    const [lo, hi] = scaleYRange(BASE, 2, BASE);
+    expect(lo).toBeLessThan(100);
+    expect(hi).toBeGreaterThan(200);
+  });
+});
+
+describe("applyYRange", () => {
+  const auto: YAxisScale = { domain: [98_000, 103_000], ticks: [98_000, 100_000, 102_000], baseline: 98_000 };
+
+  it("returns the auto-fit scale when no manual range is set (reset)", () => {
+    expect(applyYRange(auto, undefined)).toBe(auto);
+  });
+
+  it("replaces the domain and ticks with the manual range and reports its baseline", () => {
+    const view = applyYRange(auto, [99_000, 101_000]);
+    expect(view.domain).toEqual([99_000, 101_000]);
+    expect(view.ticks.length).toBeGreaterThan(0);
+    for (const t of view.ticks) expect(t >= 99_000 && t <= 101_000).toBe(true);
+    expect(view.baseline).toBe(99_000);
+  });
+
+  it("reports no baseline when the manual range starts at zero", () => {
+    expect(applyYRange(auto, [0, 500]).baseline).toBeNull();
   });
 });
