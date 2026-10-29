@@ -18,6 +18,8 @@ import {
 import { formatCompact } from "@/lib/format";
 import { useChartIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
+import { computeBreakAwareDomain } from "@/lib/chartDomain";
+import { breakNotesByRow, insertBreakSpacers, limitedHistoryCount, type SeriesBreak } from "@/lib/seriesBreaks";
 
 /** Dense defaults: 12px ticks, hairline grid, no legend (the panel header names series). */
 const TICK = { fill: "hsl(var(--muted-foreground))", fontSize: 12 };
@@ -62,14 +64,17 @@ const TooltipBox = ({
   label,
   series,
   format,
+  breakNotes,
 }: {
   active?: boolean;
   payload?: Array<{ dataKey?: string | number; value?: number }>;
   label?: unknown;
   series: SeriesDef[];
   format: (n: number) => string;
+  breakNotes?: Map<number, string>;
 }) => {
   if (!active || !payload?.length) return null;
+  const breakNote = typeof label === "number" ? breakNotes?.get(label) : undefined;
   return (
     <div className="rounded-md border border-border bg-popover px-2 py-1.5 text-sm text-popover-foreground shadow-md">
       <div className="mb-0.5 font-medium">{fmtDate(label, dateFull)}</div>
@@ -84,6 +89,7 @@ const TooltipBox = ({
           </div>
         );
       })}
+      {breakNote && <div className="mt-0.5 max-w-[16rem] text-xs text-warning">{breakNote}</div>}
     </div>
   );
 };
@@ -96,6 +102,9 @@ type TimeChartProps = {
   /** Screen-reader summary; the SVG itself is presentational. */
   label: string;
   markers?: ChartMarker[];
+  /** Declared methodology breaks (see `getSeriesBreaks`): the line is split
+   *  there, labelled, and the jump is kept out of the y-domain. */
+  breaks?: SeriesBreak[];
   /** Series key to emphasise (legend hover/focus); the others fade. */
   highlight?: string | null;
 };
@@ -107,26 +116,70 @@ export const TimeChart = ({
   kind = "line",
   label,
   markers = [],
+  breaks = [],
   highlight = null,
 }: TimeChartProps) => {
   const Chart = kind === "area" ? AreaChart : LineChart;
   // Draw in on first mount only; range/chain changes then update instantly.
   const anim = useChartIntro();
   const fade = (key: string) => highlight != null && highlight !== key;
+  // A break near the left edge has no room for its label on the left of the rule.
+  const breakNearStart = (t: number) => {
+    const ts = data.map((d) => Number(d.t)).filter(Number.isFinite);
+    const lo = Math.min(...ts);
+    const hi = Math.max(...ts);
+    return hi > lo && (t - lo) / (hi - lo) < 0.3;
+  };
   const labelled = useMemo(() => {
     const ts = data.map((d) => Number(d.t)).filter(Number.isFinite);
     const span = ts.length ? Math.max(...ts) - Math.min(...ts) : 0;
     const gap = span * 0.12;
     const sorted = markers.map((m) => m.t);
-    return markers.map((m) => !sorted.some((t) => t > m.t && t - m.t < gap));
-  }, [data, markers]);
-  const fullLabel = markers.length
-    ? `${label} ${markers.map((m) => `${m.description} on ${fmtDate(m.t, dateFull)}.`).join(" ")}`
-    : label;
+    // A break's label wins: reclass labels yield to a break within `gap`.
+    const reclass = markers.map(
+      (m) => !sorted.some((t) => t > m.t && t - m.t < gap) && !breaks.some((b) => Math.abs(b.t - m.t) < gap),
+    );
+    const breakTimes = breaks.map((b) => b.t);
+    const breakLabels = breaks.map((b) => !breakTimes.some((t) => t > b.t && t - b.t < gap));
+    return { reclass, breakLabels };
+  }, [data, markers, breaks]);
+  const keys = useMemo(() => series.map((s) => s.key), [series]);
+  const breakTs = useMemo(() => breaks.map((b) => b.t), [breaks]);
+  // A break splits every series, so nulls must not be bridged while one is drawn.
+  const split = breaks.length > 0;
+  const chartData = useMemo(() => insertBreakSpacers(data, breakTs, "t", keys) as typeof data, [data, breakTs, keys]);
+  const domain = useMemo(
+    () => (split ? computeBreakAwareDomain(data, keys, breakTs, "t") : (["auto", "auto"] as ["auto", "auto"])),
+    [split, data, keys, breakTs],
+  );
+  const breakNotes = useMemo(() => breakNotesByRow(data.map((d) => d.t), breaks), [data, breaks]);
+  // Too few points to call a curve: straight segments, visible dots, a note.
+  const limited = limitedHistoryCount(data, keys);
+  const curve = limited != null ? "linear" : "monotone";
+  const pointDot = (key: string, color: string) =>
+    limited != null
+      ? { r: 2.5, fill: color, stroke: "hsl(var(--background))", strokeWidth: 1 }
+      : split || (series.find((x) => x.key === key)?.connectNulls === false)
+        ? isolatedDot(chartData, key, color)
+        : false;
+  const allMarkers = [...markers.map((m) => m.description), ...breaks.map((b) => b.description)];
+  const fullLabel = allMarkers.length
+    ? `${label} ${[
+        ...markers.map((m) => `${m.description} on ${fmtDate(m.t, dateFull)}.`),
+        ...breaks.map((b) => `${b.description} on ${fmtDate(b.t, dateFull)}.`),
+      ].join(" ")}`
+    : limited != null
+      ? `${label} Limited history (${limited} days).`
+      : label;
   return (
-    <div role="img" aria-label={fullLabel} className="h-full w-full" data-markers={markers.length || undefined}>
+    <div role="img" aria-label={fullLabel} className="relative h-full w-full" data-markers={markers.length || undefined} data-breaks={breaks.length || undefined}>
+      {limited != null && (
+        <p className="pointer-events-none absolute bottom-7 right-3 z-10 text-xs text-muted-foreground" data-testid="limited-history">
+          Limited history ({limited} {limited === 1 ? "day" : "days"})
+        </p>
+      )}
       <ResponsiveContainer width="100%" height="100%">
-        <Chart data={data} margin={MARGIN}>
+        <Chart data={chartData} margin={MARGIN}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
           <XAxis
             dataKey="t"
@@ -144,10 +197,25 @@ export const TimeChart = ({
             tickLine={false}
             axisLine={false}
             width={48}
-            domain={["auto", "auto"]}
+            domain={domain}
+            allowDataOverflow={split}
             tickFormatter={(v: number) => formatCompact(v, 1)}
           />
-          <Tooltip content={<TooltipBox series={series} format={format} />} />
+          <Tooltip content={<TooltipBox series={series} format={format} breakNotes={breakNotes} />} />
+          {breaks.map((b, i) => (
+            <ReferenceLine
+              key={`break-${b.t}`}
+              x={b.t}
+              stroke="hsl(var(--ha-warning))"
+              strokeDasharray="2 3"
+              strokeWidth={1}
+              label={
+                labelled.breakLabels[i]
+                  ? { value: b.label, position: breakNearStart(b.t) ? "insideTopLeft" : "insideTopRight", fill: "hsl(var(--ha-warning))", fontSize: 12, fontWeight: 600 }
+                  : undefined
+              }
+            />
+          ))}
           {markers.map((m, i) => (
             <ReferenceLine
               key={`${m.t}-${m.label}`}
@@ -159,7 +227,7 @@ export const TimeChart = ({
               // Close-together markers share one label (on the latest) so
               // their text doesn't overprint.
               label={
-                labelled[i]
+                labelled.reclass[i]
                   ? { value: m.label, position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 12, fontWeight: 600 }
                   : undefined
               }
@@ -170,29 +238,29 @@ export const TimeChart = ({
               <Area
                 key={s.key}
                 dataKey={s.key}
-                type="monotone"
+                type={curve}
                 stroke={s.color}
                 fill={s.color}
                 fillOpacity={fade(s.key) ? 0.04 : 0.15}
                 strokeOpacity={fade(s.key) ? 0.25 : 1}
                 strokeWidth={highlight === s.key ? 2.25 : 1.5}
                 strokeDasharray={s.dashed ? "4 3" : undefined}
-                dot={s.connectNulls === false ? isolatedDot(data, s.key, s.color) : false}
+                dot={pointDot(s.key, s.color)}
                 isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out"
-                connectNulls={s.connectNulls ?? true}
+                connectNulls={split ? false : (s.connectNulls ?? true)}
               />
             ) : (
               <Line
                 key={s.key}
                 dataKey={s.key}
-                type="monotone"
+                type={curve}
                 stroke={s.color}
                 strokeOpacity={fade(s.key) ? 0.25 : 1}
                 strokeWidth={highlight === s.key ? 2.25 : 1.5}
                 strokeDasharray={s.dashed ? "4 3" : undefined}
-                dot={s.connectNulls === false ? isolatedDot(data, s.key, s.color) : false}
+                dot={pointDot(s.key, s.color)}
                 isAnimationActive={anim} animationDuration={CHART_DRAW_MS} animationEasing="ease-out"
-                connectNulls={s.connectNulls ?? true}
+                connectNulls={split ? false : (s.connectNulls ?? true)}
               />
             ),
           )}

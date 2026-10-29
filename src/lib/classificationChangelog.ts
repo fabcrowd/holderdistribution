@@ -8,9 +8,21 @@ export type ClassificationEvent = {
     metrics: string[];
     chains?: string[];
   };
-  backfillStatus: "complete" | "partial" | "not-planned" | "deferred";
+  backfillStatus: "complete" | "partial" | "not-planned" | "not-possible" | "deferred";
   backfillNote?: string;
   dateConfidence?: "exact" | "approximate";
+  /**
+   * Optional. Declares that history series for `metrics` are discontinuous at
+   * this event: charts split the line there, label it, and keep the jump out
+   * of the y-axis. `at` (ISO date) is the first snapshot on the new basis when
+   * it differs from `date`; `note` overrides the default tooltip text.
+   * Absent on events that don't break a series (all pre-existing feeds).
+   */
+  breaksSeries?: {
+    metrics: string[];
+    at?: string;
+    note?: string;
+  };
 };
 
 export type ClassificationChangelog = {
