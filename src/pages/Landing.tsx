@@ -4,6 +4,8 @@ import { Footer } from "@/components/Footer";
 import { TokenCard } from "@/components/TokenCard";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { fetchHolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
+import { fetchHolderHistoryPayload } from "@/hooks/useHoldersHistoryData";
+import { cardConcentration, cardTrend } from "@/lib/cardTrend";
 import { PROJECTS, getProject } from "@/lib/projects";
 import { cardStats } from "@/lib/landingStats";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/seo";
@@ -12,7 +14,10 @@ import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/seo";
  * Home: pick a token, then open its terminal. One card per mapped project; the
  * stats come from each token's existing holders-lite.json under the same query
  * key the terminal uses (["holder-lite", slug]), so opening a card reuses the
- * cached snapshot. Each card's query fails on its own and shows "—".
+ * cached snapshot. Concentration (top-10/top-100 share) comes from the same
+ * snapshot; the 30-day sparkline from holders-history.json (key
+ * ["holders-history", slug], shared with the terminal). Each query fails on its
+ * own: stats show "—" and the sparkline a placeholder.
  */
 const Landing = () => {
   usePageMeta({ title: SITE_TITLE, description: SITE_DESCRIPTION, canonicalPath: "/" });
@@ -21,6 +26,15 @@ const Landing = () => {
     queries: PROJECTS.map((p) => ({
       queryKey: ["holder-lite", p.slug],
       queryFn: () => fetchHolderLiteSnapshot(p.slug),
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    })),
+  });
+
+  const histories = useQueries({
+    queries: PROJECTS.map((p) => ({
+      queryKey: ["holders-history", p.slug],
+      queryFn: () => fetchHolderHistoryPayload(p.slug),
       staleTime: 5 * 60 * 1000,
       retry: 1,
     })),
@@ -39,9 +53,20 @@ const Landing = () => {
             const q = queries[i];
             const project = getProject(p.slug);
             const stats = q.isPending ? null : cardStats(q.isError ? null : q.data);
+            const h = histories[i];
+            const snap = q.isError ? null : q.data;
             return (
               <li key={p.slug}>
-                <TokenCard slug={p.slug} name={project.name} ticker={project.ticker} image={project.image} stats={stats} />
+                <TokenCard
+                  slug={p.slug}
+                  name={project.name}
+                  ticker={project.ticker}
+                  image={project.image}
+                  stats={stats}
+                  concentration={q.isPending ? null : cardConcentration(snap)}
+                  trendLoading={h.isPending}
+                  trend={h.isPending || h.isError ? null : cardTrend(h.data?.entries)}
+                />
               </li>
             );
           })}

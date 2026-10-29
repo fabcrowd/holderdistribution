@@ -65,6 +65,20 @@ export const resolveHolderHistoryUrl = (slug: string) => {
   return dataUrl(slug, "holders-history.json", { base: normalizedBase });
 };
 
+/** Fetch + 404-tolerance shared by the terminal hook and the landing cards. */
+export const fetchHolderHistoryPayload = async (slug: string): Promise<HolderHistoryPayload> => {
+  const response = await fetch(resolveHolderHistoryUrl(slug));
+  if (!response.ok) {
+    if (response.status === 404) {
+      return {} as HolderHistoryPayload;
+    }
+    const errorBody = await response.json().catch(() => ({}));
+    const message = typeof errorBody?.error === "string" ? errorBody.error : `Request failed (${response.status})`;
+    throw new Error(message);
+  }
+  return (await response.json()) as HolderHistoryPayload;
+};
+
 /**
  * Fetches the raw holders-history.json payload exactly once and shares it
  * across every consumer via a single stable query key. view/days-specific
@@ -75,20 +89,7 @@ export const useHoldersHistoryData = () => {
   const { slug } = useProject();
   return useQuery<HolderHistoryPayload>({
     queryKey: ["holders-history", slug],
-    queryFn: async () => {
-      const url = resolveHolderHistoryUrl(slug);
-      const response = await fetch(url);
-      if (!response.ok) {
-        if (response.status === 404) {
-          return {} as HolderHistoryPayload;
-        }
-        const errorBody = await response.json().catch(() => ({}));
-        const message =
-          typeof errorBody?.error === "string" ? errorBody.error : `Request failed (${response.status})`;
-        throw new Error(message);
-      }
-      return (await response.json()) as HolderHistoryPayload;
-    },
+    queryFn: () => fetchHolderHistoryPayload(slug),
     staleTime: 5 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
