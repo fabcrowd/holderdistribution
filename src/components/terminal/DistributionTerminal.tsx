@@ -23,6 +23,7 @@ import { CHART_TICK, TYPE_PX } from "@/lib/terminalLayout";
 import { useTierGeometry } from "@/components/tierflow/useTierGeometry";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { formatCompact } from "@/lib/format";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
 
 const int = new Intl.NumberFormat("en-US");
@@ -253,7 +254,9 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
         fit
         className="min-h-[36rem]"
         title="Tier flows"
-        info={`Each bar is a retail balance tier. Select a tier (here, in the Tiers table or on the bars) to see where its wallets and ${tk} came from and went to over the period. Retail only; sub-1-${tk} dust wallets are counted in the lowest tier.`}
+        info={`${t(TIER_FLOWS_EXPLAINER)}
+
+Select a tier here or in the Tiers table to see where its wallets and ${tk} came from and went to over the period. Retail only; sub-1-${tk} dust wallets are counted in the lowest tier.`}
         stat={
           growth.tiers > 0 && (
             <span className="text-xs text-muted-foreground">
@@ -273,9 +276,6 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
         }
         testId="panel-tier-flows"
       >
-        <p data-testid="tier-flows-explainer" className="mb-2 text-sm leading-snug text-muted-foreground">
-          {t(TIER_FLOWS_EXPLAINER)}
-        </p>
         {placeholder ? (
           <div className="min-h-[32rem]">{placeholder}</div>
         ) : rangeDays >= 1 ? (
@@ -312,8 +312,8 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
       <p className="sr-only" aria-live="polite" data-testid="tier-live-summary">
         {liveSummary}
       </p>
-      <div className="grid shrink-0 grid-cols-2 gap-3" data-testid="distribution-detail-row">
-      {selected ? (
+      <div className={`grid shrink-0 gap-3 ${selected ? "grid-cols-2" : "grid-cols-1"}`} data-testid="distribution-detail-row">
+      {selected && (
         <TerminalPanel
           fit
           className="min-h-[300px]"
@@ -323,72 +323,6 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
           testId="panel-tier-detail"
         >
           <div ref={setDetailEl} className="min-h-full" />
-        </TerminalPanel>
-      ) : (
-        <TerminalPanel
-          chart="standard"
-          title="Net wallet change by tier"
-          info="Retail wallets in each tier now, minus at the start of the period. Click a bar to select that tier."
-          testId="panel-net-change"
-        >
-          {placeholder ??
-            (countSuppressed && netByTier.some((d) => d.has) ? (
-              <PanelMessage>
-                <span data-testid="net-change-relabelled">
-                  <ChangeIndicator variant="plain" current={0} previous={0} changelogEvents={countRelabel} className="mr-1 text-xs" />
-                  Net change isn&apos;t shown: wallets were reclassified after this period&apos;s baseline
-                  {historicalDelta?.referenceDate ? ` (${historicalDelta.referenceDate})` : ""}, so tier counts would mix relabelling
-                  with real moves.
-                </span>
-              </PanelMessage>
-            ) : netByTier.some((d) => d.has) ? (
-              <div
-                role="img"
-                aria-label={`Net wallet change by tier: ${netByTier.map((d) => `${d.name} ${signedInt(d.value)}`).join(", ")}. Select a tier in the Tiers table to see its detail.`}
-                className="h-full w-full [&_.recharts-bar-rectangle]:cursor-pointer"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={netByTier} layout="vertical" margin={{ top: 2, right: 16, bottom: 0, left: 0 }}>
-                    <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
-                    <XAxis
-                      type="number"
-                      // Headroom on both sides so the value labels at the bar ends fit.
-                      domain={[(min: number) => (min < 0 ? Math.floor(min * 1.3) : 0), (max: number) => (max > 0 ? Math.ceil(max * 1.3) : 0)]}
-                      tick={CHART_TICK}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v: number) => formatCompact(v, 1)}
-                    />
-                    <YAxis type="category" dataKey="name" width={84} tick={CHART_TICK} tickLine={false} axisLine={false} interval={0} />
-                    <Tooltip
-                      cursor={{ fill: "hsl(var(--muted))" }}
-                      formatter={(v: number) => [signedInt(v), "Net wallets"]}
-                      contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
-                      labelStyle={{ color: "hsl(var(--popover-foreground))" }}
-                      itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                    />
-                    <Bar
-                      dataKey="value"
-                      isAnimationActive={chartIntro}
-                      animationDuration={CHART_DRAW_MS}
-                      radius={2}
-                      // A transparent full-row background takes the same click,
-                      // so a near-zero bar (a few px wide) is still a real target.
-                      background={{ fill: "transparent", cursor: "pointer" }}
-                      className="cursor-pointer"
-                      onClick={(d: { label?: string }) => d?.label && dispatch({ type: "tier-set", label: d.label })}
-                    >
-                      {netByTier.map((d) => (
-                        <Cell key={d.label} fill={d.value >= 0 ? "hsl(var(--ha-positive))" : "hsl(var(--ha-negative))"} />
-                      ))}
-                      <LabelList dataKey="value" content={NetBarLabel} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <PanelMessage>No baseline for this period yet.</PanelMessage>
-            ))}
         </TerminalPanel>
       )}
 
@@ -459,6 +393,81 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
         )}
       </TerminalPanel>
       </div>
+      {/* Nothing to expand when the period has no baseline, or when a reclassification makes the net change meaningless (the diagram already says so). */}
+      {!countSuppressed && netByTier.some((d) => d.has) && (
+      <Accordion type="single" collapsible className="shrink-0" data-testid="distribution-details">
+        <AccordionItem value="details" className="rounded-lg border border-border bg-card px-4">
+          <AccordionTrigger className="py-3 text-sm font-semibold">Details: net wallet change by tier</AccordionTrigger>
+          <AccordionContent>
+            <TerminalPanel
+              chart="standard"
+              title="Net wallet change by tier"
+              info="Retail wallets in each tier now, minus at the start of the period. Click a bar to select that tier."
+              testId="panel-net-change"
+            >
+              {placeholder ??
+                (countSuppressed && netByTier.some((d) => d.has) ? (
+                  <PanelMessage>
+                    <span data-testid="net-change-relabelled">
+                      <ChangeIndicator variant="plain" current={0} previous={0} changelogEvents={countRelabel} className="mr-1 text-xs" />
+                      Net change isn&apos;t shown: wallets were reclassified after this period&apos;s baseline
+                      {historicalDelta?.referenceDate ? ` (${historicalDelta.referenceDate})` : ""}, so tier counts would mix relabelling
+                      with real moves.
+                    </span>
+                  </PanelMessage>
+                ) : netByTier.some((d) => d.has) ? (
+                  <div
+                    role="img"
+                    aria-label={`Net wallet change by tier: ${netByTier.map((d) => `${d.name} ${signedInt(d.value)}`).join(", ")}. Select a tier in the Tiers table to see its detail.`}
+                    className="h-full w-full [&_.recharts-bar-rectangle]:cursor-pointer"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={netByTier} layout="vertical" margin={{ top: 2, right: 16, bottom: 0, left: 0 }}>
+                        <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
+                        <XAxis
+                          type="number"
+                          // Headroom on both sides so the value labels at the bar ends fit.
+                          domain={[(min: number) => (min < 0 ? Math.floor(min * 1.3) : 0), (max: number) => (max > 0 ? Math.ceil(max * 1.3) : 0)]}
+                          tick={CHART_TICK}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(v: number) => formatCompact(v, 1)}
+                        />
+                        <YAxis type="category" dataKey="name" width={84} tick={CHART_TICK} tickLine={false} axisLine={false} interval={0} />
+                        <Tooltip
+                          cursor={{ fill: "hsl(var(--muted))" }}
+                          formatter={(v: number) => [signedInt(v), "Net wallets"]}
+                          contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
+                          labelStyle={{ color: "hsl(var(--popover-foreground))" }}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                        />
+                        <Bar
+                          dataKey="value"
+                          isAnimationActive={chartIntro}
+                          animationDuration={CHART_DRAW_MS}
+                          radius={2}
+                          // A transparent full-row background takes the same click,
+                          // so a near-zero bar (a few px wide) is still a real target.
+                          background={{ fill: "transparent", cursor: "pointer" }}
+                          className="cursor-pointer"
+                          onClick={(d: { label?: string }) => d?.label && dispatch({ type: "tier-set", label: d.label })}
+                        >
+                          {netByTier.map((d) => (
+                            <Cell key={d.label} fill={d.value >= 0 ? "hsl(var(--ha-positive))" : "hsl(var(--ha-negative))"} />
+                          ))}
+                          <LabelList dataKey="value" content={NetBarLabel} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <PanelMessage>No baseline for this period yet.</PanelMessage>
+                ))}
+            </TerminalPanel>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+      )}
     </div>
   );
 };
