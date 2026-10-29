@@ -95,18 +95,19 @@ const ADDRESS_EXPLORER: Record<string, string> = {
 };
 
 /**
- * Address page on the chain's explorer. Built-ins cover TEL's chains; any
- * other chain uses the project's `chains[].explorer` root (passed as
- * `explorers`, key -> root), so e.g. an arbitrum wallet links to Arbiscan
- * instead of Etherscan. An `explorers` value containing `{address}` is a full
- * template (Solana: "https://solscan.io/account/{address}", base58 case kept).
+ * Address page on the chain's explorer. The project's configured explorer
+ * (passed as `explorers`, key -> value) always wins: a value containing
+ * `{address}` is a full template (Solana: "https://solscan.io/account/{address}",
+ * base58 case kept), otherwise it is a root (`chains[].explorer`) and gets
+ * `/address/<addr>`. Built-ins (TEL's chains) are only a fallback when the
+ * project configures nothing for the chain; unknown chains fall back to Etherscan.
  */
 export const addressExplorerUrl = (chain: string, address: string, explorers?: Record<string, string>) => {
-  const builtIn = ADDRESS_EXPLORER[chain];
-  if (builtIn) return `${builtIn}${address}`;
   const configured = explorers?.[chain];
   if (configured?.includes("{address}")) return configured.split("{address}").join(address);
   const root = configured?.replace(/\/+$/, "");
   if (root) return `${root}/address/${address}`;
+  const builtIn = ADDRESS_EXPLORER[chain];
+  if (builtIn) return `${builtIn}${address}`;
   return `${ADDRESS_EXPLORER.ethereum}${address}`;
 };
