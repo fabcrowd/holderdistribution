@@ -101,6 +101,7 @@ import { projectHolderTiers } from "./lib/holderTiers.js";
 import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS, setHolderTiers } from "./lib/holdersView.js";
 import { classifySnapshot, stakedAmountsByAddress } from "./lib/phantomStakers.js";
+import { readJsonOptional } from "./lib/readJsonOptional.js";
 import { selectPipelineProject, projectPaths, projectNonRetailPaths, projectClassificationPath } from "./lib/projects.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
@@ -296,7 +297,7 @@ const main = async () => {
   // Phantom-staker correction (see file header). The current funding-wallets.json
   // is stakedBy()-derived and is the authority on who actually stakes; each
   // historical date is compared against the attribution in effect on that date.
-  const currentStakes = stakedAmountsByAddress(await readJson(FUNDING_WALLETS_PATH));
+  const currentStakes = stakedAmountsByAddress(await readJsonOptional(FUNDING_WALLETS_PATH, { wallets: [] }));
   const fundingCommits = commitsByDate(FUNDING_WALLETS_FILE);
   const fundingDates = [...fundingCommits.keys()].sort();
   const fundingCache = new Map();
