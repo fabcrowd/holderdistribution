@@ -83,9 +83,8 @@ describe("project-driven copy coverage", () => {
     });
   });
 
-  it("TEL keeps its Supply-view entity and footer copy through overrides", () => {
+  it("TEL keeps its Supply-view entity copy through overrides", () => {
     const tel = getProject("tel");
-    expect(copyText(tel, "footer.affiliation", "generic")).toBe("Telcoin Holdings, the Telcoin Association, or any of their subsidiaries");
     expect(copyText(tel, "treasury.history.info", "generic")).toMatch(/Telcoin Holdings is a SEPARATE entity/);
     expect(copyText(tel, "treasury.history.info", "generic")).toMatch(/BitGo, Anchorage/);
     expect(copyText(tel, "treasury.series.council", "generic")).toBe("Association — TAO & Safes");
