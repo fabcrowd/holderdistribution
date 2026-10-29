@@ -54,9 +54,9 @@ describe("resolveCoingeckoCirculating", () => {
     warn.mockRestore();
   });
 
-  it("keeps TEL's traced snapshot only for the tel slug when the live read is missing", async () => {
+  it("keeps the traced snapshot only for a project that opts in when the live read is missing", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const tel = { slug: "tel", config: { supply: { coingeckoId: "telcoin" } } };
+    const tel = { slug: "tel", config: { supply: { coingeckoId: "telcoin", coingeckoSnapshotFallback: true } } };
     await expect(resolveCoingeckoCirculating(tel, { fetchImpl: fetchImpl({ market_data: { circulating_supply: 0 } }) })).resolves.toBe(COINGECKO_CIRCULATING);
     await expect(resolveCoingeckoCirculating(tel, { fetchImpl: fetchImpl({}, { ok: false, status: 429 }) })).resolves.toBe(COINGECKO_CIRCULATING);
     // A live positive read replaces the snapshot. Another slug never receives it.

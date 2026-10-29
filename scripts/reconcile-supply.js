@@ -55,11 +55,12 @@ export {
 
 /**
  * Inputs/outputs for one project. TEL (legacyRoot): public/data/ + config/
- * root files + the 100B TEL total and CoinGecko comparison, exactly as before.
- * Other projects: public/data/<slug>/, their own classification files, their
- * own supply.target. CoinGecko circulating is fetched for supply.coingeckoId
- * (else gated.walletFlows.coingeckoId); no id or no positive read publishes
- * null. Slug "tel" keeps its traced snapshot when the live read is missing.
+ * root files. Other projects: public/data/<slug>/, their own classification
+ * files. Every project: its own supply.target, chains order / origin and
+ * optional supply.upgrade. CoinGecko circulating is fetched for
+ * supply.coingeckoId (else gated.walletFlows.coingeckoId); no id or no positive
+ * read publishes null, unless supply.coingeckoSnapshotFallback keeps the
+ * traced snapshot (TEL).
  */
 export const reconcilePaths = (project, root = process.cwd()) => {
   const data = projectPaths(project, root);
@@ -72,15 +73,26 @@ export const reconcilePaths = (project, root = process.cwd()) => {
 };
 
 export const reconcileOptions = (project) => {
-  if (project.config?.data?.legacyRoot === true) return {}; // TEL total-supply default
-  const target = Number(project.config?.supply?.target);
+  const supply = project.config?.supply;
+  const target = Number(supply?.target);
   if (!Number.isFinite(target) || target <= 0) {
     throw new Error(`project ${project.slug}: supply.target is required to reconcile supply`);
   }
+  // Chain order and origin come from the project's own chains[] (the snapshot's
+  // chainOrder / totals.originChain still win when present). `supply.upgrade`
+  // opts into upgraded-generation accounting ({ generation }).
+  const chains = (project.config?.chains ?? []).map((c) => c.key);
+  const origin = (project.config?.chains ?? []).find((c) => c.origin)?.key;
   // CoinGecko is resolved per project in main() from supply.coingeckoId.
   // A static supply.coingeckoCirculating number is ignored so one token's
   // figure cannot be copied onto another.
-  return { totalSupply: target, coingeckoCirculating: null };
+  return {
+    totalSupply: target,
+    coingeckoCirculating: null,
+    ...(chains.length ? { chains } : {}),
+    ...(origin ? { origin } : {}),
+    ...(supply?.upgrade ? { upgrade: supply.upgrade } : {}),
+  };
 };
 
 const readJson = async (p, fallback = null) => {

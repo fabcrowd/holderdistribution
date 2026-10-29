@@ -60,7 +60,7 @@ beforeAll(() => {
     { slug: "tel", name: "Telcoin", ticker: "TEL", default: true }, { slug: "demo", name: "Demo", ticker: "DMO" },
   ] }));
   // Fixture TEL keeps the real tel.json semantics (legacyRoot) but no chainsConfig file in tmp.
-  fs.writeFileSync(path.join(tmp, "config/projects/tel.json"), JSON.stringify({ slug: "tel", ticker: "TEL", data: { legacyRoot: true }, chains: [] }));
+  fs.writeFileSync(path.join(tmp, "config/projects/tel.json"), JSON.stringify({ slug: "tel", ticker: "TEL", data: { legacyRoot: true }, supply: { target: 100_000_000_000 }, chains: [] }));
   fs.writeFileSync(path.join(tmp, "config/projects/demo.json"), JSON.stringify(DEMO));
   fs.writeFileSync(path.join(tmp, "config/projects/demo/exclusions.json"), JSON.stringify({ addresses: [A("D")], labels: {} }));
 });
@@ -197,7 +197,13 @@ describe("reconcile-supply per project", () => {
       cexWallets: path.join(repo, "config/cex-wallets.json"),
       output: path.join(repo, "public/data/supply-reconciliation.json"),
     });
-    expect(reconcileOptions(tel)).toEqual({});
+    expect(reconcileOptions(tel)).toEqual({
+      totalSupply: TEL_TOTAL_SUPPLY,
+      coingeckoCirculating: null,
+      chains: ["ethereum", "polygon", "base"],
+      origin: "ethereum",
+      upgrade: { generation: "v3" },
+    });
   });
 
   it("buildReconciliation defaults to the TEL total supply and does not assume a CoinGecko figure", () => {
@@ -230,7 +236,12 @@ describe("reconcile-supply per project", () => {
       cexWallets: null,
       output: path.join(tmp, "public/data/demo/supply-reconciliation.json"),
     });
-    expect(reconcileOptions(demo)).toEqual({ totalSupply: 1_000_000, coingeckoCirculating: null });
+    expect(reconcileOptions(demo)).toEqual({
+      totalSupply: 1_000_000,
+      coingeckoCirculating: null,
+      chains: ["ethereum", "arbitrum"],
+      origin: "ethereum",
+    });
     const r = buildReconciliation(
       { chainOrder: ["ethereum", "arbitrum"], wallets: [{ address: A(1), ethereum_balance: 600_000, arbitrum_balance: 400_000 }] },
       { labels: {} }, { wallets: [] }, reconcileOptions(demo),

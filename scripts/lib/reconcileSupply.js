@@ -13,7 +13,8 @@ export const RECONCILE_TOLERANCE = 0.01; // 1%
 // their implied non-circulating amount (100B - this) equals treasury
 // 0x2580…'s exact balance right after its 2025-10-01 transfer to Anchorage
 // (4,922,764,633, within 1,000 TEL). scripts/lib/coingeckoCirculating.js
-// applies it solely when slug is "tel" and CoinGecko has no positive live
+// applies it solely to a project whose config sets
+// supply.coingeckoSnapshotFallback (TEL) when CoinGecko has no positive live
 // circulating supply. It is not a default for any other project.
 export const COINGECKO_CIRCULATING = 95_077_236_367;
 
@@ -35,22 +36,32 @@ export const buildReconciliation = (
   // supply.target and a per-project CoinGecko read). totalSupply still
   // defaults to TEL's 100B for callers that omit it. coingeckoCirculating
   // defaults to null: omitting it hides the comparison rather than borrowing
-  // TEL's snapshot.
-  { totalSupply = TEL_TOTAL_SUPPLY, coingeckoCirculating = null } = {},
+  // TEL's snapshot. `chains` (ordered keys) and `origin` come from the
+  // project's chains[] when the snapshot does not name them; `upgrade`
+  // ({ generation }) names the upgraded-token generation (default "v3").
+  { totalSupply = TEL_TOTAL_SUPPLY, coingeckoCirculating = null, chains = null, origin = null, upgrade = null } = {},
 ) => {
   const TOTAL_SUPPLY = totalSupply;
+  const upgradeGeneration = upgrade?.generation ?? "v3";
   // Per-token ledger written by pull-holders-rpc.js (scripts/lib/supply.js).
   // Absent in pre-v3 snapshots, where every v3/retired term is zero and the
   // wallet sums ARE the legacy supply.
   const tokens = snapshot?.totals?.tokens ?? null;
   // Wallet columns are `<chainKey>_balance`; the snapshot's chainOrder names
-  // them (TEL: ethereum, polygon, base). Mirrors = every non-origin chain.
-  const chainKeys = snapshot?.chainOrder?.length ? snapshot.chainOrder : ["ethereum", "polygon", "base"];
+  // them, else the project's chains[] order, else whatever columns the wallets
+  // carry. Mirrors = every non-origin chain.
+  const chainKeys = snapshot?.chainOrder?.length
+    ? snapshot.chainOrder
+    : chains?.length
+      ? chains
+      : Object.keys(snapshot?.wallets?.[0] ?? {})
+          .filter((k) => k.endsWith("_balance"))
+          .map((k) => k.slice(0, -"_balance".length));
   // Generic bridge-netting snapshot (scripts/lib/supply.js
   // computeBridgeNettedSupply): only lock-mint chains are mirrors; native /
   // burn-mint chains are real supply, counted like the origin.
   const bridgeModes = snapshot?.totals?.method === "bridge-netting" ? snapshot?.totals?.bridgeModes ?? {} : null;
-  const originKey = snapshot?.totals?.originChain ?? (bridgeModes ? chainKeys[0] : "ethereum");
+  const originKey = snapshot?.totals?.originChain ?? (origin ?? chainKeys[0]);
   const mirrorKeys = bridgeModes
     ? chainKeys.filter((k) => k !== originKey && bridgeModes[k] === "lock-mint")
     : chainKeys.filter((k) => k !== originKey);
@@ -102,7 +113,7 @@ export const buildReconciliation = (
 
     if (bridgeSet.has(address)) {
       // Bridge locks hold legacy TEL only; a stray v3 balance is not backing.
-      bridgeLocked += eth - (Number(wallet?.[`${originKey}_v3`]) || 0);
+      bridgeLocked += eth - (Number(wallet?.[`${originKey}_${upgradeGeneration}`]) || 0);
       items.push({
         address,
         category: "bridge-lock",
@@ -176,7 +187,7 @@ export const buildReconciliation = (
   //   residual = bridgeInFlight − originDrift + (retiredLegacy − v3Supply)
   // where the last term is v3 not yet backed by retired legacy (≈ 0, in-flight).
   const retiredTotal = tokens ? sumTokens(tokens.retiredLegacy, Object.keys(tokens.retiredLegacy ?? {})) : 0;
-  const v3Total = tokens ? sumTokens(tokens.v3, Object.keys(tokens.v3 ?? {})) : 0;
+  const v3Total = tokens ? sumTokens(tokens[upgradeGeneration], Object.keys(tokens[upgradeGeneration] ?? {})) : 0;
   const derivedOrigin = bridgeModes
     ? Number(snapshot?.totals?.totalSupply) || originTotal // origin + native/burn-mint supply
     : tokens ? Number(tokens.legacy?.[originKey]) || 0 : originTotal;
@@ -214,7 +225,7 @@ export const buildReconciliation = (
             retiredLegacy: retiredTotal,
             retiredLegacyByChain: { ...tokens.retiredLegacy },
             v3Supply: v3Total,
-            v3SupplyByChain: { ...tokens.v3 },
+            v3SupplyByChain: { ...tokens[upgradeGeneration] },
             legacySupplyByChain: { ...tokens.legacy },
             // Legacy sent to an upgrade contract with no swap: counted once, on
             // the contract's own (escrow-labelled) wallet.

@@ -14,11 +14,18 @@
     "$comment": "Ported pipeline scripts read chain/token/contract addresses from chainsConfig (TEL keeps config/chains.json, which also carries explorerApi settings). A project without chainsConfig gets its chain map derived from chains[] below (scripts/lib/projects.js deriveChainsFromProject).",
     "chainsConfig": "config/chains.json"
   },
+  "capabilities": {
+    "dispositionLedger": true
+  },
   "supply": {
     "target": 100000000000,
     "targetLabel": "100B",
     "coingeckoId": "telcoin",
     "generationsSumOneToOne": true,
+    "coingeckoSnapshotFallback": true,
+    "upgrade": {
+      "generation": "v3"
+    },
     "note": "legacy + v3 = 100B; legacy retired into v3 via TokenMigration/MigrationVault is netted out, Polygon/Base legacy mirrors are backed by Ethereum bridge locks (docs/TEL-CONTRACTS.md, Supply accounting)."
   },
   "holders": {

@@ -58,7 +58,16 @@ export type ProjectConfig = ProjectEntry & {
   image?: string;
   links?: Record<string, string>;
   data?: { legacyRoot?: boolean; dir?: string };
+  /** Opt-in UI panels. Absent = off, so a new project never inherits another token's panels. */
+  capabilities?: {
+    /** Council-wallet sales journal (src/components/TelDispositionLedger.tsx). */
+    dispositionLedger?: boolean;
+  };
   supply?: {
+    /** reconcile-supply: keep the traced CoinGecko snapshot when the live read is missing (TEL only). */
+    coingeckoSnapshotFallback?: boolean;
+    /** reconcile-supply: upgraded-generation accounting (legacy retired into `generation`). Absent = none. */
+    upgrade?: { generation?: string };
     target?: number;
     targetLabel?: string;
     generationsSumOneToOne?: boolean;
@@ -112,8 +121,9 @@ export const PROJECTS: readonly ProjectEntry[] = (registry.projects as ProjectEn
   (p) => SLUG_RE.test(p.slug) && CONFIGS[p.slug],
 );
 
-export const DEFAULT_PROJECT_SLUG: string =
-  PROJECTS.find((p) => p.default)?.slug ?? PROJECTS[0]?.slug ?? "tel";
+const registryDefaultSlug = (PROJECTS.find((p) => p.default) ?? PROJECTS[0])?.slug;
+if (!registryDefaultSlug) throw new Error("config/projects.json lists no usable project, so there is no default project");
+export const DEFAULT_PROJECT_SLUG: string = registryDefaultSlug;
 
 export const isProjectSlug = (v: unknown): v is string =>
   typeof v === "string" && PROJECTS.some((p) => p.slug === v);

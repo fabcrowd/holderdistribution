@@ -4,12 +4,11 @@
  * reconcile-supply.js calls this with the project's own coin id
  * (`supply.coingeckoId`, else `gated.walletFlows.coingeckoId`). A missing id,
  * a non-positive read, or a failed request leaves the comparison unset so the
- * UI hides the row. TEL is the only slug that may fall back to its traced
- * snapshot — that number is not a default for any other project.
+ * UI hides the row. Only a project whose config sets
+ * supply.coingeckoSnapshotFallback (TEL) may fall back to its traced snapshot;
+ * that number is not a default for any other project.
  */
 import { COINGECKO_CIRCULATING } from "./reconcileSupply.js";
-
-export const TEL_COINGECKO_SLUG = "tel";
 
 const COIN_URL = (id) =>
   `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(id)}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`;
@@ -62,7 +61,7 @@ export async function resolveCoingeckoCirculating(project, deps = {}) {
     console.warn(`CoinGecko circulating unavailable for ${project?.slug} (${id}): ${error.message}`);
   }
   if (live != null) return live;
-  if (project?.slug === TEL_COINGECKO_SLUG) {
+  if (project?.config?.supply?.coingeckoSnapshotFallback === true) {
     console.warn(`CoinGecko returned no circulating supply for ${id}; keeping TEL's traced snapshot.`);
     return COINGECKO_CIRCULATING;
   }
