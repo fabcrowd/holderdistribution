@@ -44,19 +44,31 @@ export const chainViewLabel = (project: ChainsOf, view: ChainView, combinedLabel
 export const coerceChainView = (project: ChainsOf, view: unknown): ChainView =>
   isChainView(project, view) ? view : COMBINED_VIEW;
 
+/** Staking chain keys from config `staking[].chain`, in config order, de-duplicated. */
+export const stakingChainKeys = (project: Pick<ProjectConfig, "chains" | "staking">): string[] => {
+  const chainKeys = new Set(projectChainKeys(project));
+  const stakingKeys = (project.staking ?? []).map((s) => s.chain).filter((k) => chainKeys.has(k));
+  return [...new Set(stakingKeys)];
+};
+
+/** Display names of the staking chains: "Polygon", "Polygon and Base". */
+const stakingChainNames = (project: Pick<ProjectConfig, "chains" | "staking">): string => {
+  const names = stakingChainKeys(project).map((k) => (project.chains ?? []).find((c) => c.key === k)?.name ?? k);
+  return names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+};
+
 /**
- * Note for the Staked tile on a chain with no staking contract: names the
- * chain(s) staking runs on (TEL: "Staking runs on Polygon"). Null on the
- * combined view, on a staking chain, or when the project has no staking.
+ * Where the Staked tile's figure comes from on a chain view.
+ * - `none`: the project has no staking in config, so there is no Staked tile.
+ * - `view`: measured on this view (the combined view, or a chain that holds staking).
+ * - `projectWide`: this chain holds no staking, so the tile shows the project-wide
+ *   total, labelled with the chain(s) it lives on (TEL Ethereum: "Polygon").
  */
-export const stakingElsewhereNote = (
-  project: Pick<ProjectConfig, "chains" | "staking">,
-  view: ChainView,
-): string | null => {
-  if (view === COMBINED_VIEW) return null;
-  const stakingChains = [...new Set((project.staking ?? []).map((s) => s.chain).filter(Boolean))];
-  if (stakingChains.length === 0 || stakingChains.includes(view)) return null;
-  const names = stakingChains.map((k) => (project.chains ?? []).find((c) => c.key === k)?.name ?? k);
-  const list = names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
-  return `Staking runs on ${list}`;
+export type StakedScope = { kind: "none" } | { kind: "view" } | { kind: "projectWide"; where: string };
+
+export const stakedScope = (project: Pick<ProjectConfig, "chains" | "staking">, view: ChainView): StakedScope => {
+  const stakingKeys = stakingChainKeys(project);
+  if (stakingKeys.length === 0) return { kind: "none" };
+  if (view === COMBINED_VIEW || stakingKeys.includes(view)) return { kind: "view" };
+  return { kind: "projectWide", where: stakingChainNames(project) };
 };

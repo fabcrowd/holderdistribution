@@ -6,7 +6,10 @@ import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useHeadlineTiles } from "@/hooks/useHeadlineTiles";
 import type { ClassificationEvent } from "@/hooks/useClassificationChangelog";
 import { v3StakingGapEvents } from "@/lib/staking";
-import { stakingElsewhereNote, type ChainView } from "@/lib/chainViews";
+import { stakedScope, type ChainView } from "@/lib/chainViews";
+import { stakedTileCopy } from "@/lib/stakedTile";
+import { stakedPanelTip } from "@/lib/stakedPanelTip";
+import type { MethodologyLink } from "@/lib/methodology";
 import { useProject } from "@/hooks/useProject";
 import { RETAIL_WALLETS_LABEL, retailWalletsInfo, uniqueWalletCount } from "@/lib/holderCounts";
 
@@ -38,6 +41,8 @@ export type EcosystemHeadlineTile = {
   fmt: ((v: number) => string) | undefined;
   changelogEvents?: ClassificationEvent[];
   infoTooltip?: string | null;
+  /** Proof links shown under the tooltip (e.g. the staking contracts on a block explorer). */
+  infoLinks?: MethodologyLink[];
   tone?: "neutral" | "auto";
   /** "all" = the value isn't splittable by chain (exchange custody is
    *  tracked per exchange, not per chain), so it stays the all-chains figure
@@ -71,8 +76,11 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
   const { historicalDelta, cexPrevious, events } = useHeadlineTiles({ view: chain, rangeDays });
   const { ticker, chains } = useProjectCopy();
   const { project } = useProject();
-  // TEL on Ethereum/Base: "Staking runs on Polygon" (from config staking[]).
-  const stakingNote = stakingElsewhereNote(project, chain);
+  // Registry-driven (config staking[]): where the Staked figure is measured on this view.
+  // Primitives, so the memo below doesn't rebuild on every render.
+  const stakingScope = stakedScope(project, chain);
+  const stakingKind = stakingScope.kind;
+  const stakedWhere = stakingScope.kind === "projectWide" ? stakingScope.where : null;
 
   const isAth = useMemo(() => {
     const series = fullHistory?.series;
@@ -98,8 +106,13 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     // to retail<->CEX rotation — 1B moving off exchanges into self-custody left
     // it unchanged, hiding the most price-relevant event the page can show.
     const retailHeld = view.metrics.totalBalance;
-    const staked = view.stakingStats?.stakedTotal ?? 0;
     const supply = snap.totals.totalSupply;
+    // A chain with no staking reports 0 for its own view; show the project-wide
+    // total instead, labelled with the chain it lives on. Never a misleading 0.
+    const projectWide = stakingKind === "projectWide";
+    const stakedView = projectWide ? snap.views.combined ?? view : view;
+    const staked = stakedView.stakingStats?.stakedTotal ?? 0;
+    const stakedRetail = stakedView.metrics.totalBalance;
 
     // Retail baseline, not the retail+CEX totalHeld — diffing this value against
     // that baseline would report the entire ~20B CEX book as a change.
@@ -109,13 +122,24 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     // the legacy contract nets out); after it, v3 wasn't recorded, so the
     // delta is replaced by the "†" explainer rather than reading the
     // migration as a 3B outflow.
-    const v3Stats = view.stakingStats?.v3;
-    const prevStaked = v3Stats ? historicalDelta?.stakingTotal ?? null : historicalDelta?.stakingBalance ?? null;
+    // The baseline comes from the selected chain, so it has no meaning for the
+    // project-wide total: no delta there (and no "†" explainer either).
+    const v3Stats = stakedView.stakingStats?.v3;
+    const prevStaked = projectWide
+      ? null
+      : v3Stats ? historicalDelta?.stakingTotal ?? null : historicalDelta?.stakingBalance ?? null;
     const stakedEvents =
-      v3Stats && !perChain && historicalDelta?.referenceDate
+      v3Stats && !perChain && !projectWide && historicalDelta?.referenceDate
         ? v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance, v3Stats.deployDate ?? undefined, ticker)
         : [];
     const prevCex = cexPrevious;
+    const stakedCopy = stakedTileCopy({
+      ticker,
+      projectWideWhere: stakedWhere,
+      staked,
+      retailBalance: stakedRetail,
+      totalSupply: supply,
+    });
 
     // The "Retail Holders" delta badge shows NET change — same metric every
     // other tile on this page uses (holderCount/totalHeld/stakingBalance vs.
@@ -179,18 +203,23 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
             : `Includes ${formatTokenAmount(staked)} staked ${ticker}, credited to each staker and counted once inside this figure.`
           : null,
       },
-      {
-        id: "staked",
+      // Omitted entirely when the project has no staking in config.
+      ...(stakingKind === "none" ? [] : [{
+        id: "staked" as const,
         icon: Layers, label: `Staked ${ticker}`, value: formatTokenAmount(staked),
-        sub: perChain && stakingNote ? stakingNote : pctOfSupply(staked, supply),
+        sub: stakedCopy.sub,
+        infoTooltip: stakedCopy.tooltip,
         // ChangeIndicator only renders (and so only shows the "†") with a
         // baseline; with no v3 baseline, hand it the current value as one.
-        ath: false, current: staked,
+        // A project-wide total has no comparable baseline on this chain view.
+        ath: false, current: projectWide ? null : staked,
         // Sub-1-TEL differences are float noise between the lite snapshot and the
         // history row (same day): show "0" like the Staking panel, not "−0.38".
-        previous: stakedEvents.length || (prevStaked != null && Math.abs(staked - prevStaked) < 1) ? staked : prevStaked, fmt: formatTokenAmount, scope: perChain ? "chain" : "all",
+        previous: stakedEvents.length || (prevStaked != null && Math.abs(staked - prevStaked) < 1) ? staked : prevStaked, fmt: formatTokenAmount,
+        scope: perChain && !projectWide ? "chain" : "all",
         changelogEvents: stakedEvents,
-      },
+        infoLinks: stakedPanelTip(project).links,
+      }] satisfies EcosystemHeadlineTile[]),
       {
         id: "cex",
         icon: Building2, label: "CEX Balance", value: formatTokenAmount(cexHeld),
@@ -206,5 +235,5 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     ];
 
     return { tiles, isAth };
-  }, [snap, historicalDelta, cexPrevious, events, isAth, chain, ticker, chains, stakingNote]);
+  }, [snap, historicalDelta, cexPrevious, events, isAth, chain, ticker, chains, project, stakingKind, stakedWhere]);
 };

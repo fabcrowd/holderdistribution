@@ -7,7 +7,8 @@ import {
   coerceChainView,
   isChainView,
   projectChainKeys,
-  stakingElsewhereNote,
+  stakedScope,
+  stakingChainKeys,
 } from "./chainViews";
 import { readSettings } from "./historyNav";
 import { addressExplorerUrl } from "./walletFlowsTypes";
@@ -46,11 +47,12 @@ describe("chain views: TEL unchanged", () => {
     expect(chainViewLabel(tel, "combined")).toBe("Combined");
   });
 
-  it("staking note: Polygon only, as before", () => {
-    expect(stakingElsewhereNote(tel, "ethereum")).toBe("Staking runs on Polygon");
-    expect(stakingElsewhereNote(tel, "base")).toBe("Staking runs on Polygon");
-    expect(stakingElsewhereNote(tel, "polygon")).toBeNull();
-    expect(stakingElsewhereNote(tel, "combined")).toBeNull();
+  it("staked scope: TEL staking lives on Polygon, so Ethereum and Base show the project-wide total", () => {
+    expect(stakingChainKeys(tel)).toEqual(["polygon"]);
+    expect(stakedScope(tel, "combined")).toEqual({ kind: "view" });
+    expect(stakedScope(tel, "polygon")).toEqual({ kind: "view" });
+    expect(stakedScope(tel, "ethereum")).toEqual({ kind: "projectWide", where: "Polygon" });
+    expect(stakedScope(tel, "base")).toEqual({ kind: "projectWide", where: "Polygon" });
   });
 
   it("URL ?chain= accepts TEL's chains and rejects others", () => {
@@ -83,13 +85,13 @@ describe("chain views: multi-chain demo project", () => {
     expect(readSettings("?chain=solana", [30], chainViewKeys(demo)).chain).toBeNull();
   });
 
-  it("staking note names the project's staking chain", () => {
-    expect(stakingElsewhereNote(demo, "ethereum")).toBe("Staking runs on Arbitrum One");
-    expect(stakingElsewhereNote(demo, "arbitrum")).toBeNull();
-    expect(stakingElsewhereNote({ ...demo, staking: [] }, "ethereum")).toBeNull();
+  it("staked scope names the project's staking chain", () => {
+    expect(stakedScope(demo, "ethereum")).toEqual({ kind: "projectWide", where: "Arbitrum One" });
+    expect(stakedScope(demo, "arbitrum")).toEqual({ kind: "view" });
+    expect(stakedScope({ ...demo, staking: [] }, "ethereum")).toEqual({ kind: "none" });
     expect(
-      stakingElsewhereNote({ ...demo, staking: [...demo.staking!, { chain: "base", address: "0x2", name: "b" }] }, "ethereum"),
-    ).toBe("Staking runs on Arbitrum One and Base");
+      stakedScope({ ...demo, staking: [...demo.staking!, { chain: "base", address: "0x2", name: "b" }] }, "ethereum"),
+    ).toEqual({ kind: "projectWide", where: "Arbitrum One and Base" });
   });
 
   it("wallet-flow links use the project's explorer for non-built-in chains", () => {
