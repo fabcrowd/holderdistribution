@@ -203,10 +203,11 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
 
   const zoom = useChartZoom(display, (d) => d.timestamp);
   // Fitted to the visible rows and the lines switched on.
-  const yScale = useMemo(
+  const yAuto = useMemo(
     () => computeYAxisFromRows(zoom.rows, activeKeys(visible), { kind: "line", allowNegative: mode === "change" }),
     [zoom.rows, visible, mode],
   );
+  const yScale = zoom.yScale("left", yAuto);
 
   if (isError) return <div className="min-h-[8rem]"><PanelError>Couldn&apos;t load treasury history.</PanelError></div>;
   if (!data || points.length < 2) return null;
@@ -263,7 +264,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
         })}
       </div>
 
-      <ZoomFrame zoom={zoom} className={`${compact ? "h-44" : "h-56"} w-full`} notes={<AxisBaselineNote baseline={yScale.baseline} format={fmt} />}>
+      <ZoomFrame zoom={zoom} className={`${compact ? "h-44" : "h-56"} w-full`} yAxes={{ left: yAuto.domain }} notes={<AxisBaselineNote baseline={yScale.baseline} format={fmt} />}>
         <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
           <LineChart data={zoom.rows} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} />
@@ -275,7 +276,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
               tickFormatter={(v) => formatChartTimestamp(v, dateFmt)}
               tickMargin={8}
             />
-            <YAxis tickFormatter={(v) => axisFmt(Number(v))} domain={yScale.domain} ticks={yScale.ticks} tickMargin={8} width={56} />
+            <YAxis tickFormatter={(v) => axisFmt(Number(v))} domain={yScale.domain} ticks={yScale.ticks} allowDataOverflow={zoom.yRanges.left != null} tickMargin={8} width={56} />
             <ChartTooltip
               content={
                 <ChartTooltipContent
