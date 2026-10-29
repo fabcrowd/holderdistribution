@@ -41,7 +41,7 @@ export const DEFAULT_FEEDS = [
     file: "holders-lite.json",
     label: "Holder snapshot (retail/CEX/staking)",
     thresholdMs: 36 * HOUR,
-    workflow: "Refresh TEL holders snapshot",
+    workflow: "Refresh holders snapshots",
     fallback: [
       "Needs ENV_PASSPHRASE + ETHERSCAN_API_KEY (full chain rescan).",
       "export ENV_PASSPHRASE=... ETHERSCAN_API_KEY=...",
@@ -95,7 +95,7 @@ export const DEFAULT_FEEDS = [
     // would be silently folded into every holder balance with nothing
     // reporting it.
     thresholdMs: 3 * DAY,
-    workflow: "Refresh TEL holders snapshot",
+    workflow: "Refresh holders snapshots",
     fallback: [
       "Needs ETHERSCAN_API_KEY + ENV_PASSPHRASE.",
       "export ENV_PASSPHRASE=... ETHERSCAN_API_KEY=...",

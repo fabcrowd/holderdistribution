@@ -68,16 +68,6 @@ const dailyCrons = (doc) =>
   });
 
 /**
- * Per-project daily refreshes (multi-token, docs/MULTI-TOKEN.md). TEL's
- * schedule has no inputs, so it always runs HD_PROJECT=tel; each other mapped
- * project needs its own once-a-day job. Allowed ONLY as a single cron, pinned
- * to a non-TEL HD_PROJECT, in the holders-refresh concurrency group (never
- * pushes at the same moment as TEL), and committing with [skip netlify] so
- * refresh-tel-holders stays the one daily publisher (deployTriggers.test.js).
- */
-const PER_PROJECT_DAILY = { "refresh-zebec-network.yml": "zebec-network" };
-
-/**
  * The watchdog runs daily (2026-10-28) so a dead feed or an Actions billing block is
  * caught within a day, not a week. It is a monitor: the heavy self-heal chain and
  * its (publishing) commit only run when a feed is actually stale.
@@ -85,43 +75,73 @@ const PER_PROJECT_DAILY = { "refresh-zebec-network.yml": "zebec-network" };
 const DAILY_MONITORS = ["pipeline-watchdog.yml"];
 
 describe("data pipeline workflow chain", () => {
-  it("only the consolidated daily workflow (plus per-project refreshes and the watchdog monitor) runs on a daily schedule", () => {
+  it("only the consolidated daily workflow (plus the watchdog monitor) runs on a daily schedule", () => {
     const daily = fs
       .readdirSync(DIR)
       .filter((f) => f.endsWith(".yml"))
       .filter((f) => dailyCrons(load(f)).length > 0);
-    expect(daily.sort()).toEqual(["refresh-tel-holders.yml", ...Object.keys(PER_PROJECT_DAILY), ...DAILY_MONITORS].sort());
+    expect(daily.sort()).toEqual(["refresh-tel-holders.yml", ...DAILY_MONITORS].sort());
     expect(dailyCrons(load("refresh-tel-holders.yml"))).toHaveLength(1);
   });
 
-  for (const [file, slug] of Object.entries(PER_PROJECT_DAILY)) {
-    it(`${file} is one daily run of ${slug}, serialized with TEL, not a second publisher`, () => {
-      const doc = load(file);
-      expect(dailyCrons(doc)).toHaveLength(1);
-      expect(dailyCrons(load("refresh-tel-holders.yml"))[0].cron).not.toBe(dailyCrons(doc)[0].cron);
-      expect(doc.env.HD_PROJECT).toBe(slug);
+  it("no per-project refresh workflow exists: onboarding a token is config only", () => {
+    expect(fs.existsSync(path.join(DIR, "refresh-zebec-network.yml"))).toBe(false);
+    const files = fs.readdirSync(DIR).filter((f) => /^refresh-.*\.yml$/.test(f));
+    // Only the registry-driven refresh and the manual staker tool; a refresh-<slug>.yml would double-run.
+    expect(files.sort()).toEqual(["refresh-staker-balances.yml", "refresh-tel-holders.yml", "refresh-wallet-flows.yml"]);
+  });
+
+  describe("registry-driven matrix", () => {
+    const doc = load("refresh-tel-holders.yml");
+    const matrix = doc.jobs.refresh.strategy;
+
+    it("plan job feeds a one-at-a-time, fail-soft matrix from config/projects.json", () => {
+      expect(doc.jobs.refresh.needs).toBe("plan");
+      expect(matrix["max-parallel"]).toBe(1);
+      expect(matrix["fail-fast"]).toBe(false);
+      expect(matrix.matrix).toContain("fromJSON(needs.plan.outputs.matrix)");
+      const planRuns = doc.jobs.plan.steps.map((s) => s.run ?? "").join("\n");
+      expect(planRuns).toContain("workflow-paths.js matrix");
+      expect(doc.jobs.refresh.env.HD_PROJECT).toBe("${{ matrix.slug }}");
+      expect(doc.jobs.refresh["timeout-minutes"]).toBe("${{ matrix.timeout }}");
+      expect(doc.jobs.plan["timeout-minutes"]).toBeGreaterThan(0);
+    });
+
+    it("keeps the dispatch project input (default all), the shared concurrency group, and no slug checks", () => {
+      expect(triggers(doc).workflow_dispatch.inputs.project.default).toBe("all");
       expect(doc.concurrency).toEqual({ group: "holders-refresh", "cancel-in-progress": false });
+      const src = fs.readFileSync(path.join(DIR, "refresh-tel-holders.yml"), "utf8");
+      expect(src).not.toMatch(/matrix\.slug\s*==|HD_PROJECT\s*==|slug\s*==\s*'/);
+    });
+
+    it("passes every secret the two retired workflows passed", () => {
+      const src = fs.readFileSync(path.join(DIR, "refresh-tel-holders.yml"), "utf8");
+      for (const secret of ["ENV_PASSPHRASE", "SOLANA_RPC_0", "ETHERSCAN_API_KEY"]) {
+        expect(src).toContain(`secrets.${secret}`);
+      }
+    });
+
+    it("stages a project-dependent commit tag, verify list and gap fill from config", () => {
       const steps = doc.jobs.refresh.steps;
       const runs = steps.map((s) => s.run ?? "").join("\n");
-      expect(runs).toMatch(/git commit -m "[^"]*\[skip netlify\]"/);
+      expect(runs).toContain("${HD_COMMIT_TAG}");
+      expect(runs).toContain("$HD_REQUIRED_FILES");
+      expect(runs).toContain("bash scripts/push-main.sh");
+      expect(runs).not.toMatch(/git (fetch|rebase|push) origin/);
+      expect(steps.find((s) => (s.run ?? "").includes("fill-history-gaps.js")).if).toContain("HD_HAS_EVM");
+      const staking = steps.filter((s) => /^node scripts\/pull-(staker-balances|solana-staking)\.js$/.test((s.run ?? "").trim()));
+      expect(staking).toHaveLength(2);
+      for (const s of staking) expect(s["continue-on-error"]).toBe(true);
       const gateIdx = steps.findIndex((s) => (s.run ?? "").includes("check-feed-consistency.js"));
       const commitIdx = steps.findIndex((s) => (s.run ?? "").includes("git add"));
-      expect(gateIdx, "consistency gate must run BEFORE the commit step").toBeGreaterThanOrEqual(0);
       expect(gateIdx).toBeLessThan(commitIdx);
     });
-  }
+  });
 
-  it("refresh-zebec-network refreshes CEX wallets once they exist and stages the three CEX feeds", () => {
-    const doc = load("refresh-zebec-network.yml");
-    const steps = doc.jobs.refresh.steps;
-    const runs = steps.map((s) => s.run ?? "").join("\n");
-    const cex = steps.findIndex((s) => (s.run ?? "").includes("pull-cex-wallets.js"));
-    const history = steps.findIndex((s) => (s.run ?? "").includes("generate-holders-history.js"));
-    expect(cex, "pull-cex-wallets must run").toBeGreaterThanOrEqual(0);
-    expect(cex).toBeLessThan(history);
-    for (const file of ["cex-wallets.json", "cex-flows.json", "cex-balance-history.json"]) {
-      expect(runs).toContain(file);
-    }
+  it("the watchdog's billing-block detection inspects individual jobs (a matrix run has several)", () => {
+    const wd = fs.readFileSync(path.join(DIR, "pipeline-watchdog.yml"), "utf8");
+    expect(wd).toContain("jobs.jobs.some");
+    expect(wd).toContain("startup_failure");
   });
 
   it("former chained stages are manual-only (no cron, no workflow_run)", () => {

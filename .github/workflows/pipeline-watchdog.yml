@@ -277,8 +277,14 @@ jobs:
             for (const run of latest.values()) {
               if (!["failure", "startup_failure"].includes(run.conclusion)) continue;
               const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({ owner, repo, run_id: run.id, per_page: 100 });
-              const ranSteps = jobs.jobs.some((j) => (j.steps ?? []).some((s) => s.status === "completed" && s.conclusion !== "skipped"));
-              if (!ranSteps) dead.push(run);
+              // The daily refresh is a plan job plus one matrix job per project, so
+              // judge each job: a run is dead when it has no jobs at all
+              // (startup_failure) or any FAILED job completed no step. A project
+              // job that ran steps and failed on a script is a data problem and
+              // is reported by its own issue; skipped jobs (never needed) do not count.
+              const ranSteps = (j) => (j.steps ?? []).some((s) => s.status === "completed" && s.conclusion !== "skipped");
+              const blocked = jobs.jobs.length === 0 || jobs.jobs.some((j) => j.conclusion === "failure" && !ranSteps(j));
+              if (blocked) dead.push(run);
             }
             if (dead.length === 0) return;
 

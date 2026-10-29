@@ -1,11 +1,36 @@
-name: Refresh TEL holders snapshot
-# THE single daily data workflow (consolidated 2026-10-19). It used to be the
-# first of a chain: scan-exchange-flows, generate-tier-outflows and
-# fill-history-gaps each re-triggered off it via workflow_run AND kept their
-# own fallback cron, and the watchdog re-ran the whole chain daily. That was up
-# to 8 scheduled jobs a day and ~2,500 billed minutes a month on a 2,000-minute
-# plan. Now one cron runs every stage in one job, in dependency order; those
-# workflows stay as workflow_dispatch-only manual backfill tools.
+name: Refresh holders snapshots
+# THE single daily data workflow for EVERY project in config/projects.json
+# (file name kept: scripts/lib/deployTriggers.test.js and the docs key on it).
+# Onboarding a token is config only: add it to config/projects.json plus its
+# config/projects/<slug>.json, and the next run includes it. No new workflow.
+#
+# Shape: `plan` reads the registry and emits the project list; `refresh` runs
+# the stages once per project (HD_PROJECT=<slug>), one project at a time
+# (`max-parallel: 1`), TEL first. Stage differences come from the project
+# config, never from a slug check here:
+#   - the EVM staker pull and the Solana staking pull are both always run and
+#     each exits 0 when the project has no such staking contract;
+#   - the gap fill needs EVM block lookups, so it runs only when the project
+#     has an EVM chain (HD_HAS_EVM, scripts/workflow-paths.js workflowPlan);
+#   - the verify list (HD_REQUIRED_FILES) and the commit message tag
+#     (HD_COMMIT_TAG: only the registry default project publishes, the rest add
+#     [skip netlify]) come from the same place.
+# `fail-fast: false`: one project's failure never blocks the others. Each
+# project's job has its own timeout (config pipeline.workflowTimeoutMinutes).
+#
+# Why one workflow, not one per project: every per-project workflow shared the
+# `holders-refresh` concurrency group, and GitHub keeps only ONE pending run
+# per group, cancelling older pending ones, so with N projects nightly runs
+# were dropped. One run per night means nothing can be dropped, and a new token
+# no longer needs a new workflow file.
+#
+# History: consolidated 2026-10-19. It used to be the first of a chain:
+# scan-exchange-flows, generate-tier-outflows and fill-history-gaps each
+# re-triggered off it via workflow_run AND kept their own fallback cron, and the
+# watchdog re-ran the whole chain daily. That was up to 8 scheduled jobs a day
+# and ~2,500 billed minutes a month on a 2,000-minute plan. Now one cron runs
+# every stage in dependency order; those workflows stay as workflow_dispatch-only
+# manual backfill tools.
 #
 # Delivery: the data commits below do NOT rebuild Netlify (netlify.toml ignores
 # git builds). The live site reads public/data/* at runtime through the
@@ -17,9 +42,9 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scripts take --project; non-TEL runs commit public/data/<slug>/** and data/<slug>/**)'
+        description: "Project slug from config/projects.json, or 'all' (non-default projects commit public/data/<slug>/** and data/<slug>/**)"
         required: false
-        default: 'tel'
+        default: 'all'
 
 permissions:
   contents: write
@@ -31,21 +56,52 @@ concurrency:
   group: holders-refresh
   cancel-in-progress: false
 
-# Every pipeline script reads HD_PROJECT as its default `--project` (see
-# scripts/lib/projects.js); scheduled runs have no inputs and stay on TEL.
-env:
-  HD_PROJECT: ${{ inputs.project || 'tel' }}
-
 jobs:
-  refresh:
+  plan:
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: List projects from config/projects.json
+        id: matrix
+        # Scheduled runs have no inputs -> every registered project. A broken
+        # project config is skipped with a warning (never blocks the others);
+        # a slug named on dispatch that is broken fails here.
+        env:
+          SELECTION: ${{ inputs.project }}
+        run: echo "matrix=$(node scripts/workflow-paths.js matrix "$SELECTION")" >> "$GITHUB_OUTPUT"
+
+  refresh:
+    name: Refresh ${{ matrix.slug }}
+    needs: plan
+    runs-on: ubuntu-24.04
+    # Per-project cap (config pipeline.workflowTimeoutMinutes, default 60).
     # Was unbounded (GitHub's 360-minute default). On a private repo every minute
     # is billed against the 2,000 included/month, and failing runs here burned
     # ~50 min each on a throttled fallback path (2026-10-03..13, ~600 min).
-    # A healthy run is ~25-35 min; a long catch-up over public RPC takes ~10 min.
-    # Typical: 15-30 min (log scans on public RPC, see RPC_PREFER_PUBLIC).
-    # Hard cap keeps a pathological day from burning more than 1.5 h.
-    timeout-minutes: 90
+    # A healthy TEL run is ~25-35 min; a long catch-up over public RPC takes ~10 min.
+    # TEL's hard cap keeps a pathological day from burning more than 1.5 h.
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      # One project at a time: they all push to main, and a single run is
+      # cheaper to reason about than N racing rebases (scripts/push-main.sh
+      # still retries a lost race against the watchdog or a human).
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    # Every pipeline script reads HD_PROJECT as its default `--project` (see
+    # scripts/lib/projects.js).
+    env:
+      HD_PROJECT: ${{ matrix.slug }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -63,10 +119,11 @@ jobs:
 
       - name: Resolve project data paths
         # HD_DATA_DIR / HD_WORK_DIR: public/data + data for TEL (unchanged),
-        # public/data/<slug> + data/<slug> for any other project.
+        # public/data/<slug> + data/<slug> for any other project; plus the
+        # per-project plan (HD_TICKER, HD_COMMIT_TAG, HD_HAS_EVM, HD_REQUIRED_FILES).
         run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
 
-      - name: Refresh TEL staker balances
+      - name: Refresh staker balances
         # NON-FATAL, deliberately. This step is the pipeline's heaviest RPC
         # consumer (a stakedBy() eth_call per candidate address, ~6,700 of
         # them), so it is the first thing to die when the Alchemy account hits
@@ -83,6 +140,8 @@ jobs:
         # is a tracked feed in pipeline-health.js, so it surfaces in the
         # watchdog report and in the "Daily coverage" line rather than being
         # quietly assumed fresh.
+        #
+        # A project without a StakeChanged staking contract exits 0 immediately.
         continue-on-error: true
         # Cap the step: it is non-fatal, so when it degrades to the throttled
         # Etherscan path it must not spend ~50 billed minutes before giving up.
@@ -95,7 +154,20 @@ jobs:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
         run: node scripts/pull-staker-balances.js
 
-      - name: Refresh TEL holders snapshot (public RPC first)
+      - name: Pull Solana staking positions
+        # Non-fatal: on failure the lite feed keeps the previous staking file's
+        # numbers (or none) and holders still publish. Exits 0 immediately for a
+        # project with no zebecStakeV1 staking entry (e.g. TEL).
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          # loadEnv (scripts/decrypt-env.js) only overwrites keys that exist
+          # inside .env.enc, which has no SOLANA_RPC_*, so the secret survives.
+          SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
+        run: node scripts/pull-solana-staking.js
+
+      - name: Refresh holders snapshot (public RPC first)
         # Log scan. The Alchemy free tier caps eth_getLogs at 10 blocks, which
         # made this step ~23 billed minutes a day; the public nodes take wide
         # ranges. Keys are still the fallback inside getUsableRpcUrls, and the
@@ -106,14 +178,16 @@ jobs:
         timeout-minutes: 20
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
           RPC_PREFER_PUBLIC: '1'
         run: node scripts/pull-holders-rpc.js
 
-      - name: Refresh TEL holders snapshot (retry on keys)
+      - name: Refresh holders snapshot (retry on keys)
         if: ${{ steps.holders_public.outcome == 'failure' }}
         timeout-minutes: 35
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
         run: node scripts/pull-holders-rpc.js
 
       - name: Refresh CEX wallets and flows
@@ -147,29 +221,12 @@ jobs:
         run: node scripts/sync-classification-changelog.js
 
       - name: Verify generated files
+        # The list is per project (HD_REQUIRED_FILES, workflowPlan): the shared
+        # set, plus funding-wallets.json for a project with a StakeChanged
+        # staking contract, plus solana-staking.json for a Solana staking one.
         run: |
-          REQUIRED_FILES=(
-            "$HD_DATA_DIR/funding-wallets.json"
-            "$HD_DATA_DIR/tel-holders.json"
-            "$HD_DATA_DIR/holders-summary.json"
-            "$HD_DATA_DIR/holders-history.json"
-            "$HD_DATA_DIR/cex-wallets.json"
-            "$HD_DATA_DIR/cex-flows.json"
-            "$HD_DATA_DIR/cex-balance-history.json"
-            "$HD_DATA_DIR/holders-lite.json"
-            "$HD_DATA_DIR/holders-checkpoint.json"
-            "$HD_DATA_DIR/holder-transitions.json"
-            "$HD_DATA_DIR/holders-ever-checkpoint.json"
-            "$HD_DATA_DIR/supply-reconciliation.json"
-            # Was committed (FILES_TO_CHECK below) but never verified here, so a
-            # failed append-treasury-history.js left the workflow green while the
-            # treasury series silently stopped advancing — see lessons.md,
-            # "A Crashed Script Can Log a Convincing 'Complete' and Write Nothing".
-            # Keep this list and FILES_TO_CHECK in sync; they drifted once already.
-            "$HD_DATA_DIR/treasury-history.json"
-            "$HD_DATA_DIR/classification-changelog.json"
-          )
-          for file in "${REQUIRED_FILES[@]}"; do
+          for name in $HD_REQUIRED_FILES; do
+            file="$HD_DATA_DIR/$name"
             if [ ! -f "$file" ]; then
               echo "Error: Required file $file was not generated"
               exit 1
@@ -220,7 +277,7 @@ jobs:
             # status once origin/main has moved (a real rebase, not just a
             # fast-forward), so the final `git commit` found nothing staged
             # and failed for 4 straight days (see issue #187).
-            git commit -m "Refresh TEL holders snapshot, summary, and CEX wallets"
+            git commit -m "Refresh ${HD_TICKER} holders snapshot, summary, and CEX wallets${HD_COMMIT_TAG}"
 
             # pull-holders-rpc.js also writes public/data/tel-holders-previous.json
             # as a same-run scratch file (the "before this run" snapshot, used by
@@ -231,9 +288,8 @@ jobs:
             # FILES_TO_CHECK is meant to survive this run) before rebasing.
             git checkout -- .
 
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
+            # fetch + rebase + push, retried on a lost race (up to 5 attempts).
+            bash scripts/push-main.sh
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
         env:
@@ -243,7 +299,9 @@ jobs:
       # They run only after the holders snapshot above committed successfully
       # (the old workflow_run guard), against that fresh classification. Each
       # is non-fatal and time-boxed: a slow scan must not eat the minute budget,
-      # and its checkpoint simply resumes tomorrow.
+      # and its checkpoint simply resumes tomorrow. For a project with no EVM
+      # chain the two scanners publish empty feeds (so the terminal shows an
+      # empty state instead of a 404) and the gap fill is skipped.
 
       - name: Scan exchange flows
         id: flows
@@ -266,7 +324,9 @@ jobs:
 
       - name: Fill holders-history gaps
         # Uses archive-state reads, so it stays on the keys (no RPC_PREFER_PUBLIC).
+        # EVM block-timestamp lookups only: skipped for a project without EVM chains.
         id: gaps
+        if: ${{ env.HD_HAS_EVM == 'true' }}
         continue-on-error: true
         timeout-minutes: 15
         env:
@@ -286,11 +346,9 @@ jobs:
           if git diff --cached --quiet; then
             echo "No downstream changes to commit"
           else
-            git commit -m "Daily downstream feeds: exchange flows, tier outflows, history gaps"
+            git commit -m "Daily downstream feeds: exchange flows, tier outflows, history gaps${HD_COMMIT_TAG}"
             git checkout -- .
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
+            bash scripts/push-main.sh
           fi
           echo "flows=${{ steps.flows.outcome }} tiers=${{ steps.tiers.outcome }} gaps=${{ steps.gaps.outcome }}"
         env:
@@ -299,9 +357,12 @@ jobs:
       - name: Notify on failure
         if: failure()
         uses: actions/github-script@v7
+        env:
+          TICKER: ${{ matrix.ticker }}
         with:
           script: |
-            const title = "Data pipeline failure: Refresh TEL holders snapshot";
+            // One issue per project; TEL's title is the one this workflow always used.
+            const title = `Data pipeline failure: Refresh ${process.env.TICKER} holders snapshot`;
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const { data: existing } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
