@@ -72,6 +72,20 @@ describe("project registry (node side)", () => {
 
 describe("pipeline --project selection", () => {
   const root = path.resolve(".");
+  it("takes the default from the registry, never a literal", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "hd-default-"));
+    fs.mkdirSync(path.join(tmp, "config"), { recursive: true });
+    const write = (projects) => fs.writeFileSync(path.join(tmp, "config/projects.json"), JSON.stringify({ projects }));
+    try {
+      write([{ slug: "alpha" }, { slug: "beta", default: true }]);
+      expect(defaultProjectSlug(tmp)).toBe("beta");
+      write([]);
+      expect(() => defaultProjectSlug(tmp)).toThrow(/no default project/);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
   it("defaults to the registry default (tel) when the flag and env are absent", () => {
     expect(defaultProjectSlug(root)).toBe("tel");
     expect(parseProjectArg([], {}, root)).toBe("tel");

@@ -44,10 +44,12 @@ export function legacyRootSlugs(root = process.cwd()) {
     .filter((slug) => loadProjectConfig(slug, root)?.data?.legacyRoot === true);
 }
 
-/** The registry's default project (TEL today). */
+/** The registry's `default: true` project (else the first entry). */
 export function defaultProjectSlug(root = process.cwd()) {
   const registry = loadRegistry(root);
-  return (registry.find((p) => p.default) ?? registry[0])?.slug ?? "tel";
+  const slug = (registry.find((p) => p.default) ?? registry[0])?.slug;
+  if (!slug) throw new Error("config/projects.json lists no projects, so there is no default project");
+  return slug;
 }
 
 /**

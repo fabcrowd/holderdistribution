@@ -569,7 +569,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                     )}
                   </div>
                 )}
-                <TelDispositionLedger />
+                {project.capabilities?.dispositionLedger === true && <TelDispositionLedger />}
     </>
   );
   const historyBody = (
