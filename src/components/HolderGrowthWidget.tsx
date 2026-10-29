@@ -22,6 +22,7 @@ import { insertGapBreaks } from "@/lib/seriesGaps";
 import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
 import { computeSeriesDomain, computeBreakAwareDomain, activeKeys } from "@/lib/chartDomain";
 import { getSeriesBreaks, insertBreakSpacers, SERIES_BREAK_LABEL } from "@/lib/seriesBreaks";
+import { CHART_LABEL_FONT_PX } from "@/lib/terminalLayout";
 
 type HolderGrowthWidgetProps = {
   selectedView: DisplaySelection;
@@ -658,7 +659,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                           x={b.t}
                           stroke="hsl(var(--ha-warning))"
                           strokeDasharray="2 3"
-                          label={{ value: SERIES_BREAK_LABEL, position: "insideTopRight", fill: "hsl(var(--ha-warning))", fontSize: 10 }}
+                          label={{ value: SERIES_BREAK_LABEL, position: "insideTopRight", fill: "hsl(var(--ha-warning))", fontSize: CHART_LABEL_FONT_PX }}
                         />
                       ))}
                       {holdersChangelogEvents.filter((e) => !e.breaksSeries).map((event) => {
@@ -670,7 +671,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                             x={eventMs}
                             stroke="hsl(var(--muted-foreground))"
                             strokeDasharray="4 4"
-                            label={{ value: "Reclassified", position: "insideTopRight", fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                            label={{ value: "Reclassified", position: "insideTopRight", fill: "hsl(var(--muted-foreground))", fontSize: CHART_LABEL_FONT_PX }}
                           />
                         );
                       })}
@@ -878,7 +879,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                               x={eventMs}
                               stroke="hsl(var(--muted-foreground))"
                               strokeDasharray="4 4"
-                              label={{ value: "Reclassified", position: "insideTopRight", fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                              label={{ value: "Reclassified", position: "insideTopRight", fill: "hsl(var(--muted-foreground))", fontSize: CHART_LABEL_FONT_PX }}
                             />
                           );
                         })}

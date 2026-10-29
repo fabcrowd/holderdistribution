@@ -1,67 +1,50 @@
 /**
- * Holders dashboard chart sizing for the desktop terminal.
+ * Single source of truth for terminal sizing: chart height tiers, the spacing
+ * scale, the type scale and the one Recharts tick style.
  *
- * The previous grid was 2 rows × 7 panels inside a viewport that never
- * scrolled. At 1280×800 each chart body was 296px:
- *
- *   main = 800 − 56 title bar − 24 status line − 16 padding = 704
- *   row  = (704 − 8 gap) / 2 = 348
- *   body = 348 − 36 panel header − 16 body padding = 296
- *
- * Primary charts (retail holder count, balance held) now share one 2-up row
- * whose height is clamped so the body stays in a readable band at 1280–1440.
- * Staking, exchange flow and wallet sizes, then the two tables, continue
- * below. The terminal main region scrolls; tables still scroll inside panels.
+ * Rows no longer have fixed pixel heights. A chart panel's body takes a height
+ * TIER; a table panel takes its content's height; the grid row is as tall as
+ * its tallest panel. So a 7-bar chart and an 8-row table are each sized by
+ * what they hold, and tables never scroll inside a fixed box.
  */
 
-export const TERMINAL_TITLEBAR_PX = 56; // h-14
-export const TERMINAL_STATUS_PX = 24; // h-6
-export const TERMINAL_MAIN_PAD_PX = 16; // p-2
-export const PANEL_HEADER_PX = 36; // h-9
-export const PANEL_BODY_PAD_PX = 16; // p-2
-export const GRID_GAP_PX = 8;
+/** Spacing scale (px): 8 / 12 / 16 / 24. Tailwind: 2 / 3 / 4 / 6. */
+export const SPACE_PX = { xs: 8, sm: 12, md: 16, lg: 24 } as const;
+export const PANEL_PADDING_PX = SPACE_PX.sm;
+export const GRID_GAP_PX = SPACE_PX.sm;
+export const SECTION_GAP_PX = SPACE_PX.lg;
 
-/** Plain-language strip under the title bar (sentence + trend row). */
-export const TERMINAL_HEADLINE_PX = 64;
-
-/** How much of the next row stays in view so the fold doesn't look final. */
-export const PRIMARY_PEEK_PX = 72;
-
-/** 28rem. Chart body ≈ 396px — already above the old 296px squeeze. */
-export const PRIMARY_ROW_MIN_PX = 448;
-/** 36rem. Chart body ≈ 524px. Taller viewports stop growing the row here. */
-export const PRIMARY_ROW_MAX_PX = 576;
-
-/** 22rem. Secondary charts (staking, exchange flow, wallet sizes). */
-export const SECONDARY_CHART_ROW_PX = 352;
-/** 22rem. Concentration + exchange tables; the body scrolls inside. */
-export const TABLE_PANEL_PX = 352;
-
-/** Chart body inside a panel of `panelPx` (header + body padding). */
-export const chartBodyPx = (panelPx: number): number => panelPx - PANEL_HEADER_PX - PANEL_BODY_PAD_PX;
-
-const primaryChromePx = () =>
-  TERMINAL_TITLEBAR_PX + TERMINAL_HEADLINE_PX + TERMINAL_STATUS_PX + TERMINAL_MAIN_PAD_PX + PRIMARY_PEEK_PX;
+/** Type scale (px, desktop). Nothing below 12. */
+export const TYPE_PX = {
+  kpiValue: 28, // semibold
+  panelStat: 18,
+  panelTitle: 13,
+  body: 14,
+  axisTick: 12,
+  caption: 12,
+} as const;
+export const MIN_FONT_PX = 12;
 
 /**
- * Chart-body height the old 2×7 grid produced at `viewportHeight`.
- * 800px → 296. Used to pin the "squished" baseline the new row replaces.
+ * Chart body heights. `hero` follows the viewport inside a band; `standard`
+ * and `compact` are fixed. Each is the height of the whole panel body
+ * (padding included), so a chart gets this minus 2 x PANEL_PADDING_PX.
  */
-export const legacyChartBodyPx = (viewportHeight: number): number => {
-  const main = viewportHeight - TERMINAL_TITLEBAR_PX - TERMINAL_STATUS_PX - TERMINAL_MAIN_PAD_PX;
-  const row = (main - GRID_GAP_PX) / 2;
-  return Math.round(chartBodyPx(row));
-};
+export const CHART_HEIGHT = {
+  hero: "clamp(420px, 55dvh, 560px)",
+  standard: "300px",
+  compact: "200px",
+} as const;
+export type ChartTier = keyof typeof CHART_HEIGHT;
 
-/**
- * Primary-row height for a viewport. Preferred size leaves the title bar,
- * headline strip, status line, padding and a peek of the next row; then
- * clamps into [PRIMARY_ROW_MIN_PX, PRIMARY_ROW_MAX_PX].
- */
-export const holdersPrimaryRowPx = (viewportHeight: number): number => {
-  const preferred = viewportHeight - primaryChromePx();
-  return Math.round(Math.min(PRIMARY_ROW_MAX_PX, Math.max(PRIMARY_ROW_MIN_PX, preferred)));
-};
+/** Tailwind classes for the same tiers (static strings so the JIT sees them). */
+export const CHART_HEIGHT_CLASS = {
+  hero: "h-[clamp(420px,55dvh,560px)]",
+  standard: "h-[300px]",
+  compact: "h-[200px]",
+} as const;
 
-/** CSS height matching `holdersPrimaryRowPx` (100dvh, no JS measurement). */
-export const HOLDERS_PRIMARY_ROW_HEIGHT = `clamp(${PRIMARY_ROW_MIN_PX}px, calc(100dvh - ${primaryChromePx()}px), ${PRIMARY_ROW_MAX_PX}px)`;
+/** The one axis-tick style for every Recharts chart. */
+export const CHART_TICK = { fill: "hsl(var(--muted-foreground))", fontSize: TYPE_PX.axisTick } as const;
+/** In-plot labels (reference lines, bar values). */
+export const CHART_LABEL_FONT_PX = TYPE_PX.caption;

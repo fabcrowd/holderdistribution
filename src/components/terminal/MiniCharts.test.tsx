@@ -24,3 +24,22 @@ describe("TimeChart minimum-data guard", () => {
     expect(html).toContain('data-breaks="1"');
   });
 });
+
+describe("TimeChart axes", () => {
+  const two = [
+    { key: "a", label: "A", color: "red" },
+    { key: "b", label: "B", color: "blue", axis: "right" as const },
+  ];
+  const data = Array.from({ length: 8 }, (_, i) => ({ t: Date.UTC(2026, 9, 1 + i), a: 1000 + i, b: 5 + i }));
+
+  it("labels which series sits on which axis when two scales are used", () => {
+    const html = renderToStaticMarkup(<TimeChart data={data} series={two} label="Test" />);
+    expect(html).toContain('data-testid="axis-legend"');
+    expect(html).toContain("right axis");
+    expect(html).toContain("left axis");
+  });
+
+  it("has no axis legend for a single scale", () => {
+    expect(renderToStaticMarkup(<TimeChart data={data} series={[two[0]]} label="Test" />)).not.toContain("axis-legend");
+  });
+});

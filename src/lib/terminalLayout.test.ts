@@ -1,39 +1,38 @@
 import { describe, expect, it } from "vitest";
 import {
-  HOLDERS_PRIMARY_ROW_HEIGHT,
-  PRIMARY_ROW_MAX_PX,
-  PRIMARY_ROW_MIN_PX,
-  chartBodyPx,
-  holdersPrimaryRowPx,
-  legacyChartBodyPx,
+  CHART_HEIGHT,
+  CHART_HEIGHT_CLASS,
+  CHART_TICK,
+  GRID_GAP_PX,
+  MIN_FONT_PX,
+  PANEL_PADDING_PX,
+  SECTION_GAP_PX,
+  SPACE_PX,
+  TYPE_PX,
 } from "./terminalLayout";
 
-describe("holders terminal chart height", () => {
-  it("the old 2×7 grid left a 296px chart body at 1280×800", () => {
-    expect(legacyChartBodyPx(800)).toBe(296);
+describe("terminal layout tokens", () => {
+  it("defines the chart height tiers", () => {
+    expect(CHART_HEIGHT.hero).toBe("clamp(420px, 55dvh, 560px)");
+    expect(CHART_HEIGHT.standard).toBe("300px");
+    expect(CHART_HEIGHT.compact).toBe("200px");
   });
 
-  it("the primary row is meaningfully taller at laptop and desktop heights", () => {
-    for (const viewport of [720, 800, 900, 1080]) {
-      const row = holdersPrimaryRowPx(viewport);
-      const body = chartBodyPx(row);
-      expect(row).toBeGreaterThanOrEqual(PRIMARY_ROW_MIN_PX);
-      expect(row).toBeLessThanOrEqual(PRIMARY_ROW_MAX_PX);
-      expect(body).toBeGreaterThan(legacyChartBodyPx(800));
-    }
-    // 800px: just under the cap (568px row, body 516) — well clear of 296.
-    expect(holdersPrimaryRowPx(800)).toBe(568);
-    expect(chartBodyPx(holdersPrimaryRowPx(800))).toBe(516);
-    // 900px and up sit on the cap.
-    expect(holdersPrimaryRowPx(900)).toBe(PRIMARY_ROW_MAX_PX);
-    // Short laptop still clears the old body, using the floor rather than 296.
-    expect(holdersPrimaryRowPx(680)).toBe(PRIMARY_ROW_MIN_PX);
-    expect(chartBodyPx(PRIMARY_ROW_MIN_PX)).toBeGreaterThan(380);
+  it("keeps the Tailwind tier classes in step with the tiers", () => {
+    expect(CHART_HEIGHT_CLASS.hero).toBe(`h-[${CHART_HEIGHT.hero.replace(/, /g, ",")}]`);
+    expect(CHART_HEIGHT_CLASS.standard).toBe(`h-[${CHART_HEIGHT.standard}]`);
+    expect(CHART_HEIGHT_CLASS.compact).toBe(`h-[${CHART_HEIGHT.compact}]`);
   });
 
-  it("the CSS height is the same clamp the helper computes", () => {
-    expect(HOLDERS_PRIMARY_ROW_HEIGHT).toBe(
-      `clamp(${PRIMARY_ROW_MIN_PX}px, calc(100dvh - 232px), ${PRIMARY_ROW_MAX_PX}px)`,
-    );
+  it("spacing uses only the 8/12/16/24 scale", () => {
+    const scale = Object.values(SPACE_PX);
+    expect(scale).toEqual([8, 12, 16, 24]);
+    expect([PANEL_PADDING_PX, GRID_GAP_PX, SECTION_GAP_PX]).toEqual([12, 12, 24]);
+  });
+
+  it("nothing in the type scale used on charts is below 12px", () => {
+    expect(TYPE_PX.axisTick).toBeGreaterThanOrEqual(MIN_FONT_PX);
+    expect(TYPE_PX.caption).toBeGreaterThanOrEqual(MIN_FONT_PX);
+    expect(CHART_TICK.fontSize).toBe(12);
   });
 });
