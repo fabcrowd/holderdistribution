@@ -12,6 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { useMediaQuery, PHONE_QUERY } from "@/hooks/useMediaQuery";
+import { describeFreshness } from "@/lib/format";
+import { TapTile } from "@/components/tierflow/TapTile";
 import {
   CANVAS_W, rowTop, rowCenterY, tileW, tierLeftX, TIER_COL_CENTER_X, tileEdgeX,
   SIDE_H, bezierPath, laneArcPath, fanY, strokeWidth, rankedStrokeWidths, TIER_H,
@@ -112,10 +114,11 @@ const SIDE_LABELS_OUT = [
 ];
 
 // The color legend shown in the header: buy / sell pressure + redistribution.
-const LEGEND: { color: string; label: string; explanation: string }[] = [
-  { color: POSITIVE, label: "Buy pressure", explanation: "{ticker} entering retail from the market or custody — bought on a DEX, or withdrawn from an exchange into self-custody. In Wallets mode, also wallets ARRIVING into a tier (left-hand tick and inbound migration lines)." },
-  { color: NEGATIVE, label: "Sell pressure", explanation: "{ticker} leaving retail toward a sale — sold on a DEX, or deposited to an exchange (a common precursor to a sale). In Wallets mode, a tier's right-hand tick or outbound migration line uses this when that tier's outflow was dominated by real sales rather than wallet-to-wallet moves." },
-  { color: NEUTRAL, label: "Redistribution", explanation: "{ticker} moved to another wallet or added to / withdrawn from an LP pool — not market buy or sell pressure. In Wallets mode, used when a tier's outflow was mostly relocation, not a sale." },
+// `short` is the phone label; the full explanation opens on tap either way.
+const LEGEND: { color: string; label: string; short: string; explanation: string }[] = [
+  { color: POSITIVE, label: "Buy pressure", short: "Buy", explanation: "{ticker} entering retail from the market or custody — bought on a DEX, or withdrawn from an exchange into self-custody. In Wallets mode, also wallets ARRIVING into a tier (left-hand tick and inbound migration lines)." },
+  { color: NEGATIVE, label: "Sell pressure", short: "Sell", explanation: "{ticker} leaving retail toward a sale — sold on a DEX, or deposited to an exchange (a common precursor to a sale). In Wallets mode, a tier's right-hand tick or outbound migration line uses this when that tier's outflow was dominated by real sales rather than wallet-to-wallet moves." },
+  { color: NEUTRAL, label: "Redistribution", short: "Redistribution", explanation: "{ticker} moved to another wallet or added to / withdrawn from an LP pool — not market buy or sell pressure. In Wallets mode, used when a tier's outflow was mostly relocation, not a sale." },
 ];
 
 export const TierFlowDiagram = ({
@@ -198,6 +201,9 @@ export const TierFlowDiagram = ({
   // Under 640px the scaled-down canvas renders tier labels at ~6px; phones
   // get a stacked, full-size list driving the same selection + detail panel.
   const isPhone = useMediaQuery(PHONE_QUERY);
+  // Phone copy is trimmed to headline numbers; the explanations open on tap.
+  const compact = isPhone && !isTerminal;
+  const asOf = describeFreshness(outflowsAsOf);
 
   const { data: changelog } = useClassificationChangelog();
 
@@ -718,9 +724,80 @@ export const TierFlowDiagram = ({
       {LEGEND.map((l) => (
         <span key={l.label} className="inline-flex items-center gap-1.5">
           <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ background: l.color }} />
-          <ExplainNumber value={l.label} explanation={t(l.explanation)} ariaLabel={`${l.label}: what this colour means`} className="inline-flex min-h-6 items-center" />
+          <ExplainNumber value={compact ? l.short : l.label} explanation={t(l.explanation)} ariaLabel={`${l.label}: what this colour means`} className="inline-flex min-h-6 items-center" />
         </span>
       ))}
+    </div>
+  );
+
+  // Explanations shared by the stacked figures (desktop/tablet) and the phone
+  // tiles, so each sentence lives in one place.
+  const netExplain = tierLabelShort
+    ? `Snapshot-to-snapshot change for the ${tierLabelShort} tier — includes buys, sells, exchange moves, and wallet relocation.`
+    : t("The real snapshot-to-snapshot change in retail {ticker} — includes everything: buys, sells, exchange moves, and wallets simply relocating funds to other wallets. Not the same as \"net demand\" below, which excludes wallet-to-wallet relocation.");
+  const demandExplain = retailDemand
+    ? `Buy pressure (${fmtTel(retailDemand.bought)}: DEX buys + exchange withdrawals) minus sell pressure (${fmtTel(retailDemand.sold)}: DEX sells + exchange deposits)${tierLabelShort ? ` for ${tierLabelShort}` : " across retail tiers"}. Excludes wallet-to-wallet relocation — that's redistribution, not market pressure.`
+    : "";
+  const demandNote = retailDemand
+    ? `${retailDemand.net >= 0 ? "More buy than sell pressure" : "More sell than buy pressure"}, excluding wallet-to-wallet moves.`
+    : "";
+  const dexNote = tierLabelShort
+    ? "This tier’s DEX swaps — same figures as Bought on DEX / Sold on DEX beside the chart."
+    : "All wallets, not just retail tiers below — a separate figure from the tier detail.";
+
+  const dagger = isWallets ? suppressedNote?.count : suppressedNote?.balance;
+  const netClass = (v: number) => (v >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400");
+  const baselineText = `(vs ${baselineLabel(baselineDate)})`;
+  const grossExplain = `Of the ${ticker} that left retail tiers: ${fmtTel(grossExplainer.dex)} sold on DEX, ${fmtTel(grossExplainer.cex)} to exchanges, ${fmtTel(grossExplainer.moved)} moved to other wallets — gross figures, not the net above.`;
+  // Phone: one tile per figure, each a headline value. Same numbers and † rule
+  // as the stacked figures; the sentences open on tap.
+  const compactTiles = isWallets ? (
+    <TapTile
+      testId="tier-tile-net"
+      label="Net wallets"
+      value={netInfo.netWallets == null ? (dagger ? "†" : "—") : <span className={netClass(netInfo.netWallets)}>{signed(netInfo.netWallets, fmtInt)}</span>}
+      explanation={netInfo.netWallets == null
+        ? (dagger ?? "No baseline available for this period.")
+        : `Retail wallets, net change ${baselineText}.${netInfo.partialWallets ? "\nSome tiers have no baseline yet — this total only counts the ones that do." : ""}`}
+    />
+  ) : (
+    <div className="space-y-1.5">
+      <TapTile
+        testId="tier-tile-net"
+        label={`${tierLabelShort ?? "Retail"} net change`}
+        value={scopedNetTel == null ? (dagger ? "†" : "—") : <span className={netClass(scopedNetTel)}>{`${signed(scopedNetTel, fmtTel)} ${ticker}`}</span>}
+        explanation={scopedNetTel == null
+          ? (dagger ?? "No baseline available for this period.")
+          : [netExplain, `Compared with ${baselineLabel(baselineDate)}.`, scopedPartialTel ? "Some tiers have no baseline yet — this total only counts the ones that do." : null].filter(Boolean).join("\n")}
+      />
+      <TapTile
+        testId="tier-tile-demand"
+        label={`${tierLabelShort ?? "Retail"} buy − sell`}
+        value={retailDemand ? <span className={netClass(retailDemand.net)}>{`${signed(retailDemand.net, fmtTel)} ${ticker}`}</span> : "—"}
+        explanation={retailDemand ? `${rangeLabel}. ${demandExplain}\n${demandNote}` : "No DEX/exchange activity recorded yet."}
+      />
+      <TapTile
+        testId="tier-tile-dex"
+        label={`${tierLabelShort ?? "Whole market"} DEX`}
+        value={scopedDex
+          ? <><span style={{ color: POSITIVE }}>{fmtTel(scopedDex.bought)}</span> bought / <span style={{ color: NEGATIVE }}>{fmtTel(scopedDex.sold)}</span> sold</>
+          : "—"}
+        explanation={scopedDex ? `${rangeLabel}. ${dexNote}` : "No DEX activity recorded yet."}
+      />
+      <TapTile
+        testId="tier-tile-gross"
+        label="Left tiers"
+        value={
+          <>
+            <span style={{ color: NEGATIVE }}>{fmtTel(grossExplainer.dex)} DEX</span>
+            {" · "}
+            <span style={{ color: NEGATIVE }}>{fmtTel(grossExplainer.cex)} exch.</span>
+            {" · "}
+            <span style={{ color: NEUTRAL }}>{fmtTel(grossExplainer.moved)} wallets</span>
+          </>
+        }
+        explanation={grossExplain}
+      />
     </div>
   );
 
@@ -741,10 +818,15 @@ export const TierFlowDiagram = ({
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-1.5">
               <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Retail distribution by tier</h3>
-              <InfoTooltip text={isWallets ? INFO_WALLETS : t(INFO_TEL)} label="How to read the tier flows" />
+              {/* On phones a fresh as-of date moves into the tooltip; a stale
+                  feed keeps its visible warning pill. */}
+              <InfoTooltip
+                text={compact && asOf.status === "fresh" && asOf.date ? `Flows as of ${asOf.date}.\n\n${isWallets ? INFO_WALLETS : t(INFO_TEL)}` : isWallets ? INFO_WALLETS : t(INFO_TEL)}
+                label="How to read the tier flows"
+              />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />
+              {!(compact && asOf.status === "fresh") && <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />}
               {clearButton}
               {metricToggle}
             </div>
@@ -778,7 +860,7 @@ export const TierFlowDiagram = ({
           on screen in this mode, so nothing needs a unit switch mid-read.
           TEL mode: buy/sell pressure summary — period totals when no tier is
           selected; scoped to the selected tier when one is. */}
-      {isWallets ? (isTerminal ? null : (
+      {compact ? compactTiles : isWallets ? (isTerminal ? null : (
         <div className="premium-surface-card p-4 text-center max-w-md mx-auto">
           <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">
             Retail wallets, net change {`(vs ${baselineLabel(baselineDate)})`}
@@ -810,9 +892,7 @@ export const TierFlowDiagram = ({
                   <div className={`text-xl font-bold ${scopedNetTel >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                     <ExplainNumber
                       value={`${signed(scopedNetTel, fmtTel)} ${ticker}`}
-                      explanation={tierLabelShort
-                        ? `Snapshot-to-snapshot change for the ${tierLabelShort} tier — includes buys, sells, exchange moves, and wallet relocation.`
-                        : t("The real snapshot-to-snapshot change in retail {ticker} — includes everything: buys, sells, exchange moves, and wallets simply relocating funds to other wallets. Not the same as \"net demand\" below, which excludes wallet-to-wallet relocation.")}
+                      explanation={netExplain}
                     />
                   </div>
                   {scopedPartialTel && <div className="text-xs text-muted-foreground mt-0.5">Some tiers have no baseline yet — this total only counts the ones that do.</div>}
@@ -828,10 +908,10 @@ export const TierFlowDiagram = ({
                   <div className={`text-xl font-bold ${retailDemand.net >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                     <ExplainNumber
                       value={`${signed(retailDemand.net, fmtTel)} ${ticker}`}
-                      explanation={`Buy pressure (${fmtTel(retailDemand.bought)}: DEX buys + exchange withdrawals) minus sell pressure (${fmtTel(retailDemand.sold)}: DEX sells + exchange deposits)${tierLabelShort ? ` for ${tierLabelShort}` : " across retail tiers"}. Excludes wallet-to-wallet relocation — that's redistribution, not market pressure.`}
+                      explanation={demandExplain}
                     />
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{retailDemand.net >= 0 ? "More buy than sell pressure" : "More sell than buy pressure"}, excluding wallet-to-wallet moves.</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{demandNote}</div>
                 </>
               ) : (
                 <div className="text-sm text-muted-foreground">No DEX/exchange activity recorded yet.</div>
@@ -850,9 +930,7 @@ export const TierFlowDiagram = ({
                     {" sold"}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    {tierLabelShort
-                      ? "This tier’s DEX swaps — same figures as Bought on DEX / Sold on DEX beside the chart."
-                      : "All wallets, not just retail tiers below — a separate figure from the tier detail."}
+                    {dexNote}
                   </div>
                 </>
               ) : (
@@ -879,7 +957,7 @@ export const TierFlowDiagram = ({
       {/* Always-visible instruction, not buried in the (i) tooltip — the
           #1 usability gap found in review was that clicking a tier isn't
           discoverable at all. */}
-      <div className={`text-center text-sm text-muted-foreground ${isTerminal ? "shrink-0" : ""}`} aria-live="polite">
+      <div className={compact ? "sr-only" : `text-center text-sm text-muted-foreground ${isTerminal ? "shrink-0" : ""}`} aria-live="polite">
         {isPhone
           ? isWallets
             ? selected

@@ -26,6 +26,7 @@ import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
 import { mergeDistributionBaseline, summarizeTierGrowth } from "@/lib/distributionRows";
 import { TierFlowDiagram, type TierMetric } from "@/components/TierFlowDiagram";
+import { useMediaQuery, PHONE_QUERY } from "@/hooks/useMediaQuery";
 import { tierDisplayLabel } from "@/components/tierflow/geometry";
 import { bucketFloor } from "@/lib/holderTiers";
 import { DexSwaps } from "@/components/DexSwaps";
@@ -86,7 +87,11 @@ const DistributionAnalysisWidget = ({
   // have no meaningful per-tier transition data). All timeframe keys —
   // including 1D — resolve via outflowsKeyFor/transitionsKeyFor to matching
   // "1"/"7"/… buckets in both JSON files.
-  const hasUnifiedChart = selectedView === "combined" && (rangeDays ?? 0) >= 1;
+  const tierFlowsOnPage = selectedView === "combined" && (rangeDays ?? 0) >= 1;
+  // Phones use the stacked chart + table for every view (the Ethereum layout);
+  // the tier-flow diagram then sits below the table instead of replacing it.
+  const isPhone = useMediaQuery(PHONE_QUERY);
+  const hasUnifiedChart = tierFlowsOnPage && !isPhone;
 
   if (!snapshot) return null;
 
@@ -134,6 +139,28 @@ const DistributionAnalysisWidget = ({
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label;
   // † rule: the "N of M tiers gained" summary is itself a tier delta.
   const showAccumulation = tiersWithBaselineCount > 0 && rangeLabel && distributionCountEvents.length === 0;
+
+  const tierFlow = (
+    <TierFlowDiagram
+      rangeDays={rangeDays ?? 0}
+      metric={metric}
+      onMetricChange={setMetric}
+      baselineDate={historicalDelta?.referenceDate ?? null}
+      // † rule (same as the desktop terminal): no tier deltas on the diagram
+      // when a reclassification follows the baseline.
+      suppressedNote={{
+        count: distributionCountEvents.length ? "† not shown (wallets reclassified since baseline)" : null,
+        balance: distributionBalanceEvents.length ? "† not shown (wallets reclassified since baseline)" : null,
+      }}
+      rows={rows.map((r) => ({
+        label: r.label,
+        count: r.count ?? 0,
+        totalBalance: r.totalBalance ?? 0,
+        previousCount: distributionCountEvents.length ? null : r.previousCount ?? null,
+        previousTotalBalance: distributionBalanceEvents.length ? null : r.previousTotalBalance ?? null,
+      }))}
+    />
+  );
 
   return (
     <Card className="premium-surface-card">
@@ -190,25 +217,7 @@ const DistributionAnalysisWidget = ({
                 bar chart. */}
             {hasUnifiedChart ? (
               <div className="px-4 pt-4 sm:px-6">
-                <TierFlowDiagram
-                  rangeDays={rangeDays ?? 0}
-                  metric={metric}
-                  onMetricChange={setMetric}
-                  baselineDate={historicalDelta?.referenceDate ?? null}
-                  // † rule (same as the desktop terminal): no tier deltas on
-                  // the diagram when a reclassification follows the baseline.
-                  suppressedNote={{
-                    count: distributionCountEvents.length ? "† not shown (wallets reclassified since baseline)" : null,
-                    balance: distributionBalanceEvents.length ? "† not shown (wallets reclassified since baseline)" : null,
-                  }}
-                  rows={rows.map((r) => ({
-                    label: r.label,
-                    count: r.count ?? 0,
-                    totalBalance: r.totalBalance ?? 0,
-                    previousCount: distributionCountEvents.length ? null : r.previousCount ?? null,
-                    previousTotalBalance: distributionBalanceEvents.length ? null : r.previousTotalBalance ?? null,
-                  }))}
-                />
+                {tierFlow}
               </div>
             ) : (
               <div className="px-4 pt-4 sm:px-6">
@@ -317,10 +326,14 @@ const DistributionAnalysisWidget = ({
                 whatever range is selected) whenever the unified chart is
                 showing — repeating this block there would just restate it.
                 Chain views keep the plain bar chart and need this fallback. */}
-            {selectedView === "combined" && !hasUnifiedChart && (
+            {selectedView === "combined" && !tierFlowsOnPage && (
               <div className="px-4 pb-6 sm:px-6">
                 <DexSwaps rangeDays={rangeDays ?? 0} />
               </div>
+            )}
+            {/* Phone: the tier-flow diagram follows the stacked chart and table. */}
+            {isPhone && tierFlowsOnPage && (
+              <div className="px-4 pb-6 sm:px-6">{tierFlow}</div>
             )}
           </CardContent>
     </Card>
