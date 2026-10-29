@@ -55,12 +55,16 @@ const write = (rel, obj) => {
 };
 const read = (rel) => JSON.parse(fs.readFileSync(path.join(tmp, rel), "utf8"));
 const exists = (rel) => fs.existsSync(path.join(tmp, rel));
-const run = (script, args = []) =>
-  spawnSync(process.execPath, [path.join(repo, "scripts", script), ...args], {
+// Scripts log OS-native paths; assertions match posix paths, so normalize the output.
+const posixOutput = (text) => text.split(path.sep).join("/");
+const run = (script, args = []) => {
+  const r = spawnSync(process.execPath, [path.join(repo, "scripts", script), ...args], {
     cwd: tmp,
     encoding: "utf8",
     env: { ...process.env, HD_PROJECT: "" },
   });
+  return { ...r, stdout: posixOutput(r.stdout), stderr: posixOutput(r.stderr) };
+};
 // Every file under public/data/ and data/ that is NOT inside <slug>/.
 const rootLeaks = (slug) => {
   const out = [];

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { handleLiveData, LIVE_DATA_FILES, slimCheckpoint, config, repoDataPath, parseLiveDataPath } from "../../netlify/functions/live-data.mjs";
+import { handleLiveData, LIVE_DATA_FILES, slimCheckpoint, config, repoDataPath, parseLiveDataPath, buildProjectIndex } from "../../netlify/functions/live-data.mjs";
 
 const req = (file) => new Request(`https://holderdistribution.com/live-data/${file}`);
 const ok = (body) => new Response(typeof body === "string" ? body : JSON.stringify(body), { status: 200 });
@@ -80,6 +80,38 @@ describe("live-data Netlify function", () => {
 
   it("serves chain-status.json", () => {
     expect(LIVE_DATA_FILES.has("chain-status.json")).toBe(true);
+  });
+
+  describe("registry-derived projects", () => {
+    const registry = {
+      projects: [
+        { slug: "tel", default: true, legacyRoot: true },
+        { slug: "zebec-network" },
+        { slug: "fake-token" },
+        { slug: "Bad Slug" },
+      ],
+    };
+    const index = buildProjectIndex(registry);
+
+    it("builds slugs, legacy-root slugs and the default from the registry; drops malformed slugs", () => {
+      expect([...index.slugs]).toEqual(["tel", "zebec-network", "fake-token"]);
+      expect([...index.legacyRoot]).toEqual(["tel"]);
+      expect(index.defaultSlug).toBe("tel");
+    });
+
+    it("serves a newly registered project without editing the function", async () => {
+      const fetchImpl = vi.fn(async () => ok({ ok: 1 }));
+      const res = await handleLiveData(req("fake-token/holders-lite.json"), { LIVE_DATA_GITHUB_TOKEN: "t" }, fetchImpl, index);
+      expect(res.status).toBe(200);
+      expect(fetchImpl.mock.calls[0][0]).toContain("/contents/public/data/fake-token/holders-lite.json");
+      expect(repoDataPath("fake-token", "x.json", index)).toBe("public/data/fake-token/x.json");
+      const unknown = await handleLiveData(req("other/holders-lite.json"), { LIVE_DATA_GITHUB_TOKEN: "t" }, fetchImpl, index);
+      expect(unknown.status).toBe(404);
+    });
+
+    it("legacy URLs resolve to the registry default", () => {
+      expect(parseLiveDataPath("/live-data/holders-lite.json", index.defaultSlug)).toEqual({ slug: "tel", file: "holders-lite.json", legacyUrl: true });
+    });
   });
 
   describe("multi-token paths", () => {

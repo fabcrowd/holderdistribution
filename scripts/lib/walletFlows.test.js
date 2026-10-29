@@ -156,7 +156,7 @@ describe("committed wallet-flows report", () => {
     const offenders = walk(src)
       .filter((f) => /\.(ts|tsx)$/.test(f) && !f.endsWith(".test.ts"))
       .filter((f) => /(from\s+|import\(\s*)["'][^"']*data\/forensics\//.test(fs.readFileSync(f, "utf8")))
-      .map((f) => path.relative(root, f));
+      .map((f) => path.relative(root, f).split(path.sep).join("/"));
     expect(offenders).toEqual(["src/lib/loadForensicsDev.ts"]);
   });
 });

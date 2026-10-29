@@ -70,12 +70,17 @@ new project works with no `copy` section at all:
   `text(...)`, e.g. `holders.cex.info`, `staking.intro`). Some also take a
   runtime value the widget fills itself: `{amount}` (`supply.holdings.description`)
   and `{treasuryNow}` (`supply.coingecko.note`).
-- Entity slots (Supply view): every project gets the same foundation /
-  team panels and treasury chart lines. Name them with
-  `copy.text` `entity.association`, `entity.associationShort`,
-  `entity.holdings`, `entity.holdingsShort` (generic: "{name}
-  Foundation-Controlled Safes" / "Foundation" / "{name} Team Wallets" /
-  "Team"), plus `supply.association.description`, `supply.holdings.description`,
+- Entity slots (Supply view): the pie uses one bucket set for every project
+  — Retail, DEX, CEX, Treasury, Team, Holdings, Escrow, Other, Supply gap —
+  and hides empty slices. Staked tokens stay inside Retail; staking reward
+  vaults / reward contracts are developer-controlled, so give them category
+  `staking` (a contracts{} role `staking`, or an exclusions label) and they
+  count in Team (`TEAM_CATEGORY_KEYS` in `src/lib/supplyBreakdown.ts`).
+  Treasury's label is `copy.text` `entity.association`
+  (generic: "Treasury"; TEL keeps "Telcoin Association-Controlled Safes";
+  ZBCN is "Zebec Treasury & Buyback Vaults"). Holdings is `entity.holdings`
+  (generic: "Holdings"). Also `entity.associationShort` /
+  `entity.holdingsShort`, plus `supply.association.description`, `supply.holdings.description`,
   `supply.escrow.description`, `treasury.series.council`,
   `treasury.history.info`.
 - The site footer disclaimer is shared legal copy in `src/components/Footer.tsx`
@@ -442,7 +447,7 @@ The first non-TEL project, mapped 2026-10-25
 (`docs/superpowers/plans/2026-10-25-zbcn-mapping.md`).
 
 - **Identity:** slug `zebec-network` (`config/projects/zebec-network.json`,
-  `/zebec-network`, `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`).
+  `/zebec-network`, registered in `config/projects.json`).
   Mint `ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU` (SPL, 6 decimals),
   **Solana-only** (`origin: true`, `bridge: "native"`). The chain tabs are
   Combined and Solana, and the explorer is Solscan. Feeds are in
@@ -479,8 +484,8 @@ The first non-TEL project, mapped 2026-10-25
   (`stakingV3Balance` / the v3 overlay) and is not added on top. Positions
   above vault custody are scaled down in that credit so supply is not
   invented; the tile still shows the raw sum. Reward vaults are not custody
-  for those positions and stay in the supply staking slice. The staking pull
-  is non-fatal in the workflow, so holders still publish; if the feed is
+  for those positions and fold into Other on the supply pie (not their own
+  slice). The staking pull is non-fatal in the workflow, so holders still publish; if the feed is
   missing, vault balances stay uncredited and a warning is logged.
 - **Vault-gap rule (standing):** each lockup's position sum is reconciled
   against its vault ATA (0.5% tolerance), and a mismatch refuses to publish.
@@ -662,6 +667,32 @@ project's equivalents get an entry in `STATIC_GATED` (or a committed
 `data/<slug>/forensics/` file). The ledger's inner tables still use TEL
 wording, and only render when a project has a ledger.
 
+## Feed health (`health`)
+
+`npm run pipeline:health` and `npm run check:feeds` run across every project in `config/projects.json`
+(`--project <slug>` for one). Defaults live in `scripts/lib/feedHealth.js`; a project overrides them in
+its config, so onboarding a token needs no code change:
+
+```json
+"health": {
+  "feeds": {
+    "holders-lite.json":    { "maxAgeHours": 36 },
+    "tier-outflows.json":   { "placeholder": true },
+    "funding-wallets.json": { "disabled": true }
+  },
+  "consistency": { "maxHolderChangePct": 2, "knownHolderChangeDates": ["2026-10-03"] }
+}
+```
+
+* `placeholder: true` marks an intentional stub (e.g. a flow scanner not built for that chain): reported
+  as PLACEHOLDER, never stale, and checked only to be no older than the holders snapshot.
+* `disabled: true` drops a default feed the project does not produce.
+* `check-feed-consistency` WARNs (never fails) when the combined holder count moves more than
+  `maxHolderChangePct` day over day within 30 days; changelog event dates are allowed automatically.
+* `pipeline-watchdog.yml` runs daily, checks all projects, and also files an issue when a data
+  workflow's latest run failed with zero completed steps (Actions billing block). It cannot run while
+  Actions itself is blocked; run `npm run pipeline:health` from outside Actions for that case.
+
 ## Adding the next project
 
 1. Add `{ "slug": "<slug>", "name": "...", "ticker": "..." }` to `config/projects.json`.
@@ -686,7 +717,7 @@ wording, and only render when a project has a ledger.
    scripts write there when run with `--project <slug>`. Give the config
    `supply.target`, `staking[].kind` / `deployBlock` and its own
    `classification.*` files.
-5. Add the slug to `PROJECT_SLUGS` in `netlify/functions/live-data.mjs`.
+5. Nothing to do for `netlify/functions/live-data.mjs`: it reads the slugs from `config/projects.json` (only a `legacyRoot` project needs `"legacyRoot": true` on its registry entry).
    A test fails if it is missing.
 6. Optional: add a `holders` block if TEL's tier sizes don't fit the supply, and
    `chains[].rpc` for chains other than ethereum, polygon and base (Solana:

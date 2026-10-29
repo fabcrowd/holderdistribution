@@ -29,18 +29,36 @@
 export const config = { path: "/live-data/*" };
 
 /**
- * Registered project slugs (config/projects.json) and which of them still keep
- * their feeds at the public/data/ root (config/projects/<slug>.json
- * data.legacyRoot). Constants, not a JSON import, so the function bundle has no
- * build-time dependency; scripts/lib/projects.test.js fails if they drift.
+ * Registered projects come from config/projects.json, which Netlify's esbuild
+ * bundler inlines at deploy time (a few hundred bytes, no runtime file read),
+ * so registering a token needs no edit here. The per-project config files are
+ * NOT imported (~30 KB each and growing): the registry entry carries
+ * `legacyRoot: true` for projects whose feeds still live at the public/data/
+ * root (TEL), and scripts/lib/projects.test.js fails if it drifts from
+ * data.legacyRoot in config/projects/<slug>.json.
  */
-export const PROJECT_SLUGS = new Set(["tel", "zebec-network"]);
-export const LEGACY_ROOT_SLUGS = new Set(["tel"]);
+import registry from "../../config/projects.json";
+
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
+
+/** Pure: slugs, legacy-root slugs and the default slug of a registry object. */
+export const buildProjectIndex = (reg) => {
+  const entries = (reg?.projects ?? []).filter((p) => SLUG_RE.test(p.slug));
+  return {
+    slugs: new Set(entries.map((p) => p.slug)),
+    legacyRoot: new Set(entries.filter((p) => p.legacyRoot === true).map((p) => p.slug)),
+    defaultSlug: (entries.find((p) => p.default) ?? entries[0])?.slug,
+  };
+};
+
+const PROJECTS = buildProjectIndex(registry);
+export const PROJECT_SLUGS = PROJECTS.slugs;
+export const LEGACY_ROOT_SLUGS = PROJECTS.legacyRoot;
 /** Slug that legacy /live-data/<file> URLs (old bundles) resolve to. */
-export const LEGACY_URL_SLUG = "tel";
+export const LEGACY_URL_SLUG = PROJECTS.defaultSlug;
 
 /** Parses ".../live-data/<file>" or ".../live-data/<slug>/<file>". Null when invalid. */
-export const parseLiveDataPath = (pathname) => {
+export const parseLiveDataPath = (pathname, legacySlug = LEGACY_URL_SLUG) => {
   let rest;
   try {
     rest = decodeURIComponent(pathname.replace(/^.*?\/live-data\//, ""));
@@ -48,14 +66,14 @@ export const parseLiveDataPath = (pathname) => {
     return null;
   }
   const parts = rest.split("/");
-  if (parts.length === 1) return { slug: LEGACY_URL_SLUG, file: parts[0], legacyUrl: true };
+  if (parts.length === 1) return { slug: legacySlug, file: parts[0], legacyUrl: true };
   if (parts.length === 2) return { slug: parts[0], file: parts[1], legacyUrl: false };
   return null;
 };
 
 /** Repo path of a project's feed. */
-export const repoDataPath = (slug, file) =>
-  LEGACY_ROOT_SLUGS.has(slug) ? `public/data/${file}` : `public/data/${slug}/${file}`;
+export const repoDataPath = (slug, file, index = PROJECTS) =>
+  index.legacyRoot.has(slug) ? `public/data/${file}` : `public/data/${slug}/${file}`;
 
 /** Only files the frontend actually fetches. Everything else 404s. */
 export const LIVE_DATA_FILES = new Set([
@@ -112,10 +130,10 @@ const staticFallback = (location, reason) =>
     },
   });
 
-export async function handleLiveData(request, env = process.env, fetchImpl = fetch) {
+export async function handleLiveData(request, env = process.env, fetchImpl = fetch, index = PROJECTS) {
   const { pathname } = new URL(request.url);
-  const parsed0 = parseLiveDataPath(pathname);
-  if (!parsed0 || !PROJECT_SLUGS.has(parsed0.slug) || !LIVE_DATA_FILES.has(parsed0.file)) {
+  const parsed0 = parseLiveDataPath(pathname, index.defaultSlug);
+  if (!parsed0 || !index.slugs.has(parsed0.slug) || !LIVE_DATA_FILES.has(parsed0.file)) {
     return new Response("Not found", { status: 404, headers: { "Cache-Control": "public, max-age=300" } });
   }
   const { slug, file, legacyUrl } = parsed0;
@@ -126,7 +144,7 @@ export async function handleLiveData(request, env = process.env, fetchImpl = fet
 
   const repo = env.LIVE_DATA_REPO?.trim() || "fabcrowd/holderdistribution";
   const ref = env.LIVE_DATA_REF?.trim() || "main";
-  const url = `https://api.github.com/repos/${repo}/contents/${repoDataPath(slug, encodeURIComponent(file))}?ref=${encodeURIComponent(ref)}`;
+  const url = `https://api.github.com/repos/${repo}/contents/${repoDataPath(slug, encodeURIComponent(file), index)}?ref=${encodeURIComponent(ref)}`;
 
   try {
     const upstream = await fetchImpl(url, {

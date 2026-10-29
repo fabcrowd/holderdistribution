@@ -12,6 +12,7 @@ const holders = JSON.parse(read("public/data/tel-holders.json"));
 const VALID_CATEGORIES = new Set([
   "bridge-lock",
   "staking-contract",
+  "staking",
   "escrow",
   "treasury",
   "council",
