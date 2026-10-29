@@ -1,3 +1,8 @@
+import { ZoomFrame } from "@/components/chart/ZoomFrame";
+import { useChartZoom } from "@/hooks/useChartZoom";
+import { useSeriesToggle } from "@/hooks/useSeriesToggle";
+import { ChartLegend } from "@/components/chart/ChartLegend";
+import { toggleHidden, sliceWindow } from "@/lib/chartZoom";
 import { useMemo, useState } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { SubPanelTabs } from "@/components/SubPanelTabs";
@@ -66,6 +71,7 @@ const stakingChartConfig = {
   staking: { label: "Legacy contract", color: "hsl(var(--muted-foreground))" },
   stakingV3: { label: "v3 StakingModule", color: "hsl(var(--ha-accent))" },
 };
+const STAKING_SERIES_KEYS = Object.keys(stakingChartConfig) as Array<keyof typeof stakingChartConfig>;
 const V3_DEPLOY_MS = Date.parse(V3_STAKING_DEPLOY_DATE);
 
 /** Dot only where a series has a value with no neighbour (no line drawn). */
@@ -188,6 +194,10 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     [chartData, holdersBreaks],
   );
 
+  const holdersZoom = useChartZoom(holdersLineData, (p) => p.timestamp);
+  // Rows the zoom window shows; domains are computed from these so Y rescales.
+  const holdersInView = useMemo(() => sliceWindow(chartData, (p) => p.timestamp, holdersZoom.window), [chartData, holdersZoom.window]);
+
   const stakingChartData = useMemo(() => {
     const series = data?.stakingSeries ?? [];
     const num = (v: number | null | undefined) => (v != null && Number.isFinite(v) ? v : null);
@@ -241,15 +251,24 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
 
   const showStakingSplit = stakingChartData.some((p) => (p.staking ?? 0) > 0 && (p.stakingV3 ?? 0) > 0);
 
+  const stakingZoom = useChartZoom(stakingChartData, (p) => p.timestamp);
+  const stakingToggle = useSeriesToggle(STAKING_SERIES_KEYS);
+  const stakingInView = useMemo(() => sliceWindow(stakingChartData, (p) => p.timestamp, stakingZoom.window), [stakingChartData, stakingZoom.window]);
   const stakingYDomain = useMemo((): [number, number] | ["auto", "auto"] => {
-    if (stakingChartData.length === 0) return ["auto", "auto"];
-    const values = stakingChartData.flatMap((p) => [p.staking, p.stakingTotal, p.stakingV3]).filter((v): v is number => v != null);
+    if (stakingInView.length === 0) return ["auto", "auto"];
+    const values = stakingInView
+      .flatMap((p) => [
+        stakingToggle.isVisible("staking") ? p.staking : null,
+        stakingToggle.isVisible("stakingTotal") ? p.stakingTotal : null,
+        stakingToggle.isVisible("stakingV3") ? p.stakingV3 : null,
+      ])
+      .filter((v): v is number => v != null);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = Math.max(1, max - min);
     const padding = range * 0.05;
     return [Math.max(0, min - padding), max + padding];
-  }, [stakingChartData]);
+  }, [stakingInView, stakingToggle]);
 
   const balanceChartData = useMemo(() => {
     const series = data?.balanceSeries ?? [];
@@ -276,7 +295,12 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     dex: true,
   });
   const toggleBalanceSeries = (key: BalanceSeriesKey) =>
-    setVisibleBalanceSeries((prev) => ({ ...prev, [key]: !prev[key] }));
+    setVisibleBalanceSeries((prev) => {
+      const keys = Object.keys(prev) as BalanceSeriesKey[];
+      // The last visible series cannot be switched off.
+      const hidden = toggleHidden(new Set(keys.filter((k) => !prev[k])), key, keys);
+      return Object.fromEntries(keys.map((k) => [k, !hidden.has(k)])) as Record<BalanceSeriesKey, boolean>;
+    });
 
   // DEX and CEX history is sparse until the respective backfills have run
   // (see tasks/todo.md) — a single snapshot can't show a trend.
@@ -347,6 +371,9 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
       dex: p.dex !== null && baseDex !== null ? p.dex - baseDex : null,
     }));
   }, [balanceChartData, balanceMode]);
+
+  const balanceZoom = useChartZoom(balanceDisplayData, (p) => p.timestamp);
+  const balanceInView = useMemo(() => sliceWindow(balanceDisplayData, (p) => p.timestamp, balanceZoom.window), [balanceDisplayData, balanceZoom.window]);
 
   const holdersChangelogEvents = useMemo(() => {
     if (chartData.length === 0) return [];
@@ -430,27 +457,27 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   // See src/lib/chartDomain.ts (and its regression test) for the bug this fixes.
   const balanceYDomain = useMemo(
     () =>
-      computeSeriesDomain(balanceDisplayData, activeKeys(renderedBalanceSeries), {
+      computeSeriesDomain(balanceInView, activeKeys(renderedBalanceSeries), {
         allowNegative: balanceMode === "change",
         log: balanceMode === "balance" && logScale,
       }),
-    [balanceDisplayData, renderedBalanceSeries, balanceMode, logScale],
+    [balanceInView, renderedBalanceSeries, balanceMode, logScale],
   );
 
   const yDomain = useMemo((): [number, number] | ["auto", "auto"] => {
-    if (chartData.length === 0) return ["auto", "auto"];
+    if (holdersInView.length === 0) return ["auto", "auto"];
     // A declared methodology break must not decide the axis (see seriesBreaks.ts).
     if (holdersBreaks.length > 0) {
-      const d = computeBreakAwareDomain(chartData, ["holders"], holdersBreaks.map((b) => b.t), "timestamp");
+      const d = computeBreakAwareDomain(holdersInView, ["holders"], holdersBreaks.map((b) => b.t), "timestamp");
       if (typeof d[0] === "number") return d as [number, number];
     }
-    const holders = chartData.map((point) => point.holders);
+    const holders = holdersInView.map((point) => point.holders);
     const min = Math.min(...holders);
     const max = Math.max(...holders);
     const range = Math.max(1, max - min);
     const padding = range * 0.05;
     return [Math.max(0, min - padding), max + padding];
-  }, [chartData, holdersBreaks]);
+  }, [holdersInView, holdersBreaks]);
 
   // Compute explicit tick timestamps so Recharts renders exactly what we want.
   // 7D → daily; 30D → weekly (every 7 days); 90D → biweekly; YTD/1Y → 1st of each month.
@@ -616,16 +643,17 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
               )}
 
               {!isLoading && !error && chartData.length > 0 && (
-                <div className="h-56 w-full sm:h-64" role="img" aria-label={holdersAriaSummary} data-testid="holder-growth-chart">
+                <ZoomFrame zoom={holdersZoom} className="h-56 w-full sm:h-64">
+                <div className="h-full w-full" role="img" aria-label={holdersAriaSummary} data-testid="holder-growth-chart">
                   <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
-                    <LineChart data={holdersLineData}>
+                    <LineChart data={holdersZoom.rows}>
                       <CartesianGrid vertical={false} />
                       <XAxis
                         dataKey="timestamp"
                         type="number"
                         domain={["dataMin", "dataMax"]}
                         scale="time"
-                        ticks={xTicks}
+                        ticks={holdersZoom.zoomed ? undefined : xTicks}
                         tickFormatter={(value) => formatDateValue(value, tickFormatter)}
                         tickMargin={8}
                       />
@@ -678,6 +706,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                     </LineChart>
                   </ChartContainer>
                 </div>
+                </ZoomFrame>
               )}
             </div>
 
@@ -804,16 +833,16 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                     No balance history available for this range.
                   </div>
                 ) : (
-                  <div className="h-56 w-full sm:h-64">
+                  <ZoomFrame zoom={balanceZoom} className="h-56 w-full sm:h-64">
                     <ChartContainer config={balanceChartConfig} className="h-full w-full aspect-auto">
-                      <LineChart data={balanceDisplayData}>
+                      <LineChart data={balanceZoom.rows}>
                         <CartesianGrid vertical={false} />
                         <XAxis
                           dataKey="timestamp"
                           type="number"
                           domain={["dataMin", "dataMax"]}
                           scale="time"
-                          ticks={xTicks}
+                          ticks={balanceZoom.zoomed ? undefined : xTicks}
                           tickFormatter={(value) => formatDateValue(value, tickFormatter)}
                           tickMargin={8}
                         />
@@ -885,7 +914,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         })}
                       </LineChart>
                     </ChartContainer>
-                  </div>
+                  </ZoomFrame>
                 )}
               </div>
             </div>
@@ -943,16 +972,30 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                     No staking history for this period.
                   </div>
                 ) : (
-                  <div className="h-56 w-full sm:h-64">
+                  <>
+                  {showStakingSplit && (
+                    <ChartLegend
+                      className="mb-2"
+                      hidden={stakingToggle.hidden}
+                      onToggle={stakingToggle.toggle}
+                      items={STAKING_SERIES_KEYS.map((key) => ({
+                        key,
+                        label: String(stakingChartConfig[key]?.label ?? key),
+                        color: stakingChartConfig[key].color,
+                        dashed: key === "staking",
+                      }))}
+                    />
+                  )}
+                  <ZoomFrame zoom={stakingZoom} className="h-56 w-full sm:h-64">
                     <ChartContainer config={stakingChartConfig} className="h-full w-full aspect-auto">
-                      <LineChart data={stakingChartData}>
+                      <LineChart data={stakingZoom.rows}>
                         <CartesianGrid vertical={false} />
                         <XAxis
                           dataKey="timestamp"
                           type="number"
                           domain={["dataMin", "dataMax"]}
                           scale="time"
-                          ticks={xTicks}
+                          ticks={stakingZoom.zoomed ? undefined : xTicks}
                           tickFormatter={(value) => formatDateValue(value, tickFormatter)}
                           tickMargin={8}
                         />
@@ -981,14 +1024,14 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                             label={{ value: "v3 migration", position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 12, fontWeight: 600 }}
                           />
                         )}
-                        <Line
+                        {stakingToggle.isVisible("stakingTotal") && <Line
                           dataKey="stakingTotal"
                           type="monotone"
                           stroke="var(--color-stakingTotal)"
                           strokeWidth={2}
                           dot={isolatedDot(stakingChartData, "stakingTotal", "hsl(var(--primary))")}
-                        />
-                        {showStakingSplit && (
+                        />}
+                        {showStakingSplit && stakingToggle.isVisible("staking") && (
                           <Line
                             dataKey="staking"
                             type="monotone"
@@ -999,7 +1042,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                             connectNulls
                           />
                         )}
-                        {showStakingSplit && (
+                        {showStakingSplit && stakingToggle.isVisible("stakingV3") && (
                           <Line
                             dataKey="stakingV3"
                             type="monotone"
@@ -1010,7 +1053,8 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         )}
                       </LineChart>
                     </ChartContainer>
-                  </div>
+                  </ZoomFrame>
+                  </>
                 )}
               </div>
             </div>

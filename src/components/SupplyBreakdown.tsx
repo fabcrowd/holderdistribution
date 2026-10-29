@@ -1,3 +1,5 @@
+import { ChartLegend } from "@/components/chart/ChartLegend";
+import { useSeriesToggle } from "@/hooks/useSeriesToggle";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { useProject } from "@/hooks/useProject";
@@ -316,7 +318,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
   // nothing anyway), computed once so the Pie's data, its Cells, and the
   // active-slice label all index the same array — recharts' `index` in
   // onMouseEnter/label refers to a position in THIS array, not `buckets`.
-  const pieSlices = useMemo(
+  const allPieSlices = useMemo(
     () =>
       buckets
         .filter((b) => b.amount > 0)
@@ -330,6 +332,11 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
         })),
     [buckets, totalSupply],
   );
+  // Slices can be toggled off from the legend under the donut; the wedge
+  // percentages stay shares of total supply, so a hidden slice never
+  // inflates the others' numbers.
+  const sliceToggle = useSeriesToggle(useMemo(() => allPieSlices.map((x) => x.key), [allPieSlices]));
+  const pieSlices = useMemo(() => allPieSlices.filter((x) => !sliceToggle.hidden.has(x.key)), [allPieSlices, sliceToggle.hidden]);
   // Shared by both designs: the desktop chart's on-label popovers and the
   // mobile list's rows both open the same drill-down content for a key.
   const getDetail = (key: string) =>
@@ -348,6 +355,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
 
 
   const renderDonut = (className: string) => (
+    <div className="flex flex-col items-center gap-1 md:shrink-0">
                   <ChartContainer
                     config={pieChartConfig}
                     // Explicit height rather than aspect-square + max-h: that
@@ -455,6 +463,14 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                       </Pie>
                     </RePieChart>
                   </ChartContainer>
+      <ChartLegend
+        items={allPieSlices.map((x) => ({ key: x.key, label: x.label, color: x.color }))}
+        hidden={sliceToggle.hidden}
+        onToggle={sliceToggle.toggle}
+        className="max-w-[17rem] justify-center"
+        data-testid="supply-donut-legend"
+      />
+    </div>
   );
   const renderList = (compact: boolean) => (
                   <div className={compact ? "w-full min-w-0 space-y-px" : "w-full min-w-0 space-y-0.5 md:max-w-[30rem]"}>

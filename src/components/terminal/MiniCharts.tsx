@@ -21,6 +21,10 @@ import { CHART_DRAW_MS } from "@/lib/motion";
 import { computeBreakAwareDomain } from "@/lib/chartDomain";
 import { assignAxes, hasRightAxis, keysOnAxis, type AxisSide } from "@/lib/chartAxes";
 import { CHART_LABEL_FONT_PX, CHART_TICK } from "@/lib/terminalLayout";
+import { ZoomFrame } from "@/components/chart/ZoomFrame";
+import { ChartLegend, type LegendItem } from "@/components/chart/ChartLegend";
+import { useChartZoom } from "@/hooks/useChartZoom";
+import { useSeriesToggle } from "@/hooks/useSeriesToggle";
 import { breakNotesByRow, insertBreakSpacers, limitedHistoryCount, type SeriesBreak } from "@/lib/seriesBreaks";
 
 /** Dense defaults: shared 12px ticks, hairline grid. */
@@ -62,6 +66,10 @@ const isolatedDot = (data: TimeChartProps["data"], key: string, color: string) =
       <g key={`${key}-${i}`} />
     );
   };
+/** Annotations whose time falls inside the zoom window (all of them when unzoomed). */
+const inZoomWindow = <M extends { t: number }>(items: M[], win: readonly [number, number] | null): M[] =>
+  win ? items.filter((m) => m.t >= win[0] && m.t <= win[1]) : items;
+
 /** A dated annotation drawn as a dashed vertical rule (e.g. a reclassification). */
 export type ChartMarker = { t: number; label: string; description: string };
 
@@ -117,15 +125,21 @@ type TimeChartProps = {
 };
 
 export const TimeChart = ({
-  data,
-  series,
+  data: allData,
+  series: allSeries,
   format = (n) => formatCompact(n),
   kind = "line",
   label,
-  markers = [],
-  breaks = [],
+  markers: allMarkers = [],
+  breaks: allBreaks = [],
   highlight = null,
 }: TimeChartProps) => {
+  const toggled = useSeriesToggle(useMemo(() => allSeries.map((s) => s.key), [allSeries]));
+  const series = useMemo(() => allSeries.filter((s) => !toggled.hidden.has(s.key)), [allSeries, toggled.hidden]);
+  const zoom = useChartZoom(allData, (d) => Number(d.t));
+  const data = zoom.rows;
+  const markers = useMemo(() => inZoomWindow(allMarkers, zoom.window), [allMarkers, zoom.window]);
+  const breaks = useMemo(() => inZoomWindow(allBreaks, zoom.window), [allBreaks, zoom.window]);
   const Chart = kind === "area" ? AreaChart : LineChart;
   // Draw in on first mount only; range/chain changes then update instantly.
   const anim = useChartIntro();
@@ -165,7 +179,7 @@ export const TimeChart = ({
   const rightDomain = useMemo(() => (dual ? domainFor("right") : undefined), [split, dual, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
   const breakNotes = useMemo(() => breakNotesByRow(data.map((d) => d.t), breaks), [data, breaks]);
   // Too few points to call a curve: straight segments, visible dots, a note.
-  const limited = limitedHistoryCount(data, keys);
+  const limited = limitedHistoryCount(allData, keys);
   const curve = limited != null ? "linear" : "monotone";
   const pointDot = (key: string, color: string) =>
     limited != null
@@ -173,33 +187,42 @@ export const TimeChart = ({
       : split || (series.find((x) => x.key === key)?.connectNulls === false)
         ? isolatedDot(chartData, key, color)
         : false;
-  const allMarkers = [...markers.map((m) => m.description), ...breaks.map((b) => b.description)];
-  const fullLabel = allMarkers.length
+  const annotations = [...allMarkers.map((m) => m.description), ...allBreaks.map((b) => b.description)];
+  const fullLabel = annotations.length
     ? `${label} ${[
-        ...markers.map((m) => `${m.description} on ${fmtDate(m.t, dateFull)}.`),
-        ...breaks.map((b) => `${b.description} on ${fmtDate(b.t, dateFull)}.`),
+        ...allMarkers.map((m) => `${m.description} on ${fmtDate(m.t, dateFull)}.`),
+        ...allBreaks.map((b) => `${b.description} on ${fmtDate(b.t, dateFull)}.`),
       ].join(" ")}`
     : limited != null
       ? `${label} Limited history (${limited} days).`
       : label;
+  const dualAxes = assignAxes(allSeries);
+  const dualAll = hasRightAxis(allSeries);
+  const legendItems: LegendItem[] = allSeries.map((s) => ({
+    key: s.key,
+    label: s.label,
+    color: s.color,
+    dashed: s.dashed,
+    note: dualAll ? (dualAxes[s.key] === "right" ? "right axis" : "left axis") : undefined,
+  }));
   return (
-    <div role="img" aria-label={fullLabel} className="relative flex h-full w-full flex-col" data-markers={markers.length || undefined} data-breaks={breaks.length || undefined}>
+    <div className="relative flex h-full w-full flex-col" data-markers={allMarkers.length || undefined} data-breaks={allBreaks.length || undefined}>
       {limited != null && (
         <p className="pointer-events-none absolute bottom-7 right-3 z-10 text-xs text-muted-foreground" data-testid="limited-history">
           Limited history ({limited} {limited === 1 ? "day" : "days"})
         </p>
       )}
-      {dual && (
-        <p className="mb-1 flex shrink-0 flex-wrap items-center gap-x-3 text-xs text-muted-foreground" data-testid="axis-legend">
-          {series.map((s) => (
-            <span key={s.key} className="inline-flex items-center gap-1">
-              <span className="h-0.5 w-3" style={{ background: s.color }} aria-hidden="true" />
-              {s.label} <span className="opacity-80">({axes[s.key] === "right" ? "right axis" : "left axis"})</span>
-            </span>
-          ))}
-        </p>
+      {(allSeries.length > 1) && (
+        <ChartLegend
+          items={legendItems}
+          hidden={toggled.hidden}
+          onToggle={toggled.toggle}
+          className="mb-1"
+          data-testid={dualAll ? "axis-legend" : "series-legend"}
+        />
       )}
-      <div className="min-h-0 flex-1">
+      <ZoomFrame zoom={zoom} className="min-h-0 flex-1">
+      <div role="img" aria-label={fullLabel} className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
         <Chart data={chartData} margin={MARGIN}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
@@ -307,6 +330,7 @@ export const TimeChart = ({
         </Chart>
       </ResponsiveContainer>
       </div>
+      </ZoomFrame>
     </div>
   );
 };
@@ -319,9 +343,13 @@ type SignedBarsProps = {
 };
 
 /** Daily signed bars (green = positive, red = negative). */
-export const SignedBars = ({ data, format = (n) => formatCompact(n), label, seriesLabel }: SignedBarsProps) => {
+export const SignedBars = ({ data: allData, format = (n) => formatCompact(n), label, seriesLabel }: SignedBarsProps) => {
   const anim = useChartIntro();
+  // Bars sit on a category axis, so the zoom window is in row-index units.
+  const zoom = useChartZoom(allData, (_, i) => i);
+  const data = zoom.rows;
   return (
+    <ZoomFrame zoom={zoom} className="h-full w-full">
     <div role="img" aria-label={label} className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={MARGIN}>
@@ -340,6 +368,7 @@ export const SignedBars = ({ data, format = (n) => formatCompact(n), label, seri
         </BarChart>
       </ResponsiveContainer>
     </div>
+    </ZoomFrame>
   );
 };
 

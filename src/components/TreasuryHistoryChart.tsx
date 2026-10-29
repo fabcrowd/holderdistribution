@@ -7,6 +7,9 @@ import { useTreasuryHistory } from "@/hooks/useTreasuryHistory";
 import { computeSeriesDomain, activeKeys } from "@/lib/chartDomain";
 import { formatChartTimestamp } from "@/lib/chartDate";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { ZoomFrame } from "@/components/chart/ZoomFrame";
+import { useChartZoom } from "@/hooks/useChartZoom";
+import { toggleHidden } from "@/lib/chartZoom";
 import { useProjectCopy, type UseProjectCopy } from "@/hooks/useProjectCopy";
 
 /**
@@ -103,6 +106,13 @@ const formatSignedAmount = (value: number, unit: string) => {
   return `${sign}${formatCompactAmount(Math.abs(value), unit)}`;
 };
 
+/** Flip one line on/off; the last visible line cannot be switched off. */
+const toggleVisible = (prev: Record<SeriesKey, boolean>, key: SeriesKey): Record<SeriesKey, boolean> => {
+  const keys = Object.keys(SERIES) as SeriesKey[];
+  const hidden = toggleHidden(new Set(keys.filter((k) => !prev[k])), key, keys);
+  return Object.fromEntries(keys.map((k) => [k, !hidden.has(k)])) as Record<SeriesKey, boolean>;
+};
+
 /**
  * `compact` (the desktop terminal): no section rule, chips share the title
  * row and the plot is shorter, so the whole chart fits the history panel at
@@ -188,9 +198,10 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
     });
   }, [points, mode]);
 
+  const zoom = useChartZoom(display, (d) => d.timestamp);
   const domain = useMemo(
-    () => computeSeriesDomain(display, activeKeys(visible), { allowNegative: mode === "change" }),
-    [display, visible, mode],
+    () => computeSeriesDomain(zoom.rows, activeKeys(visible), { allowNegative: mode === "change" }),
+    [zoom.rows, visible, mode],
   );
 
   if (isError) return <div className="min-h-[8rem]"><PanelError>Couldn&apos;t load treasury history.</PanelError></div>;
@@ -228,7 +239,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
             <button
               key={key}
               type="button"
-              onClick={() => setVisible((prev) => ({ ...prev, [key]: !prev[key] }))}
+              onClick={() => setVisible((prev) => toggleVisible(prev, key))}
               aria-pressed={on}
               // Series colour on the border + dot, never as the text
               // background: white on these mid-tone hues failed AA (2.8:1).
@@ -247,9 +258,9 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
         })}
       </div>
 
-      <div className={`${compact ? "h-44" : "h-56"} w-full`}>
+      <ZoomFrame zoom={zoom} className={`${compact ? "h-44" : "h-56"} w-full`}>
         <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
-          <LineChart data={display} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
+          <LineChart data={zoom.rows} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="timestamp"
@@ -286,7 +297,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
             )}
           </LineChart>
         </ChartContainer>
-      </div>
+      </ZoomFrame>
     </div>
   );
 };
