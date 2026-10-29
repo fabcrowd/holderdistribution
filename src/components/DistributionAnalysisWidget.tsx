@@ -144,24 +144,13 @@ const DistributionAnalysisWidget = ({
             Distribution Analysis
             <MethodologyInfo section="distribution" />
           </CardTitle>
+          {/* One caption instead of two pills. Buckets floor at the project's
+              lowest tier; sub-floor dust wallets are counted there (see
+              scripts/lib/holdersView.js reconcileDistributionCounts). */}
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Retail only, excluding exchange &amp; hot wallets. Sub-{dustFloor}-{ticker} dust wallets are counted in the lowest tier.
+          </p>
           <div className="flex flex-wrap items-center gap-2 mt-1.5">
-            <span className="text-[10px] sm:text-xs font-medium text-muted-foreground border border-border/60 rounded-full px-2 py-0.5">
-              Retail only — excludes exchange &amp; hot wallets
-            </span>
-            {/* Buckets floor at 1 TEL by design — sub-1-TEL dust wallets
-                never land in their true tier by balance, since it can't be
-                determined without a full transfer replay. Their COUNT is
-                folded into the lowest tier (TEL: "1-250K"; the project's last
-                `holders.distributionTiers` entry) so tier counts still
-                sum to the headline Retail Holders count above (see
-                scripts/lib/holdersView.js's buildViewData /
-                reconcileDistributionCounts); their balance is not reflected
-                anywhere (dust is <1 TEL each, immaterial). See lessons.md
-                "Sub-1-TEL Dust Wallets Are Deliberately Excluded From
-                Buckets, Not Counts". */}
-            <span className="text-[10px] sm:text-xs font-medium text-muted-foreground border border-border/60 rounded-full px-2 py-0.5">
-              Sub-{dustFloor}-{ticker} dust wallets counted in lowest tier
-            </span>
             {/* This tab has no chain selector of its own — `selectedView` is
                 set on the Holders tab and carries over silently, and picking
                 a chain there also swaps this tab's whole visualization
@@ -235,7 +224,7 @@ const DistributionAnalysisWidget = ({
                             entry.gained === null
                               ? "hsl(var(--primary) / 0.8)"
                               : entry.gained
-                                ? "hsl(142 71% 45%)"
+                                ? "hsl(var(--ha-positive))"
                                 : "hsl(var(--muted-foreground) / 0.5)"
                           }
                         />
