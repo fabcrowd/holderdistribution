@@ -14,6 +14,7 @@ import { TimeChart, SignedBars, CategoryBars, type ChartMarker } from "./MiniCha
 import { DetailsButton } from "./DetailsButton";
 import { heldPanelTip } from "@/lib/heldPanelTip";
 import { StakedPanelTip } from "./StakedPanelTip";
+import { getSeriesBreaks } from "@/lib/seriesBreaks";
 import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
 
 const int = new Intl.NumberFormat("en-US");
@@ -41,7 +42,9 @@ const reclassMarkers = (
 ): ChartMarker[] => {
   if (firstMs == null) return [];
   const seen = new Set<string>();
+  // Events that declare a series break are drawn as the break marker instead.
   return getEventsAffecting(changelog, metric, firstMs, Date.now())
+    .filter((e) => !e.breaksSeries)
     .filter((e) => (seen.has(e.date) ? false : (seen.add(e.date), true)))
     .map((e) => ({ t: Date.parse(e.date), label: "† Reclassified", description: "Wallets were reclassified" }));
 };
@@ -153,6 +156,9 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
     [changelog, holders],
   );
   const balanceMarkers = useMemo(() => reclassMarkers(changelog, "retail.balance", balance[0]?.t), [changelog, balance]);
+  const holderBreaks = useMemo(() => getSeriesBreaks(changelog, ["retail.count", "holderCount"], holders[0]?.t), [changelog, holders]);
+  const balanceBreaks = useMemo(() => getSeriesBreaks(changelog, ["retail.balance"], balance[0]?.t), [changelog, balance]);
+  const stakingBreaks = useMemo(() => getSeriesBreaks(changelog, ["stakingBalance"], staking[0]?.t), [changelog, staking]);
   const netflow = useMemo(() => {
     const rows = (flow.data ?? []).map((e) => ({ t: Date.parse(e.date), value: e.net, in: e.in, out: e.out }));
     return withinRange(rows, (r) => r.t, Math.max(rangeDays, 1));
@@ -224,6 +230,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             format={(n) => int.format(n)}
             label={h ? `Retail holders from ${int.format(h.first.holders)} to ${int.format(h.last.holders)} over the period.` : "Retail holders"}
             markers={holderMarkers}
+            breaks={holderBreaks}
           />,
           holders.length > 1,
         )}
@@ -266,6 +273,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
               format={(n) => `${formatCompact(n)} ${tk}`}
               label={b ? `Retail ${tk} ${formatCompact(b.last.retail)}, exchange ${tk} ${b.last.cex != null ? formatCompact(b.last.cex) : "unknown"} at the end of the period.` : `${tk} held`}
               markers={balanceMarkers}
+              breaks={balanceBreaks}
               highlight={balanceFocus}
             />,
             balance.length > 1,
@@ -363,6 +371,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                       { key: "stakingV3", label: "v3 StakingModule", color: "hsl(var(--ha-accent))", connectNulls: false },
                     ]}
                     markers={stakingMarkers}
+                    breaks={stakingBreaks}
                     format={(n) => `${formatCompact(n)} ${tk}`}
                     label={`Staked ${tk} ${stakedNow != null ? formatCompact(stakedNow) : ""} now${stakingSplit ? ` (${stakingSplit})` : ""}. The legacy contract fell as stakers moved to the v3 StakingModule; v3 balances before the latest snapshot weren't recorded.`}
                   />
@@ -371,6 +380,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             ) : (
               <TimeChart
                 kind="area"
+                breaks={stakingBreaks}
                 data={staking.map((p) => ({ t: p.t, staking: p.stakingTotal ?? p.staking ?? p.stakingV3 }))}
                 series={[{ key: "staking", label: "Staked", color: "hsl(var(--primary))" }]}
                 format={(n) => `${formatCompact(n)} ${tk}`}

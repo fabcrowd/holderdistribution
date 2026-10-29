@@ -20,7 +20,8 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
 import { insertGapBreaks } from "@/lib/seriesGaps";
 import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
-import { computeSeriesDomain, activeKeys } from "@/lib/chartDomain";
+import { computeSeriesDomain, computeBreakAwareDomain, activeKeys } from "@/lib/chartDomain";
+import { getSeriesBreaks, insertBreakSpacers, SERIES_BREAK_LABEL } from "@/lib/seriesBreaks";
 
 type HolderGrowthWidgetProps = {
   selectedView: DisplaySelection;
@@ -171,9 +172,19 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   // src/lib/seriesGaps.ts and the 2026-08-11-pipeline-outage changelog event).
   // Kept separate from chartData so the domain, delta, and tick calculations
   // below keep operating on real observations only and never see a null.
+  const holdersBreaks = useMemo(
+    () => getSeriesBreaks(changelog, ["retail.count", "holderCount"], chartData[0]?.timestamp, chartData[chartData.length - 1]?.timestamp),
+    [changelog, chartData],
+  );
   const holdersLineData = useMemo(
-    () => insertGapBreaks(chartData, ["holders", "cumulativeHolders"]),
-    [chartData],
+    () =>
+      insertBreakSpacers(
+        insertGapBreaks(chartData, ["holders", "cumulativeHolders"]) as Record<string, unknown>[],
+        holdersBreaks.map((b) => b.t),
+        "timestamp",
+        ["holders", "cumulativeHolders"],
+      ) as typeof chartData,
+    [chartData, holdersBreaks],
   );
 
   const stakingChartData = useMemo(() => {
@@ -427,13 +438,18 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
 
   const yDomain = useMemo((): [number, number] | ["auto", "auto"] => {
     if (chartData.length === 0) return ["auto", "auto"];
+    // A declared methodology break must not decide the axis (see seriesBreaks.ts).
+    if (holdersBreaks.length > 0) {
+      const d = computeBreakAwareDomain(chartData, ["holders"], holdersBreaks.map((b) => b.t), "timestamp");
+      if (typeof d[0] === "number") return d as [number, number];
+    }
     const holders = chartData.map((point) => point.holders);
     const min = Math.min(...holders);
     const max = Math.max(...holders);
     const range = Math.max(1, max - min);
     const padding = range * 0.05;
     return [Math.max(0, min - padding), max + padding];
-  }, [chartData]);
+  }, [chartData, holdersBreaks]);
 
   // Compute explicit tick timestamps so Recharts renders exactly what we want.
   // 7D → daily; 30D → weekly (every 7 days); 90D → biweekly; YTD/1Y → 1st of each month.
@@ -618,6 +634,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         // leading digits were clipped off ("0,053.25").
                         tickFormatter={(value) => formatInteger(Math.round(value))}
                         domain={yDomain}
+                        allowDataOverflow={holdersBreaks.length > 0}
                         tickMargin={8}
                         width={64}
                       />
@@ -635,7 +652,16 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         strokeWidth={2}
                         dot={false}
                       />
-                      {holdersChangelogEvents.map((event) => {
+                      {holdersBreaks.map((b) => (
+                        <ReferenceLine
+                          key={`break-${b.t}`}
+                          x={b.t}
+                          stroke="hsl(var(--ha-warning))"
+                          strokeDasharray="2 3"
+                          label={{ value: SERIES_BREAK_LABEL, position: "insideTopRight", fill: "hsl(var(--ha-warning))", fontSize: 10 }}
+                        />
+                      ))}
+                      {holdersChangelogEvents.filter((e) => !e.breaksSeries).map((event) => {
                         const eventMs = Date.parse(event.date);
                         if (!Number.isFinite(eventMs)) return null;
                         return (

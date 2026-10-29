@@ -57,6 +57,10 @@
           "totalHeld"
         ]
       },
+      "breaksSeries": {
+        "metrics": ["retail.balance"],
+        "note": "Treasury reclassification (13.1B ZBCN moved out of retail) — not a market move"
+      },
       "backfillStatus": "not-possible",
       "backfillNote": "The 2026-10-25 snapshot was published before this approval. Later daily rows use the new treasury and team labels. Rewriting 2026-10-25 would require a full Solana replay of that slot; it was left as published, so the 2026-10-25 to 2026-10-26 retail change mixes this relabel with real movement."
     },

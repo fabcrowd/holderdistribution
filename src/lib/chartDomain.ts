@@ -63,3 +63,59 @@ export const computeSeriesDomain = <T extends Record<string, unknown>>(
 /** Keys whose flag is true, for feeding straight into computeSeriesDomain. */
 export const activeKeys = <K extends string>(flags: Record<K, boolean>): K[] =>
   (Object.keys(flags) as K[]).filter((key) => flags[key]);
+
+/**
+ * A declared break only stops dominating the axis when the older side is a
+ * short stretch next to the current basis. An older segment is folded into the
+ * domain when it covers at least as much time as the newest segment (a long
+ * view's real history must stay on the plot), or when including it keeps the
+ * span within this multiple of the newest segment's own span (a small step).
+ * Otherwise it is a methodology artefact that would flatten the real trend and
+ * is left to clip at the plot edge.
+ */
+export const BREAK_DOMAIN_SPAN_FACTOR = 3;
+
+/**
+ * Like computeSeriesDomain, but segment-aware: `breakTs` are timestamps where
+ * the series changed basis; see BREAK_DOMAIN_SPAN_FACTOR for the rule.
+ */
+export const computeBreakAwareDomain = <T extends Record<string, unknown>>(
+  points: T[],
+  keys: readonly (keyof T)[],
+  breakTs: readonly number[],
+  timeKey: keyof T,
+  options: { allowNegative?: boolean; log?: boolean } = {},
+): SeriesDomain => {
+  if (!breakTs.length) return computeSeriesDomain(points, keys, options);
+  const sorted = [...breakTs].sort((a, b) => b - a);
+  const segments: T[][] = [];
+  let rest = points;
+  for (const b of sorted) {
+    segments.push(rest.filter((p) => (p[timeKey] as number) >= b));
+    rest = rest.filter((p) => (p[timeKey] as number) < b);
+  }
+  segments.push(rest);
+  const duration = (rows: T[]): number =>
+    rows.length ? (rows[rows.length - 1][timeKey] as number) - (rows[0][timeKey] as number) : 0;
+  // Decided per series: a jump in one line must not be hidden by the span of
+  // another (balance vs exchange lines sit at very different levels).
+  const kept: Record<string, unknown>[] = [];
+  for (const key of keys) {
+    const spanOf = (rows: T[]): number => {
+      const [lo, hi] = computeSeriesDomain(rows, [key], { allowNegative: true });
+      return typeof lo === "number" && typeof hi === "number" ? hi - lo : 0;
+    };
+    const own = segments.map((s) => s.filter((p) => p[key] != null));
+    const newest = own.find((s) => s.length) ?? [];
+    const budget = Math.max(1, spanOf(newest)) * BREAK_DOMAIN_SPAN_FACTOR;
+    let included: T[] = [];
+    for (const segment of own) {
+      if (!segment.length) continue;
+      const candidate = [...segment, ...included];
+      const keep = !included.length || duration(segment) >= duration(newest) || spanOf(candidate) <= budget;
+      if (keep) included = candidate;
+    }
+    for (const p of included) kept.push({ [key as string]: p[key] });
+  }
+  return computeSeriesDomain(kept, keys as readonly string[], options);
+};
