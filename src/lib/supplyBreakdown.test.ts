@@ -10,30 +10,30 @@ import {
   circulatingFormula,
   groupSupplyCategories,
   isOtherCategory,
-  isStakingCategory,
+  isTeamCategory,
 } from "./supplyBreakdown";
 
 const CANONICAL = new Set<string>(CANONICAL_SUPPLY_BUCKETS);
 
 describe("groupSupplyCategories — fixed bucket set", () => {
-  it("folds leftover reward vaults into Other and keeps staked principal inside Retail", () => {
+  it("counts reward vaults in Team (not Other) and keeps staked principal inside Retail", () => {
     const zbcn = JSON.parse(
       readFileSync(resolve(process.cwd(), "public/data/zebec-network/supply-reconciliation.json"), "utf8"),
     );
     const labels = projectEntities(getProject("zebec-network"));
     const buckets = groupSupplyCategories(zbcn.categories, zbcn.residual, labels);
-    const other = buckets.find((b) => b.key === "other");
+    const team = buckets.find((b) => b.key === "team");
     const retail = buckets.find((b) => b.key === "retail");
     const treasury = buckets.find((b) => b.key === "treasury");
-    expect(buckets.some((b) => b.key === "staking")).toBe(false);
-    expect(other?.amount).toBeCloseTo(zbcn.categories.staking, 3);
-    expect(other?.amount ?? 0).toBeLessThan(50_000_000);
+    expect(buckets.some((b) => b.key === "staking" || b.key === "other")).toBe(false);
+    expect(team?.amount).toBeCloseTo(zbcn.categories.staking, 3);
+    expect(team?.amount ?? 0).toBeLessThan(50_000_000);
     expect(retail?.amount ?? 0).toBeGreaterThan(35_000_000_000);
     expect(retail?.amount ?? 0).toBeGreaterThan(zbcn.categories.staking);
     expect(treasury?.label).toBe("Zebec Treasury & Buyback Vaults");
     expect(buckets.map((b) => b.key).every((key) => CANONICAL.has(key))).toBe(true);
     expect(buckets.every((b) => b.amount > 0)).toBe(true);
-    expect(buckets.some((b) => b.key === "team" || b.key === "escrow")).toBe(false);
+    expect(buckets.some((b) => b.key === "escrow")).toBe(false);
     const sum = buckets.reduce((s, b) => s + b.amount, 0);
     expect(Math.abs(sum - zbcn.totalSupply)).toBeLessThan(1);
   });
@@ -44,6 +44,7 @@ describe("groupSupplyCategories — fixed bucket set", () => {
       dex: 1,
       cex: 1,
       staking: 1,
+      burn: 1,
       treasury: 1,
       team: 1,
       holdings: 1,
@@ -67,11 +68,46 @@ describe("groupSupplyCategories — fixed bucket set", () => {
     expect(buckets.find((b) => b.key === "treasury")?.label).toBe("Telcoin Association-Controlled Safes");
     expect(buckets.find((b) => b.key === "holdings")?.label).toBe("Telcoin Holdings");
     expect(buckets.find((b) => b.key === "supplyGap")?.label).toBe(SUPPLY_GAP_LABEL);
-    expect(buckets.some((b) => b.key === "team" || b.key === "staking")).toBe(false);
+    expect(buckets.some((b) => b.key === "staking")).toBe(false);
     expect(buckets.map((b) => b.key).every((key) => CANONICAL.has(key))).toBe(true);
-    expect(isStakingCategory("staking")).toBe(true);
-    expect(isStakingCategory("staking-contract")).toBe(false);
-    expect(isOtherCategory("staking")).toBe(true);
+    expect(isTeamCategory("staking")).toBe(true);
+    expect(isTeamCategory("staking-contract")).toBe(false);
+    expect(isOtherCategory("staking")).toBe(false);
+  });
+
+  it("sends TEL reward contracts (category staking) to Team, never Other or Treasury", () => {
+    const labels = projectEntities(getProject("tel"));
+    const buckets = groupSupplyCategories({ retail: 90, council: 4, staking: 6 }, 0, labels);
+    expect(buckets.find((b) => b.key === "team")?.amount).toBe(6);
+    expect(buckets.find((b) => b.key === "treasury")?.amount).toBe(4);
+    expect(buckets.some((b) => b.key === "other")).toBe(false);
+    expect(buckets.reduce((s, b) => s + b.amount, 0)).toBe(100);
+  });
+
+  it("config labels all three TELx reward contracts as staking so they land in Team", () => {
+    const exclusions = JSON.parse(readFileSync(resolve(process.cwd(), "config/exclusions.json"), "utf8"));
+    for (const a of [
+      "0x79e5a6ffe2e6ba053a80e1b199c4f328938f40ca",
+      "0x7feb8febddb66189417f732b4221a52e23b926c4",
+      "0x8f702676830ddca2801a4a7cdb971cde4df697ae",
+    ]) {
+      expect(exclusions.labels[a].category, a).toBe("staking");
+      expect(exclusions.labels[a].name).toMatch(/reward contract/);
+    }
+  });
+
+  it("merges team and reward-vault categories into one Team slice, ahead of Holdings and Other", () => {
+    const buckets = groupSupplyCategories({ retail: 10, team: 2, staking: 3, holdings: 1, "whale-unattributed": 1 }, 0);
+    expect(buckets.map((b) => b.key)).toEqual(["retail", "team", "holdings", "other"]);
+    expect(buckets.find((b) => b.key === "team")?.amount).toBe(5);
+  });
+
+  it("keeps staked principal inside Retail: no staked slice, supply sums unchanged", () => {
+    const categories = { retail: 50, cex: 20, treasury: 10, staking: 5 };
+    const buckets = groupSupplyCategories(categories, 15);
+    expect(buckets.map((b) => b.key)).toEqual(["retail", "cex", "treasury", "team", "supplyGap"]);
+    expect(buckets.find((b) => b.key === "retail")?.amount).toBe(50);
+    expect(buckets.reduce((s, b) => s + b.amount, 0)).toBe(100);
   });
 });
 
@@ -136,7 +172,9 @@ describe("ZBCN staking copy", () => {
     expect(info).toMatch(/already inside this figure/);
     expect(info).toMatch(/credited to each staker/);
     expect(info).not.toMatch(/own bucket|not included in this Retail/);
-    expect(copyText(zbcn, "supply.staking.bucketLabel", "Staking")).toBe("Reward vaults");
+    expect(zbcn.copy?.text?.["supply.staking.bucketLabel"]).toBeUndefined();
+    expect(copyText(zbcn, "supply.staking.description", "")).toMatch(/developer-controlled/);
+    expect(copyText(zbcn, "supply.staking.description", "")).toMatch(/counted in Team/);
     expect(copyText(zbcn, "supply.staking.description", "")).toMatch(/included in Retail/);
     expect(copyText(zbcn, "supply.staking.description", "")).toMatch(/not staker principal/i);
     expect(copyText(zbcn, "supply.staking.description", "")).toMatch(/Global Staked/);

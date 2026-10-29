@@ -39,6 +39,8 @@ import {
   isAssociationCategory,
   isHoldingsCategory,
   isOtherCategory,
+  isTeamCategory,
+  teamCategoryLabel,
   otherCategoryLabel,
   partitionBuckets,
   SUPPLY_GAP_LABEL,
@@ -248,7 +250,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
           .slice()
           .sort((a, b) => b.balance - a.balance),
         teamItems: items
-          .filter((i) => i.category === "team")
+          .filter((i) => isTeamCategory(i.category))
           .slice()
           .sort((a, b) => b.balance - a.balance),
         dexItems: items
@@ -1017,33 +1019,15 @@ const HoldingsPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
   );
 };
 
-const OtherAddressPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
-  const { text, hasText } = useProjectCopy();
-  const { project } = useProject();
-  // Reward vaults are not their own slice. When a project publishes them,
-  // the Solscan list #55 added still sits here, under Other.
-  const rewardLinks = hasText("supply.staking.addresses")
-    ? stakingAddressLinks(project).filter((link) => link.kind === "reward-vault")
-    : [];
-  return (
-    <div className="space-y-3">
-      <AddressListPanel
-        title="Other addresses"
-        description="Independent large wallets, temporary retail labels, burned {ticker}, and small special cases. Confirmed personal wallets move into Retail after a full holders re-scrape."
-        items={items}
-        subcategoryFor={(item) => otherCategoryLabel(item.category)}
-        emptyLabel="No itemised Other addresses."
-      />
-      {rewardLinks.length > 0 ? (
-        <div className="space-y-2 border-t border-border/50 pt-2">
-          <p className="text-muted-foreground">{text("supply.staking.description", "")}</p>
-          <p className="text-muted-foreground">{text("supply.staking.addresses", "")}</p>
-          <StakingAddressList links={rewardLinks} />
-        </div>
-      ) : null}
-    </div>
-  );
-};
+const OtherAddressPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
+  <AddressListPanel
+    title="Other addresses"
+    description="Independent large wallets, temporary retail labels, burned {ticker}, and small special cases. Confirmed personal wallets move into Retail after a full holders re-scrape."
+    items={items}
+    subcategoryFor={(item) => otherCategoryLabel(item.category)}
+    emptyLabel="No itemised Other addresses."
+  />
+);
 
 const DexLiquidityPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   <AddressListPanel
@@ -1071,15 +1055,37 @@ const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
   );
 };
 
-const TeamPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
-  <AddressListPanel
-    title="Team"
-    description="Confirmed {name} team wallets, listed apart from Treasury and Holdings."
-    items={items}
-    subcategoryFor={(item) => item.name ?? "Team wallet"}
-    emptyLabel="No team addresses itemised."
-  />
-);
+const TeamPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
+  const { text, hasText } = useProjectCopy();
+  const { project } = useProject();
+  // Staking reward vaults are developer-controlled, so they are itemised here
+  // with the team wallets. Projects that publish reward-vault Solscan links
+  // (ZBCN) get that list under the address rows.
+  const rewardLinks = hasText("supply.staking.addresses")
+    ? stakingAddressLinks(project).filter((link) => link.kind === "reward-vault")
+    : [];
+  return (
+    <div className="space-y-3">
+      <AddressListPanel
+        title="Team"
+        description={text(
+          "supply.team.description",
+          "{name} team wallets and staking reward vaults / contracts. Reward pools are paid out by the project, so they are developer-controlled and counted here, apart from Treasury and Holdings.",
+        )}
+        items={items}
+        subcategoryFor={(item) => teamCategoryLabel(item.category)}
+        emptyLabel="No team addresses itemised."
+      />
+      {rewardLinks.length > 0 ? (
+        <div className="space-y-2 border-t border-border/50 pt-2">
+          <p className="text-muted-foreground">{text("supply.staking.description", "")}</p>
+          <p className="text-muted-foreground">{text("supply.staking.addresses", "")}</p>
+          <StakingAddressList links={rewardLinks} />
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
 const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; committed: number | null }) => {
   const { entities, text, hasText } = useProjectCopy();

@@ -72,7 +72,11 @@ new project works with no `copy` section at all:
   and `{treasuryNow}` (`supply.coingecko.note`).
 - Entity slots (Supply view): the pie uses one bucket set for every project
   — Retail, DEX, CEX, Treasury, Team, Holdings, Escrow, Other, Supply gap —
-  and hides empty slices. Treasury's label is `copy.text` `entity.association`
+  and hides empty slices. Staked tokens stay inside Retail; staking reward
+  vaults / reward contracts are developer-controlled, so give them category
+  `staking` (a contracts{} role `staking`, or an exclusions label) and they
+  count in Team (`TEAM_CATEGORY_KEYS` in `src/lib/supplyBreakdown.ts`).
+  Treasury's label is `copy.text` `entity.association`
   (generic: "Treasury"; TEL keeps "Telcoin Association-Controlled Safes";
   ZBCN is "Zebec Treasury & Buyback Vaults"). Holdings is `entity.holdings`
   (generic: "Holdings"). Also `entity.associationShort` /

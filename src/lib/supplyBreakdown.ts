@@ -16,8 +16,9 @@
  * project's explanation.
  * Treasury's title comes from project copy (`entity.association`): TEL keeps
  * "Telcoin Association-Controlled Safes"; ZBCN uses its treasury name.
- * Staked principal stays inside Retail. Leftover reward-vault balances
- * (category `staking`) fold into Other — they are not their own slice.
+ * Staked principal stays inside Retail. Staking reward vaults / contracts
+ * (category `staking`) are developer-controlled, so they count in Team — not
+ * Other and not their own slice.
  */
 
 export type DisplayBucket = {
@@ -67,8 +68,6 @@ export const isHoldingsCategory = (category: string): category is HoldingsCatego
 
 /**
  * Category keys rolled into the Other base-layer row (click opens address detail).
- * `staking` is leftover program custody after staker credit (reward vaults), not
- * a canonical slice.
  */
 export const OTHER_CATEGORY_KEYS = [
   "safe-cluster",
@@ -77,7 +76,6 @@ export const OTHER_CATEGORY_KEYS = [
   "dormant-whale",
   "excluded-unlabelled",
   "burn",
-  "staking",
 ] as const;
 
 export type OtherCategoryKey = (typeof OTHER_CATEGORY_KEYS)[number];
@@ -93,7 +91,6 @@ export const OTHER_CATEGORY_LABELS: Record<OtherCategoryKey, string> = {
   "dormant-whale": "Inactive large wallet",
   "excluded-unlabelled": "Small / special cases",
   burn: "Burned",
-  staking: "Reward vaults",
 };
 
 export const otherCategoryLabel = (category: string): string =>
@@ -117,18 +114,27 @@ export const SUPPLY_GAP_LABEL = "Supply gap";
 export const DEFAULT_RESIDUAL_BUCKET_LABEL = SUPPLY_GAP_LABEL;
 
 /**
- * Raw category `staking`: program accounts that still hold tokens after
- * staker positions have been credited into retail (reward vaults). Those
- * balances fold into Other. Distinct from `staking-contract`, which rolls
- * into Treasury. Staked principal is inside Retail, not either of these.
+ * Developer-controlled supply shown in the Team slice: confirmed team wallets
+ * (`team`) and staking reward vaults / reward contracts (`staking`). Reward
+ * pools are paid out by the project, so they are team held. Distinct from
+ * `staking-contract`, which rolls into Treasury, and from staked principal,
+ * which is credited to each staker inside Retail.
  */
-export const STAKING_CATEGORY_KEYS = ["staking"] as const;
+export const TEAM_CATEGORY_KEYS = ["team", "staking"] as const;
 
-export const isStakingCategory = (category: string): boolean =>
-  (STAKING_CATEGORY_KEYS as readonly string[]).includes(category);
+export type TeamCategoryKey = (typeof TEAM_CATEGORY_KEYS)[number];
 
-/** Confirmed team wallets, when a project publishes a `team` category. */
-export const TEAM_CATEGORY_KEYS = ["team"] as const;
+export const isTeamCategory = (category: string): category is TeamCategoryKey =>
+  (TEAM_CATEGORY_KEYS as readonly string[]).includes(category);
+
+/** Plain-language labels inside the Team drill-down. */
+export const TEAM_CATEGORY_LABELS: Record<TeamCategoryKey, string> = {
+  team: "Team wallet",
+  staking: "Staking reward vault",
+};
+
+export const teamCategoryLabel = (category: string): string =>
+  isTeamCategory(category) ? TEAM_CATEGORY_LABELS[category] : category;
 
 /**
  * Fixed slice order. Every project uses these keys; zero amounts are dropped
@@ -242,7 +248,7 @@ export const groupSupplyCategories = (
  * Parenthetical under Circulating. Names only the pieces the reconciliation
  * actually subtracts, using the Treasury slice's display name when that
  * slice is present. Escrow stays in circulating except the committed
- * override. Holdings, Team, and reward vaults (inside Other) are not carved out.
+ * override. Holdings and Team (including reward vaults) are not carved out.
  */
 export const circulatingFormula = (
   categories: Record<string, number> | undefined | null,
