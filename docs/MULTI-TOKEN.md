@@ -186,6 +186,7 @@ Optional per-project pipeline keys: `chains[].origin`, `chains[].fromBlock`,
 `staking[].kind`, `staking[].deployBlock`, `pipeline.chainsConfig`,
 `treasury.categories` (append-treasury-history lines; default TEL's four),
 `treasury.labelEras` (`[{before, categories:{address: oldCategory}}]`: backfill-treasury-cex-history replays rows dated before `before` with the older labels),
+`treasury.anchorAdjustments` (`[{date, category, add, address, note}]`: in-memory corrections to real rows known to omit a wallet, applied when the backfill anchors on or validates against that row),
 `supply.coingeckoId` (CoinGecko coin id whose circulating supply reconcile-supply fetches; unset hides the comparison).
 
 ### Ported scripts vs the guard

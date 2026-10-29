@@ -9,6 +9,7 @@ import {
   mergeBackfilledEntries,
   missingDates,
   priorEntry,
+  applyAnchorAdjustments,
   categoryMapForDate,
   reconstructHistory,
   relativeDrift,
@@ -351,5 +352,48 @@ describe("reconstructHistory anchors and label eras", () => {
     await expect(
       reconstructHistory({ ...args, from: "2026-10-29", to: "2026-10-29", treasuryHistory: crossing, client: client([]) }),
     ).rejects.toThrow(/label era/);
+  });
+});
+
+describe("anchor adjustments", () => {
+  const adj = [{ date: "2026-10-01", category: "council", add: 50 }];
+  it("adds to a copy of the matching row only", () => {
+    const e = { date: "2026-10-01", categories: { treasury: 1000, council: 500 } };
+    expect(applyAnchorAdjustments(e, adj).categories).toEqual({ treasury: 1000, council: 550 });
+    expect(e.categories.council).toBe(500);
+    expect(applyAnchorAdjustments({ date: "2026-10-02", categories: { council: 1 } }, adj).categories.council).toBe(1);
+    expect(applyAnchorAdjustments(null, adj)).toBeNull();
+  });
+  it("rejects a malformed adjustment", () => {
+    expect(() => applyAnchorAdjustments({ date: "2026-10-01", categories: {} }, adj)).toThrow(/finite/);
+  });
+  it("closes drift caused by an anchor row that omitted a wallet", async () => {
+    const MISSING = "0x" + "58".repeat(20);
+    const blockOf = (d) => Number(d.slice(8)) * 100;
+    const client = {
+      async blockAtEndOfDate(_c, d) {
+        return blockOf(d);
+      },
+      async fetchTransfers() {
+        return [tr(MISSING, USER, 1000, 350)]; // -10.00 TEL council on day 3
+      },
+    };
+    const run = (anchorAdjustments) =>
+      reconstructHistory({
+        treasuryHistory: { entries: [{ date: "2026-09-29", categories: { council: 100 } }, { date: "2026-10-01", categories: { council: 100 } }, { date: "2026-10-05", categories: { council: 190 } }] },
+        cexHistory: { entries: [] },
+        from: "2026-10-03",
+        to: "2026-10-04",
+        categories: ["council"],
+        categoryByAddress: new Map([[MISSING, "council"]]),
+        exchangeByAddress: new Map(),
+        chains: [{ key: "eth", tokens: [{ address: LEGACY, decimals: 2, generation: "legacy" }] }],
+        client,
+        anchorAdjustments,
+      });
+    expect(worstDrift((await run([])).drift)).toBeGreaterThan(0.4);
+    const fixed = await run([{ date: "2026-10-01", category: "council", add: 100 }]);
+    expect(worstDrift(fixed.drift)).toBe(0);
+    expect(fixed.treasuryRows.map((r) => r.categories.council)).toEqual([200, 190]);
   });
 });

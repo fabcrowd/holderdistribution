@@ -12,6 +12,15 @@
   },
   "treasury": {
     "$comment": "labelEras: treasury-history rows dated before `before` were written when these TELx reward contracts were category council (relabelled to staking in #78). The backfill replays such rows with the old label so anchor, target and validation rows agree.",
+    "anchorAdjustments": [
+      {
+        "date": "2026-09-29",
+        "category": "council",
+        "add": 56689487,
+        "address": "0x583d596b0a79c0e83c87851ea9fb1a91e80290b2",
+        "note": "The 2026-09-29 holders snapshot omitted TELx Council, which held 56,689,486 TEL v3 on Polygon (40,710,105 at 2026-10-23 plus 1,546,392 and 14,432,990 sent to 0x7e1c409d... at blocks 94723978 and 95121949). Backfill adds this to that row in memory only."
+      }
+    ],
     "labelEras": [
       {
         "before": "2026-10-29",
