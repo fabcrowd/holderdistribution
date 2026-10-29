@@ -31,7 +31,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
-import { holderDayChanges, placeholderLag, resolveConsistencyOptions, resolveFeedHealth, runForEachProject } from "./lib/feedHealth.js";
+import { holderDayChanges, placeholderLag, resolveConsistencyOptions, resolveFeedHealth, runForEachProject, seriesBreakDates } from "./lib/feedHealth.js";
 
 // `--all`: once per registered project; fail if any project fails.
 if (process.argv.includes("--all")) {
@@ -229,9 +229,9 @@ const main = async () => {
 
   // --- 8. Holder count day-over-day. A WARN, never a failure: real events
   // (listings, airdrops, reclassifications) move it. Known dates are allowed via
-  // config health.consistency.knownHolderChangeDates and changelog event dates;
+  // changelog event dates, declared series breaks (breaksSeries, `at` when set) and the\n  // config health.consistency.knownHolderChangeDates override;
   // anything else is surfaced so a silent classification break is not missed.
-  const opts = resolveConsistencyOptions(project.config, (cfgLog.events ?? []).map((e) => e.date));
+  const opts = resolveConsistencyOptions(project.config, [...(cfgLog.events ?? []).map((e) => e.date), ...seriesBreakDates(cfgLog.events)]);
   for (const c of holderDayChanges(history?.entries, opts)) {
     warnings.push(
       `holder count moved ${c.pct.toFixed(1)}% on ${c.date} (${fmt(c.previous)} -> ${fmt(c.current)}), ` +

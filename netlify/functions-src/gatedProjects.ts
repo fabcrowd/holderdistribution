@@ -7,12 +7,13 @@
  * panel), never another project's data.
  *
  * The registry is bundled into the function, so a newly registered project is
- * accepted without touching this file. Only LEGACY_ROOT_SLUGS has to match
- * `data.legacyRoot` in config/projects/<slug>.json (a test keeps them in sync).
+ * accepted without touching this file. LEGACY_ROOT_SLUGS is derived from the
+ * registry's `legacyRoot` flag (a test keeps it equal to `data.legacyRoot` in
+ * config/projects/<slug>.json).
  */
 import registry from "../../config/projects.json";
 
-type Entry = { slug: string; default?: boolean };
+type Entry = { slug: string; default?: boolean; legacyRoot?: boolean };
 
 const ENTRIES = (registry as { projects: Entry[] }).projects;
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
@@ -20,7 +21,7 @@ const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
 export const GATED_PROJECT_SLUGS: ReadonlySet<string> = new Set(ENTRIES.map((p) => p.slug).filter((s) => SLUG_RE.test(s)));
 export const DEFAULT_GATED_PROJECT: string = ENTRIES.find((p) => p.default)?.slug ?? ENTRIES[0]?.slug ?? "tel";
 /** Projects whose working files still live at the data/ root (TEL). */
-export const LEGACY_ROOT_SLUGS: ReadonlySet<string> = new Set(["tel"]);
+export const LEGACY_ROOT_SLUGS: ReadonlySet<string> = new Set(ENTRIES.filter((p) => p.legacyRoot === true).map((p) => p.slug));
 
 /**
  * Normalize a request's `project`. Missing = the default project (TEL), so old

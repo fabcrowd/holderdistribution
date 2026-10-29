@@ -106037,96 +106037,123 @@ function verifyToken(token, env = process.env, now = Date.now()) {
 // data/forensics/wallet-flows.json
 var wallet_flows_default = {
   version: 1,
-  generated: "2026-10-19T14:22:07.791Z",
-  generator: "seeded from the 2026-10-19 forensics analysis (scripts/generate-wallet-flows.js regenerates it)",
-  priceUsd: 149198e-8,
+  generated: "2026-10-26T19:51:36.996Z",
+  generator: "scripts/generate-wallet-flows.js",
+  priceUsd: 139553e-8,
   priceSource: "CoinGecko simple/price (telcoin)",
   chains: [
     "ethereum",
     "polygon",
     "base"
   ],
-  windows: {},
+  windows: {
+    ethereum: {
+      head: 26278988,
+      headTime: "2026-10-26T19:34:35.000Z",
+      startBlocks: {
+        "72h": 26257451,
+        "30d": 26063750,
+        "90d": 25633442
+      }
+    },
+    polygon: {
+      head: 96225322,
+      headTime: "2026-10-26T19:35:54.000Z",
+      startBlocks: {
+        "72h": 96052473,
+        "30d": 94497427,
+        "90d": 91041507
+      }
+    },
+    base: {
+      head: 53127057,
+      headTime: "2026-10-26T19:37:41.000Z",
+      startBlocks: {
+        "72h": 52997367,
+        "30d": 51830967,
+        "90d": 49238967
+      }
+    }
+  },
   notes: [
-    "Outflows are first-hop TEL transfers (legacy + v3) from each wallet, classified by destination; sends to known deposit relays count as CEX. Base history covers 40 days (RPC pruning).",
+    "Outflows are first-hop TEL transfers (legacy + v3) from each wallet, classified by destination; sends to known deposit relays count as CEX.",
     "Reaching a sell venue is not proof of a market sale: it can be market making, OTC settlement or treasury operations.",
-    "Settlement hub, Recipient Safe and Holdings labels come from this repo's own forensics, not from Telcoin (medium confidence). Association Safes are confirmed by telcoinassociation.com and explorer tags.",
-    "No link found between Telcoin-known wallets and the 0x747e whale group in the 90-day windows.",
+    "Labels marked medium/low confidence come from this repo's own forensics, not from Telcoin.",
     "USD values use the price above and are rough."
   ],
   distribution: {
     totalSupply: 1e11,
-    counted: 99998844519,
+    counted: 99998804493,
     classes: [
       {
         key: "treasury",
         label: "Telcoin-linked: TEL Treasury",
         group: "telcoin",
         tel: 1191585758,
-        share: 0.01191599526723368
+        share: 0.011916000036867028
       },
       {
         key: "association",
         label: "Telcoin-linked: Association Safes & operational wallets",
         group: "telcoin",
-        tel: 362563250,
-        share: 0.0036256743926703335
+        tel: 358854665,
+        share: 0.0035885895555551393
       },
       {
         key: "holdings",
         label: "Telcoin-linked: Telcoin Holdings (company)",
         group: "telcoin",
         tel: 1230490076,
-        share: 0.012305042944804775
+        share: 0.012305047870162822
       },
       {
         key: "escrow",
         label: "Escrow & custody (BitGo, Anchorage, vaults)",
         group: "locked",
         tel: 8084466545,
-        share: 0.0808455996091556
+        share: 0.08084563196934536
       },
       {
         key: "staking",
         label: "Staking contract",
         group: "locked",
-        tel: 797578011,
-        share: 0.00797587226967019
+        tel: 727506934,
+        share: 0.007275156314735037
       },
       {
         key: "cex",
         label: "Centralised exchanges (incl. deposit relays)",
         group: "market",
-        tel: 21888176379,
-        share: 0.2188842929608103
+        tel: 22197971698,
+        share: 0.221982370795959
       },
       {
         key: "dex",
         label: "DEX pools & market makers",
         group: "market",
-        tel: 609359004,
-        share: 0.006093660454874648
+        tel: 613156981,
+        share: 0.006131643112949629
       },
       {
         key: "bots",
         label: "Tracked sell bots & large sellers",
         group: "market",
-        tel: 416610660,
-        share: 0.004166154743938235
+        tel: 103473366,
+        share: 0.0010347460325777845
       },
       {
         key: "other",
         label: "Other labelled (dormant whales, burn, unlabelled exclusions)",
         group: "other",
-        tel: 118219278,
-        share: 0.0011822064359176103
+        tel: 187360071,
+        share: 0.0018736231097564904
       },
       {
         key: "retail",
         label: "Retail & unlabelled holders",
         group: "retail",
-        tel: 65299795557,
-        share: 0.6530055009209246
+        tel: 65303938397,
+        share: 0.6530471912020919
       }
     ],
     movedFromRetail: [
@@ -106141,6 +106168,11 @@ var wallet_flows_default = {
         tel: 152759283
       },
       {
+        address: "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
+        to: "association",
+        tel: 0
+      },
+      {
         address: "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
         to: "association",
         tel: 135451
@@ -106148,7 +106180,7 @@ var wallet_flows_default = {
       {
         address: "0x92e43aec69207755cb1e6a8dc589aae630476330",
         to: "staking",
-        tel: 797303750
+        tel: 727232673
       },
       {
         address: "0xe3a465e1460e9987c772c36b91020946bc60af52",
@@ -106158,52 +106190,52 @@ var wallet_flows_default = {
       {
         address: "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
         to: "bots",
-        tel: 30673895
+        tel: 113388
       },
       {
         address: "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
         to: "bots",
-        tel: 41399306
+        tel: 88275
       },
       {
         address: "0x37ac060a943b20615918e45b7739a97e7a1b31db",
         to: "bots",
-        tel: 29686350
+        tel: 81733
       },
       {
         address: "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
         to: "bots",
-        tel: 31266804
+        tel: 96036
       },
       {
         address: "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
         to: "bots",
-        tel: 31642707
+        tel: 79163
       },
       {
         address: "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
         to: "bots",
-        tel: 32865090
+        tel: 11444
       },
       {
         address: "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
         to: "bots",
-        tel: 32555320
+        tel: 82994
       },
       {
         address: "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
         to: "bots",
-        tel: 34474729
+        tel: 191249
       },
       {
         address: "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
         to: "bots",
-        tel: 35647206
+        tel: 120295
       },
       {
         address: "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
         to: "bots",
-        tel: 14065775
+        tel: 106831
       },
       {
         address: "0x747e0733b41d29cdf8b33f53e65d59a2072f88c0",
@@ -106218,7 +106250,7 @@ var wallet_flows_default = {
       {
         address: "0x77ad55c59d5edee8beb31d3942bfc64aee2e5203",
         to: "bots",
-        tel: 17369
+        tel: 185850
       },
       {
         address: "0x8d00717b41b1212155577b6586c747c47621a736",
@@ -106226,34 +106258,30 @@ var wallet_flows_default = {
         tel: 0
       }
     ],
-    source: "public/data/supply-reconciliation.json (2026-10-19 v3-aware pipeline run)",
-    asOf: "2026-10-19"
+    source: "public/data/supply-reconciliation.json"
   },
   telcoinTotals: {
     "72h": {
       total: 0,
       usd: 0,
-      byVenue: {},
-      note: "No known-wallet TEL reached CEX/DEX/bot inside the 72h window; the last pushes were Oct 15-16 ET, just before it. The bot cluster then sold 256M TEL on DEX inside the window."
+      byVenue: {}
     },
     "30d": {
-      total: 1227543964,
-      usd: 1831471,
+      total: 1091067622,
+      usd: 1522618,
       byVenue: {
-        "CEX (arrived)": 406276180,
-        "CEX relay (pending, v3)": 152759283,
         "bot-cluster": 611434638,
-        DEX: 57073863
+        CEX: 463924399,
+        DEX: 15708585
       }
     },
     "90d": {
-      total: 2629590556,
-      usd: 3923297,
+      total: 2556632045,
+      usd: 3567857,
       byVenue: {
-        "CEX (arrived)": 1581033519,
-        "CEX relay (pending, v3)": 152759283,
+        CEX: 1657125706,
         "bot-cluster": 611434638,
-        DEX: 284363116
+        DEX: 288071701
       }
     }
   },
@@ -106272,34 +106300,32 @@ var wallet_flows_default = {
       balanceDetail: {
         polygon_v3: 35806179
       },
-      balanceUsd: 53422,
+      balanceUsd: 49969,
       outflows: {
         "72h": {},
         "30d": {
           "bot-cluster": 611434638,
-          CEX: 559035463,
-          internal: 122869577,
-          unlabelled: 100
+          CEX: 463924399,
+          unlabelled: 122869677
         },
         "90d": {
-          CEX: 1533792802,
+          CEX: 1457125706,
           "bot-cluster": 611434638,
           bridge: 6e8,
-          internal: 122869577,
-          unlabelled: 100
+          unlabelled: 122869677
         }
       },
       sellVenue: {
         "72h": 0,
-        "30d": 1170470101,
-        "90d": 2145227440
+        "30d": 1075359037,
+        "90d": 2068560344
       },
-      sellVenueUsd90d: 3200636,
+      sellVenueUsd90d: 2886738,
       sampleTxs: [
-        "https://polygonscan.com/tx/0x5b2355242025ef9a3d213bf4e23096b2a64e0a06889fd0ecf7b3c5eaf22e901b",
         "https://polygonscan.com/tx/0x39b1143f9a1a1ada8bad44a054ca47b2f4055d38162f14d1da99c8114964e9ff",
+        "https://polygonscan.com/tx/0x5b2355242025ef9a3d213bf4e23096b2a64e0a06889fd0ecf7b3c5eaf22e901b",
         "https://polygonscan.com/tx/0x08987b12e4d63dc1b545109bbf3d1833d738884dc52bedab0c3d0014677bde95",
-        "https://polygonscan.com/tx/0x69bb363650a5646de688f1c66601c61b1d325512961086b73a1ec4ec5ade496b"
+        "https://etherscan.io/tx/0x25de1d783eec09ef2b3c0a5ba1bfe1dc459262853691608dee336c26754be0bf"
       ],
       verdict: "selling / sending to sell venues"
     },
@@ -106319,22 +106345,23 @@ var wallet_flows_default = {
       outflows: {
         "72h": {},
         "30d": {
-          CEX: 357611064
+          CEX: 2625e5
         },
         "90d": {
-          CEX: 1132368403
+          CEX: 1055701308
         }
       },
       sellVenue: {
         "72h": 0,
-        "30d": 357611064,
-        "90d": 1132368403
+        "30d": 2625e5,
+        "90d": 1055701308
       },
-      sellVenueUsd90d: 1689471,
+      sellVenueUsd90d: 1473263,
       sampleTxs: [
-        "https://polygonscan.com/tx/0x4fa6c601086ee4ac1aea97340d518038101e6ff21090111b38eb434ec676684f",
         "https://polygonscan.com/tx/0x30abc0017636b467823898c354868ded8b422c6db86eb209b56d108f6a1b38e1",
-        "https://polygonscan.com/tx/0xf1abceec0d91bf9f97c9106ac824aec7acf94b73e363af095e091de2914dc8cf"
+        "https://polygonscan.com/tx/0x4fa6c601086ee4ac1aea97340d518038101e6ff21090111b38eb434ec676684f",
+        "https://polygonscan.com/tx/0xf1abceec0d91bf9f97c9106ac824aec7acf94b73e363af095e091de2914dc8cf",
+        "https://polygonscan.com/tx/0x258e0c9b7ae8e4ccd80a7c2fd65f33efdd2ea6268c5c1b68efa861069a95ca2a"
       ],
       verdict: "selling / sending to sell venues"
     },
@@ -106352,7 +106379,7 @@ var wallet_flows_default = {
       balanceDetail: {
         ethereum_v3: 152759283
       },
-      balanceUsd: 227914,
+      balanceUsd: 213180,
       outflows: {
         "72h": {},
         "30d": {
@@ -106367,11 +106394,12 @@ var wallet_flows_default = {
         "30d": 48665116,
         "90d": 448665116
       },
-      sellVenueUsd90d: 669399,
+      sellVenueUsd90d: 626126,
       sampleTxs: [
         "https://etherscan.io/tx/0xa5b7d7dfcf1542aa3e45e626097abf9cf949995ae7effd8bbd6362ed888be091",
+        "https://etherscan.io/tx/0x759223e796d899532d3ef4c9dce2dc80aa6098b492be7a96ff43cb1b1769aad2",
         "https://etherscan.io/tx/0xd648bbbf8a1c4f3e87c94a999edf93bc2f4d436fd61860c9d5b975974d891943",
-        "https://etherscan.io/tx/0x759223e796d899532d3ef4c9dce2dc80aa6098b492be7a96ff43cb1b1769aad2"
+        "https://etherscan.io/tx/0xf40bf06dc390d228c99875fbec4f8a80277fd1223526c836368911cf4611df32"
       ],
       verdict: "selling / sending to sell venues"
     },
@@ -106386,14 +106414,12 @@ var wallet_flows_default = {
         "polygon"
       ],
       balance: 0,
-      balanceDetail: {
-        polygon_legacy: 0
-      },
+      balanceDetail: {},
       balanceUsd: 0,
       outflows: {
         "72h": {},
         "30d": {
-          DEX: 57051402
+          DEX: 12e6
         },
         "90d": {
           DEX: 267110474,
@@ -106402,48 +106428,15 @@ var wallet_flows_default = {
       },
       sellVenue: {
         "72h": 0,
-        "30d": 57051402,
+        "30d": 12e6,
         "90d": 267110474
       },
-      sellVenueUsd90d: 398523,
+      sellVenueUsd90d: 372761,
       sampleTxs: [
-        "https://polygonscan.com/tx/0xf36fae449e9fced2f78399a374eeb8fba463685f5d9147c6a8e423e1ee7d7e3d",
-        "https://polygonscan.com/tx/0xe3b865819e6748e69a4655c3131674f276c5a673246dbc5bd0191f1a5cb36bbe",
-        "https://polygonscan.com/tx/0xdc6c2e1e58f1565606d034dc378dda9d6ac3ba8e4471f46a142154f1f521810d"
-      ],
-      verdict: "selling / sending to sell venues"
-    },
-    {
-      label: "Telcoin Holdings bridge-hub Safe",
-      group: "Telcoin Holdings (company)",
-      entityClass: "holdings",
-      source: "repo exclusions.json (explorer-label)",
-      confidence: "confirmed",
-      address: "0x067173cf1a20e1f7a952d3abd15537d86a239924",
-      chains: [
-        "ethereum"
-      ],
-      balance: 21857644,
-      balanceDetail: {
-        ethereum_legacy: 21857644
-      },
-      balanceUsd: 32611,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {
-          internal: 2e8,
-          CEX: 1e8
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 1e8
-      },
-      sellVenueUsd90d: 149198,
-      sampleTxs: [
-        "https://etherscan.io/tx/0x2f292c46da97b89a95ea37aa2571ec87bc0f07b0c793b36fec16d5697a9e3bdb"
+        "https://polygonscan.com/tx/0x27243076ed54075b102943bd8b61f30607b39546b2e3e4957ce33560e84ece1a",
+        "https://polygonscan.com/tx/0x296b04b3206383c835b99ca635905b31c7e94a056908e5479231edbb993345fd",
+        "https://polygonscan.com/tx/0x87328e9552c05ebb756bcd55bd51f3f87c52f3468dc9398a684ac150c66533f0",
+        "https://polygonscan.com/tx/0x95c6314c7887388e00c0498908ba13c4bcf527b998fdf2cb0c08cd39487603c2"
       ],
       verdict: "selling / sending to sell venues"
     },
@@ -106462,7 +106455,7 @@ var wallet_flows_default = {
       balanceDetail: {
         base_legacy: 199888223
       },
-      balanceUsd: 298229,
+      balanceUsd: 278950,
       outflows: {
         "72h": {},
         "30d": {},
@@ -106475,9 +106468,43 @@ var wallet_flows_default = {
         "30d": 0,
         "90d": 1e8
       },
-      sellVenueUsd90d: 149198,
+      sellVenueUsd90d: 139553,
       sampleTxs: [
         "https://etherscan.io/tx/0x088a8e6134b8bcf0d7d72d2285ea6c39332890d3dc78399e8578b40afd555a6e"
+      ],
+      verdict: "selling / sending to sell venues"
+    },
+    {
+      label: "Telcoin Holdings bridge-hub Safe",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (explorer-label)",
+      confidence: "confirmed",
+      address: "0x067173cf1a20e1f7a952d3abd15537d86a239924",
+      chains: [
+        "ethereum"
+      ],
+      balance: 21857644,
+      balanceDetail: {
+        ethereum_legacy: 21857644
+      },
+      balanceUsd: 30503,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {
+          internal: 2e8,
+          CEX: 1e8
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 1e8
+      },
+      sellVenueUsd90d: 139553,
+      sampleTxs: [
+        "https://etherscan.io/tx/0x2f292c46da97b89a95ea37aa2571ec87bc0f07b0c793b36fec16d5697a9e3bdb"
       ],
       verdict: "selling / sending to sell venues"
     },
@@ -106497,31 +106524,32 @@ var wallet_flows_default = {
         polygon_v3: 135073,
         base_legacy: 378
       },
-      balanceUsd: 202,
+      balanceUsd: 189,
       outflows: {
         "72h": {},
         "30d": {
-          internal: 152162466,
-          bridge: 137501647,
-          unlabelled: 1866927
+          internal: 12e6,
+          DEX: 3411424,
+          unlabelled: 269927
         },
         "90d": {
-          bridge: 249728313,
           internal: 248932133,
-          DEX: 16248440,
-          unlabelled: 1866927
+          bridge: 234168313,
+          DEX: 19659864,
+          unlabelled: 1859927
         }
       },
       sellVenue: {
         "72h": 0,
-        "30d": 0,
-        "90d": 16248440
+        "30d": 3411424,
+        "90d": 19659864
       },
-      sellVenueUsd90d: 24242,
+      sellVenueUsd90d: 27436,
       sampleTxs: [
+        "https://polygonscan.com/tx/0xaf701d49aaf3c9426e48d36497a89a49b6920f50e3a502d320f7177197a84dad",
         "https://polygonscan.com/tx/0x438e560ff9b04af907b788692a3e38466d4df7e70d4bd8b6ebf68ae5367fcd5b",
-        "https://polygonscan.com/tx/0xe50b84f47c8b5614bfe6aabf28134f71720a715bc7836cbfe472ff777dc59157",
-        "https://polygonscan.com/tx/0x66290dcc975648821d6ef1d1b2478125a971af0404ffd8e75f96620dba06894e"
+        "https://polygonscan.com/tx/0x66290dcc975648821d6ef1d1b2478125a971af0404ffd8e75f96620dba06894e",
+        "https://polygonscan.com/tx/0x62609c9986535f7d8a81ee62a713b029a3666d58cf17cc9ea6bf5f16a6255a7e"
       ],
       verdict: "internal / treasury moves"
     },
@@ -106539,12 +106567,10 @@ var wallet_flows_default = {
       balanceDetail: {
         polygon_legacy: 240727397
       },
-      balanceUsd: 359160,
+      balanceUsd: 335942,
       outflows: {
         "72h": {},
-        "30d": {
-          unlabelled: 0
-        },
+        "30d": {},
         "90d": {
           unlabelled: 2025e4,
           DEX: 75e4
@@ -106555,11 +106581,50 @@ var wallet_flows_default = {
         "30d": 0,
         "90d": 75e4
       },
-      sellVenueUsd90d: 1119,
+      sellVenueUsd90d: 1047,
       sampleTxs: [
         "https://polygonscan.com/tx/0x5c8186082706abdd94931831137171cffae3b0577fff993b96357a6224d32d8d"
       ],
       verdict: "internal / treasury moves"
+    },
+    {
+      label: "TAO Implementation Safe/Wallet",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0xe4ccf475a8ca5c96edbcdcf77a13ef29253d0878",
+      chains: [
+        "polygon",
+        "base"
+      ],
+      balance: 152,
+      balanceDetail: {
+        base_legacy: 152
+      },
+      balanceUsd: 0,
+      outflows: {
+        "72h": {},
+        "30d": {
+          upgrade: 297161,
+          DEX: 297161
+        },
+        "90d": {
+          upgrade: 297161,
+          DEX: 297161
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 297161,
+        "90d": 297161
+      },
+      sellVenueUsd90d: 415,
+      sampleTxs: [
+        "https://polygonscan.com/tx/0x77745b04cfda101e9a75075e71acf54197ab7a4fafe0a5631b6baecca391bc82",
+        "https://polygonscan.com/tx/0x77745b04cfda101e9a75075e71acf54197ab7a4fafe0a5631b6baecca391bc82"
+      ],
+      verdict: "selling / sending to sell venues"
     },
     {
       label: "TELx TEL/WBTC reward contract",
@@ -106575,32 +106640,87 @@ var wallet_flows_default = {
       balanceDetail: {
         polygon_legacy: 4150928
       },
-      balanceUsd: 6193,
+      balanceUsd: 5793,
       outflows: {
         "72h": {},
         "30d": {
-          "reward/unstake payout": 4726282,
-          internal: 2292571,
-          DEX: 22461
+          "reward/unstake payout": 4249157
         },
         "90d": {
-          internal: 5801790,
-          "reward/unstake payout": 4818249,
+          "reward/unstake payout": 10603893,
           DEX: 254202
         }
       },
       sellVenue: {
         "72h": 0,
-        "30d": 22461,
+        "30d": 0,
         "90d": 254202
       },
-      sellVenueUsd90d: 379,
+      sellVenueUsd90d: 355,
       sampleTxs: [
         "https://polygonscan.com/tx/0x977bccb9a88c561b8add553dce5ab2aae1ddd02ebf8e3797578c3239d6d13321",
         "https://polygonscan.com/tx/0x81593669f91a9812e110ddb709dd48621ff88ff3823f0b7ed3f7f564d711904c",
         "https://polygonscan.com/tx/0xa572be5e627a653113d2b0a75e521eb1cbe2ed7a8dc0f682a1cec3375bd15975"
       ],
       verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "BitGo Custody (Treasury collateral)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (funding-trace); TELIP Treasury collateral",
+      confidence: "confirmed",
+      address: "0xbd02c51150a4ab6ce97b9de2025644594f3e75b8",
+      chains: [
+        "ethereum"
+      ],
+      balance: 3834240801,
+      balanceDetail: {
+        ethereum_legacy: 3834240801
+      },
+      balanceUsd: 5350798,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Anchorage Digital Vault (Treasury collateral)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (funding-trace)",
+      confidence: "confirmed",
+      address: "0xaa9ae53fc7a69fde1baaf6aa03796e6ccc764271",
+      chains: [
+        "ethereum"
+      ],
+      balance: 2500001e3,
+      balanceDetail: {
+        ethereum_legacy: 2500001e3
+      },
+      balanceUsd: 3488826,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
     },
     {
       label: "TEL Treasury",
@@ -106616,12 +106736,10 @@ var wallet_flows_default = {
       balanceDetail: {
         ethereum_legacy: 1191585758
       },
-      balanceUsd: 1777822,
+      balanceUsd: 1662894,
       outflows: {
         "72h": {},
-        "30d": {
-          internal: 1375e5
-        },
+        "30d": {},
         "90d": {
           internal: 234166667
         }
@@ -106636,22 +106754,55 @@ var wallet_flows_default = {
       verdict: "internal / treasury moves"
     },
     {
-      label: "TAO Implementation Safe/Wallet",
-      group: "Association Safe",
-      entityClass: "association",
-      source: "telcoinassociation.com Safe Wallets page",
+      label: "Telcoin Association staking contract (Polygon)",
+      group: "staking/rewards",
+      entityClass: "staking",
+      source: "repo exclusions.json (contract-analysis)",
       confidence: "confirmed",
-      address: "0xe4ccf475a8ca5c96edbcdcf77a13ef29253d0878",
+      address: "0x92e43aec69207755cb1e6a8dc589aae630476330",
       chains: [
-        "polygon",
-        "base"
+        "polygon"
       ],
-      balance: 297313,
+      balance: 727232673,
       balanceDetail: {
-        polygon_legacy: 297161,
-        base_legacy: 152
+        polygon_legacy: 727232673
       },
-      balanceUsd: 444,
+      balanceUsd: 1014875,
+      outflows: {
+        "72h": {
+          "reward/unstake payout": 7511
+        },
+        "30d": {
+          "reward/unstake payout": 566903910
+        },
+        "90d": {
+          "reward/unstake payout": 3862989191
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "Escrow vault 1 (assumed)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (on-chain-pattern, Holdings-funded)",
+      confidence: "medium",
+      address: "0x60b1f621736fa7091bad2dc20c0467083f010f57",
+      chains: [
+        "ethereum"
+      ],
+      balance: 480356042,
+      balanceDetail: {
+        ethereum_legacy: 480356042
+      },
+      balanceUsd: 670351,
       outflows: {
         "72h": {},
         "30d": {},
@@ -106665,6 +106816,219 @@ var wallet_flows_default = {
       sellVenueUsd90d: 0,
       sampleTxs: [],
       verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Escrow vault 2 (assumed)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (on-chain-pattern)",
+      confidence: "medium",
+      address: "0xd6040319acdc191e485b2e103b9b4405ea8a30b0",
+      chains: [
+        "ethereum"
+      ],
+      balance: 369034642,
+      balanceDetail: {
+        ethereum_legacy: 369034642
+      },
+      balanceUsd: 514999,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Escrow vault 3 (assumed)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (on-chain-pattern)",
+      confidence: "medium",
+      address: "0x222d9b3875d7c37d5037896d9b8b0fb3a19180bf",
+      chains: [
+        "ethereum"
+      ],
+      balance: 364564981,
+      balanceDetail: {
+        ethereum_legacy: 364564981
+      },
+      balanceUsd: 508761,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telcoin Holdings reserve (Ethereum)",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (signer-graph)",
+      confidence: "confirmed",
+      address: "0x9f45bccdb42871a955e34d9d5ca33be9ccaef1fd",
+      chains: [
+        "ethereum"
+      ],
+      balance: 299e6,
+      balanceDetail: {
+        ethereum_legacy: 299e6
+      },
+      balanceUsd: 417263,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {
+          internal: 3e8
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "internal / treasury moves"
+    },
+    {
+      label: "Escrow vault 4 (assumed)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (on-chain-pattern)",
+      confidence: "medium",
+      address: "0x043a163912c680dd2b490b409e8d4ad399e97bf8",
+      chains: [
+        "ethereum"
+      ],
+      balance: 284051631,
+      balanceDetail: {
+        ethereum_legacy: 284051631
+      },
+      balanceUsd: 396403,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telcoin Holdings shared Safe (Polygon)",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (signer-graph)",
+      confidence: "confirmed",
+      address: "0x84b94024463f01d5cbb3086f14f574d7ed83b794",
+      chains: [
+        "polygon"
+      ],
+      balance: 275e6,
+      balanceDetail: {
+        polygon_v3: 275e6
+      },
+      balanceUsd: 383771,
+      outflows: {
+        "72h": {},
+        "30d": {
+          upgrade: 275e6
+        },
+        "90d": {
+          upgrade: 275e6
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "upgrading to v3"
+    },
+    {
+      label: "Escrow vault 5 (assumed)",
+      group: "escrow",
+      entityClass: "escrow",
+      source: "repo exclusions.json (on-chain-pattern)",
+      confidence: "medium",
+      address: "0x9184aae0983e5ffbe06e41ca13c24033857b56cb",
+      chains: [
+        "ethereum"
+      ],
+      balance: 251992704,
+      balanceDetail: {
+        ethereum_legacy: 251992704
+      },
+      balanceUsd: 351663,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "TAN Council",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page; Polygonscan tag 'Telcoin Association: TAN Council Safe'",
+      confidence: "confirmed",
+      address: "0x8dcf8d134f22ac625a7afb39514695801cd705b5",
+      chains: [
+        "polygon"
+      ],
+      balance: 161031090,
+      balanceDetail: {
+        polygon_legacy: 161031090
+      },
+      balanceUsd: 224724,
+      outflows: {
+        "72h": {},
+        "30d": {
+          internal: 233860
+        },
+        "90d": {
+          internal: 1440744
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "internal / treasury moves"
     },
     {
       label: "Platform Council",
@@ -106680,7 +107044,7 @@ var wallet_flows_default = {
       balanceDetail: {
         polygon_legacy: 102662861
       },
-      balanceUsd: 153171,
+      balanceUsd: 143269,
       outflows: {
         "72h": {},
         "30d": {},
@@ -106694,6 +107058,266 @@ var wallet_flows_default = {
       sellVenueUsd90d: 0,
       sampleTxs: [],
       verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telcoin Holdings cold Safe (Base) #2",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (signer-graph)",
+      confidence: "high",
+      address: "0xa9781d19e5611f65908dd6818fc1c276e2c6ac44",
+      chains: [
+        "base"
+      ],
+      balance: 98142782,
+      balanceDetail: {
+        base_legacy: 98142782
+      },
+      balanceUsd: 136961,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "Telcoin Holdings cold Safe (Base)",
+      group: "Telcoin Holdings (company)",
+      entityClass: "holdings",
+      source: "repo exclusions.json (signer-graph)",
+      confidence: "high",
+      address: "0x9756686f71e9a90558c7cfbad89e9fd8007f97e7",
+      chains: [
+        "base"
+      ],
+      balance: 95874030,
+      balanceDetail: {
+        base_legacy: 95874030
+      },
+      balanceUsd: 133795,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {}
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "inactive (no outflows in window)"
+    },
+    {
+      label: "TELx Council",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0x583d596b0a79c0e83c87851ea9fb1a91e80290b2",
+      chains: [
+        "polygon"
+      ],
+      balance: 40710105,
+      balanceDetail: {
+        polygon_v3: 40710105
+      },
+      balanceUsd: 56812,
+      outflows: {
+        "72h": {},
+        "30d": {
+          unlabelled: 15979382
+        },
+        "90d": {
+          upgrade: 58639486,
+          unlabelled: 26852714,
+          internal: 18616667
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "upgrading to v3"
+    },
+    {
+      label: "TELx Council Operational Safe",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "repo config/exclusions.json (owner-supplied)",
+      confidence: "confirmed",
+      address: "0x90f18755cad5fc696a6dd7418d05c5f5e022774a",
+      chains: [
+        "polygon"
+      ],
+      balance: 6976393,
+      balanceDetail: {
+        polygon_legacy: 6976393
+      },
+      balanceUsd: 9736,
+      outflows: {
+        "72h": {},
+        "30d": {},
+        "90d": {
+          internal: 791458
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "internal / treasury moves"
+    },
+    {
+      label: "TELx TEL/WETH reward contract",
+      group: "staking/rewards",
+      entityClass: "staking",
+      source: "repo exclusions.json (owner-supplied)",
+      confidence: "confirmed",
+      address: "0x7feb8febddb66189417f732b4221a52e23b926c4",
+      chains: [
+        "polygon"
+      ],
+      balance: 4428989,
+      balanceDetail: {
+        polygon_legacy: 4428989
+      },
+      balanceUsd: 6181,
+      outflows: {
+        "72h": {},
+        "30d": {
+          "reward/unstake payout": 1466644
+        },
+        "90d": {
+          "reward/unstake payout": 11781885
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "TELx TEL/USDC reward contract",
+      group: "staking/rewards",
+      entityClass: "staking",
+      source: "repo exclusions.json (owner-supplied)",
+      confidence: "confirmed",
+      address: "0x8f702676830ddca2801a4a7cdb971cde4df697ae",
+      chains: [
+        "polygon"
+      ],
+      balance: 2883970,
+      balanceDetail: {
+        polygon_legacy: 2883970
+      },
+      balanceUsd: 4025,
+      outflows: {
+        "72h": {},
+        "30d": {
+          "reward/unstake payout": 4217906
+        },
+        "90d": {
+          "reward/unstake payout": 10349860
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "TELx rewards (Base)",
+      group: "staking/rewards",
+      entityClass: "staking",
+      source: "repo scripts/lib/telEndpoint.js",
+      confidence: "high",
+      address: "0xe3a465e1460e9987c772c36b91020946bc60af52",
+      chains: [
+        "base"
+      ],
+      balance: 274261,
+      balanceDetail: {
+        base_v3: 274261
+      },
+      balanceUsd: 383,
+      outflows: {
+        "72h": {},
+        "30d": {
+          upgrade: 1305189,
+          "reward/unstake payout": 1030928
+        },
+        "90d": {
+          "reward/unstake payout": 6216113,
+          upgrade: 1305189
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "distributing incentives / unstakes"
+    },
+    {
+      label: "TAO Distribution Safe",
+      group: "Association Safe",
+      entityClass: "association",
+      source: "telcoinassociation.com Safe Wallets page",
+      confidence: "confirmed",
+      address: "0x99ef9f86c41d2a5b1c609e910b06c20ca45a984c",
+      chains: [
+        "polygon"
+      ],
+      balance: 68547,
+      balanceDetail: {
+        polygon_legacy: 68547
+      },
+      balanceUsd: 96,
+      outflows: {
+        "72h": {},
+        "30d": {
+          unlabelled: 14e6,
+          internal: 12e6
+        },
+        "90d": {
+          internal: 187514492,
+          unlabelled: 14e6
+        }
+      },
+      sellVenue: {
+        "72h": 0,
+        "30d": 0,
+        "90d": 0
+      },
+      sellVenueUsd90d: 0,
+      sampleTxs: [],
+      verdict: "internal / treasury moves"
     },
     {
       label: "Treasury Council",
@@ -106752,76 +107376,6 @@ var wallet_flows_default = {
       verdict: "inactive (no outflows in window)"
     },
     {
-      label: "TELx Council",
-      group: "Association Safe",
-      entityClass: "association",
-      source: "telcoinassociation.com Safe Wallets page",
-      confidence: "confirmed",
-      address: "0x583d596b0a79c0e83c87851ea9fb1a91e80290b2",
-      chains: [
-        "polygon"
-      ],
-      balance: 40710105,
-      balanceDetail: {
-        polygon_v3: 40710105
-      },
-      balanceUsd: 60739,
-      outflows: {
-        "72h": {},
-        "30d": {
-          upgrade: 58639486,
-          unlabelled: 17187530,
-          internal: 195e4
-        },
-        "90d": {
-          upgrade: 58639486,
-          unlabelled: 28060862,
-          internal: 26396667
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "upgrading to v3"
-    },
-    {
-      label: "TAN Council",
-      group: "Association Safe",
-      entityClass: "association",
-      source: "telcoinassociation.com Safe Wallets page; Polygonscan tag 'Telcoin Association: TAN Council Safe'",
-      confidence: "confirmed",
-      address: "0x8dcf8d134f22ac625a7afb39514695801cd705b5",
-      chains: [
-        "polygon"
-      ],
-      balance: 161031090,
-      balanceDetail: {
-        polygon_legacy: 161031090
-      },
-      balanceUsd: 240255,
-      outflows: {
-        "72h": {},
-        "30d": {
-          internal: 233860
-        },
-        "90d": {
-          internal: 1528347
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "internal / treasury moves"
-    },
-    {
       label: "TAO Safe",
       group: "Association Safe",
       entityClass: "association",
@@ -106831,16 +107385,16 @@ var wallet_flows_default = {
       chains: [
         "polygon"
       ],
-      balance: 3411424,
-      balanceDetail: {
-        polygon_legacy: 3411424
-      },
-      balanceUsd: 5090,
+      balance: 0,
+      balanceDetail: {},
+      balanceUsd: 0,
       outflows: {
         "72h": {},
-        "30d": {},
+        "30d": {
+          internal: 3411424
+        },
         "90d": {
-          internal: 105191411,
+          internal: 108602835,
           unlabelled: 791151
         }
       },
@@ -106880,41 +107434,6 @@ var wallet_flows_default = {
       sellVenueUsd90d: 0,
       sampleTxs: [],
       verdict: "inactive (no outflows in window)"
-    },
-    {
-      label: "TAO Distribution Safe",
-      group: "Association Safe",
-      entityClass: "association",
-      source: "telcoinassociation.com Safe Wallets page",
-      confidence: "confirmed",
-      address: "0x99ef9f86c41d2a5b1c609e910b06c20ca45a984c",
-      chains: [
-        "polygon"
-      ],
-      balance: 68547,
-      balanceDetail: {
-        polygon_legacy: 68547
-      },
-      balanceUsd: 102,
-      outflows: {
-        "72h": {},
-        "30d": {
-          unlabelled: 14e6,
-          internal: 12e6
-        },
-        "90d": {
-          internal: 308798607,
-          unlabelled: 14e6
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "internal / treasury moves"
     },
     {
       label: "TELx Miner Safe",
@@ -107029,37 +107548,6 @@ var wallet_flows_default = {
       verdict: "inactive (no outflows in window)"
     },
     {
-      label: "TELx Council Operational Safe",
-      group: "Association Safe",
-      entityClass: "association",
-      source: "repo config/exclusions.json (owner-supplied)",
-      confidence: "confirmed",
-      address: "0x90f18755cad5fc696a6dd7418d05c5f5e022774a",
-      chains: [
-        "polygon"
-      ],
-      balance: 6976393,
-      balanceDetail: {
-        polygon_legacy: 6976393
-      },
-      balanceUsd: 10409,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {
-          internal: 1764458
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "internal / treasury moves"
-    },
-    {
       label: "Treasury -> BitGo relay",
       group: "relay",
       entityClass: "relay",
@@ -107144,113 +107632,6 @@ var wallet_flows_default = {
       verdict: "inactive (no outflows in window)"
     },
     {
-      label: "Telcoin Association staking contract (Polygon)",
-      group: "staking/rewards",
-      entityClass: "staking",
-      source: "repo exclusions.json (contract-analysis)",
-      confidence: "confirmed",
-      address: "0x92e43aec69207755cb1e6a8dc589aae630476330",
-      chains: [
-        "polygon"
-      ],
-      balance: 797303750,
-      balanceDetail: {
-        polygon_legacy: 797303750
-      },
-      balanceUsd: 1189561,
-      outflows: {
-        "72h": {
-          upgrade: 1639351
-        },
-        "30d": {
-          upgrade: 3386323873,
-          "reward/unstake payout": 83910335
-        },
-        "90d": {
-          upgrade: 3386323873,
-          "reward/unstake payout": 423004193
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "distributing incentives / unstakes"
-    },
-    {
-      label: "TELx TEL/WETH reward contract",
-      group: "staking/rewards",
-      entityClass: "staking",
-      source: "repo exclusions.json (owner-supplied)",
-      confidence: "confirmed",
-      address: "0x7feb8febddb66189417f732b4221a52e23b926c4",
-      chains: [
-        "polygon"
-      ],
-      balance: 4428989,
-      balanceDetail: {
-        polygon_legacy: 4428989
-      },
-      balanceUsd: 6608,
-      outflows: {
-        "72h": {
-          "reward/unstake payout": 8098
-        },
-        "30d": {
-          "reward/unstake payout": 10242408
-        },
-        "90d": {
-          "reward/unstake payout": 12405390
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "distributing incentives / unstakes"
-    },
-    {
-      label: "TELx TEL/USDC reward contract",
-      group: "staking/rewards",
-      entityClass: "staking",
-      source: "repo exclusions.json (owner-supplied)",
-      confidence: "confirmed",
-      address: "0x8f702676830ddca2801a4a7cdb971cde4df697ae",
-      chains: [
-        "polygon"
-      ],
-      balance: 2883970,
-      balanceDetail: {
-        polygon_legacy: 2883970
-      },
-      balanceUsd: 4303,
-      outflows: {
-        "72h": {},
-        "30d": {
-          "reward/unstake payout": 4728214,
-          internal: 1410861
-        },
-        "90d": {
-          "reward/unstake payout": 7071986,
-          internal: 3510393
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "distributing incentives / unstakes"
-    },
-    {
       label: "TELx reward contract",
       group: "staking/rewards",
       entityClass: "staking",
@@ -107270,7 +107651,7 @@ var wallet_flows_default = {
           "reward/unstake payout": 233860
         },
         "90d": {
-          "reward/unstake payout": 1528347
+          "reward/unstake payout": 1440744
         }
       },
       sellVenue: {
@@ -107281,367 +107662,6 @@ var wallet_flows_default = {
       sellVenueUsd90d: 0,
       sampleTxs: [],
       verdict: "distributing incentives / unstakes"
-    },
-    {
-      label: "TELx rewards (Base)",
-      group: "staking/rewards",
-      entityClass: "staking",
-      source: "repo scripts/lib/telEndpoint.js",
-      confidence: "high",
-      address: "0xe3a465e1460e9987c772c36b91020946bc60af52",
-      chains: [
-        "base"
-      ],
-      balance: 274261,
-      balanceDetail: {
-        base_v3: 274261
-      },
-      balanceUsd: 409,
-      outflows: {
-        "72h": {},
-        "30d": {
-          "reward/unstake payout": 1679076,
-          upgrade: 1305189
-        },
-        "90d": {
-          "reward/unstake payout": 1679076,
-          upgrade: 1305189
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "distributing incentives / unstakes"
-    },
-    {
-      label: "Telcoin Holdings shared Safe (Polygon)",
-      group: "Telcoin Holdings (company)",
-      entityClass: "holdings",
-      source: "repo exclusions.json (signer-graph)",
-      confidence: "confirmed",
-      address: "0x84b94024463f01d5cbb3086f14f574d7ed83b794",
-      chains: [
-        "polygon"
-      ],
-      balance: 275e6,
-      balanceDetail: {
-        polygon_v3: 275e6
-      },
-      balanceUsd: 410294,
-      outflows: {
-        "72h": {},
-        "30d": {
-          upgrade: 275e6
-        },
-        "90d": {
-          upgrade: 275e6
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "upgrading to v3"
-    },
-    {
-      label: "Telcoin Holdings cold Safe (Base)",
-      group: "Telcoin Holdings (company)",
-      entityClass: "holdings",
-      source: "repo exclusions.json (signer-graph)",
-      confidence: "high",
-      address: "0x9756686f71e9a90558c7cfbad89e9fd8007f97e7",
-      chains: [
-        "base"
-      ],
-      balance: 95874030,
-      balanceDetail: {
-        base_legacy: 95874030
-      },
-      balanceUsd: 143042,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {}
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "inactive (no outflows in window)"
-    },
-    {
-      label: "Telcoin Holdings cold Safe (Base) #2",
-      group: "Telcoin Holdings (company)",
-      entityClass: "holdings",
-      source: "repo exclusions.json (signer-graph)",
-      confidence: "high",
-      address: "0xa9781d19e5611f65908dd6818fc1c276e2c6ac44",
-      chains: [
-        "base"
-      ],
-      balance: 98142782,
-      balanceDetail: {
-        base_legacy: 98142782
-      },
-      balanceUsd: 146427,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {}
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "inactive (no outflows in window)"
-    },
-    {
-      label: "Telcoin Holdings reserve (Ethereum)",
-      group: "Telcoin Holdings (company)",
-      entityClass: "holdings",
-      source: "repo exclusions.json (signer-graph)",
-      confidence: "confirmed",
-      address: "0x9f45bccdb42871a955e34d9d5ca33be9ccaef1fd",
-      chains: [
-        "ethereum"
-      ],
-      balance: 299e6,
-      balanceDetail: {
-        ethereum_legacy: 299e6
-      },
-      balanceUsd: 446102,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {
-          internal: 3e8,
-          unlabelled: 0
-        }
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "internal / treasury moves"
-    },
-    {
-      label: "BitGo Custody (Treasury collateral)",
-      group: "escrow",
-      entityClass: "escrow",
-      source: "repo exclusions.json (funding-trace); TELIP Treasury collateral",
-      confidence: "confirmed",
-      address: "0xbd02c51150a4ab6ce97b9de2025644594f3e75b8",
-      chains: [
-        "ethereum"
-      ],
-      balance: 3834240801,
-      balanceDetail: {
-        ethereum_legacy: 3834240801
-      },
-      balanceUsd: 5720611,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {}
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "inactive (no outflows in window)"
-    },
-    {
-      label: "Anchorage Digital Vault (Treasury collateral)",
-      group: "escrow",
-      entityClass: "escrow",
-      source: "repo exclusions.json (funding-trace)",
-      confidence: "confirmed",
-      address: "0xaa9ae53fc7a69fde1baaf6aa03796e6ccc764271",
-      chains: [
-        "ethereum"
-      ],
-      balance: 2500001e3,
-      balanceDetail: {
-        ethereum_legacy: 2500001e3
-      },
-      balanceUsd: 3729951,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {}
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "inactive (no outflows in window)"
-    },
-    {
-      label: "Escrow vault 1 (assumed)",
-      group: "escrow",
-      entityClass: "escrow",
-      source: "repo exclusions.json (on-chain-pattern, Holdings-funded)",
-      confidence: "medium",
-      address: "0x60b1f621736fa7091bad2dc20c0467083f010f57",
-      chains: [
-        "ethereum"
-      ],
-      balance: 480356042,
-      balanceDetail: {
-        ethereum_legacy: 480356042
-      },
-      balanceUsd: 716682,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {}
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "inactive (no outflows in window)"
-    },
-    {
-      label: "Escrow vault 2 (assumed)",
-      group: "escrow",
-      entityClass: "escrow",
-      source: "repo exclusions.json (on-chain-pattern)",
-      confidence: "medium",
-      address: "0xd6040319acdc191e485b2e103b9b4405ea8a30b0",
-      chains: [
-        "ethereum"
-      ],
-      balance: 369034642,
-      balanceDetail: {
-        ethereum_legacy: 369034642
-      },
-      balanceUsd: 550592,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {}
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "inactive (no outflows in window)"
-    },
-    {
-      label: "Escrow vault 3 (assumed)",
-      group: "escrow",
-      entityClass: "escrow",
-      source: "repo exclusions.json (on-chain-pattern)",
-      confidence: "medium",
-      address: "0x222d9b3875d7c37d5037896d9b8b0fb3a19180bf",
-      chains: [
-        "ethereum"
-      ],
-      balance: 364564981,
-      balanceDetail: {
-        ethereum_legacy: 364564981
-      },
-      balanceUsd: 543924,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {}
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "inactive (no outflows in window)"
-    },
-    {
-      label: "Escrow vault 4 (assumed)",
-      group: "escrow",
-      entityClass: "escrow",
-      source: "repo exclusions.json (on-chain-pattern)",
-      confidence: "medium",
-      address: "0x043a163912c680dd2b490b409e8d4ad399e97bf8",
-      chains: [
-        "ethereum"
-      ],
-      balance: 284051631,
-      balanceDetail: {
-        ethereum_legacy: 284051631
-      },
-      balanceUsd: 423799,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {}
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "inactive (no outflows in window)"
-    },
-    {
-      label: "Escrow vault 5 (assumed)",
-      group: "escrow",
-      entityClass: "escrow",
-      source: "repo exclusions.json (on-chain-pattern)",
-      confidence: "medium",
-      address: "0x9184aae0983e5ffbe06e41ca13c24033857b56cb",
-      chains: [
-        "ethereum"
-      ],
-      balance: 251992704,
-      balanceDetail: {
-        ethereum_legacy: 251992704
-      },
-      balanceUsd: 375968,
-      outflows: {
-        "72h": {},
-        "30d": {},
-        "90d": {}
-      },
-      sellVenue: {
-        "72h": 0,
-        "30d": 0,
-        "90d": 0
-      },
-      sellVenueUsd90d: 0,
-      sampleTxs: [],
-      verdict: "inactive (no outflows in window)"
     },
     {
       label: "Telco: Deployer",
@@ -107750,11 +107770,16 @@ var wallet_flows_default = {
       "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
       "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e"
     ],
-    balance: 314277182,
+    balance: 971407,
     dexSales: {
-      "72h": 256072661,
-      "30d": 709802495,
-      "90d": 2007347407
+      "72h": 13851749,
+      "30d": 887937941,
+      "90d": 2148979689
+    },
+    cexDeposits: {
+      "72h": 0,
+      "30d": 0,
+      "90d": 0
     }
   },
   largeSellers: [
@@ -107762,107 +107787,146 @@ var wallet_flows_default = {
       rank: 1,
       entity: "Polygon 10-wallet ParaSwap sell bot (cluster)",
       addresses: [
-        "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
-        "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
         "0x37ac060a943b20615918e45b7739a97e7a1b31db",
-        "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
-        "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
-        "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+        "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+        "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
         "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
         "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
-        "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
-        "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e"
+        "0x6712d1c8b1a154189eb1d58ed28957114685f2a4"
       ],
       chains: [
         "polygon"
       ],
-      destination: "DEX (ParaSwap Augustus v6.2 -> Uniswap v4/v3, Balancer, QuickSwap) for USDC/WETH",
-      tel: 254861246,
-      usd: 379580,
-      sampleTx: "https://polygonscan.com/tx/0x2b2e9dcbbb5a10214688aaf31f95fef1e2e6bf748c385085f767e6d85c9a4a08\r"
+      destination: "DEX",
+      tel: 13851749,
+      netTel: 13851749,
+      usd: 19331,
+      sampleTx: "https://polygonscan.com/tx/0xee6ee513eb67d879cd2b3d023546bdd14a524e117e5c0c6685b26c1d18bdf365"
     },
     {
       rank: 2,
-      entity: "Dormant 2021 whale (unlabelled)",
+      entity: "Unlabelled wallet",
       addresses: [
-        "0x747e0733b41d29cdf8b33f53e65d59a2072f88c0"
+        "0xef6def10d35100150624a07e33df992e437bd340"
       ],
       chains: [
         "ethereum"
       ],
-      destination: "KuCoin via deposit 0xa4e5438f98c5b9f384be4faefd5ca80dcca10dd1",
-      tel: 1e8,
-      usd: 148936,
-      sampleTx: "https://etherscan.io/tx/0x5b9ad2a8d976da557ea376d247b3b56027ac6a984ab8952a340507019ae1b288\r",
-      note: "Held TEL since 2021; still ~102M. Sibling wallets hold ~900M more; one used the same KuCoin deposit address for 100M in May and August."
+      destination: "DEX via 0x9789\u2026c61f",
+      tel: 8449196,
+      netTel: 8449196,
+      usd: 11791,
+      sampleTx: "https://etherscan.io/tx/0xaf55d1b8f1d83e7b6e50f3caf9061d9fa927b3df8dfb660befa34079981f2e1d"
     },
     {
       rank: 3,
-      entity: "Repeat KuCoin depositor",
+      entity: "Unlabelled wallet",
       addresses: [
-        "0x0421875cd12406c90d765b5c68b723733e581a28"
+        "0xe51beafb7f5dc7bea031d5297189dd8a85cd39bc"
       ],
       chains: [
-        "ethereum"
+        "polygon"
       ],
-      destination: "KuCoin via deposit 0xb0f136aab1e5b15d6ae3e0acecd661def3cfb8ba",
-      tel: 11e6,
-      usd: 16383,
-      sampleTx: "https://etherscan.io/tx/0x04a328271c7ed0dd51c54cdd3deef5a7f291c30d7cc3f359442c9a65e9ddf420\r"
+      destination: "DEX via 0xb8df\u2026166f",
+      tel: 8151769,
+      netTel: 8151769,
+      usd: 11376,
+      sampleTx: "https://polygonscan.com/tx/0x3a605ca330e5565ff71524f79cc48575ed0d0a43d21ce252245e05daa7cdb3c1"
     },
     {
       rank: 4,
-      entity: "Single-shot KuCoin depositor",
+      entity: "Unlabelled wallet",
       addresses: [
-        "0xf13027d57e3fa914e03d94d1d4ac1095a3ab90da"
-      ],
-      chains: [
-        "polygon"
-      ],
-      destination: "KuCoin 23 via deposit 0x0a235f305ad8c0cace5bc38a12a8760d606969e8",
-      tel: 10179823,
-      usd: 15161,
-      sampleTx: "https://polygonscan.com/tx/0x3a11d54ff158f2e1c091a2166b24ce96f1466b1886b7ae8356d5535107500e5c\r"
-    },
-    {
-      rank: 5,
-      entity: "Possible MEXC depositor",
-      addresses: [
-        "0x77ad55c59d5edee8beb31d3942bfc64aee2e5203"
-      ],
-      chains: [
-        "polygon"
-      ],
-      destination: "MEXC via 0xef6538e43979c56a8b4a42e48902b5e317364c24 (pass-through)",
-      tel: 10643547,
-      usd: 15852,
-      sampleTx: "https://polygonscan.com/tx/0x46915373c40c47101faee208a64160814cf4bdd93965496a08094688849d0073\r",
-      note: "Received about the same amount inside the window \u2014 may be a pass-through."
-    },
-    {
-      rank: 6,
-      entity: "Exit to unlabelled wallet (watch)",
-      addresses: [
-        "0x8d00717b41b1212155577b6586c747c47621a736"
+        "0x8f8d495422438868de023ebe2b908b6ff750478b"
       ],
       chains: [
         "ethereum"
       ],
-      destination: "0x780e2ac81e6d2222caa57d223130431582d1156c (not yet at a CEX)",
-      tel: 8991047,
-      usd: 13391,
-      sampleTx: "https://etherscan.io/tx/0x8c51ed9e7fce6c88a403e6233b5c6910486941e21483c666206b08653bc412a2",
-      note: "Not yet at a CEX \u2014 watch."
+      destination: "DEX, DEX via 0x291c\u2026a268",
+      tel: 7085843,
+      netTel: 7085843,
+      usd: 9889,
+      sampleTx: "https://etherscan.io/tx/0x515c9256d1895a3cfa4e10d6c658c6b8d099b11ebd8a716fc155bbbefaa302dc"
+    },
+    {
+      rank: 5,
+      entity: "Unlabelled wallet",
+      addresses: [
+        "0x817c4377f00b4a17437aa37f218e82df4bdd7f71"
+      ],
+      chains: [
+        "polygon"
+      ],
+      destination: "KuCoin via 0x697f\u202667a8",
+      tel: 7e6,
+      netTel: 7e6,
+      usd: 9769,
+      sampleTx: "https://polygonscan.com/tx/0xb46f396c4abb997e3c9d0772b63790405436b8b573c158153df8fa52e284d93f"
+    },
+    {
+      rank: 6,
+      entity: "Unlabelled wallet",
+      addresses: [
+        "0x47d26434f2647cb5b9129ced204097994e7bc0db"
+      ],
+      chains: [
+        "polygon"
+      ],
+      destination: "KuCoin via 0x697f\u202667a8",
+      tel: 675e4,
+      netTel: 675e4,
+      usd: 9420,
+      sampleTx: "https://polygonscan.com/tx/0x8b15e395a11610a35c0bfe1f75cfb9d85af6c12d7e102b6a4fd5dea990e41607"
+    },
+    {
+      rank: 7,
+      entity: "Unlabelled wallet",
+      addresses: [
+        "0x02c9dcc6988ae77ef2e972d8e8055b8f673aa1be"
+      ],
+      chains: [
+        "ethereum"
+      ],
+      destination: "KuCoin via 0x9764\u20263707",
+      tel: 6325417,
+      netTel: 6325417,
+      usd: 8827,
+      sampleTx: "https://etherscan.io/tx/0x5f7c02fd90f833bc12c0c1498a46f184ecb5edc59aa85de094dbe218a46f6ce0"
+    },
+    {
+      rank: 8,
+      entity: "Unlabelled wallet",
+      addresses: [
+        "0xac9da6761ef80644a3bb9ab7e590cf4e64be084f"
+      ],
+      chains: [
+        "ethereum"
+      ],
+      destination: "Bybit via 0x55fe\u20265253",
+      tel: 5478e3,
+      netTel: 5478e3,
+      usd: 7645,
+      sampleTx: "https://etherscan.io/tx/0xc3fcc687600db51c2c22887cc741b8845d8eebaa4d561604721abe1d408d1c0b"
     }
-  ],
-  largeSellersWindow: "72h to 2026-10-19 ~10:00 ET"
+  ]
 };
 
 // config/projects.json
 var projects_default = {
-  $comment: "Master registry of mapped projects. One entry per token; `slug` is the URL/data key (?token=<slug>, public/data/<slug>/). Exactly one entry has default: true. Per-project detail lives in config/projects/<slug>.json. See docs/MULTI-TOKEN.md.",
+  $comment: "Master registry of mapped projects. One entry per token; `slug` is the URL/data key (?token=<slug>, public/data/<slug>/). Exactly one entry has default: true. `legacyRoot: true` mirrors data.legacyRoot in the project file (read by netlify/functions/live-data.mjs; a test keeps them equal). Per-project detail lives in config/projects/<slug>.json. See docs/MULTI-TOKEN.md.",
   projects: [
-    { slug: "tel", name: "Telcoin", ticker: "TEL", default: true }
+    {
+      slug: "tel",
+      name: "Telcoin",
+      ticker: "TEL",
+      default: true,
+      legacyRoot: true
+    },
+    {
+      slug: "zebec-network",
+      name: "Zebec Network",
+      ticker: "ZBCN"
+    }
   ]
 };
 
@@ -107871,7 +107935,7 @@ var ENTRIES = projects_default.projects;
 var SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
 var GATED_PROJECT_SLUGS = new Set(ENTRIES.map((p) => p.slug).filter((s) => SLUG_RE.test(s)));
 var DEFAULT_GATED_PROJECT = ENTRIES.find((p) => p.default)?.slug ?? ENTRIES[0]?.slug ?? "tel";
-var LEGACY_ROOT_SLUGS = /* @__PURE__ */ new Set(["tel"]);
+var LEGACY_ROOT_SLUGS = new Set(ENTRIES.filter((p) => p.legacyRoot === true).map((p) => p.slug));
 function resolveGatedProject(raw) {
   if (raw === void 0 || raw === null || raw === "") return DEFAULT_GATED_PROJECT;
   if (typeof raw !== "string") return null;

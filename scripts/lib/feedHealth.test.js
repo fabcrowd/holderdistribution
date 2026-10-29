@@ -10,6 +10,7 @@ import {
   findHistoryGaps,
   holderDayChanges,
   resolveConsistencyOptions,
+  seriesBreakDates,
   placeholderLag,
   evaluateProjectHealth,
   evaluateAllProjects,
@@ -157,6 +158,35 @@ describe("resolveConsistencyOptions", () => {
 
   it("rejects a non-positive threshold", () => {
     expect(() => resolveConsistencyOptions({ health: { consistency: { maxHolderChangePct: 0 } } })).toThrow(/maxHolderChangePct/);
+  });
+});
+
+describe("seriesBreakDates", () => {
+  it("uses breaksSeries.at when present, else the event date, and ignores other events", () => {
+    const events = [
+      { id: "a", date: "2026-10-18", breaksSeries: { metrics: ["retail.balance"], at: "2026-10-03" } },
+      { id: "b", date: "2026-09-29", breaksSeries: { metrics: ["retail.balance"] } },
+      { id: "c", date: "2026-09-01" },
+    ];
+    expect(seriesBreakDates(events)).toEqual(["2026-10-03", "2026-09-29"]);
+    expect(seriesBreakDates(undefined)).toEqual([]);
+  });
+
+  it("lets holderDayChanges skip a break dated by `at` rather than the event date", () => {
+    const rows = [{ date: "2026-10-02", combined: { holderCount: 1000 } }, { date: "2026-10-03", combined: { holderCount: 1063 } }];
+    const events = [{ date: "2026-10-18", breaksSeries: { metrics: ["x"], at: "2026-10-03" } }];
+    const allowDates = resolveConsistencyOptions({}, [...events.map((e) => e.date), ...seriesBreakDates(events)]).allowDates;
+    expect(holderDayChanges(rows, { maxPct: 2, allowDates })).toEqual([]);
+    expect(holderDayChanges(rows, { maxPct: 2 })).toHaveLength(1);
+  });
+});
+
+describe("registered project feed tables", () => {
+  it("holds zebec-network to a 36h limit on its staking overlay without it appearing for TEL", () => {
+    const zbcn = resolveFeedHealth(resolveProject("zebec-network").config);
+    expect(zbcn.find((f) => f.file === "solana-staking.json")?.thresholdMs).toBe(36 * HOUR);
+    const tel = resolveFeedHealth(resolveProject("tel").config);
+    expect(tel.some((f) => f.file === "solana-staking.json")).toBe(false);
   });
 });
 
