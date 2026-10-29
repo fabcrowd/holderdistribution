@@ -200,6 +200,7 @@ describe("reconcile-supply per project", () => {
     expect(reconcileOptions(tel)).toEqual({
       totalSupply: TEL_TOTAL_SUPPLY,
       coingeckoCirculating: null,
+      circulatingSubtract: ["treasury", "council"],
       chains: ["ethereum", "polygon", "base"],
       origin: "ethereum",
       upgrade: { generation: "v3" },
@@ -239,6 +240,7 @@ describe("reconcile-supply per project", () => {
     expect(reconcileOptions(demo)).toEqual({
       totalSupply: 1_000_000,
       coingeckoCirculating: null,
+      circulatingSubtract: ["treasury", "council"],
       chains: ["ethereum", "arbitrum"],
       origin: "ethereum",
     });

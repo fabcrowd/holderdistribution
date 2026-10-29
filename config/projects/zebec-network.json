@@ -13,6 +13,7 @@
     "workflowTimeoutMinutes": 30
   },
   "supply": {
+    "circulating": { "subtract": ["treasury"] },
     "developerHoldings": {
       "subcategories": [
         { "category": "treasury", "label": "Treasury & buyback vaults" },

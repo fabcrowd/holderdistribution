@@ -72,6 +72,13 @@ export type ProjectConfig = ProjectEntry & {
     targetLabel?: string;
     generationsSumOneToOne?: boolean;
     note?: string;
+    /**
+     * Circulating-supply definition: reconciliation category keys held out of
+     * circulating (reconcile-supply and the Supply view copy both read this).
+     * Absent = ["treasury","council"]. Label-level nonCirculatingOverride is
+     * applied on top regardless.
+     */
+    circulating?: { subtract?: string[] };
     /** CoinGecko coin id. reconcile-supply fetches this coin's circulating supply. */
     coingeckoId?: string;
     /**

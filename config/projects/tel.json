@@ -46,6 +46,7 @@
     "dispositionLedger": true
   },
   "supply": {
+    "circulating": { "subtract": ["treasury", "council"] },
     "developerHoldings": {
       "subcategories": [
         { "category": "treasury", "label": "Treasury" },

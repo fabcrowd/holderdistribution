@@ -37,6 +37,7 @@ import {
   buildReconciliation,
   mergeRoleExclusions,
 } from "./lib/reconcileSupply.js";
+import { resolveCirculatingSubtract } from "./lib/circulatingSubtract.js";
 import { resolveCoingeckoCirculating } from "./lib/coingeckoCirculating.js";
 import {
   selectPipelineProject,
@@ -89,6 +90,7 @@ export const reconcileOptions = (project) => {
   return {
     totalSupply: target,
     coingeckoCirculating: null,
+    circulatingSubtract: resolveCirculatingSubtract(supply),
     ...(chains.length ? { chains } : {}),
     ...(origin ? { origin } : {}),
     ...(supply?.upgrade ? { upgrade: supply.upgrade } : {}),
@@ -141,6 +143,7 @@ const main = async (project) => {
     { ...reconcileOptions(project), coingeckoCirculating },
   );
   const cgCirculating = r.coingeckoCirculating;
+  const { circulatingSubtract } = reconcileOptions(project);
 
   console.log(`${project.config?.ticker ?? "TEL"} SUPPLY RECONCILIATION`);
   console.log("=========================");
@@ -173,7 +176,7 @@ const main = async (project) => {
   }
   console.log();
   console.log(
-    `Circulating (excl. treasury/council/SAFE escrow) ${fmt(r.circulating).padStart(15)}`,
+    `Circulating (excl. ${[...circulatingSubtract, "nonCirculatingOverride"].join("/")}) ${fmt(r.circulating).padStart(15)}`,
   );
   if (r.circulatingExclusions.total > 0) {
     console.log(`  nonCirculatingOverride total             ${fmt(r.circulatingExclusions.total).padStart(16)}`);
@@ -187,7 +190,7 @@ const main = async (project) => {
       `  delta                                     ${fmt(r.circulating - cgCirculating).padStart(16)}`,
     );
   }
-  // Circulating holds out treasury, council, and any address with a
+  // Circulating holds out supply.circulating.subtract categories and any address with a
   // nonCirculatingOverride (TEL contractually committed elsewhere, e.g. a
   // SAFE's return-to-treasury clause — see data/escrow-safe-provenance.md).
   // CoinGecko's figure is not a different methodology to reconcile against —
