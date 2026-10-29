@@ -662,6 +662,32 @@ project's equivalents get an entry in `STATIC_GATED` (or a committed
 `data/<slug>/forensics/` file). The ledger's inner tables still use TEL
 wording, and only render when a project has a ledger.
 
+## Feed health (`health`)
+
+`npm run pipeline:health` and `npm run check:feeds` run across every project in `config/projects.json`
+(`--project <slug>` for one). Defaults live in `scripts/lib/feedHealth.js`; a project overrides them in
+its config, so onboarding a token needs no code change:
+
+```json
+"health": {
+  "feeds": {
+    "holders-lite.json":    { "maxAgeHours": 36 },
+    "tier-outflows.json":   { "placeholder": true },
+    "funding-wallets.json": { "disabled": true }
+  },
+  "consistency": { "maxHolderChangePct": 2, "knownHolderChangeDates": ["2026-10-03"] }
+}
+```
+
+* `placeholder: true` marks an intentional stub (e.g. a flow scanner not built for that chain): reported
+  as PLACEHOLDER, never stale, and checked only to be no older than the holders snapshot.
+* `disabled: true` drops a default feed the project does not produce.
+* `check-feed-consistency` WARNs (never fails) when the combined holder count moves more than
+  `maxHolderChangePct` day over day within 30 days; changelog event dates are allowed automatically.
+* `pipeline-watchdog.yml` runs daily, checks all projects, and also files an issue when a data
+  workflow's latest run failed with zero completed steps (Actions billing block). It cannot run while
+  Actions itself is blocked; run `npm run pipeline:health` from outside Actions for that case.
+
 ## Adding the next project
 
 1. Add `{ "slug": "<slug>", "name": "...", "ticker": "..." }` to `config/projects.json`.
