@@ -6,7 +6,6 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { useTreasuryHistory } from "@/hooks/useTreasuryHistory";
 import { computeSeriesDomain, activeKeys } from "@/lib/chartDomain";
 import { formatChartTimestamp } from "@/lib/chartDate";
-import { HOLDINGS_CATEGORY_KEYS } from "@/lib/supplyBreakdown";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { useProjectCopy, type UseProjectCopy } from "@/hooks/useProjectCopy";
 
@@ -58,7 +57,7 @@ const SERIES = {
   },
   holdings: {
     color: "hsl(217 91% 60%)",
-    keys: HOLDINGS_CATEGORY_KEYS as readonly string[],
+    keys: ["holdings"] as readonly string[],
   },
   escrow: {
     color: "hsl(28 90% 55%)",

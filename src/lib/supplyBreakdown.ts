@@ -2,23 +2,24 @@
  * Groups raw supply-reconciliation categories into display buckets for the
  * holders-page SupplyBreakdown chart.
  *
- * UX layers (progressive disclosure):
- * - Base layer: one fixed set — Retail, DEX, CEX, Treasury, Team, Holdings,
- *   Escrow, Other, Supply gap. Empty buckets are omitted.
- * - Deeper layers: click a slice for address lists, bridge math, and explorer links.
- * - Analysis layer: gated deep-dive tiles (auth) for wallets with published
- *   analysis under public/data/wallet-analysis/.
+ * One fixed set for every project: Retail, DEX, CEX, Developer holdings,
+ * Other, Supply gap. Empty buckets are omitted. Buckets partition totalSupply:
+ * counted categories + the supply gap (residual).
  *
- * Buckets partition totalSupply: counted categories + the supply gap (residual).
- * DEX is retail-owned (LP receipts) but protocol-custodied.
- * Supply gap is uncounted supply (TEL: bridge lock vs L2 mirrors; ZBCN: below
- * the max). The slice name is always "Supply gap"; the drill-down keeps each
- * project's explanation.
- * Treasury's title comes from project copy (`entity.association`): TEL keeps
- * "Telcoin Association-Controlled Safes"; ZBCN uses its treasury name.
+ * Developer holdings is everything held by the project's creators and not in
+ * public hands. Which feed categories it holds, and what each is called, is
+ * per-project config (`supply.developerHoldings.subcategories`); the feed
+ * category keys (treasury, council, holdings, escrow, ...) stay intact as its
+ * sub-categories, so history series keyed on them stay valid.
+ *
  * Staked principal stays inside Retail. Staking reward vaults / contracts
- * (category `staking`) are developer-controlled, so they count in Team — not
- * Other and not their own slice.
+ * (category `staking`) are developer-controlled, so they are a sub-category
+ * here, not Other.
+ *
+ * OPEN ITEM: this grouping is display-only. It asserts nothing about whether
+ * developer holdings circulate (burned supply, vesting, escrow release need
+ * per-token research). The circulating figure is computed by
+ * reconcile-supply and `circulatingFormula` below, unchanged.
  */
 
 export type DisplayBucket = {
@@ -28,43 +29,57 @@ export type DisplayBucket = {
   /** Retail-aligned vs institutional/project vs residual (untracked legs). */
   alignment: "retail" | "institutional" | "residual";
   color: string;
+  /** Developer holdings only: non-empty sub-categories, config order. */
+  subcategories?: DeveloperGroup[];
 };
 
-/** Raw categories rolled into the Treasury bucket (drill-down keeps labels). */
-export const ASSOCIATION_CATEGORY_KEYS = [
-  "treasury",
-  "council",
-  "staking-contract",
-] as const;
+/** One sub-category of the Developer holdings bucket (a feed category). */
+export type DeveloperGroup = { category: string; label: string; amount: number };
 
-export type AssociationCategoryKey = (typeof ASSOCIATION_CATEGORY_KEYS)[number];
+export type DeveloperSubcategory = { category: string; label: string };
 
-export const isAssociationCategory = (
-  category: string,
-): category is AssociationCategoryKey =>
-  (ASSOCIATION_CATEGORY_KEYS as readonly string[]).includes(category);
+export type DeveloperHoldingsConfig = { subcategories: DeveloperSubcategory[] };
 
-/** Plain-language subcategory labels inside the Association drill-down. */
-export const ASSOCIATION_CATEGORY_LABELS: Record<AssociationCategoryKey, string> = {
-  treasury: "Treasury",
-  council: "Council / ops Safes",
-  "staking-contract": "Staking contract",
-};
-
-export const associationCategoryLabel = (category: string): string =>
-  isAssociationCategory(category) ? ASSOCIATION_CATEGORY_LABELS[category] : category;
+/** Pie / legend name of the one developer-held bucket. Same for every project. */
+export const DEVELOPER_BUCKET_LABEL = "Developer holdings";
 
 /**
- * Confirmed team / company wallets (TEL: Telcoin Holdings, ~1.65B). Kept as
- * its own hero bucket, distinct from the foundation (TEL: Association)
- * treasury/council/staking.
+ * Fallback when a project config declares no `supply.developerHoldings`:
+ * every feed category that is project-controlled, with generic labels.
  */
-export const HOLDINGS_CATEGORY_KEYS = ["holdings"] as const;
+export const DEFAULT_DEVELOPER_HOLDINGS: DeveloperHoldingsConfig = {
+  subcategories: [
+    { category: "treasury", label: "Treasury" },
+    { category: "council", label: "Council / ops Safes" },
+    { category: "staking-contract", label: "Staking contract" },
+    { category: "holdings", label: "Holdings" },
+    { category: "team", label: "Team wallets" },
+    { category: "staking", label: "Reward vaults / contracts" },
+    { category: "escrow", label: "Escrow" },
+  ],
+};
 
-export type HoldingsCategoryKey = (typeof HOLDINGS_CATEGORY_KEYS)[number];
+/** Config value (possibly absent or empty) to the list the UI and grouping read. */
+export const resolveDeveloperHoldings = (
+  cfg: Partial<DeveloperHoldingsConfig> | undefined | null,
+): DeveloperHoldingsConfig =>
+  cfg?.subcategories?.length ? { subcategories: cfg.subcategories } : DEFAULT_DEVELOPER_HOLDINGS;
 
-export const isHoldingsCategory = (category: string): category is HoldingsCategoryKey =>
-  (HOLDINGS_CATEGORY_KEYS as readonly string[]).includes(category);
+export const isDeveloperCategory = (cfg: DeveloperHoldingsConfig, category: string): boolean =>
+  cfg.subcategories.some((s) => s.category === category);
+
+/** Label for a feed category inside Developer holdings (falls back to the raw key). */
+export const developerCategoryLabel = (cfg: DeveloperHoldingsConfig, category: string): string =>
+  cfg.subcategories.find((s) => s.category === category)?.label ?? category;
+
+/** Non-empty sub-category totals in config order. */
+export const developerGroups = (
+  categories: Record<string, number> | undefined | null,
+  cfg: DeveloperHoldingsConfig,
+): DeveloperGroup[] =>
+  cfg.subcategories
+    .map((s) => ({ category: s.category, label: s.label, amount: categories?.[s.category] ?? 0 }))
+    .filter((g) => g.amount > 0);
 
 /**
  * Category keys rolled into the Other base-layer row (click opens address detail).
@@ -96,17 +111,6 @@ export const OTHER_CATEGORY_LABELS: Record<OtherCategoryKey, string> = {
 export const otherCategoryLabel = (category: string): string =>
   isOtherCategory(category) ? OTHER_CATEGORY_LABELS[category] : category;
 
-/**
- * Bucket titles for the project-controlled entities (src/lib/projectCopy.ts projectEntities).
- * `association` is the Treasury slice's display name, not a separate bucket key.
- */
-export type EntityBucketLabels = {
-  association: string;
-  holdings: string;
-  /** Team slice title. Defaults to "Team". Hidden when the category is empty. */
-  team?: string;
-};
-
 /** Pie / legend name for the residual slice. Drill-down copy can be more specific. */
 export const SUPPLY_GAP_LABEL = "Supply gap";
 
@@ -114,52 +118,19 @@ export const SUPPLY_GAP_LABEL = "Supply gap";
 export const DEFAULT_RESIDUAL_BUCKET_LABEL = SUPPLY_GAP_LABEL;
 
 /**
- * Developer-controlled supply shown in the Team slice: confirmed team wallets
- * (`team`) and staking reward vaults / reward contracts (`staking`). Reward
- * pools are paid out by the project, so they are team held. Distinct from
- * `staking-contract`, which rolls into Treasury, and from staked principal,
- * which is credited to each staker inside Retail.
- */
-export const TEAM_CATEGORY_KEYS = ["team", "staking"] as const;
-
-export type TeamCategoryKey = (typeof TEAM_CATEGORY_KEYS)[number];
-
-export const isTeamCategory = (category: string): category is TeamCategoryKey =>
-  (TEAM_CATEGORY_KEYS as readonly string[]).includes(category);
-
-/** Plain-language labels inside the Team drill-down. */
-export const TEAM_CATEGORY_LABELS: Record<TeamCategoryKey, string> = {
-  team: "Team wallet",
-  staking: "Staking reward vault",
-};
-
-export const teamCategoryLabel = (category: string): string =>
-  isTeamCategory(category) ? TEAM_CATEGORY_LABELS[category] : category;
-
-/**
  * Fixed slice order. Every project uses these keys; zero amounts are dropped
- * so a token that has no escrow (or no team) does not show an empty wedge.
+ * so a token with nothing in a bucket does not show an empty wedge.
  */
 export const CANONICAL_SUPPLY_BUCKETS = [
   "retail",
   "dex",
   "cex",
-  "treasury",
-  "team",
-  "holdings",
-  "escrow",
+  "developer",
   "other",
   "supplyGap",
 ] as const;
 
 export type CanonicalSupplyBucket = (typeof CANONICAL_SUPPLY_BUCKETS)[number];
-
-/** Project-agnostic fallbacks; the Supply view passes the active project's names. */
-export const DEFAULT_ENTITY_BUCKET_LABELS: EntityBucketLabels = {
-  association: "Treasury",
-  holdings: "Holdings",
-  team: "Team",
-};
 
 const sumKeys = (categories: Record<string, number>, keys: readonly string[]): number =>
   keys.reduce((sum, key) => sum + (categories[key] ?? 0), 0);
@@ -167,12 +138,11 @@ const sumKeys = (categories: Record<string, number>, keys: readonly string[]): n
 export const groupSupplyCategories = (
   categories: Record<string, number> | undefined | null,
   residual = 0,
-  labels: EntityBucketLabels = DEFAULT_ENTITY_BUCKET_LABELS,
+  developer: DeveloperHoldingsConfig = DEFAULT_DEVELOPER_HOLDINGS,
 ): DisplayBucket[] => {
   const c = categories ?? {};
-  const treasury = sumKeys(c, ASSOCIATION_CATEGORY_KEYS);
-  const team = sumKeys(c, TEAM_CATEGORY_KEYS);
-  const holdings = sumKeys(c, HOLDINGS_CATEGORY_KEYS);
+  const subcategories = developerGroups(c, developer);
+  const developerTotal = subcategories.reduce((sum, g) => sum + g.amount, 0);
   const other = sumKeys(c, OTHER_CATEGORY_KEYS);
 
   const buckets: DisplayBucket[] = [
@@ -198,32 +168,12 @@ export const groupSupplyCategories = (
       color: "hsl(32 90% 50%)",
     },
     {
-      key: "treasury",
-      label: labels.association,
-      amount: treasury,
+      key: "developer",
+      label: DEVELOPER_BUCKET_LABEL,
+      amount: developerTotal,
       alignment: "institutional",
       color: "hsl(250 45% 50%)",
-    },
-    {
-      key: "team",
-      label: labels.team ?? "Team",
-      amount: team,
-      alignment: "institutional",
-      color: "hsl(12 70% 48%)",
-    },
-    {
-      key: "holdings",
-      label: labels.holdings,
-      amount: holdings,
-      alignment: "institutional",
-      color: "hsl(330 55% 48%)",
-    },
-    {
-      key: "escrow",
-      label: "Escrow",
-      amount: c.escrow ?? 0,
-      alignment: "institutional",
-      color: "hsl(200 60% 45%)",
+      subcategories,
     },
     {
       key: "other",
@@ -249,10 +199,11 @@ export const groupSupplyCategories = (
  * actually subtracts, using the Treasury slice's display name when that
  * slice is present. Escrow stays in circulating except the committed
  * override. Holdings and Team (including reward vaults) are not carved out.
+ * Unchanged by the Developer holdings grouping (see the open item above).
  */
 export const circulatingFormula = (
   categories: Record<string, number> | undefined | null,
-  labels: Pick<EntityBucketLabels, "association"> = DEFAULT_ENTITY_BUCKET_LABELS,
+  labels: { association: string } = { association: "Treasury" },
   escrowCommitted = 0,
 ): string => {
   const c = categories ?? {};

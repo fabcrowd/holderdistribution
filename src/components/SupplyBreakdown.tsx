@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { useProject } from "@/hooks/useProject";
 import { PanelError } from "@/components/terminal/TerminalPanel";
@@ -19,6 +19,7 @@ import { SupplyTerminal } from "@/components/terminal/SupplyTerminal";
 import { TabsContent } from "@/components/ui/tabs";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import LockedAnalysisTile from "@/components/LockedAnalysisTile";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Pie, PieChart as RePieChart, Cell, Sector } from "recharts";
@@ -33,17 +34,18 @@ import { StakingAddressList } from "@/components/StakingAddressList";
 import { stakingAddressLinks, supplyRetailStakeModel } from "@/lib/stakingAddresses";
 import { buildViewHash } from "@/lib/viewRoute";
 import {
-  associationCategoryLabel,
   circulatingFormula,
+  developerCategoryLabel,
   groupSupplyCategories,
-  isAssociationCategory,
-  isHoldingsCategory,
+  isDeveloperCategory,
   isOtherCategory,
-  isTeamCategory,
-  teamCategoryLabel,
   otherCategoryLabel,
   partitionBuckets,
+  resolveDeveloperHoldings,
+  DEVELOPER_BUCKET_LABEL,
   SUPPLY_GAP_LABEL,
+  type DeveloperGroup,
+  type DeveloperHoldingsConfig,
 } from "@/lib/supplyBreakdown";
 import { chainExplorerLink, resolveChainVm } from "@/lib/explorerLinks";
 import { AlertTriangle, ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
@@ -126,6 +128,17 @@ const explorerUrl = (item: SupplyReconciliationItem): string => {
   return `${EXPLORER_BASE.ethereum}/address/${a}`;
 };
 
+/** Explorer link for a reconciliation item. Single-chain Solana projects
+ *  (ZBCN) link base58 addresses to their own explorer as-is; everything else
+ *  keeps the historical EVM links. */
+const useItemExplorerHref = () => {
+  const { project } = useProject();
+  const chains = project.chains ?? [];
+  const solana = chains.length === 1 && resolveChainVm(chains[0]) === "solana";
+  return (item: SupplyReconciliationItem): string =>
+    solana ? chainExplorerLink(chains[0], "address", item.address) : explorerUrl(item);
+};
+
 /** Selects the drill-down panel content for a bucket key. Shared by the
  *  chart's wedges and the list rows beside it — one switch, not eight
  *  separate ternaries repeated inline. */
@@ -135,12 +148,10 @@ const renderBucketDetail = (
     data: ReturnType<typeof useSupplyReconciliation>["data"];
     residualItems: SupplyReconciliationItem[];
     otherItems: SupplyReconciliationItem[];
-    associationItems: SupplyReconciliationItem[];
-    holdingsItems: SupplyReconciliationItem[];
-    teamItems: SupplyReconciliationItem[];
+    developerItems: SupplyReconciliationItem[];
+    developer: DeveloperHoldingsConfig;
     dexItems: SupplyReconciliationItem[];
     cexItems: SupplyReconciliationItem[];
-    escrowItems: SupplyReconciliationItem[];
     retailAmount: number;
   },
 ): ReactNode => {
@@ -149,18 +160,18 @@ const renderBucketDetail = (
       return <ResidualPanel data={ctx.data} bridges={ctx.residualItems} />;
     case "other":
       return <OtherAddressPanel items={ctx.otherItems} />;
-    case "treasury":
-      return <AssociationPanel items={ctx.associationItems} />;
-    case "holdings":
-      return <HoldingsPanel items={ctx.holdingsItems} />;
-    case "team":
-      return <TeamPanel items={ctx.teamItems} />;
+    case "developer":
+      return (
+        <DeveloperPanel
+          items={ctx.developerItems}
+          developer={ctx.developer}
+          committed={ctx.data?.circulatingExclusions?.total ?? null}
+        />
+      );
     case "dex":
       return <DexLiquidityPanel items={ctx.dexItems} />;
     case "cex":
       return <CexCustodyPanel items={ctx.cexItems} />;
-    case "escrow":
-      return <EscrowPanel items={ctx.escrowItems} committed={ctx.data?.circulatingExclusions?.total ?? null} />;
     case "retail":
       return <RetailPanel amount={ctx.retailAmount} />;
     default:
@@ -192,18 +203,40 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
     onPanelChange?.(next);
   };
   const { data, isLoading, error } = useSupplyReconciliation();
-  // Treasury / Holdings titles come from project entity copy. Slice names
-  // otherwise stay the fixed set (Retail, DEX, CEX, Team, Escrow, Other, Supply gap).
-  const bucketLabels = useMemo(
-    () => ({
-      association: entities.association,
-      holdings: entities.holdings,
-    }),
-    [entities.association, entities.holdings],
-  );
+  // Which feed categories make up Developer holdings, and their sub-category labels.
+  const developer = useMemo(() => resolveDeveloperHoldings(project.supply?.developerHoldings), [project.supply]);
   // Hovered slice — highlights the wedge and its list row together, in
   // either direction.
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  // Developer holdings breakdown card: opens on mouse hover (row or wedge) and
+  // on tap (touch). A short close delay lets the pointer travel from the row
+  // or wedge into the card to click an address link.
+  const [devOpen, setDevOpen] = useState(false);
+  const devCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPointerType = useRef<string>("mouse");
+  useEffect(() => {
+    const record = (e: PointerEvent) => {
+      lastPointerType.current = e.pointerType || "mouse";
+    };
+    document.addEventListener("pointerdown", record, true);
+    document.addEventListener("pointermove", record, true);
+    return () => {
+      document.removeEventListener("pointerdown", record, true);
+      document.removeEventListener("pointermove", record, true);
+    };
+  }, []);
+  const openDev = useCallback(() => {
+    if (devCloseTimer.current) clearTimeout(devCloseTimer.current);
+    setDevOpen(true);
+  }, []);
+  const closeDevSoon = useCallback(() => {
+    if (devCloseTimer.current) clearTimeout(devCloseTimer.current);
+    devCloseTimer.current = setTimeout(() => setDevOpen(false), 160);
+  }, []);
+  useEffect(() => () => {
+    if (devCloseTimer.current) clearTimeout(devCloseTimer.current);
+  }, []);
+  const isTouch = () => lastPointerType.current === "touch";
   // Which bucket's drill-down popover is open. Lives here rather than inside
   // a row so a click on the WEDGE and a click on that bucket's LIST ROW open
   // the exact same popover instead of two competing ones.
@@ -223,13 +256,13 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickedBucketKey, layout]);
 
-  const { buckets, totalSupply, circulating, residualItems, otherItems, associationItems, holdingsItems, teamItems, dexItems, cexItems, escrowItems } =
+  const { buckets, totalSupply, circulating, residualItems, otherItems, developerItems, dexItems, cexItems } =
     useMemo(() => {
       const total = data?.totalSupply ?? supplyTarget;
       const residual = data?.residual ?? Math.max(0, total - (data?.counted ?? 0));
       // No reconciliation (loading / failed) → no buckets. Grouping an empty
       // payload used to put the whole 100B into "In transit".
-      const all = data ? groupSupplyCategories(data.categories, residual, bucketLabels) : [];
+      const all = data ? groupSupplyCategories(data.categories, residual, developer) : [];
       const parts = partitionBuckets(all);
       const items = data?.items ?? [];
       return {
@@ -241,18 +274,14 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
           .filter((i) => isOtherCategory(i.category))
           .slice()
           .sort((a, b) => b.balance - a.balance),
-        associationItems: items
-          .filter((i) => isAssociationCategory(i.category))
+        developerItems: items
+          .filter((i) => isDeveloperCategory(developer, i.category))
           .slice()
-          .sort((a, b) => b.balance - a.balance),
-        holdingsItems: items
-          .filter((i) => isHoldingsCategory(i.category))
-          .slice()
-          .sort((a, b) => b.balance - a.balance),
-        teamItems: items
-          .filter((i) => isTeamCategory(i.category))
-          .slice()
-          .sort((a, b) => b.balance - a.balance),
+          .sort(
+            (a, b) =>
+              developer.subcategories.findIndex((x) => x.category === a.category) -
+                developer.subcategories.findIndex((x) => x.category === b.category) || b.balance - a.balance,
+          ),
         dexItems: items
           .filter((i) => i.category === "dex")
           .slice()
@@ -261,12 +290,8 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
           .filter((i) => i.category === "cex")
           .slice()
           .sort((a, b) => b.balance - a.balance),
-        escrowItems: items
-          .filter((i) => i.category === "escrow")
-          .slice()
-          .sort((a, b) => b.balance - a.balance),
       };
-    }, [data, bucketLabels, supplyTarget]);
+    }, [data, developer, supplyTarget]);
 
   // Largest category that has something to drill into. Retail is usually
   // bigger, but its "detail" is one sentence (there is no address list),
@@ -310,12 +335,10 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
       data,
       residualItems,
       otherItems,
-      associationItems,
-      holdingsItems,
-      teamItems,
+      developerItems,
+      developer,
       dexItems,
       cexItems,
-      escrowItems,
       retailAmount: pieSlices.find((s) => s.key === "retail")?.amount ?? 0,
     });
   const cg = coingeckoComparison(circulating, data?.coingeckoCirculating);
@@ -385,11 +408,23 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                           return i === -1 ? undefined : i;
                         })()}
                         activeShape={activePieSector}
-                        onMouseEnter={(_, index) => setActiveIndex(index)}
-                        onMouseLeave={() => setActiveIndex(null)}
+                        onMouseEnter={(_, index) => {
+                          setActiveIndex(index);
+                          if (!isTouch() && pieSlices[index]?.key === "developer") openDev();
+                        }}
+                        onMouseLeave={() => {
+                          setActiveIndex(null);
+                          closeDevSoon();
+                        }}
                         onClick={(entry) => {
                           const key = (entry as unknown as { key?: string }).key;
-                          if (key) setOpenBucketKey(key);
+                          if (!key) return;
+                          // Touch: the tap shows the breakdown card; its "All wallets" link opens the full panel.
+                          if (key === "developer" && isTouch()) {
+                            setDevOpen((v) => !v);
+                            return;
+                          }
+                          setOpenBucketKey(key);
                         }}
                       >
                         {pieSlices.map((b, index) => {
@@ -437,7 +472,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                       // selection is carried by the row highlight alone, and
                       // only a hover preview fades the rest.
                       const anySelected = compact ? activeIndex !== null : openBucketKey !== null || activeIndex !== null;
-                      return (
+                      const rowEl = (
                         <motion.button
                           key={b.key}
                           layout
@@ -448,6 +483,8 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                           data-bucket-key={b.key}
                           onMouseEnter={() => pieIndex !== -1 && setActiveIndex(pieIndex)}
                           onMouseLeave={() => setActiveIndex(null)}
+                          onPointerEnter={b.key === "developer" ? (e) => e.pointerType !== "touch" && openDev() : undefined}
+                          onPointerLeave={b.key === "developer" ? (e) => e.pointerType !== "touch" && closeDevSoon() : undefined}
                           // Toggle, not open-only: clicking the already-open
                           // row closes it; clicking any other row switches
                           // straight to it (no floating popover to close
@@ -456,7 +493,14 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                           // Terminal: a category is always shown, so clicking
                           // the active row keeps it selected rather than
                           // emptying the detail panel. Stacked: toggle.
-                          onClick={() => setOpenBucketKey(isOpen && !compact ? null : b.key)}
+                          onClick={() => {
+                            // Touch on Developer holdings: show the breakdown card first.
+                            if (b.key === "developer" && isTouch()) {
+                              setDevOpen((v) => !v);
+                              return;
+                            }
+                            setOpenBucketKey(isOpen && !compact ? null : b.key);
+                          }}
                           aria-pressed={isOpen}
                           // Origin left, not center, so the scale (applied via
                           // `animate` above, not a CSS class — see below)
@@ -492,6 +536,37 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                             </span>
                           </span>
                         </motion.button>
+                      );
+                      if (b.key !== "developer" || !b.subcategories?.length) return rowEl;
+                      return (
+                        <Popover key={b.key} open={devOpen} onOpenChange={setDevOpen}>
+                          <PopoverAnchor asChild>{rowEl}</PopoverAnchor>
+                          <PopoverContent
+                            data-testid="supply-developer-popover"
+                            align="start"
+                            collisionPadding={12}
+                            className="w-[min(24rem,calc(100vw-2rem))] max-h-[min(70vh,30rem)] overflow-y-auto p-3"
+                            onOpenAutoFocus={(e) => e.preventDefault()}
+                            onCloseAutoFocus={(e) => e.preventDefault()}
+                            onMouseEnter={openDev}
+                            onMouseLeave={closeDevSoon}
+                            // The row and wedge toggle the card themselves; don't let their pointerdown close-then-reopen it.
+                            onInteractOutside={(e) => {
+                              const t = e.target as Element | null;
+                              if (t?.closest?.('[data-bucket-key="developer"], .recharts-pie')) e.preventDefault();
+                            }}
+                          >
+                            <DeveloperBreakdown
+                              groups={b.subcategories}
+                              items={developerItems}
+                              total={b.amount}
+                              onOpenAll={() => {
+                                setDevOpen(false);
+                                setOpenBucketKey("developer");
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       );
                     })}
                   </div>
@@ -839,14 +914,7 @@ const AddressRow = ({
   subcategory: string;
   password: string | null;
 }) => {
-  const { project } = useProject();
-  // Single-chain Solana projects (ZBCN) link base58 addresses to their own
-  // explorer as-is; everything else keeps the historical EVM links.
-  const chains = project.chains ?? [];
-  const href =
-    chains.length === 1 && resolveChainVm(chains[0]) === "solana"
-      ? chainExplorerLink(chains[0], "address", item.address)
-      : explorerUrl(item);
+  const href = useItemExplorerHref()(item);
   return (
   <li className="space-y-2 border-b border-border/40 pb-2 last:border-0">
     <div className="flex items-start justify-between gap-2">
@@ -918,12 +986,15 @@ const AddressListPanel = ({
   items,
   subcategoryFor,
   emptyLabel,
+  groupHeaders = false,
 }: {
   title: string;
   description: ReactNode;
   items: SupplyReconciliationItem[];
   subcategoryFor: (item: SupplyReconciliationItem) => string;
   emptyLabel: string;
+  /** Items arrive grouped; print each subcategory's name and subtotal above its rows. */
+  groupHeaders?: boolean;
 }) => {
   const { password, status, unlock } = useForensicsUnlock();
   const { t } = useProjectCopy();
@@ -960,10 +1031,23 @@ const AddressListPanel = ({
         <p className="text-muted-foreground">{emptyLabel}</p>
       ) : (
         <ul className="divide-y divide-border/40 -mx-1">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const pct = bucketTotal > 0 ? (item.balance / bucketTotal) * 100 : 0;
+            const startsGroup = groupHeaders && (index === 0 || items[index - 1].category !== item.category);
+            const groupTotal = startsGroup
+              ? items.filter((i) => i.category === item.category).reduce((sum, i) => sum + i.balance, 0)
+              : 0;
             return (
               <li key={`${item.category}-${item.address}`}>
+                {startsGroup ? (
+                  <div
+                    data-testid="supply-developer-group"
+                    className="flex items-baseline justify-between gap-2 px-1 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground first:pt-1"
+                  >
+                    <span>{subcategoryFor(item)}</span>
+                    <span className="tabular-nums">{formatCompactAmount(groupTotal)}</span>
+                  </div>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => setSelectedAddress(item.address)}
@@ -985,39 +1069,7 @@ const AddressListPanel = ({
   );
 };
 
-const AssociationPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
-  const { entities, text } = useProjectCopy();
-  return (
-    <AddressListPanel
-      title={entities.association}
-      description={text(
-        "supply.association.description",
-        "Treasury and council / ops Safes controlled by the {name} foundation, listed together in the hero bucket. Balances checked on-chain.",
-      )}
-      items={items}
-      subcategoryFor={(item) => associationCategoryLabel(item.category)}
-      emptyLabel={`No ${entities.associationShort} addresses itemised.`}
-    />
-  );
-};
-
 const sumBalances = (items: SupplyReconciliationItem[]) => items.reduce((s, i) => s + (Number.isFinite(i.balance) ? i.balance : 0), 0);
-
-const HoldingsPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
-  const { entities, text } = useProjectCopy();
-  return (
-    <AddressListPanel
-      title={entities.holdings}
-      description={text(
-        "supply.holdings.description",
-        "Confirmed {name} team / company wallets ({amount} {ticker}), a separate entity from the foundation Safes.",
-      ).replace("{amount}", formatCompactAmount(sumBalances(items)))}
-      items={items}
-      subcategoryFor={() => entities.holdings}
-      emptyLabel={`No ${entities.holdingsShort} addresses itemised.`}
-    />
-  );
-};
 
 const OtherAddressPanel = ({ items }: { items: SupplyReconciliationItem[] }) => (
   <AddressListPanel
@@ -1055,26 +1107,46 @@ const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
   );
 };
 
-const TeamPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
-  const { text, hasText } = useProjectCopy();
+const DeveloperPanel = ({
+  items,
+  developer,
+  committed,
+}: {
+  items: SupplyReconciliationItem[];
+  developer: DeveloperHoldingsConfig;
+  committed: number | null;
+}) => {
+  const { entities, text, hasText } = useProjectCopy();
   const { project } = useProject();
   // Staking reward vaults are developer-controlled, so they are itemised here
-  // with the team wallets. Projects that publish reward-vault Solscan links
-  // (ZBCN) get that list under the address rows.
+  // with the other sub-categories. Projects that publish reward-vault Solscan
+  // links (ZBCN) get that list under the address rows.
   const rewardLinks = hasText("supply.staking.addresses")
     ? stakingAddressLinks(project).filter((link) => link.kind === "reward-vault")
     : [];
+  const escrowTotal = sumBalances(items.filter((i) => i.category === "escrow"));
   return (
     <div className="space-y-3">
       <AddressListPanel
-        title="Team"
-        description={text(
-          "supply.team.description",
-          "{name} team wallets and staking reward vaults / contracts. Reward pools are paid out by the project, so they are developer-controlled and counted here, apart from Treasury and Holdings.",
-        )}
+        title={DEVELOPER_BUCKET_LABEL}
+        description={
+          <>
+            {text(
+              "supply.developer.description",
+              "{ticker} held by the creators and affiliates of {name}, not in public hands. Sub-categories keep the original reconciliation categories; balances checked on-chain.",
+            )}
+            {committed != null && escrowTotal > 0 ? (
+              <>
+                {" "}Of the escrow, {formatCompactAmount(committed)} is contractually committed back to{" "}
+                {entities.associationShort} treasury and excluded from circulating.
+              </>
+            ) : null}
+          </>
+        }
         items={items}
-        subcategoryFor={(item) => teamCategoryLabel(item.category)}
-        emptyLabel="No team addresses itemised."
+        subcategoryFor={(item) => developerCategoryLabel(developer, item.category)}
+        emptyLabel="No developer-held addresses itemised."
+        groupHeaders
       />
       {rewardLinks.length > 0 ? (
         <div className="space-y-2 border-t border-border/50 pt-2">
@@ -1087,35 +1159,76 @@ const TeamPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
   );
 };
 
-const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; committed: number | null }) => {
-  const { entities, text, hasText } = useProjectCopy();
-  const total = sumBalances(items);
-  const rest = committed != null ? Math.max(0, total - committed) : null;
+/** Wallets listed per sub-category in the hover/tap breakdown; the rest sit in the full panel. */
+const DEVELOPER_PREVIEW_WALLETS = 5;
+
+/** Hover (mouse) / tap (touch) card for the Developer holdings bucket:
+ *  each sub-category with its total and its largest wallets, linked to the
+ *  chain explorer with truncated addresses. */
+const DeveloperBreakdown = ({
+  groups,
+  items,
+  total,
+  onOpenAll,
+}: {
+  groups: DeveloperGroup[];
+  items: SupplyReconciliationItem[];
+  total: number;
+  onOpenAll: () => void;
+}) => {
+  const { ticker } = useProjectCopy();
+  const hrefFor = useItemExplorerHref();
   return (
-  <AddressListPanel
-    title="Escrow"
-    description={
-      <>
-        {text("supply.escrow.description", "{ticker} held by third-party custodians")}
-        {committed != null && rest != null ? (
-          <>
-            {" "}— {formatCompactAmount(committed)} is contractually committed back to {entities.associationShort} treasury and
-            excluded from circulating; the remaining {formatCompactAmount(rest)} stays circulating
-          </>
-        ) : null}
-        {hasText("supply.escrow.description") ? (
-          <>
-            {" "}(traced on-chain in <code className="text-[11px]">data/escrow-safe-provenance.md</code>).
-          </>
-        ) : (
-          "."
-        )}
-      </>
-    }
-    items={items}
-    subcategoryFor={(item) => item.name ?? "Escrow custodian"}
-    emptyLabel="No escrow addresses itemised."
-  />
+    <div data-testid="supply-developer-breakdown" className="space-y-3 text-xs">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="font-semibold text-foreground">{DEVELOPER_BUCKET_LABEL}</span>
+        <span className="tabular-nums font-semibold">
+          {formatCompactAmount(total)} {ticker}
+        </span>
+      </div>
+      {groups.map((g) => {
+        const wallets = items.filter((i) => i.category === g.category);
+        const shown = wallets.slice(0, DEVELOPER_PREVIEW_WALLETS);
+        return (
+          <section key={g.category} data-testid="supply-developer-subcategory" className="space-y-1">
+            <div className="flex items-baseline justify-between gap-3 border-b border-border/40 pb-0.5">
+              <span className="font-medium text-foreground">{g.label}</span>
+              <span className="tabular-nums text-muted-foreground">{formatCompactAmount(g.amount)}</span>
+            </div>
+            <ul className="space-y-0.5">
+              {shown.map((w) => (
+                <li key={w.address} className="flex items-center justify-between gap-2">
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-muted-foreground">{w.name ?? g.label}</span>
+                    <a
+                      href={hrefFor(w)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center gap-0.5 font-mono text-primary hover:underline"
+                    >
+                      {shortAddr(w.address)}
+                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                    </a>
+                  </span>
+                  <span className="shrink-0 tabular-nums">{formatCompactAmount(w.balance)}</span>
+                </li>
+              ))}
+              {wallets.length > shown.length ? (
+                <li className="text-muted-foreground">+{wallets.length - shown.length} more wallets</li>
+              ) : null}
+            </ul>
+          </section>
+        );
+      })}
+      <button
+        type="button"
+        onClick={onOpenAll}
+        className="inline-flex min-h-[32px] items-center gap-1 font-semibold text-primary hover:underline"
+      >
+        All wallets and analysis
+        <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+      </button>
+    </div>
   );
 };
 

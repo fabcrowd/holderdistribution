@@ -13,6 +13,14 @@
     "workflowTimeoutMinutes": 30
   },
   "supply": {
+    "developerHoldings": {
+      "subcategories": [
+        { "category": "treasury", "label": "Treasury & buyback vaults" },
+        { "category": "holdings", "label": "Team & allocation wallets" },
+        { "category": "team", "label": "Team wallets" },
+        { "category": "staking", "label": "Reward vaults" }
+      ]
+    },
     "target": 100000000000,
     "targetLabel": "100B",
     "coingeckoId": "zebec-network",
@@ -337,7 +345,7 @@
         ]
       },
       "supplyBreakdown": {
-        "how": "Total supply is the fixed {supply} max. We split it into the shared buckets that have a balance — Retail (including staked {ticker} credited to each staker), DEX, CEX, Treasury, Team (including the developer-controlled staking reward vaults), Holdings, Other, and Supply gap — so the pieces add to {supply}. Each bucket is built from on-chain Solana token-account balances of labelled addresses; stake-vault balances are moved onto the stakers who own them so they are not counted twice. The gap below the max reflects buybacks/burns shrinking on-chain supply, not bridges (ZBCN is Solana-only here). Holdings includes the team-cluster signers and allocation wallet 56veX (~400M from team ops 9Sq2 at 40M a month past the Mar 2026 vesting end; recipient unknown; not Team). Exchange custody includes the Uphold/Fireblocks cluster (8gQjn, J8FN, 82P4, 6XHz) and Poloniex Squad Vault SOL-P (Eueeb). Uphold caveat, same as Hot Wallet 3/5: ~545M of buybacks (504.7M as of Jul 2026 plus 40.54M in the Q3 post) may sit inside omnibus Uphold/Fireblocks wallets and cannot be split out, so those balances stay cex. Open a bucket for the addresses and sources.",
+        "how": "Total supply is the fixed {supply} max. We split it into the shared buckets that have a balance — Retail (including staked {ticker} credited to each staker), DEX, CEX, Developer holdings (treasury and buyback vaults, team and allocation wallets, and the developer-controlled staking reward vaults; hover or tap it for the sub-category breakdown), Other, and Supply gap — so the pieces add to {supply}. Each bucket is built from on-chain Solana token-account balances of labelled addresses; stake-vault balances are moved onto the stakers who own them so they are not counted twice. The gap below the max reflects buybacks/burns shrinking on-chain supply, not bridges (ZBCN is Solana-only here). Holdings includes the team-cluster signers and allocation wallet 56veX (~400M from team ops 9Sq2 at 40M a month past the Mar 2026 vesting end; recipient unknown; not Team). Exchange custody includes the Uphold/Fireblocks cluster (8gQjn, J8FN, 82P4, 6XHz) and Poloniex Squad Vault SOL-P (Eueeb). Uphold caveat, same as Hot Wallet 3/5: ~545M of buybacks (504.7M as of Jul 2026 plus 40.54M in the Q3 post) may sit inside omnibus Uphold/Fireblocks wallets and cannot be split out, so those balances stay cex. Open a bucket for the addresses and sources.",
         "verify": "Open each labelled wallet on Solscan. Vesting end is in the Zebec tokenomics blog and docs (and the Oct 2026 MiCA white paper). Uphold's Canada risk statement describes Fireblocks cold storage; the buyback blog describes Uphold Institutional custody. A Figment/Uphold webinar says assets never leave Fireblocks custody. EkXEg still holds ~108.26M after sending ~437M to team ops 9Sq2.",
         "links": [
           {
