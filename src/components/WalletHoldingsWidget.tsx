@@ -836,7 +836,7 @@ const renderStakingInsights = (
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis dataKey="range" tickFormatter={balanceRangeDisplayLabel} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 13 }} height={36} />
                 <YAxis
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
                   domain={[0, yDomainMax]}
                   allowDataOverflow={false}
                 />
@@ -848,7 +848,7 @@ const renderStakingInsights = (
                     stroke="hsl(var(--destructive))"
                     strokeWidth={2}
                     strokeDasharray="4 4"
-                    label={{ value: "Avg staked", position: "top", fill: "hsl(var(--destructive))", fontSize: 11 }}
+                    label={{ value: "Avg staked", position: "top", fill: "hsl(var(--destructive))", fontSize: 12 }}
                   />
                 )}
               </BarChart>

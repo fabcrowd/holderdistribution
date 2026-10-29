@@ -517,7 +517,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
         <div
           role="status"
           data-testid="supply-reconciling"
-          className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-50 px-2.5 py-1.5 text-left text-[11px] leading-snug text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+          className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-50 px-2.5 py-1.5 text-left text-xs leading-snug text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
         >
           <AlertTriangle aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0" />
           <span>
@@ -527,7 +527,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
           </span>
         </div>
       )}
-      <p className="mt-3 text-[11px] text-muted-foreground text-center">
+      <p className="mt-3 text-xs text-muted-foreground text-center">
         Solid = retail wallets / DEX LP; muted = exchanges &amp; project; grey = in transit.
       </p>
     </>

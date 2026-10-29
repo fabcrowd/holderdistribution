@@ -7,7 +7,7 @@ export const DetailsButton = ({ onClick, label }: { onClick: () => void; label: 
     onClick={onClick}
     aria-label={`Open ${label} in Explore`}
     title="Open in Explore — this Dashboard chart, full size"
-    className="inline-flex h-6 min-w-6 items-center justify-center gap-1 rounded px-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    className="inline-flex h-6 min-w-6 items-center justify-center gap-1 rounded px-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
   >
     <Maximize2 className="h-3 w-3" aria-hidden="true" />
     <span className="hidden 2xl:inline">Explore</span>

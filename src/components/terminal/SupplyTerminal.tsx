@@ -146,7 +146,7 @@ const ReadySupply = (p: Props) => {
           role="tabpanel"
           aria-labelledby={`supply-tab-${tabBase}`}
           tabIndex={0}
-          className="relative min-h-0 flex-1 overflow-auto p-3 text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          className="relative min-h-0 flex-1 overflow-auto p-3 text-sm leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
           {tabBase === "breakdown" &&
             (p.detail ?? <PanelMessage>Select a category on the left to see its wallets and notes.</PanelMessage>)}
@@ -160,7 +160,7 @@ const ReadySupply = (p: Props) => {
         info={`${entities.associationShort} Safes, ${entities.holdings} and escrow balances over the selected period. Password protected.`}
         testId="panel-treasury-history"
       >
-        <div className={unlocked ? "text-xs" : "h-full text-xs"}>{p.history}</div>
+        <div className={unlocked ? "text-sm" : "h-full text-sm"}>{p.history}</div>
       </TerminalPanel>
     </div>
   );

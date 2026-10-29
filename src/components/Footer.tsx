@@ -55,7 +55,7 @@ export const Footer = () => {
         </div>
 
         {/* Copyright */}
-        <div className="mt-4 pt-4 border-t border-border/30 text-center text-xs text-muted-foreground space-y-0.5">
+        <div className="mt-4 pt-4 border-t border-border/30 text-center text-[13px] text-muted-foreground space-y-0.5">
           <p>© {new Date().getFullYear()} Holder Analytics. All rights reserved.</p>
           <p>Price data powered by CoinGecko</p>
           <p className="max-w-4xl mx-auto pt-2">

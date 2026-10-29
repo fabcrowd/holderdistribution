@@ -120,7 +120,7 @@ export const TerminalDashboard = ({
               <div className="flex items-center gap-1.5">
                 {/* When the data is late the pill takes the eyebrow's place
                     below 1400px, so the brand column doesn't grow into the KPIs. */}
-                <span className={`text-[10px] font-semibold uppercase tracking-[0.14em] text-primary ${stale ? "hidden min-[1400px]:inline" : ""}`}>
+                <span className={`text-xs font-semibold uppercase tracking-[0.14em] text-primary ${stale ? "hidden min-[1400px]:inline" : ""}`}>
                   Holder Analytics
                 </span>
                 {stale && (
@@ -130,7 +130,7 @@ export const TerminalDashboard = ({
                     data-status={fresh.status}
                     title={`The daily refresh is behind. Figures are as of ${fresh.date}.`}
                     aria-label={`Data as of ${fresh.date}. The daily refresh is behind.`}
-                    className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-px text-[10px] font-semibold leading-none ${
+                    className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-px text-xs font-semibold leading-none ${
                       fresh.status === "stale"
                         ? "border-red-500/50 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300"
                         : "border-amber-500/50 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
@@ -173,12 +173,12 @@ export const TerminalDashboard = ({
           <dl className="flex min-w-0 flex-1 items-center justify-[safe_center] gap-3 min-[1400px]:gap-6 2xl:gap-10" aria-label="Headline numbers" data-testid="headline-numbers">
             {tiles.map((t) => (
               <div key={t.id} className="flex shrink-0 flex-col gap-0.5 leading-tight" data-testid={`kpi-${t.id}`}>
-                <dt className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <dt className="whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {t.label}
                   {/* A chain is picked but this figure can't be split by
                       chain: say so rather than pass it off as that chain's. */}
                   {selectedView !== "combined" && t.scope === "all" && (
-                    <span className="ml-1 rounded-sm bg-muted px-1 text-[9px] normal-case tracking-normal" title="Not split by chain: this figure covers all chains" data-testid={`kpi-${t.id}-scope`}>
+                    <span className="ml-1 rounded-sm bg-muted px-1 text-[11px] normal-case tracking-normal" title="Not split by chain: this figure covers all chains" data-testid={`kpi-${t.id}-scope`}>
                       All chains
                     </span>
                   )}
@@ -309,7 +309,7 @@ export const TerminalDashboard = ({
           </div>
         </main>
 
-        <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-card px-3 text-[11px] text-muted-foreground">
+        <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-card px-3 text-xs text-muted-foreground">
           {fresh.status === "unknown" && isError ? (
             <span role="alert" className="inline-flex items-center gap-2 font-semibold text-destructive">
               Couldn&apos;t load the holder snapshot.

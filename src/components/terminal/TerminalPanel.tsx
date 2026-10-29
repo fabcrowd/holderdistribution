@@ -43,7 +43,7 @@ export const TerminalPanel = ({ title, titleText, info, stat, actions, className
       className={`relative flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card ${fit ? "" : "min-h-0"} ${className}`}
     >
       <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border/70 px-3">
-        <h2 id={headingId} className="shrink-0 whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 id={headingId} className="shrink-0 whitespace-nowrap text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </h2>
         {info && <InfoTip content={info} label={`About ${titleText ?? (typeof title === "string" ? title : "this panel")}`} className="-m-1" />}

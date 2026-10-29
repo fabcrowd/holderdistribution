@@ -14,7 +14,7 @@ type Props = {
 
 const Stat = ({ label, value }: { label: string; value: string | null }) => (
   <div className="flex flex-col gap-0.5">
-    <dt className="text-xs text-muted-foreground">{label}</dt>
+    <dt className="text-[13px] text-muted-foreground">{label}</dt>
     {value === null ? (
       <dd data-loading="true" className="h-5 w-16 rounded bg-muted/70 animate-pulse" aria-label="Loading" />
     ) : (
@@ -34,7 +34,7 @@ export const TokenCard = ({ slug, name, ticker, image, stats }: Props) => (
       {image && <img src={image} alt="" width={40} height={40} decoding="async" className="h-10 w-10 shrink-0 rounded-full" />}
       <div className="min-w-0">
         <h2 className="truncate text-lg font-bold text-foreground group-hover:text-primary">{name}</h2>
-        <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">{ticker}</p>
+        <p className="font-mono text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{ticker}</p>
       </div>
     </div>
     <dl className="grid grid-cols-2 gap-3">

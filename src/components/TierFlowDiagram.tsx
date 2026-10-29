@@ -764,7 +764,7 @@ export const TierFlowDiagram = ({
       )}
 
       {isWallets && chain !== "all" && (
-        <div className={`text-center text-muted-foreground ${isTerminal ? "shrink-0 text-[11px]" : "text-xs"}`}>
+        <div className={`text-center text-xs text-muted-foreground ${isTerminal ? "shrink-0" : ""}`}>
           Tier sizes are for this chain; wallet moves between tiers (the +/− ticks and lines) are tracked across all chains combined.
         </div>
       )}
@@ -791,7 +791,7 @@ export const TierFlowDiagram = ({
         </div>
       )) : (
         <>
-          <div className={`grid sm:grid-cols-3 ${isTerminal ? "shrink-0 gap-2 [&>div]:!p-2 [&_.text-xl]:!text-base [&>div>div:first-child]:!text-[10px] [&>div>div:first-child]:!mb-0" : "gap-3"}`}>
+          <div className={`grid sm:grid-cols-3 ${isTerminal ? "shrink-0 gap-2 [&>div]:!p-2 [&_.text-xl]:!text-base [&>div>div:first-child]:!text-xs [&>div>div:first-child]:!mb-0" : "gap-3"}`}>
             <div className="premium-surface-card p-4 text-center">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">
                 {tierLabelShort
@@ -856,7 +856,7 @@ export const TierFlowDiagram = ({
             </div>
           </div>
 
-          <div className={`text-muted-foreground text-center ${isTerminal ? "shrink-0 text-[11px]" : "text-xs"}`}>
+          <div className={`text-center text-xs text-muted-foreground ${isTerminal ? "shrink-0" : ""}`}>
             Of the {ticker} that left retail tiers:{" "}
             <span style={{ color: NEGATIVE }} className="font-semibold">
               <ExplainNumber value={`${fmtTel(grossExplainer.dex)}`} explanation="Sold on a DEX — a direct, unambiguous sale (sell pressure)." />
@@ -874,7 +874,7 @@ export const TierFlowDiagram = ({
       {/* Always-visible instruction, not buried in the (i) tooltip — the
           #1 usability gap found in review was that clicking a tier isn't
           discoverable at all. */}
-      <div className={`text-center text-muted-foreground ${isTerminal ? "shrink-0 text-xs" : "text-sm"}`} aria-live="polite">
+      <div className={`text-center text-sm text-muted-foreground ${isTerminal ? "shrink-0" : ""}`} aria-live="polite">
         {isPhone
           ? isWallets
             ? selected
