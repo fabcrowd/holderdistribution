@@ -15,7 +15,7 @@ import type { EcosystemHeadlineTileId } from "@/hooks/useEcosystemHeadlineTiles"
 import SupplyBreakdown from "@/components/SupplyBreakdown";
 import { TimeRangeDropdown } from "@/components/TimeRangeDropdown";
 import { PageIntro } from "@/components/PageIntro";
-import { Coins, PieChart, Users } from "lucide-react";
+import { ArrowLeft, Coins, PieChart, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TerminalDashboard } from "@/components/terminal/TerminalDashboard";
 import { HoldersTerminal } from "@/components/terminal/HoldersTerminal";
@@ -318,7 +318,6 @@ const Holders = () => {
         view={activeTab}
         onViewChange={selectTab}
         explore={activeTab === "holders" && explore}
-        onExploreChange={activeTab === "holders" ? changeExplore : undefined}
         rangeDays={rangeDays}
         onRangeDaysChange={setRangeDays}
         rangeOptions={visibleRangeOptions}
@@ -328,9 +327,20 @@ const Holders = () => {
         {activeTab === "holders" &&
           (explore ? (
             <div className="terminal-dense flex h-full flex-col overflow-auto rounded-lg" data-testid="holders-explore">
-              <p data-testid="explore-hint" className="shrink-0 border-b border-border/60 bg-card/80 px-3 py-2 text-xs leading-snug text-muted-foreground">
-                {EXPLORE_HINT}
-              </p>
+              <div className="flex shrink-0 items-center gap-3 border-b border-border/60 bg-card/80 px-3 py-2">
+                <button
+                  type="button"
+                  data-testid="explore-back"
+                  onClick={() => changeExplore(false)}
+                  className="inline-flex h-8 items-center gap-1 rounded-md border border-border px-2 text-xs font-semibold text-brand hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                  Overview
+                </button>
+                <p data-testid="explore-hint" className="text-xs leading-snug text-muted-foreground">
+                  {EXPLORE_HINT}
+                </p>
+              </div>
               {holdersWidget}
             </div>
           ) : (

@@ -1,25 +1,12 @@
 /**
- * Desktop terminal labels. Dashboard is the multi-chart screen; Explore is
- * the same Holders charts one at a time (plus Momentum, which has no
+ * Desktop terminal labels. The overview is the multi-chart screen; each
+ * panel's expand icon opens Explore, the same Holders charts one at a time (plus Momentum, which has no
  * Dashboard cell). Ids match `HOLDER_PANEL_IDS` in viewRoute — only the
  * words change, so existing hashes keep working.
  */
 
-export const LAYOUT_MODES = [
-  {
-    explore: false,
-    label: "Dashboard",
-    hint: "Dashboard: the key charts together. Scroll for staking, exchange flow, wallet sizes and the tables.",
-  },
-  {
-    explore: true,
-    label: "Explore",
-    hint: "Explore: one chart at a time. Holder history, exchange flows, wallet sizes, staking, concentration and exchanges are the Dashboard charts at full size.",
-  },
-] as const;
-
 export const EXPLORE_HINT =
-  "Explore opens one chart at a time. Holder history, exchange flows, wallet sizes, staking, concentration and exchanges are the Dashboard charts at full size. Momentum is only in Explore.";
+  "One chart at a time. Holder history, exchange flows, wallet sizes, staking, concentration and exchanges are the overview charts at full size. Momentum is only here.";
 
 export type ExplorePanelCopy = {
   id: string;
