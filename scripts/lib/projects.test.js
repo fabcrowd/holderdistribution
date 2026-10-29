@@ -34,10 +34,11 @@ describe("project registry (node side)", () => {
     }
   });
 
-  it("live-data function constants match the registry (add the slug there too)", () => {
+  it("live-data function derives slugs from the registry; registry legacyRoot matches each project config", () => {
     expect([...PROJECT_SLUGS].sort()).toEqual(registry.map((p) => p.slug).sort());
     expect([...LEGACY_ROOT_SLUGS].sort()).toEqual(legacyRootSlugs(root).sort());
     expect(LEGACY_URL_SLUG).toBe(registry.find((p) => p.default)?.slug);
+    for (const p of registry) expect(p.legacyRoot === true, p.slug).toBe(loadProjectConfig(p.slug, root).data?.legacyRoot === true);
   });
 
   it("data dirs: TEL keeps the legacy root, others get public/data/<slug>", () => {
