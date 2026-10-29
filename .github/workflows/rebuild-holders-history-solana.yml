@@ -76,6 +76,8 @@ jobs:
       - name: Replay Solana token transactions
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          # The paid Solana RPC key is a repo secret (not in .env.enc); the public endpoint 429s on a full replay.
+          SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
           INPUT_SINCE: ${{ inputs.since }}
           INPUT_MAX_TX: ${{ inputs.max_tx }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}
