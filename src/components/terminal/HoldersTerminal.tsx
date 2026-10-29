@@ -287,7 +287,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           netflow.length > 0 && (
             <>
               <Delta value={flowTotals.in - flowTotals.out} format={(n) => formatCompact(n)} />
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 in {formatCompact(flowTotals.in)} · out {formatCompact(flowTotals.out)}
               </span>
             </>
@@ -338,7 +338,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
               <div className="flex h-full min-h-0 flex-col">
                 {stakingSplit && combinedStaking?.legacy && (
                   // Doubles as the chart's legend (swatches match the series).
-                  <p className="flex shrink-0 flex-wrap items-center gap-x-2 text-[11px] tabular-nums text-muted-foreground" data-testid="staked-split">
+                  <p className="flex shrink-0 flex-wrap items-center gap-x-2 text-xs tabular-nums text-muted-foreground" data-testid="staked-split">
                     <span className="sr-only">{stakingSplit}</span>
                     <span aria-hidden="true" className="inline-flex items-center gap-1">
                       <span className="h-0.5 w-2.5 bg-primary" />
@@ -388,7 +388,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         info={`Retail wallets by balance (${tk}). The gold bar contains the average balance${stats ? ` (${formatCompact(stats.average)} ${tk})` : ""}.`}
         stat={
           stats && (
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               median <span className="font-semibold text-foreground">{formatCompact(stats.median)}</span>
             </span>
           )
@@ -423,16 +423,16 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         className="h-full min-h-0"
         title="Concentration"
         info={`Share of retail ${tk} held by the largest N retail wallets. Change is against the previous snapshot.`}
-        stat={stats && <span className="text-[11px] text-muted-foreground">Gini <span className="font-semibold text-foreground">{stats.gini.toFixed(3)}</span></span>}
+        stat={stats && <span className="text-xs text-muted-foreground">Gini <span className="font-semibold text-foreground">{stats.gini.toFixed(3)}</span></span>}
         actions={<DetailsButton onClick={() => onExplore("concentration")} label="Concentration" />}
         flush
       >
         {!snapshot ? (
           <div className="h-full p-2">{snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />}</div>
         ) : (
-          <table className="w-full text-xs tabular-nums">
+          <table className="w-full text-sm tabular-nums">
             <caption className="sr-only">Share of retail {tk} held by the top wallets</caption>
-            <thead className="sticky top-0 bg-card text-[11px] text-muted-foreground">
+            <thead className="sticky top-0 bg-card text-xs text-muted-foreground">
               <tr>
                 <th scope="col" className="px-3 py-1 text-left font-medium">Top</th>
                 <th scope="col" className="px-2 py-1 text-left font-medium">Share</th>
@@ -481,9 +481,9 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         ) : cexHistory.isError ? (
           <PanelError>Couldn't load exchange balances.</PanelError>
         ) : (
-          <table className="w-full text-xs tabular-nums">
+          <table className="w-full text-sm tabular-nums">
             <caption className="sr-only">{tk} held per exchange</caption>
-            <thead className="sticky top-0 bg-card text-[11px] text-muted-foreground">
+            <thead className="sticky top-0 bg-card text-xs text-muted-foreground">
               <tr>
                 <th scope="col" className="px-3 py-1 text-left font-medium">Exchange</th>
                 <th scope="col" className="px-2 py-1 text-right font-medium">{tk}</th>

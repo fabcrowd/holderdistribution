@@ -19,8 +19,8 @@ import { formatCompact } from "@/lib/format";
 import { useChartIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
 
-/** Dense defaults: 10px ticks, hairline grid, no legend (the panel header names series). */
-const TICK = { fill: "hsl(var(--muted-foreground))", fontSize: 10 };
+/** Dense defaults: 12px ticks, hairline grid, no legend (the panel header names series). */
+const TICK = { fill: "hsl(var(--muted-foreground))", fontSize: 12 };
 const MARGIN = { top: 6, right: 8, bottom: 0, left: 0 };
 const dateTick = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
 const dateFull = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -71,7 +71,7 @@ const TooltipBox = ({
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md border border-border bg-popover px-2 py-1.5 text-[11px] text-popover-foreground shadow-md">
+    <div className="rounded-md border border-border bg-popover px-2 py-1.5 text-sm text-popover-foreground shadow-md">
       <div className="mb-0.5 font-medium">{fmtDate(label, dateFull)}</div>
       {payload.map((p) => {
         const s = series.find((x) => x.key === p.dataKey);
@@ -143,7 +143,7 @@ export const TimeChart = ({
             tick={TICK}
             tickLine={false}
             axisLine={false}
-            width={44}
+            width={48}
             domain={["auto", "auto"]}
             tickFormatter={(v: number) => formatCompact(v, 1)}
           />
@@ -160,7 +160,7 @@ export const TimeChart = ({
               // their text doesn't overprint.
               label={
                 labelled[i]
-                  ? { value: m.label, position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 10, fontWeight: 600 }
+                  ? { value: m.label, position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 12, fontWeight: 600 }
                   : undefined
               }
             />
@@ -218,7 +218,7 @@ export const SignedBars = ({ data, format = (n) => formatCompact(n), label, seri
         <BarChart data={data} margin={MARGIN}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
           <XAxis dataKey="t" tickFormatter={(v) => fmtDate(v)} tick={TICK} tickLine={false} axisLine={false} minTickGap={40} />
-          <YAxis tick={TICK} tickLine={false} axisLine={false} width={44} tickFormatter={(v: number) => formatCompact(v, 1)} />
+          <YAxis tick={TICK} tickLine={false} axisLine={false} width={48} tickFormatter={(v: number) => formatCompact(v, 1)} />
           <Tooltip
             cursor={{ fill: "hsl(var(--muted))" }}
             content={<TooltipBox series={[{ key: "value", label: seriesLabel, color: "hsl(var(--primary))" }]} format={format} />}
@@ -251,7 +251,7 @@ export const CategoryBars = ({ data, format = (n) => formatCompact(n), label }: 
         <BarChart data={data} margin={MARGIN}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
           <XAxis dataKey="name" tick={TICK} tickLine={false} axisLine={false} interval={0} />
-          <YAxis tick={TICK} tickLine={false} axisLine={false} width={40} tickFormatter={(v: number) => formatCompact(v, 1)} />
+          <YAxis tick={TICK} tickLine={false} axisLine={false} width={48} tickFormatter={(v: number) => formatCompact(v, 1)} />
           <Tooltip
             cursor={{ fill: "hsl(var(--muted))" }}
             formatter={(v: number) => [format(v), "Wallets"]}
@@ -263,7 +263,7 @@ export const CategoryBars = ({ data, format = (n) => formatCompact(n), label }: 
               background: "hsl(var(--popover))",
               border: "1px solid hsl(var(--border))",
               borderRadius: 6,
-              fontSize: 11,
+              fontSize: 14,
               color: "hsl(var(--popover-foreground))",
             }}
             labelStyle={{ color: "hsl(var(--popover-foreground))" }}

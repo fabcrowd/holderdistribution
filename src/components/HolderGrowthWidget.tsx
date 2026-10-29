@@ -881,7 +881,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                       {(() => {
                         const last = stakingChartData[stakingChartData.length - 1];
                         return last && showStakingSplit ? (
-                          <span className="text-xs tabular-nums" data-testid="staked-split">
+                          <span className="text-sm tabular-nums" data-testid="staked-split">
                             Legacy {formatCompactAmount(last.staking ?? 0)} / v3 {formatCompactAmount(last.stakingV3 ?? 0)}
                           </span>
                         ) : null;
@@ -951,7 +951,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                             x={V3_DEPLOY_MS}
                             stroke="hsl(var(--ha-accent))"
                             strokeDasharray="3 3"
-                            label={{ value: "v3 migration", position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 11, fontWeight: 600 }}
+                            label={{ value: "v3 migration", position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 12, fontWeight: 600 }}
                           />
                         )}
                         <Line

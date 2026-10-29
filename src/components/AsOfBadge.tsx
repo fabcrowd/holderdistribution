@@ -29,7 +29,7 @@ export const AsOfBadge = ({
       title={title}
       data-testid={testId}
       data-status={f.status}
-      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] leading-none ${
+      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs leading-none ${
         late
           ? `rounded-full border px-1.5 py-0.5 font-semibold ${
               f.status === "stale"
@@ -39,7 +39,7 @@ export const AsOfBadge = ({
           : "text-muted-foreground"
       } ${className}`}
     >
-      {late && <Clock className="h-2.5 w-2.5" aria-hidden="true" />}
+      {late && <Clock className="h-3 w-3" aria-hidden="true" />}
       <span className="sr-only">{title}</span>
       <span aria-hidden="true">
         {label} {f.monthDay}

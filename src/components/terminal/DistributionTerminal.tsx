@@ -47,7 +47,7 @@ const NetBarLabel = (props: BarLabelProps) => {
       y={y + h / 2}
       dy="0.35em"
       textAnchor={neg ? "end" : "start"}
-      fontSize={10}
+      fontSize={12}
       className="tabular-nums"
       fill="hsl(var(--foreground))"
       aria-hidden="true"
@@ -273,7 +273,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
         }
         testId="panel-tier-flows"
       >
-        <p data-testid="tier-flows-explainer" className="mb-2 text-xs leading-snug text-muted-foreground">
+        <p data-testid="tier-flows-explainer" className="mb-2 text-sm leading-snug text-muted-foreground">
           {t(TIER_FLOWS_EXPLAINER)}
         </p>
         {placeholder ? (
@@ -353,16 +353,16 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
                       type="number"
                       // Headroom on both sides so the value labels at the bar ends fit.
                       domain={[(min: number) => (min < 0 ? Math.floor(min * 1.3) : 0), (max: number) => (max > 0 ? Math.ceil(max * 1.3) : 0)]}
-                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
                       tickLine={false}
                       axisLine={false}
                       tickFormatter={(v: number) => formatCompact(v, 1)}
                     />
-                    <YAxis type="category" dataKey="name" width={72} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} tickLine={false} axisLine={false} interval={0} />
+                    <YAxis type="category" dataKey="name" width={84} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickLine={false} axisLine={false} interval={0} />
                     <Tooltip
                       cursor={{ fill: "hsl(var(--muted))" }}
                       formatter={(v: number) => [signedInt(v), "Net wallets"]}
-                      contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 11 }}
+                      contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                       labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                       itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                     />
@@ -401,9 +401,9 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
         {placeholder ? (
           <div className="h-full p-2">{placeholder}</div>
         ) : (
-          <table className="w-full text-xs tabular-nums">
+          <table className="w-full text-sm tabular-nums">
             <caption className="sr-only">Retail wallets and {tk} by balance tier. Select a tier to see its detail.</caption>
-            <thead className="sticky top-0 z-[1] bg-card text-[11px] text-muted-foreground">
+            <thead className="sticky top-0 z-[1] bg-card text-xs text-muted-foreground">
               <tr>
                 <th scope="col" className="px-3 py-1 text-left font-medium">Tier ({tk})</th>
                 <th scope="col" className="px-2 py-1 text-right font-medium">Wallets</th>

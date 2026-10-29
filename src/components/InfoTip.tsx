@@ -93,7 +93,7 @@ export const InfoTip = ({
       <PopoverContent
         side={side}
         align={align}
-        className="w-auto max-w-xs whitespace-pre-line p-3 text-xs leading-relaxed"
+        className="w-auto max-w-xs whitespace-pre-line p-3 text-sm leading-relaxed"
         onPointerEnter={(e) => e.pointerType === "mouse" && cancelClose()}
         onPointerLeave={(e) => e.pointerType === "mouse" && scheduleClose()}
         onOpenAutoFocus={(e) => e.preventDefault()}
