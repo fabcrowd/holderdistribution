@@ -566,9 +566,6 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
             </span>
             Holder Growth
                       </div>
-          <p data-panel-desc className="text-sm text-muted-foreground mt-1.5">
-            Holder history based on the scheduled snapshot archive.
-          </p>
         </div>
         <div>
           <div className="space-y-4 pt-4">
@@ -589,12 +586,10 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                   </span>
                 )}
                 {holdersChangelogEvents.length > 0 && (
-                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    Classification changed in this range
-                    <InfoTooltip
-                      text={`The dashed marker(s) on this chart mark a reclassification, not real holder movement:\n\n${holdersChangelogEvents.map((e) => `${e.date}: ${e.summary}`).join("\n\n")}`}
-                    />
-                  </span>
+                  <InfoTooltip
+                    label="Classification changed in this range"
+                    text={`Classification changed in this range. The dashed marker(s) on this chart mark a reclassification, not real holder movement:\n\n${holdersChangelogEvents.map((e) => `${e.date}: ${e.summary}`).join("\n\n")}`}
+                  />
                 )}
               </div>
             </div>
@@ -731,12 +726,10 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         </span>
                       )}
                       {balanceChangelogEvents.length > 0 && (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          Classification changed in this range
-                          <InfoTooltip
-                            text={`The dashed marker(s) on this chart mark a reclassification, not real balance movement:\n\n${balanceChangelogEvents.map((e) => `${e.date}: ${e.summary}`).join("\n\n")}`}
-                          />
-                        </span>
+                        <InfoTooltip
+                          label="Classification changed in this range"
+                          text={`Classification changed in this range. The dashed marker(s) on this chart mark a reclassification, not real balance movement:\n\n${balanceChangelogEvents.map((e) => `${e.date}: ${e.summary}`).join("\n\n")}`}
+                        />
                       )}
                     </>
                   )}

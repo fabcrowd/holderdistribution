@@ -64,6 +64,8 @@ import { useHeadlineTiles } from "@/hooks/useHeadlineTiles";
 import { ChainStatusBar } from "@/components/ChainStatusBar";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
+import { InfoTip } from "@/components/InfoTip";
+import { StatTile } from "@/components/ui/stat-tile";
 import { BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, ReferenceLine, Line } from "recharts";
 import { chainViewOptions, type ChainView } from "@/lib/chainViews";
 import { stakingSplitSub } from "@/lib/stakingSplit";
@@ -508,7 +510,8 @@ const renderVelocity = (
 
   const netTone = momentum.net >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400";
   const emerald = "text-emerald-700 dark:text-emerald-400";
-  const items: Array<{ label: string; value: string; sub: string; tone: string }> = [];
+  const ticker = copy.t("{ticker}");
+  const items: Array<{ label: string; value: string; sub: string; tone: string; info: string }> = [];
   if (everHeld?.total != null) {
     // Adoption framing first: first-time holders never subtract churn.
     items.push({
@@ -516,37 +519,73 @@ const renderVelocity = (
       value: everHeld.newInRange != null ? `+${formatInteger(everHeld.newInRange)}` : "—",
       sub: "first-time wallets",
       tone: emerald,
+      info: copy.t(`Wallets that held {ticker} for the first time in ${rangeLabel}. Wallets that sell or leave never reduce this number.`),
     });
-    items.push({ label: copy.t("Wallets Ever Held {ticker}"), value: formatInteger(everHeld.total), sub: "cumulative — only grows", tone: "text-primary" });
-    items.push({ label: `Net Active Wallets (${rangeLabel})`, value: formatSignedInteger(momentum.net), sub: `${momentum.pct >= 0 ? "+" : ""}${momentum.pct.toFixed(2)}% active base`, tone: netTone });
+    items.push({
+      label: copy.t("Wallets Ever Held {ticker}"),
+      value: formatInteger(everHeld.total),
+      sub: "cumulative — only grows",
+      tone: "text-primary",
+      info: copy.t("Every wallet that has ever held {ticker} on the tracked chains. This total only grows."),
+    });
+    items.push({
+      label: `Net Active Wallets (${rangeLabel})`,
+      value: formatSignedInteger(momentum.net),
+      sub: `${momentum.pct >= 0 ? "+" : ""}${momentum.pct.toFixed(2)}% active base`,
+      tone: netTone,
+      info: `Wallets gained minus wallets lost in ${rangeLabel}, with the percentage relative to the active base at the start. Negative means more ${ticker} wallets left than joined.`,
+    });
   } else {
-    items.push({ label: `Net New Wallets (${rangeLabel})`, value: formatSignedInteger(momentum.net), sub: `${formatSignedInteger(Math.round(momentum.perDay))} / day`, tone: netTone });
-    items.push({ label: "Growth", value: `${momentum.pct >= 0 ? "+" : ""}${momentum.pct.toFixed(2)}%`, sub: `over ${Math.round(momentum.days)} days`, tone: netTone });
-    items.push({ label: "Total Retail Wallets", value: formatInteger(momentum.current), sub: `from ${formatInteger(momentum.baseline)}`, tone: "text-primary" });
+    items.push({
+      label: `Net New Wallets (${rangeLabel})`,
+      value: formatSignedInteger(momentum.net),
+      sub: `${formatSignedInteger(Math.round(momentum.perDay))} / day`,
+      tone: netTone,
+      info: `Wallets holding ${ticker} at the end of ${rangeLabel} minus at the start. Negative means more wallets left than joined. The per-day figure is the same change averaged over the days.`,
+    });
+    items.push({
+      label: "Growth",
+      value: `${momentum.pct >= 0 ? "+" : ""}${momentum.pct.toFixed(2)}%`,
+      sub: `over ${Math.round(momentum.days)} days`,
+      tone: netTone,
+      info: `Percentage change in the ${ticker} wallet count from the start of the range to the end.`,
+    });
+    items.push({
+      label: "Total Retail Wallets",
+      value: formatInteger(momentum.current),
+      sub: `from ${formatInteger(momentum.baseline)}`,
+      tone: "text-primary",
+      info: copy.t("Wallets holding {ticker} outside exchange and hot wallets now, with the count at the start of the range."),
+    });
   }
 
   return (
     <Card className="premium-surface-card">
       <CardHeader className="px-4 py-4 sm:px-6 sm:py-5 border-b border-border/60 bg-muted/40">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
-            <Activity className="h-5 w-5 text-primary shrink-0" />
-            Holder Momentum
-            <MethodologyInfo section="holderMomentum" />
-          </CardTitle>
-        </div>
-        <CardDescription className="text-sm sm:text-base text-muted-foreground">
-          First-time holders and holder growth for {selectionLabel} over the selected timeframe.
-        </CardDescription>
+        <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-1.5 sm:gap-2">
+          <Activity className="h-5 w-5 text-primary shrink-0" />
+          <span className="min-w-0">Holder Momentum</span>
+          <InfoTip
+            label="About Holder Momentum"
+            align="start"
+            className="text-muted-foreground/80 hover:text-primary"
+            iconClassName="h-4 w-4"
+            content={`First-time holders and holder growth for ${selectionLabel} over the selected timeframe.`}
+          />
+          <MethodologyInfo section="holderMomentum" />
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 pt-5">
-        <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3">
+      <CardContent className="space-y-4 px-3 pt-5 sm:px-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           {items.map((item) => (
-            <div key={item.label} className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">{item.label}</div>
-              <div className={`text-2xl font-bold ${item.tone}`}>{item.value}</div>
-              <div className="text-xs text-muted-foreground">{item.sub}</div>
-            </div>
+            <StatTile
+              key={item.label}
+              label={item.label}
+              value={item.value}
+              sub={item.sub}
+              valueClassName={item.tone}
+              info={item.info}
+            />
           ))}
         </div>
       </CardContent>
