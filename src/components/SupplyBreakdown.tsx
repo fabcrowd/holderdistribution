@@ -28,6 +28,10 @@ import {
   useSupplyReconciliation,
   type SupplyReconciliationItem,
 } from "@/hooks/useSupplyReconciliation";
+import { useHolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
+import { StakingAddressList } from "@/components/StakingAddressList";
+import { stakingAddressLinks, supplyRetailStakeModel } from "@/lib/stakingAddresses";
+import { buildViewHash } from "@/lib/viewRoute";
 import {
   associationCategoryLabel,
   groupSupplyCategories,
@@ -168,6 +172,12 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
   const pieIntro = useChartIntro();
   const { ticker, entities, text } = useProjectCopy();
   const { project } = useProject();
+  const { data: holderLite } = useHolderLiteSnapshot();
+  const retailStake = supplyRetailStakeModel(
+    project,
+    holderLite?.views.combined?.stakingStats?.stakedTotal ?? 0,
+    formatCompactAmount,
+  );
   // Fallback denominator before reconciliation loads: the project's supply target (TEL: 100B).
   const supplyTarget = project.supply?.target ?? 100_000_000_000;
   const pieChartConfig = useMemo(() => supplyPieChartConfig(ticker), [ticker]);
@@ -331,7 +341,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                         content={({ active, payload }) => {
                           if (!active || !payload?.length) return null;
                           const entry = payload[0]?.payload as
-                            | { label: string; amount: number; pct: number }
+                            | { key?: string; label: string; amount: number; pct: number }
                             | undefined;
                           if (!entry) return null;
                           return (
@@ -340,6 +350,9 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                               <p className="text-muted-foreground tabular-nums">
                                 {formatCompactAmount(entry.amount)} {ticker} ({entry.pct.toFixed(1)}%)
                               </p>
+                              {entry.key === "retail" && retailStake.note ? (
+                                <p className="text-foreground">{retailStake.note}</p>
+                              ) : null}
                             </div>
                           );
                         }}
@@ -417,6 +430,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                       const pieIndex = pieSlices.findIndex((s) => s.key === b.key);
                       const isActive = pieIndex !== -1 && pieIndex === activeIndex;
                       const isRowActive = isOpen || isActive;
+                      const retailNote = b.key === "retail" ? retailStake.note : null;
                       // Compact (terminal) list: a category is always selected,
                       // so fading every other row to 40% would leave most of
                       // the list unreadable (and failing contrast). There the
@@ -452,12 +466,22 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                               : "hover:bg-muted/40"
                           } ${anySelected && !isRowActive ? "opacity-40" : "opacity-100"}`}
                         >
-                          <span className="flex items-center gap-2.5 min-w-0">
+                          <span className={`flex min-w-0 gap-2.5 ${retailNote ? "items-start" : "items-center"}`}>
                             <span
-                              className="inline-block h-3 w-3 rounded-sm shrink-0"
+                              className={`inline-block h-3 w-3 shrink-0 rounded-sm ${retailNote ? "mt-1" : ""}`}
                               style={{ backgroundColor: b.color }}
                             />
-                            <span className="truncate text-sm font-medium text-foreground">{b.label}</span>
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-medium text-foreground">{b.label}</span>
+                              {retailNote ? (
+                                <span
+                                  data-testid="supply-retail-staked"
+                                  className="block whitespace-normal text-[11px] font-medium leading-snug text-foreground"
+                                >
+                                  {retailNote}
+                                </span>
+                              ) : null}
+                            </span>
                           </span>
                           <span className="tabular-nums text-sm font-semibold shrink-0">
                             {formatCompactAmount(b.amount)}
@@ -1027,18 +1051,30 @@ const CexCustodyPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
 };
 
 const StakingPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
-  const { text } = useProjectCopy();
+  const { text, hasText } = useProjectCopy();
+  const { project } = useProject();
+  const rewardLinks = hasText("supply.staking.addresses")
+    ? stakingAddressLinks(project).filter((link) => link.kind === "reward-vault")
+    : [];
   return (
-    <AddressListPanel
-      title={text("supply.staking.bucketLabel", DEFAULT_STAKING_BUCKET_LABEL)}
-      description={text(
-        "supply.staking.description",
-        "Undistributed {ticker} still held by staking-program accounts after staked balances are credited to each staker. Staked {ticker} is inside Retail, not this slice.",
-      )}
-      items={items}
-      subcategoryFor={(item) => item.name ?? "Staking vault"}
-      emptyLabel="No staking vault addresses itemised."
-    />
+    <div className="space-y-3">
+      <AddressListPanel
+        title={text("supply.staking.bucketLabel", DEFAULT_STAKING_BUCKET_LABEL)}
+        description={text(
+          "supply.staking.description",
+          "Undistributed {ticker} still held by staking-program accounts after staked balances are credited to each staker. These balances are not staker principal. Staked {ticker} is inside Retail, not this slice.",
+        )}
+        items={items}
+        subcategoryFor={(item) => item.name ?? text("supply.staking.addressFallback", "Staking program")}
+        emptyLabel={text("supply.staking.empty", "No staking-program addresses itemised.")}
+      />
+      {rewardLinks.length > 0 ? (
+        <div className="space-y-2 border-t border-border/50 pt-2">
+          <p className="text-muted-foreground">{text("supply.staking.addresses", "")}</p>
+          <StakingAddressList links={rewardLinks} />
+        </div>
+      ) : null}
+    </div>
   );
 };
 
@@ -1076,6 +1112,13 @@ const EscrowPanel = ({ items, committed }: { items: SupplyReconciliationItem[]; 
 
 const RetailPanel = ({ amount }: { amount: number }) => {
   const { ticker } = useProjectCopy();
+  const { project } = useProject();
+  const { data: holderLite } = useHolderLiteSnapshot();
+  const retailStake = supplyRetailStakeModel(
+    project,
+    holderLite?.views.combined?.stakingStats?.stakedTotal ?? 0,
+    formatCompactAmount,
+  );
   return (
   <div className="space-y-3">
     <p className="font-semibold text-foreground text-sm">Retail (wallets)</p>
@@ -1085,6 +1128,23 @@ const RetailPanel = ({ amount }: { amount: number }) => {
       holders snapshot, not a fixed address list. There's no single "retail" address to link to;
       the Holders and Distribution tabs break it down by wallet size and tier.
     </p>
+    {retailStake.note ? (
+      <p className="font-medium text-foreground" data-testid="supply-retail-staked-detail">
+        {retailStake.note}
+      </p>
+    ) : null}
+    {retailStake.body ? <p className="text-muted-foreground">{retailStake.body}</p> : null}
+    {retailStake.principalLinks.length > 0 ? (
+      <>
+        <StakingAddressList links={retailStake.principalLinks} />
+        <a
+          href={buildViewHash({ view: "holders", panel: "staking" })}
+          className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+        >
+          Open Staking Overview
+        </a>
+      </>
+    ) : null}
   </div>
   );
 };
