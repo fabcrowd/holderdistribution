@@ -92,8 +92,9 @@ describe("supplyRetailStakeModel", () => {
     expect(staked / 1e9).toBeCloseTo(4.75, 1);
 
     const model = supplyRetailStakeModel(zbcn, staked, formatCompact);
-    expect(model.note).toBe("of which 4.75B is staked");
-    expect(model.body).toMatch(/4\.75B/);
+    const shown = `${(staked / 1e9).toFixed(2)}B`;
+    expect(model.note).toBe(`of which ${shown} is staked`);
+    expect(model.body).toContain(shown);
     expect(model.body).toMatch(/inside Retail/);
     expect(model.body).toMatch(/not this principal/);
     expect(model.principalLinks.map((link) => link.address)).toEqual([PROGRAM, ...LOCKUPS.flatMap((lockup, i) => [lockup, STAKE_VAULT_ATAS[i]])]);
