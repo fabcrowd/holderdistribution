@@ -39,7 +39,7 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
         <div className="flex h-16 md:h-20 items-center justify-between">
           {/* Logo (+ optional page title) */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
-            <Link to="/" className="flex items-center gap-2 group shrink-0">
+            <Link to="/" className="flex min-h-10 items-center gap-2 group shrink-0">
               <img src={logo} alt="Holder Analytics" width={196} height={48} fetchPriority="high" decoding="async" className="h-8 md:h-10 w-auto transition-opacity group-hover:opacity-80" />
             </Link>
             {/* Hidden from lg up, where the nav's own links start rendering

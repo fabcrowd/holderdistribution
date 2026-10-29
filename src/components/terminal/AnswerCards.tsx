@@ -16,7 +16,7 @@ export const AnswerCards = ({ tiles, selectedView, isError }: Props) => {
   const cards = pickAnswerTiles(tiles);
   if (cards.length === 0) {
     return (
-      <div data-testid="answer-cards" className="grid grid-cols-3 gap-3">
+      <div data-testid="answer-cards" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[0, 1, 2].map((i) => (
           <div key={i} className={CARD}>
             {isError ? (
@@ -33,7 +33,7 @@ export const AnswerCards = ({ tiles, selectedView, isError }: Props) => {
     );
   }
   return (
-    <dl data-testid="answer-cards" aria-label="Headline numbers" className="grid grid-cols-3 gap-3">
+    <dl data-testid="answer-cards" aria-label="Headline numbers" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {cards.map((t) => (
         <div key={t.id} className={CARD} data-testid={`answer-${t.id}`}>
           <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">

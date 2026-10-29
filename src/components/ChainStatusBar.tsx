@@ -22,7 +22,7 @@ export const ChainStatusBar = () => {
           href={chain.tokenUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-primary transition-colors"
+          className="inline-flex min-h-10 xl:min-h-0 items-center gap-1 text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-primary transition-colors"
         >
           {chain.label} RPC
           {chain.stale && <span className="text-amber-500/90 no-underline">(stale)</span>}
