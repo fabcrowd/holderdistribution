@@ -42,21 +42,11 @@ import {
 } from "@/lib/supplyBreakdown";
 import { chainExplorerLink, resolveChainVm } from "@/lib/explorerLinks";
 import { AlertTriangle, ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
+import { coingeckoComparison } from "@/lib/coingeckoComparison";
 import { reconcileStatus } from "@/lib/supplyGuard";
 import { EXPLORER_BASE } from "@/lib/telContracts";
 import { useChartIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
-
-/**
- * CoinGecko circulating (comparison only), fallback for when the served
- * supply-reconciliation.json predates its coingeckoCirculating field —
- * scripts/lib/reconcileSupply.js is the source of truth. Traced 2026-08:
- * their implied non-circulating amount (100B - this) is the main treasury
- * wallet's exact balance right after its 2025-10-01 transfer to
- * Anchorage (4,922,764,633, within 1,000 TEL of this figure's complement)
- * — a frozen snapshot, not a live read.
- */
-const COINGECKO_CIRCULATING = 95_077_236_367;
 
 const SUPPLY_PANELS = [
   { id: "breakdown", label: "Breakdown" },
@@ -318,8 +308,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
       stakingItems,
       retailAmount: pieSlices.find((s) => s.key === "retail")?.amount ?? 0,
     });
-  const coingeckoCirculating = data?.coingeckoCirculating ?? COINGECKO_CIRCULATING;
-  const cgDelta = circulating != null ? circulating - coingeckoCirculating : null;
+  const cg = coingeckoComparison(circulating, data?.coingeckoCirculating);
 
 
 
@@ -532,25 +521,23 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                         {" "}{entities.holdingsShort}-sourced escrow included)
                       </span>
                     </div>
-                    <div>
-                      CoinGecko reports {formatCompactAmount(coingeckoCirculating)}
-                      {cgDelta != null && (
-                        <>
-                          {" "}
-                          (Δ {cgDelta >= 0 ? "+" : "−"}
-                          {formatCompactAmount(Math.abs(cgDelta))}).{" "}
-                          {text(
-                            "supply.coingecko.note",
-                            "CoinGecko's figure is the aggregator's own reported number, not reconstructed from on-chain balances.",
-                          ).replace(
-                            "{treasuryNow}",
-                            data?.categories?.treasury != null
-                              ? `, down to today's ${formatCompactAmount(data.categories.treasury)} balance,`
-                              : "",
-                          )}
-                        </>
-                      )}
-                    </div>
+                    {cg && (
+                      <div data-testid="coingecko-circulating">
+                        CoinGecko reports {formatCompactAmount(cg.reported)}
+                        {" "}
+                        (Δ {cg.delta >= 0 ? "+" : "−"}
+                        {formatCompactAmount(Math.abs(cg.delta))}).{" "}
+                        {text(
+                          "supply.coingecko.note",
+                          "CoinGecko's figure is the aggregator's own reported number, not reconstructed from on-chain balances.",
+                        ).replace(
+                          "{treasuryNow}",
+                          data?.categories?.treasury != null
+                            ? `, down to today's ${formatCompactAmount(data.categories.treasury)} balance,`
+                            : "",
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
                 <TelDispositionLedger />

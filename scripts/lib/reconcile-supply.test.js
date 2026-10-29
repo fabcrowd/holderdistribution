@@ -203,8 +203,18 @@ describe("buildReconciliation nonCirculatingOverride", () => {
 });
 
 describe("buildReconciliation coingeckoCirculating", () => {
-  it("emits the exported constant so consumers never need their own copy", () => {
+  it("omits the comparison unless the caller passes a figure", () => {
     const r = buildReconciliation({ wallets: [] }, { addresses: [], labels: {} }, { wallets: [] });
+    expect(r.coingeckoCirculating).toBeNull();
+  });
+
+  it("records an explicit figure, including TEL's traced snapshot when passed", () => {
+    const r = buildReconciliation(
+      { wallets: [] },
+      { addresses: [], labels: {} },
+      { wallets: [] },
+      { coingeckoCirculating: COINGECKO_CIRCULATING },
+    );
     expect(r.coingeckoCirculating).toBe(COINGECKO_CIRCULATING);
   });
 });

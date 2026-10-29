@@ -61,7 +61,9 @@ describe("zebec-network config (owner choices 2026-10-25)", () => {
 
   it("supply target 100e9, coingecko zebec-network, not default", () => {
     expect(c.supply.target).toBe(100e9);
+    expect(c.supply.coingeckoId).toBe("zebec-network");
     expect(c.gated.walletFlows.coingeckoId).toBe("zebec-network");
+    expect(c.supply.coingeckoId).not.toBe("telcoin");
     expect(c.default).toBeUndefined();
   });
 

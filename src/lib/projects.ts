@@ -58,7 +58,14 @@ export type ProjectConfig = ProjectEntry & {
   image?: string;
   links?: Record<string, string>;
   data?: { legacyRoot?: boolean; dir?: string };
-  supply?: { target?: number; targetLabel?: string; generationsSumOneToOne?: boolean; note?: string };
+  supply?: {
+    target?: number;
+    targetLabel?: string;
+    generationsSumOneToOne?: boolean;
+    note?: string;
+    /** CoinGecko coin id. reconcile-supply fetches this coin's circulating supply. */
+    coingeckoId?: string;
+  };
   /**
    * Holder-tier settings (src/lib/holderTiers.ts / scripts/lib/holderTiers.js):
    * retail + mega thresholds, Wallet Holdings balance ranges, Distribution

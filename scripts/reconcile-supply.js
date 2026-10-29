@@ -37,6 +37,7 @@ import {
   buildReconciliation,
   mergeRoleExclusions,
 } from "./lib/reconcileSupply.js";
+import { resolveCoingeckoCirculating } from "./lib/coingeckoCirculating.js";
 import {
   selectPipelineProject,
   projectPaths,
@@ -56,7 +57,9 @@ export {
  * Inputs/outputs for one project. TEL (legacyRoot): public/data/ + config/
  * root files + the 100B TEL total and CoinGecko comparison, exactly as before.
  * Other projects: public/data/<slug>/, their own classification files, their
- * own supply.target, and no CoinGecko comparison unless configured.
+ * own supply.target. CoinGecko circulating is fetched for supply.coingeckoId
+ * (else gated.walletFlows.coingeckoId); no id or no positive read publishes
+ * null. Slug "tel" keeps its traced snapshot when the live read is missing.
  */
 export const reconcilePaths = (project, root = process.cwd()) => {
   const data = projectPaths(project, root);
@@ -69,13 +72,15 @@ export const reconcilePaths = (project, root = process.cwd()) => {
 };
 
 export const reconcileOptions = (project) => {
-  if (project.config?.data?.legacyRoot === true) return {}; // TEL defaults
+  if (project.config?.data?.legacyRoot === true) return {}; // TEL total-supply default
   const target = Number(project.config?.supply?.target);
   if (!Number.isFinite(target) || target <= 0) {
     throw new Error(`project ${project.slug}: supply.target is required to reconcile supply`);
   }
-  const cg = Number(project.config?.supply?.coingeckoCirculating);
-  return { totalSupply: target, coingeckoCirculating: Number.isFinite(cg) && cg > 0 ? cg : null };
+  // CoinGecko is resolved per project in main() from supply.coingeckoId.
+  // A static supply.coingeckoCirculating number is ignored so one token's
+  // figure cannot be copied onto another.
+  return { totalSupply: target, coingeckoCirculating: null };
 };
 
 const readJson = async (p, fallback = null) => {
@@ -116,11 +121,12 @@ const main = async (project) => {
   ]);
   if (!snapshot) throw new Error(`${paths.holders} not found`);
 
+  const coingeckoCirculating = await resolveCoingeckoCirculating(project);
   const r = buildReconciliation(
     snapshot,
     projectExclusions(project, exclusions, snapshot),
     cexWallets,
-    reconcileOptions(project),
+    { ...reconcileOptions(project), coingeckoCirculating },
   );
   const cgCirculating = r.coingeckoCirculating;
 

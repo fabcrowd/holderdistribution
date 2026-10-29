@@ -60,9 +60,9 @@ export type SupplyReconciliation = {
   /** Non-empty when a nonCirculatingOverride has drifted stale against the
    * address's real balance — see scripts/lib/reconcileSupply.js. */
   warnings: string[];
-  /** CoinGecko's reported circulating supply, for comparison only — see
-   * scripts/lib/reconcileSupply.js for why it's a frozen 2025-10-01 snapshot. */
-  coingeckoCirculating: number;
+  /** This project's CoinGecko circulating supply, for comparison only.
+   * Null hides the row — never filled from another project's figure. */
+  coingeckoCirculating: number | null;
   items: SupplyReconciliationItem[];
 };
 
