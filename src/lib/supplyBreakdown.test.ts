@@ -84,6 +84,18 @@ describe("groupSupplyCategories — fixed bucket set", () => {
     expect(buckets.reduce((s, b) => s + b.amount, 0)).toBe(100);
   });
 
+  it("config labels all three TELx reward contracts as staking so they land in Team", () => {
+    const exclusions = JSON.parse(readFileSync(resolve(process.cwd(), "config/exclusions.json"), "utf8"));
+    for (const a of [
+      "0x79e5a6ffe2e6ba053a80e1b199c4f328938f40ca",
+      "0x7feb8febddb66189417f732b4221a52e23b926c4",
+      "0x8f702676830ddca2801a4a7cdb971cde4df697ae",
+    ]) {
+      expect(exclusions.labels[a].category, a).toBe("staking");
+      expect(exclusions.labels[a].name).toMatch(/reward contract/);
+    }
+  });
+
   it("merges team and reward-vault categories into one Team slice, ahead of Holdings and Other", () => {
     const buckets = groupSupplyCategories({ retail: 10, team: 2, staking: 3, holdings: 1, "whale-unattributed": 1 }, 0);
     expect(buckets.map((b) => b.key)).toEqual(["retail", "team", "holdings", "other"]);

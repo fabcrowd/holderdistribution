@@ -441,6 +441,33 @@
       },
       "backfillStatus": "not-possible",
       "backfillNote": "The archive holds no snapshots between 2026-09-17 and 2026-09-29, so the two bases cannot be reconciled. Charts split the series at 2026-09-29 instead of joining them."
+    },
+    {
+      "id": "2026-10-29-tel-reward-contracts-team",
+      "date": "2026-10-29",
+      "type": "reclassification",
+      "summary": "The three TELx reward contracts on Polygon (TEL/WBTC, TEL/WETH, TEL/USDC) were labelled council and shown inside the Treasury (Telcoin Association-Controlled Safes) slice. They are the pools TELx rewards are paid out of, so they are team held. They are now labelled staking, which the Supply view shows in the Team bucket together with any other staking reward vaults (Zebec's two reward vaults use the same category).",
+      "addresses": [
+        "0x79e5a6ffe2e6ba053a80e1b199c4f328938f40ca",
+        "0x7feb8febddb66189417f732b4221a52e23b926c4",
+        "0x8f702676830ddca2801a4a7cdb971cde4df697ae"
+      ],
+      "affects": {
+        "artifacts": [
+          "supply-reconciliation",
+          "treasury-history"
+        ],
+        "metrics": [
+          "totalHeld"
+        ]
+      },
+      "evidence": "Owner-supplied classification (unchanged evidence tier on the labels). Balances at the 2026-10-28 snapshot: 4,428,989.23 (TEL/WETH) + 4,150,927.62 (TEL/WBTC) + 2,883,969.91 (TEL/USDC) = 11,463,886.76 TEL.",
+      "limitation": "The supply-reconciliation categories are not recomputed for earlier dates, so published history keeps these balances under council.",
+      "circulatingImpact": "Council is held out of circulating; Team is not. Circulating rises by the reward contracts' balance (~11.46M TEL, about 0.012% of supply) on the first pipeline run after this change, and the council series in the treasury history drops by the same amount. No nonCirculatingOverride is set.",
+      "backfillStatus": "not-possible",
+      "backfillNote": "NOT BACKFILLED (not-possible: earlier supply-reconciliation categories cannot be recomputed from historical snapshots): a display-level step of ~11.46M TEL between Treasury and Team on the first pipeline run after this change; total supply and counted supply are unchanged.",
+      "uiNote": "The Treasury slice shrinks and the Team slice appears on the first refresh after this change. That is a classification change, not a transfer of tokens.",
+      "dateNote": "Dated the day the classification changed; the first data point carrying it is the next pipeline run."
     }
   ]
 }
