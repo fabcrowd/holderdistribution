@@ -67,6 +67,7 @@ import { stakingSplitSub } from "@/lib/stakingSplit";
 import { RETAIL_WALLETS_LABEL, retailWalletsInfo, uniqueWalletCount } from "@/lib/holderCounts";
 import { StakingSupplyTie } from "@/components/StakingSupplyTie";
 import "@/lib/rechartsMotion";
+import { CHART_HEIGHT_CLASS, CHART_TICK, CHART_LABEL_FONT_PX } from "@/lib/terminalLayout";
 
 const formatCompactTokens = (n: number) => formatCompact(n, 2);
 
@@ -466,11 +467,11 @@ const renderConcentration = (
       {concentrationChartData.some((d) => d.percent > 0) && (
         <div className="premium-surface-card p-4">
           <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 text-center">Top holders share of retail (% by tier)</p>
-          <ChartContainer config={concentrationChartConfig} className="h-[220px] w-full sm:h-[280px]">
+          <ChartContainer config={concentrationChartConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full`}>
             <BarChart data={concentrationChartData} margin={{ top: 12, right: 12, bottom: 24, left: 12 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-              <XAxis dataKey="label" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+              <XAxis dataKey="label" tick={CHART_TICK} />
+              <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="percent" fill="hsl(var(--primary) / 0.8)" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -732,12 +733,12 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
                 count: { label: "Wallets", color: "hsl(var(--primary))" },
                 curve: { label: "Log-normal fit", color: "hsl(188 95% 55%)" },
               }}
-              className="h-[240px] w-full sm:h-[300px]"
+              className={`${CHART_HEIGHT_CLASS.standard} w-full`}
             >
               <ComposedChart data={chartData} margin={{ top: 20, right: 24, bottom: 36, left: 24 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                <XAxis dataKey="range" tickFormatter={balanceRangeDisplayLabel} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} height={36} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} domain={[0, yDomainMax]} allowDataOverflow={false} />
+                <XAxis dataKey="range" tickFormatter={balanceRangeDisplayLabel} tick={CHART_TICK} height={36} />
+                <YAxis tick={CHART_TICK} domain={[0, yDomainMax]} allowDataOverflow={false} />
                 <ChartTooltip content={<ChartTooltipContent labelFormatter={(value) => balanceRangeDisplayLabel(String(value))} />} />
                 <Bar dataKey="count" fill="hsl(var(--primary) / 0.35)" stroke="hsl(var(--primary))" strokeWidth={1} radius={[4, 4, 0, 0]} />
                 <Line
@@ -754,7 +755,7 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
                     stroke="hsl(var(--destructive))"
                     strokeWidth={2}
                     strokeDasharray="4 4"
-                    label={{ value: "Avg", position: "top", fill: "hsl(var(--destructive))", fontSize: 11 }}
+                    label={{ value: "Avg", position: "top", fill: "hsl(var(--destructive))", fontSize: CHART_LABEL_FONT_PX }}
                   />
                 )}
               </ComposedChart>
@@ -835,15 +836,15 @@ const renderStakingInsights = (
           <div className="premium-surface-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1 text-center">Staked balance distribution (staker count by range)</p>
             <p className="text-xs text-muted-foreground mb-3 text-center">Buckets exclude sub-1-{copy.ticker} dust amounts, so bars sum to slightly fewer stakers than the tiles above.</p>
-            <ChartContainer config={stakingInsightsChartConfig} className="h-[260px] w-full sm:h-[360px]">
+            <ChartContainer config={stakingInsightsChartConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full`}>
               <BarChart
                 data={chartData}
                 margin={{ top: 20, right: 24, bottom: 36, left: 24 }}
               >
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                <XAxis dataKey="range" tickFormatter={balanceRangeDisplayLabel} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 13 }} height={36} />
+                <XAxis dataKey="range" tickFormatter={balanceRangeDisplayLabel} tick={CHART_TICK} height={36} />
                 <YAxis
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  tick={CHART_TICK}
                   domain={[0, yDomainMax]}
                   allowDataOverflow={false}
                 />

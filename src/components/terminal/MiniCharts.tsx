@@ -19,10 +19,12 @@ import { formatCompact } from "@/lib/format";
 import { useChartIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
 import { computeBreakAwareDomain } from "@/lib/chartDomain";
+import { assignAxes, hasRightAxis, keysOnAxis, type AxisSide } from "@/lib/chartAxes";
+import { CHART_LABEL_FONT_PX, CHART_TICK } from "@/lib/terminalLayout";
 import { breakNotesByRow, insertBreakSpacers, limitedHistoryCount, type SeriesBreak } from "@/lib/seriesBreaks";
 
-/** Dense defaults: 12px ticks, hairline grid, no legend (the panel header names series). */
-const TICK = { fill: "hsl(var(--muted-foreground))", fontSize: 12 };
+/** Dense defaults: shared 12px ticks, hairline grid. */
+const TICK = CHART_TICK;
 const MARGIN = { top: 6, right: 8, bottom: 0, left: 0 };
 const dateTick = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
 const dateFull = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -39,6 +41,11 @@ export type SeriesDef = {
    *  whose nulls mean "unknown", so the line doesn't invent a history. */
   connectNulls?: boolean;
   dashed?: boolean;
+  /** Put this series on a secondary y-axis (right) with its own scale, so a
+   *  series of a different size or unit isn't flattened against the main one. */
+  axis?: AxisSide;
+  /** Unit label ("wallets", "TEL"). Series in different units never share an axis. */
+  unit?: string;
 };
 
 /** With connectNulls off, a value with no measured neighbour draws no line
@@ -148,10 +155,14 @@ export const TimeChart = ({
   // A break splits every series, so nulls must not be bridged while one is drawn.
   const split = breaks.length > 0;
   const chartData = useMemo(() => insertBreakSpacers(data, breakTs, "t", keys) as typeof data, [data, breakTs, keys]);
-  const domain = useMemo(
-    () => (split ? computeBreakAwareDomain(data, keys, breakTs, "t") : (["auto", "auto"] as ["auto", "auto"])),
-    [split, data, keys, breakTs],
-  );
+  const axes = useMemo(() => assignAxes(series), [series]);
+  const dual = hasRightAxis(series);
+  // Each axis is scaled to its own series only (a break's jump stays out of
+  // the domain too). Single-axis, break-free charts keep Recharts' auto scale.
+  const domainFor = (side: AxisSide) =>
+    split || dual ? computeBreakAwareDomain(data, keysOnAxis(series, side), breakTs, "t") : (["auto", "auto"] as ["auto", "auto"]);
+  const domain = useMemo(() => domainFor("left"), [split, dual, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rightDomain = useMemo(() => (dual ? domainFor("right") : undefined), [split, dual, data, series, breakTs]); // eslint-disable-line react-hooks/exhaustive-deps
   const breakNotes = useMemo(() => breakNotesByRow(data.map((d) => d.t), breaks), [data, breaks]);
   // Too few points to call a curve: straight segments, visible dots, a note.
   const limited = limitedHistoryCount(data, keys);
@@ -172,12 +183,23 @@ export const TimeChart = ({
       ? `${label} Limited history (${limited} days).`
       : label;
   return (
-    <div role="img" aria-label={fullLabel} className="relative h-full w-full" data-markers={markers.length || undefined} data-breaks={breaks.length || undefined}>
+    <div role="img" aria-label={fullLabel} className="relative flex h-full w-full flex-col" data-markers={markers.length || undefined} data-breaks={breaks.length || undefined}>
       {limited != null && (
         <p className="pointer-events-none absolute bottom-7 right-3 z-10 text-xs text-muted-foreground" data-testid="limited-history">
           Limited history ({limited} {limited === 1 ? "day" : "days"})
         </p>
       )}
+      {dual && (
+        <p className="mb-1 flex shrink-0 flex-wrap items-center gap-x-3 text-xs text-muted-foreground" data-testid="axis-legend">
+          {series.map((s) => (
+            <span key={s.key} className="inline-flex items-center gap-1">
+              <span className="h-0.5 w-3" style={{ background: s.color }} aria-hidden="true" />
+              {s.label} <span className="opacity-80">({axes[s.key] === "right" ? "right axis" : "left axis"})</span>
+            </span>
+          ))}
+        </p>
+      )}
+      <div className="min-h-0 flex-1">
       <ResponsiveContainer width="100%" height="100%">
         <Chart data={chartData} margin={MARGIN}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
@@ -193,6 +215,7 @@ export const TimeChart = ({
             minTickGap={40}
           />
           <YAxis
+            yAxisId="left"
             tick={TICK}
             tickLine={false}
             axisLine={false}
@@ -201,17 +224,31 @@ export const TimeChart = ({
             allowDataOverflow={split}
             tickFormatter={(v: number) => formatCompact(v, 1)}
           />
+          {dual && (
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={{ ...TICK, fill: series.find((s) => axes[s.key] === "right")?.color ?? TICK.fill }}
+              tickLine={false}
+              axisLine={false}
+              width={48}
+              domain={rightDomain}
+              allowDataOverflow={split}
+              tickFormatter={(v: number) => formatCompact(v, 1)}
+            />
+          )}
           <Tooltip content={<TooltipBox series={series} format={format} breakNotes={breakNotes} />} />
           {breaks.map((b, i) => (
             <ReferenceLine
               key={`break-${b.t}`}
               x={b.t}
+              yAxisId="left"
               stroke="hsl(var(--ha-warning))"
               strokeDasharray="2 3"
               strokeWidth={1}
               label={
                 labelled.breakLabels[i]
-                  ? { value: b.label, position: breakNearStart(b.t) ? "insideTopLeft" : "insideTopRight", fill: "hsl(var(--ha-warning))", fontSize: 12, fontWeight: 600 }
+                  ? { value: b.label, position: breakNearStart(b.t) ? "insideTopLeft" : "insideTopRight", fill: "hsl(var(--ha-warning))", fontSize: CHART_LABEL_FONT_PX, fontWeight: 600 }
                   : undefined
               }
             />
@@ -220,6 +257,7 @@ export const TimeChart = ({
             <ReferenceLine
               key={`${m.t}-${m.label}`}
               x={m.t}
+              yAxisId="left"
               ifOverflow="extendDomain"
               stroke="hsl(var(--ha-accent))"
               strokeDasharray="3 3"
@@ -228,7 +266,7 @@ export const TimeChart = ({
               // their text doesn't overprint.
               label={
                 labelled.reclass[i]
-                  ? { value: m.label, position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: 12, fontWeight: 600 }
+                  ? { value: m.label, position: "insideTopRight", fill: "hsl(var(--ha-accent))", fontSize: CHART_LABEL_FONT_PX, fontWeight: 600 }
                   : undefined
               }
             />
@@ -238,6 +276,7 @@ export const TimeChart = ({
               <Area
                 key={s.key}
                 dataKey={s.key}
+                yAxisId={axes[s.key]}
                 type={curve}
                 stroke={s.color}
                 fill={s.color}
@@ -253,6 +292,7 @@ export const TimeChart = ({
               <Line
                 key={s.key}
                 dataKey={s.key}
+                yAxisId={axes[s.key]}
                 type={curve}
                 stroke={s.color}
                 strokeOpacity={fade(s.key) ? 0.25 : 1}
@@ -266,6 +306,7 @@ export const TimeChart = ({
           )}
         </Chart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 };

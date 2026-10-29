@@ -43,6 +43,7 @@ import {
   type BurnPlan,
   type OutstandingCategory,
 } from "@/lib/burnForecast";
+import { CHART_HEIGHT_CLASS } from "@/lib/terminalLayout";
 
 const formatUsd = (value: number) =>
   new Intl.NumberFormat(undefined, {
@@ -273,7 +274,7 @@ export const BurnForecastView = ({
           Starts at stablecoin left after invoices due now. Each month subtracts the spend used
           above. TEL inventory is not in this series.
         </p>
-        <ChartContainer config={runwayConfig} className="h-[240px] w-full aspect-auto">
+        <ChartContainer config={runwayConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
           <AreaChart data={cashSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="burn-cash-fill" x1="0" y1="0" x2="0" y2="1">
@@ -327,7 +328,7 @@ export const BurnForecastView = ({
               <LegendDot color={COLORS.spend} label="Used (max)" />
             </div>
           </div>
-          <ChartContainer config={spendConfig} className="h-[220px] w-full aspect-auto">
+          <ChartContainer config={spendConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
             <LineChart data={spendSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid vertical={false} className="stroke-border/40" />
               <XAxis dataKey="label" tickMargin={8} />
@@ -382,7 +383,7 @@ export const BurnForecastView = ({
           <p className="text-[10px] text-muted-foreground">
             Raised is stablecoin from TEL sales. Paid is that stablecoin sent to an outside payee.
           </p>
-          <ChartContainer config={actualsConfig} className="h-[220px] w-full aspect-auto">
+          <ChartContainer config={actualsConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
             <BarChart data={actualsSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid vertical={false} className="stroke-border/40" />
               <XAxis dataKey="label" tickMargin={8} />
@@ -409,7 +410,7 @@ export const BurnForecastView = ({
           <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
             Opening cash walk
           </h4>
-          <ChartContainer config={bridgeConfig} className="h-[200px] w-full aspect-auto">
+          <ChartContainer config={bridgeConfig} className={`${CHART_HEIGHT_CLASS.compact} w-full aspect-auto`}>
             <BarChart data={bridgeSeries} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid vertical={false} className="stroke-border/40" />
               <XAxis dataKey="label" tickMargin={8} interval={0} />

@@ -595,3 +595,16 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     animation: none !important;
   }
 }
+
+/* Chart type floor. Recharts renders an axis with no `tick` prop at its own
+   10px default, and a `tick` prop's fontSize is only a presentation attribute,
+   which any CSS beats. One rule keeps every axis (including shadcn
+   ChartContainer ones) on the terminal tick size; keep in step with
+   TYPE_PX.axisTick in src/lib/terminalLayout.ts. */
+:root {
+  --chart-tick-size: 12px;
+}
+.recharts-cartesian-axis-tick text,
+.recharts-polar-angle-axis-tick text {
+  font-size: var(--chart-tick-size);
+}

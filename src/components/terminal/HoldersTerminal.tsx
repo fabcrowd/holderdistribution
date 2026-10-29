@@ -9,7 +9,6 @@ import { EXCHANGE_FLOW_FEED, flowUnavailableText, isFlowPlaceholder, settledEntr
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { formatCompact, formatSignedCompact } from "@/lib/format";
-import { HOLDERS_PRIMARY_ROW_HEIGHT, SECONDARY_CHART_ROW_PX, TABLE_PANEL_PX } from "@/lib/terminalLayout";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
 import { TimeChart, SignedBars, CategoryBars, type ChartMarker } from "./MiniCharts";
 import { DetailsButton } from "./DetailsButton";
@@ -205,14 +204,13 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const retailTotal = stats?.total ?? 0;
 
   return (
-    <div className={`flex flex-col gap-2 ${intro ? "ha-stagger" : ""}`} data-testid="holders-terminal">
+    <div className={`flex flex-col gap-3 ${intro ? "ha-stagger" : ""}`} data-testid="holders-terminal">
       <div
-        className="grid shrink-0 grid-cols-2 gap-2"
-        style={{ height: HOLDERS_PRIMARY_ROW_HEIGHT }}
+        className="grid shrink-0 grid-cols-2 gap-3"
         data-testid="holders-primary"
       >
       <TerminalPanel
-        className="h-full min-h-0"
+        chart="hero"
         title="Retail wallets"
         info={`Wallets holding more than 0 ${tk}, excluding exchange, DEX, contract and ${pn}-controlled wallets.`}
         stat={
@@ -239,7 +237,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       </TerminalPanel>
 
       <TerminalPanel
-        className="h-full min-h-0"
+        chart="hero"
         title={`${tk} held`}
         info={heldPanelTip(project, {
           stakedTotal: v3Staking ? (combinedStaking?.stakedTotal ?? 0) : (combinedStaking?.stakedTotal ?? null),
@@ -270,7 +268,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
               data={balance}
               series={[
                 { key: "retail", label: "Retail", color: "hsl(var(--primary))" },
-                { key: "cex", label: "Exchanges", color: "hsl(var(--ha-accent))" },
+                { key: "cex", label: "Exchanges", color: "hsl(var(--ha-accent))", axis: "right" },
               ]}
               format={(n) => `${formatCompact(n)} ${tk}`}
               label={b ? `Retail ${tk} ${formatCompact(b.last.retail)}, exchange ${tk} ${b.last.cex != null ? formatCompact(b.last.cex) : "unknown"} at the end of the period.` : `${tk} held`}
@@ -285,12 +283,11 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
 
       </div>
       <div
-        className="grid shrink-0 grid-cols-3 gap-2"
-        style={{ height: SECONDARY_CHART_ROW_PX }}
+        className="grid shrink-0 grid-cols-3 gap-3"
         data-testid="holders-secondary"
       >
       <TerminalPanel
-        className="h-full min-h-0"
+        chart="standard"
         title="Exchange net flow"
         info={`Daily ${tk} deposited to minus withdrawn from known exchange wallets. A deposit is not necessarily a sale.`}
         stat={
@@ -324,7 +321,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       </TerminalPanel>
 
       <TerminalPanel
-        className="h-full min-h-0"
+        chart="standard"
         title={`Staked ${tk}`}
         info={<StakedPanelTip />}
         stat={
@@ -397,7 +394,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       </TerminalPanel>
 
       <TerminalPanel
-        className="h-full min-h-0"
+        chart="standard"
         title="Wallet sizes"
         info={`Retail wallets by balance (${tk}). The gold bar contains the average balance${stats ? ` (${formatCompact(stats.average)} ${tk})` : ""}.`}
         stat={
@@ -429,12 +426,11 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
 
       </div>
       <div
-        className="grid shrink-0 grid-cols-2 gap-2"
-        style={{ height: TABLE_PANEL_PX }}
+        className="grid shrink-0 grid-cols-2 gap-3"
         data-testid="holders-tables"
       >
       <TerminalPanel
-        className="h-full min-h-0"
+        fit
         title="Concentration"
         info={`Share of retail ${tk} held by the largest N retail wallets. Change is against the previous snapshot.`}
         stat={stats && <span className="text-xs text-muted-foreground">Gini <span className="font-semibold text-foreground">{stats.gini.toFixed(3)}</span></span>}
@@ -442,7 +438,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         flush
       >
         {!snapshot ? (
-          <div className="h-full p-2">{snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />}</div>
+          <div className="p-3">{snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />}</div>
         ) : (
           <table className="w-full text-sm tabular-nums">
             <caption className="sr-only">Share of retail {tk} held by the top wallets</caption>
@@ -483,7 +479,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       </TerminalPanel>
 
       <TerminalPanel
-        className="h-full min-h-0"
+        fit
         title="Exchange balances"
         info={`${tk} held at each exchange's known wallets, with the change over the selected period.`}
         stat={cexTotal > 0 && <span className="font-semibold text-foreground">{formatCompact(cexTotal)}</span>}
@@ -491,7 +487,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         flush
       >
         {cexHistory.isLoading ? (
-          <div className="h-full p-2"><PanelSkeleton /></div>
+          <div className="p-3"><PanelSkeleton /></div>
         ) : cexHistory.isError ? (
           <PanelError>Couldn't load exchange balances.</PanelError>
         ) : (

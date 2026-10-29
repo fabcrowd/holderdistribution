@@ -19,7 +19,7 @@ import {
   EMPTY_SELECTION, defaultTierLabel, hasSelection, reduceSelection, shouldClearOnEscape, type DistAction, type DistSelection,
 } from "@/lib/distributionSelection";
 import { TIER_FLOWS_EXPLAINER } from "@/lib/terminalCopy";
-import { TABLE_PANEL_PX } from "@/lib/terminalLayout";
+import { CHART_TICK, TYPE_PX } from "@/lib/terminalLayout";
 import { useTierGeometry } from "@/components/tierflow/useTierGeometry";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { formatCompact } from "@/lib/format";
@@ -47,7 +47,7 @@ const NetBarLabel = (props: BarLabelProps) => {
       y={y + h / 2}
       dy="0.35em"
       textAnchor={neg ? "end" : "start"}
-      fontSize={12}
+      fontSize={TYPE_PX.caption}
       className="tabular-nums"
       fill="hsl(var(--foreground))"
       aria-hidden="true"
@@ -248,7 +248,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
   );
 
   return (
-    <div className={`flex flex-col gap-2 ${intro ? "ha-stagger" : ""}`} data-testid="distribution-terminal">
+    <div className={`flex flex-col gap-3 ${intro ? "ha-stagger" : ""}`} data-testid="distribution-terminal">
       <TerminalPanel
         fit
         className="min-h-[36rem]"
@@ -312,10 +312,11 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
       <p className="sr-only" aria-live="polite" data-testid="tier-live-summary">
         {liveSummary}
       </p>
-      <div className="grid shrink-0 grid-cols-2 gap-2" style={{ height: TABLE_PANEL_PX }} data-testid="distribution-detail-row">
+      <div className="grid shrink-0 grid-cols-2 gap-3" data-testid="distribution-detail-row">
       {selected ? (
         <TerminalPanel
-          className="h-full min-h-0"
+          fit
+          className="min-h-[300px]"
           title={detailTitle}
           info="Detail for the selection on the tier diagram. Close with ✕ or Esc."
           actions={closeButton}
@@ -325,7 +326,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
         </TerminalPanel>
       ) : (
         <TerminalPanel
-          className="h-full min-h-0"
+          chart="standard"
           title="Net wallet change by tier"
           info="Retail wallets in each tier now, minus at the start of the period. Click a bar to select that tier."
           testId="panel-net-change"
@@ -353,12 +354,12 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
                       type="number"
                       // Headroom on both sides so the value labels at the bar ends fit.
                       domain={[(min: number) => (min < 0 ? Math.floor(min * 1.3) : 0), (max: number) => (max > 0 ? Math.ceil(max * 1.3) : 0)]}
-                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                      tick={CHART_TICK}
                       tickLine={false}
                       axisLine={false}
                       tickFormatter={(v: number) => formatCompact(v, 1)}
                     />
-                    <YAxis type="category" dataKey="name" width={84} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickLine={false} axisLine={false} interval={0} />
+                    <YAxis type="category" dataKey="name" width={84} tick={CHART_TICK} tickLine={false} axisLine={false} interval={0} />
                     <Tooltip
                       cursor={{ fill: "hsl(var(--muted))" }}
                       formatter={(v: number) => [signedInt(v), "Net wallets"]}
@@ -392,14 +393,14 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
       )}
 
       <TerminalPanel
-        className="h-full min-h-0"
+        fit
         title="Tiers"
         info={`Wallets and ${tk} per tier, with the change over the period, and each tier's share of retail ${tk}. Click a row to select that tier.`}
         flush
         testId="panel-tiers"
       >
         {placeholder ? (
-          <div className="h-full p-2">{placeholder}</div>
+          <div className="p-3">{placeholder}</div>
         ) : (
           <table className="w-full text-sm tabular-nums">
             <caption className="sr-only">Retail wallets and {tk} by balance tier. Select a tier to see its detail.</caption>

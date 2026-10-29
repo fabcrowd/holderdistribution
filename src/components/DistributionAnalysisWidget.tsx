@@ -33,6 +33,7 @@ import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid } from "recharts";
 import "@/lib/rechartsMotion";
+import { CHART_HEIGHT_CLASS, CHART_TICK } from "@/lib/terminalLayout";
 
 type DistributionAnalysisWidgetProps = {
   snapshot: HolderLiteSnapshot | null;
@@ -220,11 +221,11 @@ const DistributionAnalysisWidget = ({
             ) : (
               <div className="px-4 pt-4 sm:px-6">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 text-center">% of retail by balance range</p>
-                <ChartContainer config={distributionChartConfig} className="h-[220px] w-full sm:h-[280px]">
+                <ChartContainer config={distributionChartConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full`}>
                   <BarChart data={chartData} margin={{ top: 12, right: 12, bottom: 24, left: 12 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                    <XAxis dataKey="range" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                    <XAxis dataKey="range" tick={CHART_TICK} />
+                    <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} />
                     <ChartTooltip content={<ChartTooltipContent />} formatter={(value: number) => [`${value.toFixed(2)}%`, "% of retail"]} />
                     <Bar dataKey="percent" radius={[4, 4, 0, 0]}>
                       {chartData.map((entry) => (
