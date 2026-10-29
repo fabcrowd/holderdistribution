@@ -39,6 +39,50 @@ export const stakingAddressLinks = (project: LinkProject): StakingAddressLink[] 
     return [{ label: link.label, address: match[1], href: link.href, kind: stakingAddressKind(link.label) }];
   });
 
+/** Test/staging lockups (ZBCN_Lockup_UAT_001 and its vault) stay out of the public list. */
+export const isStagingStakingLabel = (label: string): boolean => /UAT/i.test(label);
+
+export type StakingLockupRow = {
+  name: string;
+  lockup: StakingAddressLink;
+  vault: StakingAddressLink | null;
+};
+
+export type GroupedStakingAccounts = {
+  program: StakingAddressLink | null;
+  lockups: StakingLockupRow[];
+  rewardVaults: StakingAddressLink[];
+};
+
+/**
+ * Public Staking Overview groups. Staging (UAT) labels are dropped. A lockup
+ * is paired with the stake-vault ATA that follows it in config order.
+ */
+export const groupStakingAccounts = (links: StakingAddressLink[]): GroupedStakingAccounts => {
+  const visible = links.filter((link) => !isStagingStakingLabel(link.label));
+  let program: StakingAddressLink | null = null;
+  const lockups: StakingLockupRow[] = [];
+  const rewardVaults: StakingAddressLink[] = [];
+  for (let i = 0; i < visible.length; i++) {
+    const link = visible[i];
+    if (link.kind === "program") {
+      if (!program) program = link;
+      continue;
+    }
+    if (link.kind === "reward-vault") {
+      rewardVaults.push(link);
+      continue;
+    }
+    if (link.kind === "lockup") {
+      const next = visible[i + 1];
+      const vault = next?.kind === "stake-vault" ? next : null;
+      if (vault) i += 1;
+      lockups.push({ name: link.label, lockup: link, vault });
+    }
+  }
+  return { program, lockups, rewardVaults };
+};
+
 export const fillStakedFigure = (template: string, stakedLabel: string): string =>
   template.replace(/\{staked\}/g, stakedLabel);
 

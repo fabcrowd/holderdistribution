@@ -809,9 +809,11 @@ const renderStakingInsights = (
             <MethodologyInfo section="staking" />
           </CardTitle>
         </div>
-        <CardDescription data-panel-desc className="text-sm sm:text-base text-muted-foreground">
-          {copy.text("staking.intro", "{ticker} staked by retail, mapped back to holder wallets and counted once per staker (excludes exchange & hot wallets).")}
-        </CardDescription>
+        {copy.hasText("staking.addresses.note") ? null : (
+          <CardDescription data-panel-desc className="text-sm sm:text-base text-muted-foreground">
+            {copy.text("staking.intro", "{ticker} staked by retail, mapped back to holder wallets and counted once per staker (excludes exchange & hot wallets).")}
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent className="pt-5 space-y-6">
         <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
