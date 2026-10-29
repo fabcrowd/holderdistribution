@@ -111,12 +111,30 @@ must be in `config/projects.json`; the script loads `config/projects/<slug>.json
 and its data dir (`projectDataDir`).
 
 The data workflows have a `project` input on manual dispatch and export it as
-`HD_PROJECT` for every step (scheduled runs fall back to `tel`):
+`HD_PROJECT` for every step. `refresh-tel-holders.yml` (the daily refresh) takes a
+slug or `all` (the default, and what the schedule runs):
 
 ```sh
 node scripts/pull-holders-rpc.js --project tel
 gh workflow run refresh-tel-holders.yml -f project=tel
 ```
+
+### Onboarding a token: config only
+
+The daily refresh is registry-driven: a `plan` job runs
+`node scripts/workflow-paths.js matrix`, which lists every project in
+`config/projects.json` (default first), and the `refresh` job runs once per
+project (`max-parallel: 1`, `fail-fast: false`, `timeout-minutes` from
+`pipeline.workflowTimeoutMinutes` in the project file, default 60). To add a
+token: register it in `config/projects.json`, add `config/projects/<slug>.json`
+(optionally `pipeline.workflowTimeoutMinutes`), and nothing else. Stage
+differences come from that config (`workflowPlan` in `scripts/workflow-paths.js`):
+the verify list, the `[skip netlify]` tag (only the registry default publishes),
+and whether the EVM gap fill runs (any EVM chain); the staker and Solana
+staking pulls exit 0 when the project has no such staking contract. A project
+whose config is broken is skipped with a warning, so a half-onboarded token
+cannot stop the others. Pushes go through `scripts/push-main.sh` (rebase +
+push, up to 5 attempts).
 
 ### Data-path rules
 
@@ -225,11 +243,9 @@ after `npm ci`, which exports `HD_DATA_DIR` / `HD_WORK_DIR` (TEL:
   dropped and `public/data/<slug>` itself is added, so the commit covers
   `public/data/<slug>/**`. A path with no per-project mapping is refused.
 
-Known limit for a second token: the `refresh-tel-holders` verify step requires
-the same feed set for every project (including `funding-wallets.json` and
-`treasury-history.json`), and its schedule always runs TEL. A mapped project
-therefore gets its own daily workflow with its own verify list (see
-[zebec-network](#zebec-network-solana) below).
+The `refresh-tel-holders` verify list is per project (`HD_REQUIRED_FILES`,
+derived from the project's staking config), so a mapped project needs no
+workflow of its own (see [zebec-network](#zebec-network-solana) below).
 
 ## Holder tiers and thresholds (`holders`)
 
@@ -452,22 +468,20 @@ The first non-TEL project, mapped 2026-10-25
   **Solana-only** (`origin: true`, `bridge: "native"`). The chain tabs are
   Combined and Solana, and the explorer is Solscan. Feeds are in
   `public/data/zebec-network/` and the work dir is `data/zebec-network/`.
-- **Daily refresh:** `.github/workflows/refresh-zebec-network.yml`, cron
-  `30 1 * * *` (01:30 UTC = 21:30 EDT / 20:30 EST), which is 90 min after TEL.
-  It is in the same `holders-refresh` concurrency group as
-  `refresh-tel-holders.yml`, so the two never push at once. It commits with
-  `[skip netlify]`, so `refresh-tel-holders` stays the one daily publisher
-  (`deployTriggers.test.js`). The data still goes live through the live-data
-  function. Stages: staking pull, then holders, then `pull-cex-wallets` (the
-  same CEX stage TEL runs once wallets exist — it stages `cex-wallets.json`,
-  `cex-flows.json` and `cex-balance-history.json`), then lite, history,
-  transitions, `scan-exchange-flows`, `generate-tier-outflows`, supply,
-  treasury and changelog, then the verify step and `validate-outputs` +
-  `check-feed-consistency`, then the commit. There is no EVM holder or staker
-  scan. `workflowChain.test.js` (`PER_PROJECT_DAILY`) pins the workflow to a
-  single cron, `HD_PROJECT=zebec-network`, the shared group, and a gate that
-  runs before the commit. `public/data/*/tel-holders-previous.json` (a same-run
-  scratch file) is gitignored, so it is never staged.
+- **Daily refresh:** the `zebec-network` leg of the registry-driven matrix in
+  `.github/workflows/refresh-tel-holders.yml` (00:00 UTC, right after TEL; the
+  separate `refresh-zebec-network.yml` and its 01:30 cron were retired). It
+  commits with `[skip netlify]` (only the registry default publishes,
+  `deployTriggers.test.js`); the data goes live through the live-data function.
+  Stages are the shared ones: Solana staking pull (the EVM staker pull exits 0
+  here), holders, `pull-cex-wallets` (51 CEX wallets: stages `cex-wallets.json`,
+  `cex-flows.json`, `cex-balance-history.json`), lite, history, transitions,
+  supply, treasury, changelog, verify (includes `solana-staking.json`), gate,
+  commit, then `scan-exchange-flows` and `generate-tier-outflows` (empty feeds,
+  no EVM chain) and a second commit; the EVM gap fill is skipped.
+  `workflowChain.test.js` pins the matrix wiring.
+  `public/data/*/tel-holders-previous.json` (a same-run scratch file) is
+  gitignored, so it is never staged.
 - **RPC:** `SOLANA_RPC_0` is an **Actions secret** (a Helius HTTPS URL). Locally
   it lives in the gitignored `.env`. `loadEnv` only overwrites keys that exist
   in `.env.enc`, and `.env.enc` has no `SOLANA_RPC_*`, so the secret survives.

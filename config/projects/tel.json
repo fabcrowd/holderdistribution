@@ -12,7 +12,8 @@
   },
   "pipeline": {
     "$comment": "Ported pipeline scripts read chain/token/contract addresses from chainsConfig (TEL keeps config/chains.json, which also carries explorerApi settings). A project without chainsConfig gets its chain map derived from chains[] below (scripts/lib/projects.js deriveChainsFromProject).",
-    "chainsConfig": "config/chains.json"
+    "chainsConfig": "config/chains.json",
+    "workflowTimeoutMinutes": 90
   },
   "capabilities": {
     "dispositionLedger": true

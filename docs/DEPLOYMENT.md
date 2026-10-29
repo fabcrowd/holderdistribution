@@ -80,8 +80,10 @@ and an empty browser console on all three tabs.
 
 ## Data pipeline (daily) and live data (no rebuild)
 
-**Schedule.** One scheduled workflow, *Refresh TEL holders snapshot*
-(`refresh-tel-holders.yml`, 00:00 UTC daily), runs every stage in one job: staker balances →
+**Schedule.** One scheduled workflow, *Refresh holders snapshots*
+(`refresh-tel-holders.yml`, 00:00 UTC daily), runs once per project in `config/projects.json`
+(one matrix job each, one at a time, TEL first; a failing project never blocks the others;
+onboarding a token needs no new workflow). Each job runs every stage: staker balances →
 holders scan → derived feeds → commit → exchange flows → tier outflows → history-gap fill →
 consistency gate → commit. `scan-exchange-flows`, `generate-tier-outflows` and
 `fill-history-gaps` are manual (`workflow_dispatch`) backfill tools now; `pipeline-watchdog`

@@ -45,6 +45,10 @@ import {
   pipelineProject,
   projectWorkDir,
   projectClassificationRelPath,
+  projectChainKeysByVm,
+  projectStakingContracts,
+  loadRegistry,
+  resolveProject,
   CLASSIFICATION_KINDS,
 } from "./lib/projects.js";
 
@@ -55,6 +59,69 @@ export function workflowPaths(project, root = process.cwd()) {
     HD_DATA_DIR: project.dataDir,
     HD_WORK_DIR: projectWorkDir(project),
     HD_CEX_CONFIG: projectClassificationRelPath(project, "cexWallets", root) ?? "",
+  };
+}
+
+export const DEFAULT_TIMEOUT_MINUTES = 60;
+
+/**
+ * Projects the daily refresh matrix runs: `selection` is a slug, or empty /
+ * "all" for every project in config/projects.json (default project first, then
+ * registry order). Per-project job timeout comes from
+ * `pipeline.workflowTimeoutMinutes`. Under "all" a project whose config is
+ * broken is reported in `skipped` instead of throwing, so a half-onboarded
+ * token can never stop the others from refreshing; a named slug throws.
+ */
+export function workflowMatrix(selection, root = process.cwd()) {
+  const sel = (selection ?? "").trim();
+  const registry = loadRegistry(root);
+  const ordered = [...registry].sort((a, b) => Number(b.default === true) - Number(a.default === true));
+  const toEntry = (slug) => {
+    const project = resolveProject(slug, root);
+    return {
+      slug,
+      ticker: project.config?.ticker ?? slug.toUpperCase(),
+      timeout: Number(project.config?.pipeline?.workflowTimeoutMinutes) || DEFAULT_TIMEOUT_MINUTES,
+    };
+  };
+  if (sel && sel !== "all") return { include: [toEntry(sel)], skipped: [] };
+  const include = [];
+  const skipped = [];
+  for (const { slug } of ordered) {
+    try {
+      include.push(toEntry(slug));
+    } catch (err) {
+      skipped.push({ slug, error: err.message });
+    }
+  }
+  return { include, skipped };
+}
+
+/**
+ * Per-project stage differences for the shared refresh job, derived from the
+ * project config (never from a slug check in YAML):
+ *   HD_TICKER         issue titles
+ *   HD_COMMIT_TAG     " [skip netlify]" unless this is the registry default
+ *                     project, which stays the one daily publisher
+ *                     (scripts/lib/deployTriggers.test.js)
+ *   HD_HAS_EVM        any EVM chain: gates the eth_getBlockByNumber gap fill
+ *   HD_REQUIRED_FILES feeds the verify step requires in HD_DATA_DIR
+ */
+export function workflowPlan(project, root = process.cwd()) {
+  const required = [
+    "tel-holders.json", "holders-summary.json", "holders-history.json", "holders-lite.json", "holders-checkpoint.json",
+    "holder-transitions.json", "holders-ever-checkpoint.json", "supply-reconciliation.json", "treasury-history.json",
+    "classification-changelog.json", "cex-wallets.json", "cex-flows.json", "cex-balance-history.json",
+  ];
+  if (projectStakingContracts(project, { kind: "stakeChanged" }).length > 0) required.push("funding-wallets.json");
+  if (projectStakingContracts(project, { kind: "zebecStakeV1" }).length > 0) required.push("solana-staking.json");
+  const registry = loadRegistry(root);
+  const defaultSlug = (registry.find((p) => p.default) ?? registry[0])?.slug;
+  return {
+    HD_TICKER: project.config?.ticker ?? project.slug.toUpperCase(),
+    HD_COMMIT_TAG: project.slug === defaultSlug ? "" : " [skip netlify]",
+    HD_HAS_EVM: projectChainKeysByVm(project.config, "evm").length > 0 ? "true" : "false",
+    HD_REQUIRED_FILES: required.join(" "),
   };
 }
 
@@ -97,7 +164,18 @@ if (isDirectRun) {
     if (argv[i].startsWith("--project=")) continue;
     rest.push(argv[i]);
   }
-  if (rest[0] === "files") {
+  if (rest[0] === "matrix") {
+    // node scripts/workflow-paths.js matrix [<slug>|all] -> {"include":[...]} for a GitHub matrix.
+    try {
+      const { include, skipped } = workflowMatrix(rest[1]);
+      for (const s of skipped) console.error(`::warning::project ${s.slug} skipped: ${s.error}`);
+      if (include.length === 0) throw new Error("no runnable projects in config/projects.json");
+      console.log(JSON.stringify({ include }));
+    } catch (err) {
+      console.error(`[workflow-paths] ${err.message}`);
+      process.exit(2);
+    }
+  } else if (rest[0] === "files") {
     try {
       console.log(mapWorkflowFiles(project, rest.slice(1)).join(" "));
     } catch (err) {
@@ -105,6 +183,6 @@ if (isDirectRun) {
       process.exit(2);
     }
   } else {
-    for (const [k, v] of Object.entries(workflowPaths(project))) console.log(`${k}=${v}`);
+    for (const [k, v] of Object.entries({ ...workflowPaths(project), ...workflowPlan(project) })) console.log(`${k}=${v}`);
   }
 }

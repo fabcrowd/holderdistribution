@@ -9,6 +9,9 @@
     "legacyRoot": false,
     "dir": "public/data/zebec-network"
   },
+  "pipeline": {
+    "workflowTimeoutMinutes": 30
+  },
   "supply": {
     "target": 100000000000,
     "targetLabel": "100B",
@@ -397,8 +400,8 @@
   },
   "health": {
     "feeds": {
-      "holders-lite.json": { "workflow": "Refresh zebec-network holders" },
-      "cex-wallets.json": { "maxAgeHours": 36, "workflow": "Refresh zebec-network holders" },
+      "holders-lite.json": { "workflow": "Refresh holders snapshots" },
+      "cex-wallets.json": { "maxAgeHours": 36, "workflow": "Refresh holders snapshots" },
       "funding-wallets.json": { "disabled": true },
         "solana-staking.json": { "maxAgeHours": 36, "label": "Staking overlay (zebec-stake)", "workflow": "Refresh zebec-network holders" },
       "exchange-flow-history.json": { "placeholder": true },

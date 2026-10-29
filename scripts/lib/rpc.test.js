@@ -155,12 +155,18 @@ describe("RPC_PREFER_PUBLIC", () => {
 describe("workflow cost guards", () => {
   // Private-repo Actions minutes are billed; an unbounded job (360-minute default)
   // that fails slowly is how the included minutes were exhausted in October 2026.
-  for (const file of ["refresh-tel-holders.yml", "pipeline-watchdog.yml", "refresh-zebec-network.yml"]) {
-    it(`${file} has a job timeout and shares the holders-refresh concurrency group`, () => {
+  for (const file of ["refresh-tel-holders.yml", "pipeline-watchdog.yml"]) {
+    it(`${file} has a timeout on every job and shares the holders-refresh concurrency group`, () => {
       const wf = yaml.parse(fs.readFileSync(path.resolve(process.cwd(), ".github/workflows", file), "utf8"));
-      const job = Object.values(wf.jobs)[0];
-      expect(job["timeout-minutes"]).toBeGreaterThan(0);
-      expect(job["timeout-minutes"]).toBeLessThanOrEqual(120);
+      for (const job of Object.values(wf.jobs)) {
+        // The refresh matrix job takes its cap per project from config (an expression).
+        if (typeof job["timeout-minutes"] === "string") {
+          expect(job["timeout-minutes"]).toBe("${{ matrix.timeout }}");
+          continue;
+        }
+        expect(job["timeout-minutes"]).toBeGreaterThan(0);
+        expect(job["timeout-minutes"]).toBeLessThanOrEqual(120);
+      }
       expect(wf.concurrency.group).toBe("holders-refresh");
       expect(wf.concurrency["cancel-in-progress"]).toBe(false);
     });
