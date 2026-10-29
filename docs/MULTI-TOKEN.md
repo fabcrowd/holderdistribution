@@ -467,18 +467,28 @@ The first non-TEL project, mapped 2026-10-25
 - **Staking (`zebecStakeV1`):** `scripts/pull-solana-staking.js` →
   `solana-staking.json` (`scripts/lib/solana/zebecStake.js`). Positions are
   every unclaimed `UserStakeData`, summed per staker. The lockup stake-vault
-  ATAs and the reward vaults are `contracts{}` with role `staking`, so they are
-  non-retail. **Staked ≠ retail:** staked balances appear in a separate Staked
-  tile and are never merged into retail holders. The step is non-fatal in the
-  workflow, so holders still publish.
+  ATAs and the reward vaults are `contracts{}` with role `staking`, so the
+  accounts themselves are non-retail. **Staked is inside Retail**, the TEL
+  way: `pull-holders-rpc.js` reads this feed and credits each position to the
+  staker, then reduces stake-vault custody by the same amount
+  (`attributeCustodyStaking`). The Staked tile stays a subset
+  (`stakingV3Balance` / the v3 overlay) and is not added on top. Positions
+  above vault custody are scaled down in that credit so supply is not
+  invented; the tile still shows the raw sum. Reward vaults are not custody
+  for those positions and stay in the supply staking slice. The staking pull
+  is non-fatal in the workflow, so holders still publish; if the feed is
+  missing, vault balances stay uncredited and a warning is logged.
 - **Vault-gap rule (standing):** each lockup's position sum is reconciled
   against its vault ATA (0.5% tolerance), and a mismatch refuses to publish.
   When a gap is a real on-chain property, add an exemption
   (`STAKE_VAULT_GAP_EXEMPTIONS`, keyed by exact lockup address) and an
   explainer. The feed records `vaultGapRaw`, `vaultGapRatio`,
-  `vaultReconcile: "exempt"` and the explainer text. Positions are shown as
-  they are on-chain: never scale them to the vault, and never loosen every
-  lockup to an overall-only check. Today one lockup is exempt: ZBCN Lockup
+  `vaultReconcile: "exempt"` and the explainer text. The Staked tile shows
+  positions as they are on-chain: it does not scale them to the vault, and
+  the publisher does not loosen every lockup to an overall-only check.
+  The holder snapshot's credit is separate and does scale down to custody
+  when the raw sum runs ahead, so that gap is not invented into Retail.
+  Today one lockup is exempt: ZBCN Lockup
   `AYbW5cbZ…SJjp`, with a gap of about 2.42% between unclaimed positions and
   the vault ATA.
 - **Holder tiers:** a per-project `holders.megaHolderThreshold` of 25B keeps

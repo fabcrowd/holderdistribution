@@ -80,8 +80,9 @@ const main = async () => {
     readJson(ASOF_BLOCKS_PATH),
   ]);
   let v3Staking = loadV3StakingPositions(checkpoint, chainConfig, asOfBlocks);
-  // Solana program staking (e.g. zebecStakeV1): same overlay channel, holder
-  // balances untouched (staked != retail). TEL has no such file.
+  // Solana program staking (e.g. zebecStakeV1): same informational overlay as
+  // TEL v3. pull-holders-rpc.js already credited each staker and reduced
+  // stake-vault custody, so this must not be added to balances again.
   if (!v3Staking) v3Staking = loadSolanaStakingPositions(await readJson(data("solana-staking.json")));
   // A rebuilt past day (pull-holders-rpc.js --as-of) from before the module
   // existed must not pick up today's positions from the live checkpoint.

@@ -11,13 +11,21 @@ import {
 } from "./supplyBreakdown";
 
 describe("groupSupplyCategories — staking bucket", () => {
-  it("adds a Staking bucket for non-zero categories.staking (ZBCN pie sums to supply)", () => {
+  it("keeps a staking slice only for leftover program custody, and the pie still sums", () => {
     const zbcn = JSON.parse(
       readFileSync(resolve(process.cwd(), "public/data/zebec-network/supply-reconciliation.json"), "utf8"),
     );
-    const buckets = groupSupplyCategories(zbcn.categories, zbcn.residual);
+    const buckets = groupSupplyCategories(zbcn.categories, zbcn.residual, {
+      ...DEFAULT_ENTITY_BUCKET_LABELS,
+      staking: "Reward vaults",
+    });
     const staking = buckets.find((b) => b.key === "staking");
+    const retail = buckets.find((b) => b.key === "retail");
     expect(staking?.amount).toBeCloseTo(zbcn.categories.staking, 3);
+    expect(staking?.label).toBe("Reward vaults");
+    // Staked principal is inside retail, not this slice.
+    expect(staking?.amount ?? 0).toBeLessThan(50_000_000);
+    expect(retail?.amount ?? 0).toBeGreaterThan(35_000_000_000);
     const sum = buckets.reduce((s, b) => s + b.amount, 0);
     expect(Math.abs(sum - zbcn.totalSupply)).toBeLessThan(1);
   });
@@ -61,18 +69,32 @@ describe("groupSupplyCategories — residual label", () => {
 
 describe("ZBCN staking copy", () => {
   const zbcn = getProject("zebec-network");
-  it("holders.staked.info carries Super App disclaimer, vault-gap explainer, and dual-totals note", () => {
+  it("holders.staked.info says staked is inside retail and keeps the Super App disclaimer", () => {
     const info = copyText(zbcn, "holders.staked.info", "generic");
     expect(info).toContain("AYbW5cbZEUgLEj6Eiy3yg74PU3YbEHkbFxgW6fjbSJjp");
     expect(info).toMatch(/2\.42%/);
     expect(info).toMatch(/0\.5%/);
     expect(info).toMatch(/4\.75B/);
-    expect(info).toMatch(/4\.76B/);
     expect(info).toMatch(/reward vaults/);
+    expect(info).toMatch(/subset of Retail Held/);
+    expect(info).toMatch(/credited to each staker/);
+    expect(info).not.toMatch(/own bucket/);
+    expect(info).not.toMatch(/not merged into the retail/);
+    expect(info).not.toMatch(/not included in this Retail line/);
     expect(info).toMatch(/Global Staked/);
     expect(info).toMatch(/18\.9B/);
     expect(info).toMatch(/not current TVL/i);
     expect(info).toMatch(/methodology tip/i);
+  });
+
+  it("retail held copy credits staked ZBCN inside the retail figure", () => {
+    const info = copyText(zbcn, "holders.retailHeld.info", "generic");
+    expect(info).toMatch(/already inside this figure/);
+    expect(info).toMatch(/credited to each staker/);
+    expect(info).not.toMatch(/own bucket|not included in this Retail/);
+    expect(copyText(zbcn, "supply.staking.bucketLabel", "Staking")).toBe("Reward vaults");
+    expect(copyText(zbcn, "supply.staking.description", "")).toMatch(/included in Retail/);
+    expect(copyText(zbcn, "supply.staking.description", "")).toMatch(/Global Staked/);
   });
 
   it("residual body does not claim Ethereum / Polygon / Base bridges", () => {
@@ -95,6 +117,14 @@ describe("ZBCN staking copy", () => {
     expect(lockup.vaultGapRatio).toBeCloseTo(0.0242, 3);
     // Positions drift with the daily refresh; copy says "~4.75B", so allow ±0.05B.
     expect(staking.stakedTotal / 1e9).toBeCloseTo(4.75, 1);
-    expect(supply.categories.staking / 1e9).toBeCloseTo(4.76, 1);
+    // Stake-vault principal is credited to stakers. The staking category is
+    // only the reward-vault remainder, not a ~4.76B sibling of retail.
+    const stakeItems = (supply.items as Array<{ category: string; name: string | null }>).filter(
+      (item) => item.category === "staking",
+    );
+    expect(stakeItems.length).toBeGreaterThan(0);
+    expect(stakeItems.every((item) => /reward/i.test(item.name ?? ""))).toBe(true);
+    expect(supply.categories.staking).toBeLessThan(staking.stakedTotal * 0.01);
+    expect(supply.categories.retail).toBeGreaterThan(staking.stakedTotal);
   });
 });

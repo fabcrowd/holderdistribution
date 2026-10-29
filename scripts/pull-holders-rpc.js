@@ -9,6 +9,7 @@ import { buildChainStatus } from "./lib/chainStatus.js";
 import { getUsableRpcUrls, rpcCall, getLogs } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
 import { residualCustodyBalance, attributeStakingReceipts } from "./lib/stakingCustody.js";
+import { attributeSolanaStakingBalances } from "./lib/solanaStaking.js";
 import { ensureWindowCache, readCommittedJson, replayChainRawBalances } from "./lib/holdersAsOfReplay.js";
 import { computeSupplyTotals, computeBridgeNettedSupply, selectSupplyMethod } from "./lib/supply.js";
 import { loadChainAdapter, resolveChainVm } from "./lib/chainAdapters.js";
@@ -825,6 +826,42 @@ async function main() {
       console.log(
         `${chainKey}: ${name ?? address} ${Math.round(r.held).toLocaleString()} TEL -> ` +
           `${Math.round(r.residual).toLocaleString()} after attributing ${Math.round(r.attributed).toLocaleString()} to ${r.stakers} stakers.`
+      );
+    }
+  }
+
+  // Solana program staking (zebecStakeV1): same TEL rule. Stake-vault PDAs
+  // custody the tokens; credit each staker and leave only the unattributed
+  // remainder on the vault, so Retail includes staked balances once. Reward
+  // vaults are not in the feed's stakeVault list and are not touched. The
+  // staking pull runs before this scan and writes solana-staking.json.
+  const wantsProgramStake = (project.config?.staking ?? []).some((entry) => entry?.kind === "zebecStakeV1");
+  if (wantsProgramStake) {
+    let solanaStakingFeed = null;
+    try {
+      solanaStakingFeed = JSON.parse(await fs.readFile(data("solana-staking.json"), "utf8"));
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    const stakingChainKey = solanaStakingFeed?.chain ?? "solana";
+    const stakingBalances = chainBalancesRaw[stakingChainKey];
+    const stakingReport = stakingBalances ? attributeSolanaStakingBalances(stakingBalances, solanaStakingFeed) : null;
+    if (!solanaStakingFeed) {
+      console.warn(
+        "WARNING: zebecStakeV1 is configured but solana-staking.json is missing — " +
+          "staked tokens stay on the vaults and are not inside retail.",
+      );
+    } else if (stakingReport?.attributed > 0) {
+      if (stakingReport.overAttributed >= 1) {
+        console.warn(
+          `WARNING: ${stakingChainKey}: staking positions exceed stake-vault custody by ` +
+            `${Math.round(stakingReport.overAttributed).toLocaleString()} — credits scaled down to the vault balance.`,
+        );
+      }
+      console.log(
+        `${stakingChainKey}: stake vaults ${Math.round(stakingReport.held).toLocaleString()} -> ` +
+          `${Math.round(stakingReport.residual).toLocaleString()} after crediting ` +
+          `${Math.round(stakingReport.attributed).toLocaleString()} to ${stakingReport.stakers} stakers.`,
       );
     }
   }

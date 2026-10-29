@@ -4,7 +4,7 @@
  * The sentence is the project's `holders.held.info`. A generic fallback only
  * describes retail vs exchange custody. Whether staked tokens sit inside
  * retail is a project fact (TEL: yes, including the v3 StakingModule; ZBCN:
- * not yet) and lives in that override — this module does not branch on
+ * yes, credited to each staker) and lives in that override — this module does not branch on
  * `stakingStats.v3`, which Solana staking also occupies.
  *
  * `{stakedTotal}` and `{stakedV3}` are filled from the live snapshot when the
