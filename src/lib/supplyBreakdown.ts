@@ -103,8 +103,9 @@ export const DEFAULT_RESIDUAL_BUCKET_LABEL = "In transit (bridges)";
 export const DEFAULT_STAKING_BUCKET_LABEL = "Staking";
 
 /**
- * Raw category `staking`: tokens held by a staking program's vault accounts
- * (ZBCN: stake-vault + reward-vault ATA owners). Distinct from TEL's
+ * Raw category `staking`: program accounts that still hold tokens after
+ * staker positions have been credited into retail (ZBCN reward vaults).
+ * Stake-vault principal is not this slice. Distinct from TEL's
  * `staking-contract`, which rolls into Association. Missing / zero → no bucket.
  */
 export const STAKING_CATEGORY_KEYS = ["staking"] as const;

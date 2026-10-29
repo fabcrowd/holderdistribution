@@ -1033,7 +1033,7 @@ const StakingPanel = ({ items }: { items: SupplyReconciliationItem[] }) => {
       title={text("supply.staking.bucketLabel", DEFAULT_STAKING_BUCKET_LABEL)}
       description={text(
         "supply.staking.description",
-        "{ticker} held by the staking program's vault accounts (stake vaults and reward vaults), counted by on-chain token-account balance.",
+        "Undistributed {ticker} still held by staking-program accounts after staked balances are credited to each staker. Staked {ticker} is inside Retail, not this slice.",
       )}
       items={items}
       subcategoryFor={(item) => item.name ?? "Staking vault"}

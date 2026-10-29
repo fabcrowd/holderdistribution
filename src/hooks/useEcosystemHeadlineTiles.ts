@@ -164,10 +164,14 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
         // was invariant to it. So it needs the same changelog suppression the
         // holders tile has — retail.balance events, already computed upstream.
         changelogEvents: events.retailBalance,
-        // Staked TEL is a subset of this, not an addition: v3 StakingModule
-        // positions are credited to each staker's wallet at the source.
+        // Staked is a subset of this tile once the snapshot has credited it
+        // to each staker. The v3/legacy split sentence is the TEL module
+        // wording; a program with no legacy stake (ZBCN) says the same fact
+        // without naming that module.
         infoTooltip: v3Stats && !perChain
-          ? `Includes ${formatTokenAmount(staked)} staked ${ticker}, of which ${formatTokenAmount(v3Stats.stakedTotal)} is Staked (v3) in the StakingModule. Staked ${ticker} is counted once, inside this figure.`
+          ? (view.stakingStats?.legacy?.stakedTotal ?? 0) > 0
+            ? `Includes ${formatTokenAmount(staked)} staked ${ticker}, of which ${formatTokenAmount(v3Stats.stakedTotal)} is Staked (v3) in the StakingModule. Staked ${ticker} is counted once, inside this figure.`
+            : `Includes ${formatTokenAmount(staked)} staked ${ticker}, credited to each staker and counted once inside this figure.`
           : null,
       },
       {

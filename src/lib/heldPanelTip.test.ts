@@ -23,14 +23,18 @@ const abc: ProjectConfig = {
 };
 
 describe("heldPanelTip", () => {
-  it("uses holders.held.info for ZBCN and does not claim staked tokens are inside retail", () => {
+  it("uses holders.held.info for ZBCN and says retail includes staked tokens", () => {
     const zbcn = getProject("zebec-network");
-    const tip = heldPanelTip(zbcn, { stakedTotal: 4.75e9, stakedV3: 4.75e9 });
-    expect(tip).toBe(copyText(zbcn, "holders.held.info", HELD_INFO_FALLBACK));
-    expect(tip).toMatch(/own bucket/);
-    expect(tip).toMatch(/not included in this Retail line/);
+    const stakedTotal = 4.75e9;
+    const tip = heldPanelTip(zbcn, { stakedTotal, stakedV3: stakedTotal });
+    expect(tip).toBe(
+      `ZBCN in retail wallets compared with ZBCN in custody at known exchange wallets. All chains combined. Retail includes ${formatCompact(stakedTotal)} staked ZBCN, credited to each staker's wallet from Zebec SuperApp staking (counted once, so it isn't a separate supply bucket).`,
+    );
+    expect(tip).toMatch(/credited to each staker/);
+    expect(tip).toMatch(/Retail includes/);
+    expect(tip).not.toMatch(/own bucket/);
+    expect(tip).not.toMatch(/not included in this Retail line/);
     expect(tip).not.toMatch(/v3 StakingModule|Polygon/);
-    expect(tip).not.toMatch(/Retail includes|already counted|credited to each staker|subset of Retail/i);
   });
 
   it("keeps the TEL held tip, including the live v3 StakingModule figures", () => {

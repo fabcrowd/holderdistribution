@@ -89,3 +89,73 @@ export const attributeStakingReceipts = (balances, custody, receipts, v3Balances
   }
   return { held, attributed: placed, residual, stakers, overAttributed: Math.max(0, attributed - held) };
 };
+
+/**
+ * Same rule as attributeStakingReceipts, for several custody accounts that
+ * together hold one program's staked tokens (ZBCN stake-vault PDAs).
+ *
+ * Credits each staker and removes the same amount from the custody accounts,
+ * so the tokens are counted once. Receipts above custody are scaled down —
+ * never invent tokens. Anything custody holds beyond the positions (or a
+ * vault this list does not name, such as a reward vault) stays where it is.
+ * A second call is a no-op once custody has been reduced to 0.
+ *
+ * @param {Map<string, number>} balances address -> tokens (mutated)
+ * @param {Iterable<[string, number]>} positions staker -> amount
+ * @param {string[]} custodyAddresses holder rows that custody the positions
+ * @returns {{ held: number, attributed: number, residual: number, stakers: number, overAttributed: number }}
+ */
+export const attributeCustodyStaking = (balances, positions, custodyAddresses) => {
+  const custody = [];
+  const custodySet = new Set();
+  for (const raw of custodyAddresses ?? []) {
+    if (typeof raw !== "string" || raw.length === 0 || custodySet.has(raw)) continue;
+    custodySet.add(raw);
+    custody.push(raw);
+  }
+  let held = 0;
+  for (const address of custody) held += Number(balances.get(address)) || 0;
+  if (!(held > 0)) {
+    return { held: 0, attributed: 0, residual: 0, stakers: 0, overAttributed: 0 };
+  }
+
+  const receipts = new Map();
+  for (const [account, amount] of positions ?? []) {
+    if (typeof account !== "string" || custodySet.has(account)) continue;
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    receipts.set(account, (receipts.get(account) ?? 0) + amount);
+  }
+  let requested = 0;
+  for (const amount of receipts.values()) requested += amount;
+  const scale = requested > held && requested > 0 ? held / requested : 1;
+  let placed = 0;
+  for (const [account, amount] of receipts) {
+    const credit = amount * scale;
+    balances.set(account, (Number(balances.get(account)) || 0) + credit);
+    placed += credit;
+  }
+
+  // Remove `placed` from custody (capped at what each account holds). The
+  // unattributed remainder stays on the vaults, counted once.
+  let remaining = Math.min(placed, held);
+  for (const address of custody) {
+    const balance = Number(balances.get(address)) || 0;
+    const take = Math.min(balance, Math.max(0, remaining));
+    balances.set(address, balance - take);
+    remaining -= take;
+  }
+  // Sub-atomic float left on a vault would still publish as its own supply
+  // row. Fold anything below 1e-4 token back to zero.
+  for (const address of custody) {
+    const balance = Number(balances.get(address)) || 0;
+    if (Math.abs(balance) < 1e-4) balances.set(address, 0);
+  }
+  const residual = custody.reduce((sum, address) => sum + (Number(balances.get(address)) || 0), 0);
+  return {
+    held,
+    attributed: placed,
+    residual,
+    stakers: receipts.size,
+    overAttributed: Math.max(0, requested - held),
+  };
+};
