@@ -51,8 +51,6 @@ const formatUsd = (value: number) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 
 
-const CHAIN_SHORT: Record<string, string> = { ethereum: "ETH", polygon: "POL", base: "BASE" };
-
 const CLASS_COLOR: Record<string, string> = {
   telcoin: "bg-sky-500",
   locked: "bg-slate-400",
@@ -86,7 +84,7 @@ const AddressLinks = ({ address, chains }: { address: string; chains: string[] }
       ),
     [project],
   );
-  const list = chains.length > 0 ? chains : [project.chains?.[0]?.key ?? "ethereum"];
+  const list = chains.length > 0 ? chains : [project.chains?.[0]?.key ?? ""];
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       <a
@@ -99,7 +97,7 @@ const AddressLinks = ({ address, chains }: { address: string; chains: string[] }
         {shortAddress(address)}
       </a>
       <CopyButton value={address} label={`address ${address}`} />
-      {list.map((c) => (
+      {list.filter(Boolean).map((c) => (
         <a
           key={c}
           href={addressExplorerUrl(c, address, explorers)}
@@ -108,7 +106,7 @@ const AddressLinks = ({ address, chains }: { address: string; chains: string[] }
           className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground hover:border-primary/50 hover:text-foreground"
           aria-label={`${address} on ${c} explorer`}
         >
-          {CHAIN_SHORT[c] ?? c.toUpperCase()}
+          {project.chains?.find((pc) => pc.key === c)?.shortName ?? c.toUpperCase()}
         </a>
       ))}
     </span>

@@ -68,7 +68,6 @@ import { partialDateFor } from "./lib/partialDay.js";
 // map, classification lists and StakeChanged staking contract. TEL resolves to
 // exactly the paths/addresses this script used to hardcode.
 const project = selectPipelineProject("generate-tier-outflows", { ported: true });
-const IS_LEGACY = project.config?.data?.legacyRoot === true;
 const data = projectPaths(project);
 const work = projectWork(project);
 
@@ -165,10 +164,8 @@ const chainEntry = (chainKey) => {
     divisor: divisorFor(chainKey),
   };
 };
-// TEL: exactly ethereum, polygon, base (unchanged table + divisor 100).
-const CHAINS = IS_LEGACY
-  ? { ethereum: chainEntry("ethereum"), polygon: chainEntry("polygon"), base: chainEntry("base") }
-  : Object.fromEntries(Object.keys(CHAIN_CONFIG).map((k) => [k, chainEntry(k)]));
+// Every chain in the project's chain map (TEL: ethereum, polygon, base; divisor 100).
+const CHAINS = Object.fromEntries(Object.keys(CHAIN_CONFIG).map((k) => [k, chainEntry(k)]));
 
 // The project's distribution tiers (TEL: the historical 10, unchanged).
 const TIERS = projectHolderTiers(project).distributionTiers;
