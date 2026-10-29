@@ -22,7 +22,7 @@ export const TimeRangeDropdown = ({ value, onChange, className, options = RANGE_
     <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
       <SelectTrigger
         aria-label={`Time range: ${active?.label ?? `${value}D`}`}
-        className={`h-8 w-auto gap-1.5 rounded-full border-primary/40 bg-primary/10 px-3 text-xs font-semibold text-primary focus:ring-primary/40 ${className ?? ""}`}
+        className={`h-8 max-xl:h-10 w-auto gap-1.5 rounded-full border-primary/40 bg-primary/10 px-3 text-xs font-semibold text-primary focus:ring-primary/40 ${className ?? ""}`}
       >
         <SelectValue>{active?.label ?? `${value}D`}</SelectValue>
       </SelectTrigger>

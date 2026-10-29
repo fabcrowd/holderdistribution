@@ -41,7 +41,7 @@ export const Footer = () => {
           </p>
           <button
             onClick={copyAddress}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-card border border-border hover:bg-muted transition-colors group"
+            className="inline-flex min-h-10 items-center gap-2 px-4 py-2 rounded-md bg-card border border-border hover:bg-muted transition-colors group"
             title="Click to copy address"
             type="button"
           >
