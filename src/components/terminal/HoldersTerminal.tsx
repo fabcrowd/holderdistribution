@@ -5,6 +5,7 @@ import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClass
 import { clampToRange, shortBucketLabel } from "@/lib/chartRange";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
+import { EXCHANGE_FLOW_FEED, flowUnavailableText, isFlowPlaceholder, settledEntries } from "@/lib/flowFeeds";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { formatCompact, formatSignedCompact } from "@/lib/format";
@@ -160,7 +161,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const balanceBreaks = useMemo(() => getSeriesBreaks(changelog, ["retail.balance"], balance[0]?.t), [changelog, balance]);
   const stakingBreaks = useMemo(() => getSeriesBreaks(changelog, ["stakingBalance"], staking[0]?.t), [changelog, staking]);
   const netflow = useMemo(() => {
-    const rows = (flow.data ?? []).map((e) => ({ t: Date.parse(e.date), value: e.net, in: e.in, out: e.out }));
+    // Finished days only: today's hours-so-far would draw as a false collapse.
+    const rows = settledEntries(flow.data ?? []).map((e) => ({ t: Date.parse(e.date), value: e.net, in: e.in, out: e.out }));
     return withinRange(rows, (r) => r.t, Math.max(rangeDays, 1));
   }, [flow.data, rangeDays]);
   const flowTotals = netflow.reduce((a, r) => ({ in: a.in + r.in, out: a.out + r.out }), { in: 0, out: 0 });
@@ -211,7 +213,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       >
       <TerminalPanel
         className="h-full min-h-0"
-        title="Retail holders"
+        title="Retail wallets"
         info={`Wallets holding more than 0 ${tk}, excluding exchange, DEX, contract and ${pn}-controlled wallets.`}
         stat={
           h && (
@@ -221,14 +223,14 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             </>
           )
         }
-        actions={<DetailsButton onClick={() => onExplore("trends")} label="Retail holders" />}
+        actions={<DetailsButton onClick={() => onExplore("trends")} label="Retail wallets" />}
       >
         {series(
           <TimeChart
             data={holders}
-            series={[{ key: "holders", label: "Holders", color: "hsl(var(--primary))" }]}
+            series={[{ key: "holders", label: "Wallets", color: "hsl(var(--primary))" }]}
             format={(n) => int.format(n)}
-            label={h ? `Retail holders from ${int.format(h.first.holders)} to ${int.format(h.last.holders)} over the period.` : "Retail holders"}
+            label={h ? `Retail wallets from ${int.format(h.first.holders)} to ${int.format(h.last.holders)} over the period.` : "Retail wallets"}
             markers={holderMarkers}
             breaks={holderBreaks}
           />,
@@ -315,7 +317,9 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             label={`Net exchange flow over the period: ${formatSignedCompact(flowTotals.in - flowTotals.out)} ${tk}.`}
           />
         ) : (
-          <PanelMessage>No flow data for this period.</PanelMessage>
+          <PanelMessage>
+            {isFlowPlaceholder(project, EXCHANGE_FLOW_FEED) ? flowUnavailableText(project) : "No flow data for this period."}
+          </PanelMessage>
         )}
       </TerminalPanel>
 

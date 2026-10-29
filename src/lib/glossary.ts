@@ -24,6 +24,12 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryTerm[] = [
       "Any wallet holding more than 0 {ticker} that is not an exchange, DEX pool, {name} treasury/escrow wallet or a known contract. Roughly: individual holders.",
   },
   {
+    id: "wallet-counts",
+    term: "Retail wallets vs unique wallets",
+    definition:
+      "Holder figures count wallet addresses, not people. Retail wallets counts every address with more than 0 {ticker} on each chain separately, so a wallet on several chains counts once per chain. Unique wallets counts each address once across {chains}. On a single-chain token the two are equal.",
+  },
+  {
     id: "legacy-v3",
     term: "Token generations",
     definition:

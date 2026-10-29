@@ -88,6 +88,8 @@ export type ProjectConfig = ProjectEntry & {
   /** Pipeline wiring: `chainsConfig` = repo path of a config/chains.json-shaped map (else derived from `chains`). */
   pipeline?: { chainsConfig?: string };
   classification?: Record<string, string>;
+  /** Feed-health overrides (scripts/lib/feedHealth.js). `placeholder: true` marks an intentionally empty feed. */
+  health?: { feeds?: Record<string, { placeholder?: boolean }> };
   gated?: { forensics?: boolean };
   /**
    * Project-specific copy. `glossary` overrides the generic template for a

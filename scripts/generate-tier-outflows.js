@@ -59,6 +59,7 @@ import { loadEnv } from "./loadEnv.js";
 import { selectPipelineProject, projectPaths, projectChains, projectWork, projectClassificationPath } from "./lib/projects.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 import { projectHolderTiers, rangeLabelOf } from "./lib/holderTiers.js";
+import { partialDateFor } from "./lib/partialDay.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk + git history), work dir (day store / checkpoint), chain
@@ -810,7 +811,7 @@ const main = async () => {
   await fs.mkdir(path.dirname(DAYS_STORE_PATH), { recursive: true });
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
   await fs.writeFile(DAYS_STORE_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, days }, null, 2)}\n`, "utf8");
-  await fs.writeFile(OUT_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, generatedAt: new Date().toISOString(), latestDate: latestDate ?? null, complete, sourceTierSince, ranges }, null, 2)}\n`, "utf8");
+  await fs.writeFile(OUT_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, generatedAt: new Date().toISOString(), latestDate: latestDate ?? null, partialDate: partialDateFor(latestDate), complete, sourceTierSince, ranges }, null, 2)}\n`, "utf8");
   await fs.writeFile(CHECKPOINT_PATH, `${JSON.stringify(checkpoint, null, 2)}\n`, "utf8");
   // Delete the pre-split legacy checkpoint once the new one exists, so a
   // future run doesn't keep reading two sources of truth. Safe to no-op if

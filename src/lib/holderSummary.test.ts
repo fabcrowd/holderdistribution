@@ -24,7 +24,7 @@ describe("buildHolderSummary", () => {
       ["staked", "up"],
       ["cex", "flat"],
     ]);
-    expect(s.points[0].text).toBe("Retail holders down 1,485 (−1.5%) this year");
+    expect(s.points[0].text).toBe("Retail wallets down 1,485 (−1.5%) this year");
     expect(s.points[1].text).toBe("Staked TEL up 195.18M this year, now 4.17B");
     expect(s.points[2].text).toBe("21.57B TEL (22%) sits on exchanges");
   });
@@ -33,7 +33,7 @@ describe("buildHolderSummary", () => {
     const s = buildHolderSummary({ ...base, rangeLabel: "30D", holders: { ...base.holders, comparisonBlocked: true } })!;
     expect(s.points[0]).toEqual({
       id: "holders",
-      text: "Holder change over 30D not directly comparable (some wallets were reclassified)",
+      text: "Wallet count change over 30D not directly comparable (some wallets were reclassified)",
       trend: "unknown",
     });
   });

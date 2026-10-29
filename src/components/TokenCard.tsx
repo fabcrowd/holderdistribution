@@ -38,7 +38,7 @@ export const TokenCard = ({ slug, name, ticker, image, stats }: Props) => (
       </div>
     </div>
     <dl className="grid grid-cols-2 gap-3">
-      <Stat label="Holders" value={stats ? stats.holders : null} />
+      <Stat label="Unique wallets" value={stats ? stats.holders : null} />
       <Stat label="Retail share of supply" value={stats ? stats.retailShare : null} />
     </dl>
   </Link>

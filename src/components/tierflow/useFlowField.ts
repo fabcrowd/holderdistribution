@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useHolderTransitions, transitionsKeyFor } from "@/hooks/useHolderTransitions";
 import { useTierOutflows, outflowsKeyFor, type TierOutflowCell } from "@/hooks/useTierOutflows";
 import { ytdDays } from "@/lib/timeRange";
+import { isPartialOutflowWindow } from "@/lib/flowFeeds";
 import { tileW } from "./geometry";
 import { useTierGeometry } from "./useTierGeometry";
 
@@ -285,6 +286,8 @@ export const useFlowField = (rows: TierRow[], chain: ChainKey, metric: "wallets"
     attributedDays: outflows?.ranges?.[outflowsKey]?.attributedDays ?? 0,
     totalDays: outflows?.ranges?.[outflowsKey]?.totalDays ?? 0,
     sourceTierSince: outflows?.sourceTierSince ?? null,
+    // True when this window is only the in-progress day (hours so far).
+    partialToday: isPartialOutflowWindow(outflows, outflowsKey),
     // When the tier-outflows feed was built: it refreshes on its own job, so
     // it can lag the snapshot the rest of the diagram reads.
     // The transitions window actually used for the tier crossings. It can

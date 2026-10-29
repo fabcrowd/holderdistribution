@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState, useEffect, useLayoutEffect, useCallback, type ReactNode } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
+import { useProject } from "@/hooks/useProject";
+import { PARTIAL_DAY_LABEL, TIER_OUTFLOWS_FEED, flowUnavailableText, isFlowPlaceholder } from "@/lib/flowFeeds";
 import { AsOfBadge } from "@/components/AsOfBadge";
 import { useChartIntro } from "@/hooks/useMotion";
 import { createPortal } from "react-dom";
@@ -186,9 +188,12 @@ export const TierFlowDiagram = ({
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   // 1 until measured, so the first paint is the unshrunken desktop layout.
   const [scale, setScale] = useState(1);
-  const { fields, netInfo, grossExplainer, maxMigrationCount, loading, errored, empty, ready, complete, attributedDays, totalDays, sourceTierSince, outflowsAsOf, crossingsWindow } = useFlowField(rows, chain, metric, rangeDays);
+  const { fields, netInfo, grossExplainer, maxMigrationCount, loading, errored, empty, ready, complete, attributedDays, totalDays, sourceTierSince, outflowsAsOf, crossingsWindow, partialToday } = useFlowField(rows, chain, metric, rangeDays);
   const { data: exchangeFlow } = useExchangeFlow();
-  const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
+  const { project } = useProject();
+  const flowsUnavailable = isFlowPlaceholder(project, TIER_OUTFLOWS_FEED);
+  const flowsEmptyText = flowsUnavailable ? flowUnavailableText(project) : "No tier flows for this period yet.";
+  const rangeLabel = `${RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`}${partialToday ? ` ${PARTIAL_DAY_LABEL}` : ""}`;
   const isWallets = metric === "wallets";
   // Under 640px the scaled-down canvas renders tier labels at ~6px; phones
   // get a stacked, full-size list driving the same selection + detail panel.
@@ -649,8 +654,8 @@ export const TierFlowDiagram = ({
   if (empty) {
     return (
       <>
-        {detailFallback("No tier flows for this period yet.")}
-        <FlowEmpty />
+        {detailFallback(flowsEmptyText)}
+        <FlowEmpty message={flowsEmptyText} />
       </>
     );
   }
@@ -1414,12 +1419,12 @@ const DetailEmpty = ({ children }: { children: ReactNode }) => (
   </div>
 );
 
-const FlowEmpty = () => (
+const FlowEmpty = ({ message }: { message: string }) => (
   <div
     className="flex min-h-[12rem] items-center justify-center rounded-xl border border-border/50 bg-muted/10 p-8 text-center text-sm text-muted-foreground"
     data-testid="tier-flows-empty"
   >
-    No tier flows for this period yet.
+    {message}
   </div>
 );
 

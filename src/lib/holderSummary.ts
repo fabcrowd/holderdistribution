@@ -65,15 +65,15 @@ export const buildHolderSummary = (input: SummaryInput): HolderSummary | null =>
     const rel = h.rel !== null ? ` (${h.rel > 0 ? "+" : h.rel < 0 ? "−" : ""}${Math.abs(h.rel).toFixed(1)}%)` : "";
     points.push(
       h.diff === 0
-        ? { id: "holders", text: `Retail holder count unchanged ${when}`, trend: "flat" }
+        ? { id: "holders", text: `Retail wallet count unchanged ${when}`, trend: "flat" }
         : {
             id: "holders",
-            text: `Retail holders ${h.diff > 0 ? "up" : "down"} ${int.format(Math.abs(h.diff))}${rel} ${when}`,
+            text: `Retail wallets ${h.diff > 0 ? "up" : "down"} ${int.format(Math.abs(h.diff))}${rel} ${when}`,
             trend: h.diff > 0 ? "up" : "down",
           },
     );
   } else if (holders.comparisonBlocked) {
-    points.push({ id: "holders", text: `Holder change ${when} not directly comparable (some wallets were reclassified)`, trend: "unknown" });
+    points.push({ id: "holders", text: `Wallet count change ${when} not directly comparable (some wallets were reclassified)`, trend: "unknown" });
   }
 
   const s = change(staked);

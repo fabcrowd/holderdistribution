@@ -14,6 +14,8 @@ export type ExchangeFlowEntry = {
   dexIn?: number;
   dexOut?: number;
   dexNet?: number;
+  /** The in-progress UTC day (hours so far); absent on settled days and older feeds. */
+  partial?: boolean;
 };
 
 type ExchangeFlowPayload = {

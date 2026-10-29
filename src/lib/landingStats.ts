@@ -1,20 +1,24 @@
 import type { HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
+import { uniqueWalletCount } from "@/lib/holderCounts";
 
 export const DASH = "—";
 
+/** `holders` is the unique-wallet count (labelled "Unique wallets" on the card). */
 export type CardStats = { holders: string; retailShare: string };
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
 /**
- * Landing-card stats from a token's existing holders-lite.json: holder count
- * (views.combined.metrics.holderCount) and retail share of supply
- * (views.combined.metrics.totalBalance / totals.totalSupply, the same inputs as
- * the terminal's "Retail Held" tile). Each stat falls back to "—" on its own.
+ * Landing-card stats from a token's existing holders-lite.json: unique wallets
+ * (overlap.uniqueCount, each address once across chains; falls back to
+ * views.combined.metrics.holderCount, which equals it on single-chain tokens)
+ * and retail share of supply (views.combined.metrics.totalBalance /
+ * totals.totalSupply, the same inputs as the terminal's "Retail Held" tile).
+ * Each stat falls back to "—" on its own.
  */
 export const cardStats = (snap: HolderLiteSnapshot | null | undefined): CardStats => {
   const m = snap?.views?.combined?.metrics;
-  const count = num(m?.holderCount);
+  const count = uniqueWalletCount(snap) ?? num(m?.holderCount);
   const held = num(m?.totalBalance);
   const supply = num(snap?.totals?.totalSupply);
   return {

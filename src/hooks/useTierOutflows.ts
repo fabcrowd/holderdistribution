@@ -60,6 +60,8 @@ export type TierOutflows = {
   generatedAt?: string;
   complete?: boolean;
   latestDate?: string;
+  /** Set when `latestDate` is still in progress, so the 1-day window holds hours-so-far. Absent on older feeds. */
+  partialDate?: string | null;
   /** Earliest day with real counterparty-tier attribution, or null if none yet (schema v11+). */
   sourceTierSince?: string | null;
   ranges: Record<string, TierOutflowRange>;

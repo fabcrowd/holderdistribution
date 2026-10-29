@@ -36,6 +36,7 @@ import { getUsableRpcUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { loadEnv } from "./loadEnv.js";
 import { selectPipelineProject, projectPaths, projectChains, projectClassificationPath } from "./lib/projects.js";
 import { exchangeFlowChains } from "./lib/exchangeFlowChains.js";
+import { markPartialDay } from "./lib/partialDay.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: token addresses,
 // decimals and start blocks come from the project's chain map, CEX/DEX lists
@@ -263,7 +264,9 @@ const main = async () => {
     await scanChain(chainKey, cexSet, dexSet, checkpoint, dayBuckets);
   }
 
-  const entries = Array.from(dayBuckets.entries())
+  // The final row is today's hours so far; flag it so the UI can label it
+  // instead of drawing a collapse (see scripts/lib/partialDay.js).
+  const entries = markPartialDay(Array.from(dayBuckets.entries())
     .map(([date, b]) => ({
       date,
       chains: b.chains,
@@ -274,7 +277,7 @@ const main = async () => {
       dexOut: Math.round(b.dexOut ?? 0),
       dexNet: Math.round((b.dexIn ?? 0) - (b.dexOut ?? 0)),
     }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => a.date.localeCompare(b.date)));
 
   await fs.mkdir(path.dirname(HISTORY_PATH), { recursive: true });
   await fs.writeFile(HISTORY_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, generatedAt: new Date().toISOString(), entries }, null, 2)}\n`, "utf8");

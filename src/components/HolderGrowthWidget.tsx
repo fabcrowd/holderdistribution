@@ -157,14 +157,14 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   // Text alternative for the holders line: start, end and net change in
   // one sentence (the chart's points are mouse-only tooltips).
   const holdersAriaSummary = useMemo(() => {
-    if (chartData.length === 0) return "Retail holders: no data for this range.";
+    if (chartData.length === 0) return "Retail wallets: no data for this range.";
     const f = chartData[0];
     const l = chartData[chartData.length - 1];
     const day = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
     const n = new Intl.NumberFormat();
     const d = l.holders - f.holders;
     const change = d === 0 ? "no net change" : `${d > 0 ? "up" : "down"} ${n.format(Math.abs(d))}`;
-    return `Retail holders line chart: ${n.format(f.holders)} on ${day.format(f.timestamp)} to ${n.format(l.holders)} on ${day.format(l.timestamp)}, ${change}.`;
+    return `Retail wallets line chart: ${n.format(f.holders)} on ${day.format(f.timestamp)} to ${n.format(l.holders)} on ${day.format(l.timestamp)}, ${change}.`;
   }, [chartData]);
 
   // Render-only view of chartData: breaks the line across days the pipeline
