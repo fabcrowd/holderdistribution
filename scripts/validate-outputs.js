@@ -10,6 +10,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { selectPipelineProject, projectPaths } from "./lib/projects.js";
+import { runForEachProject } from "./lib/feedHealth.js";
+
+// `--all`: once per registered project; fail if any project fails.
+if (process.argv.includes("--all")) {
+  process.exit(runForEachProject(import.meta.url, process.argv.slice(2).filter((a) => a !== "--all")) > 0 ? 1 : 0);
+}
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: validates the
 // project's data dir (TEL: public/data/, others: public/data/<slug>/).

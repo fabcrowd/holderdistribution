@@ -334,6 +334,15 @@
     "liveData": "Registered in PROJECT_SLUGS (netlify/functions/live-data.mjs).",
     "supplyReconciliation": "reconcile-supply labels contracts{} role addresses (and Solana token-account owners persisted on the snapshot as tokenAccountOwnersByChain) as treasury/staking categories; no ZBCN-only exclusions file. After pull-holders-rpc credits stakers, stake-vault rows are residual-only, so the staking category is undistributed reward vaults — staked principal is inside retail (or the staker's own label, if they are an exchange)."
   },
+  "health": {
+    "feeds": {
+      "holders-lite.json": { "workflow": "Refresh zebec-network holders" },
+      "cex-wallets.json": { "maxAgeHours": 36, "workflow": "Refresh zebec-network holders" },
+      "funding-wallets.json": { "disabled": true },
+      "exchange-flow-history.json": { "placeholder": true },
+      "tier-outflows.json": { "placeholder": true }
+    }
+  },
   "classification": {
     "cexWallets": "config/projects/zebec-network/cex-wallets.json",
     "changelog": "config/projects/zebec-network/classification-changelog.json"

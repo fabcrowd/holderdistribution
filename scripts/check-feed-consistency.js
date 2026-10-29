@@ -24,13 +24,22 @@
  * Exit 1 on any mismatch, so a pipeline run fails BEFORE committing rather
  * than publishing a self-contradicting dataset.
  *
- * Run: node scripts/check-feed-consistency.js [--strict]
+ * Run: node scripts/check-feed-consistency.js [--project <slug> | --all] [--strict]
  *   --strict also fails on staleness warnings (feeds more than STALE_DAYS old).
  */
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
+import { holderDayChanges, placeholderLag, resolveConsistencyOptions, resolveFeedHealth, runForEachProject } from "./lib/feedHealth.js";
+
+// `--all`: once per registered project; fail if any project fails.
+if (process.argv.includes("--all")) {
+  const failed = runForEachProject(import.meta.url, process.argv.slice(2).filter((a) => a !== "--all"));
+  if (failed > 0) console.error(`
+${failed} project(s) failed the consistency check.`);
+  process.exit(failed > 0 ? 1 : 0);
+}
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: checks the
 // project's data dir (TEL: public/data/, others: public/data/<slug>/) against
@@ -218,6 +227,32 @@ const main = async () => {
     }
   }
 
+  // --- 8. Holder count day-over-day. A WARN, never a failure: real events
+  // (listings, airdrops, reclassifications) move it. Known dates are allowed via
+  // config health.consistency.knownHolderChangeDates and changelog event dates;
+  // anything else is surfaced so a silent classification break is not missed.
+  const opts = resolveConsistencyOptions(project.config, (cfgLog.events ?? []).map((e) => e.date));
+  for (const c of holderDayChanges(history?.entries, opts)) {
+    warnings.push(
+      `holder count moved ${c.pct.toFixed(1)}% on ${c.date} (${fmt(c.previous)} -> ${fmt(c.current)}), ` +
+        `over the ${opts.maxPct}% day-over-day threshold; if expected, add the date to ` +
+        `health.consistency.knownHolderChangeDates in config/projects/${project.slug}.json`,
+    );
+  }
+
+  // --- 9. Placeholder feeds (intentional stubs) must be rewritten with the
+  // snapshot, not left over from an earlier run.
+  const snapshotMs = Date.parse(lite?.generatedAt ?? "");
+  const placeholders = [];
+  for (const feed of resolveFeedHealth(project.config).filter((f) => f.placeholder)) {
+    placeholders.push({ file: feed.file, doc: await read(feed.file, { optional: true }) });
+  }
+  if (Number.isFinite(snapshotMs)) {
+    for (const p of placeholderLag(placeholders, snapshotMs, opts.placeholderSlackMs)) {
+      warnings.push(`placeholder ${p.file} (generated ${p.generatedAt}) is older than the holders snapshot (${lite.generatedAt})`);
+    }
+  }
+
   // --- 7. Staleness. Feeds are produced by three different workflows on three
   // crons, so they are never byte-simultaneous; this only flags real drift.
   const now = Date.now();
@@ -227,6 +262,8 @@ const main = async () => {
     ["exchange-flow-history.json", await read("exchange-flow-history.json", { optional: true })],
     ["tier-outflows.json", await read("tier-outflows.json", { optional: true })],
   ]) {
+    // Intentional stubs are checked by (9), not aged here.
+    if (placeholders.some((p) => p.file === name)) continue;
     const ts = Date.parse(doc?.generatedAt ?? "");
     if (!Number.isFinite(ts)) continue;
     const days = (now - ts) / 86_400_000;

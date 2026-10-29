@@ -77,13 +77,20 @@ const dailyCrons = (doc) =>
  */
 const PER_PROJECT_DAILY = { "refresh-zebec-network.yml": "zebec-network" };
 
+/**
+ * The watchdog runs daily (2026-10-28) so a dead feed or an Actions billing block is
+ * caught within a day, not a week. It is a monitor: the heavy self-heal chain and
+ * its (publishing) commit only run when a feed is actually stale.
+ */
+const DAILY_MONITORS = ["pipeline-watchdog.yml"];
+
 describe("data pipeline workflow chain", () => {
-  it("only the consolidated daily workflow (plus per-project refreshes) runs on a daily schedule", () => {
+  it("only the consolidated daily workflow (plus per-project refreshes and the watchdog monitor) runs on a daily schedule", () => {
     const daily = fs
       .readdirSync(DIR)
       .filter((f) => f.endsWith(".yml"))
       .filter((f) => dailyCrons(load(f)).length > 0);
-    expect(daily.sort()).toEqual(["refresh-tel-holders.yml", ...Object.keys(PER_PROJECT_DAILY)].sort());
+    expect(daily.sort()).toEqual(["refresh-tel-holders.yml", ...Object.keys(PER_PROJECT_DAILY), ...DAILY_MONITORS].sort());
     expect(dailyCrons(load("refresh-tel-holders.yml"))).toHaveLength(1);
   });
 
