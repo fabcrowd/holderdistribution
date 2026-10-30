@@ -158,9 +158,9 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
                     <span
                       className={`ml-1.5 text-xs ${
                         tile.change > 0
-                          ? "text-red-700 dark:text-red-400"
+                          ? "text-negative"
                           : tile.change < 0
-                            ? "text-emerald-700 dark:text-emerald-400"
+                            ? "text-positive"
                             : "text-muted-foreground"
                       }`}
                     >

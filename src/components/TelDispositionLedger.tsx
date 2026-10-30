@@ -323,7 +323,7 @@ const MetricTile = ({
   hint?: string;
 }) => (
   <div className="rounded-lg border border-border/50 bg-background/60 px-3 py-2">
-    <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+    <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground">
       {label}
       {hint ? <InfoTooltip text={hint} /> : null}
     </p>
@@ -334,12 +334,12 @@ const MetricTile = ({
 const WhereStablecoinWentBuckets = ({ buckets }: { buckets: WhereStablecoinWentBucket[] }) => (
   <article className="space-y-2">
     <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">Where stablecoin went</h4>
-    <p className="text-[10px] text-muted-foreground">
+    <p className="text-xs text-muted-foreground">
       USDC and USDT received from TEL sales in this period — whether it stayed in the selling wallet or was
       paid out. Expand a line for payees, transaction count, and dollar totals.
     </p>
     {buckets.length === 0 ? (
-      <p className="text-[10px] text-muted-foreground">No stablecoin proceeds in this period.</p>
+      <p className="text-xs text-muted-foreground">No stablecoin proceeds in this period.</p>
     ) : (
       <div className="divide-y divide-border/40 rounded-lg border border-border/40 bg-background/40">
         {buckets.map((bucket) => (
@@ -361,9 +361,9 @@ const WhereStablecoinWentBuckets = ({ buckets }: { buckets: WhereStablecoinWentB
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-[10px]">Payee</TableHead>
-                      <TableHead className="text-[10px] text-right">Sales</TableHead>
-                      <TableHead className="text-[10px] text-right">Stablecoin</TableHead>
+                      <TableHead className="text-xs">Payee</TableHead>
+                      <TableHead className="text-xs text-right">Sales</TableHead>
+                      <TableHead className="text-xs text-right">Stablecoin</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -371,7 +371,7 @@ const WhereStablecoinWentBuckets = ({ buckets }: { buckets: WhereStablecoinWentB
                       const label = dest.toLabel ?? stablecoinPayeeLabel(dest.to);
                       return (
                         <TableRow key={`${dest.chain}-${dest.to}-${dest.token}`}>
-                          <TableCell className="max-w-[14rem] text-[10px]">
+                          <TableCell className="max-w-[14rem] text-xs">
                             <a
                               href={explorerAddress(dest.chain, dest.to)}
                               target="_blank"
@@ -382,11 +382,11 @@ const WhereStablecoinWentBuckets = ({ buckets }: { buckets: WhereStablecoinWentB
                               <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
                             </a>
                             {label && (
-                              <div className="truncate font-mono text-[9px] text-muted-foreground">{shortAddr(dest.to)}</div>
+                              <div className="truncate font-mono text-[11px] text-muted-foreground">{shortAddr(dest.to)}</div>
                             )}
                           </TableCell>
-                          <TableCell className="text-right text-[10px] tabular-nums">{dest.txCount}</TableCell>
-                          <TableCell className="text-right text-[10px] font-medium tabular-nums">
+                          <TableCell className="text-right text-xs tabular-nums">{dest.txCount}</TableCell>
+                          <TableCell className="text-right text-xs font-medium tabular-nums">
                             {formatUsd(dest.usd)}
                             {dest.token ? (
                               <span className="ml-0.5 font-normal text-muted-foreground">{dest.token}</span>
@@ -409,7 +409,7 @@ const WhereStablecoinWentBuckets = ({ buckets }: { buckets: WhereStablecoinWentB
 const WhereTelWentBuckets = ({ buckets }: { buckets: WhereTelWentBucket[] }) => (
   <article className="space-y-2">
     <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">Where TEL went</h4>
-    <p className="text-[10px] text-muted-foreground">
+    <p className="text-xs text-muted-foreground">
       All TEL that left Association wallets in this period — sold for stablecoin or transferred.
       Expand a line for destinations, transaction count, and totals.
       Chain hops are followed to the wallet or venue on the other chain — not listed as
@@ -435,15 +435,15 @@ const WhereTelWentBuckets = ({ buckets }: { buckets: WhereTelWentBucket[] }) => 
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-[10px]">Destination</TableHead>
-                    <TableHead className="text-[10px] text-right">Transactions</TableHead>
-                    <TableHead className="text-[10px] text-right">TEL</TableHead>
+                    <TableHead className="text-xs">Destination</TableHead>
+                    <TableHead className="text-xs text-right">Transactions</TableHead>
+                    <TableHead className="text-xs text-right">TEL</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {bucket.destinations.map((dest) => (
                     <TableRow key={`${dest.chain}-${dest.to}`}>
-                      <TableCell className="max-w-[14rem] truncate text-[10px]">
+                      <TableCell className="max-w-[14rem] truncate text-xs">
                         {dest.to ? (
                           <a
                             href={explorerAddress(dest.chain, dest.to)}
@@ -458,8 +458,8 @@ const WhereTelWentBuckets = ({ buckets }: { buckets: WhereTelWentBucket[] }) => 
                           "—"
                         )}
                       </TableCell>
-                      <TableCell className="text-right text-[10px] tabular-nums">{dest.txCount}</TableCell>
-                      <TableCell className="text-right text-[10px] font-medium tabular-nums">
+                      <TableCell className="text-right text-xs tabular-nums">{dest.txCount}</TableCell>
+                      <TableCell className="text-right text-xs font-medium tabular-nums">
                         {formatCompactAmount(dest.tel)}
                       </TableCell>
                     </TableRow>
@@ -501,7 +501,7 @@ const ChainRail = ({
     </dl>
     {data.topPayees.length > 0 && (
       <div className="pt-1">
-        <p className="mb-1 text-[10px] text-muted-foreground">Largest stablecoin recipients</p>
+        <p className="mb-1 text-xs text-muted-foreground">Largest stablecoin recipients</p>
         <ul className="space-y-0.5">
           {data.topPayees.slice(0, 5).map((p) => (
             <li key={`${p.to}-${p.token}`} className="flex justify-between gap-2 text-[11px]">
@@ -532,7 +532,7 @@ const SortHead = ({
   return (
     <TableHead
       aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
-      className={cn("text-[10px]", align === "right" && "text-right")}
+      className={cn("text-xs", align === "right" && "text-right")}
     >
       <button
         type="button"
@@ -698,17 +698,17 @@ export const TelDispositionLedger = () => {
             periodSummary.sellsRetained > 0) && (
             <div className="flex flex-wrap gap-2">
               {periodSummary.sellsWithoutQuote > 0 && (
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-xs">
                   {periodSummary.sellsWithoutQuote} sales missing a stablecoin amount
                 </Badge>
               )}
               {periodSummary.sellsWithoutProceed > 0 && (
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-xs">
                   {periodSummary.sellsWithoutProceed} sales with unknown stablecoin destination
                 </Badge>
               )}
               {periodSummary.sellsRetained > 0 && (
-                <Badge variant="secondary" className="text-[10px]">
+                <Badge variant="secondary" className="text-xs">
                   {periodSummary.sellsRetained} stablecoin still in the selling wallet
                 </Badge>
               )}
@@ -782,16 +782,16 @@ export const TelDispositionLedger = () => {
                   ) : (
                     journalRows.map((s) => (
                     <TableRow key={s.id}>
-                      <TableCell className="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
                         {s.timestamp
                           ? new Date(s.timestamp * 1000).toLocaleDateString()
                           : `#${s.block}`}
                       </TableCell>
-                      <TableCell className="max-w-[7rem] truncate text-[10px]">{s.fromName}</TableCell>
-                      <TableCell className="text-right text-[10px] tabular-nums">
+                      <TableCell className="max-w-[7rem] truncate text-xs">{s.fromName}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">
                         {formatCompactAmount(s.telAmount)}
                       </TableCell>
-                      <TableCell className="text-right text-[10px] tabular-nums">
+                      <TableCell className="text-right text-xs tabular-nums">
                         {stableQuoteUsd(s.quoteToken, s.quoteAmount) ? (
                           <>
                             {formatUsd(stableQuoteUsd(s.quoteToken, s.quoteAmount))}
@@ -803,7 +803,7 @@ export const TelDispositionLedger = () => {
                           "—"
                         )}
                       </TableCell>
-                      <TableCell className="max-w-[8rem] truncate text-[10px]">
+                      <TableCell className="max-w-[8rem] truncate text-xs">
                         {s.proceedStatus === "retained_in_wallet" ? (
                           <span className="text-muted-foreground">still in {s.fromName}</span>
                         ) : s.proceedTo ? (
@@ -812,7 +812,7 @@ export const TelDispositionLedger = () => {
                               {stablecoinPayeeLabel(s.proceedTo) ?? shortAddr(s.proceedTo)}
                             </span>
                             {stablecoinPayeeLabel(s.proceedTo) ? (
-                              <span className="font-mono text-[9px] text-muted-foreground">{shortAddr(s.proceedTo)}</span>
+                              <span className="font-mono text-[11px] text-muted-foreground">{shortAddr(s.proceedTo)}</span>
                             ) : null}
                           </span>
                         ) : (
@@ -824,7 +824,7 @@ export const TelDispositionLedger = () => {
                           href={explorerTx(s.chain, s.txHash)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+                          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                           aria-label="View on-chain receipt"
                         >
                           Receipt
@@ -837,7 +837,7 @@ export const TelDispositionLedger = () => {
                 </TableBody>
               </Table>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               * Stablecoin amount estimated from nearby sales of the same wallet (the trade settled in a
               way that did not leave a clean stablecoin amount on the same transaction).
             </p>

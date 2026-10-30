@@ -75,7 +75,7 @@ export function ZoomFrame<T>({ zoom, children, className, notes, yAxes }: Props<
             <button
               type="button"
               onClick={zoom.reset}
-              className="ml-auto inline-flex h-5 shrink-0 items-center gap-1 rounded border border-border bg-background px-1.5 text-[11px] text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+              className="ml-auto inline-flex h-5 max-xl:h-11 max-xl:px-3 max-xl:text-xs shrink-0 items-center gap-1 rounded border border-border bg-background px-1.5 text-[11px] text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
             >
               <RotateCcw className="h-2.5 w-2.5" aria-hidden="true" />
               Reset zoom

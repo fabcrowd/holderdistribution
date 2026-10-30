@@ -70,7 +70,7 @@ const TxLink = ({ chain, hash }: { chain: string; hash: string }) => (
     href={explorerTx(chain, hash)}
     target="_blank"
     rel="noopener noreferrer"
-    className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
     aria-label="View on-chain receipt"
   >
     Receipt
@@ -83,26 +83,26 @@ const TxRows = ({ txs, counterpartLabel }: { txs: PnlTx[]; counterpartLabel: str
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="text-[10px]">Date</TableHead>
-          <TableHead className="text-[10px]">{counterpartLabel}</TableHead>
-          <TableHead className="text-[10px] text-right">TEL</TableHead>
-          <TableHead className="text-[10px] text-right">USD</TableHead>
+          <TableHead className="text-xs">Date</TableHead>
+          <TableHead className="text-xs">{counterpartLabel}</TableHead>
+          <TableHead className="text-xs text-right">TEL</TableHead>
+          <TableHead className="text-xs text-right">USD</TableHead>
           <TableHead className="w-16" />
         </TableRow>
       </TableHeader>
       <TableBody>
         {txs.map((tx) => (
           <TableRow key={tx.id}>
-            <TableCell className="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">
+            <TableCell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
               {tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleDateString() : "—"}
             </TableCell>
-            <TableCell className="max-w-[12rem] truncate text-[10px]">
+            <TableCell className="max-w-[12rem] truncate text-xs">
               {tx.to ? <AddrLink chain={tx.chain} address={tx.to} label={tx.toLabel} /> : "—"}
             </TableCell>
-            <TableCell className="text-right text-[10px] tabular-nums">
+            <TableCell className="text-right text-xs tabular-nums">
               {tx.telAmount ? formatCompactAmount(tx.telAmount) : "—"}
             </TableCell>
-            <TableCell className="text-right text-[10px] tabular-nums">
+            <TableCell className="text-right text-xs tabular-nums">
               {tx.usd != null ? formatUsd(tx.usd) : "—"}
             </TableCell>
             <TableCell className="p-1">
@@ -153,7 +153,7 @@ const CostCenterBody = ({ center }: { center: CostCenter }) => {
         <div className="space-y-2">
           {income.length > 0 && (
             <div>
-              <p className="flex items-center gap-1 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="flex items-center gap-1 px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Income
                 <InfoTooltip text="USDC or USDT received when this wallet sold TEL. That is income from the sale — not an accrual P&L." />
               </p>
@@ -164,7 +164,7 @@ const CostCenterBody = ({ center }: { center: CostCenter }) => {
           )}
           {movements.length > 0 && (
             <div>
-              <p className="flex items-center gap-1 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="flex items-center gap-1 px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Uses of TEL
                 <InfoTooltip text="TEL that left this wallet. Sold for stablecoin is a conversion. Sent to another Association wallet is a transfer between cost centers, not a cost." />
               </p>
@@ -233,7 +233,7 @@ export const DispositionPnlView = ({
             <dd className="font-semibold tabular-nums">{formatCompactAmount(pnl.totalTelOut)} TEL</dd>
           </div>
         </dl>
-        <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           Records TEL and stablecoin when they move, not a GAAP income statement. Each cost center
           is a council wallet. Expand a center, then a GL line, to open the receipts.
         </p>

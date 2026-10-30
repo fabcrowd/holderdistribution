@@ -2,8 +2,8 @@ import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import type { SummaryPoint, HolderSummary } from "@/lib/holderSummary";
 
 const TREND_STYLE: Record<SummaryPoint["trend"], { Icon: typeof Minus; cls: string }> = {
-  up: { Icon: ArrowUpRight, cls: "text-emerald-700 dark:text-emerald-400" },
-  down: { Icon: ArrowDownRight, cls: "text-red-700 dark:text-red-400" },
+  up: { Icon: ArrowUpRight, cls: "text-positive" },
+  down: { Icon: ArrowDownRight, cls: "text-negative" },
   flat: { Icon: Minus, cls: "text-muted-foreground" },
   unknown: { Icon: Minus, cls: "text-muted-foreground" },
 };

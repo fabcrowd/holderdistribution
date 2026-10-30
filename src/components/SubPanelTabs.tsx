@@ -86,15 +86,15 @@ export const SubPanelTabs = ({
                 key={panel.id}
                 value={panel.id}
                 title={panel.title}
-                className="min-h-[32px] max-xl:min-h-10 rounded px-3 text-xs font-semibold text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                className="min-h-[32px] max-xl:min-h-11 rounded px-3 text-xs font-semibold text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm"
               >
                 {panel.label}
               </TabsTrigger>
             ))}
           </TabsList>
         ) : (
-          <div className={`min-w-0 flex-1 overflow-x-auto [-webkit-overflow-scrolling:touch] ${useSelect ? "hidden sm:block" : ""}`}>
-            <TabsList className="inline-flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 rounded-none border-b border-border/60 bg-transparent p-0">
+          <div className={`min-w-0 flex-1 overflow-x-auto [-webkit-overflow-scrolling:touch] max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-28px),transparent)] ${useSelect ? "hidden sm:block" : ""}`}>
+            <TabsList className="inline-flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 max-sm:pr-7 rounded-none border-b border-border/60 bg-transparent p-0">
               {panels.map((panel) => (
                 <TabsTrigger
                   key={panel.id}

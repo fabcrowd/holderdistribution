@@ -29,8 +29,8 @@ export const ExchangeFlowWidget = ({ rangeDays }: ExchangeFlowWidgetProps) => {
   return (
   <div>
     <div className="flex items-center gap-2 text-base sm:text-lg font-bold tracking-tight flex-wrap">
-      <span className="p-1.5 rounded-xl bg-amber-500/12 border border-amber-500/20 shrink-0">
-        <ArrowLeftRight className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+      <span className="p-1.5 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
+        <ArrowLeftRight className="h-4 w-4 text-primary" />
       </span>
       Exchange Flows
       <MethodologyInfo section="cexFlows" />

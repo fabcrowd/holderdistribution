@@ -13,7 +13,7 @@ import { useProject } from "@/hooks/useProject";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { AnswerCards } from "./AnswerCards";
 import { TimeRangeDropdown } from "@/components/TimeRangeDropdown";
-import { Footer, SITE_DISCLAIMER } from "@/components/Footer";
+import { DisclaimerLink, Footer } from "@/components/Footer";
 import { useHeadlineSummary } from "@/hooks/useHeadlineSummary";
 import { useIntro } from "@/hooks/useMotion";
 import type { DisplaySelection } from "@/hooks/useHolderSnapshot";
@@ -49,7 +49,7 @@ type Props = {
 };
 
 /**
- * Desktop (>=1280px) shell: one 56px title bar carrying the brand (eyebrow +
+ * Desktop (>=1280px) shell: one 64px title bar carrying the brand (eyebrow +
  * an always-visible "<image> <Name> Holder Distribution" h1 whose token mark
  * links home to the token picker, plus a stale-data pill),
  * the view switch, and every control; then three answer cards (holders, held, on
@@ -101,7 +101,7 @@ export const TerminalDashboard = ({
           Skip to main content
         </a>
         <header
-          className={`relative flex h-14 shrink-0 items-center gap-3 ${intro ? "ha-fade-in" : ""} border-b border-border bg-card px-3 shadow-[0_1px_0_0_hsl(var(--border))] 2xl:gap-5 2xl:px-4`}
+          className={`relative flex h-16 shrink-0 items-center gap-3 ${intro ? "ha-fade-in" : ""} border-b border-border bg-card px-3 shadow-[0_1px_0_0_hsl(var(--border))] 2xl:gap-5 2xl:px-4`}
           data-testid="terminal-header"
         >
           {/* Brand accent: a 2px primary rule across the top of the bar so the
@@ -109,10 +109,10 @@ export const TerminalDashboard = ({
           <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary via-primary/70 to-[hsl(var(--ha-accent))]" />
           <div className="flex shrink-0 items-center gap-2.5">
             <Link to="/" className="shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <img src={logoIcon} alt="" width={36} height={36} className="h-8 w-8 min-[1400px]:h-9 min-[1400px]:w-9" />
+              <img src={logoIcon} alt="" width={36} height={36} className="h-9 w-9 min-[1400px]:h-10 min-[1400px]:w-10" />
               <span className="sr-only">Holder Analytics home</span>
             </Link>
-            <div className="flex flex-col justify-center leading-none">
+            <div className="flex flex-col justify-center gap-1.5 leading-none">
               <div className="flex items-center gap-1.5">
                 {/* When the data is late the pill takes the eyebrow's place
                     below 1400px, so the brand column doesn't grow into the KPIs. */}
@@ -137,8 +137,9 @@ export const TerminalDashboard = ({
                   </span>
                 )}
               </div>
-              <h1 className="mt-1 whitespace-nowrap text-base font-extrabold leading-none tracking-tight text-foreground min-[1400px]:text-lg 2xl:text-xl">
-                <TokenIdentity /> Holder Distribution
+              <h1 className="flex items-center gap-1.5 whitespace-nowrap text-base font-extrabold leading-none tracking-tight text-foreground min-[1400px]:text-lg 2xl:text-xl">
+                <TokenIdentity className="text-foreground" />
+                <span>Holder Distribution</span>
               </h1>
             </div>
           </div>
@@ -155,7 +156,7 @@ export const TerminalDashboard = ({
                     e.preventDefault();
                     onViewChange(v.id);
                   }}
-                  className={`inline-flex h-8 items-center gap-1.5 rounded px-2.5 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  className={`inline-flex h-9 items-center gap-1.5 rounded px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     active ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -174,7 +175,7 @@ export const TerminalDashboard = ({
               id="terminal-chain"
               value={selectedView}
               onChange={(e) => onSelectedViewChange(e.target.value as DisplaySelection)}
-              className="h-8 rounded-full border border-border bg-card px-2.5 text-xs font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-9 rounded-full border border-border bg-card px-3 text-[13px] font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {CHAINS.map((c) => (
                 <option key={c.key} value={c.key}>
@@ -182,14 +183,14 @@ export const TerminalDashboard = ({
                 </option>
               ))}
             </select>
-            <TimeRangeDropdown value={rangeDays} onChange={onRangeDaysChange} options={rangeOptions} />
+            <TimeRangeDropdown value={rangeDays} onChange={onRangeDaysChange} options={rangeOptions} className="xl:!h-9 xl:!text-[13px]" />
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   type="button"
                   aria-label="Summary of what changed"
                   title="Summary"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Info className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -215,8 +216,8 @@ export const TerminalDashboard = ({
                 )}
               </PopoverContent>
             </Popover>
-            <GlossaryDialog className="!min-h-0 h-8 px-2 text-xs" labelClassName="sr-only 2xl:not-sr-only" />
-            <ThemeToggle />
+            <GlossaryDialog className="!min-h-0 h-9 px-2.5 text-[13px]" labelClassName="sr-only 2xl:not-sr-only" />
+            <ThemeToggle className="!h-9 !w-9" />
           </div>
         </header>
 
@@ -256,6 +257,9 @@ export const TerminalDashboard = ({
             )}
             <span aria-hidden="true">·</span>
             <span>On-chain data for {t("{chains}")}. Prices by CoinGecko.</span>
+            <span aria-hidden="true">·</span>
+            <span>Not financial advice.</span>
+            <DisclaimerLink />
             <Sheet>
               <SheetTrigger asChild>
                 <button type="button" className="ml-auto font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -271,9 +275,6 @@ export const TerminalDashboard = ({
               </SheetContent>
             </Sheet>
           </div>
-          <p className="px-3 pb-2 text-center leading-snug" data-testid="terminal-disclaimer">
-            {SITE_DISCLAIMER}
-          </p>
         </footer>
       </div>
     </TooltipProvider>

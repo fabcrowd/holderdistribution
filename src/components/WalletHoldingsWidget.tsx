@@ -61,10 +61,9 @@ import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { pickBaseline, baselineLabel } from "@/lib/baseline";
 import { type ClassificationEvent } from "@/hooks/useClassificationChangelog";
 import { useHeadlineTiles } from "@/hooks/useHeadlineTiles";
-import { ChainStatusBar } from "@/components/ChainStatusBar";
+import { ChainStatusBar, CompactProvenance } from "@/components/ChainStatusBar";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
-import { InfoTip } from "@/components/InfoTip";
 import { StatTile } from "@/components/ui/stat-tile";
 import { BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, ReferenceLine, Line } from "recharts";
 import { chainViewOptions, type ChainView } from "@/lib/chainViews";
@@ -565,13 +564,6 @@ const renderVelocity = (
         <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-1.5 sm:gap-2">
           <Activity className="h-5 w-5 text-primary shrink-0" />
           <span className="min-w-0">Holder Momentum</span>
-          <InfoTip
-            label="About Holder Momentum"
-            align="start"
-            className="text-muted-foreground/80 hover:text-primary"
-            iconClassName="h-4 w-4"
-            content={`First-time holders and holder growth for ${selectionLabel} over the selected timeframe.`}
-          />
           <MethodologyInfo section="holderMomentum" />
         </CardTitle>
       </CardHeader>
@@ -710,13 +702,13 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
         {/* Stat tiles */}
         <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
           {items.map((item) => (
-            <div key={item.label} className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
+            <div key={item.label} className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-lg:last:odd:col-span-2 ${TILE_HOVER}`}>
               <div className="flex items-center justify-center gap-1 mb-2">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{item.label}</div>
                 {item.info && <InfoTooltip text={item.info} />}
               </div>
               <div className="text-xl font-semibold text-primary">{item.value}</div>
-              {item.sub && <div className="text-xs text-muted-foreground mt-1">{item.sub}</div>}
+              {item.sub && <div className="text-xs text-muted-foreground mt-1 lg:basis-full">{item.sub}</div>}
             </div>
           ))}
         </div>
@@ -880,10 +872,10 @@ const renderStakingInsights = (
       <CardContent className="pt-5 space-y-6">
         <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
           {items.map((item) => (
-            <div key={item.label} className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
+            <div key={item.label} className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-lg:last:odd:col-span-2 ${TILE_HOVER}`}>
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">{item.label}</div>
               <div className="text-xl font-semibold text-primary">{item.value}</div>
-              {"sub" in item && item.sub && <div className="mt-1 text-xs tabular-nums text-muted-foreground">{item.sub}</div>}
+              {"sub" in item && item.sub && <div className="mt-1 text-xs tabular-nums text-muted-foreground lg:basis-full">{item.sub}</div>}
             </div>
           ))}
         </div>
@@ -945,15 +937,15 @@ const renderOverlap = (stats: HolderLiteSnapshot["overlap"] | null, ctl: RangeCt
       </CardHeader>
       <CardContent className="space-y-4 pt-5">
         <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3">
-          <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
+          <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
             <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Unique Wallets</div>
             <div className="text-xl font-semibold text-primary">{formatInteger(stats.uniqueCount)}</div>
           </div>
-          <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
+          <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
             <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Multi-chain Wallets</div>
             <div className="text-xl font-semibold text-primary">{formatInteger(stats.multiChainCount)}</div>
           </div>
-          <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
+          <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
             <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Multi-chain Share</div>
             <div className="text-xl font-semibold text-primary">{formatPercentage(stats.multiChainShare * 100, 2)}</div>
           </div>
@@ -1050,7 +1042,7 @@ const renderCexFlows = (
       </CardHeader>
       <CardContent className="space-y-4 pt-5">
         <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3">
-          <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
+          <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
             <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Exchange Wallets</div>
             <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
               <div className="text-2xl font-semibold text-primary">{formatInteger(overall.walletCountWithBalance)}</div>
@@ -1067,7 +1059,7 @@ const renderCexFlows = (
             </div>
             <div className="mt-1 text-xs text-muted-foreground">holding {copy.ticker}, of {formatInteger(overall.walletCount)} tracked</div>
           </div>
-          <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
+          <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
             <div className="flex items-center justify-center gap-1.5 mb-2">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">CEX Balance</div>
               <InfoTooltip text={copy.text("cex.balance.info", "{ticker} held in known exchange wallets. Additional balances may exist in untagged wallets, so treat this as a floor, not a total.")} />
@@ -1085,7 +1077,7 @@ const renderCexFlows = (
               />
             </div>
           </div>
-          <div className={`premium-surface-card p-3 sm:p-5 text-center ${TILE_HOVER}`}>
+          <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
             <div className="flex items-center justify-center gap-1.5 mb-2">
               <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Balance Change ({rangeLabel})</div>
               <InfoTooltip text={copy.t("How much the tracked exchange balances moved over this window — a change in STOCK, not measured flow.\n\nIt also shifts when an exchange reshuffles {ticker} between tagged and untagged wallets, so it won't exactly equal deposits minus withdrawals.\n\nFor measured FLOW — actual deposits and withdrawals counted from on-chain Transfer logs — see Exchange Netflow below.")} />
@@ -1100,16 +1092,16 @@ const renderCexFlows = (
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
-                  <TableHead className="text-left font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4 w-10" aria-label="Expand" />
-                  <TableHead className="text-left font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4">Exchange</TableHead>
+                  <TableHead className="text-left font-semibold text-muted-foreground text-xs sm:text-sm px-1 sm:px-4 w-6 sm:w-10" aria-label="Expand" />
+                  <TableHead className="text-left font-semibold text-muted-foreground text-xs sm:text-sm px-1 sm:px-4">Exchange</TableHead>
                   {/* Wallets is the lowest-priority column and the reason
                       Net(range) — the number this section exists for — sat
                       off-screen at 430px. Hidden below sm; the count is still
                       recoverable by expanding the row, which lists each wallet.
                       Same treatment as DistributionAnalysisWidget's pp chip. */}
                   <TableHead className="hidden sm:table-cell text-right font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4">Wallets</TableHead>
-                  <TableHead className="text-right font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4">Balance</TableHead>
-                  <TableHead className="text-right font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4">Net ({rangeLabel})</TableHead>
+                  <TableHead className="text-right font-semibold text-muted-foreground text-xs sm:text-sm px-1 sm:px-4">Balance</TableHead>
+                  <TableHead title={`Net (${rangeLabel})`} className="text-right font-semibold text-muted-foreground text-xs sm:text-sm px-1 sm:px-4 whitespace-nowrap">Net<span className="max-sm:hidden"> ({rangeLabel})</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1134,7 +1126,7 @@ const renderCexFlows = (
                           }
                         }}
                       >
-                        <TableCell className="px-2 sm:px-4 py-2 w-10">
+                        <TableCell className="px-1 sm:px-4 py-2 w-6 sm:w-10">
                           {hasWallets ? (
                             isExpanded ? (
                               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -1143,9 +1135,9 @@ const renderCexFlows = (
                             )
                           ) : null}
                         </TableCell>
-                        <TableCell className="px-2 sm:px-4 py-2 text-sm font-medium text-foreground">{exchange.name}</TableCell>
+                        <TableCell className="px-1 sm:px-4 py-2 max-sm:text-xs text-sm font-medium text-foreground max-sm:max-w-[5.5rem] max-sm:truncate">{exchange.name}</TableCell>
                         <TableCell className="hidden sm:table-cell px-2 sm:px-4 py-2 text-right text-sm text-muted-foreground">{formatInteger(exchange.walletCountWithBalance)}</TableCell>
-                        <TableCell className="px-2 sm:px-4 py-2 text-right text-sm text-muted-foreground">{formatTokenAmount(exchange.currentBalance)}</TableCell>
+                        <TableCell className="px-1 sm:px-4 py-2 max-sm:text-xs text-right text-sm text-muted-foreground whitespace-nowrap">{formatTokenAmount(exchange.currentBalance)}</TableCell>
                         {(() => {
                           const net = exchangeNet(exchange.name, exchange.net);
                           // Match Exchange Netflow's convention below: MORE on
@@ -1158,7 +1150,7 @@ const renderCexFlows = (
                           // on one page.
                           return (
                             <TableCell
-                              className={`px-2 sm:px-4 py-2 text-right text-sm font-medium tabular-nums ${
+                              className={`px-1 sm:px-4 py-2 max-sm:text-xs text-right text-sm font-medium tabular-nums whitespace-nowrap ${
                                 net > 0 ? "text-red-700 dark:text-red-400" : net < 0 ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"
                               }`}
                             >
@@ -1319,7 +1311,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
           type="button"
           onClick={() => onViewChange(option.key)}
           disabled={isLoading}
-          className={`${compactHeader ? "min-h-[32px] max-xl:min-h-10 shrink-0 px-2.5 text-[11px]" : "min-h-[44px] px-3.5 text-xs sm:text-sm"} rounded-full font-semibold transition-colors disabled:opacity-50 ${
+          className={`${compactHeader ? "min-h-[32px] max-xl:min-h-11 max-xl:min-w-11 shrink-0 px-2.5 text-[11px]" : "min-h-[44px] px-3.5 text-xs sm:text-sm"} rounded-full font-semibold transition-colors disabled:opacity-50 ${
             option.key === selectedView
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-primary"
@@ -1572,7 +1564,28 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
                 put ~300px of "where the data came from" ahead of the control
                 that picks WHAT you see — on a phone the selector landed below
                 the fold. It stays in full, just after the panel it describes. */}
-            <div className="flex flex-col gap-1.5 border-t border-border/40 pt-4">
+            <CompactProvenance
+              className="border-t border-border/40 sm:hidden"
+              snapshotLabel={formattedGeneratedAt ? `Snapshot generated ${formattedGeneratedAt}` : "Snapshot timestamp unavailable"}
+              sourceLabel={sourceDetails ? `Source: ${sourceDetails}` : "Source unavailable"}
+            >
+              {isAdmin && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-1 min-h-11 gap-2"
+                  onClick={() => {
+                    void refetch();
+                  }}
+                  disabled={isLoading}
+                >
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Refresh
+                </Button>
+              )}
+            </CompactProvenance>
+            <div className="flex flex-col gap-1.5 border-t border-border/40 pt-4 max-sm:hidden">
               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Database className="h-4 w-4" />

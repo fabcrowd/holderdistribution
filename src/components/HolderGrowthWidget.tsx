@@ -63,11 +63,14 @@ const balanceChartConfig = {
   },
   dex: {
     label: "DEX Liquidity",
-    color: "hsl(152 60% 42%)",
+    color: "hsl(262 70% 62%)",
   },
 } as const;
 
 type BalanceSeriesKey = keyof typeof balanceChartConfig;
+
+/** Below this many snapshots the Wallets line is a stub; say so rather than show a near-empty plot. */
+const SPARSE_HISTORY_POINTS = 8;
 
 const stakingChartConfig = {
   stakingTotal: { label: "Total staked", color: "hsl(var(--primary))" },
@@ -583,7 +586,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     return "";
   };
 
-  const changeTone = stats.change !== null && stats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400";
+  const changeTone = stats.change !== null && stats.change >= 0 ? "text-positive" : "text-negative";
   const ChangeIcon = stats.change !== null && stats.change >= 0 ? TrendingUp : TrendingDown;
 
   return (
@@ -591,8 +594,8 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
       <div>
         <div>
           <div className="flex items-center gap-2 text-base sm:text-lg font-bold tracking-tight flex-wrap">
-            <span className="p-1.5 rounded-xl bg-emerald-500/12 border border-emerald-500/20 shrink-0">
-              <TrendingUp className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
+            <span className="p-1.5 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
+              <TrendingUp className="h-4 w-4 text-primary" />
             </span>
             Holder Growth
                       </div>
@@ -661,7 +664,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                 </div>
               )}
 
-              {!isLoading && !error && chartData.length > 0 && (
+              {!isLoading && !error && chartData.length > 0 && (<>
                 <ZoomFrame zoom={holdersZoom} className="h-56 w-full sm:h-64" yAxes={{ left: holdersYAuto.domain }} notes={<AxisBaselineNote baseline={holdersY.baseline} format={(n) => formatInteger(Math.round(n))} />}>
                 <div className="h-full w-full" role="img" aria-label={holdersAriaSummary} data-testid="holder-growth-chart">
                   <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
@@ -710,7 +713,12 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                   </ChartContainer>
                 </div>
                 </ZoomFrame>
-              )}
+                {chartData.length < SPARSE_HISTORY_POINTS && (
+                  <p className="mt-2 text-xs text-muted-foreground" data-testid="history-building">
+                    History is still building: {chartData.length} snapshot{chartData.length === 1 ? "" : "s"} in this range.
+                  </p>
+                )}
+              </>)}
             </div>
 
             </TabsContent>
@@ -731,7 +739,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         <span>Retail {formatCompactAmount(balanceStats.latest)}</span>
                       )}
                       {balanceStats.change !== null && balanceStats.changePct !== null && (
-                        <span className={`inline-flex items-center gap-1 ${balanceStats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
+                        <span className={`inline-flex items-center gap-1 ${balanceStats.change >= 0 ? "text-positive" : "text-negative"}`}>
                           {balanceStats.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                           {balanceStats.change >= 0 ? "+" : ""}
                           {formatCompactAmount(Math.abs(balanceStats.change))}
@@ -749,7 +757,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
               </div>
 
               {selectedView === "combined" && balanceChartData.length > 0 && (
-                <div className="flex items-center gap-2 mb-3 overflow-x-auto sm:flex-wrap sm:overflow-visible [-webkit-overflow-scrolling:touch]">
+                <div className="flex items-center gap-2 mb-3 overflow-x-auto sm:flex-wrap sm:overflow-visible [-webkit-overflow-scrolling:touch] max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-28px),transparent)]">
                   {/* Balance = absolute levels; Change = each series rebased to 0 at
                       the start of the range, which is what makes accumulation vs
                       selling legible when the series differ ~4x in size.
@@ -940,7 +948,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         <ChangeIndicator variant="plain" current={0} previous={0} changelogEvents={stakingStats.gap} className="text-xs" />
                       )}
                       {stakingStats.change !== null && stakingStats.changePct !== null && (
-                        <span className={`inline-flex items-center gap-1 ${stakingStats.change >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
+                        <span className={`inline-flex items-center gap-1 ${stakingStats.change >= 0 ? "text-positive" : "text-negative"}`}>
                           {stakingStats.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                           {stakingStats.change >= 0 ? "+" : ""}
                           {formatCompactAmount(Math.abs(stakingStats.change))} ({stakingStats.changePct.toFixed(2)}%)
@@ -1057,7 +1065,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
             {/* Provenance applies to every panel, so it stays outside the
                 selector rather than repeating in each one. */}
             {data?.updatedAt && (
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground max-sm:hidden">
                 Updated {new Date(data.updatedAt).toLocaleString()}
               </div>
             )}

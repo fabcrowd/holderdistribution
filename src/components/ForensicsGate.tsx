@@ -251,14 +251,14 @@ const GateForm = ({
             placeholder="Enter password"
             aria-invalid={status === "error"}
             aria-describedby={status === "error" ? errorId : undefined}
-            className={`${compact ? "h-9" : "h-11"} pl-9 pr-11 text-sm`}
+            className={`${compact ? "h-9 pr-11" : "h-11 pr-12"} pl-9 text-sm`}
           />
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
             aria-label={visible ? "Hide password" : "Show password"}
             aria-pressed={visible}
-            className={`absolute right-1 top-1/2 inline-flex ${compact ? "h-7 w-7" : "h-9 w-9"} -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+            className={`absolute ${compact ? "right-1 h-7 w-7" : "right-0 h-11 w-11"} top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
           >
             {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>

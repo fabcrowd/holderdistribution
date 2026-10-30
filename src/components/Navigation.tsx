@@ -8,21 +8,23 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import logo from "@/assets/holder-analytics-horizontal.svg";
+import logoIcon from "@/assets/holder-analytics-icon.svg";
+import { TokenIdentity } from "@/components/TokenIdentity";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 type NavigationProps = {
-  /** Optional page name shown beside the logo. The mobile nav is otherwise
-   *  just a logo and a hamburger — it carries no active state and no page
-   *  name — so a page that wants an identity marker on a phone has to put it
-   *  here. Pages that don't pass it render exactly as before. */
+  /** Deprecated: the header now shows the token identity on /<slug> routes
+   *  instead of a generic page title. Accepted so existing callers compile. */
   pageTitle?: string;
 };
 
-export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
+export const Navigation = (_props: NavigationProps = {}) => {
   const location = useLocation();
   const { isAuthenticated, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const isMobile = useIsMobile();
+  // Token identity replaces the generic page title on /<slug> routes; the landing page has none.
+  const onToken = location.pathname !== "/";
 
   // This repo is a single-page extraction of the Holders/Tokenomics section
   // from the original multi-page hub — no other routes exist here, so there is
@@ -37,20 +39,16 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
     >
       <div className="mx-auto px-4 max-w-7xl">
         <div className="flex h-16 md:h-20 items-center justify-between">
-          {/* Logo (+ optional page title) */}
+          {/* Brand + (on /<slug> routes) which token is open. Phones get the
+              icon mark so the token chip fits beside the 44px controls. */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
-            <Link to="/" className="flex min-h-10 items-center gap-2 group shrink-0">
-              <img src={logo} alt="Holder Analytics" width={196} height={48} fetchPriority="high" decoding="async" className="h-8 md:h-10 w-auto transition-opacity group-hover:opacity-80" />
+            <Link to="/" className="flex min-h-11 min-w-11 items-center justify-center gap-2 group shrink-0">
+              <img src={logoIcon} alt="Holder Analytics" width={36} height={36} className={cn("h-9 w-9 transition-opacity group-hover:opacity-80 dark:brightness-150", onToken ? "sm:hidden" : "hidden")} />
+              <img src={logo} alt="Holder Analytics" width={196} height={48} fetchPriority="high" decoding="async" className={cn("h-8 md:h-10 w-auto transition-opacity group-hover:opacity-80 dark:brightness-150", onToken ? "hidden sm:block" : "")} />
             </Link>
-            {/* Hidden from lg up, where the nav's own links start rendering
-                their text labels (`hidden lg:inline` below) and the active
-                pill already names the page — showing both reads as a
-                stutter. Hidden below sm too: a phone only has room for
-                "Token…", and the hero heading directly beneath already names
-                the page. Between sm and lg it's the only page identity. */}
-            {pageTitle && (
-              <span className="hidden sm:inline lg:hidden truncate border-l border-primary/25 pl-2 md:pl-3 text-base md:text-lg font-bold text-foreground">
-                {pageTitle}
+            {onToken && (
+              <span className="flex min-h-11 min-w-0 items-center border-l border-primary/25 pl-2 md:pl-3">
+                <TokenIdentity className="min-h-11 min-w-0 max-w-[10.5rem] truncate text-sm font-bold text-foreground sm:max-w-none sm:text-base md:text-lg" />
               </span>
             )}
           </div>
@@ -59,7 +57,7 @@ export const Navigation = ({ pageTitle }: NavigationProps = {}) => {
               exactly the newcomer who has no other way to decode it. */}
           <span className="ml-auto" aria-hidden="true" />
           <GlossaryDialog />
-          <ThemeToggle className="h-11 w-11" />
+          <ThemeToggle className="h-11 w-11 max-xl:h-11 max-xl:w-11" />
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-1 lg:gap-2">
