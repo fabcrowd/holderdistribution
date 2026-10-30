@@ -85,7 +85,7 @@ export const InfoTip = ({
             if (e.pointerType !== "mouse") return;
             scheduleClose();
           }}
-          className={`relative inline-flex h-6 w-6 shrink-0 items-center before:absolute before:-inset-2 before:content-[''] before:xl:hidden justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
+          className={`relative inline-flex h-6 w-6 shrink-0 items-center before:absolute before:-inset-2.5 before:content-[''] before:xl:hidden justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
         >
           {children ?? <Info className={iconClassName} aria-hidden="true" />}
         </button>
@@ -93,7 +93,8 @@ export const InfoTip = ({
       <PopoverContent
         side={side}
         align={align}
-        className="w-auto max-w-xs whitespace-pre-line p-3 text-sm leading-relaxed"
+        collisionPadding={12}
+        className="w-auto max-w-xs max-h-[70svh] overflow-y-auto whitespace-pre-line p-3 text-sm leading-relaxed"
         onPointerEnter={(e) => e.pointerType === "mouse" && cancelClose()}
         onPointerLeave={(e) => e.pointerType === "mouse" && scheduleClose()}
         onOpenAutoFocus={(e) => e.preventDefault()}

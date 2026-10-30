@@ -67,7 +67,7 @@ const TabBlurb = ({ id, hidden }: { id: TabId; hidden: boolean }) => {
   if (hidden) return null;
   const tab = TABS.find((t) => t.id === id)!;
   return (
-    <p className="mb-3 text-sm text-muted-foreground">
+    <p className="sr-only text-sm text-muted-foreground sm:not-sr-only sm:mb-3">
       <span className="font-semibold text-foreground">{tab.label}:</span>{" "}
       {tab.blurb({ ticker: project.ticker, name: project.name, supply: supplyTargetLabel(project) })}
     </p>
@@ -309,7 +309,7 @@ const Holders = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100svh]">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:shadow-md"
@@ -357,7 +357,7 @@ const Holders = () => {
               <TabsTrigger
                 key={t.id}
                 value={t.id}
-                className={`min-h-[40px] gap-1.5 text-xs sm:text-sm font-semibold rounded-full px-3 sm:px-4 py-1.5 whitespace-nowrap text-muted-foreground bg-transparent hover:text-foreground hover:bg-background/60 data-[state=active]:bg-background data-[state=active]:shadow-sm ${t.accent}`}
+                className={`min-h-[40px] max-xl:min-h-[44px] gap-1.5 text-xs sm:text-sm font-semibold rounded-full px-3 sm:px-4 py-1.5 whitespace-nowrap text-muted-foreground bg-transparent hover:text-foreground hover:bg-background/60 data-[state=active]:bg-background data-[state=active]:shadow-sm ${t.accent}`}
               >
                 <t.icon aria-hidden="true" className="hidden min-[400px]:block h-4 w-4 shrink-0" />
                 {t.label}

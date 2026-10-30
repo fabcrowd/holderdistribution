@@ -118,7 +118,7 @@ const BILL_KIND: Record<OutstandingCategory, string> = {
 };
 
 const LegendDot = ({ color, label }: { color: string; label: string }) => (
-  <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground">
+  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
     {label}
   </span>
@@ -134,7 +134,7 @@ const Metric = ({
   hint?: string;
 }) => (
   <div className="rounded-lg border border-border/50 bg-background/60 px-3 py-2">
-    <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+    <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground">
       {label}
       {hint ? <InfoTooltip text={hint} /> : null}
     </p>
@@ -229,7 +229,7 @@ export const BurnForecastView = ({
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-border/50 bg-background/60 px-3 py-3">
-        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Operating runway</p>
+        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Operating runway</p>
         <p className="mt-0.5 text-2xl font-semibold tabular-nums text-foreground">
           {formatRunway(forecast)}
         </p>
@@ -242,7 +242,7 @@ export const BurnForecastView = ({
               ? " · bills due now exceed stablecoin on hand."
               : "."}
         </p>
-        <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           Each month uses the current payout rate ({formatUsd(forecast.measured.averagePaidUsd)})
           or the scheduled month ({formatUsd(forecast.plannedMonthlyUsd)}), whichever is higher.
           That schedule continues after {plan.forecastWindow}. Forward THPL is off unless you tick
@@ -302,7 +302,7 @@ export const BurnForecastView = ({
             {depleteLabel ? <LegendDot color="hsl(0 72% 51%)" label={`Runs out ${depleteLabel}`} /> : null}
           </div>
         </div>
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Starts at stablecoin left after invoices due now. Each month subtracts the spend used
           above. TEL inventory is not in this series.
         </p>
@@ -417,7 +417,7 @@ export const BurnForecastView = ({
             </h4>
             <ChartLegend items={ACTUALS_LEGEND} hidden={actualsToggle.hidden} onToggle={actualsToggle.toggle} />
           </div>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Raised is stablecoin from TEL sales. Paid is that stablecoin sent to an outside payee.
           </p>
           <ChartContainer config={actualsConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
@@ -465,7 +465,7 @@ export const BurnForecastView = ({
               </Bar>
             </BarChart>
           </ChartContainer>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Authorized-not-pulled ({formatUsd(forecast.cash.authorizedUsd)}) is not cash on hand.
             One-offs totalling {formatUsd(forecast.cash.oneOffsUsd)} stay off this operating runway.
           </p>
@@ -510,12 +510,12 @@ export const BurnForecastView = ({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="h-8 px-2 text-[10px]">Month</TableHead>
-                <TableHead className="h-8 px-2 text-right text-[10px]">Opening</TableHead>
-                <TableHead className="h-8 px-2 text-right text-[10px]">Burn</TableHead>
-                <TableHead className="h-8 px-2 text-right text-[10px]">Scheduled</TableHead>
-                <TableHead className="h-8 px-2 text-right text-[10px]">Spend</TableHead>
-                <TableHead className="h-8 px-2 text-right text-[10px]">Closing</TableHead>
+                <TableHead className="h-8 px-2 text-xs">Month</TableHead>
+                <TableHead className="h-8 px-2 text-right text-xs">Opening</TableHead>
+                <TableHead className="h-8 px-2 text-right text-xs">Burn</TableHead>
+                <TableHead className="h-8 px-2 text-right text-xs">Scheduled</TableHead>
+                <TableHead className="h-8 px-2 text-right text-xs">Spend</TableHead>
+                <TableHead className="h-8 px-2 text-right text-xs">Closing</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -552,9 +552,9 @@ export const BurnForecastView = ({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="h-8 px-2 text-[10px]">Item</TableHead>
+                <TableHead className="h-8 px-2 text-xs">Item</TableHead>
                 {remainingKeys.map(({ label }) => (
-                  <TableHead key={label} className="h-8 px-2 text-right text-[10px]">
+                  <TableHead key={label} className="h-8 px-2 text-right text-xs">
                     {label}
                   </TableHead>
                 ))}
@@ -581,7 +581,7 @@ export const BurnForecastView = ({
 
       {forecast.bills.items.length > 0 && (
         <DetailBlock title="Invoice book">
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Sheet line items sum to {formatUsd(forecast.bills.items.reduce((s, r) => s + r.amountUsd, 0))}.
             {" "}
             {formatUsd(forecast.bills.holdingsUsd)} is the July THPL invoice. The rest is
@@ -592,11 +592,11 @@ export const BurnForecastView = ({
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-8 px-2 text-[10px]">Invoice</TableHead>
-                  <TableHead className="h-8 px-2 text-[10px]">Kind</TableHead>
-                  <TableHead className="h-8 px-2 text-[10px]">Due</TableHead>
-                  <TableHead className="h-8 px-2 text-right text-[10px]">Amount</TableHead>
-                  <TableHead className="h-8 px-2 text-right text-[10px]">Still due</TableHead>
+                  <TableHead className="h-8 px-2 text-xs">Invoice</TableHead>
+                  <TableHead className="h-8 px-2 text-xs">Kind</TableHead>
+                  <TableHead className="h-8 px-2 text-xs">Due</TableHead>
+                  <TableHead className="h-8 px-2 text-right text-xs">Amount</TableHead>
+                  <TableHead className="h-8 px-2 text-right text-xs">Still due</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -604,12 +604,12 @@ export const BurnForecastView = ({
                   <TableRow key={row.item} className="hover:bg-muted/30">
                     <TableCell className="p-2 text-[11px]">
                       <div>{row.item}</div>
-                      <div className="text-[10px] text-muted-foreground">{row.note}</div>
+                      <div className="text-xs text-muted-foreground">{row.note}</div>
                     </TableCell>
-                    <TableCell className="p-2 text-[10px] text-muted-foreground">
+                    <TableCell className="p-2 text-xs text-muted-foreground">
                       {BILL_KIND[row.category]}
                     </TableCell>
-                    <TableCell className="p-2 text-[10px] text-muted-foreground">
+                    <TableCell className="p-2 text-xs text-muted-foreground">
                       {row.dueDate || row.period || "—"}
                     </TableCell>
                     <TableCell className="p-2 text-right text-[11px] tabular-nums">

@@ -2,7 +2,7 @@ import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { describeFreshness, type Freshness } from "@/lib/format";
 
 const TONE: Record<Freshness["status"], string> = {
-  fresh: "border-emerald-600/30 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
+  fresh: "border-border bg-muted text-muted-foreground",
   delayed: "border-amber-500/40 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200",
   stale: "border-amber-500/40 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200",
   unknown: "border-border/60 bg-muted/40 text-muted-foreground",

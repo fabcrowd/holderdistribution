@@ -243,7 +243,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
               key={m}
               type="button"
               onClick={() => setMode(m)}
-              className={`text-xs font-semibold rounded-full px-3 py-1 transition-colors ${
+              className={`text-xs font-semibold rounded-full px-3 py-1 max-xl:min-h-11 transition-colors ${
                 mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-primary"
               }`}
             >

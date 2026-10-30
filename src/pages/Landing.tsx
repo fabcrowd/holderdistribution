@@ -41,9 +41,9 @@ const Landing = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-[100svh] flex-col bg-background">
       <Navigation />
-      <main id="main-content" className="mx-auto max-w-7xl px-4 py-8 sm:py-12">
+      <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:py-12">
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">Token holder distribution</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           On-chain holder counts, distribution and supply for each mapped token. Pick a token to open its terminal.

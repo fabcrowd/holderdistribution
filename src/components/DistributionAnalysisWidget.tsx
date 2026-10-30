@@ -31,6 +31,7 @@ import { tierDisplayLabel } from "@/components/tierflow/geometry";
 import { bucketFloor } from "@/lib/holderTiers";
 import { DexSwaps } from "@/components/DexSwaps";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid } from "recharts";
 import "@/lib/rechartsMotion";
@@ -140,8 +141,13 @@ const DistributionAnalysisWidget = ({
   // † rule: the "N of M tiers gained" summary is itself a tier delta.
   const showAccumulation = tiersWithBaselineCount > 0 && rangeLabel && distributionCountEvents.length === 0;
 
+  // Scope + dust note: lives in the (i) beside the chart title (floors at the
+  // project's lowest tier; see scripts/lib/holdersView.js reconcileDistributionCounts).
+  const scopeNote = `Retail only, excluding exchange & hot wallets. Sub-${dustFloor}-${ticker} dust wallets are counted in the lowest tier.`;
+
   const tierFlow = (
     <TierFlowDiagram
+      infoPrefix={scopeNote}
       rangeDays={rangeDays ?? 0}
       metric={metric}
       onMetricChange={setMetric}
@@ -168,19 +174,13 @@ const DistributionAnalysisWidget = ({
           already does the showing and hiding. */}
       <CardHeader className="holders-header-distribution">
           <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
-            <span className="p-1.5 rounded-xl bg-violet-500/12 border border-violet-500/20 shrink-0">
-              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-violet-600 dark:text-violet-400" />
+            <span className="p-1.5 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
+              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </span>
             Distribution Analysis
             <MethodologyInfo section="distribution" />
           </CardTitle>
-          {/* One caption instead of two pills. Buckets floor at the project's
-              lowest tier; sub-floor dust wallets are counted there (see
-              scripts/lib/holdersView.js reconcileDistributionCounts). */}
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            Retail only, excluding exchange &amp; hot wallets. Sub-{dustFloor}-{ticker} dust wallets are counted in the lowest tier.
-          </p>
-          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+          <div className="flex flex-wrap items-center gap-2 mt-1.5 empty:hidden">
             {/* This tab has no chain selector of its own — `selectedView` is
                 set on the Holders tab and carries over silently, and picking
                 a chain there also swaps this tab's whole visualization
@@ -221,11 +221,20 @@ const DistributionAnalysisWidget = ({
               </div>
             ) : (
               <div className="px-4 pt-4 sm:px-6">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 text-center">% of retail by balance range</p>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 flex items-center justify-center gap-1.5">
+                  % of retail by balance range
+                  <InfoTooltip text={scopeNote} label="About this chart" className="max-xl:before:-inset-2.5" />
+                </p>
+                {chartData.some((d) => d.gained !== null) && (
+                  <p className="mb-2 flex items-center justify-center gap-4 text-[13px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm bg-positive" />Tier gained wallets</span>
+                    <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/50" />No gain</span>
+                  </p>
+                )}
                 <ChartContainer config={distributionChartConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full`}>
-                  <BarChart data={chartData} margin={{ top: 12, right: 12, bottom: 24, left: 12 }} barCategoryGap={percentSizing.barCategoryGap}>
+                  <BarChart data={chartData} margin={{ top: 12, right: 12, bottom: 28, left: 12 }} barCategoryGap={percentSizing.barCategoryGap}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                    <XAxis dataKey="range" tick={CHART_TICK} />
+                    <XAxis dataKey="range" tick={CHART_TICK} interval={0} angle={-35} textAnchor="end" height={48} />
                     <YAxis tick={CHART_TICK} tickFormatter={(v) => `${v}%`} domain={percentY.domain} ticks={percentY.ticks} />
                     <ChartTooltip content={<ChartTooltipContent />} formatter={(value: number) => [`${value.toFixed(2)}%`, "% of retail"]} />
                     <Bar dataKey="percent" radius={[4, 4, 0, 0]} maxBarSize={percentSizing.maxBarSize} minPointSize={percentSizing.minPointSize}>
@@ -275,22 +284,23 @@ const DistributionAnalysisWidget = ({
                       <TableCell className="text-center text-xs sm:text-sm px-2 sm:px-4">
                         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
                           {formatInteger(row.count)}
-                          <ChangeIndicator current={row.count} previous={row.previousCount ?? null} changelogEvents={distributionCountEvents} />
+                          <ChangeIndicator current={row.count} previous={row.previousCount ?? null} changelogEvents={distributionCountEvents} variant={distributionCountEvents.length ? "plain" : "pill"} />
                         </div>
                       </TableCell>
                       <TableCell className="text-center text-xs sm:text-sm px-2 sm:px-4">
-                        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
+                        <div className={`flex items-center justify-center gap-x-2 gap-y-0.5 ${distributionBalanceEvents.length ? "flex-nowrap" : "flex-wrap"}`}>
                           <span className="whitespace-nowrap">{formatTokenAmount(row.totalBalance)}</span>
                           <ChangeIndicator
                             current={row.totalBalance}
                             previous={row.previousTotalBalance ?? null}
                             formatter={formatTokenAmount}
                             changelogEvents={distributionBalanceEvents}
+                            variant={distributionBalanceEvents.length ? "plain" : "pill"}
                           />
                           {/* percentage change repeats the same delta as the
                               amount chip — keep it for larger screens only,
                               it was crowding this cell off narrow viewports */}
-                          <span className="hidden sm:inline-flex">
+                          <span className={distributionBalanceEvents.length ? "hidden" : "hidden sm:inline-flex"}>
                             <ChangeIndicator
                               current={row.totalBalance}
                               previous={row.previousTotalBalance ?? null}
@@ -320,6 +330,9 @@ const DistributionAnalysisWidget = ({
                 </TableBody>
               </Table>
             </div>
+            )}
+            {!hasUnifiedChart && (distributionCountEvents.length > 0 || distributionBalanceEvents.length > 0) && (
+              <p className="px-4 text-xs text-muted-foreground sm:px-6">† Change vs. baseline not shown: wallets were reclassified.</p>
             )}
             {/* TierFlowDiagram's own header already shows the whole-market DEX
                 figure (sourced the same way, from useExchangeFlow, matching

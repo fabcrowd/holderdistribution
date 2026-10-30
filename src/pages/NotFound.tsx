@@ -29,7 +29,7 @@ const NotFound = () => {
         <p className="mt-3 text-muted-foreground">There&apos;s nothing at this address. Pick a token on the home page.</p>
         <Link
           to="/"
-          className="mt-6 inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="mt-6 inline-flex h-11 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           Go to home
         </Link>

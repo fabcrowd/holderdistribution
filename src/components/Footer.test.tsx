@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Footer, SITE_DISCLAIMER, TIP_ADDRESS } from "./Footer";
+import { DisclaimerPanel, Footer, SITE_DISCLAIMER, TIP_ADDRESS } from "./Footer";
 
 describe("Footer", () => {
   const html = renderToStaticMarkup(<Footer />);
@@ -12,9 +12,19 @@ describe("Footer", () => {
     expect(html).not.toContain("0xce98fE636e83D36EA64cafEfF4020317B8B718EA");
   });
 
-  it("states independence, no advice, no offer, and no warranty", () => {
-    expect(html).toContain('data-testid="site-disclaimer"');
-    expect(html).toContain(SITE_DISCLAIMER);
+  it("collapses to one compact line with a Disclaimer control", () => {
+    expect(html).toContain("Support Holder Analytics");
+    expect(html).toContain("Price data by CoinGecko");
+    expect(html).toContain("Not financial advice");
+    expect(html).toContain(">Disclaimer<");
+    // The long text lives in the popover, not inline in the footer.
+    expect(html).not.toContain(SITE_DISCLAIMER);
+  });
+
+  it("opens to the full disclaimer: independence, no advice, no offer, no warranty", () => {
+    const opened = renderToStaticMarkup(<DisclaimerPanel />);
+    expect(opened).toContain('data-testid="site-disclaimer"');
+    expect(opened).toContain(SITE_DISCLAIMER);
     expect(SITE_DISCLAIMER).toMatch(/independent on-chain analytics platform/i);
     expect(SITE_DISCLAIMER).toMatch(/not endorsed by, paid by, or affiliated with any cryptocurrency token or project/i);
     expect(SITE_DISCLAIMER).toMatch(/not financial, investment, legal, or tax advice/i);

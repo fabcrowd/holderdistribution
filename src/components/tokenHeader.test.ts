@@ -14,7 +14,7 @@ describe("token header (no switcher)", () => {
     }
   });
   it("desktop and mobile headings show TokenIdentity", () => {
-    expect(src("terminal/TerminalDashboard.tsx")).toMatch(/<TokenIdentity\b[^>]*\/> Holder Distribution/);
+    expect(src("terminal/TerminalDashboard.tsx")).toMatch(/<TokenIdentity\b[^>]*\/>\s*<span>Holder Distribution<\/span>/);
     expect(src("PageIntro.tsx")).toMatch(/<TokenIdentity size="lg"[^>]*\/> holder distribution/);
   });
 });

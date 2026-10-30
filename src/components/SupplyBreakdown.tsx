@@ -1,5 +1,3 @@
-import { ChartLegend } from "@/components/chart/ChartLegend";
-import { useSeriesToggle } from "@/hooks/useSeriesToggle";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { useProject } from "@/hooks/useProject";
@@ -335,8 +333,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
   // Slices can be toggled off from the legend under the donut; the wedge
   // percentages stay shares of total supply, so a hidden slice never
   // inflates the others' numbers.
-  const sliceToggle = useSeriesToggle(useMemo(() => allPieSlices.map((x) => x.key), [allPieSlices]));
-  const pieSlices = useMemo(() => allPieSlices.filter((x) => !sliceToggle.hidden.has(x.key)), [allPieSlices, sliceToggle.hidden]);
+  const pieSlices = allPieSlices;
   // Shared by both designs: the desktop chart's on-label popovers and the
   // mobile list's rows both open the same drill-down content for a key.
   const getDetail = (key: string) =>
@@ -463,13 +460,6 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                       </Pie>
                     </RePieChart>
                   </ChartContainer>
-      <ChartLegend
-        items={allPieSlices.map((x) => ({ key: x.key, label: x.label, color: x.color }))}
-        hidden={sliceToggle.hidden}
-        onToggle={sliceToggle.toggle}
-        className="max-w-[17rem] justify-center"
-        data-testid="supply-donut-legend"
-      />
     </div>
   );
   const renderList = (compact: boolean) => (
@@ -719,8 +709,8 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
       {/* No Collapsible: sole content of the "Supply" tab. */}
       <CardHeader className="holders-header-supply">
           <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
-            <span className="p-1.5 rounded-xl bg-sky-500/12 border border-sky-500/20 shrink-0">
-              <PieChart className="h-4 w-4 sm:h-5 sm:w-5 text-sky-600 dark:text-sky-400" />
+            <span className="p-1.5 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
+              <PieChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </span>
             Supply Breakdown
             <MethodologyInfo section="supplyBreakdown" />

@@ -31,7 +31,7 @@ export const TokenIdentity = ({ size = "sm", className = "" }: Props) => {
           className={`shrink-0 rounded-full ${size === "lg" ? "h-7 w-7 sm:h-8 sm:w-8" : "h-6 w-6"}`}
         />
       )}
-      <span>{project.name}</span>
+      <span className="truncate">{project.name}</span>
     </Link>
   );
 };

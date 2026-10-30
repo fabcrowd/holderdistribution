@@ -265,6 +265,8 @@ export const TimeChart = ({
             tickLine={false}
             axisLine={false}
             minTickGap={40}
+            tickMargin={6}
+            height={34}
           />
           <YAxis
             yAxisId="left"

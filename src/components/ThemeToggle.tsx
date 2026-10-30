@@ -13,7 +13,7 @@ export const ThemeToggle = ({ className = "" }: { className?: string }) => {
       onClick={cycle}
       title={`Theme: ${LABEL[preference]} (click to change)`}
       aria-label={`Colour theme: ${LABEL[preference]}. Change theme`}
-      className={`inline-flex h-8 w-8 max-xl:h-10 max-xl:w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
+      className={`inline-flex h-8 w-8 max-xl:h-11 max-xl:w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
     >
       <Icon className="h-4 w-4" aria-hidden="true" />
     </button>

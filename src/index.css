@@ -170,6 +170,7 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     background-repeat: no-repeat;
     background-attachment: fixed;
     min-height: 100vh;
+    min-height: 100svh;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-size: 16px; /* Prevent iOS zoom on focus */
     -webkit-font-smoothing: antialiased;
@@ -321,7 +322,7 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
 
   .holders-header-distribution {
     background-image:
-      radial-gradient(circle at 92% 12%, hsl(262 83% 58% / 0.14), transparent 46%),
+      radial-gradient(circle at 92% 12%, hsl(var(--primary) / 0.08), transparent 46%),
       linear-gradient(145deg, hsl(var(--muted) / 0.6), hsl(var(--card)));
   }
 

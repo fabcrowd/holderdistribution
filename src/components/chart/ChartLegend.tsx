@@ -17,7 +17,7 @@ type Props = {
 export function ChartLegend({ items, hidden, onToggle, className, ...rest }: Props) {
   const visibleCount = items.filter((i) => !hidden.has(i.key)).length;
   return (
-    <ul className={cn("m-0 flex shrink-0 list-none flex-wrap items-center gap-x-3 gap-y-1 p-0 text-xs text-muted-foreground", className)} {...rest}>
+    <ul className={cn("m-0 flex shrink-0 list-none flex-wrap items-center gap-x-3 gap-y-1 max-xl:gap-y-0.5 p-0 text-xs text-muted-foreground", className)} {...rest}>
       {items.map((item) => {
         const off = hidden.has(item.key);
         const last = !off && visibleCount === 1;
@@ -30,7 +30,7 @@ export function ChartLegend({ items, hidden, onToggle, className, ...rest }: Pro
               title={last ? "At least one series stays visible" : off ? `Show ${item.label}` : `Hide ${item.label}`}
               onClick={() => onToggle(item.key)}
               className={cn(
-                "inline-flex items-center gap-1 rounded px-1 py-0.5 hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
+                "inline-flex items-center gap-1 rounded px-1 py-0.5 max-xl:min-h-11 max-xl:px-2 hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
                 off && "opacity-50 line-through",
                 last && "cursor-default",
               )}

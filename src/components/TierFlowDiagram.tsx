@@ -16,7 +16,7 @@ import { describeFreshness } from "@/lib/format";
 import { TapTile } from "@/components/tierflow/TapTile";
 import {
   CANVAS_W, rowTop, rowCenterY, tileW, tierLeftX, TIER_COL_CENTER_X, tileEdgeX,
-  SIDE_H, bezierPath, laneArcPath, fanY, strokeWidth, rankedStrokeWidths, TIER_H,
+  SIDE_H, PITCH, bezierPath, laneArcPath, fanY, strokeWidth, rankedStrokeWidths, TIER_H,
   tierDisplayLabel, CANVAS_H as DEFAULT_CANVAS_H,
 } from "@/components/tierflow/geometry";
 import { tierCanvasScale } from "@/lib/tierFlowScale";
@@ -50,6 +50,9 @@ type Props = {
    *  the baseline), it passes previous* = null plus the reason to show in
    *  place of "no baseline", so the diagram agrees with the Tiers table. */
   suppressedNote?: { count?: string | null; balance?: string | null };
+  /** Caption that used to sit above the diagram (scope + dust note); shown in
+   *  the (i) beside the title instead. */
+  infoPrefix?: string;
   /** Chain filter from the page-level selector; defaults to all chains. */
   chain?: ChainKey;
   /** Controlled selection, shared with sibling panels (Tiers table, bars). */
@@ -115,6 +118,17 @@ const SIDE_LABELS_OUT = [
 
 // The color legend shown in the header: buy / sell pressure + redistribution.
 // `short` is the phone label; the full explanation opens on tap either way.
+// InfoTip's own hit area is 24px + 8px per side (40px); widen it to 44px on
+// phone/tablet. Desktop (xl+) is untouched.
+const INFO_HIT_44 = "max-xl:before:-inset-2.5";
+
+const TAP_TARGET_PX = 44;
+// Canvas px of invisible hit-area padding needed so a control renders at
+// >= 44 screen px once the canvas is scaled down; capped so neighbours (tier
+// rows are PITCH apart) never overlap.
+const hitPad = (scale: number, ownSize: number, cap: number) =>
+  Math.min(cap, Math.max(0, (TAP_TARGET_PX / scale - ownSize) / 2));
+
 const LEGEND: { color: string; label: string; short: string; explanation: string }[] = [
   { color: POSITIVE, label: "Buy pressure", short: "Buy", explanation: "{ticker} entering retail from the market or custody — bought on a DEX, or withdrawn from an exchange into self-custody. In Wallets mode, also wallets ARRIVING into a tier (left-hand tick and inbound migration lines)." },
   { color: NEGATIVE, label: "Sell pressure", short: "Sell", explanation: "{ticker} leaving retail toward a sale — sold on a DEX, or deposited to an exchange (a common precursor to a sale). In Wallets mode, a tier's right-hand tick or outbound migration line uses this when that tier's outflow was dominated by real sales rather than wallet-to-wallet moves." },
@@ -128,6 +142,7 @@ export const TierFlowDiagram = ({
   onMetricChange,
   baselineDate,
   suppressedNote,
+  infoPrefix,
   chain: chainProp,
   selection: selectionProp,
   onSelectionChange,
@@ -203,6 +218,9 @@ export const TierFlowDiagram = ({
   const isPhone = useMediaQuery(PHONE_QUERY);
   // Phone copy is trimmed to headline numbers; the explanations open on tap.
   const compact = isPhone && !isTerminal;
+  // Touch (phones and coarse-pointer tablets) taps; mouse clicks.
+  const coarse = useMediaQuery("(pointer: coarse)");
+  const verb = isPhone || coarse ? "Tap" : "Click";
   const asOf = describeFreshness(outflowsAsOf);
 
   const { data: changelog } = useClassificationChangelog();
@@ -724,7 +742,7 @@ export const TierFlowDiagram = ({
       {LEGEND.map((l) => (
         <span key={l.label} className="inline-flex items-center gap-1.5">
           <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ background: l.color }} />
-          <ExplainNumber value={l.short}explanation={t(l.explanation)} ariaLabel={`${l.label}: what this colour means`} className="inline-flex min-h-6 items-center" />
+          <ExplainNumber value={l.short}explanation={t(l.explanation)} ariaLabel={`${l.label}: what this colour means`} className="inline-flex min-h-6 items-center max-xl:relative max-xl:before:absolute max-xl:before:-inset-x-1 max-xl:before:-inset-y-2.5 max-xl:before:content-['']" />
         </span>
       ))}
     </div>
@@ -810,7 +828,7 @@ export const TierFlowDiagram = ({
           <div className="ml-auto flex items-center gap-2">
             <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />
             {clearButton}
-            <InfoTooltip text={isWallets ? INFO_WALLETS : t(INFO_TEL)} label="How to read the tier flows" />
+            <InfoTooltip text={[infoPrefix, isWallets ? INFO_WALLETS : t(INFO_TEL)].filter(Boolean).join("\n\n")} label="How to read the tier flows" className={INFO_HIT_44} />
           </div>
         </div>
       ) : (
@@ -821,12 +839,14 @@ export const TierFlowDiagram = ({
               {/* On phones a fresh as-of date moves into the tooltip; a stale
                   feed keeps its visible warning pill. */}
               <InfoTooltip
-                text={compact && asOf.status === "fresh" && asOf.date ? `Flows as of ${asOf.date}.\n\n${isWallets ? INFO_WALLETS : t(INFO_TEL)}` : isWallets ? INFO_WALLETS : t(INFO_TEL)}
+                text={[infoPrefix, compact && asOf.status === "fresh" && asOf.date ? `Flows as of ${asOf.date}.` : null, isWallets ? INFO_WALLETS : t(INFO_TEL)].filter(Boolean).join("\n\n")}
                 label="How to read the tier flows"
+                className={INFO_HIT_44}
               />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {legend}
+              {!(compact && asOf.status === "fresh") && <span aria-hidden="true" className="hidden h-4 w-px bg-border sm:inline-block" />}
               {!(compact && asOf.status === "fresh") && <AsOfBadge iso={outflowsAsOf} label="Flows as of" testId="tier-outflows-asof" />}
               {clearButton}
               {metricToggle}
@@ -861,19 +881,19 @@ export const TierFlowDiagram = ({
           TEL mode: buy/sell pressure summary — period totals when no tier is
           selected; scoped to the selected tier when one is. */}
       {compact ? compactTiles : isWallets ? (isTerminal ? null : (
-        <div className="premium-surface-card p-4 text-center max-w-md mx-auto">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">
+        <div className="premium-surface-card mx-auto flex min-h-11 w-fit max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-0 px-4 py-1.5 text-center" data-testid="tier-net-pill">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
             Retail wallets, net change {`(vs ${baselineLabel(baselineDate)})`}
-          </div>
+          </span>
           {netInfo.netWallets == null ? (
-            <div className="text-sm text-muted-foreground">{suppressedNote?.count ?? "No baseline available for this period."}</div>
+            suppressedNote?.count
+              ? <ExplainNumber value="†" explanation={suppressedNote.count} ariaLabel="Why the change is not shown" className="inline-flex min-h-11 min-w-11 items-center justify-center text-sm text-muted-foreground" />
+              : <span className="text-sm text-muted-foreground">No baseline available for this period.</span>
           ) : (
-            <>
-              <div className={`text-xl font-bold ${netInfo.netWallets >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
-                {signed(netInfo.netWallets, fmtInt)} wallets
-              </div>
-              {netInfo.partialWallets && <div className="text-xs text-muted-foreground mt-0.5">Some tiers have no baseline yet — this total only counts the ones that do.</div>}
-            </>
+            <span className={`inline-flex items-center gap-1 text-xl font-bold ${netInfo.netWallets >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
+              {signed(netInfo.netWallets, fmtInt)} wallets
+              {netInfo.partialWallets && <InfoTooltip text="Some tiers have no baseline yet — this total only counts the ones that do." label="About this total" className={INFO_HIT_44} />}
+            </span>
           )}
         </div>
       )) : (
@@ -886,7 +906,9 @@ export const TierFlowDiagram = ({
                   : `Retail net change`}{` (vs ${baselineLabel(baselineDate)})`}
               </div>
               {scopedNetTel == null ? (
-                <div className="text-sm text-muted-foreground">{suppressedNote?.balance ?? "No baseline available for this period."}</div>
+                suppressedNote?.balance
+                ? <ExplainNumber value="†" explanation={suppressedNote.balance} ariaLabel="Why the change is not shown" className="inline-flex min-h-11 min-w-11 items-center justify-center text-sm text-muted-foreground" />
+                : <div className="text-sm text-muted-foreground">No baseline available for this period.</div>
               ) : (
                 <>
                   <div className={`text-xl font-bold ${scopedNetTel >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
@@ -957,7 +979,7 @@ export const TierFlowDiagram = ({
       {/* Always-visible instruction, not buried in the (i) tooltip — the
           #1 usability gap found in review was that clicking a tier isn't
           discoverable at all. */}
-      <div className={compact ? "sr-only" : `text-center text-sm text-muted-foreground ${isTerminal ? "shrink-0" : ""}`} aria-live="polite">
+      <div className={compact && selected ? "sr-only" : `text-center ${compact ? "text-xs" : "text-sm"} text-muted-foreground ${isTerminal ? "shrink-0" : ""}`} aria-live="polite">
         {isPhone
           ? isWallets
             ? selected
@@ -969,7 +991,7 @@ export const TierFlowDiagram = ({
           : isWallets
           ? selected
             ? `Showing where ${tierDisplayLabel(selected)} wallets came from and went. Click a line for its gross flows; Esc or Clear to reset.`
-            : "Click a tier to see where its wallets came from and went."
+            : `${verb} a tier to see where its wallets came from and went.`
           : selectedField && expandedFlow === "wallet"
             ? (selectedSideTile?.side === "out"
               ? "Yellow lines are wallet transfers out of this tier — click To wallet again to close."
@@ -1041,7 +1063,11 @@ export const TierFlowDiagram = ({
         <div
           // Tier nodes and any arcs fade in once with the first load.
           className={`absolute left-0 top-0 ${canvasIntro ? "ha-fade-in" : ""}`}
-          style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left" }}
+          style={{
+            width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left",
+            ["--tier-hit-pad" as string]: `${hitPad(scale, TIER_H, (PITCH - TIER_H) / 2)}px`,
+            ["--tick-hit-pad" as string]: `${hitPad(scale, 40, 8)}px`,
+          }}
         >
           {/* The svg itself stays pointer-events:none so it never intercepts
               tile clicks; only the individual flow groups opt back in. Lines
@@ -1267,7 +1293,7 @@ export const TierFlowDiagram = ({
                   // performance concern. hover/active scale is a transform
                   // (compositor-only, no layout at all) for the interactive
                   // feedback layer specifically.
-                  className={`group absolute inset-0 rounded-lg border text-left transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.99] ${
+                  className={`group absolute inset-0 max-xl:before:absolute max-xl:before:-inset-y-[var(--tier-hit-pad)] max-xl:before:inset-x-0 max-xl:before:content-[''] rounded-lg border text-left transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.99] ${
                     isSelected ? "scale-[1.015] ring-2 ring-offset-1 ring-offset-background"
                     : isHoveredCounterpart ? "ring-1"
                     : (dimmedByHover || dimmedBySidePivot || dimmedByWalletDrill) ? "opacity-30"
@@ -1355,7 +1381,7 @@ export const TierFlowDiagram = ({
                       value={`+${fmtInt(f.addedCount)}`}
                       explanation={t(addedTickExplanation(f))}
                       ariaLabel={`+${fmtInt(f.addedCount)} wallet${f.addedCount === 1 ? "" : "s"} arrived into ${tierDisplayLabel(f.label)}. Explain`}
-                      className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center px-1"
+                      className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center px-1 max-xl:relative max-xl:before:absolute max-xl:before:-inset-x-[var(--tick-hit-pad)] max-xl:before:-inset-y-[var(--tick-hit-pad)] max-xl:before:content-['']"
                     />
                   </span>
                 )}
@@ -1365,7 +1391,7 @@ export const TierFlowDiagram = ({
                       value={`−${fmtInt(f.removedCount)}`}
                       explanation={t(removedTickExplanation(f))}
                       ariaLabel={`${fmtInt(f.removedCount)} wallet${f.removedCount === 1 ? "" : "s"} left ${tierDisplayLabel(f.label)}. Explain`}
-                      className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center px-1"
+                      className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center px-1 max-xl:relative max-xl:before:absolute max-xl:before:-inset-x-[var(--tick-hit-pad)] max-xl:before:-inset-y-[var(--tick-hit-pad)] max-xl:before:content-['']"
                     />
                   </span>
                 )}
