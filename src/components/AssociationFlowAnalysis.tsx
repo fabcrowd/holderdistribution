@@ -1,8 +1,10 @@
+import { Fragment, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
 import { ForensicsUnlockGate, useForensicsUnlock } from "@/components/ForensicsGate";
 import { useProject } from "@/hooks/useProject";
 import { loadAssociationFlowReport } from "@/lib/loadForensics";
+import { chainExplorerLink, type ExplorerChain } from "@/lib/explorerLinks";
 
 /**
  * Password-gated forensic reconciliation of stablecoin outflows linked to the
@@ -32,9 +34,49 @@ const useFlowReport = (password: string | null, slug: string) =>
     retry: false,
   });
 
+/** `[0x1234…](0xfull…)` or `[0x1234…](0xfull…|polygon)` — the only markup this
+ *  hand-authored prose carries. Any mention without a known full address (and
+ *  so without this markup) stays plain text rather than a guessed link. */
+const BODY_LINK = /\[([^\]]+)\]\(([^)|]+)(?:\|([a-z0-9-]+))?\)/g;
+
+const BodyText = ({ body, chains }: { body: string; chains: ExplorerChain[] }) => {
+  const parts = useMemo(() => {
+    const out: Array<string | { label: string; href: string }> = [];
+    let last = 0;
+    for (const m of body.matchAll(BODY_LINK)) {
+      if (m.index! > last) out.push(body.slice(last, m.index));
+      const [, label, address, chainKey] = m;
+      const chain = chains.find((c) => c.key === chainKey) ?? chains[0];
+      out.push({ label, href: chain ? chainExplorerLink(chain, "address", address) : "#" });
+      last = m.index! + m[0].length;
+    }
+    if (last < body.length) out.push(body.slice(last));
+    return out;
+  }, [body, chains]);
+  return (
+    <>
+      {parts.map((p, i) =>
+        typeof p === "string" ? (
+          <Fragment key={i}>{p}</Fragment>
+        ) : (
+          <a
+            key={i}
+            href={p.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-primary hover:underline"
+          >
+            {p.label}
+          </a>
+        ),
+      )}
+    </>
+  );
+};
+
 export const AssociationFlowAnalysis = () => {
   const { password, status, unlock } = useForensicsUnlock();
-  const { slug } = useProject();
+  const { project, slug } = useProject();
   const { data: report, isLoading } = useFlowReport(password, slug);
 
   return (
@@ -73,7 +115,9 @@ export const AssociationFlowAnalysis = () => {
               <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
                 {s.heading}
               </h4>
-              <p className="text-xs leading-relaxed text-muted-foreground">{s.body}</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                <BodyText body={s.body} chains={project.chains ?? []} />
+              </p>
               {s.rows.length > 0 && (
                 <dl className="divide-y divide-border/40 rounded-lg border border-border/40 bg-background/40">
                   {s.rows.map((r) => (
