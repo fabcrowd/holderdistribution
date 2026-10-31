@@ -9,12 +9,11 @@ describe("token header (no switcher)", () => {
     expect(fs.existsSync(path.resolve(__dirname, "TokenSwitcher.tsx"))).toBe(false);
   });
   it("no navigation or terminal file references TokenSwitcher", () => {
-    for (const f of ["Navigation.tsx", "PageIntro.tsx", "terminal/TerminalDashboard.tsx"]) {
+    for (const f of ["Navigation.tsx", "terminal/TerminalDashboard.tsx"]) {
       expect(src(f), f).not.toContain("TokenSwitcher");
     }
   });
-  it("desktop and mobile headings show TokenIdentity", () => {
+  it("the heading shows TokenIdentity", () => {
     expect(src("terminal/TerminalDashboard.tsx")).toMatch(/<TokenIdentity\b[^>]*\/>\s*<span>Holder Distribution<\/span>/);
-    expect(src("PageIntro.tsx")).toMatch(/<TokenIdentity size="lg"[^>]*\/> holder distribution/);
   });
 });

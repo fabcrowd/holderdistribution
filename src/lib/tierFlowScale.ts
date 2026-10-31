@@ -12,7 +12,7 @@
 
 /** 13px labels stay ≥ ~12px. Below this the diagram was hard to read. */
 export const READABLE_TIER_SCALE = 0.92;
-const MIN_STACKED_SCALE = 0.2;
+export const MIN_STACKED_SCALE = 0.2;
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
@@ -22,11 +22,13 @@ export function tierCanvasScale(args: {
   clientHeight: number;
   canvasW: number;
   canvasH: number;
+  /** Floor override: the canvas overflows (scrolls) rather than shrink below it. */
+  minScale?: number;
 }): number {
-  const { terminal, clientWidth, canvasW } = args;
+  const { terminal, clientWidth, canvasW, minScale } = args;
   if (!(clientWidth > 0) || !(canvasW > 0)) return 1;
   const byWidth = clientWidth / canvasW;
-  if (!terminal) return clamp(byWidth, MIN_STACKED_SCALE, 1);
+  if (!terminal) return clamp(byWidth, minScale ?? MIN_STACKED_SCALE, 1);
   // Height is intentionally ignored: fitting it is what crushed the type.
-  return clamp(Math.min(1, byWidth), READABLE_TIER_SCALE, 1);
+  return clamp(Math.min(1, byWidth), minScale ?? READABLE_TIER_SCALE, 1);
 }

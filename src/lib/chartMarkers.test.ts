@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { datedNotes, groupMarkers, markerCollapseGap, markerNotesByRow } from "./chartMarkers";
+import { MARKER_TOOLTIP_MAX, datedNotes, groupMarkers, markerCollapseGap, markerNotesByRow, markerTooltip, type ChartNote } from "./chartMarkers";
 import { reclassMarkers } from "./chartMarkers";
 
 const DAY = 86_400_000;
@@ -62,5 +62,21 @@ describe("datedNotes", () => {
       { suffix: "2026-10-02", text: "" },
     ]);
     expect(notes).toEqual([{ t: Date.parse("2026-10-01"), text: "gap", tone: "warning" }]);
+  });
+});
+
+describe("markerTooltip", () => {
+  const group = (...items: ChartNote[]) => ({ t: items[0].t, items });
+  it("prefers the item's tooltip over its tooltip-less text", () => {
+    expect(markerTooltip(group({ ...at(1, "long text"), tooltip: "Method change · Oct 3, 2026" }))).toBe("Method change · Oct 3, 2026");
+    expect(markerTooltip(group(at(1, "v3 migration")))).toBe("v3 migration");
+  });
+  it("counts the other notes folded into a collapsed marker", () => {
+    expect(markerTooltip(group(at(1, "a"), at(2, "b"), at(3, "c")))).toBe("a (+2 more)");
+  });
+  it("keeps a long line short with an ellipsis", () => {
+    const out = markerTooltip(group(at(1, "x".repeat(200))));
+    expect(out.length).toBeLessThanOrEqual(MARKER_TOOLTIP_MAX);
+    expect(out.endsWith("…")).toBe(true);
   });
 });

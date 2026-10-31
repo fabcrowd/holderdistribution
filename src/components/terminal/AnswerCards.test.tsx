@@ -31,6 +31,23 @@ describe("pickAnswerTiles", () => {
   });
 });
 
+describe("AnswerCards all-time-high note", () => {
+  it("adds a keyboard-reachable note only on an ATH tile that has one", () => {
+    const withNote = renderToStaticMarkup(
+      <AnswerCards
+        tiles={[tile("holders", { ath: true, athNote: "Based on 5 days of data" }), tile("retailHeld"), tile("cex")]}
+        selectedView="combined"
+        isError={false}
+      />,
+    );
+    expect(withNote).toContain("All-time high: Based on 5 days of data");
+    const without = renderToStaticMarkup(
+      <AnswerCards tiles={[tile("holders", { ath: true }), tile("retailHeld"), tile("cex")]} selectedView="combined" isError={false} />,
+    );
+    expect(without).not.toContain("days of data");
+  });
+});
+
 describe("AnswerCards", () => {
   it("renders exactly three cards using the tokens, with the label, value and sub line", () => {
     const html = renderToStaticMarkup(<AnswerCards tiles={ALL} selectedView="combined" isError={false} />);

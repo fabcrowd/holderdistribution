@@ -6,8 +6,11 @@ import { getProject } from "./projects";
 import {
   CANONICAL_SUPPLY_BUCKETS,
   DEFAULT_DEVELOPER_HOLDINGS,
+  DEFAULT_SLICE_OPACITY,
   DEVELOPER_BUCKET_LABEL,
+  DIMMED_SLICE_OPACITY,
   OTHER_CATEGORY_KEYS,
+  RESIDUAL_SLICE_OPACITY,
   SUPPLY_GAP_LABEL,
   circulatingFormula,
   developerGroups,
@@ -239,7 +242,8 @@ describe("ZBCN staking copy", () => {
       }),
       { total: 0, active: 0 },
     );
-    expect(lockupTotals.total / 1e9).toBeCloseTo(18.9, 1);
+    // Cumulative counters only grow, so allow +-0.15B drift before the "~18.9B" copy needs a refresh.
+    expect(Math.abs(lockupTotals.total / 1e9 - 18.9)).toBeLessThan(0.15);
     expect(lockupTotals.active / 1e9).toBeCloseTo(staking.stakedTotal / 1e9, 2);
     // Copy says ~14.2B already claimed; the snapshot drifts daily, so allow +-0.1B.
     expect(Math.abs((lockupTotals.total - lockupTotals.active) / 1e9 - 14.2)).toBeLessThan(0.1);
@@ -253,4 +257,101 @@ describe("ZBCN staking copy", () => {
     expect(supply.categories.staking).toBeLessThan(staking.stakedTotal * 0.01);
     expect(supply.categories.retail).toBeGreaterThan(staking.stakedTotal);
   });
+});
+
+type HslTriple = [number, number, number];
+type Rgb = [number, number, number];
+
+const MIN_DONUT_CONTRAST = 3;
+const SUPPLY_TOKEN_CALL = /^hsl\(var\(--([\w-]+)\)\)$/;
+
+const tokenTriple = (block: string, name: string): HslTriple => {
+  const match = new RegExp(`--${name}:\\s*([\\d.]+)\\s+([\\d.]+)%\\s+([\\d.]+)%`).exec(block);
+  if (!match) throw new Error(`token --${name} not found in theme block`);
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+};
+
+const hslToRgb = ([h, s, l]: HslTriple): Rgb => {
+  const sat = s / 100;
+  const lig = l / 100;
+  const a = sat * Math.min(lig, 1 - lig);
+  const channel = (n: number): number => {
+    const k = (n + h / 30) % 12;
+    return lig - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+  };
+  return [channel(0), channel(8), channel(4)];
+};
+
+const linearChannel = (c: number): number => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+
+const luminance = ([r, g, b]: Rgb): number =>
+  0.2126 * linearChannel(r) + 0.7152 * linearChannel(g) + 0.0722 * linearChannel(b);
+
+const contrastRatio = (a: Rgb, b: Rgb): number => {
+  const la = luminance(a);
+  const lb = luminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+};
+
+/** Opacity composite of a fill over an opaque background, per sRGB channel. */
+const compositeOver = (fg: Rgb, alpha: number, bg: Rgb): Rgb => [
+  fg[0] * alpha + bg[0] * (1 - alpha),
+  fg[1] * alpha + bg[1] * (1 - alpha),
+  fg[2] * alpha + bg[2] * (1 - alpha),
+];
+
+describe("Supply donut palette — >= 3:1 against --card in both themes", () => {
+  const css = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8");
+  const darkStart = css.indexOf(".dark {");
+  const lightBlock = css.slice(css.indexOf("--card:"), darkStart);
+  const darkBlock = css.slice(darkStart, css.indexOf("}", darkStart));
+  const themes: Array<[string, string]> = [
+    ["light", lightBlock],
+    ["dark", darkBlock],
+  ];
+  // Residual is the supply-gap bucket (alignment "residual"); the component
+  // rests it at RESIDUAL_SLICE_OPACITY, retail-aligned buckets at 1, others at DEFAULT.
+  const restingOpacity = (alignment: string): number =>
+    alignment === "retail" ? 1 : alignment === "residual" ? RESIDUAL_SLICE_OPACITY : DEFAULT_SLICE_OPACITY;
+  const sampleBuckets = groupSupplyCategories(
+    { retail: 1, dex: 1, cex: 1, staking: 1, burn: 1, treasury: 1, team: 1, holdings: 1, escrow: 1 },
+    1,
+  );
+
+  for (const [theme, block] of themes) {
+    describe(`${theme} theme`, () => {
+      const card = hslToRgb(tokenTriple(block, "card"));
+      const bucketRgb = (color: string): Rgb => {
+        const match = SUPPLY_TOKEN_CALL.exec(color);
+        if (!match) throw new Error(`slice colour must be hsl(var(--token)), got ${color}`);
+        return hslToRgb(tokenTriple(block, match[1]));
+      };
+
+      const failuresAt = (opacityOf: (alignment: string) => number): string[] =>
+        sampleBuckets.flatMap((b) => {
+          const ratio = contrastRatio(
+            compositeOver(bucketRgb(b.color), opacityOf(b.alignment), card),
+            card,
+          );
+          return ratio >= MIN_DONUT_CONTRAST ? [] : [`${b.key}: ${ratio.toFixed(2)}:1`];
+        });
+
+      it("gives every bucket its own colour", () => {
+        const triples = sampleBuckets.map((b) => bucketRgb(b.color).map((c) => c.toFixed(6)).join(","));
+        expect(new Set(triples).size).toBe(sampleBuckets.length);
+      });
+
+      it("meets 3:1 vs --card at full opacity", () => {
+        expect(failuresAt(() => 1)).toEqual([]);
+      });
+
+      it("meets 3:1 vs --card at each bucket's resting opacity", () => {
+        expect(failuresAt(restingOpacity)).toEqual([]);
+      });
+
+      it("meets 3:1 vs --card at DIMMED_SLICE_OPACITY", () => {
+        expect(failuresAt(() => DIMMED_SLICE_OPACITY)).toEqual([]);
+      });
+    });
+  }
 });

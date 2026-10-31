@@ -1,31 +1,27 @@
 import { useId } from "react";
-import type { CardTrend } from "@/lib/cardTrend";
+import { formatCount, formatTrendDate, trendLabel, type CardTrend } from "@/lib/cardTrend";
 import { MIN_FONT_PX, TYPE_PX } from "@/lib/terminalLayout";
 
 const W = 240;
 const H = 40;
 const PAD = 3;
 
-const int = new Intl.NumberFormat("en-US");
-const dateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-
-/** Accessible summary read by screen readers (the SVG itself is a single image). */
-export const trendLabel = (name: string, t: CardTrend): string =>
-  `${name} retail wallets, ${dateFmt.format(t.first.t)} to ${dateFmt.format(t.last.t)}: ${int.format(t.first.v)} to ${int.format(t.last.v)}.`;
+const DEFAULT_EMPTY_NOTE = "Holder trend appears once 2+ days of history exist.";
 
 /**
  * Tiny single-series line. Stroke/fill use theme tokens so it works in light
  * and dark; y-domain is padded min..max of the window (a count, so it need not
  * start at zero); caption text uses the terminal caption size (>= 12px).
- * `trend === null` renders a same-height placeholder so cards stay aligned.
+ * `trend === null` renders a same-height placeholder so cards stay aligned;
+ * `note` replaces the placeholder text (e.g. after a methodology break).
  */
-export const CardSparkline = ({ name, trend }: { name: string; trend: CardTrend | null }) => {
+export const CardSparkline = ({ name, trend, note }: { name: string; trend: CardTrend | null; note?: string }) => {
   const gid = useId();
   if (!trend) {
     return (
       <div data-testid="card-sparkline-empty" className="flex h-[72px] flex-col justify-center rounded-md bg-muted/40 px-3">
         <p style={{ fontSize: TYPE_PX.caption }} className="text-muted-foreground">
-          Holder trend appears once 2+ days of history exist.
+          {note ?? DEFAULT_EMPTY_NOTE}
         </p>
       </div>
     );
@@ -57,10 +53,15 @@ export const CardSparkline = ({ name, trend }: { name: string; trend: CardTrend 
         <circle cx={x(last.t)} cy={y(last.v)} r="2.5" fill="hsl(var(--primary))" />
       </svg>
       <p style={{ fontSize: Math.max(TYPE_PX.caption, MIN_FONT_PX) }} className="flex justify-between text-muted-foreground">
-        <span>{spanDays} day{spanDays === 1 ? "" : "s"} · retail wallets</span>
+        <span>
+          {trend.sinceBreak === undefined
+            ? `${spanDays} day${spanDays === 1 ? "" : "s"}`
+            : `since ${formatTrendDate(trend.sinceBreak)}`}{" "}
+          · retail wallets
+        </span>
         <span className="font-mono tabular-nums">
           {sign}
-          {int.format(Math.abs(delta))}
+          {formatCount(Math.abs(delta))}
         </span>
       </p>
     </div>

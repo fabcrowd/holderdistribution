@@ -13,8 +13,8 @@
  *   SOURCE tiles      LANE      TIER column      LANE      SINK tiles
  *   x  8 → 198         120      x 318 → 618        120      x 738 → 928
  *   (4 tiles: swap/    (migration lines           (10 tiers, CENTERED       (4 tiles: swap/
- *    LP/CEX/wallet)     fan through here           on x=468, growing         LP/CEX/wallet)
- *                       on both sides)              left+right by value)
+ *    LP/CEX/wallet)     fan through here           on x=468, equal           LP/CEX/wallet)
+ *                       on both sides)              width)
  */
 
 /**
@@ -69,33 +69,44 @@ export const SRC_X = 8;
 export const SRC_W = 190; // right edge 198
 export const LANE_W = 120;
 export const TIER_COL_X = SRC_X + SRC_W + LANE_W; // 318
-export const TIER_COL_W = 300; // nominal — actual bar right edge is ragged (tileW is data-driven)
+export const TIER_COL_W = 300; // column slot; tiles (TIER_TILE_W) are centred in it
 export const SINK_X = TIER_COL_X + TIER_COL_W + LANE_W; // 738
 export const SINK_W = 190;
 // Right-hand outer margin mirrors SRC_X on the left, for symmetric padding.
 export const CANVAS_W = SINK_X + SINK_W + SRC_X; // 936
 
+// Wallets mode has no side tiles, so the outer gutters are empty. Its useful
+// span (tiles plus the ticks beside them and the migration lane arcs) is
+// cropped out of the same coordinate space: nothing is re-positioned, the
+// view is just offset by WALLETS_ORIGIN_X.
+export const WALLETS_ORIGIN_X = 168;
+export const WALLETS_W = 600; // x 168..768
+export const canvasWidthFor = (metric: "wallets" | "tel"): number => (metric === "wallets" ? WALLETS_W : CANVAS_W);
+export const canvasOriginX = (metric: "wallets" | "tel"): number => (metric === "wallets" ? WALLETS_ORIGIN_X : 0);
+
 // --- Tier rows ---
 export const rowTop = (i: number): number => TOP_PAD + PITCH * i;
 export const rowCenterY = (i: number): number => rowTop(i) + TIER_H / 2;
 
-// Bar width in px from a 0-100 log-scaled percentage (see useFlowField's
-// barPct, lifted verbatim from the pre-redesign component). Floor of 104px
-// keeps even a 3%-scaled tier (500M+, 2 wallets) wide enough for its label
-// and printed count; ceiling of 300px matches TIER_COL_W's nominal width.
-export const tileW = (pct: number): number => 104 + (196 * Math.max(0, Math.min(100, pct))) / 100;
+// Every tier tile is the same width; the balance range's size is shown by a
+// bar INSIDE the tile (tierBarFraction), so labels, counts and the +N / -N
+// ticks fall in straight columns instead of a ragged pill outline.
+export const TIER_TILE_W = 260;
 
 export const tierLeftX = TIER_COL_X;
-// Tier bars are CENTER-aligned, not left-aligned: every tier's bar shares the
-// same horizontal center line and grows outward left/right by equal amounts
-// as its value grows, rather than all starting flush at TIER_COL_X and only
-// ever extending rightward. TIER_COL_CENTER_X is the fixed center every bar
-// shares; tileEdgeX takes an already-computed WIDTH (not a raw pct — the
-// caller may have rescaled pct against the tallest bar first) and returns
-// that bar's own left or right edge around the shared center.
+// Tiles are centred on TIER_COL_CENTER_X. tileEdgeX is the shared left/right
+// edge every flow line, arc and tick attaches to.
 export const TIER_COL_CENTER_X = TIER_COL_X + TIER_COL_W / 2; // 468
-export const tileEdgeX = (width: number, side: "left" | "right"): number =>
-  side === "left" ? TIER_COL_CENTER_X - width / 2 : TIER_COL_CENTER_X + width / 2;
+export const tileEdgeX = (side: "left" | "right"): number =>
+  side === "left" ? TIER_COL_CENTER_X - TIER_TILE_W / 2 : TIER_COL_CENTER_X + TIER_TILE_W / 2;
+
+/** Smallest filled share of the inner size bar, so the narrowest tier still shows a sliver. */
+export const TIER_BAR_MIN_FRACTION = 0.06;
+/** Fill fraction (0..1) of a tile's size bar from the 0-100 log-scaled pct. */
+export const tierBarFraction = (pct: number): number => {
+  if (!Number.isFinite(pct)) return TIER_BAR_MIN_FRACTION;
+  return Math.max(TIER_BAR_MIN_FRACTION, Math.min(1, pct / 100));
+};
 
 // --- Side tiles (4 sources on the left, 4 sinks on the right — same y
 // positions on both sides so a "came" and "went" row line up horizontally) ---
@@ -121,17 +132,24 @@ export const bezierPath = (x1: number, y1: number, x2: number, y2: number): stri
 };
 
 // Migration lines connect two TIER TILES on the SAME side of the canvas
-// (both left edges, or both right edges) — but tile widths are data-driven,
-// so two right edges rarely share an x. A plain cubic between them would cut
+// (both left edges, or both right edges), which share one x. A plain cubic between them would cut
 // a diagonal straight through the tier column instead of arcing out through
 // the lane. This bulges both control points out to a shared far-X (into the
 // lane), so the curve leaves x1 and arrives at x2 each roughly perpendicular
 // to its own tile edge — "arcs from and towards" both bars, touching each
 // exactly at its real edge even when those edges sit at different x.
-export const laneArcPath = (x1: number, y1: number, x2: number, y2: number, side: "left" | "right"): string => {
+const laneArcFarX = (x1: number, y1: number, x2: number, y2: number, side: "left" | "right"): number => {
   const bulge = Math.min(LANE_W - 8, Math.max(16, Math.abs(y2 - y1) * 0.25));
-  const farX = side === "left" ? Math.min(x1, x2) - bulge : Math.max(x1, x2) + bulge;
+  return side === "left" ? Math.min(x1, x2) - bulge : Math.max(x1, x2) + bulge;
+};
+export const laneArcPath = (x1: number, y1: number, x2: number, y2: number, side: "left" | "right"): string => {
+  const farX = laneArcFarX(x1, y1, x2, y2, side);
   return `M ${x1} ${y1} C ${farX} ${y1}, ${farX} ${y2}, ${x2} ${y2}`;
+};
+/** Midpoint (t = 0.5) of laneArcPath: where an amount label sits on its own line. */
+export const laneArcMid = (x1: number, y1: number, x2: number, y2: number, side: "left" | "right"): { x: number; y: number } => {
+  const farX = laneArcFarX(x1, y1, x2, y2, side);
+  return { x: (x1 + x2 + 6 * farX) / 8, y: (y1 + y2) / 2 };
 };
 
 // Spreads k=0..n-1 endpoints that would otherwise all land on the same y

@@ -45,9 +45,9 @@ describe("TimeChart legend", () => {
   });
   it("makes the chart zoomable (focusable group) once there are enough rows", () => {
     expect(renderToStaticMarkup(<TimeChart data={data} series={two} label="T" />)).toContain('role="group"');
-    expect(renderToStaticMarkup(<TimeChart data={data.slice(0, 5)} series={two} label="T" />)).not.toContain('role="group"');
+    expect(renderToStaticMarkup(<TimeChart data={data.slice(0, 5)} series={two} label="T" />)).not.toContain("Chart. Scroll");
   });
-  it("keeps the screen-reader summary on an img", () => {
-    expect(renderToStaticMarkup(<TimeChart data={data} series={two} label="Summary text" />)).toMatch(/role="img"[^>]*aria-label="Summary text"/);
+  it("keeps the screen-reader summary on the chart group", () => {
+    expect(renderToStaticMarkup(<TimeChart data={data} series={two} label="Summary text" />)).toMatch(/role="group"[^>]*aria-label="Summary text"/);
   });
 });

@@ -63,6 +63,7 @@ import { type ClassificationEvent } from "@/hooks/useClassificationChangelog";
 import { useHeadlineTiles } from "@/hooks/useHeadlineTiles";
 import { ChainStatusBar, CompactProvenance } from "@/components/ChainStatusBar";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { InfoTip } from "@/components/InfoTip";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { StatTile } from "@/components/ui/stat-tile";
 import { BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, ReferenceLine, Line } from "recharts";
@@ -71,6 +72,7 @@ import { stakingSplitSub } from "@/lib/stakingSplit";
 import { RETAIL_WALLETS_LABEL, retailWalletsInfo, uniqueWalletCount } from "@/lib/holderCounts";
 import { StakingSupplyTie } from "@/components/StakingSupplyTie";
 import "@/lib/rechartsMotion";
+import { athHistoryNote, historyDays } from "@/lib/athNote";
 import { CHART_HEIGHT_CLASS, CHART_TICK, CHART_LABEL_FONT_PX } from "@/lib/terminalLayout";
 
 const formatCompactTokens = (n: number) => formatCompact(n, 2);
@@ -189,6 +191,8 @@ type StatItem = {
   value: string;
   description: string;
   badge?: string;
+  /** Qualifier for the badge, e.g. "Based on 5 days of data". */
+  badgeNote?: string | null;
   previous: number | null;
   rawValue: number;
   icon: LucideIcon;
@@ -210,6 +214,7 @@ const renderMetrics = (
   holdersEvents?: ClassificationEvent[],
   cexEvents?: ClassificationEvent[],
   retailBalanceEvents?: ClassificationEvent[],
+  holderAthNote?: string | null,
 ) => {
   const previousHolderCount = historicalPrevious
     ? historicalPrevious.holderCount
@@ -244,6 +249,7 @@ const renderMetrics = (
       value: formatInteger(result.metrics.holderCount),
       description: holderCountIsAth ? "All-time high" : copy.t("Wallets >0 {ticker}, excl. exchanges"),
       badge: holderCountIsAth ? "ATH" : undefined,
+      badgeNote: holderCountIsAth ? holderAthNote : null,
       previous: previousHolderCount,
       rawValue: result.metrics.holderCount,
       icon: Users,
@@ -334,7 +340,10 @@ const renderMetrics = (
                 changelogEvents={item.changelogEvents}
               />
             </div>
-            <div className={`text-xs ${item.badge === "ATH" ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}`}>{item.description}</div>
+            <div className={`flex items-center justify-center gap-1 text-xs ${item.badge === "ATH" ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}`}>
+              {item.description}
+              {item.badgeNote && <InfoTip content={item.badgeNote} label={`All-time high: ${item.badgeNote}`} />}
+            </div>
             {deltaLabel && item.previous !== null && (
               <div className="text-xs text-muted-foreground mt-1">vs {deltaLabel}</div>
             )}
@@ -417,7 +426,7 @@ const renderConcentration = (
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-lg font-semibold text-foreground">Concentration Spread</span>
         <MethodologyInfo section="concentration" />
-        <span className="text-[10px] sm:text-xs font-medium text-muted-foreground border border-border/60 rounded-full px-2 py-0.5">
+        <span className="text-xs font-medium text-muted-foreground border border-border/60 rounded-full px-2 py-0.5">
           Retail only — excludes exchange &amp; hot wallets
         </span>
               </div>
@@ -1311,7 +1320,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
           type="button"
           onClick={() => onViewChange(option.key)}
           disabled={isLoading}
-          className={`${compactHeader ? "min-h-[32px] max-xl:min-h-11 max-xl:min-w-11 shrink-0 px-2.5 text-[11px]" : "min-h-[44px] px-3.5 text-xs sm:text-sm"} rounded-full font-semibold transition-colors disabled:opacity-50 ${
+          className={`${compactHeader ? "min-h-[32px] max-xl:min-h-11 max-xl:min-w-11 shrink-0 px-2.5 text-xs" : "min-h-[44px] px-3.5 text-xs sm:text-sm"} rounded-full font-semibold transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             option.key === selectedView
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-primary"
@@ -1346,6 +1355,9 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
     const max = Math.max(...holders);
     return latest > 0 && latest >= max;
   }, [fullHistory, selectedView]);
+  const holderAthNote = holderCountIsAth
+    ? athHistoryNote(historyDays((fullHistory?.series ?? []).map((p) => Date.parse(p.timestamp))))
+    : null;
 
   // Range-aware holder momentum: net new holders over the selected window,
   // computed within the same history series so both ends are consistent.
@@ -1490,6 +1502,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
                   events.holders,
                   events.cex,
                   events.retailBalance,
+                  holderAthNote,
                 )}
               </TabsContent>
 

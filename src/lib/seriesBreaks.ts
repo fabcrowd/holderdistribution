@@ -21,6 +21,23 @@ export type SeriesBreak = {
   label: string;
   /** Tooltip / screen-reader text. */
   description: string;
+  /** The changelog event's one-line summary, for the marker tooltip. */
+  summary?: string;
+};
+
+/** Longest event summary shown on a marker tooltip before it is cut with an ellipsis. */
+export const BREAK_SUMMARY_MAX = 36;
+
+const shortDate = (t: number) =>
+  new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+
+/** One short line for a break's marker: "Method change · Oct 3, 2026 · {event summary}". */
+export const breakTooltip = (b: SeriesBreak): string => {
+  const head = `Method change · ${shortDate(b.t)}`;
+  const summary = b.summary?.trim();
+  if (!summary) return head;
+  const cut = summary.length > BREAK_SUMMARY_MAX ? `${summary.slice(0, BREAK_SUMMARY_MAX - 1).trimEnd()}…` : summary;
+  return `${head} · ${cut}`;
 };
 
 /**
@@ -45,7 +62,7 @@ export const getSeriesBreaks = (
     const t = Date.parse(spec.at ?? event.date);
     if (!Number.isFinite(t) || t <= fromMs || t > toMs || seen.has(t)) continue;
     seen.add(t);
-    breaks.push({ t, label: SERIES_BREAK_LABEL, description: spec.note ?? SERIES_BREAK_NOTE });
+    breaks.push({ t, label: SERIES_BREAK_LABEL, description: spec.note ?? SERIES_BREAK_NOTE, summary: event.summary });
   }
   return breaks.sort((a, b) => a.t - b.t);
 };

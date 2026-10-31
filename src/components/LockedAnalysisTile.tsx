@@ -159,7 +159,7 @@ const LockedAnalysisTile = ({ address, password = null }: LockedAnalysisTileProp
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/70 backdrop-blur-[2px] p-4 text-center">
         <Lock className="h-5 w-5 text-muted-foreground" />
         <p className="text-sm font-semibold text-foreground">Subscription Required</p>
-        <p className="text-[11px] text-muted-foreground max-w-[16rem]">
+        <p className="text-xs text-muted-foreground max-w-[16rem]">
           Deep funding-chain and controller analysis unlocks with an admin account.
         </p>
         {!isAuthenticated ? (
@@ -167,7 +167,7 @@ const LockedAnalysisTile = ({ address, password = null }: LockedAnalysisTileProp
             <Link to="/auth">Sign in</Link>
           </Button>
         ) : (
-          <p className="text-[11px] text-muted-foreground">Signed in — admin role required.</p>
+          <p className="text-xs text-muted-foreground">Signed in — admin role required.</p>
         )}
       </div>
     </div>

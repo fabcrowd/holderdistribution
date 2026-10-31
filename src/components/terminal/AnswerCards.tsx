@@ -1,4 +1,5 @@
 import { ChangeIndicator } from "@/components/ChangeIndicator";
+import { InfoTip } from "@/components/InfoTip";
 import type { EcosystemHeadlineTile } from "@/hooks/useEcosystemHeadlineTiles";
 import type { DisplaySelection } from "@/hooks/useHolderSnapshot";
 import { pickAnswerTiles } from "@/lib/answerCards";
@@ -57,7 +58,10 @@ export const AnswerCards = ({ tiles, selectedView, isError }: Props) => {
               />
             )}
           </dd>
-          <p className={`text-xs ${t.ath ? "font-semibold text-ha-accent" : "text-muted-foreground"}`}>{t.sub}</p>
+          <p className={`flex items-center gap-1 text-xs ${t.ath ? "font-semibold text-ha-accent" : "text-muted-foreground"}`}>
+            {t.sub}
+            {t.ath && t.athNote && <InfoTip content={t.athNote} label={`All-time high: ${t.athNote}`} />}
+          </p>
         </div>
       ))}
     </dl>

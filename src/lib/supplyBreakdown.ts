@@ -8,6 +8,10 @@ import { DEFAULT_CIRCULATING_SUBTRACT, subtractTerms } from "@/lib/circulatingSu
  * Other, Supply gap. Empty buckets are omitted. Buckets partition totalSupply:
  * counted categories + the supply gap (residual).
  *
+ * Slice colours are theme tokens: retail `--primary`, DEX/CEX/Developer/Supply
+ * gap `--supply-*`, Other `--muted-foreground`. Each must stay >= 3:1 against
+ * --card at the donut's opacities (supplyBreakdown.test.ts enforces it).
+ *
  * Developer holdings is everything held by the project's creators and not in
  * public hands. Which feed categories it holds, and what each is called, is
  * per-project config (`supply.developerHoldings.subcategories`); the feed
@@ -137,6 +141,15 @@ export type CanonicalSupplyBucket = (typeof CANONICAL_SUPPLY_BUCKETS)[number];
 const sumKeys = (categories: Record<string, number>, keys: readonly string[]): number =>
   keys.reduce((sum, key) => sum + (categories[key] ?? 0), 0);
 
+/**
+ * Donut fill opacities. The slice palette (`--supply-*` tokens in index.css)
+ * meets 3:1 against --card down to the dimmed opacity, so none of these may
+ * drop below the value the palette was tested at (supplyBreakdown.test.ts).
+ */
+export const DEFAULT_SLICE_OPACITY = 0.85;
+export const RESIDUAL_SLICE_OPACITY = 0.8;
+export const DIMMED_SLICE_OPACITY = 0.8;
+
 export const groupSupplyCategories = (
   categories: Record<string, number> | undefined | null,
   residual = 0,
@@ -160,21 +173,21 @@ export const groupSupplyCategories = (
       label: "DEX",
       amount: c.dex ?? 0,
       alignment: "retail",
-      color: "hsl(152 60% 42%)",
+      color: "hsl(var(--supply-dex))",
     },
     {
       key: "cex",
       label: "CEX",
       amount: c.cex ?? 0,
       alignment: "institutional",
-      color: "hsl(32 90% 50%)",
+      color: "hsl(var(--supply-cex))",
     },
     {
       key: "developer",
       label: DEVELOPER_BUCKET_LABEL,
       amount: developerTotal,
       alignment: "institutional",
-      color: "hsl(250 45% 50%)",
+      color: "hsl(var(--supply-developer))",
       subcategories,
     },
     {
@@ -189,7 +202,7 @@ export const groupSupplyCategories = (
       label: SUPPLY_GAP_LABEL,
       amount: residual,
       alignment: "residual",
-      color: "hsl(0 0% 55%)",
+      color: "hsl(var(--supply-gap))",
     },
   ];
 

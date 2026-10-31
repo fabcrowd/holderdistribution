@@ -10,7 +10,7 @@ import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { formatCompact, formatSignedCompact } from "@/lib/format";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
-import { TimeChart, SignedBars, CategoryBars, type ChartMarker } from "./MiniCharts";
+import { TimeChart, StackedTimeCharts, StackedBody, SignedBars, CategoryBars, type ChartMarker } from "./MiniCharts";
 import { DetailsButton } from "./DetailsButton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { heldPanelTip } from "@/lib/heldPanelTip";
@@ -229,6 +229,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             data={holders}
             series={[{ key: "holders", label: "Wallets", color: "hsl(var(--primary))" }]}
             format={(n) => int.format(n)}
+            tableTitle="Retail wallets by date"
             label={h ? `Retail wallets from ${int.format(h.first.holders)} to ${int.format(h.last.holders)} over the period.` : "Retail wallets"}
             markers={holderMarkers}
             breaks={holderBreaks}
@@ -238,7 +239,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       </TerminalPanel>
 
       <TerminalPanel
-        chart="hero"
+        fit
         title={`${tk} held`}
         info={heldPanelTip(project, {
           stakedTotal: v3Staking ? (combinedStaking?.stakedTotal ?? 0) : (combinedStaking?.stakedTotal ?? null),
@@ -261,25 +262,28 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         }
         actions={<DetailsButton onClick={() => onExplore("balances")} label={`${tk} held`} />}
       >
-        {!isCombined ? (
-          <PanelMessage>Available for all chains combined only.</PanelMessage>
-        ) : (
-          series(
-            <TimeChart
-              data={balance}
-              series={[
-                { key: "retail", label: "Retail", color: "hsl(var(--primary))" },
-                { key: "cex", label: "Exchanges", color: "hsl(var(--ha-accent))", axis: "right" },
-              ]}
-              format={(n) => `${formatCompact(n)} ${tk}`}
-              label={b ? `Retail ${tk} ${formatCompact(b.last.retail)}, exchange ${tk} ${b.last.cex != null ? formatCompact(b.last.cex) : "unknown"} at the end of the period.` : `${tk} held`}
-              markers={balanceMarkers}
-              breaks={balanceBreaks}
-              highlight={balanceFocus}
-            />,
-            balance.length > 1,
-          )
-        )}
+        <StackedBody>
+          {!isCombined ? (
+            <PanelMessage>Available for all chains combined only.</PanelMessage>
+          ) : (
+            series(
+              <StackedTimeCharts
+                data={balance}
+                tableTitle="Retail and exchange balances by date"
+                series={[
+                  { key: "retail", label: "Retail", color: "hsl(var(--primary))" },
+                  { key: "cex", label: "Exchanges", color: "hsl(var(--ha-accent))" },
+                ]}
+                format={(n) => `${formatCompact(n)} ${tk}`}
+                label={b ? `Retail ${tk} ${formatCompact(b.last.retail)}, exchange ${tk} ${b.last.cex != null ? formatCompact(b.last.cex) : "unknown"} at the end of the period.` : `${tk} held`}
+                markers={balanceMarkers}
+                breaks={balanceBreaks}
+                highlight={balanceFocus}
+              />,
+              balance.length > 1,
+            )
+          )}
+        </StackedBody>
       </TerminalPanel>
 
       </div>
@@ -428,6 +432,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                     markers={stakingMarkers}
                     breaks={stakingBreaks}
                     format={(n) => `${formatCompact(n)} ${tk}`}
+                    tableTitle={`Staked ${tk} by date`}
                     label={`Staked ${tk} ${stakedNow != null ? formatCompact(stakedNow) : ""} now${stakingSplit ? ` (${stakingSplit})` : ""}. The legacy contract fell as stakers moved to the v3 StakingModule; v3 balances before the latest snapshot weren't recorded.`}
                   />
                 </div>
@@ -439,6 +444,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                 data={staking.map((p) => ({ t: p.t, staking: p.stakingTotal ?? p.staking ?? p.stakingV3 }))}
                 series={[{ key: "staking", label: "Staked", color: "hsl(var(--primary))" }]}
                 format={(n) => `${formatCompact(n)} ${tk}`}
+                tableTitle={`Staked ${tk} by date`}
                 label={s ? `Staked ${tk} ${formatCompact(s.last.stakingTotal ?? s.last.staking ?? s.last.stakingV3 ?? 0)} at the end of the period.` : `Staked ${tk}`}
               />
             ),

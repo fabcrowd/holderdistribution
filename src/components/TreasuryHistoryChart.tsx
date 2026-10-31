@@ -281,7 +281,7 @@ export const TreasuryHistoryChart = ({ rangeDays, compact = false }: { rangeDays
 
       <ZoomFrame zoom={zoom} className={`${compact ? "h-44" : "h-56"} w-full`} yAxes={{ left: yAuto.domain }} notes={<AxisBaselineNote baseline={yScale.baseline} format={fmt} />}>
         <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
-          <LineChart data={zoom.rows} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
+          <LineChart data={zoom.rows} margin={{ top: 10, right: 8, bottom: 0, left: 0 }} accessibilityLayer>
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="timestamp"

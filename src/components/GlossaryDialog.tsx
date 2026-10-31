@@ -1,5 +1,6 @@
 import { BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useMemo } from "react";
 import { buildGlossary } from "@/lib/glossary";
@@ -17,13 +18,15 @@ export const GlossaryDialog = ({
   labelClassName = "",
 }: {
   className?: string;
-  /** e.g. "sr-only 2xl:not-sr-only" for an icon-only trigger on narrow desktops. */
+  /** e.g. "sr-only xl:not-sr-only" for an icon-only trigger on narrower desktops. */
   labelClassName?: string;
 }) => {
   const { slug } = useProject();
   const glossary = useMemo(() => buildGlossary(getProject(slug)), [slug]);
   return (
   <Sheet>
+    <Tooltip>
+      <TooltipTrigger asChild>
     <SheetTrigger asChild>
       <Button
         variant="ghost"
@@ -34,6 +37,9 @@ export const GlossaryDialog = ({
         <span className={labelClassName}>Key terms</span>
       </Button>
     </SheetTrigger>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">Key terms: what the labels mean</TooltipContent>
+    </Tooltip>
     <SheetContent side="right" className="w-full max-w-md overflow-y-auto sm:max-w-md">
       <SheetHeader className="text-left">
         <SheetTitle>Key terms</SheetTitle>

@@ -39,6 +39,14 @@ describe("ZoomFrame", () => {
     expect(html.indexOf("Axis starts at 98000")).toBeLessThan(html.indexOf('data-testid="plot"'));
   });
 
+  it("is not a Tab stop itself (the plot is the chart's one stop) but keeps its group label", () => {
+    const html = renderToStaticMarkup(<ZoomFrame zoom={zoomFake({})}>plot</ZoomFrame>);
+    expect(html).toContain('tabindex="-1"');
+    expect(html).not.toContain('tabindex="0"');
+    expect(html).toContain('role="group"');
+    expect(html).toContain('aria-label="Chart.');
+  });
+
   it("adds an X strip when zoomable and one Y strip per requested axis", () => {
     const html = renderToStaticMarkup(<ZoomFrame zoom={zoomFake({})} yAxes={{ left: [0, 10] }}>plot</ZoomFrame>);
     expect(html).toContain('data-testid="axis-strip-x"');

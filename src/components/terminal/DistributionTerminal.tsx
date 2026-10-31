@@ -4,17 +4,18 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useChartIntro, useIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
 import { signedInt } from "@/lib/format";
-import { X } from "lucide-react";
+
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
-import { ChangeIndicator } from "@/components/ChangeIndicator";
 import { TierFlowDiagram, type TierMetric } from "@/components/TierFlowDiagram";
 import { tierDisplayLabel } from "@/components/tierflow/geometry";
 import { SIDE_TILE_LABELS } from "@/components/tierflow/netFlow";
-import type { ChainKey } from "@/components/tierflow/useFlowField";
-import { mergeDistributionBaseline, summarizeTierGrowth } from "@/lib/distributionRows";
+import { useFlowField, type ChainKey } from "@/components/tierflow/useFlowField";
+import { ALL_CHAIN_CROSSINGS_NOTE, netByTierRows } from "@/components/tierflow/netByTier";
+import { tierTileSelector } from "@/components/tierflow/focusTier";
+import { mergeDistributionBaseline } from "@/lib/distributionRows";
 import {
   EMPTY_SELECTION, defaultTierLabel, hasSelection, reduceSelection, shouldClearOnEscape, type DistAction, type DistSelection,
 } from "@/lib/distributionSelection";
@@ -107,7 +108,6 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
     choice.current = "user";
     setSelection(next);
   }, []);
-  const [detailEl, setDetailEl] = useState<HTMLDivElement | null>(null);
   const view = snapshot?.views[selectedView];
   // [] not null: with no history baseline for the range, drop the pipeline's
   // own previousCount (vs its last run, which can be weeks old) rather than
@@ -116,7 +116,6 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
     () => mergeDistributionBaseline(view?.distribution ?? [], historicalDelta?.distribution ?? []),
     [view, historicalDelta],
   );
-  const growth = summarizeTierGrowth(rows);
   // † rule shared with the header KPIs and the Holders cards: when a
   // reclassification falls after this period's baseline, tier deltas mix
   // relabelling with real movement, so they're replaced by a † that says so.
@@ -130,8 +129,14 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
     () => (Number.isFinite(baselineMs) ? getEventsAffecting(changelog, "retail.balance", baselineMs, Date.now()) : []),
     [changelog, baselineMs],
   );
-  const countSuppressed = countRelabel.length > 0;
+  const countSuppressed = countRelabel.length > 0; // Tiers table "Change" columns only
   const balanceSuppressed = balanceRelabel.length > 0;
+  // Net = wallets joined minus wallets left, per tier (owner decision 2026-10-31); the Tiers table keeps its snapshot-vs-baseline columns.
+  const flowRows = useMemo(
+    () => rows.map((r) => ({ label: r.label, count: r.count ?? 0, totalBalance: r.totalBalance ?? 0, previousCount: r.previousCount ?? null, previousTotalBalance: r.previousTotalBalance ?? null })),
+    [rows],
+  );
+  const { fields: flowFields, ready: flowsReady, avail: flowAvail } = useFlowField(flowRows, chainKeyFor(selectedView), "wallets", rangeDays);
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
   const selectedTier = selection.tier;
   const selected = hasSelection(selection);
@@ -189,7 +194,8 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
     if (!was || selected) return;
     const active = document.activeElement;
     const lost = !active || active === document.body || !document.contains(active);
-    const inDetail = !!active?.closest?.('[data-testid="panel-tier-detail"], [data-testid="tier-flow"]');
+    // The rail is always mounted (ranked list when nothing is selected); only its selected state counts as "in detail".
+    const inDetail = !!active?.closest?.('[data-testid="panel-tier-detail"][data-selected="true"], [data-testid="tier-flow"]');
     if (!lost && !inDetail) return;
     const tier = lastTier.current;
     const esc = (v: string) => (typeof CSS !== "undefined" && CSS.escape ? CSS.escape(v) : v.replace(/"/g, '\\"'));
@@ -198,7 +204,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
     const target =
       (from && document.contains(from) && !from.closest('[data-testid="panel-tier-detail"]') ? from : null) ||
       (tier && document.querySelector<HTMLElement>(`[data-testid="panel-tiers"] tr[data-tier="${esc(tier)}"] button`)) ||
-      (tier && document.querySelector<HTMLElement>(`[data-testid="tier-flow"] [data-tier="${esc(tier)}"]`)) ||
+      (tier && document.querySelector<HTMLElement>(tierTileSelector(tier))) ||
       document.querySelector<HTMLElement>('[data-testid="tier-flow"]');
     if (!target) return;
     if (!target.hasAttribute("tabindex") && !/^(BUTTON|A|INPUT)$/.test(target.tagName)) target.setAttribute("tabindex", "-1");
@@ -215,12 +221,8 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
     return () => document.removeEventListener("keydown", onKey);
   }, [selected]);
 
-  const netByTier = rows.map((r) => ({
-    label: r.label,
-    name: tierDisplayLabel(r.label),
-    value: r.previousCount != null ? r.count - r.previousCount : 0,
-    has: r.previousCount != null,
-  }));
+  // Skipped (no zero-length bars) when the wallet-crossings feed is missing.
+  const netByTier = netByTierRows(flowFields, flowsReady && flowAvail.hasTransitions);
   // Signed bars: zero baseline, fitted to the net changes, with extra headroom for end labels.
   const netScale = computeYAxisFromRows(netByTier, ["value"], { kind: "bar", headroom: NET_LABEL_HEADROOM });
   const netFmt = distinctTickFormatter(netScale.ticks, formatCompact);
@@ -244,43 +246,20 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
       ? `${detailTitle} selected. Details in the panel; press Escape to close.`
       : "";
 
-  const closeButton = (
-    <button
-      type="button"
-      onClick={() => dispatch({ type: "clear" })}
-      aria-label="Close tier detail (Esc)"
-      title="Close (Esc)"
-      data-testid="tier-detail-close"
-      className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <X className="h-4 w-4" aria-hidden="true" />
-    </button>
-  );
 
   return (
     <div className={`flex flex-col gap-3 ${intro ? "ha-stagger" : ""}`} data-testid="distribution-terminal">
       <TerminalPanel
         fit
-        className="min-h-[36rem]"
+        // overflow-visible: the detail rail inside is sticky, which a clipping ancestor would defeat.
+        className="min-h-[36rem] !overflow-visible"
         title="Tier flows"
         info={`${t(TIER_FLOWS_EXPLAINER)}
 
 Select a tier here or in the Tiers table to see where its wallets and ${tk} came from and went to over the period. Retail only; sub-1-${tk} dust wallets are counted in the lowest tier.`}
         stat={
-          growth.tiers > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {/* † rule: "N of M tiers gained" is itself a tier delta. */}
-              {!countSuppressed && (
-                <>
-                  <span className="font-semibold text-foreground">
-                    {growth.grew} of {growth.tiers}
-                  </span>{" "}
-                  tiers gained wallets ·{" "}
-                </>
-              )}
-              {countSuppressed && "Tier change "}
-              <Delta value={growth.netWallets} format={(n) => int.format(n)} relabel={countRelabel} /> net over {rangeLabel}
-            </span>
+          flowsReady && flowFields.length > 0 && (
+            <span className="text-xs text-muted-foreground">{rangeLabel}</span>
           )
         }
         testId="panel-tier-flows"
@@ -293,18 +272,11 @@ Select a tier here or in the Tiers table to see where its wallets and ${tk} came
               chain={chainKeyFor(selectedView)}
               selection={selection}
               onSelectionChange={onSelectionChange}
-              detailContainer={detailEl}
+
               rangeDays={rangeDays}
               metric={metric}
               onMetricChange={setMetric}
               baselineDate={historicalDelta?.referenceDate ?? null}
-              // Same † rule as the Tiers table and net-change bars: no tier
-              // deltas on the diagram (pills, colours, detail) when they'd mix
-              // a reclassification with real moves.
-              suppressedNote={{
-                count: countSuppressed ? "† not shown (wallets reclassified since baseline)" : null,
-                balance: balanceSuppressed ? "† not shown (wallets reclassified since baseline)" : null,
-              }}
               rows={rows.map((r) => ({
                 label: r.label,
                 count: r.count ?? 0,
@@ -321,20 +293,9 @@ Select a tier here or in the Tiers table to see where its wallets and ${tk} came
       <p className="sr-only" aria-live="polite" data-testid="tier-live-summary">
         {liveSummary}
       </p>
-      <div className={`grid shrink-0 gap-3 ${selected ? "grid-cols-2" : "grid-cols-1"}`} data-testid="distribution-detail-row">
-      {selected && (
-        <TerminalPanel
-          fit
-          className="min-h-[300px]"
-          title={detailTitle}
-          info="Detail for the selection on the tier diagram. Close with ✕ or Esc."
-          actions={closeButton}
-          testId="panel-tier-detail"
-        >
-          <div ref={setDetailEl} className="min-h-full" />
-        </TerminalPanel>
-      )}
-
+      {/* The selection's detail now lives in the Tier flows panel's right-hand rail,
+          so the Tiers table takes the whole row. */}
+      <div className="grid shrink-0 grid-cols-1 gap-3" data-testid="distribution-detail-row">
       <TerminalPanel
         fit
         title="Tiers"
@@ -402,29 +363,23 @@ Select a tier here or in the Tiers table to see where its wallets and ${tk} came
         )}
       </TerminalPanel>
       </div>
-      {/* Nothing to expand when the period has no baseline, or when a reclassification makes the net change meaningless (the diagram already says so). */}
-      {!countSuppressed && netByTier.some((d) => d.has) && (
+      {/* Nothing to expand until the period's flows have loaded. */}
+      {netByTier.some((d) => d.has) && (
       <Accordion type="single" collapsible className="shrink-0" data-testid="distribution-details">
         <AccordionItem value="details" className="rounded-lg border border-border bg-card px-4">
           <AccordionTrigger className="py-3 text-sm font-semibold">Details: net wallet change by tier</AccordionTrigger>
           <AccordionContent>
+            {chainKeyFor(selectedView) !== "all" && (
+              <p className="mb-2 text-xs text-muted-foreground" data-testid="net-change-chain-note">{ALL_CHAIN_CROSSINGS_NOTE}</p>
+            )}
             <TerminalPanel
               chart="standard"
               title="Net wallet change by tier"
-              info="Retail wallets in each tier now, minus at the start of the period. Click a bar to select that tier."
+              info="Wallets that joined each tier minus wallets that left it over the period. Click a bar to select that tier."
               testId="panel-net-change"
             >
               {placeholder ??
-                (countSuppressed && netByTier.some((d) => d.has) ? (
-                  <PanelMessage>
-                    <span data-testid="net-change-relabelled">
-                      <ChangeIndicator variant="plain" current={0} previous={0} changelogEvents={countRelabel} className="mr-1 text-xs" />
-                      Net change isn&apos;t shown: wallets were reclassified after this period&apos;s baseline
-                      {historicalDelta?.referenceDate ? ` (${historicalDelta.referenceDate})` : ""}, so tier counts would mix relabelling
-                      with real moves.
-                    </span>
-                  </PanelMessage>
-                ) : netByTier.some((d) => d.has) ? (
+                (netByTier.some((d) => d.has) ? (
                   <div
                     role="img"
                     aria-label={`Net wallet change by tier: ${netByTier.map((d) => `${d.name} ${signedInt(d.value)}`).join(", ")}. Select a tier in the Tiers table to see its detail.`}

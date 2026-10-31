@@ -105,7 +105,7 @@ export const AssociationFlowAnalysis = () => {
         <div className="mt-3 space-y-4">
           <div className="rounded-lg border border-border/50 bg-background/60 p-3">
             <p className="text-sm font-medium text-foreground">{report.headline}</p>
-            <p className="mt-2 text-[11px] text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               Traced {report.tracedAt} · {report.coverage}
             </p>
           </div>
@@ -122,8 +122,8 @@ export const AssociationFlowAnalysis = () => {
                 <dl className="divide-y divide-border/40 rounded-lg border border-border/40 bg-background/40">
                   {s.rows.map((r) => (
                     <div key={r.label} className="flex justify-between gap-3 px-2.5 py-1.5">
-                      <dt className="text-[11px] text-muted-foreground">{r.label}</dt>
-                      <dd className="shrink-0 text-[11px] font-semibold tabular-nums text-foreground">
+                      <dt className="text-xs text-muted-foreground">{r.label}</dt>
+                      <dd className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
                         {r.value}
                       </dd>
                     </div>

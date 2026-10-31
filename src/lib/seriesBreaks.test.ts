@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ClassificationChangelog, ClassificationEvent } from "@/lib/classificationChangelog";
 import { computeBreakAwareDomain, computeSeriesDomain } from "@/lib/chartDomain";
-import { breakNotesByRow, getSeriesBreaks, insertBreakSpacers, limitedHistoryCount, MIN_SMOOTH_POINTS, SERIES_BREAK_NOTE } from "@/lib/seriesBreaks";
+import { BREAK_SUMMARY_MAX, breakNotesByRow, breakTooltip, getSeriesBreaks, insertBreakSpacers, limitedHistoryCount, MIN_SMOOTH_POINTS, SERIES_BREAK_NOTE } from "@/lib/seriesBreaks";
 
 const day = (iso: string) => Date.parse(iso);
 
@@ -28,7 +28,7 @@ describe("getSeriesBreaks", () => {
 
   it("returns a break for a declared metric, with the default note", () => {
     const out = getSeriesBreaks(feed(event({ breaksSeries: { metrics: ["retail.balance"] } })), ["retail.balance"], from);
-    expect(out).toEqual([{ t: day("2026-10-26"), label: "Methodology change", description: SERIES_BREAK_NOTE }]);
+    expect(out).toEqual([{ t: day("2026-10-26"), label: "Methodology change", description: SERIES_BREAK_NOTE, summary: "s" }]);
   });
 
   it("uses breaksSeries.at and note when given", () => {
@@ -155,5 +155,22 @@ describe("committed feeds", () => {
     expect(getSeriesBreaks(zbcn, ["retail.count"], day("2026-10-01")).map((b) => b.t)).toEqual([day("2026-10-28")]);
     expect(getSeriesBreaks(zbcn, ["cexBalance"], day("2026-10-01")).map((b) => b.t)).toEqual([day("2026-10-28")]);
     expect(tel.events.filter((e) => !e.breaksSeries).length).toBeGreaterThan(10);
+  });
+});
+
+describe("breakTooltip", () => {
+  const b = { t: Date.UTC(2026, 9, 3), label: "Methodology change", description: "d" };
+  it("reads 'Method change · date' and appends the event summary when there is one", () => {
+    expect(breakTooltip(b)).toBe("Method change · Oct 3, 2026");
+    expect(breakTooltip({ ...b, summary: "Wallets reclassified" })).toBe("Method change · Oct 3, 2026 · Wallets reclassified");
+  });
+  it("shortens a long summary", () => {
+    const out = breakTooltip({ ...b, summary: "word ".repeat(60) });
+    expect(out.length).toBeLessThanOrEqual(BREAK_SUMMARY_MAX + "Method change · Oct 3, 2026 · ".length);
+    expect(out.endsWith("…")).toBe(true);
+  });
+  it("carries the changelog event summary through getSeriesBreaks", () => {
+    const out = getSeriesBreaks(feed(event({ summary: "Moved wallets", breaksSeries: { metrics: ["retail.balance"] } })), ["retail.balance"], day("2026-10-01"));
+    expect(out[0].summary).toBe("Moved wallets");
   });
 });

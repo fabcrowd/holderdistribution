@@ -134,7 +134,7 @@ const Metric = ({
   hint?: string;
 }) => (
   <div className="rounded-lg border border-border/50 bg-background/60 px-3 py-2">
-    <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+    <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
       {label}
       {hint ? <InfoTooltip text={hint} /> : null}
     </p>
@@ -229,7 +229,7 @@ export const BurnForecastView = ({
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-border/50 bg-background/60 px-3 py-3">
-        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Operating runway</p>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">Operating runway</p>
         <p className="mt-0.5 text-2xl font-semibold tabular-nums text-foreground">
           {formatRunway(forecast)}
         </p>
@@ -248,7 +248,7 @@ export const BurnForecastView = ({
           That schedule continues after {plan.forecastWindow}. Forward THPL is off unless you tick
           the box; the July THPL invoice is already in bills due now.
         </p>
-        <label className="mt-2 flex items-center gap-2 text-[11px] text-foreground">
+        <label className="mt-2 flex items-center gap-2 text-xs text-foreground">
           <input
             type="checkbox"
             checked={includeThpl}
@@ -308,7 +308,7 @@ export const BurnForecastView = ({
         </p>
         <ZoomFrame zoom={cashZoom} yAxes={{ left: cashAxisAuto.domain }} notes={<AxisBaselineNote baseline={cashAxis.baseline} format={formatCompactUsd} />}>
         <ChartContainer config={runwayConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
-          <AreaChart data={cashZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <AreaChart data={cashZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} accessibilityLayer>
             <defs>
               <linearGradient id="burn-cash-fill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={COLORS.cash} stopOpacity={0.35} />
@@ -362,7 +362,7 @@ export const BurnForecastView = ({
           </div>
           <ZoomFrame zoom={spendZoom} yAxes={{ left: spendAxisAuto.domain }} notes={<AxisBaselineNote baseline={spendAxis.baseline} format={formatCompactUsd} />}>
           <ChartContainer config={spendConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full aspect-auto`}>
-            <LineChart data={spendZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <LineChart data={spendZoom.rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} accessibilityLayer>
               <CartesianGrid vertical={false} className="stroke-border/40" />
               <XAxis dataKey="label" tickMargin={8} />
               <YAxis tickFormatter={axisFmt(spendAxis)} domain={spendAxis.domain} ticks={spendAxis.ticks} allowDataOverflow={spendZoom.yRanges.left != null} tickMargin={8} width={48} />
@@ -490,7 +490,7 @@ export const BurnForecastView = ({
                   />
                 ))}
               </div>
-              <ul className="space-y-1 text-[11px]">
+              <ul className="space-y-1 text-xs">
                 {mixSeries.map((row) => (
                   <li key={row.key} className="flex items-center justify-between gap-3">
                     <LegendDot color={COLORS[row.key]} label={row.label} />
@@ -500,7 +500,7 @@ export const BurnForecastView = ({
               </ul>
             </>
           ) : (
-            <p className="text-[11px] text-muted-foreground">No unpaid invoices on the sheet.</p>
+            <p className="text-xs text-muted-foreground">No unpaid invoices on the sheet.</p>
           )}
         </article>
       </div>
@@ -524,20 +524,20 @@ export const BurnForecastView = ({
                   key={month.id}
                   className={month.closingUsd < 0 ? "bg-destructive/5 hover:bg-destructive/10" : "hover:bg-muted/30"}
                 >
-                  <TableCell className="p-2 text-[11px]">{month.label}</TableCell>
-                  <TableCell className="p-2 text-right text-[11px] tabular-nums">
+                  <TableCell className="p-2 text-xs">{month.label}</TableCell>
+                  <TableCell className="p-2 text-right text-xs tabular-nums">
                     {formatUsd(month.openingUsd)}
                   </TableCell>
-                  <TableCell className="p-2 text-right text-[11px] tabular-nums">
+                  <TableCell className="p-2 text-right text-xs tabular-nums">
                     {formatUsd(month.burnUsd)}
                   </TableCell>
-                  <TableCell className="p-2 text-right text-[11px] tabular-nums">
+                  <TableCell className="p-2 text-right text-xs tabular-nums">
                     {formatUsd(month.scheduledUsd)}
                   </TableCell>
-                  <TableCell className="p-2 text-right text-[11px] tabular-nums">
+                  <TableCell className="p-2 text-right text-xs tabular-nums">
                     {formatUsd(month.spendUsd)}
                   </TableCell>
-                  <TableCell className="p-2 text-right text-[11px] tabular-nums">
+                  <TableCell className="p-2 text-right text-xs tabular-nums">
                     {formatUsd(month.closingUsd)}
                   </TableCell>
                 </TableRow>
@@ -566,9 +566,9 @@ export const BurnForecastView = ({
                 .filter((line) => remainingKeys.some(({ label }) => line.monthlyUsd[label] != null))
                 .map((line) => (
                   <TableRow key={line.name} className="hover:bg-muted/30">
-                    <TableCell className="p-2 text-[11px]">{line.name}</TableCell>
+                    <TableCell className="p-2 text-xs">{line.name}</TableCell>
                     {remainingKeys.map(({ label }) => (
-                      <TableCell key={label} className="p-2 text-right text-[11px] tabular-nums">
+                      <TableCell key={label} className="p-2 text-right text-xs tabular-nums">
                         {line.monthlyUsd[label] != null ? formatUsd(line.monthlyUsd[label] as number) : "—"}
                       </TableCell>
                     ))}
@@ -602,7 +602,7 @@ export const BurnForecastView = ({
               <TableBody>
                 {forecast.bills.items.map((row) => (
                   <TableRow key={row.item} className="hover:bg-muted/30">
-                    <TableCell className="p-2 text-[11px]">
+                    <TableCell className="p-2 text-xs">
                       <div>{row.item}</div>
                       <div className="text-xs text-muted-foreground">{row.note}</div>
                     </TableCell>
@@ -612,10 +612,10 @@ export const BurnForecastView = ({
                     <TableCell className="p-2 text-xs text-muted-foreground">
                       {row.dueDate || row.period || "—"}
                     </TableCell>
-                    <TableCell className="p-2 text-right text-[11px] tabular-nums">
+                    <TableCell className="p-2 text-right text-xs tabular-nums">
                       {formatUsd(row.amountUsd)}
                     </TableCell>
-                    <TableCell className="p-2 text-right text-[11px] tabular-nums">
+                    <TableCell className="p-2 text-right text-xs tabular-nums">
                       {formatUsd(row.stillDueUsd)}
                     </TableCell>
                   </TableRow>

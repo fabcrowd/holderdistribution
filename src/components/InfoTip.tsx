@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Info } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { hasMoreBelow } from "@/lib/scrollMore";
 
 type InfoTipProps = {
   /** Explainer. Strings honour \n as paragraph breaks. */
@@ -49,6 +50,19 @@ export const InfoTip = ({
   };
   useEffect(() => cancelClose, []);
 
+  // Long explainers (e.g. a changelog) scroll inside the popover; show a fade while more is below.
+  const [moreBelow, setMoreBelow] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const syncMore = () => {
+    const el = scrollRef.current;
+    if (el) setMoreBelow(hasMoreBelow(el));
+  };
+  useEffect(() => {
+    if (!open) return;
+    const id = window.requestAnimationFrame(syncMore);
+    return () => window.cancelAnimationFrame(id);
+  }, [open, content]);
+
   return (
     <Popover
       open={open}
@@ -94,13 +108,19 @@ export const InfoTip = ({
         side={side}
         align={align}
         collisionPadding={12}
-        className="w-auto max-w-xs max-h-[70svh] overflow-y-auto whitespace-pre-line p-3 text-sm leading-relaxed"
+        ref={scrollRef}
+        onScroll={syncMore}
+        className="relative w-auto max-w-xs max-h-[60svh] overflow-y-auto overscroll-contain whitespace-pre-line p-3 text-sm leading-relaxed [scrollbar-width:thin]"
         onPointerEnter={(e) => e.pointerType === "mouse" && cancelClose()}
         onPointerLeave={(e) => e.pointerType === "mouse" && scheduleClose()}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onClick={(e) => e.stopPropagation()}
       >
         {content}
+        {/* Fade over the last lines while there is more to scroll to. */}
+        {moreBelow && (
+          <div aria-hidden="true" data-testid="infotip-more" className="pointer-events-none sticky -bottom-3 -mx-3 -mb-3 h-8 bg-gradient-to-t from-popover to-transparent" />
+        )}
       </PopoverContent>
     </Popover>
   );

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ExternalLink, Info } from "lucide-react";
 import { useChainStatus } from "@/hooks/useChainStatus";
-import { formatRelativeAge } from "@/lib/format";
+import { describeFreshness, formatRelativeAge } from "@/lib/format";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const timeAgo = (iso: string): string => formatRelativeAge(iso) ?? "unknown";
@@ -54,7 +54,13 @@ type CompactProps = {
 export const CompactProvenance = ({ snapshotLabel, sourceLabel, children, className = "" }: CompactProps) => {
   const { data } = useChainStatus();
   const anyStale = !!data?.chains.some((c) => c.stale);
-  const summary = data?.generatedAt ? `Updated ${timeAgo(data.generatedAt)}` : "Data source";
+  const freshness = describeFreshness(data?.generatedAt);
+  const behind = freshness.status === "delayed" || freshness.status === "stale";
+  const summary = !data?.generatedAt
+    ? "Data source"
+    : behind
+      ? `Data from ${freshness.date} · refresh delayed`
+      : `Updated ${timeAgo(data.generatedAt)}`;
   return (
     <div className={`flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground ${className}`} data-testid="compact-provenance">
       <Popover>
@@ -62,7 +68,7 @@ export const CompactProvenance = ({ snapshotLabel, sourceLabel, children, classN
           <button
             type="button"
             aria-label={`${summary}. Snapshot, source and RPC links`}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${behind ? "font-medium text-amber-700 dark:text-amber-400" : ""}`}
           >
             {summary}
             <Info className="h-3.5 w-3.5" aria-hidden="true" />

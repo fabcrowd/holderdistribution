@@ -251,19 +251,19 @@ const GateForm = ({
             placeholder="Enter password"
             aria-invalid={status === "error"}
             aria-describedby={status === "error" ? errorId : undefined}
-            className={`${compact ? "h-9 pr-11" : "h-11 pr-12"} pl-9 text-sm`}
+            className={`${compact ? "h-9 pr-11 max-xl:h-11 max-xl:pr-12" : "h-11 pr-12"} pl-9 text-sm`}
           />
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
             aria-label={visible ? "Hide password" : "Show password"}
             aria-pressed={visible}
-            className={`absolute ${compact ? "right-1 h-7 w-7" : "right-0 h-11 w-11"} top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+            className={`absolute ${compact ? "right-1 h-7 w-7 max-xl:right-0 max-xl:h-11 max-xl:w-11" : "right-0 h-11 w-11"} top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
           >
             {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        <Button type="submit" className={`${compact ? "h-9" : "h-11"} px-4 shrink-0`} disabled={checking || limited || !value.trim()}>
+        <Button type="submit" className={`${compact ? "h-9 max-xl:h-11" : "h-11"} px-4 shrink-0`} disabled={checking || limited || !value.trim()}>
           {checking ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : null}
           {checking ? "Checking…" : limited ? `Wait ${formatWait(waitS)}` : "Unlock"}
         </Button>

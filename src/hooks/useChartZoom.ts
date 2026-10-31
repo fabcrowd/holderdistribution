@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import {
-  KEY_PAN_FRACTION,
-  KEY_ZOOM_FACTOR,
   MIN_ZOOMABLE_ROWS,
   applyYRange,
   clampWindow,
   fullExtent,
   insideRect,
+  isEventInside,
   minSpanFor,
   panWindow,
   pinchSpanFactor,
@@ -16,6 +15,7 @@ import {
   shouldCaptureWheel,
   sliceWindow,
   wheelSpanFactor,
+  zoomKeyIntent,
   zoomWindow,
   type XRange,
   type YRange,
@@ -60,6 +60,18 @@ export type ChartZoom<T> = {
 export const plotRect = (node: HTMLElement): DOMRect => {
   const grid = node.querySelector(PLOT_SELECTOR);
   return (grid ?? node).getBoundingClientRect();
+};
+
+type Rect = { left: number; right: number; top: number; bottom: number };
+
+/** The plot rect containing the point, or null. Stacked charts pass one rect per plot. */
+export const findPlotRect = <R extends Rect>(rects: readonly R[], x: number, y: number): R | null =>
+  rects.find((r) => insideRect(x, y, r)) ?? null;
+
+/** Plot rect under the pointer, so a stacked chart's lower plot takes gestures too. */
+export const plotRectAt = (node: HTMLElement, clientX: number, clientY: number): DOMRect | null => {
+  const grids = Array.from(node.querySelectorAll(PLOT_SELECTOR), (g) => g.getBoundingClientRect());
+  return findPlotRect(grids.length > 0 ? grids : [node.getBoundingClientRect()], clientX, clientY);
 };
 
 /**
@@ -134,8 +146,8 @@ export const useChartZoom = <T,>(rowsIn: readonly T[], getX: (row: T, index: num
     const onWheel = (e: WheelEvent) => {
       const { win: w, zoomable: z } = live.current;
       if (!z) return;
-      const rect = plotRect(node);
-      if (!insideRect(e.clientX, e.clientY, rect)) return;
+      const rect = plotRectAt(node, e.clientX, e.clientY);
+      if (!rect) return;
       // Sideways trackpad swipes pan a zoomed chart.
       if (w && !e.ctrlKey && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
         e.preventDefault();
@@ -163,7 +175,8 @@ export const useChartZoom = <T,>(rowsIn: readonly T[], getX: (row: T, index: num
     if (!live.current.zoomable) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
     const frame = nodeRef.current;
-    if (!frame || !insideRect(e.clientX, e.clientY, plotRect(frame))) return;
+    if (!isEventInside(frame, e.target)) return;
+    if (!frame || !plotRectAt(frame, e.clientX, e.clientY)) return;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.current.size === 2) {
       drag.current = null;
@@ -176,9 +189,11 @@ export const useChartZoom = <T,>(rowsIn: readonly T[], getX: (row: T, index: num
   const onPointerMove = useCallback(
     (e: ReactPointerEvent<HTMLElement>) => {
       const frame = nodeRef.current;
+      if (!isEventInside(frame, e.target)) return;
       if (!frame || !pointers.current.has(e.pointerId)) return;
       pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      const rect = plotRect(frame);
+      // Falls back to the first plot once the pointer leaves the plots; both plots share the x-range.
+      const rect = plotRectAt(frame, e.clientX, e.clientY) ?? plotRect(frame);
       if (pointers.current.size === 2 && pinch.current != null) {
         const next = pinchDistance();
         const [a, b] = [...pointers.current.values()];
@@ -201,6 +216,7 @@ export const useChartZoom = <T,>(rowsIn: readonly T[], getX: (row: T, index: num
   );
 
   const onPointerUp = useCallback((e: ReactPointerEvent<HTMLElement>) => {
+    if (!isEventInside(nodeRef.current, e.target)) return;
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinch.current = null;
     if (drag.current?.id === e.pointerId) drag.current = null;
@@ -209,13 +225,21 @@ export const useChartZoom = <T,>(rowsIn: readonly T[], getX: (row: T, index: num
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLElement>) => {
       const { zoomable: z, win: w } = live.current;
-      if (!z || e.altKey || e.ctrlKey || e.metaKey) return;
-      if (e.key === "+" || e.key === "=") zoomBy(KEY_ZOOM_FACTOR);
-      else if (e.key === "-" || e.key === "_") zoomBy(1 / KEY_ZOOM_FACTOR);
-      else if (e.key === "0" || e.key === "Escape") reset();
-      else if (w && e.key === "ArrowLeft") panBy(-KEY_PAN_FRACTION);
-      else if (w && e.key === "ArrowRight") panBy(KEY_PAN_FRACTION);
-      else return;
+      if (!z || !isEventInside(nodeRef.current, e.target)) return;
+      // Keys bubble up from the focused Recharts plot, which uses the arrows to move its point.
+      const intent = zoomKeyIntent({
+        key: e.key,
+        zoomed: w != null,
+        frameFocused: e.target === nodeRef.current,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+      });
+      if (!intent) return;
+      if (intent.type === "zoom") zoomBy(intent.factor);
+      else if (intent.type === "pan") panBy(intent.delta);
+      else reset();
       e.preventDefault();
     },
     [zoomBy, panBy, reset],

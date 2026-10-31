@@ -37,6 +37,12 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     --muted: 180 20% 93%;
     --muted-foreground: 180 6% 38%;
 
+    /* Donut slice fills, must stay >=3:1 vs --card (tested in supplyBreakdown.test.ts). */
+    --supply-dex: 152 62% 22%;
+    --supply-cex: 30 95% 37%;
+    --supply-developer: 250 45% 50%;
+    --supply-gap: 0 0% 45%;
+
     --accent: 180 29% 90%;
     --accent-foreground: 183 97% 14%;
 
@@ -44,7 +50,7 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     --destructive-foreground: 0 0% 100%;
 
     --border: 180 16% 88%;
-    --input: 180 16% 82%;
+    --input: 180 16% 51%;
     --ring: 182 98% 23%;
 
     --radius: 0.875rem;
@@ -124,6 +130,10 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
 
     --muted: 190 14% 14%;
     --muted-foreground: 185 8% 66%;
+    --supply-dex: 152 60% 42%;
+    --supply-cex: 32 90% 50%;
+    --supply-developer: 250 70% 68%;
+    --supply-gap: 0 0% 55%;
 
     --accent: 190 14% 16%;
     --accent-foreground: 180 14% 92%;
@@ -132,7 +142,7 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     --destructive-foreground: 190 30% 6%;
 
     --border: 190 12% 19%;
-    --input: 190 12% 24%;
+    --input: 190 12% 38%;
     --ring: 181 62% 50%;
 
     --brand-bright: 183 70% 50%;
@@ -487,6 +497,28 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
   .flow-line-draw {
     stroke-dasharray: 1000;
     animation: flowDraw 0.5s ease-out forwards;
+  }
+
+  /* Redistribution lines: dashed, so they differ from buy/sell by more than
+     colour. They keep their own dash pattern (flow-line-draw would override
+     it), so they only fade in; no motion under prefers-reduced-motion. */
+  .flow-line-dashed {
+    animation: flowDashedIn 0.4s ease-out both;
+  }
+
+  @keyframes flowDashedIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flow-line-dashed {
+      animation: none;
+    }
   }
 
   @keyframes flowDraw {

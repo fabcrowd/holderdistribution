@@ -110,7 +110,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
         </p>
         <ZoomFrame zoom={zoom} className="h-[220px] w-full">
         <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
-          <BarChart data={zoom.rows} margin={{ top: 8, right: 8, bottom: 4, left: 8 }} barCategoryGap={sizing.barCategoryGap}>
+          <BarChart data={zoom.rows} margin={{ top: 8, right: 8, bottom: 4, left: 8 }} barCategoryGap={sizing.barCategoryGap} accessibilityLayer>
             <CartesianGrid vertical={false} className="stroke-border/40" />
             <XAxis
               dataKey="timestamp"

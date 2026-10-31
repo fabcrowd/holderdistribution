@@ -16,6 +16,8 @@ type Props = {
   concentration?: CardConcentration | null;
   /** 30-day retail-wallet series; null when the feed is missing or has <2 rows. */
   trend?: CardTrend | null;
+  /** Placeholder text shown when `trend` is null (e.g. history cut by a methodology change). */
+  trendNote?: string;
   /** True while holders-history.json is loading. */
   trendLoading?: boolean;
 };
@@ -32,11 +34,11 @@ const Stat = ({ label, value }: { label: string; value: string | null }) => (
 );
 
 /** One landing card. The whole card is a single link to the token's terminal. */
-export const TokenCard = ({ slug, name, ticker, image, stats, concentration = null, trendLoading = false, trend = null }: Props) => (
+export const TokenCard = ({ slug, name, ticker, image, stats, concentration = null, trendLoading = false, trend = null, trendNote }: Props) => (
   <Link
     to={tokenPath(slug)}
     data-testid={`token-card-${slug}`}
-    className="group flex h-full flex-col gap-4 rounded-lg border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    className="group flex h-full flex-col gap-4 rounded-lg border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
   >
     <div className="flex items-center gap-3">
       {image && <img src={image} alt="" width={40} height={40} decoding="async" className="h-10 w-10 shrink-0 rounded-full" />}
@@ -54,7 +56,7 @@ export const TokenCard = ({ slug, name, ticker, image, stats, concentration = nu
     {trendLoading ? (
       <div data-loading="true" aria-label="Loading holder trend" className="h-[72px] rounded-md bg-muted/70 animate-pulse" />
     ) : (
-      <CardSparkline name={name} trend={trend} />
+      <CardSparkline name={name} trend={trend} note={trendNote} />
     )}
   </Link>
 );

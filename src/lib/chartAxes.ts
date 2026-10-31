@@ -202,6 +202,18 @@ export const distinctTickFormatter = (ticks: readonly number[], format: (v: numb
   return (v: number) => trimZeros(format(v, digits));
 };
 
+/** Default y-axis gutter; enough for labels such as "12.5M". */
+export const DEFAULT_Y_AXIS_WIDTH = 48;
+/** Average glyph width as a share of font size for tabular digits, plus the tick gap. */
+const GLYPH_WIDTH_EM = 0.6;
+const Y_AXIS_PAD_PX = 10;
+
+/** Y-axis width that fits the longest formatted tick (3-decimal labels like "46.026B" overflow the default). */
+export const yAxisWidthFor = (labels: readonly string[], fontPx = 12): number => {
+  const longest = labels.reduce((m, l) => Math.max(m, l.length), 0);
+  return Math.max(DEFAULT_Y_AXIS_WIDTH, Math.ceil(longest * fontPx * GLYPH_WIDTH_EM + Y_AXIS_PAD_PX));
+};
+
 /* ---- bar sizing ---- */
 
 export type BarSizing = {
