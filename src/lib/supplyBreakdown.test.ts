@@ -242,7 +242,8 @@ describe("ZBCN staking copy", () => {
       }),
       { total: 0, active: 0 },
     );
-    expect(lockupTotals.total / 1e9).toBeCloseTo(18.9, 1);
+    // Cumulative counters only grow, so allow +-0.15B drift before the "~18.9B" copy needs a refresh.
+    expect(Math.abs(lockupTotals.total / 1e9 - 18.9)).toBeLessThan(0.15);
     expect(lockupTotals.active / 1e9).toBeCloseTo(staking.stakedTotal / 1e9, 2);
     // Copy says ~14.2B already claimed; the snapshot drifts daily, so allow +-0.1B.
     expect(Math.abs((lockupTotals.total - lockupTotals.active) / 1e9 - 14.2)).toBeLessThan(0.1);
