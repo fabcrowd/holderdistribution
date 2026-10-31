@@ -1,9 +1,9 @@
 import { useMemo } from "react";
+import { totalNetTel, type FlowAvailability } from "./net";
 import { useHolderTransitions, transitionsKeyFor } from "@/hooks/useHolderTransitions";
 import { useTierOutflows, outflowsKeyFor, type TierOutflowCell } from "@/hooks/useTierOutflows";
 import { ytdDays } from "@/lib/timeRange";
 import { isPartialOutflowWindow } from "@/lib/flowFeeds";
-import { tileW } from "./geometry";
 import { useTierGeometry } from "./useTierGeometry";
 
 export type TierRow = {
@@ -224,32 +224,12 @@ export const useFlowField = (rows: TierRow[], chain: ChainKey, metric: "wallets"
     });
   }, [rowOf, pctByTier, outflowTiers, chain, rangeData, TIERS, tierIndex]);
 
-  // Aggregate net TEL and net wallets, from snapshot truth only — never
-  // derived by summing the gross flow figures (see the plan's data-contract
-  // audit: gross flows cannot reconcile to a real net, sometimes not even in
-  // sign). Both units are computed so the UI can show whichever one matches
-  // the active Wallets/TEL toggle without mixing units on screen.
-  const netInfo = useMemo(() => {
-    let telCur = 0, telPrev = 0, telHaveAny = false, telHaveAll = true;
-    let walletsCur = 0, walletsPrev = 0, walletsHaveAny = false, walletsHaveAll = true;
-    for (const r of rows) {
-      telCur += r.totalBalance;
-      walletsCur += r.count;
-      if (r.previousTotalBalance != null) { telPrev += r.previousTotalBalance; telHaveAny = true; }
-      else telHaveAll = false;
-      if (r.previousCount != null) { walletsPrev += r.previousCount; walletsHaveAny = true; }
-      else walletsHaveAll = false;
-    }
-    return {
-      netTel: telHaveAny ? telCur - telPrev : null,
-      partialTel: telHaveAny && !telHaveAll,
-      netWallets: walletsHaveAny ? walletsCur - walletsPrev : null,
-      partialWallets: walletsHaveAny && !walletsHaveAll,
-    };
-  }, [rows]);
+  // Aggregate net: the sum of the per-tier nets, each in minus out (see ./net).
+  // Wallets have no total: it is always 0, so only the per-tier net is shown.
+  const netInfo = useMemo(() => ({ netTel: totalNetTel(fields) }), [fields]);
 
   // Aggregate gross "why" explainer, across all tiers (chain-filtered),
-  // clearly a SEPARATE quantity from netInfo.net above.
+  // clearly a SEPARATE quantity from netInfo above.
   const grossExplainer = useMemo(() => {
     let dex = 0, cex = 0, moved = 0;
     for (const f of fields) { dex += f.cause.dex; cex += f.cause.cex; moved += f.cause.moved; }
@@ -277,8 +257,10 @@ export const useFlowField = (rows: TierRow[], chain: ChainKey, metric: "wallets"
   const ready = flowLoad === "ready";
 
   return {
-    fields, tileW, netInfo, grossExplainer, maxMigrationCount,
+    fields, netInfo, grossExplainer, maxMigrationCount,
     loading, errored, empty, ready,
+    // Which feed behind each net exists; "ready" only needs one of them.
+    avail: { hasTransitions: !!rangeData, hasOutflows: outflowTiers != null } satisfies FlowAvailability,
     complete: outflows?.complete ?? null,
     // Window-level counterparty-tier attribution coverage — same for every
     // tier/chain in this window, so it's surfaced once here rather than per
