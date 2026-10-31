@@ -11,7 +11,23 @@ export type MarkerItem = { t: number };
 export type MarkerGroup<M extends MarkerItem> = { t: number; items: M[] };
 export type MarkerTone = "warning" | "accent" | "muted";
 /** An annotation on a time chart: a marker on the line, its wording in the tooltip. */
-export type ChartNote = MarkerItem & { text: string; tone: MarkerTone };
+export type ChartNote = MarkerItem & {
+  text: string;
+  tone: MarkerTone;
+  /** Short one-line wording for the marker's own tooltip; falls back to `text`. */
+  tooltip?: string;
+};
+
+/** Longest marker tooltip line before it is cut with an ellipsis. */
+export const MARKER_TOOLTIP_MAX = 80;
+
+/** One short line for a marker: its first note, plus a count of any others folded into it. */
+export const markerTooltip = (group: MarkerGroup<ChartNote>): string => {
+  const [first, ...rest] = group.items;
+  const base = first.tooltip ?? first.text;
+  const line = base.length > MARKER_TOOLTIP_MAX ? `${base.slice(0, MARKER_TOOLTIP_MAX - 1).trimEnd()}…` : base;
+  return rest.length > 0 ? `${line} (+${rest.length} more)` : line;
+};
 
 /** Gap (ms) under which neighbouring markers share one marker, from the visible X values. */
 export const markerCollapseGap = (xs: readonly number[]): number => {

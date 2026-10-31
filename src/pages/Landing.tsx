@@ -5,7 +5,9 @@ import { TokenCard } from "@/components/TokenCard";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { fetchHolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { fetchHolderHistoryPayload } from "@/hooks/useHoldersHistoryData";
-import { cardConcentration, cardTrend } from "@/lib/cardTrend";
+import { fetchClassificationChangelog } from "@/hooks/useClassificationChangelog";
+import { TREND_DAYS, afterBreakNote, cardConcentration, cardTrendState } from "@/lib/cardTrend";
+import { getSeriesBreaks } from "@/lib/seriesBreaks";
 import { PROJECTS, getProject } from "@/lib/projects";
 import { cardStats } from "@/lib/landingStats";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/seo";
@@ -40,6 +42,15 @@ const Landing = () => {
     })),
   });
 
+  const changelogs = useQueries({
+    queries: PROJECTS.map((p) => ({
+      queryKey: ["classification-changelog", p.slug],
+      queryFn: () => fetchClassificationChangelog(p.slug),
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    })),
+  });
+
   return (
     <div className="flex min-h-[100svh] flex-col bg-background">
       <Navigation />
@@ -55,6 +66,9 @@ const Landing = () => {
             const stats = q.isPending ? null : cardStats(q.isError ? null : q.data);
             const h = histories[i];
             const snap = q.isError ? null : q.data;
+            // from=0 returns every break; cardTrend keeps only those inside its window.
+            const breaks = getSeriesBreaks(changelogs[i]?.data, ["retail.count", "holderCount"], 0).map((b) => b.t);
+            const trendState = h.isPending || h.isError ? null : cardTrendState(h.data?.entries, TREND_DAYS, breaks);
             return (
               <li key={p.slug}>
                 <TokenCard
@@ -65,7 +79,8 @@ const Landing = () => {
                   stats={stats}
                   concentration={q.isPending ? null : cardConcentration(snap)}
                   trendLoading={h.isPending}
-                  trend={h.isPending || h.isError ? null : cardTrend(h.data?.entries)}
+                  trend={trendState?.trend ?? null}
+                  trendNote={trendState?.reason === "after-break" ? afterBreakNote(trendState.sinceBreak) : undefined}
                 />
               </li>
             );

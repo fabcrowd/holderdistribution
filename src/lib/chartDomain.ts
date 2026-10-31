@@ -76,20 +76,20 @@ export const activeKeys = <K extends string>(flags: Record<K, boolean>): K[] =>
 export const BREAK_DOMAIN_SPAN_FACTOR = 3;
 
 /**
- * Like computeSeriesDomain, but segment-aware: `breakTs` are timestamps where
- * the series changed basis; see BREAK_DOMAIN_SPAN_FACTOR for the rule.
+ * Per key, the original rows whose segment the BREAK_DOMAIN_SPAN_FACTOR rule
+ * admits. Rows are kept by identity so callers can match them back to input.
+ * This is the single definition of the rule; the domain and the mask both
+ * read it.
  */
-export const computeBreakAwareDomain = <T extends Record<string, unknown>>(
+const keptRowsByKey = <T extends Record<string, unknown>>(
   points: T[],
   keys: readonly (keyof T)[],
   breakTs: readonly number[],
   timeKey: keyof T,
-  options: { allowNegative?: boolean; log?: boolean } = {},
-): SeriesDomain => {
-  if (!breakTs.length) return computeSeriesDomain(points, keys, options);
+): Map<keyof T, Set<T>> => {
   const sorted = [...breakTs].sort((a, b) => b - a);
   const segments: T[][] = [];
-  let rest = points;
+  let rest = [...points].sort((x, y) => (x[timeKey] as number) - (y[timeKey] as number));
   for (const b of sorted) {
     segments.push(rest.filter((p) => (p[timeKey] as number) >= b));
     rest = rest.filter((p) => (p[timeKey] as number) < b);
@@ -99,7 +99,7 @@ export const computeBreakAwareDomain = <T extends Record<string, unknown>>(
     rows.length ? (rows[rows.length - 1][timeKey] as number) - (rows[0][timeKey] as number) : 0;
   // Decided per series: a jump in one line must not be hidden by the span of
   // another (balance vs exchange lines sit at very different levels).
-  const kept: Record<string, unknown>[] = [];
+  const kept = new Map<keyof T, Set<T>>();
   for (const key of keys) {
     const spanOf = (rows: T[]): number => {
       const [lo, hi] = computeSeriesDomain(rows, [key], { allowNegative: true });
@@ -115,7 +115,52 @@ export const computeBreakAwareDomain = <T extends Record<string, unknown>>(
       const keep = !included.length || duration(segment) >= duration(newest) || spanOf(candidate) <= budget;
       if (keep) included = candidate;
     }
-    for (const p of included) kept.push({ [key as string]: p[key] });
+    kept.set(key, new Set(included));
   }
-  return computeSeriesDomain(kept, keys as readonly string[], options);
+  return kept;
+};
+
+/**
+ * Like computeSeriesDomain, but segment-aware: `breakTs` are timestamps where
+ * the series changed basis; see BREAK_DOMAIN_SPAN_FACTOR for the rule.
+ */
+export const computeBreakAwareDomain = <T extends Record<string, unknown>>(
+  points: T[],
+  keys: readonly (keyof T)[],
+  breakTs: readonly number[],
+  timeKey: keyof T,
+  options: { allowNegative?: boolean; log?: boolean } = {},
+): SeriesDomain => {
+  if (!breakTs.length) return computeSeriesDomain(points, keys, options);
+  const kept = keptRowsByKey(points, keys, breakTs, timeKey);
+  const rows: Record<string, unknown>[] = [];
+  for (const key of keys) {
+    for (const p of kept.get(key) ?? []) rows.push({ [key as string]: p[key] });
+  }
+  return computeSeriesDomain(rows, keys as readonly string[], options);
+};
+
+/**
+ * Copy of `points` where each key's value is nulled on rows whose segment the
+ * domain rule excludes. Those segments are not drawn at all, so a short island
+ * between two breaks does not appear as a clipped stub at the plot edge. Rows
+ * and timestamps are kept, so markers, notes and spacers still line up.
+ * Returns `points` itself when there are no breaks. Input is not mutated.
+ */
+export const maskExcludedSegments = <T extends Record<string, unknown>>(
+  points: T[],
+  keys: readonly (keyof T)[],
+  breakTs: readonly number[],
+  timeKey: keyof T,
+): T[] => {
+  if (!breakTs.length) return points;
+  const kept = keptRowsByKey(points, keys, breakTs, timeKey);
+  return points.map((p) => {
+    let row = p;
+    for (const key of keys) {
+      if (p[key] == null || kept.get(key)?.has(p)) continue;
+      row = { ...row, [key]: null } as T;
+    }
+    return row;
+  });
 };

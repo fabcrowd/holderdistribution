@@ -28,6 +28,37 @@ export const Y_MIN_SPAN_RATIO = 0.1;
 /** ...or stretch to this multiple of it, so the axis cannot vanish or run away. */
 export const Y_MAX_SPAN_RATIO = 4;
 
+export type ZoomKeyIntent = { type: "zoom"; factor: number } | { type: "pan"; delta: number } | { type: "reset" };
+
+type ZoomKeyInput = {
+  key: string;
+  /** An X window is set, so there is something to pan. */
+  zoomed: boolean;
+  /** The chart frame itself (not the plot inside it) has focus. */
+  frameFocused: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+};
+
+/**
+ * Key map for a chart. The plot is the chart's only Tab stop and its plain
+ * arrows step the data tooltip, so panning uses Shift+arrows (plain arrows pan
+ * only if the frame itself was focused by a click): + / = zoom in, - / _ zoom
+ * out, 0 / Escape reset. Browser shortcuts (Ctrl/Alt/Meta) are never taken.
+ */
+export const zoomKeyIntent = (e: ZoomKeyInput): ZoomKeyIntent | null => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return null;
+  if (e.key === "+" || e.key === "=") return { type: "zoom", factor: KEY_ZOOM_FACTOR };
+  if (e.key === "-" || e.key === "_") return { type: "zoom", factor: 1 / KEY_ZOOM_FACTOR };
+  if (e.key === "0" || e.key === "Escape") return { type: "reset" };
+  const canPan = e.zoomed && (e.frameFocused || e.shiftKey);
+  if (canPan && e.key === "ArrowLeft") return { type: "pan", delta: -KEY_PAN_FRACTION };
+  if (canPan && e.key === "ArrowRight") return { type: "pan", delta: KEY_PAN_FRACTION };
+  return null;
+};
+
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /** Full X extent of a sorted list of X values, or null when there is no span. */
@@ -183,3 +214,17 @@ export const applyYRange = (scale: YAxisScale, override: YRange | undefined): YA
   const ticks = niceTicks(lo, hi).filter((t) => t >= lo - 1e-9 && t <= hi + 1e-9);
   return { domain: [lo, hi], ticks, baseline: lo === 0 ? null : lo };
 };
+
+/** Two frame pointerdowns this close together count as a double-click on the frame. */
+export const FRAME_DOUBLE_CLICK_MS = 500;
+
+/**
+ * True when the frame itself received both pointerdowns of a double-click.
+ * Pointerdowns on the axis drag strips never reach the frame, so they are excluded.
+ */
+export const isFrameDoubleClick = (prevDownAt: number | null, downAt: number, windowMs = FRAME_DOUBLE_CLICK_MS): boolean =>
+  prevDownAt != null && downAt - prevDownAt <= windowMs;
+
+/** Whether an event target sits inside the frame node (false when either is missing). */
+export const isEventInside = (frame: { contains(n: unknown): boolean } | null, target: unknown): boolean =>
+  !!frame && target != null && frame.contains(target);

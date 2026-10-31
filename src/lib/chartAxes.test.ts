@@ -33,6 +33,8 @@ import {
   computeYAxis,
   computeYAxisFromRows,
   distinctTickFormatter,
+  DEFAULT_Y_AXIS_WIDTH,
+  yAxisWidthFor,
   MAX_BAR_PX,
   niceStep,
   niceTicks,
@@ -166,6 +168,24 @@ describe("computeYAxisFromRows (visible rows / series only)", () => {
   });
   it("no visible series yields the empty axis", () => {
     expect(computeYAxisFromRows(rows, [], { kind: "line" }).domain).toEqual([0, 1]);
+  });
+});
+
+describe("yAxisWidthFor", () => {
+  it("keeps the default width for short labels", () => {
+    expect(yAxisWidthFor(["0", "5M", "10M"])).toBe(DEFAULT_Y_AXIS_WIDTH);
+  });
+  it("grows with the longest formatted tick so 3-decimal labels are not clipped", () => {
+    const w = yAxisWidthFor(["46.026B", "46.028B", "46.030B"], 12);
+    expect(w).toBeGreaterThan(DEFAULT_Y_AXIS_WIDTH);
+    expect(w).toBeGreaterThanOrEqual(7 * 12 * 0.6);
+  });
+  it("is monotonic in label length and font size", () => {
+    expect(yAxisWidthFor(["123.456B"], 12)).toBeGreaterThan(yAxisWidthFor(["12.3B"], 12));
+    expect(yAxisWidthFor(["46.026B"], 14)).toBeGreaterThan(yAxisWidthFor(["46.026B"], 12));
+  });
+  it("tolerates no ticks", () => {
+    expect(yAxisWidthFor([])).toBe(DEFAULT_Y_AXIS_WIDTH);
   });
 });
 

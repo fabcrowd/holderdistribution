@@ -52,7 +52,7 @@ const CexSparkline = ({ series, ticker }: { series: TileRow[]; ticker: string })
   return (
     <ZoomFrame zoom={zoom} className="h-20 w-full">
       <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
-                <LineChart data={zoom.rows} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
+                <LineChart data={zoom.rows} margin={{ top: 2, right: 2, bottom: 0, left: 2 }} accessibilityLayer>
                   <XAxis dataKey="timestamp" type="number" domain={["dataMin", "dataMax"]} scale="time" hide />
                   <YAxis hide domain={yScale.domain} />
                   <ChartTooltip

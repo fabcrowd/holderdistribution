@@ -16,7 +16,8 @@ import { NotedTooltip, markerLines } from "@/components/chart/ChartMarkers";
 import { groupMarkers, markerCollapseGap, markerNotesByRow, reclassMarkers } from "@/lib/chartMarkers";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
-import { type DisplaySelection } from "@/hooks/useHolderSnapshot";
+import { useHolderLiteSnapshot, type DisplaySelection } from "@/hooks/useHolderSnapshot";
+import { chartLagsPage } from "@/lib/chartFreshness";
 import { useProject } from "@/hooks/useProject";
 import { chainViewLabel } from "@/lib/chainViews";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
@@ -27,10 +28,11 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
 import { insertGapBreaks } from "@/lib/seriesGaps";
 import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
-import { computeSeriesDomain, computeBreakAwareDomain, activeKeys } from "@/lib/chartDomain";
+import { computeSeriesDomain, computeBreakAwareDomain, activeKeys, maskExcludedSegments } from "@/lib/chartDomain";
 import { computeYAxis, computeYAxisFromRows, distinctTickFormatter } from "@/lib/chartAxes";
 import { AxisBaselineNote } from "@/components/chart/AxisBaselineNote";
-import { getSeriesBreaks, insertBreakSpacers } from "@/lib/seriesBreaks";
+import { ChartDataTable } from "@/components/chart/ChartDataTable";
+import { breakTooltip, getSeriesBreaks, insertBreakSpacers } from "@/lib/seriesBreaks";
 
 type HolderGrowthWidgetProps = {
   selectedView: DisplaySelection;
@@ -115,6 +117,7 @@ const signedAmount = (value: number, unit: string, digits = 2) => {
 type BalanceMode = "balance" | "change";
 
 const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: HolderGrowthWidgetProps) => {
+  const { data: pageSnapshot } = useHolderLiteSnapshot();
   const { project } = useProject();
   // Label from the project's chains[] (TEL: Combined / Ethereum / Polygon / Base).
   const config = { label: chainViewLabel(project, selectedView) };
@@ -202,6 +205,13 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   );
 
   const holdersZoom = useChartZoom(holdersLineData, (p) => p.timestamp);
+  // Segments the domain rule excludes are not drawn (see maskExcludedSegments).
+  const holdersRows = useMemo(
+    () => maskExcludedSegments(holdersZoom.rows, ["holders"], holdersBreaks.map((b) => b.t), "timestamp"),
+    [holdersZoom.rows, holdersBreaks],
+  );
+  // Text alternative: the full observed series, not the zoom window.
+  const holdersTableRows = useMemo(() => chartData.map((p) => ({ date: p.timestamp, wallets: p.holders })), [chartData]);
   // Rows the zoom window shows; domains are computed from these so Y rescales.
   const holdersInView = useMemo(() => sliceWindow(chartData, (p) => p.timestamp, holdersZoom.window), [chartData, holdersZoom.window]);
 
@@ -391,7 +401,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     () =>
       groupMarkers(
         [
-          ...holdersBreaks.map((b) => ({ t: b.t, text: b.description, tone: "warning" as const })),
+          ...holdersBreaks.map((b) => ({ t: b.t, text: b.description, tone: "warning" as const, tooltip: breakTooltip(b) })),
           ...reclassMarkers(holdersChangelogEvents.filter((e) => !e.breaksSeries)),
         ],
         markerCollapseGap(holdersZoom.rows.map((p) => p.timestamp)),
@@ -635,17 +645,15 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                 </div>
               )}
 
-              {/* The page header already carries the full stale-data notice
-                  (StaleDataBanner); repeating it here as a red error inside
-                  the chart read as "this chart is broken" when the numbers
-                  are fine as of their date. A one-line amber note keeps the
-                  context next to the line without the alarm. */}
-              {!isLoading && !error && data?.feedError && (
+              {/* The page header already states freshness. This note appears only
+                  when this chart's feed trails the page's snapshot, so the reader
+                  knows the line is older than the rest of the page. */}
+              {!isLoading && !error && chartLagsPage(data?.updatedAt, pageSnapshot?.generatedAt) && (
                 <p className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-50 px-2.5 py-1 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                   <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   {(() => {
-                    const rel = formatRelativeAge(data.updatedAt);
-                    const date = formatShortDate(data.updatedAt);
+                    const rel = formatRelativeAge(data?.updatedAt);
+                    const date = formatShortDate(data?.updatedAt);
                     return date ? `Last updated ${date}${rel ? ` (${rel})` : ""}` : "Data feed delayed";
                   })()}
                 </p>
@@ -666,9 +674,9 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
 
               {!isLoading && !error && chartData.length > 0 && (<>
                 <ZoomFrame zoom={holdersZoom} className="h-56 w-full sm:h-64" yAxes={{ left: holdersYAuto.domain }} notes={<AxisBaselineNote baseline={holdersY.baseline} format={(n) => formatInteger(Math.round(n))} />}>
-                <div className="h-full w-full" role="img" aria-label={holdersAriaSummary} data-testid="holder-growth-chart">
+                <div className="h-full w-full" role="group" aria-label={holdersAriaSummary} data-testid="holder-growth-chart">
                   <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
-                    <LineChart data={holdersZoom.rows}>
+                    <LineChart data={holdersRows} accessibilityLayer>
                       <CartesianGrid vertical={false} />
                       <XAxis
                         dataKey="timestamp"
@@ -718,6 +726,16 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                     History is still building: {chartData.length} snapshot{chartData.length === 1 ? "" : "s"} in this range.
                   </p>
                 )}
+                <ChartDataTable
+                  caption={`Retail wallets by date, ${config.label}`}
+                  title={`Retail wallets by date, ${config.label}`}
+                  columns={[
+                    { key: "date", label: "Date", format: (v) => formatDateValue(v, tooltipFormatter) },
+                    { key: "wallets", label: "Wallets", align: "right", format: (v) => (typeof v === "number" ? formatInteger(v) : "") },
+                  ]}
+                  rows={holdersTableRows}
+                  className="mt-2"
+                />
               </>)}
             </div>
 
@@ -843,8 +861,9 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                   </div>
                 ) : (
                   <ZoomFrame zoom={balanceZoom} className="h-56 w-full sm:h-64" yAxes={balanceLog ? undefined : { left: balanceYAuto.domain }} notes={<AxisBaselineNote baseline={balanceLog ? null : balanceY.baseline} format={(n) => (balanceMode === "change" ? formatSignedAmount(n) : formatCompactAmount(n))} />}>
+                    <div className="h-full w-full" role="group" aria-label="Balance by holder type over time">
                     <ChartContainer config={balanceChartConfig} className="h-full w-full aspect-auto">
-                      <LineChart data={balanceZoom.rows}>
+                      <LineChart data={balanceZoom.rows} accessibilityLayer>
                         <CartesianGrid vertical={false} />
                         <XAxis
                           dataKey="timestamp"
@@ -916,6 +935,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         {markerLines(balanceMarkers, "balance")}
                       </LineChart>
                     </ChartContainer>
+                    </div>
                   </ZoomFrame>
                 )}
               </div>
@@ -989,8 +1009,9 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                     />
                   )}
                   <ZoomFrame zoom={stakingZoom} className="h-56 w-full sm:h-64" yAxes={{ left: stakingYAuto.domain }} notes={<AxisBaselineNote baseline={stakingY.baseline} format={(n) => formatCompactAmount(n)} />}>
+                    <div className="h-full w-full" role="group" aria-label="Staked supply over time">
                     <ChartContainer config={stakingChartConfig} className="h-full w-full aspect-auto">
-                      <LineChart data={stakingZoom.rows}>
+                      <LineChart data={stakingZoom.rows} accessibilityLayer>
                         <CartesianGrid vertical={false} />
                         <XAxis
                           dataKey="timestamp"
@@ -1053,6 +1074,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         )}
                       </LineChart>
                     </ChartContainer>
+                    </div>
                   </ZoomFrame>
                   </>
                 )}
@@ -1062,13 +1084,6 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
             </TabsContent>
             </SubPanelTabs>
 
-            {/* Provenance applies to every panel, so it stays outside the
-                selector rather than repeating in each one. */}
-            {data?.updatedAt && (
-              <div className="text-xs text-muted-foreground max-sm:hidden">
-                Updated {new Date(data.updatedAt).toLocaleString()}
-              </div>
-            )}
           </div>
         </div>
       </div>

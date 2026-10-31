@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { YAxisScale } from "./chartAxes";
 import {
+  KEY_PAN_FRACTION,
+  KEY_ZOOM_FACTOR,
   Y_MAX_SPAN_RATIO,
   Y_MIN_SPAN_RATIO,
+  zoomKeyIntent,
   applyYRange,
   axisDragSpanFactor,
   scaleYRange,
@@ -22,6 +25,7 @@ import {
   zoomWindow,
   type XRange,
 } from "./chartZoom";
+import { isEventInside, isFrameDoubleClick } from "./chartZoom";
 
 const FULL: XRange = [0, 100];
 
@@ -236,5 +240,72 @@ describe("applyYRange", () => {
 
   it("reports no baseline when the manual range starts at zero", () => {
     expect(applyYRange(auto, [0, 500]).baseline).toBeNull();
+  });
+});
+
+describe("isFrameDoubleClick", () => {
+  it("is false when there was no previous pointerdown", () => {
+    expect(isFrameDoubleClick(null, 1000)).toBe(false);
+  });
+
+  it("is true for two frame pointerdowns 100ms apart", () => {
+    expect(isFrameDoubleClick(1000, 1100)).toBe(true);
+  });
+
+  it("is false for two pointerdowns 900ms apart", () => {
+    expect(isFrameDoubleClick(1000, 1900)).toBe(false);
+  });
+
+  it("is true at exactly the window boundary", () => {
+    expect(isFrameDoubleClick(1000, 1500)).toBe(true);
+  });
+});
+
+describe("isEventInside", () => {
+  const inside = {};
+  const frame = { contains: (n: unknown) => n === inside };
+
+  it("is true when the target is inside the frame", () => {
+    expect(isEventInside(frame, inside)).toBe(true);
+  });
+
+  it("is false when the target is outside the frame", () => {
+    expect(isEventInside(frame, {})).toBe(false);
+  });
+
+  it("is false for a null target", () => {
+    expect(isEventInside(frame, null)).toBe(false);
+  });
+
+  it("is false when the frame is null", () => {
+    expect(isEventInside(null, inside)).toBe(false);
+  });
+});
+
+describe("zoomKeyIntent", () => {
+  const k = (key: string, over: Partial<{ zoomed: boolean; frameFocused: boolean; shiftKey: boolean; altKey: boolean; ctrlKey: boolean; metaKey: boolean }> = {}) =>
+    zoomKeyIntent({ key, zoomed: false, frameFocused: false, shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, ...over });
+
+  it("zooms with +/- and resets with 0 or Escape, wherever focus is inside the chart", () => {
+    expect(k("+")).toEqual({ type: "zoom", factor: KEY_ZOOM_FACTOR });
+    expect(k("=")).toEqual({ type: "zoom", factor: KEY_ZOOM_FACTOR });
+    expect(k("-")).toEqual({ type: "zoom", factor: 1 / KEY_ZOOM_FACTOR });
+    expect(k("0")).toEqual({ type: "reset" });
+    expect(k("Escape")).toEqual({ type: "reset" });
+  });
+  it("leaves plain arrows to the plot so they step the tooltip", () => {
+    expect(k("ArrowLeft", { zoomed: true })).toBeNull();
+    expect(k("ArrowRight", { zoomed: true })).toBeNull();
+  });
+  it("pans a zoomed chart with Shift+arrows, or plain arrows when the frame itself has focus", () => {
+    expect(k("ArrowLeft", { zoomed: true, shiftKey: true })).toEqual({ type: "pan", delta: -KEY_PAN_FRACTION });
+    expect(k("ArrowRight", { zoomed: true, shiftKey: true })).toEqual({ type: "pan", delta: KEY_PAN_FRACTION });
+    expect(k("ArrowRight", { zoomed: true, frameFocused: true })).toEqual({ type: "pan", delta: KEY_PAN_FRACTION });
+    expect(k("ArrowRight", { zoomed: false, shiftKey: true })).toBeNull();
+  });
+  it("ignores browser shortcuts", () => {
+    expect(k("+", { ctrlKey: true })).toBeNull();
+    expect(k("0", { metaKey: true })).toBeNull();
+    expect(k("-", { altKey: true })).toBeNull();
   });
 });

@@ -1,8 +1,9 @@
-import { useRef, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import { useRef, type ReactNode, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { CHART_FOCUS_RING } from "@/components/ui/chart";
 import { RotateCcw } from "lucide-react";
 import type { ChartZoom } from "@/hooks/useChartZoom";
 import { plotRect } from "@/hooks/useChartZoom";
-import { axisDragSpanFactor, type XRange } from "@/lib/chartZoom";
+import { axisDragSpanFactor, isEventInside, isFrameDoubleClick, type XRange } from "@/lib/chartZoom";
 import type { AxisSide } from "@/lib/chartAxes";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,8 @@ type Props<T> = {
 };
 
 type StripDrag = { id: number; axis: "x" | "y"; side?: AxisSide; last: number };
+/** Timestamps of the frame's last two pointerdowns; a double-click needs both to land here. */
+type FrameDowns = { prev: number | null; last: number | null };
 
 /**
  * Wraps a chart with the shared zoom gestures, a header row for notes and the
@@ -32,10 +35,20 @@ type StripDrag = { id: number; axis: "x" | "y"; side?: AxisSide; last: number };
  * stretch or shrink that axis. Dragging right or up zooms in, left or down out.
  * The plot is always `touch-action: pan-y` so a vertical swipe still scrolls the page,
  * whether or not the chart is zoomable; only the Y strip takes vertical drags.
+ *
+ * Keyboard: ONE Tab stop per chart, the Recharts plot (`accessibilityLayer`;
+ * charts in a ZoomFrame must set it). This wrapper is tabIndex -1: a click can
+ * focus it, Tab never lands on it, and it still receives the plot's key events
+ * as they bubble. Key map (see `zoomKeyIntent`):
+ *   Left / Right      step the data tooltip (plot) - or pan, if this frame was click-focused
+ *   Shift + Left/Right pan the zoomed window (captured here, so the tooltip stays put)
+ *   + / =  and  - / _  zoom in / out         0 or Escape  reset
+ * "Reset zoom" and "View data as table" remain ordinary buttons.
  */
 export function ZoomFrame<T>({ zoom, children, className, notes, yAxes }: Props<T>) {
   const { zoomable } = zoom;
   const drag = useRef<StripDrag | null>(null);
+  const downs = useRef<FrameDowns>({ prev: null, last: null });
   const sides = Object.keys(yAxes ?? {}) as AxisSide[];
 
   const startDrag = (axis: "x" | "y", side?: AxisSide) => (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -66,6 +79,28 @@ export function ZoomFrame<T>({ zoom, children, className, notes, yAxes }: Props<
 
   const stopAndIgnore = (e: { stopPropagation: () => void }) => e.stopPropagation();
 
+  // Shift+Arrow pans. Handled in the capture phase so the focused plot, which
+  // also reads arrows, does not step its tooltip at the same time.
+  const onPanKeyCapture = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!e.shiftKey || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+    if (!zoom.zoomed) return;
+    e.stopPropagation();
+    zoom.onKeyDown(e);
+  };
+
+  const onFramePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    downs.current = { prev: downs.current.last, last: performance.now() };
+    zoom.onPointerDown(e);
+  };
+
+  // A dblclick whose two clicks did not both land on the frame (e.g. a dialog
+  // backdrop closed under the first click) must not reset the zoom.
+  const onFrameDoubleClick = (e: ReactMouseEvent<HTMLDivElement>) => {
+    const { prev, last } = downs.current;
+    if (!isEventInside(e.currentTarget, e.target)) return;
+    if (last != null && isFrameDoubleClick(prev, last)) zoom.reset();
+  };
+
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
       {(notes != null || zoom.zoomed) && (
@@ -75,7 +110,7 @@ export function ZoomFrame<T>({ zoom, children, className, notes, yAxes }: Props<
             <button
               type="button"
               onClick={zoom.reset}
-              className="ml-auto inline-flex h-5 max-xl:h-11 max-xl:px-3 max-xl:text-xs shrink-0 items-center gap-1 rounded border border-border bg-background px-1.5 text-[11px] text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+              className="ml-auto inline-flex h-5 max-xl:h-11 max-xl:px-3 shrink-0 items-center gap-1 rounded border border-border bg-background px-1.5 text-xs text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
             >
               <RotateCcw className="h-2.5 w-2.5" aria-hidden="true" />
               Reset zoom
@@ -85,16 +120,20 @@ export function ZoomFrame<T>({ zoom, children, className, notes, yAxes }: Props<
       )}
       <div
         ref={zoom.containerRef}
-        className="relative min-h-0 w-full flex-1 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className={cn(
+          "relative min-h-0 w-full flex-1 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          CHART_FOCUS_RING,
+        )}
         style={{ touchAction: "pan-y" }}
-        tabIndex={zoomable ? 0 : undefined}
+        tabIndex={zoomable ? -1 : undefined}
         role={zoomable ? "group" : undefined}
         aria-label={zoomable ? "Chart. Scroll to zoom, drag to pan, plus and minus keys zoom, Escape resets." : undefined}
-        onPointerDown={zoom.onPointerDown}
+        onPointerDown={onFramePointerDown}
         onPointerMove={zoom.onPointerMove}
         onPointerUp={zoom.onPointerUp}
         onPointerCancel={zoom.onPointerUp}
-        onDoubleClick={zoomable ? zoom.reset : undefined}
+        onDoubleClick={zoomable ? onFrameDoubleClick : undefined}
+        onKeyDownCapture={onPanKeyCapture}
         onKeyDown={zoom.onKeyDown}
         data-zoomed={zoom.zoomed || undefined}
       >

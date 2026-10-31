@@ -19,7 +19,7 @@ export const AxisBaselineNote = ({ baseline, format = (n) => formatCompact(n, 2)
   const name = side === "right" ? "Right axis" : "Axis";
   const value = format(baseline);
   return (
-    <p className="text-[11px] leading-4 text-muted-foreground" data-testid="axis-baseline-note" data-side={side}>
+    <p className="text-xs leading-4 text-muted-foreground" data-testid="axis-baseline-note" data-side={side}>
       <span className="max-sm:hidden">
         {name} starts at {value}
       </span>

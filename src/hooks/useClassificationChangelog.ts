@@ -16,15 +16,18 @@ const resolveUrl = (slug: string) => dataUrl(slug, "classification-changelog.jso
  * from reading as an artificial jump/drop when only categorization changed,
  * not real on-chain movement.
  */
+/** Shared by the terminal hook and the landing cards (one cache entry per slug). */
+export const fetchClassificationChangelog = async (slug: string): Promise<ClassificationChangelog | null> => {
+  const res = await fetch(resolveUrl(slug));
+  if (!res.ok) throw new FeedError(res.url || "feed", res.status);
+  return (await res.json()) as ClassificationChangelog;
+};
+
 export const useClassificationChangelog = () => {
   const { slug } = useProject();
   return useQuery({
     queryKey: ["classification-changelog", slug],
-    queryFn: async (): Promise<ClassificationChangelog | null> => {
-      const res = await fetch(resolveUrl(slug));
-      if (!res.ok) throw new FeedError(res.url || "feed", res.status);
-      return (await res.json()) as ClassificationChangelog;
-    },
+    queryFn: () => fetchClassificationChangelog(slug),
     staleTime: 5 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
