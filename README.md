@@ -4,6 +4,7 @@ On-chain holder analytics for multiple tokens — holder distribution and tiers,
 breakdown, exchange flows, staking and historical growth — published at
 [holderdistribution.com](https://holderdistribution.com) under the **Holder Analytics** brand.
 Mapped so far: **TEL** (Telcoin; Ethereum, Polygon, Base) and **ZBCN** (Zebec Network; Solana).
+ZBCN history starts at 2026-10-25; there is no backfill yet.
 
 A single-page React app: `/` is the token picker and `/<slug>` (e.g. `/tel`,
 `/zebec-network`) is that token's terminal (Holders · Distribution · Supply tabs). It reads
@@ -55,6 +56,7 @@ design-system/             brand spec, tokens, logos
 .github/workflows/         ci.yml + scheduled data-pipeline workflows (nightly refresh runs per project)
 docs/DEPLOYMENT.md         deploy + production-readiness runbook
 docs/FORENSICS.md          password-gated forensics (Wallet flows), gate hardening, password rotation
+docs/MULTI-TOKEN.md        multi-token layout, pipeline --project flag, Solana support, onboarding checklist
 docs/PIPELINE-RECOVERY.md  recovering a stalled or broken data pipeline
 docs/TEL-CONTRACTS.md      TEL contract registry (legacy vs. v3) + supply accounting (legacy + v3 = 100B)
 CLAUDE.md                  deeper architecture/handoff notes

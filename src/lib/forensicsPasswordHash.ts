@@ -13,7 +13,7 @@
  * Treat this gate as "keeps the content off the public web", not as real secrecy.
  */
 export const FORENSICS_PASSWORD_SHA256 =
-  "dc1303c56ee8888310bd0560f5d0cb93a3e3ba4653630d6824aa56ba7c0463d8";
+  "68ec0f87d5a4a2133c3714a2c48c348529f204c48eecae48bc49e7b1b7c2b93c";
 
 export const forensicsPasswordMatches = async (password: string): Promise<boolean> => {
   if (!password) return false;
