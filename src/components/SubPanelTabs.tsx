@@ -1,5 +1,8 @@
-import { type ReactNode, useId } from "react";
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { prefersReducedMotion } from "@/lib/motion";
+import { type ScrollEdges, revealActiveTab, scrollEdges, scrollStepPx } from "@/lib/tabScroll";
 
 export type SubPanel = { id: string; label: string; title?: string };
 
@@ -44,6 +47,14 @@ type SubPanelTabsProps = {
  *  a sideways-scrolling strip whose later items are off-screen and unseen. */
 export const SELECT_THRESHOLD = 4;
 
+const NO_EDGES: ScrollEdges = { overflowing: false, left: false, right: false };
+
+const sameEdges = (a: ScrollEdges, b: ScrollEdges): boolean =>
+  a.overflowing === b.overflowing && a.left === b.left && a.right === b.right;
+
+const scrollButtonClass =
+  "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:bg-transparent aria-disabled:hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
 export const SubPanelTabs = ({
   panels,
   value,
@@ -55,6 +66,51 @@ export const SubPanelTabs = ({
 }: SubPanelTabsProps) => {
   const useSelect = variant === "underline" && panels.length > SELECT_THRESHOLD;
   const selectId = useId();
+  const showStrip = variant !== "filter";
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const lastRevealedValue = useRef<string | undefined>(undefined);
+  const [edges, setEdges] = useState<ScrollEdges>(NO_EDGES);
+
+  const syncEdges = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const next = scrollEdges({ scrollLeft: el.scrollLeft, scrollWidth: el.scrollWidth, clientWidth: el.clientWidth });
+    setEdges((prev) => (sameEdges(prev, next) ? prev : next));
+  }, []);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    syncEdges();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", syncEdges);
+      return () => window.removeEventListener("resize", syncEdges);
+    }
+    // Observing the list too catches a panel count change, which resizes content but not the scroller.
+    const observer = new ResizeObserver(syncEdges);
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+    return () => observer.disconnect();
+  }, [showStrip, syncEdges]);
+
+  useEffect(() => {
+    const strip = scrollerRef.current;
+    if (!strip) return;
+    // Animate only when the user changed tabs; the mount/first-overflow reveal is instant.
+    const tabChanged = lastRevealedValue.current !== undefined && lastRevealedValue.current !== value;
+    revealActiveTab(strip, prefersReducedMotion() || !tabChanged);
+    lastRevealedValue.current = value;
+  }, [value, showStrip, edges.overflowing]);
+
+  const nudge = (direction: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({
+      left: direction * scrollStepPx(el.clientWidth),
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  };
+
   return (
     <Tabs value={value} onValueChange={onValueChange}>
       <div className={`flex items-end gap-3 ${className}`}>
@@ -93,7 +149,21 @@ export const SubPanelTabs = ({
             ))}
           </TabsList>
         ) : (
-          <div className={`min-w-0 flex-1 overflow-x-auto [-webkit-overflow-scrolling:touch] max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-28px),transparent)] ${useSelect ? "hidden sm:block" : ""}`}>
+          <div className={`flex min-w-0 flex-1 items-center ${useSelect ? "hidden sm:flex" : ""}`}>
+            {edges.overflowing && (
+              <button
+                type="button"
+                aria-label="Scroll tabs left"
+                // aria-disabled, not disabled: a disabled button that has focus drops it to <body>.
+                aria-disabled={!edges.left}
+                onClick={() => edges.left && nudge(-1)}
+                className={scrollButtonClass}
+              >
+                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+              </button>
+            )}
+            <div className="relative min-w-0 flex-1">
+            <div ref={scrollerRef} onScroll={syncEdges} className="scroll-px-8 overflow-x-auto [-webkit-overflow-scrolling:touch]">
             <TabsList className="inline-flex h-auto w-max min-w-full flex-nowrap justify-start gap-1 max-sm:pr-7 rounded-none border-b border-border/60 bg-transparent p-0">
               {panels.map((panel) => (
                 <TabsTrigger
@@ -106,6 +176,25 @@ export const SubPanelTabs = ({
                 </TabsTrigger>
               ))}
             </TabsList>
+            </div>
+            {edges.left && (
+              <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-card to-transparent" />
+            )}
+            {edges.right && (
+              <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent" />
+            )}
+            </div>
+            {edges.overflowing && (
+              <button
+                type="button"
+                aria-label="Scroll tabs right"
+                aria-disabled={!edges.right}
+                onClick={() => edges.right && nudge(1)}
+                className={scrollButtonClass}
+              >
+                <ChevronRight className="h-5 w-5" aria-hidden="true" />
+              </button>
+            )}
           </div>
         )}
         {trailing ? <div className="shrink-0 pb-1">{trailing}</div> : null}

@@ -239,7 +239,7 @@ const HowToRead = () => (
       How to read this
       <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
     </CollapsibleTrigger>
-    <CollapsibleContent className="space-y-2 border-t border-border/50 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
+    <CollapsibleContent className="space-y-2 border-t border-border/50 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
       <p>
         The Telcoin Association holds TEL in several wallets — one per council, plus a few
         operating wallets that sell TEL. Treat each wallet as a cost center.
@@ -287,7 +287,7 @@ const PeriodFilter = ({
   const selected = periods.find((p) => p.id === value) ?? periods[0];
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         <span className="font-medium text-foreground">Reporting period</span>
         {selected ? ` · ${selected.start} – ${selected.end}` : null}
       </p>
@@ -295,7 +295,7 @@ const PeriodFilter = ({
         aria-label="Reporting period"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-7 rounded-md border border-border/60 bg-background px-2 text-[11px] text-foreground"
+        className="h-7 rounded-md border border-border/60 bg-background px-2 text-xs text-foreground"
       >
         {PERIOD_GROUPS.map(({ group, label }) => (
           <optgroup key={group} label={label}>
@@ -323,7 +323,7 @@ const MetricTile = ({
   hint?: string;
 }) => (
   <div className="rounded-lg border border-border/50 bg-background/60 px-3 py-2">
-    <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+    <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
       {label}
       {hint ? <InfoTooltip text={hint} /> : null}
     </p>
@@ -345,10 +345,10 @@ const WhereStablecoinWentBuckets = ({ buckets }: { buckets: WhereStablecoinWentB
         {buckets.map((bucket) => (
           <Collapsible key={bucket.cls}>
             <CollapsibleTrigger className="group flex w-full items-center justify-between gap-3 px-2.5 py-1.5 text-left hover:bg-muted/40">
-              <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+              <span className="min-w-0 truncate text-xs text-muted-foreground">
                 {stablecoinProceedLabel(bucket.cls)}
               </span>
-              <span className="flex shrink-0 items-center gap-2 text-[11px] font-semibold tabular-nums text-foreground">
+              <span className="flex shrink-0 items-center gap-2 text-xs font-semibold tabular-nums text-foreground">
                 {formatUsd(bucket.usd)}
                 <span className="font-normal text-muted-foreground">
                   {bucket.txCount} {bucket.txCount === 1 ? "sale" : "sales"}
@@ -382,7 +382,7 @@ const WhereStablecoinWentBuckets = ({ buckets }: { buckets: WhereStablecoinWentB
                               <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
                             </a>
                             {label && (
-                              <div className="truncate font-mono text-[11px] text-muted-foreground">{shortAddr(dest.to)}</div>
+                              <div className="truncate font-mono text-xs text-muted-foreground">{shortAddr(dest.to)}</div>
                             )}
                           </TableCell>
                           <TableCell className="text-right text-xs tabular-nums">{dest.txCount}</TableCell>
@@ -419,10 +419,10 @@ const WhereTelWentBuckets = ({ buckets }: { buckets: WhereTelWentBucket[] }) => 
       {buckets.map((bucket) => (
         <Collapsible key={bucket.cls}>
           <CollapsibleTrigger className="group flex w-full items-center justify-between gap-3 px-2.5 py-1.5 text-left hover:bg-muted/40">
-            <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+            <span className="min-w-0 truncate text-xs text-muted-foreground">
               {classificationLabel(bucket.cls)}
             </span>
-            <span className="flex shrink-0 items-center gap-2 text-[11px] font-semibold tabular-nums text-foreground">
+            <span className="flex shrink-0 items-center gap-2 text-xs font-semibold tabular-nums text-foreground">
               {formatCompactAmount(bucket.tel)} TEL
               <span className="font-normal text-muted-foreground">
                 {bucket.txCount} {bucket.txCount === 1 ? "tx" : "txs"}
@@ -483,7 +483,7 @@ const ChainRail = ({
 }) => (
   <article className="space-y-2 rounded-lg border border-border/40 bg-background/40 p-3">
     <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">{title}</h4>
-    <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+    <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
       <div className="flex justify-between gap-2">
         <dt className="text-muted-foreground">Stablecoin received</dt>
         <dd className="font-semibold tabular-nums">{formatUsd(data.stableOutUsd)}</dd>
@@ -504,7 +504,7 @@ const ChainRail = ({
         <p className="mb-1 text-xs text-muted-foreground">Largest stablecoin recipients</p>
         <ul className="space-y-0.5">
           {data.topPayees.slice(0, 5).map((p) => (
-            <li key={`${p.to}-${p.token}`} className="flex justify-between gap-2 text-[11px]">
+            <li key={`${p.to}-${p.token}`} className="flex justify-between gap-2 text-xs">
               <span className="truncate font-mono text-muted-foreground">{shortAddr(p.to)}</span>
               <span className="shrink-0 tabular-nums font-medium">{formatUsd(p.usd)}</span>
             </li>
@@ -661,7 +661,7 @@ export const TelDispositionLedger = () => {
                   : "."
               }`}
             </p>
-            <p className="mt-2 text-[11px] text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               {`On-chain records from Ethereum and Polygon${period ? ` · ${period.start} – ${period.end}` : ""}. Updated ${new Date(report.generated).toLocaleString()}.`}
             </p>
           </div>
@@ -733,7 +733,7 @@ export const TelDispositionLedger = () => {
                 aria-label="Sold from"
                 value={walletFilter}
                 onChange={(e) => setWalletFilter(e.target.value)}
-                className="h-7 rounded-md border border-border/60 bg-background px-2 text-[11px] text-foreground"
+                className="h-7 rounded-md border border-border/60 bg-background px-2 text-xs text-foreground"
               >
                 <option value="all">All wallets</option>
                 {walletOptions.map(([addr, name]) => (
@@ -775,7 +775,7 @@ export const TelDispositionLedger = () => {
                 <TableBody>
                   {journalRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-[11px] text-muted-foreground">
+                      <TableCell colSpan={6} className="text-xs text-muted-foreground">
                         No TEL sales in this period.
                       </TableCell>
                     </TableRow>
@@ -812,7 +812,7 @@ export const TelDispositionLedger = () => {
                               {stablecoinPayeeLabel(s.proceedTo) ?? shortAddr(s.proceedTo)}
                             </span>
                             {stablecoinPayeeLabel(s.proceedTo) ? (
-                              <span className="font-mono text-[11px] text-muted-foreground">{shortAddr(s.proceedTo)}</span>
+                              <span className="font-mono text-xs text-muted-foreground">{shortAddr(s.proceedTo)}</span>
                             ) : null}
                           </span>
                         ) : (

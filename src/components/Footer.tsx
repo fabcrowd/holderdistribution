@@ -59,7 +59,7 @@ export const Footer = () => {
 
   return (
     <footer className="border-t border-border/50 bg-card/30 backdrop-blur-md mt-8">
-      <div className="container mx-auto flex flex-col items-center gap-x-6 gap-y-1 px-4 py-3 text-[13px] text-muted-foreground lg:flex-row lg:justify-between">
+      <div className="mx-auto w-full max-w-7xl flex flex-col items-center gap-x-6 gap-y-1 px-4 py-3 text-[13px] text-muted-foreground lg:flex-row lg:justify-between">
         {/* Support: label + copy control + (i) with the explanatory sentences. */}
         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
           <Heart aria-hidden="true" className="h-4 w-4 text-primary" />

@@ -5,7 +5,7 @@ import { ArrowDownRight, ArrowUpRight, Clock, Coins, Info, Minus, PieChart, User
 import logoIcon from "@/assets/holder-analytics-icon.svg";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TokenIdentity } from "@/components/TokenIdentity";
@@ -81,6 +81,9 @@ export const TerminalDashboard = ({
   const qc = useQueryClient();
   const fresh = describeFreshness(snapshot?.generatedAt);
   const stale = fresh.status === "delayed" || fresh.status === "stale";
+  // The status bar carries the only freshness notice besides the header pill:
+  // loading and error states, and the amber/red stale notice.
+  const showStatusNotice = fresh.status === "unknown" || stale;
   const intro = useIntro();
   // The first view fades in with the panel stagger; later view switches get a
   // quick crossfade instead (the keyed wrapper below remounts per view).
@@ -96,7 +99,7 @@ export const TerminalDashboard = ({
       <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground" data-testid="terminal">
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           Skip to main content
         </a>
@@ -114,22 +117,25 @@ export const TerminalDashboard = ({
             </Link>
             <div className="flex flex-col justify-center gap-1.5 leading-none">
               <div className="flex items-center gap-1.5">
-                {/* When the data is late the pill takes the eyebrow's place
-                    below 1400px, so the brand column doesn't grow into the KPIs. */}
-                <span className={`text-xs font-semibold uppercase tracking-[0.14em] text-primary ${stale ? "hidden min-[1400px]:inline" : ""}`}>
+                {/* The "As of" pill is always shown once the snapshot loads. Below
+                    1400px it takes the eyebrow's place, so the brand column doesn't
+                    grow into the KPIs. */}
+                <span className={`text-xs font-semibold uppercase tracking-[0.14em] text-primary ${fresh.status === "unknown" ? "" : "hidden min-[1400px]:inline"}`}>
                   Holder Analytics
                 </span>
-                {stale && (
+                {fresh.status !== "unknown" && (
                   <span
-                    role="status"
+                    role={stale ? "status" : undefined}
                     data-testid="header-stale-pill"
                     data-status={fresh.status}
-                    title={`The daily refresh is behind. Figures are as of ${fresh.date}.`}
-                    aria-label={`Data as of ${fresh.date}. The daily refresh is behind.`}
+                    title={stale ? `The daily refresh is behind. Figures are as of ${fresh.date}.` : `Figures are as of ${fresh.date}.`}
+                    aria-label={stale ? `Data as of ${fresh.date}. The daily refresh is behind.` : `Data as of ${fresh.date}.`}
                     className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-px text-xs font-semibold leading-none ${
                       fresh.status === "stale"
                         ? "border-red-500/50 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300"
-                        : "border-amber-500/50 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                        : fresh.status === "delayed"
+                          ? "border-amber-500/50 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                          : "border-border bg-muted text-muted-foreground"
                     }`}
                   >
                     <Clock className="h-2.5 w-2.5" aria-hidden="true" />
@@ -185,16 +191,20 @@ export const TerminalDashboard = ({
             </select>
             <TimeRangeDropdown value={rangeDays} onChange={onRangeDaysChange} options={rangeOptions} className="xl:!h-9 xl:!text-[13px]" />
             <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Summary of what changed"
-                  title="Summary"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Info className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </PopoverTrigger>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Summary of what changed"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <Info className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Summary of what changed</TooltipContent>
+              </Tooltip>
               <PopoverContent align="end" className="w-96 space-y-2 text-sm">
                 {summary ? (
                   <>
@@ -216,7 +226,7 @@ export const TerminalDashboard = ({
                 )}
               </PopoverContent>
             </Popover>
-            <GlossaryDialog className="!min-h-0 h-9 px-2.5 text-[13px]" labelClassName="sr-only 2xl:not-sr-only" />
+            <GlossaryDialog className="!min-h-0 h-9 px-2.5 text-[13px]" labelClassName="sr-only xl:not-sr-only" />
             <ThemeToggle className="!h-9 !w-9" />
           </div>
         </header>
@@ -230,7 +240,7 @@ export const TerminalDashboard = ({
         <main
           id="main-content"
           tabIndex={-1}
-          className={`relative min-h-0 flex-1 p-2 focus:outline-none ${mainScrolls ? "overflow-y-auto" : "overflow-hidden"}`}
+          className={`relative min-h-0 flex-1 p-3 focus:outline-none ${mainScrolls ? "overflow-y-auto" : "overflow-hidden"}`}
         >
           <div key={view} className={mainScrolls ? `min-h-full ${viewIn}` : `h-full min-h-0 ${viewIn}`}>
             {children}
@@ -250,12 +260,14 @@ export const TerminalDashboard = ({
                   Retry
                 </button>
               </span>
-            ) : (
-              <span className={fresh.status === "stale" ? "font-semibold text-destructive" : stale ? "font-semibold text-[hsl(var(--ha-warning))]" : undefined}>
-                {fresh.status === "unknown" ? "Loading data…" : fresh.status === "fresh" ? `Updated ${fresh.relative}` : fresh.status === "stale" ? `Stale: data from ${fresh.date} (${fresh.ageDays} days old)` : `Data from ${fresh.date} · daily refresh delayed`}
+            ) : fresh.status === "unknown" ? (
+              <span>Loading data…</span>
+            ) : stale ? (
+              <span className={fresh.status === "stale" ? "font-semibold text-destructive" : "font-semibold text-[hsl(var(--ha-warning))]"}>
+                {fresh.status === "stale" ? `Stale: data from ${fresh.date} (${fresh.ageDays} days old)` : `Data from ${fresh.date} · daily refresh delayed`}
               </span>
-            )}
-            <span aria-hidden="true">·</span>
+            ) : null}
+            {showStatusNotice && <span aria-hidden="true">·</span>}
             <span>On-chain data for {t("{chains}")}. Prices by CoinGecko.</span>
             <span aria-hidden="true">·</span>
             <span>Not financial advice.</span>

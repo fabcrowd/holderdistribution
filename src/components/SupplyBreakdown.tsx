@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import LockedAnalysisTile from "@/components/LockedAnalysisTile";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { ChartDataTable } from "@/components/chart/ChartDataTable";
 import { Pie, PieChart as RePieChart, Cell, Sector } from "recharts";
 import "@/lib/rechartsMotion";
 import type { PieSectorDataItem } from "recharts/types/polar/Pie";
@@ -43,7 +44,10 @@ import {
   otherCategoryLabel,
   partitionBuckets,
   resolveDeveloperHoldings,
+  DEFAULT_SLICE_OPACITY,
   DEVELOPER_BUCKET_LABEL,
+  DIMMED_SLICE_OPACITY,
+  RESIDUAL_SLICE_OPACITY,
   SUPPLY_GAP_LABEL,
   type DeveloperGroup,
   type DeveloperHoldingsConfig,
@@ -351,8 +355,8 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
 
 
 
-  const renderDonut = (className: string) => (
-    <div className="flex flex-col items-center gap-1 md:shrink-0">
+  const renderDonut = (className: string, wrapperClassName = "") => (
+    <div className={`flex flex-col items-center gap-1 md:shrink-0 ${wrapperClassName}`}>
                   <ChartContainer
                     config={pieChartConfig}
                     // Explicit height rather than aspect-square + max-h: that
@@ -362,7 +366,10 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                     // aspect-ratio doesn't reconcile the two backwards), which
                     // showed up as the list's first row rendering underneath
                     // the donut instead of below it.
-                    className={className}
+                    // The selected wedge grows past the Pie's 92% radius (see
+                    // makeActivePieSector); let it draw past the svg box instead
+                    // of being cut flat at the svg edge.
+                    className={`${className} [&_.recharts-surface]:overflow-visible`}
                     role="img"
                     aria-label={`${ticker} total supply by category`}
                   >
@@ -442,7 +449,10 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                           // against the one selected wedge, not category color.
                           const isRowActive = openBucketKey === b.key || activeIndex === index;
                           const anySelected = openBucketKey !== null || activeIndex !== null;
-                          const baseOpacity = b.alignment === "retail" ? 1 : b.alignment === "residual" ? 0.7 : 0.85;
+                          // The slice palette meets 3:1 vs --card down to 0.8 opacity in both
+                          // themes (index.css --supply-*, tested in supplyBreakdown.test.ts).
+                          const baseOpacity =
+                            b.alignment === "retail" ? 1 : b.alignment === "residual" ? RESIDUAL_SLICE_OPACITY : DEFAULT_SLICE_OPACITY;
                           return (
                             <Cell
                               key={b.key}
@@ -450,7 +460,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                               // Recharts hard-codes role="img" on each wedge;
                               // give it a text alternative (WCAG 1.1.1).
                               aria-label={`${b.label}: ${formatCompactAmount(b.amount)} ${ticker} (${b.pct.toFixed(1)}%)`}
-                              fillOpacity={anySelected ? (isRowActive ? 1 : 0.25) : baseOpacity}
+                              fillOpacity={anySelected ? (isRowActive ? 1 : DIMMED_SLICE_OPACITY) : baseOpacity}
                               stroke="hsl(var(--background))"
                               strokeWidth={isRowActive ? 3 : 0}
                               className="cursor-pointer transition-[fill-opacity,stroke-width] duration-150"
@@ -460,6 +470,22 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                       </Pie>
                     </RePieChart>
                   </ChartContainer>
+                  {/* Same rows, order and numbers as the legend list beside it. */}
+                  <ChartDataTable
+                    caption={`${ticker} total supply by category`}
+                    title="Supply by category"
+                    columns={[
+                      { key: "category", label: "Category" },
+                      { key: "amount", label: `Amount (${ticker})`, align: "right", format: (v) => (typeof v === "number" ? formatCompactAmount(v) : "") },
+                      { key: "share", label: "Share", align: "right", format: (v) => (typeof v === "number" ? `${v.toFixed(1)}%` : "") },
+                    ]}
+                    rows={buckets.map((b) => ({
+                      category: b.label,
+                      amount: b.amount,
+                      share: totalSupply > 0 ? (b.amount / totalSupply) * 100 : 0,
+                    }))}
+                    className="w-full"
+                  />
     </div>
   );
   const renderList = (compact: boolean) => (
@@ -530,7 +556,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                               {retailNote ? (
                                 <span
                                   data-testid="supply-retail-staked"
-                                  className="block whitespace-normal text-[11px] font-medium leading-snug text-foreground"
+                                  className="block whitespace-normal text-xs font-medium leading-snug text-foreground"
                                 >
                                   {retailNote}
                                 </span>
@@ -685,7 +711,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
         panel={panel}
         onPanelChange={setPanel}
         totalSupplyLabel={`${formatCompactAmount(totalSupply)} ${ticker}`}
-        donut={renderDonut("mx-auto h-[170px] w-[170px] shrink-0 2xl:h-[240px] 2xl:w-[240px]")}
+        donut={renderDonut("min-h-[140px] w-full flex-1 aspect-auto", "min-h-0 flex-1")}
         list={renderList(true)}
         footnote={footnote}
         openBucketLabel={openBucketKey ? buckets.find((b) => b.key === openBucketKey)?.label ?? null : null}
@@ -935,7 +961,7 @@ const AddressRow = ({
         <div className="font-medium text-foreground truncate flex items-center gap-1.5 flex-wrap">
           <span className="truncate">{item.name ?? subcategory}</span>
           {password !== null && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+            <Badge variant="secondary" className="text-xs px-1.5 py-0 font-normal">
               Analysis
             </Badge>
           )}
@@ -965,7 +991,7 @@ const AddressRow = ({
     {password !== null ? (
       <LockedAnalysisTile address={item.address} password={password} />
     ) : (
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Lock className="h-3 w-3 shrink-0" />
         Detailed forensic analysis — unlocks with the password
       </div>
@@ -1055,7 +1081,7 @@ const AddressListPanel = ({
                 {startsGroup ? (
                   <div
                     data-testid="supply-developer-group"
-                    className="flex items-baseline justify-between gap-2 px-1 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground first:pt-1"
+                    className="flex items-baseline justify-between gap-2 px-1 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground first:pt-1"
                   >
                     <span>{subcategoryFor(item)}</span>
                     <span className="tabular-nums">{formatCompactAmount(groupTotal)}</span>
@@ -1069,7 +1095,7 @@ const AddressListPanel = ({
                   <span className="truncate text-foreground">{item.name ?? subcategoryFor(item)}</span>
                   <span className="flex shrink-0 items-center gap-1.5 tabular-nums font-medium">
                     {formatCompactAmount(item.balance)}
-                    <span className="text-muted-foreground font-normal text-[11px]">{pct.toFixed(1)}%</span>
+                    <span className="text-muted-foreground font-normal text-xs">{pct.toFixed(1)}%</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                   </span>
                 </button>

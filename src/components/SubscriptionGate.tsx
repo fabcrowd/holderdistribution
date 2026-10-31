@@ -39,11 +39,11 @@ export const SubscriptionGate = ({
 
   if (compact) {
     return (
-      <div className="flex h-full items-center gap-4" data-testid="gate-compact">
+      <div className="flex min-h-full items-center gap-4" data-testid="gate-compact">
         <Lock aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground">{title}</p>
-          <p className="truncate text-[11px] text-muted-foreground" title={description}>{description}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
         </div>
         <div className="w-[22rem] shrink-0">
           <ForensicsUnlockGate status={status} onUnlock={unlock} primary={primary} compact />
@@ -62,7 +62,7 @@ export const SubscriptionGate = ({
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/70 backdrop-blur-[2px] p-4 text-center">
         <Lock className="h-5 w-5 text-muted-foreground" />
         <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="text-[11px] text-muted-foreground max-w-[20rem]">{description}</p>
+        <p className="text-xs text-muted-foreground max-w-[20rem]">{description}</p>
         <div className="w-full max-w-md">
           <ForensicsUnlockGate status={status} onUnlock={unlock} primary={primary} />
         </div>

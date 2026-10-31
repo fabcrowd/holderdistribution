@@ -12,6 +12,7 @@ import { stakedPanelTip } from "@/lib/stakedPanelTip";
 import type { MethodologyLink } from "@/lib/methodology";
 import { useProject } from "@/hooks/useProject";
 import { RETAIL_WALLETS_LABEL, retailWalletsInfo, uniqueWalletCount } from "@/lib/holderCounts";
+import { athHistoryNote, historyDays } from "@/lib/athNote";
 
 const formatInteger = (v: number) => new Intl.NumberFormat().format(v);
 const formatTokenAmount = (v: number) => {
@@ -36,6 +37,8 @@ export type EcosystemHeadlineTile = {
   value: string;
   sub: string;
   ath: boolean;
+  /** "Based on N days of data" while the history behind the ATH badge is short. */
+  athNote?: string | null;
   current: number | null;
   previous: number | null;
   fmt: ((v: number) => string) | undefined;
@@ -89,6 +92,11 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     const latest = snap.views[chain]?.metrics.holderCount ?? 0;
     return latest > 0 && latest >= Math.max(...holders);
   }, [fullHistory, snap, chain]);
+
+  const athNote = useMemo(
+    () => athHistoryNote(historyDays((fullHistory?.series ?? []).map((p) => Date.parse(p.timestamp)))),
+    [fullHistory],
+  );
 
   return useMemo<{ tiles: EcosystemHeadlineTile[]; isAth: boolean } | null>(() => {
     if (!snap) return null;
@@ -175,7 +183,7 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
         id: "holders",
         icon: Users, label: RETAIL_WALLETS_LABEL, value: formatInteger(holders),
         sub: isAth ? "All-time high" : `Wallets >0 ${ticker}, excl. exchanges`,
-        ath: isAth, current: holders, previous: prevHolders, fmt: undefined, scope: perChain ? "chain" : "all",
+        ath: isAth, athNote: isAth ? athNote : null, current: holders, previous: prevHolders, fmt: undefined, scope: perChain ? "chain" : "all",
         changelogEvents: events.holders,
         // Per-chain wallet count: say so (and give the unique figure) in the combined view.
         infoTooltip: [
@@ -235,5 +243,5 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
     ];
 
     return { tiles, isAth };
-  }, [snap, historicalDelta, cexPrevious, events, isAth, chain, ticker, chains, project, stakingKind, stakedWhere]);
+  }, [snap, historicalDelta, cexPrevious, events, isAth, athNote, chain, ticker, chains, project, stakingKind, stakedWhere]);
 };

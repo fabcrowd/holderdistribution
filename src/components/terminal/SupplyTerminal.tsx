@@ -40,7 +40,7 @@ type Props = {
 export const SupplyTerminal = (p: Props) => {
   if (p.state !== "ready") {
     return (
-      <div className="grid h-full min-h-0 grid-cols-12 gap-2">
+      <div className="grid h-full min-h-0 grid-cols-12 gap-3">
         <TerminalPanel className="col-span-12" title="Supply">
           {p.state === "loading" ? (
             <PanelSkeleton />
@@ -76,7 +76,7 @@ const ReadySupply = (p: Props) => {
   }, [wantsHistory]);
   return (
     <div
-      className={`grid h-full min-h-0 grid-cols-12 gap-2 ${intro ? "ha-stagger" : ""} ${
+      className={`grid h-full min-h-0 grid-cols-12 gap-3 ${intro ? "ha-stagger" : ""} ${
         // Locked, the history panel is a one-row tile; the category detail
         // gets everything else. Unlocked, the chart earns real height.
         unlocked ? "grid-rows-[minmax(0,1fr)_minmax(0,1fr)]" : "grid-rows-[minmax(0,1fr)_auto]"

@@ -1,5 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RANGE_OPTIONS } from "@/lib/timeRange";
+import { RANGE_OPTIONS, rangeLabel } from "@/lib/timeRange";
 
 type TimeRangeDropdownProps = {
   value: number;
@@ -17,14 +17,14 @@ type TimeRangeDropdownProps = {
  * "Showing: {label}" note, so changing the period never requires scrolling.
  */
 export const TimeRangeDropdown = ({ value, onChange, className, options = RANGE_OPTIONS }: TimeRangeDropdownProps) => {
-  const active = options.find((o) => o.days === value);
+  const label = rangeLabel(value, options);
   return (
     <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
       <SelectTrigger
-        aria-label={`Time range: ${active?.label ?? `${value}D`}`}
+        aria-label={`Time range: ${label}`}
         className={`h-8 max-xl:h-11 w-auto gap-1.5 rounded-full border-primary/40 bg-primary/10 px-3 text-xs font-semibold text-primary focus:ring-primary/40 ${className ?? ""}`}
       >
-        <SelectValue>{active?.label ?? `${value}D`}</SelectValue>
+        <SelectValue>{label}</SelectValue>
       </SelectTrigger>
       <SelectContent align="end">
         {options.map((option) => (

@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/s
 import logo from "@/assets/holder-analytics-horizontal.svg";
 import logoIcon from "@/assets/holder-analytics-icon.svg";
 import { TokenIdentity } from "@/components/TokenIdentity";
+import { slugFromPath } from "@/lib/tokenRoutes";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 type NavigationProps = {
@@ -24,7 +25,7 @@ export const Navigation = (_props: NavigationProps = {}) => {
   const { isAdmin } = useUserRole();
   const isMobile = useIsMobile();
   // Token identity replaces the generic page title on /<slug> routes; the landing page has none.
-  const onToken = location.pathname !== "/";
+  const onToken = slugFromPath(location.pathname) !== null;
 
   // This repo is a single-page extraction of the Holders/Tokenomics section
   // from the original multi-page hub — no other routes exist here, so there is
@@ -107,7 +108,7 @@ export const Navigation = (_props: NavigationProps = {}) => {
           <div className="md:hidden flex items-center gap-1">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-10 w-10 text-foreground hover:bg-card/50">
+                <Button variant="ghost" size="icon" className="h-11 w-11 text-foreground hover:bg-card/50">
                   <Menu className="h-6 w-6" />
                   <span className="sr-only">Open menu</span>
                 </Button>

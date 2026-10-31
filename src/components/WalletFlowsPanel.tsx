@@ -69,7 +69,7 @@ const VERDICT_CLASS = {
 } as const;
 
 const VerdictBadge = ({ verdict }: { verdict: string }) => (
-  <span className={`inline-block rounded-md border px-2 py-0.5 text-[11px] font-medium leading-snug ${VERDICT_CLASS[toneOf(verdict)]}`}>
+  <span className={`inline-block rounded-md border px-2 py-0.5 text-xs font-medium leading-snug ${VERDICT_CLASS[toneOf(verdict)]}`}>
     {verdict}
   </span>
 );
@@ -91,7 +91,7 @@ const AddressLinks = ({ address, chains }: { address: string; chains: string[] }
         href={addressExplorerUrl(list[0], address, explorers)}
         target="_blank"
         rel="noopener noreferrer"
-        className="font-mono text-[11px] text-primary hover:underline"
+        className="font-mono text-xs text-primary hover:underline"
         title={address}
       >
         {shortAddress(address)}
@@ -103,7 +103,7 @@ const AddressLinks = ({ address, chains }: { address: string; chains: string[] }
           href={addressExplorerUrl(c, address, explorers)}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground hover:border-primary/50 hover:text-foreground"
+          className="rounded border border-border/60 px-1.5 py-0.5 text-xs font-semibold uppercase text-muted-foreground hover:border-primary/50 hover:text-foreground"
           aria-label={`${address} on ${c} explorer`}
         >
           {project.chains?.find((pc) => pc.key === c)?.shortName ?? c.toUpperCase()}
@@ -136,7 +136,7 @@ const DistributionBars = ({ report }: { report: WalletFlowsReport }) => {
       <h4 id="wf-distribution" className="text-base font-semibold text-foreground">
         Supply distribution by entity
       </h4>
-      <p className="mt-0.5 text-[11px] text-muted-foreground">
+      <p className="mt-0.5 text-xs text-muted-foreground">
         {`${formatTel(distribution.counted)} ${ticker} counted${distribution.asOf ? ` · as of ${distribution.asOf}` : ""}. Tracked wallets the public reconciliation leaves in "retail" (staking contract, deposit relays, tracked bots and sellers) are moved to their class.`}
       </p>
       <ul className="mt-3 space-y-2">
@@ -282,12 +282,12 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
                         <ChevronDown aria-hidden="true" className={`mt-0.5 h-3.5 w-3.5 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} />
                         <span>
                           {w.label}
-                          <span className="block text-[11px] font-normal text-muted-foreground">{w.group}</span>
+                          <span className="block text-xs font-normal text-muted-foreground">{w.group}</span>
                         </span>
                       </button>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={confidenceVariant(w.confidence)} className="text-[10px] capitalize">
+                      <Badge variant={confidenceVariant(w.confidence)} className="text-xs capitalize">
                         {w.confidence}
                       </Badge>
                     </TableCell>
@@ -306,7 +306,7 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
                   </TableRow>
                   {expanded && (
                     <TableRow id={detailId} className="bg-muted/20 hover:bg-muted/20">
-                      <TableCell colSpan={8} className="space-y-1.5 text-[11px]">
+                      <TableCell colSpan={8} className="space-y-1.5 text-xs">
                         <p>
                           <span className="font-semibold">Label source:</span> {w.source}
                         </p>
@@ -365,7 +365,7 @@ const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
         <h4 id="wf-bot" className="text-base font-semibold text-foreground">
           {bot.label}
         </h4>
-        {bot.note && <p className="mt-0.5 text-[11px] text-muted-foreground">{bot.note}</p>}
+        {bot.note && <p className="mt-0.5 text-xs text-muted-foreground">{bot.note}</p>}
         <dl className="mt-2 grid grid-cols-4 gap-2 text-xs">
           <div>
             <dt className="text-muted-foreground">Holds</dt>
@@ -390,7 +390,7 @@ const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
         <h4 id="wf-funding" className="text-base font-semibold text-foreground">
           Funding links
         </h4>
-        <ul className="mt-2 space-y-2 text-[11px]">
+        <ul className="mt-2 space-y-2 text-xs">
           {report.fundingLinks.map((f, i) => (
             <li key={i}>
               <p className="text-foreground">
@@ -423,7 +423,7 @@ const LargeSellers = ({ report }: { report: WalletFlowsReport }) => {
     <h4 id="wf-sellers" className="text-base font-semibold text-foreground">
       Recent large sellers ({report.largeSellersWindow ?? "last 72h"})
     </h4>
-    <p className="mt-0.5 text-[11px] text-muted-foreground">
+    <p className="mt-0.5 text-xs text-muted-foreground">
       Net {ticker} sent to exchanges and DEXs. Upgrades, bridges and arbitrage bots that bought as much as they sold are excluded.
     </p>
     <div className="mt-2 overflow-x-auto">
@@ -450,7 +450,7 @@ const LargeSellers = ({ report }: { report: WalletFlowsReport }) => {
                     <AddressLinks key={a} address={a} chains={s.chains} />
                   ))}
                   {s.addresses.length > 3 && (
-                    <span className="text-[10px] text-muted-foreground">+{s.addresses.length - 3} more (see bot cluster)</span>
+                    <span className="text-xs text-muted-foreground">+{s.addresses.length - 3} more (see bot cluster)</span>
                   )}
                 </span>
               </TableCell>
@@ -488,7 +488,7 @@ const Summary = ({ report }: { report: WalletFlowsReport }) => {
     <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
       {FLOW_WINDOWS.map((w) => (
         <div key={w} className="rounded-xl border border-border/50 bg-card p-3 sm:p-4">
-          <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Last {w}</dt>
+          <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last {w}</dt>
           <dd className="mt-1">
             <span className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground">
               {formatTel(report.telcoinTotals[w]?.total ?? 0)}
@@ -499,7 +499,7 @@ const Summary = ({ report }: { report: WalletFlowsReport }) => {
         </div>
       ))}
     </dl>
-    <p className="text-[11px] text-muted-foreground">
+    <p className="text-xs text-muted-foreground">
       {`Unique ${ticker} (relays not double counted). Report generated ${new Date(report.generated).toLocaleString()} · price $${report.priceUsd} (${report.priceSource}) · chains: ${report.chains.join(", ")}`}
     </p>
   </section>
@@ -614,7 +614,7 @@ export const WalletFlowsPanel = () => {
           <KnownWalletsTable report={report} />
           <BotAndFunding report={report} />
           <LargeSellers report={report} />
-          <ul className="list-disc space-y-0.5 pl-4 text-[11px] text-muted-foreground">
+          <ul className="list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
             {report.notes.map((n) => (
               <li key={n}>{n}</li>
             ))}

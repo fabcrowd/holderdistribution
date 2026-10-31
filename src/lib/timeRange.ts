@@ -18,3 +18,13 @@ export const RANGE_OPTIONS = [
   { label: "YTD", days: ytdDays() },
   { label: "1Y", days: 365 },
 ];
+
+type RangeOption = { label: string; days: number };
+
+/**
+ * Display label for a range. The picker hides options the archive cannot back
+ * (a young token has no YTD baseline), but the page still defaults to the YTD
+ * window; it must read "YTD" like every other token, not "304D".
+ */
+export const rangeLabel = (days: number, options: readonly RangeOption[] = RANGE_OPTIONS): string =>
+  options.find((o) => o.days === days)?.label ?? (days === ytdDays() ? "YTD" : `${days}D`);

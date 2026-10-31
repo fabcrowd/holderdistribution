@@ -118,11 +118,11 @@ const TxRows = ({ txs, counterpartLabel }: { txs: PnlTx[]; counterpartLabel: str
 const GlLineRow = ({ line }: { line: GlLine }) => (
   <Collapsible>
     <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left hover:bg-muted/40">
-      <span className="min-w-0 truncate text-[11px]">
+      <span className="min-w-0 truncate text-xs">
         <span className="mr-2 font-mono tabular-nums text-muted-foreground">{line.code}</span>
         {line.name}
       </span>
-      <span className="shrink-0 text-[11px] tabular-nums">
+      <span className="shrink-0 text-xs tabular-nums">
         {line.side === "revenue" ? formatUsd(line.usd) : `${formatCompactAmount(line.tel)} TEL`}
         <span className="ml-2 text-muted-foreground">
           {line.txs.length} {line.txs.length === 1 ? "receipt" : "receipts"}
@@ -143,17 +143,17 @@ const CostCenterBody = ({ center }: { center: CostCenter }) => {
   const movements = center.lines.filter((l) => l.side === "expense");
   return (
     <>
-      <div className="mb-2 flex flex-wrap items-center gap-2 px-1 text-[11px] text-muted-foreground">
+      <div className="mb-2 flex flex-wrap items-center gap-2 px-1 text-xs text-muted-foreground">
         <span>Wallet</span>
         <AddrLink chain={explorerChainForCenter(center)} address={center.address} />
       </div>
       {center.lines.length === 0 ? (
-        <p className="px-2 text-[11px] text-muted-foreground">No TEL left this wallet in this period.</p>
+        <p className="px-2 text-xs text-muted-foreground">No TEL left this wallet in this period.</p>
       ) : (
         <div className="space-y-2">
           {income.length > 0 && (
             <div>
-              <p className="flex items-center gap-1 px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="flex items-center gap-1 px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Income
                 <InfoTooltip text="USDC or USDT received when this wallet sold TEL. That is income from the sale — not an accrual P&L." />
               </p>
@@ -164,7 +164,7 @@ const CostCenterBody = ({ center }: { center: CostCenter }) => {
           )}
           {movements.length > 0 && (
             <div>
-              <p className="flex items-center gap-1 px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="flex items-center gap-1 px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Uses of TEL
                 <InfoTooltip text="TEL that left this wallet. Sold for stablecoin is a conversion. Sent to another Association wallet is a transfer between cost centers, not a cost." />
               </p>
@@ -184,7 +184,7 @@ const CostCenterSection = ({ center }: { center: CostCenter }) => (
     <AccordionTrigger className="py-2.5 text-sm hover:no-underline">
       <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <span className="min-w-0 truncate font-medium">{center.name}</span>
-        <span className="flex shrink-0 gap-3 text-[11px] font-normal tabular-nums text-muted-foreground">
+        <span className="flex shrink-0 gap-3 text-xs font-normal tabular-nums text-muted-foreground">
           <span>{formatUsd(center.usdProceeds)} stablecoin</span>
           <span>{formatCompactAmount(center.telOut)} TEL moved</span>
         </span>
@@ -217,7 +217,7 @@ export const DispositionPnlView = ({
           {periodLabel ? `${periodLabel} · ` : ""}
           {period.start} – {period.end}
         </p>
-        <dl className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+        <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">
           <div>
             <dt className="flex items-center gap-1 text-muted-foreground">
               Income (stablecoin from sales)
@@ -250,7 +250,7 @@ export const DispositionPnlView = ({
               </span>
             </AccordionTrigger>
             <AccordionContent>
-              <ul className="space-y-1 px-2 pb-1 text-[11px] text-muted-foreground">
+              <ul className="space-y-1 px-2 pb-1 text-xs text-muted-foreground">
                 {idle.map((center) => (
                   <li key={center.address}>{center.name}</li>
                 ))}
