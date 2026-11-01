@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * postbuild: shape dist/data for the multi-token layout.
  *
