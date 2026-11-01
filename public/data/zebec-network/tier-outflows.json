@@ -1,52 +1,1648 @@
 {
   "schema": 9,
-  "generatedAt": "2026-11-01T14:33:45.133Z",
-  "latestDate": "2026-11-01",
-  "partialDate": "2026-11-01",
+  "generatedAt": "2026-11-01T16:27:52.808Z",
+  "latestDate": "2026-10-25",
+  "partialDate": null,
   "complete": false,
   "sourceTierSince": null,
   "ranges": {
     "1": {
-      "from": "2026-11-01",
-      "to": "2026-11-01",
-      "tiers": {},
+      "from": "2026-10-25",
+      "to": "2026-10-25",
+      "tiers": {
+        "250K-1M": {
+          "dex": 3416499,
+          "dexSwap": 3416499,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 3434190,
+            "dexSwap": 3434190,
+            "dexLp": 0,
+            "cex": 2161451,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 3416499,
+              "dexSwap": 3416499,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 3434190,
+                "dexSwap": 3434190,
+                "dexLp": 0,
+                "cex": 2161451,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1-250K": {
+          "dex": 2314500,
+          "dexSwap": 2314500,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 2424771,
+            "dexSwap": 2424771,
+            "dexLp": 0,
+            "cex": 4173174,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2314500,
+              "dexSwap": 2314500,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 2424771,
+                "dexSwap": 2424771,
+                "dexLp": 0,
+                "cex": 4173174,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "5M-10M": {
+          "dex": 139837,
+          "dexSwap": 139837,
+          "dexLp": 0,
+          "cex": 4810127,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "BingX": 4810127
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1370377,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 139837,
+              "dexSwap": 139837,
+              "dexLp": 0,
+              "cex": 4810127,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1370377,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1M-5M": {
+          "dex": 1701615,
+          "dexSwap": 1701615,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1971937,
+            "dexSwap": 1971937,
+            "dexLp": 0,
+            "cex": 5396730,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 1701615,
+              "dexSwap": 1701615,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1971937,
+                "dexSwap": 1971937,
+                "dexLp": 0,
+                "cex": 5396730,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "25M-50M": {
+          "dex": 2984951,
+          "dexSwap": 2984951,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1218329,
+            "dexSwap": 1218329,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2984951,
+              "dexSwap": 2984951,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1218329,
+                "dexSwap": 1218329,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "10M-25M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 265971,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 265971
+          },
+          "inflows": {
+            "dex": 13530508,
+            "dexSwap": 13530508,
+            "dexLp": 0,
+            "cex": 78097,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 265971,
+              "moved": 0,
+              "inflows": {
+                "dex": 13530508,
+                "dexSwap": 13530508,
+                "dexLp": 0,
+                "cex": 78097,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "100M-250M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 176516493,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 176516493
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 176516493,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        }
+      },
       "attributedDays": 0,
-      "totalDays": 0
+      "totalDays": 1
     },
     "7": {
-      "from": "2026-10-26",
-      "to": "2026-11-01",
-      "tiers": {},
+      "from": "2026-10-19",
+      "to": "2026-10-25",
+      "tiers": {
+        "250K-1M": {
+          "dex": 3416499,
+          "dexSwap": 3416499,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 3434190,
+            "dexSwap": 3434190,
+            "dexLp": 0,
+            "cex": 2161451,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 3416499,
+              "dexSwap": 3416499,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 3434190,
+                "dexSwap": 3434190,
+                "dexLp": 0,
+                "cex": 2161451,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1-250K": {
+          "dex": 2314500,
+          "dexSwap": 2314500,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 2424771,
+            "dexSwap": 2424771,
+            "dexLp": 0,
+            "cex": 4173174,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2314500,
+              "dexSwap": 2314500,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 2424771,
+                "dexSwap": 2424771,
+                "dexLp": 0,
+                "cex": 4173174,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "5M-10M": {
+          "dex": 139837,
+          "dexSwap": 139837,
+          "dexLp": 0,
+          "cex": 4810127,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "BingX": 4810127
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1370377,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 139837,
+              "dexSwap": 139837,
+              "dexLp": 0,
+              "cex": 4810127,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1370377,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1M-5M": {
+          "dex": 1701615,
+          "dexSwap": 1701615,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1971937,
+            "dexSwap": 1971937,
+            "dexLp": 0,
+            "cex": 5396730,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 1701615,
+              "dexSwap": 1701615,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1971937,
+                "dexSwap": 1971937,
+                "dexLp": 0,
+                "cex": 5396730,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "25M-50M": {
+          "dex": 2984951,
+          "dexSwap": 2984951,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1218329,
+            "dexSwap": 1218329,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2984951,
+              "dexSwap": 2984951,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1218329,
+                "dexSwap": 1218329,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "10M-25M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 265971,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 265971
+          },
+          "inflows": {
+            "dex": 13530508,
+            "dexSwap": 13530508,
+            "dexLp": 0,
+            "cex": 78097,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 265971,
+              "moved": 0,
+              "inflows": {
+                "dex": 13530508,
+                "dexSwap": 13530508,
+                "dexLp": 0,
+                "cex": 78097,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "100M-250M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 176516493,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 176516493
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 176516493,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        }
+      },
       "attributedDays": 0,
-      "totalDays": 0
+      "totalDays": 1
     },
     "30": {
-      "from": "2026-10-03",
-      "to": "2026-11-01",
-      "tiers": {},
+      "from": "2026-09-26",
+      "to": "2026-10-25",
+      "tiers": {
+        "250K-1M": {
+          "dex": 3416499,
+          "dexSwap": 3416499,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 3434190,
+            "dexSwap": 3434190,
+            "dexLp": 0,
+            "cex": 2161451,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 3416499,
+              "dexSwap": 3416499,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 3434190,
+                "dexSwap": 3434190,
+                "dexLp": 0,
+                "cex": 2161451,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1-250K": {
+          "dex": 2314500,
+          "dexSwap": 2314500,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 2424771,
+            "dexSwap": 2424771,
+            "dexLp": 0,
+            "cex": 4173174,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2314500,
+              "dexSwap": 2314500,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 2424771,
+                "dexSwap": 2424771,
+                "dexLp": 0,
+                "cex": 4173174,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "5M-10M": {
+          "dex": 139837,
+          "dexSwap": 139837,
+          "dexLp": 0,
+          "cex": 4810127,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "BingX": 4810127
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1370377,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 139837,
+              "dexSwap": 139837,
+              "dexLp": 0,
+              "cex": 4810127,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1370377,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1M-5M": {
+          "dex": 1701615,
+          "dexSwap": 1701615,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1971937,
+            "dexSwap": 1971937,
+            "dexLp": 0,
+            "cex": 5396730,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 1701615,
+              "dexSwap": 1701615,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1971937,
+                "dexSwap": 1971937,
+                "dexLp": 0,
+                "cex": 5396730,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "25M-50M": {
+          "dex": 2984951,
+          "dexSwap": 2984951,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1218329,
+            "dexSwap": 1218329,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2984951,
+              "dexSwap": 2984951,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1218329,
+                "dexSwap": 1218329,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "10M-25M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 265971,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 265971
+          },
+          "inflows": {
+            "dex": 13530508,
+            "dexSwap": 13530508,
+            "dexLp": 0,
+            "cex": 78097,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 265971,
+              "moved": 0,
+              "inflows": {
+                "dex": 13530508,
+                "dexSwap": 13530508,
+                "dexLp": 0,
+                "cex": 78097,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "100M-250M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 176516493,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 176516493
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 176516493,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        }
+      },
       "attributedDays": 0,
-      "totalDays": 0
+      "totalDays": 1
     },
     "90": {
-      "from": "2026-08-04",
-      "to": "2026-11-01",
-      "tiers": {},
+      "from": "2026-07-28",
+      "to": "2026-10-25",
+      "tiers": {
+        "250K-1M": {
+          "dex": 3416499,
+          "dexSwap": 3416499,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 3434190,
+            "dexSwap": 3434190,
+            "dexLp": 0,
+            "cex": 2161451,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 3416499,
+              "dexSwap": 3416499,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 3434190,
+                "dexSwap": 3434190,
+                "dexLp": 0,
+                "cex": 2161451,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1-250K": {
+          "dex": 2314500,
+          "dexSwap": 2314500,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 2424771,
+            "dexSwap": 2424771,
+            "dexLp": 0,
+            "cex": 4173174,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2314500,
+              "dexSwap": 2314500,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 2424771,
+                "dexSwap": 2424771,
+                "dexLp": 0,
+                "cex": 4173174,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "5M-10M": {
+          "dex": 139837,
+          "dexSwap": 139837,
+          "dexLp": 0,
+          "cex": 4810127,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "BingX": 4810127
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1370377,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 139837,
+              "dexSwap": 139837,
+              "dexLp": 0,
+              "cex": 4810127,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1370377,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1M-5M": {
+          "dex": 1701615,
+          "dexSwap": 1701615,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1971937,
+            "dexSwap": 1971937,
+            "dexLp": 0,
+            "cex": 5396730,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 1701615,
+              "dexSwap": 1701615,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1971937,
+                "dexSwap": 1971937,
+                "dexLp": 0,
+                "cex": 5396730,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "25M-50M": {
+          "dex": 2984951,
+          "dexSwap": 2984951,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1218329,
+            "dexSwap": 1218329,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2984951,
+              "dexSwap": 2984951,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1218329,
+                "dexSwap": 1218329,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "10M-25M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 265971,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 265971
+          },
+          "inflows": {
+            "dex": 13530508,
+            "dexSwap": 13530508,
+            "dexLp": 0,
+            "cex": 78097,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 265971,
+              "moved": 0,
+              "inflows": {
+                "dex": 13530508,
+                "dexSwap": 13530508,
+                "dexLp": 0,
+                "cex": 78097,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "100M-250M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 176516493,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 176516493
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 176516493,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        }
+      },
       "attributedDays": 0,
-      "totalDays": 0
+      "totalDays": 1
     },
     "365": {
-      "from": "2025-11-02",
-      "to": "2026-11-01",
-      "tiers": {},
+      "from": "2025-10-26",
+      "to": "2026-10-25",
+      "tiers": {
+        "250K-1M": {
+          "dex": 3416499,
+          "dexSwap": 3416499,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 3434190,
+            "dexSwap": 3434190,
+            "dexLp": 0,
+            "cex": 2161451,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 3416499,
+              "dexSwap": 3416499,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 3434190,
+                "dexSwap": 3434190,
+                "dexLp": 0,
+                "cex": 2161451,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1-250K": {
+          "dex": 2314500,
+          "dexSwap": 2314500,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 2424771,
+            "dexSwap": 2424771,
+            "dexLp": 0,
+            "cex": 4173174,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2314500,
+              "dexSwap": 2314500,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 2424771,
+                "dexSwap": 2424771,
+                "dexLp": 0,
+                "cex": 4173174,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "5M-10M": {
+          "dex": 139837,
+          "dexSwap": 139837,
+          "dexLp": 0,
+          "cex": 4810127,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "BingX": 4810127
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1370377,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 139837,
+              "dexSwap": 139837,
+              "dexLp": 0,
+              "cex": 4810127,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1370377,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1M-5M": {
+          "dex": 1701615,
+          "dexSwap": 1701615,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1971937,
+            "dexSwap": 1971937,
+            "dexLp": 0,
+            "cex": 5396730,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 1701615,
+              "dexSwap": 1701615,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1971937,
+                "dexSwap": 1971937,
+                "dexLp": 0,
+                "cex": 5396730,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "25M-50M": {
+          "dex": 2984951,
+          "dexSwap": 2984951,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1218329,
+            "dexSwap": 1218329,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2984951,
+              "dexSwap": 2984951,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1218329,
+                "dexSwap": 1218329,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "10M-25M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 265971,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 265971
+          },
+          "inflows": {
+            "dex": 13530508,
+            "dexSwap": 13530508,
+            "dexLp": 0,
+            "cex": 78097,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 265971,
+              "moved": 0,
+              "inflows": {
+                "dex": 13530508,
+                "dexSwap": 13530508,
+                "dexLp": 0,
+                "cex": 78097,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "100M-250M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 176516493,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 176516493
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 176516493,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        }
+      },
       "attributedDays": 0,
-      "totalDays": 0
+      "totalDays": 1
     },
     "ytd": {
       "from": "2026-01-01",
-      "to": "2026-11-01",
-      "tiers": {},
+      "to": "2026-10-25",
+      "tiers": {
+        "250K-1M": {
+          "dex": 3416499,
+          "dexSwap": 3416499,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 3434190,
+            "dexSwap": 3434190,
+            "dexLp": 0,
+            "cex": 2161451,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 3416499,
+              "dexSwap": 3416499,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 3434190,
+                "dexSwap": 3434190,
+                "dexLp": 0,
+                "cex": 2161451,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1-250K": {
+          "dex": 2314500,
+          "dexSwap": 2314500,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 2424771,
+            "dexSwap": 2424771,
+            "dexLp": 0,
+            "cex": 4173174,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2314500,
+              "dexSwap": 2314500,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 2424771,
+                "dexSwap": 2424771,
+                "dexLp": 0,
+                "cex": 4173174,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "5M-10M": {
+          "dex": 139837,
+          "dexSwap": 139837,
+          "dexLp": 0,
+          "cex": 4810127,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "BingX": 4810127
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1370377,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 139837,
+              "dexSwap": 139837,
+              "dexLp": 0,
+              "cex": 4810127,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1370377,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1M-5M": {
+          "dex": 1701615,
+          "dexSwap": 1701615,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1971937,
+            "dexSwap": 1971937,
+            "dexLp": 0,
+            "cex": 5396730,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 1701615,
+              "dexSwap": 1701615,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1971937,
+                "dexSwap": 1971937,
+                "dexLp": 0,
+                "cex": 5396730,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "25M-50M": {
+          "dex": 2984951,
+          "dexSwap": 2984951,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {},
+          "inflows": {
+            "dex": 1218329,
+            "dexSwap": 1218329,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 2984951,
+              "dexSwap": 2984951,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 0,
+              "inflows": {
+                "dex": 1218329,
+                "dexSwap": 1218329,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "10M-25M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 265971,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 265971
+          },
+          "inflows": {
+            "dex": 13530508,
+            "dexSwap": 13530508,
+            "dexLp": 0,
+            "cex": 78097,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 265971,
+              "moved": 0,
+              "inflows": {
+                "dex": 13530508,
+                "dexSwap": 13530508,
+                "dexLp": 0,
+                "cex": 78097,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "100M-250M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 176516493,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "OKX": 176516493
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 176516493,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        }
+      },
       "attributedDays": 0,
-      "totalDays": 0
+      "totalDays": 1
     }
   }
 }
