@@ -74,6 +74,10 @@ export function configureProjectRpc(projectConfig) {
       if (typeof rpc.envPrefix !== "string" || !/^[A-Z][A-Z0-9_]*$/.test(rpc.envPrefix)) {
         throw new Error(`chain ${chain.key}: rpc.envPrefix must be UPPER_SNAKE (got ${JSON.stringify(rpc.envPrefix)})`);
       }
+      if (/_RPC$/.test(rpc.envPrefix)) {
+        // Keys are read as <prefix>_RPC_<n>, so "SOLANA_RPC" would silently look up SOLANA_RPC_RPC_0.
+        throw new Error(`chain ${chain.key}: rpc.envPrefix must not end in _RPC (use ${rpc.envPrefix.replace(/_RPC$/, "")}; keys are <prefix>_RPC_<n>)`);
+      }
       entry.envPrefix = rpc.envPrefix;
     }
     if (rpc.publicUrls !== undefined) {

@@ -100,8 +100,12 @@ export async function getUsableSolanaRpcUrls(chainKey = "solana", { logger = con
   const results = await Promise.all(candidates.map((u) => probe(u, call)));
   const usable = results.filter((r) => r.ok).map((r) => r.url);
   const dead = results.filter((r) => !r.ok);
+  const keyed = getAllRpcUrls(chainKey);
+  const publicSet = new Set(solanaPublicUrls(chainKey));
+  const keyedDistinct = keyed.filter((u) => !publicSet.has(u)).length;
   logger.log?.(
-    `RPC pool ${chainKey}: ${usable.length}/${candidates.length} usable (public first)` +
+    `RPC pool ${chainKey}: ${usable.length}/${candidates.length} usable (public first); ` +
+      `${keyed.length} ${chainKey.toUpperCase()}_RPC_n set, ${keyedDistinct} distinct from the public endpoints` +
       (dead.length ? ` — skipping ${dead.map((d) => `…${d.url.slice(-12)} (${String(d.reason).slice(0, 40)})`).join(", ")}` : ""),
   );
   if (usable.length === 0) {

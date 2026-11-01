@@ -16,6 +16,7 @@
  * Owners are kept exactly as returned (base58 is case-sensitive).
  */
 import { mintDeltasByOwner } from "./tokenFlows.js";
+import { getTransactionAnyVersion } from "./getTransaction.js";
 
 export const SIGNATURE_PAGE = 1000;
 const MAX_PAGES = 500;
@@ -222,9 +223,7 @@ export async function scanVenueFlows({
     }
     const end = wholeSlotEnd(start + Math.max(1, chunkSize), limit);
     const chunk = ordered.slice(start, end);
-    const txs = await mapLimit(chunk, concurrency, (s) =>
-      call("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0, commitment: "finalized" }]),
-    );
+    const txs = await mapLimit(chunk, concurrency, (s) => getTransactionAnyVersion(call, s.signature));
     const fresh = [];
     chunk.forEach((s, i) => {
       done.add(s.signature);

@@ -92,6 +92,7 @@ describe("chains a project declares beyond ethereum/polygon/base", () => {
 
   it("rejects malformed rpc blocks", () => {
     expect(() => configureProjectRpc({ chains: [{ key: "x", rpc: { envPrefix: "lower" } }] })).toThrow(/UPPER_SNAKE/);
+    expect(() => configureProjectRpc({ chains: [{ key: "solana", rpc: { envPrefix: "SOLANA_RPC" } }] })).toThrow(/must not end in _RPC/);
     expect(() => configureProjectRpc({ chains: [{ key: "x", rpc: { publicUrls: ["http://insecure"] } }] })).toThrow(/https/);
   });
 });

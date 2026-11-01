@@ -60,6 +60,7 @@ import { PROGRAM_BY_NAME } from "./lib/solana/metadata.js";
 import { holderScanParams } from "./lib/solana/splScanner.js";
 import { listSignatures, bySlotThenSig, mapLimit } from "./lib/solana/flowScan.js";
 import { mintDeltasByOwner } from "./lib/solana/tokenFlows.js";
+import { getTransactionAnyVersion } from "./lib/solana/getTransaction.js";
 import {
   cexBalanceAsOf,
   createReplayState,
@@ -199,9 +200,7 @@ async function listAccounts(tracked) {
 
 /** getTransaction for each signature of the batch; a missing result aborts (a gap would corrupt balances). */
 async function fetchTransactions(batch) {
-  const txs = await mapLimit(batch, CONCURRENCY, (s) =>
-    call("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0, commitment: "finalized" }]),
-  );
+  const txs = await mapLimit(batch, CONCURRENCY, (s) => getTransactionAnyVersion(call, s.signature));
   txs.forEach((tx, i) => {
     if (!tx) throw new Error(`getTransaction ${batch[i].signature}: no result. Refusing a partial replay; rerun to retry.`);
   });
