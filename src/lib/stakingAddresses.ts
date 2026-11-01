@@ -87,7 +87,7 @@ export const fillStakedFigure = (template: string, stakedLabel: string): string 
   template.replace(/\{staked\}/g, stakedLabel);
 
 export type RetailStakeModel = {
-  /** Secondary line under the Retail bucket, e.g. "of which 4.75B is staked". */
+  /** Secondary line under the Retail bucket, e.g. "of which <n>B is staked". */
   note: string | null;
   /** Longer explanation for the Retail drill-down. */
   body: string | null;
