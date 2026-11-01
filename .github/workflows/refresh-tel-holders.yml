@@ -121,7 +121,10 @@ jobs:
         # HD_DATA_DIR / HD_WORK_DIR: public/data + data for TEL (unchanged),
         # public/data/<slug> + data/<slug> for any other project; plus the
         # per-project plan (HD_TICKER, HD_COMMIT_TAG, HD_HAS_EVM, HD_REQUIRED_FILES).
-        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
+        run: |
+          node scripts/workflow-paths.js >> "$GITHUB_ENV"
+          # Every pipeline process appends its RPC call counts here (scripts/lib/rpcMetrics.js).
+          echo "HD_METRICS_FILE=$RUNNER_TEMP/rpc-metrics.ndjson" >> "$GITHUB_ENV"
 
       - name: Refresh staker balances
         # NON-FATAL, deliberately. This step is the pipeline's heaviest RPC
@@ -358,9 +361,19 @@ jobs:
           node scripts/validate-outputs.js
           node scripts/check-feed-consistency.js
 
+      - name: Summarize RPC usage
+        # Folds this job's per-process RPC counts into data/<slug>/rpc-usage.json
+        # (committed below) and checks the monthly Alchemy CU / Helius credit
+        # budgets in config/budgets.json. A budget breach exits 1; it is
+        # non-fatal here so the feeds still commit, and fails the run afterwards.
+        id: usage
+        if: always()
+        continue-on-error: true
+        run: node scripts/summarize-run-metrics.js
+
       - name: Commit downstream feeds
         run: |
-          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json data/solana-flow-days.json public/data/holders-history.json data/holders-asof-blocks.json)
+          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json data/solana-flow-days.json public/data/holders-history.json data/holders-asof-blocks.json data/rpc-usage.json)
           for f in $FILES; do [ -e "$f" ] && git add "$f"; done
           if git diff --cached --quiet; then
             echo "No downstream changes to commit"
@@ -372,6 +385,21 @@ jobs:
           echo "solana=${{ steps.solana.outcome }} flows=${{ steps.flows.outcome }} tiers=${{ steps.tiers.outcome }} gaps=${{ steps.gaps.outcome }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail if the Solana flow scan crashed
+        # The scan is continue-on-error so the other feeds still publish, but a
+        # crash must not leave the run green (ZBCN flows stayed empty unnoticed).
+        # Runs after the commit step so the other feeds are already pushed.
+        if: ${{ steps.solana.outcome == 'failure' }}
+        run: |
+          echo "::error::Solana flow scan failed; exchange and tier flows for Solana projects are stale."
+          exit 1
+
+      - name: Fail if the monthly RPC budget is exceeded
+        if: ${{ steps.usage.outcome == 'failure' }}
+        run: |
+          echo "::error::Monthly RPC budget exceeded (config/budgets.json); see the 'Summarize RPC usage' step."
+          exit 1
 
       - name: Notify on failure
         if: failure()

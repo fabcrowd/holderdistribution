@@ -303,7 +303,7 @@ async function main() {
   if (AS_OF) console.log(`as-of ${AS_OF.iso}: windows anchored there; balances and USD values will be null`);
 
   for (const chain of CHAINS) {
-    const urls = await getUsableRpcUrls(chain);
+    const urls = await getUsableRpcUrls(chain, { logRange: true });
     if (urls.length === 0) throw new Error(`no RPC for ${chain}`);
     const tokens = resolveChainTokens(chainsCfg[chain]);
     const tokenList = [tokens.legacy, ...(tokens.v3 ? [tokens.v3] : [])];

@@ -39,6 +39,23 @@ export function applyFlowEvents(store, chainKey, events) {
   return store;
 }
 
+/**
+ * Idempotent fold of one delivered chunk. A crash between the store write and
+ * the checkpoint write makes the same chunk come back on the next run, so the
+ * signatures of the last delivered chunk are kept in lastApplied and events
+ * already in it are skipped (only sums, no dedupe, otherwise).
+ */
+export function applyFlowEventsOnce(store, chainKey, events) {
+  const applied = new Set(store.chains[chainKey]?.lastApplied ?? []);
+  const fresh = events.filter((e) => e.signature === undefined || !applied.has(e.signature));
+  applyFlowEvents(store, chainKey, fresh);
+  if (events.length > 0) {
+    const signatures = events.map((e) => e.signature).filter((s) => s !== undefined);
+    store.chains[chainKey].lastApplied = [...new Set(signatures)];
+  }
+  return store;
+}
+
 /** `decimals`: one number, or { <chainKey>: number }. */
 const decimalsOf = (decimals, chainKey) => (typeof decimals === "number" ? decimals : decimals[chainKey]);
 

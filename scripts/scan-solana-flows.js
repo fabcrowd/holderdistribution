@@ -17,8 +17,11 @@
  * Floor: --since | SOLANA_FLOWS_SINCE | the first committed holder snapshot
  * date (never earlier: no tier / no real data before it).
  * Budget: --max-tx | SOLANA_FLOW_MAX_TX (default 3000 transactions per run;
- * the rest is picked up by the next run). SOLANA_FLOW_CONCURRENCY (default 4).
- * RPC: chain "solana" reads SOLANA_RPC_0..9 (public endpoint first).
+ * the rest is picked up by the next run), SOLANA_FLOW_MAX_MS (default 20 min
+ * wall clock; stops cleanly after the current chunk). SOLANA_FLOW_CONCURRENCY
+ * (default 4). Progress is saved after every chunk of transactions.
+ * RPC: chain "solana" reads SOLANA_RPC_0..9; this scan tries keyed endpoints
+ * first and the public one last (it makes thousands of calls).
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -63,9 +66,27 @@ const sinceSec = Date.parse(`${since}T00:00:00Z`) / 1000;
 const maxTx = Number(argValue("--max-tx") || process.env.SOLANA_FLOW_MAX_TX) || 3000;
 const concurrency = Number(process.env.SOLANA_FLOW_CONCURRENCY) || 4;
 
-const { configureSolanaChain, getUsableSolanaRpcUrls, solanaCallWithFailover } = await import("./lib/solana/rpc.js");
+const { configureSolanaChain, getUsableSolanaRpcUrls, keyedFirst, solanaCallWithFailover } = await import("./lib/solana/rpc.js");
 const { scanVenueFlows } = await import("./lib/solana/flowScan.js");
-const { applyFlowEvents, emptyFlowStore } = await import("./lib/solana/flowFeeds.js");
+const { applyFlowEventsOnce, emptyFlowStore } = await import("./lib/solana/flowFeeds.js");
+
+// Stop cleanly before the workflow step's 25-minute timeout so progress is kept.
+const deadlineMs = Date.now() + (Number(process.env.SOLANA_FLOW_MAX_MS) || 20 * 60 * 1000);
+
+// A half-written JSON file would make the next run discard the cursors or the store.
+const writeJsonAtomic = async (file, value) => {
+  const tmp = `${file}.tmp`;
+  await fs.writeFile(tmp, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  await fs.rename(tmp, file);
+};
+
+const persist = async () => {
+  await fs.mkdir(path.dirname(STORE_PATH), { recursive: true });
+  await fs.mkdir(path.dirname(CHECKPOINT_PATH), { recursive: true });
+  // Store first: a crash in between re-delivers the chunk, which applyFlowEventsOnce skips.
+  await writeJsonAtomic(STORE_PATH, store);
+  await writeJsonAtomic(CHECKPOINT_PATH, checkpoint);
+};
 
 const checkpoint = (await readOptionalJson(CHECKPOINT_PATH)) ?? { chains: {} };
 checkpoint.chains ??= {};
@@ -80,6 +101,10 @@ if (!store) {
 }
 
 for (const c of chains) {
+  if (Date.now() >= deadlineMs) {
+    console.log(`  ${c.key}: time budget used up before scanning; checkpoint unchanged`);
+    continue;
+  }
   const prev = checkpoint.chains[c.key];
   if (prev && (prev.mint !== c.mint || prev.since !== since)) {
     console.warn(`  ${c.key}: mint or floor changed (${prev.mint}@${prev.since} -> ${c.mint}@${since}); re-scanning from the floor.`);
@@ -87,26 +112,25 @@ for (const c of chains) {
     delete store.chains[c.key];
   }
   configureSolanaChain(c.chain);
-  const urls = await getUsableSolanaRpcUrls(c.key);
+  // Flow scans make thousands of calls; keyed endpoints first, public last.
+  const urls = keyedFirst(await getUsableSolanaRpcUrls(c.key), c.key);
   const call = (m, p) => solanaCallWithFailover(urls, m, p, { chainKey: c.key });
   const venues = solanaFlowVenues(project, c.key, { stakingFeedPath: STAKING_FEED });
   console.log(`  ${c.key}: ${venues.cexWallets.length} CEX, ${venues.dexOwners.length} DEX, ${venues.stakingAddresses.length} staking addresses; floor ${since}, budget ${maxTx} tx`);
-  const res = await scanVenueFlows({
-    call, mint: c.mint, ...venues, state: checkpoint.chains[c.key], sinceSec, maxTx, concurrency,
-  });
-  applyFlowEvents(store, c.key, res.events);
-  checkpoint.chains[c.key] = {
-    mint: c.mint,
-    since,
-    accounts: res.accounts,
-    complete: res.remaining === 0,
-    missingTx: (checkpoint.chains[c.key]?.missingTx ?? 0) + res.missing,
+  const baseMissing = checkpoint.chains[c.key]?.missingTx ?? 0;
+  // Saved after every chunk: a crash, 429 storm or the deadline keeps all
+  // progress made so far (the old end-of-run write lost a whole 25-minute run).
+  const save = async ({ newEvents, accounts, remaining, missing }) => {
+    applyFlowEventsOnce(store, c.key, newEvents);
+    checkpoint.chains[c.key] = { mint: c.mint, since, accounts, complete: remaining === 0, missingTx: baseMissing + missing };
+    await persist();
   };
-  console.log(`  ${c.key}: ${res.processed} tx processed, ${res.events.length} events, ${res.remaining} signatures left, ${res.missing} unavailable`);
+  const res = await scanVenueFlows({
+    call, mint: c.mint, ...venues, state: checkpoint.chains[c.key], sinceSec, maxTx, concurrency, deadlineMs, onProgress: save,
+  });
+  await save({ newEvents: [], accounts: res.accounts, remaining: res.remaining, missing: res.missing });
+  console.log(`  ${c.key}: ${res.processed} tx processed, ${res.events.length} events, ${res.remaining} signatures left, ${res.missing} unavailable${res.timedOut ? " (stopped at the time budget; resumes next run)" : ""}`);
 }
 
-await fs.mkdir(path.dirname(STORE_PATH), { recursive: true });
-await fs.mkdir(path.dirname(CHECKPOINT_PATH), { recursive: true });
-await fs.writeFile(STORE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
-await fs.writeFile(CHECKPOINT_PATH, `${JSON.stringify(checkpoint, null, 2)}\n`, "utf8");
+await persist();
 console.log(`Wrote ${STORE_PATH} and ${CHECKPOINT_PATH}`);

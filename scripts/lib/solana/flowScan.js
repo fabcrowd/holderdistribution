@@ -19,6 +19,7 @@ import { mintDeltasByOwner } from "./tokenFlows.js";
 
 export const SIGNATURE_PAGE = 1000;
 const MAX_PAGES = 500;
+export const DEFAULT_CHUNK = 200;
 
 export const bySlotThenSig = (a, b) => (a.slot !== b.slot ? a.slot - b.slot : a.signature < b.signature ? -1 : 1);
 
@@ -155,7 +156,10 @@ export async function mapLimit(items, limit, fn) {
  * @param {number} p.maxTx transactions fetched this run
  * @returns {Promise<{ events: Array<object>, accounts: object, remaining: number, missing: number, processed: number }>}
  */
-export async function scanVenueFlows({ call, mint, cexWallets, dexOwners, stakingAddresses, state, sinceSec, maxTx, concurrency = 4, logger = console }) {
+export async function scanVenueFlows({
+  call, mint, cexWallets, dexOwners, stakingAddresses, state, sinceSec, maxTx, concurrency = 4,
+  chunkSize = DEFAULT_CHUNK, deadlineMs = Infinity, onProgress = null, logger = console,
+}) {
   const roles = {
     cex: new Map(cexWallets.map((w) => [w.address, w.exchange])),
     dex: new Set(dexOwners),
@@ -180,39 +184,66 @@ export async function scanVenueFlows({ call, mint, cexWallets, dexOwners, stakin
 
   const ordered = [...merged.values()].sort(bySlotThenSig);
   // Whole-slot cutoff: same-slot signatures are ordered differently by the RPC
-  // than here, so never split a slot across two runs.
-  let cut = Math.min(ordered.length, Math.max(0, maxTx));
-  while (cut > 0 && cut < ordered.length && ordered[cut].slot === ordered[cut - 1].slot) cut += 1;
-  const batch = ordered.slice(0, cut);
-  const done = new Set(batch.map((s) => s.signature));
+  // than here, so never split a slot across two runs (or two chunks).
+  const wholeSlotEnd = (end, limit) => {
+    let e = Math.min(limit, end);
+    while (e > 0 && e < limit && ordered[e].slot === ordered[e - 1].slot) e += 1;
+    return e;
+  };
+  const limit = wholeSlotEnd(Math.max(0, maxTx), ordered.length);
 
-  let missing = 0;
-  const txs = await mapLimit(batch, concurrency, (s) =>
-    call("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0, commitment: "finalized" }]),
-  );
+  const done = new Set();
   const events = [];
-  batch.forEach((s, i) => {
-    const tx = txs[i];
-    if (!tx) {
-      missing += 1;
-      logger.warn?.(`  getTransaction ${s.signature.slice(0, 12)}...: no result (pruned?); skipped`);
-      return;
-    }
-    const transfers = pairTransfers(mintDeltasByOwner(tx, mint));
-    for (const e of classifyTransfers(transfers, roles, tx, mint)) {
-      events.push({ ...e, signature: s.signature, blockTime: s.blockTime, date: utcDay(s.blockTime), raw: e.raw.toString() });
-    }
-  });
+  let missing = 0;
 
-  const accounts = {};
-  let remaining = 0;
-  for (const { account, owner } of tokenAccounts) {
-    const sigs = lists.get(account);
-    const newestDone = sigs.find((s) => done.has(s.signature));
-    remaining += sigs.filter((s) => !done.has(s.signature)).length;
-    accounts[account] = { owner, until: newestDone ? newestDone.signature : prev[account]?.until ?? null };
+  // Per-account cursor = newest processed signature. Valid after any whole-slot
+  // prefix, because processing is globally oldest-first.
+  const cursors = () => {
+    const accounts = {};
+    let remaining = 0;
+    for (const { account, owner } of tokenAccounts) {
+      const sigs = lists.get(account);
+      const newestDone = sigs.find((s) => done.has(s.signature));
+      remaining += sigs.filter((s) => !done.has(s.signature)).length;
+      accounts[account] = { owner, until: newestDone ? newestDone.signature : prev[account]?.until ?? null };
+    }
+    // Accounts seen before but no longer returned (closed): keep their cursor.
+    for (const [account, v] of Object.entries(prev)) if (!accounts[account]) accounts[account] = v;
+    return { accounts, remaining };
+  };
+
+  // Chunked so a crash or the wall-clock deadline keeps everything already
+  // fetched: onProgress persists each chunk (new events + advanced cursors).
+  let timedOut = false;
+  for (let start = 0; start < limit; ) {
+    if (Date.now() >= deadlineMs) {
+      timedOut = true;
+      break;
+    }
+    const end = wholeSlotEnd(start + Math.max(1, chunkSize), limit);
+    const chunk = ordered.slice(start, end);
+    const txs = await mapLimit(chunk, concurrency, (s) =>
+      call("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0, commitment: "finalized" }]),
+    );
+    const fresh = [];
+    chunk.forEach((s, i) => {
+      done.add(s.signature);
+      const tx = txs[i];
+      if (!tx) {
+        missing += 1;
+        logger.warn?.(`  getTransaction ${s.signature.slice(0, 12)}...: no result (pruned?); skipped`);
+        return;
+      }
+      const transfers = pairTransfers(mintDeltasByOwner(tx, mint));
+      for (const e of classifyTransfers(transfers, roles, tx, mint)) {
+        fresh.push({ ...e, signature: s.signature, blockTime: s.blockTime, date: utcDay(s.blockTime), raw: e.raw.toString() });
+      }
+    });
+    events.push(...fresh);
+    start = end;
+    if (onProgress) await onProgress({ newEvents: fresh, ...cursors(), missing, processed: done.size });
   }
-  // Accounts seen before but no longer returned (closed): keep their cursor.
-  for (const [account, v] of Object.entries(prev)) if (!accounts[account]) accounts[account] = v;
-  return { events, accounts, remaining, missing, processed: batch.length };
+
+  const { accounts, remaining } = cursors();
+  return { events, accounts, remaining, missing, processed: done.size, timedOut };
 }

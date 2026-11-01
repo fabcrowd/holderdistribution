@@ -1,0 +1,13 @@
+{
+  "$comment": "Monthly RPC budgets across ALL projects (UTC calendar month). Figures are estimates from scripts/lib/rpcMetrics.js rate cards; the Alchemy/Helius dashboards stay the billing source of truth. warnAt/failAt are fractions of the monthly budget. alchemyCu: the project target in docs/MULTI-TOKEN.md step 10. heliusCredits: free tier (verify the current allowance on Helius's pricing page).",
+  "monthly": {
+    "alchemyCu": 30000000,
+    "heliusCredits": 1000000
+  },
+  "warnAt": 0.8,
+  "failAt": 1.0,
+  "perRunWarn": {
+    "alchemyCu": 2000000,
+    "heliusCredits": 100000
+  }
+}
