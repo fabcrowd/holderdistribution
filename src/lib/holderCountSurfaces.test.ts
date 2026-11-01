@@ -16,9 +16,9 @@ const src = (rel: string) => readFileSync(resolve(process.cwd(), rel), "utf8");
 const code = (rel: string) => src(rel).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
 describe("holder-count surfaces", () => {
-  it("landing card reads unique wallets and is labelled so", () => {
-    expect(code("src/lib/landingStats.ts")).toMatch(/uniqueWalletCount\(snap\)/);
-    expect(code("src/components/TokenCard.tsx")).toContain('label="Unique wallets"');
+  it("landing card reads retail wallets (metrics.holderCount) and uses the shared label", () => {
+    expect(code("src/lib/landingStats.ts")).toMatch(/num\(m\?\.holderCount\)/);
+    expect(code("src/components/TokenCard.tsx")).toContain("label={RETAIL_WALLETS_LABEL}");
   });
 
   it("headline tile and stat card read metrics.holderCount, labelled Retail Wallets with the per-chain tooltip", () => {
