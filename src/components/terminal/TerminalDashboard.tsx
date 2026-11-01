@@ -49,10 +49,10 @@ type Props = {
 };
 
 /**
- * Desktop (>=1280px) shell: one 64px title bar carrying the brand (eyebrow +
- * an always-visible "<image> <Name> Holder Distribution" h1 whose token mark
- * links home to the token picker, plus a stale-data pill),
- * the view switch, and every control; then three answer cards (holders, held, on
+ * Desktop (>=1280px) shell: one 64px title bar carrying the brand (site mark +
+ * "Holder Distribution" h1, plus a stale pill only when the refresh is behind),
+ * the view switch, and every control, with the open token's mark beside the
+ * chain and timeframe pickers; then three answer cards (holders, held, on
  * exchanges); then the view.
  * Holders dashboard and Distribution scroll this region so charts can be
  * taller than the fold. Supply and Explore still fill the viewport and
@@ -110,44 +110,31 @@ export const TerminalDashboard = ({
           {/* Brand accent: a 2px primary rule across the top of the bar so the
               header reads as the portal's title bar, not another panel. */}
           <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary via-primary/70 to-[hsl(var(--ha-accent))]" />
-          <div className="flex shrink-0 items-center gap-2.5">
-            <Link to="/" className="shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <img src={logoIcon} alt="" width={36} height={36} className="h-9 w-9 min-[1400px]:h-10 min-[1400px]:w-10" />
-              <span className="sr-only">Holder Analytics home</span>
-            </Link>
-            <div className="flex flex-col justify-center gap-1.5 leading-none">
-              <div className="flex items-center gap-1.5">
-                {/* The "As of" pill is always shown once the snapshot loads. Below
-                    1400px it takes the eyebrow's place, so the brand column doesn't
-                    grow into the KPIs. */}
-                <span className={`text-xs font-semibold uppercase tracking-[0.14em] text-primary ${fresh.status === "unknown" ? "" : "hidden min-[1400px]:inline"}`}>
-                  Holder Analytics
-                </span>
-                {fresh.status !== "unknown" && (
-                  <span
-                    role={stale ? "status" : undefined}
-                    data-testid="header-stale-pill"
-                    data-status={fresh.status}
-                    title={stale ? `The daily refresh is behind. Figures are as of ${fresh.date}.` : `Figures are as of ${fresh.date}.`}
-                    aria-label={stale ? `Data as of ${fresh.date}. The daily refresh is behind.` : `Data as of ${fresh.date}.`}
-                    className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-px text-xs font-semibold leading-none ${
-                      fresh.status === "stale"
-                        ? "border-red-500/50 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300"
-                        : fresh.status === "delayed"
-                          ? "border-amber-500/50 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
-                          : "border-border bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    <Clock className="h-2.5 w-2.5" aria-hidden="true" />
-                    {fresh.status === "stale" ? "Stale · " : ""}As of {fresh.monthDay}
-                  </span>
-                )}
-              </div>
-              <h1 className="flex items-center gap-1.5 whitespace-nowrap text-base font-extrabold leading-none tracking-tight text-foreground min-[1400px]:text-lg 2xl:text-xl">
-                <TokenIdentity className="text-foreground" />
-                <span>Holder Distribution</span>
-              </h1>
-            </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <h1 className="whitespace-nowrap text-base font-extrabold tracking-tight text-foreground min-[1400px]:text-lg 2xl:text-xl">
+              <Link to="/" aria-label="Holder Distribution home" className="flex items-center gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <img src={logoIcon} alt="" width={32} height={32} className="h-8 w-8" />
+                Holder Distribution
+              </Link>
+            </h1>
+            {/* Shown only when the daily refresh is behind; a fresh snapshot needs no
+                badge, and the date is not worth the header's width. */}
+            {stale && (
+              <span
+                role="status"
+                data-testid="header-stale-pill"
+                data-status={fresh.status}
+                title="The daily refresh is behind."
+                className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-px text-xs font-semibold leading-none ${
+                  fresh.status === "stale"
+                    ? "border-red-500/50 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300"
+                    : "border-amber-500/50 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                }`}
+              >
+                <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+                {fresh.status === "stale" ? "Stale" : "Delayed"}
+              </span>
+            )}
           </div>
 
           <nav aria-label="Views" className="flex shrink-0 items-center rounded-md border border-border bg-muted/50 p-0.5">
@@ -174,6 +161,7 @@ export const TerminalDashboard = ({
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            <TokenIdentity iconOnly className="mr-1" />
             <label className="sr-only" htmlFor="terminal-chain">
               Chain
             </label>
@@ -280,7 +268,7 @@ export const TerminalDashboard = ({
               </SheetTrigger>
               <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
                 <SheetHeader className="text-left">
-                  <SheetTitle>About Holder Analytics</SheetTitle>
+                  <SheetTitle>About Holder Distribution</SheetTitle>
                   <SheetDescription>Support the project, and the disclaimer.</SheetDescription>
                 </SheetHeader>
                 <Footer />

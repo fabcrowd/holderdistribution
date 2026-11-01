@@ -63,9 +63,9 @@ const confidenceVariant = (c: string): "default" | "secondary" | "outline" | "de
   c === "confirmed" ? "default" : c === "high" ? "secondary" : "outline";
 
 const VERDICT_CLASS = {
-  selling: "border-red-500/40 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300",
+  selling: "border-negative/40 bg-negative-tint text-negative",
   inactive: "border-border/60 bg-muted/40 text-muted-foreground",
-  neutral: "border-sky-500/30 bg-sky-50 text-sky-900 dark:bg-sky-950/40 dark:text-sky-200",
+  neutral: "border-brand/30 bg-brand-tint text-brand",
 } as const;
 
 const VerdictBadge = ({ verdict }: { verdict: string }) => (

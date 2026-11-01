@@ -9,7 +9,7 @@ export const TIP_ADDRESS = "0x82C2Bca9d6a3ad4611eA5b8FAEAd789ad59a0542";
 
 /** Shared legal disclaimer. Landing, the phone layout, and the desktop terminal all use this wording. */
 export const SITE_DISCLAIMER =
-  "Holder Analytics is an independent on-chain analytics platform and is not endorsed by, paid by, or affiliated with any cryptocurrency token or project. Content is informational and educational only: it is not financial, investment, legal, or tax advice, and it is not an offer or solicitation to buy or sell any security or token. Data may be incomplete or delayed and is provided without warranty of accuracy or completeness; users should verify it on-chain.";
+  "Holder Distribution is an independent on-chain analytics platform and is not endorsed by, paid by, or affiliated with any cryptocurrency token or project. Content is informational and educational only: it is not financial, investment, legal, or tax advice, and it is not an offer or solicitation to buy or sell any security or token. Data may be incomplete or delayed and is provided without warranty of accuracy or completeness; users should verify it on-chain.";
 
 /** Donation copy, shown in the (i) beside the copy control. */
 const SUPPORT_NOTE =
@@ -63,7 +63,7 @@ export const Footer = () => {
         {/* Support: label + copy control + (i) with the explanatory sentences. */}
         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
           <Heart aria-hidden="true" className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-foreground">Support Holder Analytics</span>
+          <span className="font-semibold text-foreground">Support Holder Distribution</span>
           <button
             onClick={copyAddress}
             className="inline-flex min-h-11 xl:min-h-9 items-center gap-2 px-3 rounded-md bg-card border border-border hover:bg-muted transition-colors group"
@@ -79,13 +79,13 @@ export const Footer = () => {
             </code>
             <Copy aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
           </button>
-          <InfoTooltip text={SUPPORT_NOTE} label="About supporting Holder Analytics" className="max-xl:before:-inset-2.5" />
+          <InfoTooltip text={SUPPORT_NOTE} label="About supporting Holder Distribution" className="max-xl:before:-inset-2.5" />
           {copied && <span role="status" className="text-xs text-primary animate-fade-in">Copied!</span>}
         </div>
 
         <p className="flex flex-wrap items-center justify-center gap-x-1.5 text-center">
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span>© {new Date().getFullYear()} Holder Analytics</span>
+            <span>© {new Date().getFullYear()} Holder Distribution</span>
             <span aria-hidden="true">·</span>
             <span>Price data by CoinGecko</span>
           </span>

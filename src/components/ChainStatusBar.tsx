@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ExternalLink, Info } from "lucide-react";
+import { AlertTriangle, ExternalLink, Info } from "lucide-react";
 import { useChainStatus } from "@/hooks/useChainStatus";
 import { describeFreshness, formatRelativeAge } from "@/lib/format";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -27,7 +27,7 @@ export const ChainStatusBar = () => {
           className="inline-flex min-h-11 xl:min-h-0 items-center gap-1 text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-primary transition-colors"
         >
           {chain.label} RPC
-          {chain.stale && <span className="text-amber-700 dark:text-amber-400 no-underline">(stale)</span>}
+          {chain.stale && <span className="text-warning no-underline">(stale)</span>}
           <ExternalLink aria-hidden="true" className="h-3 w-3" />
           <span className="sr-only">(opens in new tab)</span>
         </a>
@@ -68,8 +68,9 @@ export const CompactProvenance = ({ snapshotLabel, sourceLabel, children, classN
           <button
             type="button"
             aria-label={`${summary}. Snapshot, source and RPC links`}
-            className={`inline-flex min-h-11 items-center gap-1.5 rounded tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${behind ? "font-medium text-amber-700 dark:text-amber-400" : ""}`}
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${behind ? "font-medium text-warning" : ""}`}
           >
+            {behind && <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
             {summary}
             <Info className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
@@ -88,7 +89,7 @@ export const CompactProvenance = ({ snapshotLabel, sourceLabel, children, classN
                   className="inline-flex min-h-11 items-center gap-1 underline decoration-dotted underline-offset-2 hover:text-primary"
                 >
                   {chain.label} RPC
-                  {chain.stale && <span className="text-amber-700 dark:text-amber-400 no-underline">(stale)</span>}
+                  {chain.stale && <span className="text-warning no-underline">(stale)</span>}
                   <ExternalLink aria-hidden="true" className="h-3 w-3" />
                   <span className="sr-only">(opens in new tab)</span>
                 </a>
@@ -98,7 +99,7 @@ export const CompactProvenance = ({ snapshotLabel, sourceLabel, children, classN
           {children}
         </PopoverContent>
       </Popover>
-      {anyStale && <span className="text-amber-700 dark:text-amber-400">RPC data stale</span>}
+      {anyStale && <span className="text-warning">RPC data stale</span>}
     </div>
   );
 };

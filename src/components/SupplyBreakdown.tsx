@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import LockedAnalysisTile from "@/components/LockedAnalysisTile";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { Callout } from "@/components/ui/callout";
 import { ChartDataTable } from "@/components/chart/ChartDataTable";
 import { Pie, PieChart as RePieChart, Cell, Sector } from "recharts";
 import "@/lib/rechartsMotion";
@@ -53,7 +54,7 @@ import {
   type DeveloperHoldingsConfig,
 } from "@/lib/supplyBreakdown";
 import { chainExplorerLink, resolveChainVm } from "@/lib/explorerLinks";
-import { AlertTriangle, ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
+import { ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
 import { coingeckoComparison } from "@/lib/coingeckoComparison";
 import { reconcileStatus } from "@/lib/supplyGuard";
 import { EXPLORER_BASE } from "@/lib/telContracts";
@@ -625,18 +626,13 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
   const footnote = (
     <>
       {reconcile.kind === "reconciling" && (
-        <div
-          role="status"
-          data-testid="supply-reconciling"
-          className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-50 px-2.5 py-1.5 text-left text-xs leading-snug text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
-        >
-          <AlertTriangle aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0" />
+        <Callout role="status" data-testid="supply-reconciling" className="mt-3 py-1.5 text-xs">
           <span>
             <span className="font-semibold">Reconciling.</span> This snapshot's categories don't yet add up to the{" "}
             {formatCompactAmount(totalSupply)} total supply, so individual amounts may shift slightly at the next
             refresh.
           </span>
-        </div>
+        </Callout>
       )}
       <p className="mt-3 text-xs text-muted-foreground text-center">
         Solid = retail wallets / DEX LP; muted = exchanges &amp; project; grey = supply gap.

@@ -18,9 +18,9 @@ describe("NotFound", () => {
 
   it("wraps the message in the site header and footer", () => {
     expect(html).toContain("<nav ");
-    expect(html).toContain("Support Holder Analytics");
+    expect(html).toContain("Support Holder Distribution");
     expect(html.indexOf("<nav ")).toBeLessThan(html.indexOf('data-testid="not-found"'));
-    expect(html.indexOf('data-testid="not-found"')).toBeLessThan(html.indexOf("Support Holder Analytics"));
+    expect(html.indexOf('data-testid="not-found"')).toBeLessThan(html.indexOf("Support Holder Distribution"));
   });
 
   it("fills the viewport with the footer pinned below a growing main", () => {

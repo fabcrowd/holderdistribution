@@ -7,7 +7,7 @@ import { Footer } from "@/components/Footer";
 const NotFound = () => {
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = "Page not found | Holder Analytics";
+    document.title = "Page not found | Holder Distribution";
     let meta = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
     const created = !meta;
     const prev = meta?.getAttribute("content") ?? null;

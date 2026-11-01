@@ -1,6 +1,6 @@
-# Holder Analytics — design system
+# Holder Distribution — design system
 
-Exported snapshot of the Holder Analytics brand/design system, for use in code. This is a point-in-time copy — the live, editable version (where updates should be made first) is at:
+Exported snapshot of the Holder Distribution brand/design system, for use in code. This is a point-in-time copy — the live, editable version (where updates should be made first) is at:
 
 https://claude.ai/artifact/2uD9F1N4qYTc1JPUx331Rs
 

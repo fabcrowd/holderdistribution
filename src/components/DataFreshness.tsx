@@ -1,10 +1,11 @@
-import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle2, Clock } from "lucide-react";
 import { describeFreshness, type Freshness } from "@/lib/format";
+import { Callout } from "@/components/ui/callout";
 
 const TONE: Record<Freshness["status"], string> = {
   fresh: "border-border bg-muted text-muted-foreground",
-  delayed: "border-amber-500/40 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200",
-  stale: "border-amber-500/40 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200",
+  delayed: "border-warning/40 bg-warning-tint text-warning",
+  stale: "border-warning/40 bg-warning-tint text-warning",
   unknown: "border-border/60 bg-muted/40 text-muted-foreground",
 };
 
@@ -35,19 +36,14 @@ export const StaleDataBanner = ({ generatedAt, now }: { generatedAt: string | nu
   const f = describeFreshness(generatedAt, now);
   if (f.status !== "delayed" && f.status !== "stale") return null;
   return (
-    <div
-      role="status"
-      data-testid="stale-banner"
-      className="flex items-start gap-2.5 rounded-xl border border-amber-500/40 bg-amber-50/90 px-3.5 py-2.5 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
-    >
-      <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-      <p className="leading-snug">
+    <Callout role="status" data-testid="stale-banner">
+      <p>
         <span className="font-semibold">Showing data from {f.date}</span>
-        <span className="text-amber-900/90 dark:text-amber-200/90">
+        <span className="text-foreground/80">
           {" "}
           ({f.relative}). The daily refresh is behind, so figures are accurate as of that date, not today.
         </span>
       </p>
-    </div>
+    </Callout>
   );
 };

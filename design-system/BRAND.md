@@ -1,6 +1,6 @@
-# Holder Analytics — design system
+# Holder Distribution — design system
 
-Holder Analytics tracks on-chain holder behavior — concentration, movement, and wallet activity — for crypto teams who need to see what's actually happening to a token's holder base, not just its price. The brand should read as **precise and current**: a tool built by people who look at chain data all day, not a marketing site dressed up to look serious.
+Holder Distribution tracks on-chain holder behavior — concentration, movement, and wallet activity — for crypto teams who need to see what's actually happening to a token's holder base, not just its price. The brand should read as **precise and current**: a tool built by people who look at chain data all day, not a marketing site dressed up to look serious.
 
 ## Voice
 
