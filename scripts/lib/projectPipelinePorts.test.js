@@ -207,9 +207,8 @@ describe("ported scripts end to end for a non-legacy project (fixture repo, no n
     expect(r.status).toBe(2);
   });
 
-  it("sync-cex-wallets-dune --source spellbook is candidates-only and Solana-only (exit 2, no network)", () => {
-    expect(run("sync-cex-wallets-dune.js", ["--project", "demo", "--source", "spellbook"]).status).toBe(2);
-    expect(run("sync-cex-wallets-dune.js", ["--project", "bare", "--candidates", "--source", "spellbook"]).status).toBe(2);
+  it("sync-cex-wallets-dune rejects an unknown --source (exit 2, no network)", () => {
+    expect(run("sync-cex-wallets-dune.js", ["--project", "demo", "--source", "bogus"]).status).toBe(2);
   });
 
   it("generate-wallet-flows runs for demo: no forensics registry = skip before any RPC (exit 0, nothing written)", () => {

@@ -9,11 +9,23 @@
  */
 import { normalizeAddressForVm } from "./address.js";
 
-/** Raw spellbook model for Solana CEX labels (what Dune serves as cex_solana.addresses / cex.addresses). */
+/**
+ * Raw spellbook models for CEX labels (what Dune serves as cex_<chain>.addresses / cex.addresses).
+ * The EVM list is chain-agnostic: no blockchain column, addresses are valid across EVM chains.
+ */
 export const SPELLBOOK_CEX_SQL_URLS = {
+  evm:
+    "https://raw.githubusercontent.com/duneanalytics/spellbook/main/dbt_subprojects/hourly_spellbook/models/_sector/cex/addresses/chains/cex_evms_addresses.sql",
   solana:
     "https://raw.githubusercontent.com/duneanalytics/spellbook/main/dbt_subprojects/hourly_spellbook/models/_sector/cex/addresses/chains/solana/cex_solana_addresses.sql",
 };
+
+/** Spellbook model URL for a VM; throws a clear error naming the VM when none is wired. */
+export function spellbookUrlForVm(vm) {
+  const url = SPELLBOOK_CEX_SQL_URLS[vm];
+  if (!url) throw new Error(`no spellbook CEX model wired for vm "${vm}" (wired: ${Object.keys(SPELLBOOK_CEX_SQL_URLS).join(", ")}).`);
+  return url;
+}
 
 /** "solana" when every chain the project maps is Solana; otherwise "evm" (TEL and any EVM project). */
 export function cexVmForProject(project) {
@@ -80,6 +92,46 @@ export function parseSpellbookCexSql(sql) {
     });
   }
   return rows;
+}
+
+const SPELLBOOK_EVM_ROW_RE = new RegExp(`\\(\\s*(0x[0-9a-fA-F]{40})\\s*,\\s*${SQL_STR}\\s*,\\s*${SQL_STR}`, "g");
+
+/**
+ * Parses the static rows of the spellbook cex_evms_addresses model
+ * (`(0x…, 'Binance', 'Binance 1', 'hildobby', date '…')`, unquoted address, no
+ * blockchain column) into Dune-shaped rows { address, cex_name, distinct_name }.
+ * Comment lines and malformed rows are skipped; addresses are lowercased.
+ */
+export function parseSpellbookEvmCexSql(sql) {
+  const rows = [];
+  for (const m of String(sql ?? "").matchAll(SPELLBOOK_EVM_ROW_RE)) {
+    rows.push({ address: m[1].toLowerCase(), cex_name: unq(m[2]), distinct_name: unq(m[3]) });
+  }
+  return rows;
+}
+
+/**
+ * Additions-only merge of parsed CEX `entries` into `existingWallets`.
+ * Existing entries are untouched except that an "Unknown" label is repaired
+ * from a labelled entry. Returns { wallets, additions, repaired }; never mutates inputs.
+ */
+export function mergeCexAdditions(existingWallets, entries, normalize) {
+  const existing = existingWallets ?? [];
+  const existingAddresses = new Set(existing.map((w) => normalize(w.address)).filter(Boolean));
+  const byAddress = new Map((entries ?? []).map((e) => [e.address, e]));
+  let repaired = 0;
+  const repairedWallets = existing.map((w) => {
+    if (w.label !== "Unknown") return w;
+    const norm = normalize(w.address);
+    const fresh = norm ? byAddress.get(norm) : null;
+    if (fresh && fresh.label !== "Unknown") {
+      repaired++;
+      return { ...w, label: fresh.label, walletName: fresh.walletName };
+    }
+    return w;
+  });
+  const additions = (entries ?? []).filter((e) => !existingAddresses.has(e.address));
+  return { wallets: [...repairedWallets, ...additions], additions, repaired };
 }
 
 /**

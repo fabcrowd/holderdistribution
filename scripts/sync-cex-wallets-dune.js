@@ -21,9 +21,13 @@
  *   dune      (default) — Dune API, query id from DUNE_QUERY_ID or
  *                         pipeline.duneCexQueryId (TEL keeps its built-in
  *                         3761086; other projects must bring their own).
- *   spellbook           — the public Dune spellbook model behind
- *                         cex_<chain>.addresses (Solana only); no key needed.
- *                         Candidates mode only.
+ *   spellbook           — the public Dune spellbook static lists behind
+ *                         cex_<chain>.addresses; no Dune key or credits needed.
+ *                         EVM    — cex_evms_addresses.sql; works in the normal
+ *                                  additions-only merge (and in --candidates).
+ *                                  Fails (non-zero) if the list parses below
+ *                                  MIN_SPELLBOOK_EVM_ROWS rows (format changed?).
+ *                         Solana — candidates mode only (`--candidates`).
  *
  * Env (dune source): DUNE_API_KEY (required), DUNE_QUERY_ID, DUNE_RESULT_LIMIT (default 5000).
  */
@@ -40,12 +44,17 @@ import {
 } from "./lib/projects.js";
 import { normalizeAddressForVm } from "./lib/address.js";
 import {
-  SPELLBOOK_CEX_SQL_URLS,
   cexVmForProject,
   intersectCexWithHolders,
+  mergeCexAdditions,
   parseDuneCexRows,
   parseSpellbookCexSql,
+  parseSpellbookEvmCexSql,
+  spellbookUrlForVm,
 } from "./lib/duneCex.js";
+
+// The EVM spellbook list holds ~5,000 rows; far fewer means the format changed, not that the list shrank.
+const MIN_SPELLBOOK_EVM_ROWS = 1000;
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: merges into the
 // project's own `classification.cexWallets` file (TEL: config/cex-wallets.json).
@@ -83,8 +92,12 @@ const fail = (code, msg) => {
 
 if (!["dune", "spellbook"].includes(SOURCE)) fail(2, `unknown --source "${SOURCE}" (dune | spellbook).`);
 if (SOURCE === "spellbook") {
-  if (!CANDIDATES) fail(2, "--source spellbook is candidates-only; add --candidates (it never writes a production list).");
-  if (!SPELLBOOK_CEX_SQL_URLS[VM]) fail(2, `no spellbook CEX model wired for vm "${VM}".`);
+  if (!CANDIDATES && VM !== "evm") fail(2, "--source spellbook for Solana is candidates-only; add --candidates (it never writes a production list).");
+  try {
+    spellbookUrlForVm(VM);
+  } catch (e) {
+    fail(2, e.message);
+  }
 }
 if (SOURCE === "dune") {
   if (!QUERY_ID) {
@@ -103,11 +116,12 @@ if (SOURCE === "dune") {
 
 const fetchRows = async () => {
   if (SOURCE === "spellbook") {
-    const url = SPELLBOOK_CEX_SQL_URLS[VM];
+    const url = spellbookUrlForVm(VM);
     console.log(`Fetching Dune spellbook CEX model (${VM}): ${url}`);
     const res = await fetch(url);
     if (!res.ok) throw new Error(`spellbook fetch ${res.status}`);
-    const rows = parseSpellbookCexSql(await res.text());
+    const text = await res.text();
+    const rows = VM === "evm" ? parseSpellbookEvmCexSql(text) : parseSpellbookCexSql(text);
     return { rows, source: { type: "dune-spellbook", url, vm: VM } };
   }
   const url = `https://api.dune.com/api/v1/query/${QUERY_ID}/results?limit=${LIMIT}`;
@@ -161,6 +175,14 @@ const main = async () => {
   const duneEntries = parseDuneCexRows(rows, VM);
   console.log(`Parsed ${duneEntries.length} valid ${VM} address entries.`);
 
+  if (SOURCE === "spellbook" && VM === "evm" && (rows.length < MIN_SPELLBOOK_EVM_ROWS || duneEntries.length === 0)) {
+    fail(
+      1,
+      `spellbook EVM list parsed ${rows.length} rows / ${duneEntries.length} entries (expected >= ${MIN_SPELLBOOK_EVM_ROWS}); ` +
+        `the file format may have changed. Nothing written.`,
+    );
+  }
+
   if (CANDIDATES) return writeCandidates(duneEntries, source);
 
   if (rows.length === 0) {
@@ -171,26 +193,11 @@ const main = async () => {
   // --- Load existing config ---
   const normalize = (v) => normalizeAddressForVm(VM, v);
   const config = JSON.parse(await fs.readFile(CEX_CONFIG_PATH, "utf8"));
-  const existingAddresses = new Set((config.wallets ?? []).map((w) => normalize(w.address)).filter(Boolean));
-  console.log(`Existing addresses in config: ${existingAddresses.size}`);
+  console.log(`Existing addresses in config: ${(config.wallets ?? []).length}`);
 
-  const duneByAddress = new Map(duneEntries.map((e) => [e.address, e]));
-
-  // --- Repair existing "Unknown" labels using Dune data ---
-  let repaired = 0;
-  config.wallets = (config.wallets ?? []).map((w) => {
-    if (w.label !== "Unknown") return w;
-    const norm = normalize(w.address);
-    const fresh = norm ? duneByAddress.get(norm) : null;
-    if (fresh && fresh.label !== "Unknown") {
-      repaired++;
-      return { ...w, label: fresh.label, walletName: fresh.walletName };
-    }
-    return w;
-  });
-  if (repaired > 0) console.log(`Repaired ${repaired} Unknown labels from Dune data.`);
-
-  const additions = duneEntries.filter((e) => !existingAddresses.has(e.address));
+  // Additions-only; existing "Unknown" labels are repaired from the source data.
+  const { wallets: mergedWallets, additions, repaired } = mergeCexAdditions(config.wallets, duneEntries, normalize);
+  if (repaired > 0) console.log(`Repaired ${repaired} Unknown labels from ${source.type} data.`);
   console.log(`Net-new addresses to add: ${additions.length}`);
 
   if (additions.length === 0 && repaired === 0) {
@@ -207,9 +214,9 @@ const main = async () => {
       .forEach(([label, count]) => console.log(`  ${label}: +${count}`));
   }
 
-  config.wallets = [...config.wallets, ...additions];
+  config.wallets = mergedWallets;
   await fs.writeFile(CEX_CONFIG_PATH, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-  console.log(`\nWrote ${config.wallets.length} total wallets → ${CEX_CONFIG_PATH}`);
+  console.log(`\nWrote ${config.wallets.length} total wallets → ${CEX_CONFIG_PATH} (source=${source.type})`);
   console.log(`Done. Commit ${CEX_CONFIG_REL} to apply.`);
 };
 
