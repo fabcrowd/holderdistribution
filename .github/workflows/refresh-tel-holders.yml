@@ -165,6 +165,7 @@ jobs:
           # loadEnv (scripts/decrypt-env.js) only overwrites keys that exist
           # inside .env.enc, which has no SOLANA_RPC_*, so the secret survives.
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
+          SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
         run: node scripts/pull-solana-staking.js
 
       - name: Refresh holders snapshot (public RPC first)
@@ -179,6 +180,7 @@ jobs:
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
+          SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
           RPC_PREFER_PUBLIC: '1'
         run: node scripts/pull-holders-rpc.js
 
@@ -188,6 +190,7 @@ jobs:
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
+          SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
         run: node scripts/pull-holders-rpc.js
 
       - name: Refresh CEX wallets and flows
@@ -315,6 +318,8 @@ jobs:
         timeout-minutes: 25
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
+          SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
         run: node scripts/scan-solana-flows.js
 
       - name: Scan exchange flows

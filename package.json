@@ -16,7 +16,8 @@
     "preview": "vite preview",
     "check:feeds": "node scripts/validate-outputs.js --all && node scripts/check-feed-consistency.js --all",
     "pipeline:health": "node scripts/pipeline-health.js --all",
-    "audit:deploys": "node scripts/audit-deploy-triggers.js --strict"
+    "audit:deploys": "node scripts/audit-deploy-triggers.js --strict",
+    "receipt": "node scripts/change-receipt.js"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.11",

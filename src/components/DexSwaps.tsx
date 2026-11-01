@@ -135,7 +135,7 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
           </div>
           <div>
             <div className="font-semibold text-foreground flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-red-500" /> Sold on DEX
+              <span className="inline-block w-2 h-2 rounded-full bg-negative" /> Sold on DEX
             </div>
             <div className="text-muted-foreground mt-1">
               Swapped into a liquidity pool for another coin — a realized on-chain sale, visible in the same transaction.
@@ -143,7 +143,7 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
           </div>
           <div>
             <div className="font-semibold text-foreground flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-yellow-500" /> Added to LP
+              <span className="inline-block w-2 h-2 rounded-full bg-ha-accent" /> Added to LP
             </div>
             <div className="text-muted-foreground mt-1">
               Deposited into a pool for liquidity — still economically owned via LP tokens, not a sale.
@@ -151,7 +151,7 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
           </div>
           <div>
             <div className="font-semibold text-foreground flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-amber-500" /> To exchanges
+              <span className="inline-block w-2 h-2 rounded-full bg-warning" /> To exchanges
             </div>
             <div className="text-muted-foreground mt-1">
               Deposited to an exchange wallet — potential sell pressure, but trading is off-chain so the sale itself isn&apos;t visible here.

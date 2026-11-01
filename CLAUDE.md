@@ -10,7 +10,7 @@ Never create a branch, commit or push unless the owner explicitly says so. Edit 
 
 A single-page React app that shows on-chain analytics for the TEL token: holder distribution, supply breakdown, exchange flows, and historical growth trends. It lives at **holderdistribution.com** and is deployed on Netlify.
 
-The site was originally extracted from a larger Telcoin Hub multi-page app. It is now its own standalone product under the **Holder Analytics** brand — rebranding from "TelcoinHub" to "Holder Distribution / Holder Analytics" is in progress.
+The site was originally extracted from a larger Telcoin Hub multi-page app. It is now its own standalone product under the **Holder Distribution** brand — rebranded from "TelcoinHub" to "Holder Distribution".
 
 ---
 
@@ -18,7 +18,7 @@ The site was originally extracted from a larger Telcoin Hub multi-page app. It i
 
 Full spec lives in `design-system/` and `BRAND.md` inside it.
 
-**Brand:** Holder Analytics — on-chain holder tracking tool. Tone: precise, current, data-first.
+**Brand:** Holder Distribution — on-chain holder tracking tool. Tone: precise, current, data-first.
 
 **Key tokens** (defined in `tailwind.config.ts` + `src/index.css`):
 - `brand` — dark teal, primary identity color
@@ -71,9 +71,9 @@ Secrets are encrypted via `scripts/encrypt-env.js` / `decrypt-env.js`.
 
 ## Current goals / active work
 
-- **Rebrand status (2026-10-18):** the UI, theme tokens, logo, favicons, OG image, meta tags and canonical URLs are now Holder Analytics / holderdistribution.com. `src/index.css` maps the shadcn variables to the Holder Analytics palette; `--ha-*` tokens are defined there. See `README.md` and `docs/DEPLOYMENT.md` for run/deploy/security notes.
+- **Rebrand status (2026-10-18):** the UI, theme tokens, logo, favicons, OG image, meta tags and canonical URLs are now Holder Distribution / holderdistribution.com. `src/index.css` maps the shadcn variables to the Holder Distribution palette; `--ha-*` tokens are defined there. See `README.md` and `docs/DEPLOYMENT.md` for run/deploy/security notes.
 
-- **Rebranding** from "TelcoinHub" → "Holder Distribution" / "Holder Analytics" brand is partially complete. The Footer, copyright, and design system are updated. Some component interiors and meta tags may still reference the old brand.
+- **Rebranding** from "TelcoinHub" → "Holder Distribution" is complete across the UI, copy, meta tags and design-system docs. Remaining "Holder Analytics" text is limited to asset file names and the `HolderAnalytics` design-system bundle namespace.
 - **Design system rollout** — tokens are in `tailwind.config.ts` and `design-system/tokens.css`. Components should progressively adopt the semantic tokens (`brand`, `positive`, `negative`, `ha-accent`, etc.) instead of raw Tailwind color classes.
 - **Forensics Gate** — premium content gate in `netlify/functions/forensics-gate.cjs`. Gated via `ForensicsGate.tsx` + `SubscriptionGate.tsx` components.
 
@@ -106,3 +106,4 @@ Live site: `https://holderdistribution.com`
 - `src/components/`: widgets; `chart/`, `terminal/`, `tierflow/`, `ui/` subfolders. `src/pages/`: routes.
 - `netlify/functions/`: `live-data.mjs` (serves latest feeds from GitHub), `forensics-gate.cjs`. `netlify.toml`: manual-deploy rules.
 - `tasks/`, `.claude/`, `scripts/CLAUDE.md`: local-only, uncommitted. `design-system/`, `docs/`: specs.
+- Harness: `.claude/HANDOFF.md` (session facts, decisions, progress); `npm run receipt -- --objective "..." [--verify]` writes `tasks/receipt.md` (what changed, what passed); `.claude/agents/verifier.md` (adversarial check before a slice is marked done); `tasks/harness-audit.md` (which gates caught which lessons). Git commit, push, branch, merge and reset are set to `ask` in `.claude/settings.local.json`.

@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, RotateCw, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Callout } from "@/components/ui/callout";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { useMediaQuery, PHONE_QUERY } from "@/hooks/useMediaQuery";
 import { describeFreshness } from "@/lib/format";
@@ -135,8 +136,8 @@ const WALLETS_COL_INSET_PX = 48;
 // count keeps one right edge. Shift = slot width + gap before it.
 const NET_SLOT_W_PX = 64; // fits 8-char nets such as "+123,456" at 13px
 const NET_TONE_CLASS = {
-  positive: "text-emerald-700 dark:text-emerald-400",
-  negative: "text-red-700 dark:text-red-400",
+  positive: "text-positive",
+  negative: "text-negative",
   neutral: "text-muted-foreground",
 } as const;
 const NET_SLOT_SHIFT_PX = NET_SLOT_W_PX + 6;
@@ -821,9 +822,9 @@ export const TierFlowDiagram = ({
   const notices = (
     <>
       {complete !== true && (
-        <div className={`rounded-lg border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-center ${isTerminal ? "shrink-0 px-2 py-1 text-xs" : "px-3 py-2 text-sm"}`}>
+        <Callout icon={null} className={`justify-center rounded-lg text-center ${isTerminal ? "shrink-0 px-2 py-1 text-xs" : "px-3 py-2 text-sm"}`}>
           On-chain classification is still backfilling for some chains — figures below may under-represent recent activity.
-        </div>
+        </Callout>
       )}
 
       {flowChangelogEvents.length > 0 && (

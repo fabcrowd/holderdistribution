@@ -187,7 +187,7 @@ const DistributionAnalysisWidget = ({
               <button
                 type="button"
                 onClick={() => onViewChange?.("combined")}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 rounded-full px-2 py-0.5 min-h-[28px] hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-warning border border-warning/40 bg-warning-tint rounded-full px-2 py-0.5 min-h-[28px] hover:bg-warning-tint/80 transition-colors"
               >
                 Showing {chainViewLabel(project, selectedView)} only
                 <span className="underline">View all chains</span>

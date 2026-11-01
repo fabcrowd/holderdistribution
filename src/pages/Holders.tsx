@@ -43,7 +43,7 @@ const TAB_DEFS = [
     label: "Distribution",
     icon: PieChart,
     blurb: (t: TabCopy) => `Which balance tiers are gaining or losing wallets, and where their ${t.ticker} went.`,
-    accent: "data-[state=active]:text-violet-700 dark:data-[state=active]:text-violet-400",
+    accent: "data-[state=active]:text-primary",
   },
   {
     id: "supply",
@@ -51,7 +51,7 @@ const TAB_DEFS = [
     icon: Coins,
     blurb: (t: TabCopy) =>
       `Where all ${t.supply ? `${t.supply} ` : ""}${t.ticker} sits: retail, exchanges, DEX pools, escrow and ${t.name} wallets.`,
-    accent: "data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-400",
+    accent: "data-[state=active]:text-primary",
   },
 ] as const;
 const TABS = TAB_DEFS;
@@ -77,36 +77,10 @@ const TabBlurb = ({ id, hidden }: { id: TabId; hidden: boolean }) => {
 const Holders = () => {
   // Mounted at /<slug> by TokenRoute; /holders redirects there (lib/tokenRoutes).
 
-  // One panel at a time rather than five stacked accordions. Every section
-  // used to start collapsed, so a first-time visitor got the hero and five
-  // closed doors — every comparable token page (CoinGecko, Etherscan,
-  // DeFiLlama) shows content on load instead. The three widgets that are the
-  // sole content of a tab have since dropped their collapsible headers
-  // entirely — a collapse control inside a tab that already selects it is
-  // duplicated navigation — and use SubPanelTabs internally instead.
-  //
-  // There is no Overview tab. It had already been reduced to "the Ecosystem
-  // Headline and nothing else", and that headline renders above the selector
-  // on every tab — so the tab selected an empty panel whose content was
-  // already on screen, and landing there meant a second click to reach any
-  // data at all. The headline tiles now route into these tabs directly, which
-  // is the job Overview was nominally doing. Holders is the default.
-  // Each headline tile is a link to the charts behind that number. Before
-  // this, reading the growth chart for "Retail Holders" meant clicking the
-  // Holders tab and then the Trends sub-tab — two levels of menu between the
-  // number and its own history, on a page whose whole first screen is those
-  // four numbers. The tile is the more direct control, and it was already the
-  // thing being looked at.
-
-
-  // Deep links keep working: #holders / #distribution / ... select the tab, and
-  // switching tabs rewrites the hash so a URL can be copied and shared.
-  // "#overview" is still honoured — it was a real tab until 2026-09-13 and is
-  // in shared links — but it now resolves to Holders like any other entry
-  // point rather than 404ing into the default.
-  // Hash routing lives in lib/viewRoute: "#view" or "#view/panel". Hashes
-  // that are not views (the skip link's "#main-content") are ignored rather
-  // than bouncing the reader back to the default tab.
+  // One panel at a time. Deep links use the hash (#holders, #distribution,
+  // #supply; #overview resolves to Holders). Switching tabs rewrites the hash,
+  // and headline tiles link into the matching tab. Non-view hashes are ignored
+  // (lib/viewRoute).
   const [route0] = useState(initialRoute);
   const [activeTab, setActiveTab] = useState<TabId>(route0.view);
   // Desktop only: a panel in the URL means "Explore" (the full multi-panel

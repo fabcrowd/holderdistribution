@@ -52,7 +52,7 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        /* Holder Analytics semantic tokens */
+        /* Holder Distribution semantic tokens */
         brand: {
           DEFAULT: "hsl(var(--ha-brand))",
           hover: "hsl(var(--ha-brand-hover))",
@@ -68,6 +68,7 @@ export default {
         },
         warning: {
           DEFAULT: "hsl(var(--ha-warning))",
+          tint: "hsl(var(--ha-warning-tint))",
         },
         "ha-accent": {
           DEFAULT: "hsl(var(--ha-accent))",

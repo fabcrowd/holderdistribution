@@ -13,7 +13,7 @@ describe("Footer", () => {
   });
 
   it("collapses to one compact line with a Disclaimer control", () => {
-    expect(html).toContain("Support Holder Analytics");
+    expect(html).toContain("Support Holder Distribution");
     expect(html).toContain("Price data by CoinGecko");
     expect(html).toContain("Not financial advice");
     expect(html).toContain(">Disclaimer<");

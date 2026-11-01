@@ -308,8 +308,8 @@ override both in its project config:
 - Built-in free starters exist for ethereum, polygon, base, arbitrum, optimism,
   bsc and avalanche. The four newer ones are unverified, and TEL does not use
   them.
-- Use free public RPCs only (no paid providers). Only add `<PREFIX>_RPC_n` keys
-  to `.env.enc` if a chain needs them.
+- Prefer free public RPCs first (they are tried before keys). Paid providers are
+  allowed when a chain needs them; add `<PREFIX>_RPC_n` keys to `.env.enc` for that.
 - TEL declares no `rpc` blocks, so its pools are unchanged
   (`scripts/lib/rpcProjectChains.test.js`).
 - The UI's Chain Status card takes its labels, explorers and token links from
@@ -743,6 +743,19 @@ its config, so onboarding a token needs no code change:
    `SOLANA_RPC_0..9` if public RPC refuses the holder scan).
 7. Optional: add `copy` overrides for wording the generic templates get wrong.
 8. Run `npm run typecheck && npx vitest run && npm run build`.
+9. Historical backfill for the new token (optional, local, cheap on RPC credits): the wallet-flow
+   scanner can read logs from SQD Portal instead of Alchemy/public RPC, which costs no Alchemy CU.
+   Run `node scripts/generate-wallet-flows.js --project <slug> --source portal` (or set
+   `HD_BACKFILL_SOURCE=portal`). It is opt-in; the default stays `rpc`, and nightly runs never use it.
+   Only public-registry addresses go to Portal (sender lists stay on RPC), the end block trails the
+   head by a reorg margin, and a completeness gate compares sampled windows against RPC and refuses to
+   write output on any mismatch. `--as-of <date>` needs `--out <path>` (never under `public/`).
+   Flags, env vars and limits: see "Backfill via SQD Portal" in [FORENSICS.md](FORENSICS.md). EVM chains only
+   (ethereum, polygon, base); Solana projects keep using the keyed Solana RPC pool.
+10. RPC budget: the project target is under 30M Alchemy CU a month across all tokens. Keep the
+    Alchemy key pool to paid keys (a free-tier key fails wide `eth_getLogs`), and prefer one
+    chain-level scan over per-token scans (todo 1g). Solana keys: `SOLANA_RPC_0` and `SOLANA_RPC_1`
+    (separate accounts, per-call failover).
 
 The landing page and the sitemap pick the new project up automatically.
 

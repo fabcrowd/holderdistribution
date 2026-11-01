@@ -13,7 +13,10 @@ describe("token header (no switcher)", () => {
       expect(src(f), f).not.toContain("TokenSwitcher");
     }
   });
-  it("the heading shows TokenIdentity", () => {
-    expect(src("terminal/TerminalDashboard.tsx")).toMatch(/<TokenIdentity\b[^>]*\/>\s*<span>Holder Distribution<\/span>/);
+  it("the heading is the brand, not the token name", () => {
+    expect(src("terminal/TerminalDashboard.tsx")).toMatch(/<h1[\s\S]*?Holder Distribution[\s\S]*?<\/h1>/);
+  });
+  it("the open token's mark sits in the controls, icon only", () => {
+    expect(src("terminal/TerminalDashboard.tsx")).toMatch(/<TokenIdentity\s+iconOnly\b/);
   });
 });

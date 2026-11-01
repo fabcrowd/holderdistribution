@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import logo from "@/assets/holder-analytics-horizontal.svg";
 import logoIcon from "@/assets/holder-analytics-icon.svg";
 import { TokenIdentity } from "@/components/TokenIdentity";
 import { slugFromPath } from "@/lib/tokenRoutes";
@@ -40,12 +39,13 @@ export const Navigation = (_props: NavigationProps = {}) => {
     >
       <div className="mx-auto px-4 max-w-7xl">
         <div className="flex h-16 md:h-20 items-center justify-between">
-          {/* Brand + (on /<slug> routes) which token is open. Phones get the
-              icon mark so the token chip fits beside the 44px controls. */}
+          {/* Brand + (on /<slug> routes) which token is open. On phones the
+              title drops out while a token is open, so the token chip fits
+              beside the 44px controls. */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
-            <Link to="/" className="flex min-h-11 min-w-11 items-center justify-center gap-2 group shrink-0">
-              <img src={logoIcon} alt="Holder Analytics" width={36} height={36} className={cn("h-9 w-9 transition-opacity group-hover:opacity-80 dark:brightness-150", onToken ? "sm:hidden" : "hidden")} />
-              <img src={logo} alt="Holder Analytics" width={196} height={48} fetchPriority="high" decoding="async" className={cn("h-8 md:h-10 w-auto transition-opacity group-hover:opacity-80 dark:brightness-150", onToken ? "hidden sm:block" : "")} />
+            <Link to="/" aria-label="Holder Distribution home" className="flex min-h-11 items-center gap-2 group shrink-0">
+              <img src={logoIcon} alt="" width={32} height={32} className="h-8 w-8 transition-opacity group-hover:opacity-80 dark:brightness-150" />
+              <span className={cn("whitespace-nowrap text-base font-extrabold tracking-tight text-foreground md:text-lg", onToken ? "hidden sm:inline" : "")}>Holder Distribution</span>
             </Link>
             {onToken && (
               <span className="flex min-h-11 min-w-0 items-center border-l border-primary/25 pl-2 md:pl-3">
@@ -58,7 +58,7 @@ export const Navigation = (_props: NavigationProps = {}) => {
               exactly the newcomer who has no other way to decode it. */}
           <span className="ml-auto" aria-hidden="true" />
           <GlossaryDialog />
-          <ThemeToggle className="h-11 w-11 max-xl:h-11 max-xl:w-11" />
+          <ThemeToggle className="h-11 w-11" />
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-1 lg:gap-2">
@@ -116,8 +116,9 @@ export const Navigation = (_props: NavigationProps = {}) => {
               <SheetContent side="right" className="w-72 p-0">
                 <div className="flex flex-col h-full">
                   {/* Header */}
-                  <div className="flex items-center p-4 border-b border-border/40">
-                    <img src={logo} alt="Holder Analytics" width={131} height={32} className="h-8 w-auto" />
+                  <div className="flex items-center gap-2 p-4 border-b border-border/40">
+                    <img src={logoIcon} alt="" width={32} height={32} className="h-8 w-8" />
+                    <span className="text-base font-extrabold tracking-tight text-foreground">Holder Distribution</span>
                   </div>
 
                   {/* Nav Items */}

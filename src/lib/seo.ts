@@ -1,7 +1,7 @@
 /** Page titles / descriptions for the landing page and token routes. */
 
 /** The site name, as already used by index.html's <title>. */
-export const SITE_TITLE = "Holder Distribution | Token Holder Analytics & Supply Data";
+export const SITE_TITLE = "Holder Distribution | Token Holder Distribution & Supply Data";
 
 export const SITE_DESCRIPTION =
   "Real, on-chain holder distribution, supply breakdown, and exchange flow data for crypto tokens — a source of truth for the community, not the project team.";

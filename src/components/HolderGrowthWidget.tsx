@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Callout } from "@/components/ui/callout";
 import { NotedTooltip, markerLines } from "@/components/chart/ChartMarkers";
 import { groupMarkers, markerCollapseGap, markerNotesByRow, reclassMarkers } from "@/lib/chartMarkers";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
@@ -649,14 +650,13 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                   when this chart's feed trails the page's snapshot, so the reader
                   knows the line is older than the rest of the page. */}
               {!isLoading && !error && chartLagsPage(data?.updatedAt, pageSnapshot?.generatedAt) && (
-                <p className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-50 px-2.5 py-1 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                  <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <Callout icon={Clock} className="mb-3 py-1 text-xs">
                   {(() => {
                     const rel = formatRelativeAge(data?.updatedAt);
                     const date = formatShortDate(data?.updatedAt);
                     return date ? `Last updated ${date}${rel ? ` (${rel})` : ""}` : "Data feed delayed";
                   })()}
-                </p>
+                </Callout>
               )}
 
               {!isLoading && error && (

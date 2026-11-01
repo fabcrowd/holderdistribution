@@ -5,7 +5,7 @@
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL (space-separated triplets, consumed as hsl(var(--token))).
 
-Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
+Palette follows the Holder Distribution brand (design-system/BRAND.md, tokens.css):
 - brand   #017276  dark teal — identity, primary actions, default chart series
 - ink     #0E1414  text            ink-muted #5B6666  secondary text
 - surface #F4F8F8  page            #FFFFFF  cards      border #E2EAEA
@@ -66,7 +66,7 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
        for text on light surfaces (fails 4.5:1). */
     --brand-bright: 183 70% 44%;
 
-    /* Holder Analytics semantic tokens, consumed by tailwind.config.ts
+    /* Holder Distribution semantic tokens, consumed by tailwind.config.ts
        (bg-brand, text-positive, bg-negative-tint, text-warning, ...). These
        were referenced by the Tailwind config but never defined, so every
        one of those utilities silently resolved to nothing. */
@@ -80,6 +80,7 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     --ha-negative: 358 53% 50%;
     --ha-negative-tint: 0 68% 96%;
     --ha-warning: 39 100% 31%;
+    --ha-warning-tint: 44 100% 95%;
     /* Delta text drawn ON the tier diagram's tinted tiles (darker than
        --ha-positive/negative, which are tuned for plain card surfaces). */
     --tier-positive-text: 142 72% 22%;
@@ -157,6 +158,7 @@ Palette follows the Holder Analytics brand (design-system/BRAND.md, tokens.css):
     --ha-negative: 358 75% 68%;
     --ha-negative-tint: 358 35% 15%;
     --ha-warning: 39 90% 60%;
+    --ha-warning-tint: 39 40% 14%;
     --tier-positive-text: 142 70% 72%;
     --tier-negative-text: 0 95% 82%;
     --ha-link: 181 62% 55%;

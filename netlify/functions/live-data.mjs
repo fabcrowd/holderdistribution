@@ -37,7 +37,7 @@ export const config = { path: "/live-data/*" };
  * root (TEL), and scripts/lib/projects.test.js fails if it drifts from
  * data.legacyRoot in config/projects/<slug>.json.
  */
-import registry from "../../config/projects.json";
+import registry from "../../config/projects.json" with { type: "json" };
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
 

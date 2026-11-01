@@ -340,7 +340,7 @@ const renderMetrics = (
                 changelogEvents={item.changelogEvents}
               />
             </div>
-            <div className={`flex items-center justify-center gap-1 text-xs ${item.badge === "ATH" ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}`}>
+            <div className={`flex items-center justify-center gap-1 text-xs ${item.badge === "ATH" ? "text-brand font-semibold" : "text-muted-foreground"}`}>
               {item.description}
               {item.badgeNote && <InfoTip content={item.badgeNote} label={`All-time high: ${item.badgeNote}`} />}
             </div>
@@ -516,8 +516,8 @@ const renderVelocity = (
 ) => {
   if (!momentum) return null;
 
-  const netTone = momentum.net >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400";
-  const emerald = "text-emerald-700 dark:text-emerald-400";
+  const netTone = momentum.net >= 0 ? "text-positive" : "text-negative";
+  const positiveTone = "text-positive";
   const ticker = copy.t("{ticker}");
   const items: Array<{ label: string; value: string; sub: string; tone: string; info: string }> = [];
   if (everHeld?.total != null) {
@@ -526,7 +526,7 @@ const renderVelocity = (
       label: `New Wallets (${rangeLabel})`,
       value: everHeld.newInRange != null ? `+${formatInteger(everHeld.newInRange)}` : "—",
       sub: "first-time wallets",
-      tone: emerald,
+      tone: positiveTone,
       info: copy.t(`Wallets that held {ticker} for the first time in ${rangeLabel}. Wallets that sell or leave never reduce this number.`),
     });
     items.push({
@@ -1160,7 +1160,7 @@ const renderCexFlows = (
                           return (
                             <TableCell
                               className={`px-1 sm:px-4 py-2 max-sm:text-xs text-right text-sm font-medium tabular-nums whitespace-nowrap ${
-                                net > 0 ? "text-red-700 dark:text-red-400" : net < 0 ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"
+                                net > 0 ? "text-negative" : net < 0 ? "text-positive" : "text-muted-foreground"
                               }`}
                             >
                               {formatSignedTokenAmount(net)}

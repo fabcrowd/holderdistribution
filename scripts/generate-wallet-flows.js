@@ -32,6 +32,10 @@
  * Usage:
  *   node scripts/generate-wallet-flows.js [--project <slug>] [--out <path>] [--recon <path>]
  *        [--skip-sellers] [--dry-run] [--strict] [--chains ethereum,polygon,base]
+ *        [--source rpc|portal] [--as-of <YYYY-MM-DD|ISO>]
+ * Backfill: `--as-of` anchors the 72h/30d/90d windows to that moment and requires `--out`
+ * (a file other than the live report, never under public/). Balances and USD values are null
+ * in that output (see scripts/lib/walletFlowsAsOf.js). docs/FORENSICS.md "Backfill via SQD Portal".
  * Env: RPC_PREFER_PUBLIC=1 recommended; PUBLIC_RPC_URLS_<CHAIN> to override.
  */
 import fs from "node:fs/promises";
@@ -39,6 +43,15 @@ import path from "node:path";
 import process from "node:process";
 import { getUsableRpcUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
+import { confirmationsFor, createLogScanner, parseSource } from "./lib/logSource.js";
+import { anchorSeconds, parseWalletFlowArgs } from "./lib/walletFlowArgs.js";
+import { applyAsOfNulls, asOfPrice } from "./lib/walletFlowsAsOf.js";
+import {
+  assertPortalComplete,
+  completenessSampleConfig,
+  describeCompleteness,
+  verifyPortalCompleteness,
+} from "./lib/portalCompleteness.js";
 import { resolveChainTokens, rawToTel } from "./lib/telTokens.js";
 import {
   SWAP_TOPICS,
@@ -81,6 +94,24 @@ const CHAINS = PLAN.chains;
 const STRICT = flag("--strict");
 const DRY = flag("--dry-run");
 const SKIP_SELLERS = flag("--skip-sellers");
+/** `--source rpc|portal` or HD_BACKFILL_SOURCE; an unknown value is a hard error. */
+let SOURCE;
+try {
+  SOURCE = parseSource({ argv, env: process.env });
+} catch (error) {
+  console.error(`generate-wallet-flows: ${error?.message ?? error}`);
+  process.exit(1);
+}
+/** `--as-of` / `--out` backfill guards. Invalid combinations exit 1 before any RPC call. */
+let BACKFILL;
+try {
+  const liveOut = walletFlowsPlan(PROJECT, { root: ROOT, argv: [] }).out;
+  BACKFILL = parseWalletFlowArgs({ argv, root: ROOT, liveOut });
+} catch (error) {
+  console.error(`generate-wallet-flows: ${error?.message ?? error}`);
+  process.exit(1);
+}
+const AS_OF = BACKFILL.asOf;
 /** Initial getLogs span per chain; rpc.getLogs bisects automatically when a node refuses. */
 const SPAN = (chain) => PLAN.logSpan(chain);
 const MAX_RECEIPTS = Number(process.env.WALLET_FLOWS_MAX_RECEIPTS) || 2500;
@@ -149,14 +180,26 @@ async function blockAtOrAfter(urls, target, head, headTs) {
   return hi;
 }
 
-async function scanLogs(chain, urls, failover, filterBase, from, to) {
-  const ranges = [];
-  const span = SPAN(chain);
-  for (let a = from; a <= to; a += span) ranges.push([a, Math.min(a + span - 1, to)]);
-  const parts = await pool(ranges, Math.min(4, urls.length * 2), ([a, b], i) =>
-    failover(urls, i % urls.length, { ...filterBase, fromBlock: hex(a), toBlock: hex(b) }),
-  );
-  return parts.flat();
+/** Portal is used only when the caller passes `{ allowPortal: true }` (see logSource.js). */
+const scanLogs = (scanner, filterBase, from, to, options) => scanner.scan(filterBase, from, to, options);
+
+/**
+ * Portal-only gate: compares the Portal log set with RPC on sampled windows and throws
+ * (before any output is written) on a mismatch. `head - confirmations` is the end Portal scans to.
+ */
+async function checkPortalCompleteness({ chain, urls, failover, filterBase, portalLogs, from, head }) {
+  const check = await verifyPortalCompleteness({
+    chain,
+    urls,
+    failover,
+    filterBase,
+    portalLogs,
+    fromBlock: from,
+    toBlock: head - confirmationsFor(chain),
+    sample: completenessSampleConfig(process.env, SPAN(chain)),
+  });
+  console.log(describeCompleteness(check));
+  assertPortalComplete(check);
 }
 
 function toTransfers(chain, logs, slotByToken) {
@@ -224,7 +267,8 @@ async function main() {
   const cexCfg = loadProjectClassification(PROJECT, "cexWallets", { wallets: [] }, ROOT);
   const dexCfg = loadProjectClassification(PROJECT, "dexContracts", {}, ROOT);
   const [registry, recon, previous] = await Promise.all([readJson(REGISTRY), readJson(RECON), readJsonOr(OUT, null)]);
-  const { priceUsd, priceSource } = await fetchPrice(previous);
+  // --as-of: no live price (it would be the price today, not on the anchor date).
+  const { priceUsd, priceSource } = AS_OF ? asOfPrice(AS_OF.iso) : await fetchPrice(previous);
 
   const upgradeContracts = [];
   for (const c of CHAINS) upgradeContracts.push(...resolveChainTokens(chainsCfg[c]).escrow);
@@ -254,8 +298,9 @@ async function main() {
   const allTransfers = [];
   const sellerTransfers = [];
   const budget = { left: MAX_RECEIPTS };
-  const now = Math.floor(Date.now() / 1000);
+  const now = anchorSeconds(AS_OF, Date.now());
   const failover = createLogsFailover(getLogs);
+  if (AS_OF) console.log(`as-of ${AS_OF.iso}: windows anchored there; balances and USD values will be null`);
 
   for (const chain of CHAINS) {
     const urls = await getUsableRpcUrls(chain);
@@ -263,21 +308,25 @@ async function main() {
     const tokens = resolveChainTokens(chainsCfg[chain]);
     const tokenList = [tokens.legacy, ...(tokens.v3 ? [tokens.v3] : [])];
     const slotByToken = tokenSlots(tokens);
-    const head = Number.parseInt(await viaPool(urls, (u) => rpcCall(u, "eth_blockNumber", [])), 16);
-    const headTs = await blockTs(urls, head);
+    const liveHead = Number.parseInt(await viaPool(urls, (u) => rpcCall(u, "eth_blockNumber", [])), 16);
+    const liveHeadTs = await blockTs(urls, liveHead);
+    // --as-of: the scan head becomes the first block at or after the anchor, so every window ends there.
+    const head = AS_OF ? await blockAtOrAfter(urls, now, liveHead, liveHeadTs) : liveHead;
+    const headTs = AS_OF ? await blockTs(urls, head) : liveHeadTs;
     startBlocks[chain] = {};
     for (const win of WINDOWS) {
       startBlocks[chain][win] = await blockAtOrAfter(urls, now - WINDOW_SECONDS[win], head, headTs);
     }
     windows[chain] = { head, headTime: new Date(headTs * 1000).toISOString(), startBlocks: startBlocks[chain] };
     console.log(`${chain}: head ${head}, 90d from ${startBlocks[chain]["90d"]}`);
+    const scanner = createLogScanner({ source: SOURCE, chain, head, urls, failover, span: SPAN(chain), pool });
+    console.log(`${chain}: log source ${scanner.source}`);
 
     // 1+3. Outflows from registry wallets and the bot cluster (topic1 = sender).
+    // Always RPC: sender lists are never sent to Portal (decision D2).
     const senders = [...new Set([...knownAddrs, ...botAddrs])].map(pad);
     const logs = await scanLogs(
-      chain,
-      urls,
-      failover,
+      scanner,
       { address: tokenList.map((t) => t.address), topics: [TRANSFER, senders] },
       startBlocks[chain]["90d"],
       head,
@@ -292,12 +341,13 @@ async function main() {
 
     // 4. 72h large-seller discovery (every TEL transfer in the window).
     if (!SKIP_SELLERS) {
+      const sellerFilter = { address: tokenList.map((t) => t.address), topics: [TRANSFER] };
       try {
-        const all = toTransfers(
-          chain,
-          await scanLogs(chain, urls, failover, { address: tokenList.map((t) => t.address), topics: [TRANSFER] }, startBlocks[chain]["72h"], head),
-          slotByToken,
-        );
+        const portalLogs = await scanLogs(scanner, sellerFilter, startBlocks[chain]["72h"], head, { allowPortal: true });
+        if (SOURCE === "portal") {
+          await checkPortalCompleteness({ chain, urls, failover, filterBase: sellerFilter, portalLogs, from: startBlocks[chain]["72h"], head });
+        }
+        const all = toTransfers(chain, portalLogs, slotByToken);
         const perSender = new Map();
         for (const t of all) {
           if (classifyOutflow(t.from, t.to, index) !== "unlabelled") continue;
@@ -308,20 +358,24 @@ async function main() {
         sellerTransfers.push(...all);
         console.log(`${chain}: ${all.length} transfers in 72h`);
       } catch (error) {
+        // Portal caps, reorgs and failed completeness checks must stop the run; only RPC failures fall back to the previous list.
+        if (["PortalError", "PortalReorgError", "PortalCompletenessError"].includes(error?.name)) throw error;
         console.warn(`${chain}: 72h seller scan failed (${String(error?.message ?? error).slice(0, 120)}) — keeping previous sellers list`);
         sellerTransfers.failed = true;
       }
     }
 
-    // 2. Balances.
-    await pool(balanceAddrs, 4, async (a) => {
-      const detail = balances.get(a) ?? {};
-      for (const t of tokenList) {
-        const raw = await balanceOf(urls, t.address, a);
-        if (raw > 0n) detail[`${chain}_${slotByToken.get(t.address).slot}`] = rawToTel(raw, t.decimals);
-      }
-      balances.set(a, detail);
-    });
+    // 2. Balances. Skipped for --as-of: eth_call reads the current state, so nulls are written instead.
+    if (!AS_OF) {
+      await pool(balanceAddrs, 4, async (a) => {
+        const detail = balances.get(a) ?? {};
+        for (const t of tokenList) {
+          const raw = await balanceOf(urls, t.address, a);
+          if (raw > 0n) detail[`${chain}_${slotByToken.get(t.address).slot}`] = rawToTel(raw, t.decimals);
+        }
+        balances.set(a, detail);
+      });
+    }
   }
 
   const { byWallet, bot } = aggregateOutflows(allTransfers, index, startBlocks);
@@ -336,7 +390,7 @@ async function main() {
       ? previous?.largeSellers ?? []
       : discoverLargeSellers(sellerTransfers, index, { minTel: MIN_SELLER_TEL, priceUsd });
 
-  const report = {
+  const builtReport = {
     version: 1,
     generated: new Date().toISOString(),
     generator: "scripts/generate-wallet-flows.js",
@@ -345,7 +399,7 @@ async function main() {
     priceSource,
     chains: CHAINS,
     windows,
-    notes: walletFlowsNotes(PLAN),
+    notes: [...walletFlowsNotes(PLAN), ...(SOURCE === "portal" ? ["source: portal"] : [])],
     distribution: { ...buildDistribution(recon, tracked), source: path.relative(ROOT, RECON).split(path.sep).join("/") },
     telcoinTotals: telcoinSellTotals(knownWallets, priceUsd),
     knownWallets,
@@ -361,6 +415,7 @@ async function main() {
     },
     largeSellers,
   };
+  const report = AS_OF ? applyAsOfNulls(builtReport, AS_OF) : builtReport;
 
   const errors = validateWalletFlowsReport(report);
   if (errors.length) throw new Error(`report failed validation: ${errors.join("; ")}`);
@@ -393,5 +448,6 @@ async function exists(p) {
 })().catch((error) => {
   console.warn(`generate-wallet-flows: skipped — ${error?.stack ?? error}`);
   console.warn(`Previous ${path.relative(ROOT, OUT)} left unchanged.`);
-  process.exitCode = STRICT ? 1 : 0;
+  // A failed Portal completeness check is never a silent skip: exit 1 even without --strict.
+  process.exitCode = STRICT || error?.name === "PortalCompletenessError" ? 1 : 0;
 });
