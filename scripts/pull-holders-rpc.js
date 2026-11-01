@@ -24,6 +24,8 @@ import {
 } from "./lib/holderMetrics.js";
 import { selectPipelineProject, projectPaths, projectChainsAllVms, projectRoleAddresses, projectClassificationPath, projectNonRetailPaths, projectWork, projectWorkDir } from "./lib/projects.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
+import { writeWindow, transferWindowName, SHARED_WINDOW_MAX_BLOCKS } from "./lib/transferWindow.js";
+import { sharedScanEnabled } from "./lib/sharedTransferLogs.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: chain/token
 // addresses come from the project's chain map (TEL: config/chains.json),
@@ -413,9 +415,30 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
 
   // One head block for both tokens (see streamTransferLogs).
   const headBlock = Number.parseInt(String(await rpcCall(rpcUrls[0], "eth_blockNumber", [])), 16);
+
+  // Keep the logs for the shared window only on a nightly incremental run; a cold
+  // rebuild would write a huge file that other feeds do not need.
+  const keepWindow = sharedScanEnabled() && !ARG_AS_OF && headBlock - fromBlock + 1 <= SHARED_WINDOW_MAX_BLOCKS;
+  const windowLogs = [];
+  const onBatch = keepWindow
+    ? (logs) => {
+      for (const log of logs) windowLogs.push(log);
+      builder.onBatch(logs);
+    }
+    : builder.onBatch;
   const { totalLogs, latestBlock } = await streamTransferLogs(
-    rpcUrls, tokenAddress, topic0, fromBlock, chunkSize, builder.onBatch, headBlock
+    rpcUrls, tokenAddress, topic0, fromBlock, chunkSize, onBatch, headBlock
   );
+  if (keepWindow && fromBlock <= latestBlock) {
+    try {
+      await writeWindow(projectWork(project)(transferWindowName(chainKey)), {
+        chain: chainKey, tokens: [tokenAddress], fromBlock, toBlock: latestBlock, logs: windowLogs,
+      });
+      console.log(`  ${chainKey}: shared transfer window ${fromBlock}-${latestBlock} (${windowLogs.length} logs) written.`);
+    } catch (err) {
+      console.warn(`  ${chainKey}: could not write shared transfer window (${err.message}); later steps will read from RPC.`);
+    }
+  }
 
   // TEL v3 (18 decimals): scanned from its deployment block, independently
   // checkpointed, and combined per wallet with the legacy balance. A chain

@@ -37,6 +37,8 @@ import { loadEnv } from "./loadEnv.js";
 import { selectPipelineProject, projectPaths, projectWork, projectChains, projectClassificationPath } from "./lib/projects.js";
 import { exchangeFlowChains } from "./lib/exchangeFlowChains.js";
 import { markPartialDay } from "./lib/partialDay.js";
+import { readWindow, transferWindowName } from "./lib/transferWindow.js";
+import { getTransferLogsCached, sharedScanEnabled } from "./lib/sharedTransferLogs.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: token addresses,
 // decimals and start blocks come from the project's chain map, CEX/DEX lists
@@ -101,6 +103,7 @@ const scanChain = async (chainKey, cexSet, dexSet, checkpoint, dayBuckets) => {
     console.warn(`  ${chainKey}: no RPC URLs configured — skipping.`);
     return;
   }
+  const sharedWindow = sharedScanEnabled() ? await readWindow(projectWork(project)(transferWindowName(chainKey))) : null;
 
   const latest = hexToNumber(await rpcCall(rpcUrls[0], "eth_blockNumber", []));
   const from = checkpoint.chains?.[chainKey]?.lastBlock != null
@@ -143,6 +146,7 @@ const scanChain = async (chainKey, cexSet, dexSet, checkpoint, dayBuckets) => {
   };
 
   console.log(`  ${chainKey}: scanning ${from}..${end} (latest ${latest}) across ${rpcUrls.length} keys`);
+  if (sharedWindow) console.log(`  ${chainKey}: shared transfer window ${sharedWindow.meta.fromBlock}-${sharedWindow.meta.toBlock} available.`);
 
   // Build ordered chunk list, process in parallel batches (one RPC key each).
   const chunks = [];
@@ -158,11 +162,18 @@ const scanChain = async (chainKey, cexSet, dexSet, checkpoint, dayBuckets) => {
     const batch = chunks.slice(i, i + conc);
     const results = await Promise.allSettled(
       batch.map(([start, stop], j) =>
-        getLogs(rpcUrls[j % rpcUrls.length], {
-          fromBlock: `0x${start.toString(16)}`,
-          toBlock: `0x${stop.toString(16)}`,
-          address: cfg.token,
-          topics: [TRANSFER_TOPIC0],
+        getTransferLogsCached({
+          window: sharedWindow,
+          chain: chainKey,
+          tokens: [cfg.token],
+          fromBlock: start,
+          toBlock: stop,
+          fetchFromRpc: () => getLogs(rpcUrls[j % rpcUrls.length], {
+            fromBlock: `0x${start.toString(16)}`,
+            toBlock: `0x${stop.toString(16)}`,
+            address: cfg.token,
+            topics: [TRANSFER_TOPIC0],
+          }),
         }),
       ),
     );

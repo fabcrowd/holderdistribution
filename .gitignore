@@ -49,6 +49,10 @@ data/*/rebuild-transfers-*.ndjson
 data/*/asof-window-*.ndjson
 data/*/rebuild-transfers-*.json
 
+# Same-run shared Transfer-log window (pull-holders-rpc.js writes, the flow and
+# tier scans read; HD_SHARED_SCAN=off disables). Scratch, never committed.
+data/**/transfer-window-*
+
 # pull-holders-rpc.js's same-run "before this run" scratch snapshot. TEL's root
 # copy is untouched (refresh-tel-holders.yml names its files and never stages
 # it); per-project workflows stage public/data/<slug>/ as a whole dir, so the

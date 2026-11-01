@@ -145,6 +145,7 @@ jobs:
         # quietly assumed fresh.
         #
         # A project without a StakeChanged staking contract exits 0 immediately.
+        id: stakers
         continue-on-error: true
         # Cap the step: it is non-fatal, so when it degrades to the throttled
         # Etherscan path it must not spend ~50 billed minutes before giving up.
@@ -161,6 +162,7 @@ jobs:
         # Non-fatal: on failure the lite feed keeps the previous staking file's
         # numbers (or none) and holders still publish. Exits 0 immediately for a
         # project with no zebecStakeV1 staking entry (e.g. TEL).
+        id: solana_staking
         continue-on-error: true
         timeout-minutes: 10
         env:
@@ -386,26 +388,58 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Fail if the Solana flow scan crashed
-        # The scan is continue-on-error so the other feeds still publish, but a
-        # crash must not leave the run green (ZBCN flows stayed empty unnoticed).
-        # Runs after the commit step so the other feeds are already pushed.
-        if: ${{ steps.solana.outcome == 'failure' }}
+      - name: Stage verdict
+        # Non-fatal stages use continue-on-error so one failure cannot block the
+        # others, which also leaves the run green. This step runs last (after the
+        # feeds are committed) and fails the run if any of them failed, so
+        # "Notify on failure" files the issue. Every continue-on-error step with
+        # an id must be listed here (scripts/lib/stageVerdict.test.js enforces it).
+        # holders_public is not listed: its failure is retried by the fatal
+        # "retry on keys" step, so only the retry's result matters.
+        if: always()
+        env:
+          OUTCOME_STAKERS: ${{ steps.stakers.outcome }}
+          OUTCOME_SOLANA_STAKING: ${{ steps.solana_staking.outcome }}
+          OUTCOME_SOLANA: ${{ steps.solana.outcome }}
+          OUTCOME_FLOWS: ${{ steps.flows.outcome }}
+          OUTCOME_TIERS: ${{ steps.tiers.outcome }}
+          OUTCOME_GAPS: ${{ steps.gaps.outcome }}
+          OUTCOME_USAGE: ${{ steps.usage.outcome }}
         run: |
-          echo "::error::Solana flow scan failed; exchange and tier flows for Solana projects are stale."
-          exit 1
-
-      - name: Fail if the monthly RPC budget is exceeded
-        if: ${{ steps.usage.outcome == 'failure' }}
-        run: |
-          echo "::error::Monthly RPC budget exceeded (config/budgets.json); see the 'Summarize RPC usage' step."
-          exit 1
+          failed=""
+          summary=""
+          while IFS='|' read -r id var label; do
+            [ -n "$id" ] || continue
+            if [ "${!var}" = "failure" ]; then
+              echo "::error::Stage '$id' failed: $label."
+              failed="${failed:+$failed, }$id ($label)"
+              summary="$summary- \`$id\`: $label"$'\n'
+            fi
+          done <<'STAGES'
+          stakers|OUTCOME_STAKERS|Staker balances refresh (staking attribution is stale)
+          solana_staking|OUTCOME_SOLANA_STAKING|Solana staking positions pull
+          solana|OUTCOME_SOLANA|Solana flow scan (exchange and tier flows for Solana projects are stale)
+          flows|OUTCOME_FLOWS|Exchange flows scan
+          tiers|OUTCOME_TIERS|Tier outflows generation
+          gaps|OUTCOME_GAPS|Holders-history gap fill
+          usage|OUTCOME_USAGE|monthly RPC budget exceeded or usage summary crashed (config/budgets.json, see the Summarize RPC usage step)
+          STAGES
+          if [ -n "$failed" ]; then
+            {
+              echo "### Failed stages for ${HD_PROJECT}"
+              printf '%s' "$summary"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "FAILED_STAGES=$failed" >> "$GITHUB_ENV"
+            exit 1
+          fi
+          echo "All non-fatal stages succeeded or were skipped."
 
       - name: Notify on failure
         if: failure()
         uses: actions/github-script@v7
         env:
           TICKER: ${{ matrix.ticker }}
+          FAILED_STAGES: ${{ env.FAILED_STAGES }}
         with:
           script: |
             // One issue per project; TEL's title is the one this workflow always used.
@@ -418,7 +452,10 @@ jobs:
               labels: "pipeline-failure",
             });
             const match = existing.find((issue) => issue.title === title);
-            const body = `Run failed: ${runUrl}\nTriggered: ${new Date().toISOString()}`;
+            const failedStages = process.env.FAILED_STAGES
+              ? `\nFailed stages: ${process.env.FAILED_STAGES}`
+              : "";
+            const body = `Run failed: ${runUrl}${failedStages}\nTriggered: ${new Date().toISOString()}`;
             if (match) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
