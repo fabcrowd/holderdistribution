@@ -62,6 +62,8 @@ import { buildSolanaTierDays } from "./lib/solana/flowFeeds.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 import { projectHolderTiers, rangeLabelOf } from "./lib/holderTiers.js";
 import { partialDateFor } from "./lib/partialDay.js";
+import { readWindow, transferWindowName } from "./lib/transferWindow.js";
+import { getTransferLogsCached, sharedScanEnabled } from "./lib/sharedTransferLogs.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk + git history), work dir (day store / checkpoint), chain
@@ -292,6 +294,7 @@ const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
   const cfg = CHAINS[chainKey];
   const rpcUrls = await getUsableRpcUrls(chainKey, { logRange: true });
   if (rpcUrls.length === 0) { console.warn(`  ${chainKey}: no RPC URLs — skipping.`); return; }
+  const sharedWindow = sharedScanEnabled() ? await readWindow(projectWork(project)(transferWindowName(chainKey))) : null;
 
   const latest = hexToNumber(await rpcCall(rpcUrls[0], "eth_blockNumber", []));
   const defaultStart = Math.max(0, latest - Math.ceil(cfg.blocksPerDay * (MAX_WINDOW_DAYS + 3)));
@@ -327,6 +330,7 @@ const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
   };
 
   console.log(`  ${chainKey}: scanning ${from}..${end} (latest ${latest}) across ${rpcUrls.length} keys`);
+  if (sharedWindow) console.log(`  ${chainKey}: shared transfer window ${sharedWindow.meta.fromBlock}-${sharedWindow.meta.toBlock} available.`);
 
   const chunks = [];
   for (let s = from; s <= end; s += cfg.chunk) chunks.push([s, Math.min(s + cfg.chunk - 1, end)]);
@@ -339,11 +343,18 @@ const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
     const batch = chunks.slice(i, i + conc);
     const results = await Promise.allSettled(
       batch.map(([s, e], j) =>
-        getLogs(rpcUrls[j % rpcUrls.length], {
-          fromBlock: `0x${s.toString(16)}`,
-          toBlock: `0x${e.toString(16)}`,
-          address: cfg.token,
-          topics: [TRANSFER_TOPIC0],
+        getTransferLogsCached({
+          window: sharedWindow,
+          chain: chainKey,
+          tokens: [cfg.token],
+          fromBlock: s,
+          toBlock: e,
+          fetchFromRpc: () => getLogs(rpcUrls[j % rpcUrls.length], {
+            fromBlock: `0x${s.toString(16)}`,
+            toBlock: `0x${e.toString(16)}`,
+            address: cfg.token,
+            topics: [TRANSFER_TOPIC0],
+          }),
         }),
       ),
     );
