@@ -17,8 +17,9 @@
  * Floor: --since | SOLANA_FLOWS_SINCE | the first committed holder snapshot
  * date (never earlier: no tier / no real data before it).
  * Budget: --max-tx | SOLANA_FLOW_MAX_TX (default 15000 transactions per run, about a day of ZBCN venue activity;
- * the rest is picked up by the next run), SOLANA_FLOW_MAX_MS (default 20 min
- * wall clock; stops cleanly after the current chunk). SOLANA_FLOW_CONCURRENCY
+ * the rest is picked up by the next run), SOLANA_FLOW_MAX_MS (default 40 min
+ * wall clock, under the workflow step's 45-min timeout; the Helius free tier
+ * moves about 6 tx/s; stops cleanly after the current chunk). SOLANA_FLOW_CONCURRENCY
  * (default 4). Progress is saved after every chunk of transactions.
  * RPC: chain "solana" reads SOLANA_RPC_0..9; this scan tries keyed endpoints
  * first and the public one last (it makes thousands of calls).
@@ -70,8 +71,8 @@ const { configureSolanaChain, getUsableSolanaRpcUrls, keyedFirst, solanaCallWith
 const { scanVenueFlows } = await import("./lib/solana/flowScan.js");
 const { applyFlowEventsOnce, emptyFlowStore } = await import("./lib/solana/flowFeeds.js");
 
-// Stop cleanly before the workflow step's 25-minute timeout so progress is kept.
-const deadlineMs = Date.now() + (Number(process.env.SOLANA_FLOW_MAX_MS) || 20 * 60 * 1000);
+// Stop cleanly before the workflow step's 45-minute timeout so progress is kept.
+const deadlineMs = Date.now() + (Number(process.env.SOLANA_FLOW_MAX_MS) || 40 * 60 * 1000);
 
 // A half-written JSON file would make the next run discard the cursors or the store.
 const writeJsonAtomic = async (file, value) => {

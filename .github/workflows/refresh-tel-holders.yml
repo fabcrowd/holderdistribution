@@ -320,7 +320,7 @@ jobs:
         if: ${{ env.HD_SOLANA_FLOWS == 'true' }}
         id: solana
         continue-on-error: true
-        timeout-minutes: 25
+        timeout-minutes: 45
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}

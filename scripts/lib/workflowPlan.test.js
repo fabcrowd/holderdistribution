@@ -17,7 +17,8 @@ describe("workflowMatrix", () => {
     const { include, skipped } = workflowMatrix("all", repo);
     expect(skipped).toEqual([]);
     expect(include.map((p) => p.slug)).toEqual(["tel", "zebec-network"]);
-    expect(include.map((p) => p.timeout)).toEqual([90, 30]);
+    const configured = include.map((p) => resolveProject(p.slug, repo).config?.pipeline?.workflowTimeoutMinutes);
+    expect(include.map((p) => p.timeout)).toEqual(configured);
     expect(include[0].ticker).toBe("TEL");
   });
 
