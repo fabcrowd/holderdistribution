@@ -22273,7 +22273,7 @@ var ASSOCIATION_STABLECOIN_FLOWS = {
   sections: [
     {
       heading: "1. How the payments are initiated",
-      body: "The Association Safes do not send stablecoins themselves \u2014 but they are the origin of these payments. They send TEL to 0x11cb903d\u2026, an EOA on both Ethereum and Polygon (confirmed on-chain: not a contract, not a Safe) that community sources identify as the TA Sale Wallet, managed by the Association to handle bridging, swapping and payments on its behalf. That wallet sells the TEL for USDC and makes the payouts. So every payment below is an Association payment; the Safe-to-EOA step is mechanics, not a change of ownership. Worth flagging on its own: an EOA is controlled by a single private key, with none of the multisig approval the Association Safes themselves require. All 15 labelled Association addresses (TEL Treasury, TAO Safe, TAO Distribution, the Councils, Validator/Staker/Developer Safes) were checked for USDC, bridged USDC.e, USDT and DAI on both chains. Every one returns zero transfers. The single exception is the TAO Implementation Wallet, which passed $18,810.68 straight through in March 2025 (in and out the same day, same amount) and has been idle in stablecoins since. The Association's own multisigs operate purely in TEL.",
+      body: "The Association Safes do not send stablecoins themselves \u2014 but they are the origin of these payments. They send TEL to [0x11cb903d\u2026](0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3), an EOA on both Ethereum and Polygon (confirmed on-chain: not a contract, not a Safe) that community sources identify as the TA Sale Wallet, managed by the Association to handle bridging, swapping and payments on its behalf. That wallet sells the TEL for USDC and makes the payouts. So every payment below is an Association payment; the Safe-to-EOA step is mechanics, not a change of ownership. Worth flagging on its own: an EOA is controlled by a single private key, with none of the multisig approval the Association Safes themselves require. All 15 labelled Association addresses (TEL Treasury, TAO Safe, TAO Distribution, the Councils, Validator/Staker/Developer Safes) were checked for USDC, bridged USDC.e, USDT and DAI on both chains. Every one returns zero transfers. The single exception is the TAO Implementation Wallet, which passed $18,810.68 straight through in March 2025 (in and out the same day, same amount) and has been idle in stablecoins since. The Association's own multisigs operate purely in TEL.",
       rows: []
     },
     {
@@ -22290,7 +22290,7 @@ var ASSOCIATION_STABLECOIN_FLOWS = {
     },
     {
       heading: "2. Where the stablecoins actually come from",
-      body: "Two wallets, already named in data/association-payment-mapping.md as TEL destinations, are the entire stablecoin engine. 'Recipient' (0xE71e5BB3\u2026, a 1-of-1 Safe on Polygon) sells TEL for USDC on CoW Swap continuously \u2014 206 trades since 2026-03-30 totalling $432,326.02, the most recent two days before this trace. It forwards the proceeds to 'Conduit' (0x11cb903d\u2026) in 8 lump transfers of $321,169.55. Conduit also sells TEL directly through 1inch, KyberSwap and CoW. Conduit then bridges its USDC from Polygon to itself on Ethereum using Circle's official CCTP \u2014 27 burns totalling $1,085,006.36, confirmed by decoding the DepositForBurn events (same address on both sides). Payouts happen on the Ethereum side.",
+      body: "Two wallets, already named in data/association-payment-mapping.md as TEL destinations, are the entire stablecoin engine. 'Recipient' ([0xE71e5BB3\u2026](0xe71e5bb31d76be3a4a840e1781a4b49645079105|polygon), a 1-of-1 Safe on Polygon) sells TEL for USDC on CoW Swap continuously \u2014 206 trades since 2026-03-30 totalling $432,326.02, the most recent two days before this trace. It forwards the proceeds to 'Conduit' ([0x11cb903d\u2026](0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3)) in 8 lump transfers of $321,169.55. Conduit also sells TEL directly through 1inch, KyberSwap and CoW. Conduit then bridges its USDC from Polygon to itself on Ethereum using Circle's official CCTP \u2014 27 burns totalling $1,085,006.36, confirmed by decoding the DepositForBurn events (same address on both sides). Payouts happen on the Ethereum side.",
       rows: [
         { label: "Recipient: TEL sold for USDC on CoW Swap", value: "$432,326.02 over 206 trades" },
         { label: "Recipient \u2192 Conduit", value: "$321,169.55 over 8 transfers" },
@@ -22308,7 +22308,7 @@ var ASSOCIATION_STABLECOIN_FLOWS = {
     },
     {
       heading: "4. The largest destination is a payment processor, not a person",
-      body: "The biggest recurring destination is a 2-of-7 Gnosis Safe (0x3dcb7cfb\u2026) that received $627,639.98 from Conduit across 15 payments since May 2025. On its own, that looks like a large private beneficiary. It is not. That Safe handles $21.5M in from 244 different senders and $22.5M out to 1,341 distinct payees, with 99 of them on recurring schedules, and it cashes out through a Circle deposit contract (CircleDeposit1, $1,401,000). Conduit ranks only 11th among its funders and accounts for 1.8% of its inflow. The shape \u2014 many-to-many, high frequency, recurring, fiat off-ramp \u2014 is a payroll or mass-payout service that Telcoin-linked funds are one client of.",
+      body: "The biggest recurring destination is a 2-of-7 Gnosis Safe ([0x3dcb7cfb\u2026](0x3dcb7cfbb431a11cabb6f7f2296e2354f488efc2)) that received $627,639.98 from Conduit across 15 payments since May 2025. On its own, that looks like a large private beneficiary. It is not. That Safe handles $21.5M in from 244 different senders and $22.5M out to 1,341 distinct payees, with 99 of them on recurring schedules, and it cashes out through a Circle deposit contract (CircleDeposit1, $1,401,000). Conduit ranks only 11th among its funders and accounts for 1.8% of its inflow. The shape \u2014 many-to-many, high frequency, recurring, fiat off-ramp \u2014 is a payroll or mass-payout service that Telcoin-linked funds are one client of.",
       rows: [
         { label: "Destination Safe throughput", value: "$21.5M in / $22.5M out" },
         { label: "Senders in / payees out", value: "244 / 1,341 (99 recurring)" },
@@ -105889,7 +105889,7 @@ var TEL_DISPOSITION_LEDGER = {
 var import_node_crypto = require("node:crypto");
 
 // src/lib/forensicsPasswordHash.ts
-var FORENSICS_PASSWORD_SHA256 = "dc1303c56ee8888310bd0560f5d0cb93a3e3ba4653630d6824aa56ba7c0463d8";
+var FORENSICS_PASSWORD_SHA256 = "68ec0f87d5a4a2133c3714a2c48c348529f204c48eecae48bc49e7b1b7c2b93c";
 
 // netlify/functions-src/gateAuth.ts
 var DEFAULT_ALLOWED_ORIGINS = ["https://holderdistribution.com", "https://www.holderdistribution.com"];
