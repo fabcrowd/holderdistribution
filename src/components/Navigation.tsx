@@ -44,8 +44,8 @@ export const Navigation = (_props: NavigationProps = {}) => {
               beside the 44px controls. */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <Link to="/" aria-label="Holder Distribution home" className="flex min-h-11 items-center gap-2 group shrink-0">
-              <img src={logoIcon} alt="" width={32} height={32} className="h-8 w-8 transition-opacity group-hover:opacity-80 dark:brightness-150" />
-              <span className={cn("whitespace-nowrap text-base font-extrabold tracking-tight text-foreground md:text-lg", onToken ? "hidden sm:inline" : "")}>Holder Distribution</span>
+              <img src={logoIcon} alt="" width={56} height={56} className="h-[clamp(2.5rem,10vw,3.5rem)] w-[clamp(2.5rem,10vw,3.5rem)] transition-opacity group-hover:opacity-80 dark:brightness-150" />
+              <span className={cn("whitespace-nowrap text-[clamp(1rem,4vw,1.8rem)] font-extrabold tracking-tight text-foreground", onToken ? "hidden sm:inline" : "")}>Holder Distribution</span>
             </Link>
             {onToken && (
               <span className="flex min-h-11 min-w-0 items-center border-l border-primary/25 pl-2 md:pl-3">

@@ -111,9 +111,9 @@ export const TerminalDashboard = ({
               header reads as the portal's title bar, not another panel. */}
           <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary via-primary/70 to-[hsl(var(--ha-accent))]" />
           <div className="flex shrink-0 items-center gap-2">
-            <h1 className="whitespace-nowrap text-base font-extrabold tracking-tight text-foreground min-[1400px]:text-lg 2xl:text-xl">
-              <Link to="/" aria-label="Holder Distribution home" className="flex items-center gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                <img src={logoIcon} alt="" width={32} height={32} className="h-8 w-8" />
+            <h1 className="whitespace-nowrap text-[clamp(1.2rem,1.6vw,1.8rem)] font-extrabold tracking-tight text-foreground">
+              <Link to="/" aria-label="Holder Distribution home" className="flex items-center gap-3 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <img src={logoIcon} alt="" width={64} height={64} className="h-[clamp(2.5rem,3.5vw,3.5rem)] w-[clamp(2.5rem,3.5vw,3.5rem)]" />
                 Holder Distribution
               </Link>
             </h1>
@@ -219,7 +219,7 @@ export const TerminalDashboard = ({
           </div>
         </header>
 
-        {!explore && (
+        {!explore && !mainScrolls && (
           <div data-testid="terminal-headline" className="shrink-0 border-b border-border bg-background px-3 py-3">
             <AnswerCards tiles={tiles} selectedView={selectedView} isError={isError} />
           </div>
@@ -230,6 +230,11 @@ export const TerminalDashboard = ({
           tabIndex={-1}
           className={`relative min-h-0 flex-1 p-3 focus:outline-none ${mainScrolls ? "overflow-y-auto" : "overflow-hidden"}`}
         >
+          {!explore && mainScrolls && (
+            <div data-testid="terminal-headline" className="-mx-3 -mt-3 mb-3 border-b border-border bg-background px-3 py-3">
+              <AnswerCards tiles={tiles} selectedView={selectedView} isError={isError} />
+            </div>
+          )}
           <div key={view} className={mainScrolls ? `min-h-full ${viewIn}` : `h-full min-h-0 ${viewIn}`}>
             {children}
           </div>
