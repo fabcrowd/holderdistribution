@@ -62,6 +62,14 @@ docs/TEL-CONTRACTS.md      TEL contract registry (legacy vs. v3) + supply accoun
 CLAUDE.md                  deeper architecture/handoff notes
 ```
 
+### Reading the Distribution tier flows
+
+Net numbers on the tier-flow diagram are simply **in minus out** over the selected period:
+wallets = joined − left, token amount = tokens in − tokens out. The Tiers table "Change"
+columns are different: they compare the current snapshot with the period baseline (a † marks
+a reclassification that makes the comparison unreliable). Charts support wheel/pinch zoom,
+drag to pan, keyboard arrows (Shift+arrows pan, +/− zoom, 0 or Esc reset) and a data-table view.
+
 Mapping a new token is config-only: register it in `config/projects.json`, add
 `config/projects/<slug>.json`, and the landing page, sitemap and nightly refresh pick it up.
 See [docs/MULTI-TOKEN.md](docs/MULTI-TOKEN.md) for the layout, the pipeline `--project <slug>`
