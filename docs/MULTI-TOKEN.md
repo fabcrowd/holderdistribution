@@ -799,7 +799,7 @@ nothing else.
   classified, not an exchange flow).
 - **Resume and budget:** signatures from all accounts are merged and processed
   oldest first in whole-slot steps, at most `--max-tx` / `SOLANA_FLOW_MAX_TX`
-  (default 3000) per run; each account cursor advances to its newest processed
+  (default 15000) per run; each account cursor advances to its newest processed
   signature, a transaction touching two venue accounts is counted once, and a
   re-run with nothing new changes no file. `SOLANA_FLOW_CONCURRENCY` (default 4)
   bounds parallel `getTransaction`; 429s use the shared `rpcCall` backoff. The

@@ -16,7 +16,7 @@
  *
  * Floor: --since | SOLANA_FLOWS_SINCE | the first committed holder snapshot
  * date (never earlier: no tier / no real data before it).
- * Budget: --max-tx | SOLANA_FLOW_MAX_TX (default 3000 transactions per run;
+ * Budget: --max-tx | SOLANA_FLOW_MAX_TX (default 15000 transactions per run, about a day of ZBCN venue activity;
  * the rest is picked up by the next run), SOLANA_FLOW_MAX_MS (default 20 min
  * wall clock; stops cleanly after the current chunk). SOLANA_FLOW_CONCURRENCY
  * (default 4). Progress is saved after every chunk of transactions.
@@ -63,7 +63,7 @@ if (!/^\d{4}-\d{2}-\d{2}$/.test(since ?? "")) {
   process.exit(1);
 }
 const sinceSec = Date.parse(`${since}T00:00:00Z`) / 1000;
-const maxTx = Number(argValue("--max-tx") || process.env.SOLANA_FLOW_MAX_TX) || 3000;
+const maxTx = Number(argValue("--max-tx") || process.env.SOLANA_FLOW_MAX_TX) || 15000;
 const concurrency = Number(process.env.SOLANA_FLOW_CONCURRENCY) || 4;
 
 const { configureSolanaChain, getUsableSolanaRpcUrls, keyedFirst, solanaCallWithFailover } = await import("./lib/solana/rpc.js");
