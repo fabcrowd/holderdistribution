@@ -47,8 +47,9 @@ export function classifyProvider(url) {
   } catch {
     return "public";
   }
-  if (host.endsWith("alchemy.com") || host.endsWith("alchemyapi.io")) return "alchemy";
-  if (host.endsWith("helius-rpc.com") || host.endsWith("helius.dev")) return "helius";
+  const isHostOrSubdomain = (value, domain) => value === domain || value.endsWith(`.${domain}`);
+  if (isHostOrSubdomain(host, "alchemy.com") || isHostOrSubdomain(host, "alchemyapi.io")) return "alchemy";
+  if (isHostOrSubdomain(host, "helius-rpc.com") || isHostOrSubdomain(host, "helius.dev")) return "helius";
   return "public";
 }
 
