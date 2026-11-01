@@ -20,7 +20,7 @@ import { getTransactionAnyVersion } from "./getTransaction.js";
 
 export const SIGNATURE_PAGE = 1000;
 const MAX_PAGES = 500;
-export const DEFAULT_CHUNK = 200;
+export const DEFAULT_CHUNK = 60;
 
 export const bySlotThenSig = (a, b) => (a.slot !== b.slot ? a.slot - b.slot : a.signature < b.signature ? -1 : 1);
 
