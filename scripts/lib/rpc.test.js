@@ -120,6 +120,110 @@ describe("getUsableRpcUrls public fallback", () => {
     expect(urls).toEqual(["https://eth-mainnet.g.alchemy.com/v2/goodkey"]);
   });
 
+  describe("logRange probe", () => {
+    afterEach(() => {
+      delete process.env.ETH_RPC_3;
+    });
+    const freeTierError = {
+      jsonrpc: "2.0",
+      id: 1,
+      error: { code: -32600, message: "Under the Free tier plan, you can make eth_getLogs requests with up to a 10 block range." },
+    };
+    // A free key answers eth_blockNumber but rejects a wide eth_getLogs; a paid key answers both.
+    const mockKeys = () => {
+      globalThis.fetch = vi.fn(async (url, init) => {
+        const { method } = JSON.parse(init.body);
+        if (method === "eth_blockNumber") return jsonResponse({ jsonrpc: "2.0", id: 1, result: "0x10000" });
+        return String(url).includes("freekey") ? jsonResponse(freeTierError, 400) : jsonResponse({ jsonrpc: "2.0", id: 1, result: [] });
+      });
+    };
+
+    it("drops free-tier keys from the pool for log scans, keeps the paid ones", async () => {
+      process.env.ETH_RPC_0 = "https://eth-mainnet.g.alchemy.com/v2/freekey";
+      process.env.ETH_RPC_3 = "https://eth-mainnet.g.alchemy.com/v2/paidkey";
+      mockKeys();
+      const urls = await getUsableRpcUrls("ethereum", { logger: { log() {}, warn() {} }, logRange: true });
+      expect(urls).toEqual(["https://eth-mainnet.g.alchemy.com/v2/paidkey"]);
+    });
+
+    it("does not probe logs (and keeps every key) when logRange is off", async () => {
+      process.env.ETH_RPC_0 = "https://eth-mainnet.g.alchemy.com/v2/freekey";
+      process.env.ETH_RPC_3 = "https://eth-mainnet.g.alchemy.com/v2/paidkey";
+      mockKeys();
+      const urls = await getUsableRpcUrls("ethereum", { logger: { log() {}, warn() {} } });
+      expect(urls).toHaveLength(2);
+      expect(globalThis.fetch.mock.calls.every(([, init]) => JSON.parse(init.body).method === "eth_blockNumber")).toBe(true);
+    });
+
+    it("falls back to public endpoints when every key is free-tier", async () => {
+      process.env.ETH_RPC_0 = "https://eth-mainnet.g.alchemy.com/v2/freekey";
+      globalThis.fetch = vi.fn(async (url, init) => {
+        const { method } = JSON.parse(init.body);
+        if (method === "eth_blockNumber") return jsonResponse({ jsonrpc: "2.0", id: 1, result: "0x10000" });
+        return jsonResponse(freeTierError, 400);
+      });
+      const urls = await getUsableRpcUrls("ethereum", { logger: { log() {}, warn() {} }, logRange: true });
+      expect(urls).toEqual(getPublicFallbackUrls("ethereum"));
+    });
+
+    // Keys answer eth_blockNumber but cap eth_getLogs; the rest of the public fleet is unreachable.
+    const mockFreeKeyWithPublicDown = () => {
+      globalThis.fetch = vi.fn(async (url, init) => {
+        if (!String(url).includes("alchemy")) return jsonResponse({}, 503);
+        const { method } = JSON.parse(init.body);
+        if (method === "eth_blockNumber") return jsonResponse({ jsonrpc: "2.0", id: 1, result: "0x10000" });
+        return jsonResponse(freeTierError, 400);
+      });
+    };
+
+    it("returns free-tier keys (not a throw) when every key is free-tier and public endpoints are down, and caches them", async () => {
+      process.env.ETH_RPC_0 = "https://eth-mainnet.g.alchemy.com/v2/freekey";
+      mockFreeKeyWithPublicDown();
+      const logger = { log() {}, warn: vi.fn() };
+      const urls = await getUsableRpcUrls("ethereum", { logger, logRange: true });
+      expect(urls).toEqual(["https://eth-mainnet.g.alchemy.com/v2/freekey"]);
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("only free-tier keys available"));
+
+      const callsAfterFirst = globalThis.fetch.mock.calls.length;
+      await expect(getUsableRpcUrls("ethereum", { logger, logRange: true })).resolves.toEqual(urls);
+      expect(globalThis.fetch.mock.calls.length).toBe(callsAfterFirst);
+    });
+
+    it("prefers public endpoints over free-tier keys when a public endpoint answers", async () => {
+      process.env.ETH_RPC_0 = "https://eth-mainnet.g.alchemy.com/v2/freekey";
+      const logger = { log() {}, warn: vi.fn() };
+      globalThis.fetch = vi.fn(async (url, init) => {
+        if (!String(url).includes("alchemy")) return jsonResponse({ jsonrpc: "2.0", id: 1, result: "0x1" });
+        const { method } = JSON.parse(init.body);
+        if (method === "eth_blockNumber") return jsonResponse({ jsonrpc: "2.0", id: 1, result: "0x10000" });
+        return jsonResponse(freeTierError, 400);
+      });
+      const urls = await getUsableRpcUrls("ethereum", { logger, logRange: true });
+      expect(urls).toEqual(getPublicFallbackUrls("ethereum"));
+      expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining("only free-tier keys available"));
+    });
+
+    it("keeps only the healthy key when the pool mixes one free-tier and one paid key, even with public endpoints down", async () => {
+      process.env.ETH_RPC_0 = "https://eth-mainnet.g.alchemy.com/v2/freekey";
+      process.env.ETH_RPC_3 = "https://eth-mainnet.g.alchemy.com/v2/paidkey";
+      mockKeys();
+      const logger = { log() {}, warn: vi.fn() };
+      const urls = await getUsableRpcUrls("ethereum", { logger, logRange: true });
+      expect(urls).toEqual(["https://eth-mainnet.g.alchemy.com/v2/paidkey"]);
+      expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining("only free-tier keys available"));
+    });
+
+    it("still throws when every key is plainly dead (not free-tier) and public endpoints are down", async () => {
+      process.env.ETH_RPC_0 = "https://eth-mainnet.g.alchemy.com/v2/deadkey";
+      globalThis.fetch = vi.fn(async (url) =>
+        String(url).includes("alchemy") ? jsonResponse(quotaError, 429) : jsonResponse({}, 503),
+      );
+      await expect(
+        getUsableRpcUrls("ethereum", { logger: { log() {}, warn() {} }, logRange: true }),
+      ).rejects.toThrow(/No usable RPC URLs/);
+    });
+  });
+
   it("can be disabled with PUBLIC_RPC_FALLBACK=off", async () => {
     process.env.ETH_RPC_0 = "https://eth-mainnet.g.alchemy.com/v2/deadkey";
     process.env.PUBLIC_RPC_FALLBACK = "off";

@@ -15,6 +15,7 @@
  */
 import process from "node:process";
 import { configureProjectRpc, getAllRpcUrls, getPublicFallbackUrls, rpcCall } from "../rpc.js";
+import { recordCall } from "../rpcMetrics.js";
 
 export const SOLANA_PUBLIC_RPC = Object.freeze(["https://api.mainnet-beta.solana.com"]);
 
@@ -46,6 +47,16 @@ export function solanaRpcCandidates(chainKey = "solana") {
   return [...new Set([...solanaPublicUrls(chainKey), ...getAllRpcUrls(chainKey)])];
 }
 
+/**
+ * Reorders a usable-URL list so keyed endpoints come before public ones.
+ * For call-heavy scans (thousands of getTransaction calls) the public endpoint
+ * 429s and burns minutes in backoff, so the scan should only fall back to it.
+ */
+export function keyedFirst(urls, chainKey = "solana") {
+  const isPublic = new Set(solanaPublicUrls(chainKey));
+  return [...urls.filter((u) => !isPublic.has(u)), ...urls.filter((u) => isPublic.has(u))];
+}
+
 async function probe(url, call) {
   try {
     const r = await call(url, "getHealth", []);
@@ -64,6 +75,7 @@ async function probe(url, call) {
 
 /** One-shot JSON-RPC call (no retry ladder) for the health probe. */
 async function probeCall(url, method, params) {
+  recordCall(url, method);
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

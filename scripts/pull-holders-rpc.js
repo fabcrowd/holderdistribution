@@ -363,7 +363,7 @@ const formatDate = (value) => {
  */
 async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = null) {
   const settings = rpcSettingsFor(chainKey);
-  const rpcUrls = await getUsableRpcUrls(chainKey);
+  const rpcUrls = await getUsableRpcUrls(chainKey, { logRange: true });
   if (rpcUrls.length === 0) {
     console.warn(`No RPC URLs for ${chainKey}; skipping.`);
     return { chainKey, balances: new Map(), checkpointData: null };

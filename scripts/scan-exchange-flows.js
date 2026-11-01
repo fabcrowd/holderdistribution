@@ -96,7 +96,7 @@ const blockTimestampSec = async (rpcUrl, blockNumber) => {
 
 const scanChain = async (chainKey, cexSet, dexSet, checkpoint, dayBuckets) => {
   const cfg = CHAINS[chainKey];
-  const rpcUrls = await getUsableRpcUrls(chainKey);
+  const rpcUrls = await getUsableRpcUrls(chainKey, { logRange: true });
   if (rpcUrls.length === 0) {
     console.warn(`  ${chainKey}: no RPC URLs configured — skipping.`);
     return;

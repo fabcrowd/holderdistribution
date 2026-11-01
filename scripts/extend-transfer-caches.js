@@ -117,7 +117,7 @@ const main = async () => {
     const cfg = CHAINS[chainKey];
     if (!cfg) throw new Error(`Unknown chain: ${chainKey}`);
 
-    const rpcUrls = await getUsableRpcUrls(chainKey);
+    const rpcUrls = await getUsableRpcUrls(chainKey, { logRange: true });
     if (rpcUrls.length === 0) {
       console.log(`${chainKey}: no RPC URLs — skipping (is ENV_PASSPHRASE set?)`);
       continue;

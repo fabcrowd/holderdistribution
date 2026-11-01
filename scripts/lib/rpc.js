@@ -1,4 +1,5 @@
 import process from "node:process";
+import { recordCall } from "./rpcMetrics.js";
 
 /**
  * Key pools: chain `<key>` reads env vars `<PREFIX>_RPC_0` … `<PREFIX>_RPC_9`
@@ -141,19 +142,52 @@ export function getAllRpcUrls(chainKey) {
  */
 const usableUrlCache = new Map();
 
-async function probeUrls(urls) {
+/** Width of the eth_getLogs range a log-scan key must accept (free Alchemy keys reject >10 blocks). */
+export const LOG_PROBE_BLOCKS = 1000;
+const LOG_PROBE_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+async function postProbe(url, method, params) {
+  recordCall(url, method);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+  });
+  const body = await response.json().catch(() => null);
+  return { response, body };
+}
+
+/**
+ * `logRange: true` additionally asks for a LOG_PROBE_BLOCKS-wide eth_getLogs
+ * (a filter that matches nothing, so the reply is empty) and rejects a key whose
+ * plan caps the range, e.g. Alchemy's free tier "up to a 10 block range". The
+ * health probe alone (eth_blockNumber) cannot see that: such keys pass it and
+ * then crawl a log scan in 10-block sub-chunks. Only the free-tier wording is
+ * treated as a rejection; other providers' range caps are handled by getLogs.
+ */
+async function probeUrls(urls, { logRange = false } = {}) {
   return Promise.all(
     urls.map(async (url) => {
       try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }),
-          signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
-        });
-        const body = await response.json().catch(() => null);
+        const { response, body } = await postProbe(url, "eth_blockNumber", []);
         if (!response.ok || body?.error) {
           return { url, ok: false, reason: body?.error?.message ?? `HTTP ${response.status}` };
+        }
+        if (logRange) {
+          const head = Number.parseInt(body?.result, 16);
+          if (Number.isFinite(head) && head >= LOG_PROBE_BLOCKS) {
+            const filter = {
+              fromBlock: `0x${(head - LOG_PROBE_BLOCKS + 1).toString(16)}`,
+              toBlock: `0x${head.toString(16)}`,
+              address: LOG_PROBE_ADDRESS,
+            };
+            const logs = await postProbe(url, "eth_getLogs", [filter]);
+            const message = logs.body?.error?.message ?? (logs.response.ok ? "" : `HTTP ${logs.response.status}`);
+            if (FREE_TIER_RANGE_PATTERN.test(message)) {
+              return { url, ok: false, freeTier: true, reason: `free-tier key (eth_getLogs capped; ${message.slice(0, 40)})` };
+            }
+          }
         }
         return { url, ok: true };
       } catch (error) {
@@ -178,8 +212,16 @@ async function probeUrls(urls) {
  */
 export const preferPublicRpc = () => /^(1|true|yes|on)$/i.test(process.env.RPC_PREFER_PUBLIC ?? "");
 
-export async function getUsableRpcUrls(chainKey, { logger = console } = {}) {
-  if (usableUrlCache.has(chainKey)) return usableUrlCache.get(chainKey);
+/**
+ * @param {string} chainKey
+ * @param {{ logger?: Console, logRange?: boolean }} [opts] `logRange`: log scanners
+ *   set it so free-tier keys (10-block eth_getLogs cap) are dropped from the pool
+ *   instead of crawling a scan in tiny sub-chunks. Costs one empty eth_getLogs per
+ *   configured key per process; leave it off for anything that only reads state.
+ */
+export async function getUsableRpcUrls(chainKey, { logger = console, logRange = false } = {}) {
+  const cacheKey = logRange ? `${chainKey}#logs` : chainKey;
+  if (usableUrlCache.has(cacheKey)) return usableUrlCache.get(cacheKey);
 
   if (preferPublicRpc()) {
     const publicUrls = getPublicFallbackUrls(chainKey);
@@ -189,7 +231,7 @@ export async function getUsableRpcUrls(chainKey, { logger = console } = {}) {
         logger.log(
           `RPC pool ${chainKey}: RPC_PREFER_PUBLIC — using ${publicUsable.length}/${publicUrls.length} public endpoint(s), keys held in reserve`,
         );
-        usableUrlCache.set(chainKey, publicUsable);
+        usableUrlCache.set(cacheKey, publicUsable);
         return publicUsable;
       }
       logger.warn(`RPC pool ${chainKey}: RPC_PREFER_PUBLIC set but no public endpoint answered — using configured keys`);
@@ -198,11 +240,11 @@ export async function getUsableRpcUrls(chainKey, { logger = console } = {}) {
 
   const configured = getAllRpcUrls(chainKey);
   if (configured.length === 0) {
-    usableUrlCache.set(chainKey, []);
+    usableUrlCache.set(cacheKey, []);
     return [];
   }
 
-  const results = await probeUrls(configured);
+  const results = await probeUrls(configured, { logRange });
 
   const usable = results.filter((r) => r.ok).map((r) => r.url);
   const dead = results.filter((r) => !r.ok);
@@ -223,16 +265,24 @@ export async function getUsableRpcUrls(chainKey, { logger = console } = {}) {
           `Slower and rate-limited; restore/upgrade the Alchemy keys for full speed.`,
       );
       if (publicUsable.length > 0) {
-        usableUrlCache.set(chainKey, publicUsable);
+        usableUrlCache.set(cacheKey, publicUsable);
         return publicUsable;
       }
+    }
+    // Free-tier keys answer eth_blockNumber, so they work, just slowly for log scans.
+    // Better to scan slowly than to fail the run on keys that are alive.
+    const freeTier = results.filter((r) => r.freeTier).map((r) => r.url);
+    if (freeTier.length > 0) {
+      logger.warn(`RPC pool ${chainKey}: only free-tier keys available; log scans will be slow`);
+      usableUrlCache.set(cacheKey, freeTier);
+      return freeTier;
     }
     throw new Error(
       `No usable RPC URLs for ${chainKey}: all ${configured.length} configured key(s) failed a ` +
         `single eth_blockNumber. First reason: ${dead[0]?.reason ?? "unknown"}`,
     );
   }
-  usableUrlCache.set(chainKey, usable);
+  usableUrlCache.set(cacheKey, usable);
   return usable;
 }
 
@@ -291,6 +341,7 @@ function isRetryableNetworkError(err) {
  */
 export async function rpcCall(rpcUrl, method, params = [], attempt = 0) {
   let response;
+  recordCall(rpcUrl, method);
   try {
     response = await fetch(rpcUrl, {
       method: "POST",

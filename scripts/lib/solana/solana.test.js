@@ -8,6 +8,7 @@ import { aggregateTokenAccounts, holderScanParams, scanMintHolders } from "./spl
 import {
   __resetSolanaRpcForTests,
   getUsableSolanaRpcUrls,
+  keyedFirst,
   solanaCallWithFailover,
   solanaPublicUrls,
   solanaRpcCandidates,
@@ -146,6 +147,12 @@ describe("Solana RPC pool (matches the EVM pattern)", () => {
     process.env.SOLANA_RPC_3 = "https://key-b.example/rpc";
     expect(solanaPublicUrls("solana")).toEqual([...SOLANA_PUBLIC_RPC]);
     expect(solanaRpcCandidates("solana")).toEqual([...SOLANA_PUBLIC_RPC, "https://key-a.example/rpc", "https://key-b.example/rpc"]);
+  });
+
+  it("keyedFirst moves keyed endpoints ahead of the public one, order otherwise kept", () => {
+    const urls = [...SOLANA_PUBLIC_RPC, "https://key-a.example/rpc", "https://key-b.example/rpc"];
+    expect(keyedFirst(urls, "solana")).toEqual(["https://key-a.example/rpc", "https://key-b.example/rpc", ...SOLANA_PUBLIC_RPC]);
+    expect(keyedFirst([...SOLANA_PUBLIC_RPC], "solana")).toEqual([...SOLANA_PUBLIC_RPC]);
   });
 
   it("honours PUBLIC_RPC_FALLBACK=off and chains[].rpc.publicUrls", () => {

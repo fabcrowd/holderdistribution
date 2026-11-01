@@ -160,7 +160,7 @@ const main = async () => {
 
   const flagged = [];
   for (const chainKey of Object.keys(chains)) {
-    const rpcUrls = await getUsableRpcUrls(chainKey);
+    const rpcUrls = await getUsableRpcUrls(chainKey, { logRange: true });
     if (rpcUrls.length === 0) {
       console.warn(`No RPC URLs for ${chainKey}; skipping.`);
       continue;

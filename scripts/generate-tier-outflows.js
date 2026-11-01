@@ -290,7 +290,7 @@ const makeTierResolver = (snapCommits, fundCommits, snapDates, fundDates, excl) 
 
 const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
   const cfg = CHAINS[chainKey];
-  const rpcUrls = await getUsableRpcUrls(chainKey);
+  const rpcUrls = await getUsableRpcUrls(chainKey, { logRange: true });
   if (rpcUrls.length === 0) { console.warn(`  ${chainKey}: no RPC URLs — skipping.`); return; }
 
   const latest = hexToNumber(await rpcCall(rpcUrls[0], "eth_blockNumber", []));

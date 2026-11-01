@@ -349,7 +349,7 @@ async function main() {
 
   for (const chainKey of chainKeys) {
     const meta = chainConfig[chainKey];
-    const rpcUrls = await getUsableRpcUrls(chainKey);
+    const rpcUrls = await getUsableRpcUrls(chainKey, { logRange: true });
     if (!rpcUrls.length) throw new Error(`No RPC URLs for ${chainKey} — is ENV_PASSPHRASE set?`);
     const decimals = Number.isFinite(Number(meta?.decimals)) ? Number(meta.decimals) : 2;
     const genesis = Number(meta.fromBlock);

@@ -161,6 +161,38 @@ describe("scanVenueFlows", () => {
     expect(res.processed).toBe(2); // s1 and s2b share slot 100
   });
 
+  it("reports progress per chunk with advancing cursors", async () => {
+    const progress = [];
+    const res = await scan(fakeChain(world()), { chunkSize: 1, onProgress: (p) => progress.push(p) });
+    expect(progress.map((p) => p.newEvents.map((e) => e.signature))).toEqual([["s1"], ["s2"], ["s3"], ["s4"]]);
+    expect(progress.map((p) => p.processed)).toEqual([1, 2, 3, 4]);
+    expect(progress[0].accounts.MexcAta1.until).toBe("s1");
+    expect(progress[3].remaining).toBe(0);
+    expect(progress.flatMap((p) => p.newEvents)).toEqual(res.events);
+  });
+
+  it("keeps earlier chunks when a later transaction fetch fails", async () => {
+    const w = world();
+    const chain = fakeChain(w);
+    const flaky = async (method, params) => {
+      if (method === "getTransaction" && params[0] === "s3") throw new Error("every RPC endpoint failed");
+      return chain.call(method, params);
+    };
+    const progress = [];
+    await expect(scan({ call: flaky }, { chunkSize: 1, onProgress: (p) => progress.push(p) })).rejects.toThrow(/every RPC endpoint failed/);
+    expect(progress.map((p) => p.processed)).toEqual([1, 2]);
+    expect(progress[1].accounts.MexcAta1.until).toBe("s1");
+  });
+
+  it("stops at the deadline without losing the cursor", async () => {
+    const chain = fakeChain(world());
+    const res = await scan(chain, { deadlineMs: Date.now() - 1 });
+    expect(res.timedOut).toBe(true);
+    expect(res.processed).toBe(0);
+    expect(chain.calls.getTransaction).toBe(0);
+    expect(res.remaining).toBeGreaterThan(0);
+  });
+
   it("skips failed transactions and counts unavailable ones", async () => {
     const w = world();
     w.sigsByAccount.MexcAta1[0] = { ...w.sigsByAccount.MexcAta1[0], err: { InstructionError: [0, "x"] } };

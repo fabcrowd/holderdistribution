@@ -121,7 +121,7 @@ const main = async () => {
   // --- 1. Resolve each new date's start block per chain, extending date-blocks.
   for (const chainKey of CHAIN_KEYS) {
     const known = dateBlocks[chainKey] ?? {};
-    const rpcUrls = await getUsableRpcUrls(chainKey);
+    const rpcUrls = await getUsableRpcUrls(chainKey, { logRange: true });
     if (rpcUrls.length === 0) throw new Error(`${chainKey}: no RPC URLs (is ENV_PASSPHRASE set?)`);
     const rpcUrl = rpcUrls[0];
 
