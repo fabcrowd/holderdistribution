@@ -9,12 +9,16 @@ describe("cardStats", () => {
   it("formats holder count and retail share of total supply", () => {
     expect(cardStats(snap(102130, 66_323_619_610.4, 100_000_000_000))).toEqual({ holders: "102,130", retailShare: "66.3%" });
   });
-  it("counts unique wallets (overlap.uniqueCount), not the per-chain sum", () => {
+  it("reads the retail wallet count (metrics.holderCount), not the de-duplicated overlap count", () => {
     const s = {
       totals: { totalSupply: 100 },
       overlap: { uniqueCount: 99510 },
-      views: { combined: { metrics: { holderCount: 102129, totalBalance: 50 } } },
+      views: { combined: { metrics: { holderCount: 102125, totalBalance: 50 } } },
     } as unknown as HolderLiteSnapshot;
+    expect(cardStats(s).holders).toBe("102,125");
+  });
+  it("falls back to overlap.uniqueCount when holderCount is missing", () => {
+    const s = { totals: { totalSupply: 100 }, overlap: { uniqueCount: 99510 }, views: { combined: { metrics: {} } } } as unknown as HolderLiteSnapshot;
     expect(cardStats(s).holders).toBe("99,510");
   });
   it("shows a dash per missing stat, independently", () => {

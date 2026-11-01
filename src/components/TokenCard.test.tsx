@@ -20,7 +20,7 @@ describe("TokenCard", () => {
     expect(html).toContain(">ZBCN<");
     expect(html).toContain(">111,469<");
     expect(html).toContain(">38.6%<");
-    expect(html).toContain("Unique wallets");
+    expect(html).toContain("Retail Wallets");
     expect(html).toContain("Retail share of supply");
   });
   it("still renders and links when stats are dashes", () => {

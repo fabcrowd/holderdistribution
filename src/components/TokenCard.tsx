@@ -3,6 +3,7 @@ import type { CardStats } from "@/lib/landingStats";
 import type { CardConcentration, CardTrend } from "@/lib/cardTrend";
 import { CardSparkline } from "@/components/CardSparkline";
 import { tokenPath } from "@/lib/tokenRoutes";
+import { RETAIL_WALLETS_LABEL } from "@/lib/holderCounts";
 
 type Props = {
   slug: string;
@@ -48,7 +49,7 @@ export const TokenCard = ({ slug, name, ticker, image, stats, concentration = nu
       </div>
     </div>
     <dl className="grid grid-cols-2 gap-3">
-      <Stat label="Unique wallets" value={stats ? stats.holders : null} />
+      <Stat label={RETAIL_WALLETS_LABEL} value={stats ? stats.holders : null} />
       <Stat label="Retail share of supply" value={stats ? stats.retailShare : null} />
       <Stat label="Top 10 holders" value={concentration ? concentration.top10 : null} />
       <Stat label="Top 100 holders" value={concentration ? concentration.top100 : null} />
