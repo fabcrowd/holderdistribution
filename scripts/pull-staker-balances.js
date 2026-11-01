@@ -33,13 +33,15 @@
  * Outputs:
  *   public/data/funding-wallets.json
  *
- * The stakedBy() phase below is ~6,144 individual eth_call requests. Candidate
+ * The stakedBy() phase covers ~6,700 candidates. On the RPC path they are
+ * answered through Multicall3 (scripts/lib/multicall.js, STAKER_MULTICALL_BATCH
+ * per call, default 400), i.e. ~17 eth_calls instead of ~6,700 — about 99%
+ * fewer CU, from a single block. Candidate
  * discovery (StakeChanged log scan) always goes through Etherscan — it's a
  * handful of paginated requests, not the bottleneck. stakedBy() itself
  * prefers Alchemy Polygon RPC (MATIC_RPC_0..9, decrypted from .env.enc via
  * ENV_PASSPHRASE — same keys pull-holders-rpc.js uses) when available,
- * spreading calls across every configured key the same way
- * pull-holders-rpc.js's streamTransferLogs does (concurrency = key count).
+ * spreading the multicall batches across the configured keys.
  * Etherscan's proxy module is the fallback when no Alchemy keys are
  * configured — that path is ~25+ minutes even under ideal rate limiting
  * (this key's actual cap is 3 calls/sec, see REQUEST_DELAY_MS below).
@@ -59,6 +61,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, getPublicFallbackUrls, rpcCall, getLogs } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
+import { aggregateCalls, DEFAULT_MULTICALL_BATCH } from "./lib/multicall.js";
 import { scanStakeChangedCandidates } from "./lib/stakingDiscovery.js";
 import { STAKED_BY_SELECTOR, TOTAL_STAKED_SELECTOR, STAKE_CHANGED_TOPIC0, decodeUint256, parseStakeChangedAccount } from "./lib/staking.js";
 import { selectPipelineProject, projectPaths } from "./lib/projects.js";
@@ -356,6 +359,26 @@ const deleteCheckpoint = async () => {
  * whole scan. Returns raw (2-decimal) amounts, including zero-balance
  * entries.
  */
+/**
+ * Multicall with endpoint failover: when `primaryUrl` is unreachable, the chunk
+ * moves to the other pool URLs in order. Throws the last error only if every
+ * URL fails; the checkpoint already holds the finished chunks.
+ */
+const aggregateWithFailover = async (primaryUrl, calls, batchSize) => {
+  const urls = [primaryUrl, ...rpcPool.filter((url) => url !== primaryUrl)];
+  let lastError;
+  for (const url of urls) {
+    try {
+      return await aggregateCalls(url, calls, { maxBatch: batchSize });
+    } catch (error) {
+      lastError = error;
+      // Deliberately no URL or error text: RPC URLs carry API keys.
+      console.log(`  Multicall batch of ${calls.length} failed on one RPC URL; trying the next.`);
+    }
+  }
+  throw lastError;
+};
+
 const fetchStakedByAll = async (candidates, seedRaw = new Map()) => {
   const raw = new Map(seedRaw);
   const remaining = [...candidates].filter((address) => !raw.has(address));
@@ -365,24 +388,43 @@ const fetchStakedByAll = async (candidates, seedRaw = new Map()) => {
   if (remaining.length === 0) return raw;
 
   let queriedThisRun = 0;
-  const maybeCheckpoint = async () => {
-    queriedThisRun++;
-    if (queriedThisRun % 200 === 0 || queriedThisRun === remaining.length) {
+  const maybeCheckpoint = async (count = 1) => {
+    const before = queriedThisRun;
+    queriedThisRun += count;
+    if (Math.floor(queriedThisRun / 200) > Math.floor(before / 200) || queriedThisRun === remaining.length) {
       console.log(`  stakedBy: ${raw.size}/${candidates.size} candidates queried...`);
       await saveCheckpoint(candidates, raw);
     }
   };
 
   if (usingAlchemy) {
-    const concurrency = rpcPool.length;
-    console.log(`  Using ${concurrency} Alchemy Polygon RPC URL(s) for stakedBy() (concurrency = ${concurrency}).`);
+    // Multicall3: one eth_call answers a whole batch of stakedBy() lookups, so
+    // ~6,700 eth_calls (~175k CU) become ~17 calls, all read from one block.
+    const batchSize = Number(process.env.STAKER_MULTICALL_BATCH) || DEFAULT_MULTICALL_BATCH;
+    const chunks = [];
+    for (let i = 0; i < remaining.length; i += batchSize) chunks.push(remaining.slice(i, i + batchSize));
+    console.log(`  Using Multicall3 (${batchSize} stakedBy() per call, ${chunks.length} call(s)) over ${rpcPool.length} RPC URL(s).`);
+    let nextChunk = 0;
     await Promise.all(
-      rpcPool.map(async (rpcUrl, workerIdx) => {
-        for (let i = workerIdx; i < remaining.length; i += concurrency) {
-          const address = remaining[i];
-          const value = await ethCallViaRpc(rpcUrl, encodeStakedByCall(address));
-          raw.set(address, value);
-          await maybeCheckpoint();
+      rpcPool.map(async (rpcUrl) => {
+        for (;;) {
+          const chunk = chunks[nextChunk++];
+          if (!chunk) return;
+          const results = await aggregateWithFailover(
+            rpcUrl,
+            chunk.map((address) => ({ target: STAKING_CONTRACT, callData: encodeStakedByCall(address) })),
+            batchSize,
+          );
+          for (let i = 0; i < chunk.length; i++) {
+            const r = results[i];
+            // A call the batch could not answer falls back to a plain eth_call, so a
+            // single bad item never drops a staker.
+            const value = r.success && r.returnData.length >= 66
+              ? decodeUint256(r.returnData)
+              : await ethCallViaRpc(rpcUrl, encodeStakedByCall(chunk[i]));
+            raw.set(chunk[i], value);
+          }
+          await maybeCheckpoint(chunk.length);
         }
       })
     );
