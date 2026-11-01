@@ -23,6 +23,12 @@ describe("classifyProvider", () => {
     expect(classifyProvider("https://api.mainnet-beta.solana.com")).toBe("public");
     expect(classifyProvider("not a url")).toBe("public");
   });
+
+  it("does not match lookalike hosts that merely end with a provider domain", () => {
+    expect(classifyProvider("https://evilalchemy.com/v2/k")).toBe("public");
+    expect(classifyProvider("https://nothelius-rpc.com/?api-key=k")).toBe("public");
+    expect(classifyProvider("https://alchemy.com/v2/k")).toBe("alchemy");
+  });
 });
 
 describe("estimateUsage", () => {
