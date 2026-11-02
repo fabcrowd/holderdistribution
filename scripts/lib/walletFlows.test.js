@@ -8,6 +8,7 @@ import {
   buildVenueIndex,
   classifyOutflow,
   discoverLargeSellers,
+  RECON_CATEGORY_CLASS,
   telcoinSellTotals,
   validateWalletFlowsReport,
 } from "./walletFlows.js";
@@ -158,5 +159,108 @@ describe("committed wallet-flows report", () => {
       .filter((f) => /(from\s+|import\(\s*)["'][^"']*data\/forensics\//.test(fs.readFileSync(f, "utf8")))
       .map((f) => path.relative(root, f).split(path.sep).join("/"));
     expect(offenders).toEqual(["src/lib/loadForensicsDev.ts"]);
+  });
+});
+
+describe("validateWalletFlowsReport address kinds", () => {
+  const BASE58_MIXED_CASE = "7dGbd2QZcCKcTndnHcTL8q7SMVXAkp688NTQYwrRCrar";
+  const minimalReport = (address) => ({
+    version: 1,
+    generated: "2026-11-01T00:00:00.000Z",
+    distribution: { classes: [{ key: "retail" }] },
+    knownWallets: [{ address }],
+    largeSellers: [],
+  });
+
+  it("keeps the EVM default and rejects a base58 address", () => {
+    expect(validateWalletFlowsReport(minimalReport(A(1)))).toEqual([]);
+    expect(validateWalletFlowsReport(minimalReport(BASE58_MIXED_CASE))).toEqual([`bad address ${BASE58_MIXED_CASE}`]);
+  });
+
+  it("accepts a mixed-case base58 address when addressKind is base58", () => {
+    expect(validateWalletFlowsReport(minimalReport(BASE58_MIXED_CASE), { addressKind: "base58" })).toEqual([]);
+  });
+
+  it("rejects an 0x address when addressKind is base58", () => {
+    expect(validateWalletFlowsReport(minimalReport(A(1)), { addressKind: "base58" })).toEqual([`bad address ${A(1)}`]);
+  });
+
+  it("keeps staking out of the reconciliation category map", () => {
+    expect(RECON_CATEGORY_CLASS).not.toHaveProperty("staking");
+  });
+});
+
+describe("validateWalletFlowsReport optional sections", () => {
+  const SIG = "5xSigAbc";
+  const baseReport = () => ({
+    version: 1,
+    generated: "2026-11-01T00:00:00.000Z",
+    distribution: { classes: [{ key: "retail" }] },
+    knownWallets: [{ address: A(1) }],
+    largeSellers: [],
+  });
+  const validJournal = () => ({
+    window: "30d",
+    valuedAtReportTime: true,
+    totals: { count: 1, zbcnSold: 10, proceedsUsd: 5 },
+    sales: [
+      {
+        wallet: A(1),
+        label: "Seller",
+        sig: SIG,
+        url: "https://solscan.io/tx/5xSigAbc",
+        t: "2026-10-30T00:00:00.000Z",
+        zbcnSold: 10,
+        proceeds: [{ mint: "So11", symbol: "SOL", raw: "1500000000", decimals: 9, amount: 1.5, usd: 5, source: "native" }],
+        proceedsUsd: 5,
+        effectivePriceUsd: 0.5,
+        onwardStatus: "none-seen",
+        onward: [],
+      },
+    ],
+  });
+  const validTrace = () => ({
+    window: "30d",
+    totals: { received: 0, byKind: {} },
+    destinations: [],
+  });
+
+  it("treats a report without the optional keys as valid", () => {
+    expect(validateWalletFlowsReport(baseReport())).toEqual([]);
+  });
+
+  it("accepts valid salesJournal and unlabelledTrace sections", () => {
+    const report = { ...baseReport(), salesJournal: validJournal(), unlabelledTrace: validTrace() };
+    expect(validateWalletFlowsReport(report)).toEqual([]);
+  });
+
+  it("rejects a proceeds raw amount that is not an integer string", () => {
+    const journal = validJournal();
+    journal.sales[0].proceeds[0].raw = "1.5";
+    const report = { ...baseReport(), salesJournal: journal };
+    expect(validateWalletFlowsReport(report)).toEqual([
+      "salesJournal.sales[0].proceeds[0].raw is not an integer string",
+    ]);
+  });
+
+  it("rejects a salesJournal without a sales array", () => {
+    const report = { ...baseReport(), salesJournal: { window: "30d", totals: {} } };
+    expect(validateWalletFlowsReport(report)).toEqual([
+      "salesJournal must be an object with a sales array",
+    ]);
+  });
+
+  it("rejects a sale without a non-empty sig", () => {
+    const journal = validJournal();
+    journal.sales[0].sig = "";
+    const report = { ...baseReport(), salesJournal: journal };
+    expect(validateWalletFlowsReport(report)).toEqual(["salesJournal.sales[0].sig must be a non-empty string"]);
+  });
+
+  it("rejects an unlabelledTrace without a destinations array", () => {
+    const report = { ...baseReport(), unlabelledTrace: { window: "30d", totals: {} } };
+    expect(validateWalletFlowsReport(report)).toEqual([
+      "unlabelledTrace must be an object with a destinations array",
+    ]);
   });
 });

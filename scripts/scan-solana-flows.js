@@ -9,7 +9,7 @@
  * discovery / resume rules.
  *
  * Writes (nothing else):
- *   <data>/exchange-flow-checkpoint.json   chains.<key> = { mint, since, accounts{ata:{owner,until}}, complete, missingTx }
+ *   <data>/exchange-flow-checkpoint.json   chains.<key> = { mint, since, accounts{ata:{owner,until}}, complete, missingTx, unavailable[{signature,slot,blockTime}] }
  *   <work>/solana-flow-days.json           exact per-day / per-counterparty raw sums (not served)
  * scan-exchange-flows.js and generate-tier-outflows.js publish the feeds from
  * that store, so run this first.
@@ -121,15 +121,15 @@ for (const c of chains) {
   const baseMissing = checkpoint.chains[c.key]?.missingTx ?? 0;
   // Saved after every chunk: a crash, 429 storm or the deadline keeps all
   // progress made so far (the old end-of-run write lost a whole 25-minute run).
-  const save = async ({ newEvents, accounts, remaining, missing }) => {
+  const save = async ({ newEvents, accounts, remaining, missing, unavailable }) => {
     applyFlowEventsOnce(store, c.key, newEvents);
-    checkpoint.chains[c.key] = { mint: c.mint, since, accounts, complete: remaining === 0, missingTx: baseMissing + missing };
+    checkpoint.chains[c.key] = { mint: c.mint, since, accounts, complete: remaining === 0, missingTx: baseMissing + missing, unavailable };
     await persist();
   };
   const res = await scanVenueFlows({
     call, mint: c.mint, ...venues, state: checkpoint.chains[c.key], sinceSec, maxTx, concurrency, deadlineMs, onProgress: save,
   });
-  await save({ newEvents: [], accounts: res.accounts, remaining: res.remaining, missing: res.missing });
+  await save({ newEvents: [], accounts: res.accounts, remaining: res.remaining, missing: res.missing, unavailable: res.unavailable });
   console.log(`  ${c.key}: ${res.processed} tx processed, ${res.events.length} events, ${res.remaining} signatures left, ${res.missing} unavailable${res.timedOut ? " (stopped at the time budget; resumes next run)" : ""}`);
 }
 

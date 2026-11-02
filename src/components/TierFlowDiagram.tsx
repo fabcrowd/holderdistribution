@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState, useEffect, useLayoutEffect, useCallback, type ReactNode } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { useProject } from "@/hooks/useProject";
-import { PARTIAL_DAY_LABEL, TIER_OUTFLOWS_FEED, flowUnavailableText, isFlowPlaceholder } from "@/lib/flowFeeds";
+import { PARTIAL_DAY_LABEL } from "@/lib/flowFeeds";
+import { flowEmptyMessage } from "@/lib/flowEmptyState";
 import { AsOfBadge } from "@/components/AsOfBadge";
 import { useChartIntro } from "@/hooks/useMotion";
 import { ChevronLeft, ChevronRight, RotateCw, X } from "lucide-react";
@@ -224,8 +225,7 @@ export const TierFlowDiagram = ({
   const { fields, netInfo, avail, grossExplainer, maxMigrationCount, loading, errored, empty, ready, complete, attributedDays, totalDays, sourceTierSince, outflowsAsOf, crossingsWindow, partialToday } = useFlowField(rows, chain, metric, rangeDays);
   const { data: exchangeFlow } = useExchangeFlow();
   const { project } = useProject();
-  const flowsUnavailable = isFlowPlaceholder(project, TIER_OUTFLOWS_FEED);
-  const flowsEmptyText = flowsUnavailable ? flowUnavailableText(project) : "No tier flows for this period yet.";
+  const flowsEmptyText = flowEmptyMessage(project, "tier");
   const rangeLabel = `${RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`}${partialToday ? ` ${PARTIAL_DAY_LABEL}` : ""}`;
   const isWallets = metric === "wallets";
   // Wallets mode crops the empty side gutters out of the same coordinate space.

@@ -5,7 +5,8 @@ import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClass
 import { clampToRange, shortBucketLabel } from "@/lib/chartRange";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
-import { EXCHANGE_FLOW_FEED, flowUnavailableText, isFlowPlaceholder, settledEntries } from "@/lib/flowFeeds";
+import { settledEntries } from "@/lib/flowFeeds";
+import { flowEmptyMessage } from "@/lib/flowEmptyState";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { formatCompact, formatSignedCompact } from "@/lib/format";
@@ -317,7 +318,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           />
         ) : (
           <PanelMessage>
-            {isFlowPlaceholder(project, EXCHANGE_FLOW_FEED) ? flowUnavailableText(project) : "No flow data for this period."}
+            {flowEmptyMessage(project, "exchange")}
           </PanelMessage>
         )}
       </TerminalPanel>

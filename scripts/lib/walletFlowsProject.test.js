@@ -12,7 +12,7 @@ import path from "node:path";
 import os from "node:os";
 import { legacyRootSlugs, resolveProject } from "./projects.js";
 import { BRIDGE_INFRA } from "./telEndpoint.js";
-import { TEL_LOG_SPAN, tokenSlots, walletFlowsNotes, walletFlowsPlan } from "./walletFlowsProject.js";
+import { TEL_LOG_SPAN, forensicsRegistryProblems, tokenSlots, walletFlowsNotes, walletFlowsPlan } from "./walletFlowsProject.js";
 
 const repo = path.resolve(".");
 const rel = (from, to) => path.relative(from, to).split(path.sep).join("/");
@@ -81,6 +81,62 @@ describe("walletFlowsPlan", () => {
 
   it("--chains must name chains in the project's map", () => {
     expect(() => walletFlowsPlan(resolveProject("demo", tmp), { root: tmp, argv: ["--chains", "polygon"] })).toThrow(/not in demo/);
+  });
+});
+
+describe("forensicsRegistryProblems", () => {
+  // Projects are resolved inside each test: beforeAll has not run at collection time.
+  const demoProject = () => resolveProject("demo", tmp);
+  const telProject = () => resolveProject("tel", repo);
+  const enoent = () => {
+    const error = new Error("ENOENT: no such file");
+    error.code = "ENOENT";
+    throw error;
+  };
+  const stubText = (text) => () => text;
+
+  it("returns no problems when the project is not gated", () => {
+    const open = { ...demoProject(), config: { ...demoProject().config, gated: {} } };
+    expect(forensicsRegistryProblems(open, { root: tmp, readFile: enoent })).toEqual([]);
+  });
+
+  it("flags a missing registry with the init command", () => {
+    const problems = forensicsRegistryProblems(demoProject(), { root: tmp, readFile: enoent });
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("init-forensics-registry");
+    expect(problems[0]).toContain("--project demo");
+  });
+
+  it("flags a registry that is not valid JSON", () => {
+    const problems = forensicsRegistryProblems(demoProject(), { root: tmp, readFile: stubText("{not json") });
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/not valid JSON/);
+  });
+
+  it("flags a registry with an empty knownWallets list", () => {
+    const readFile = stubText(JSON.stringify({ knownWallets: [] }));
+    expect(forensicsRegistryProblems(demoProject(), { root: tmp, readFile })).toHaveLength(1);
+  });
+
+  it("passes a registry with at least one known wallet", () => {
+    const readFile = stubText(JSON.stringify({ knownWallets: [X("d")] }));
+    expect(forensicsRegistryProblems(demoProject(), { root: tmp, readFile })).toEqual([]);
+  });
+
+  it("reads TEL's registry from the legacy data/forensics path", () => {
+    const tel = telProject();
+    const gated = { ...tel, config: { ...tel.config, gated: { forensics: true } } };
+    const seen = [];
+    const problems = forensicsRegistryProblems(gated, {
+      root: repo,
+      readFile: (file) => {
+        seen.push(file);
+        return enoent();
+      },
+    });
+    expect(rel(repo, seen[0])).toBe("data/forensics/wallet-flows.registry.json");
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("--project tel");
   });
 });
 

@@ -39,7 +39,7 @@ export const DISTRIBUTION_CLASSES = [
 ];
 
 /** supply-reconciliation.json category → distribution class. */
-const RECON_CATEGORY_CLASS = {
+export const RECON_CATEGORY_CLASS = {
   treasury: "treasury",
   council: "association",
   holdings: "holdings",
@@ -422,8 +422,41 @@ export function discoverLargeSellers(transfers, index, { minTel = 5e6, limit = 1
   return rows.slice(0, limit).map((r, i) => ({ rank: i + 1, ...r }));
 }
 
+const INTEGER_STRING = /^\d+$/;
+
+/** Optional section, checked only when present. Raw amounts are integer strings to keep precision. */
+function validateSalesJournal(journal) {
+  if (!journal || typeof journal !== "object" || !Array.isArray(journal.sales)) {
+    return ["salesJournal must be an object with a sales array"];
+  }
+  const errors = [];
+  journal.sales.forEach((sale, i) => {
+    const at = `salesJournal.sales[${i}]`;
+    if (typeof sale?.sig !== "string" || sale.sig === "") errors.push(`${at}.sig must be a non-empty string`);
+    if (sale?.proceeds === undefined) return;
+    if (!Array.isArray(sale.proceeds)) {
+      errors.push(`${at}.proceeds must be an array`);
+      return;
+    }
+    sale.proceeds.forEach((proceeds, j) => {
+      if (typeof proceeds?.raw !== "string" || !INTEGER_STRING.test(proceeds.raw)) {
+        errors.push(`${at}.proceeds[${j}].raw is not an integer string`);
+      }
+    });
+  });
+  return errors;
+}
+
+/** Optional section, checked only when present. */
+function validateUnlabelledTrace(trace) {
+  if (!trace || typeof trace !== "object" || !Array.isArray(trace.destinations)) {
+    return ["unlabelledTrace must be an object with a destinations array"];
+  }
+  return [];
+}
+
 /** Minimal schema check used by the generator before overwriting the file, and by tests. */
-export function validateWalletFlowsReport(report) {
+export function validateWalletFlowsReport(report, { addressKind = "evm" } = {}) {
   const errors = [];
   if (!report || typeof report !== "object") return ["report is not an object"];
   if (report.version !== 1) errors.push("version must be 1");
@@ -431,8 +464,12 @@ export function validateWalletFlowsReport(report) {
   if (!Array.isArray(report.distribution?.classes) || report.distribution.classes.length === 0) errors.push("distribution.classes missing");
   if (!Array.isArray(report.knownWallets) || report.knownWallets.length === 0) errors.push("knownWallets missing");
   if (!Array.isArray(report.largeSellers)) errors.push("largeSellers missing");
+  const addressPattern =
+    addressKind === "base58" ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/ : /^0x[0-9a-f]{40}$/;
   for (const w of report.knownWallets ?? []) {
-    if (!/^0x[0-9a-f]{40}$/.test(w.address ?? "")) errors.push(`bad address ${w.address}`);
+    if (!addressPattern.test(w.address ?? "")) errors.push(`bad address ${w.address}`);
   }
+  if (report.salesJournal !== undefined) errors.push(...validateSalesJournal(report.salesJournal));
+  if (report.unlabelledTrace !== undefined) errors.push(...validateUnlabelledTrace(report.unlabelledTrace));
   return errors;
 }
