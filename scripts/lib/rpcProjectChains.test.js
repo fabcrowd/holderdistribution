@@ -97,6 +97,6 @@ describe("chains a project declares beyond ethereum/polygon/base", () => {
   });
 
   it("rejects an envPrefix that already ends in _RPC (the pool appends _RPC_<n> itself)", () => {
-    expect(() => configureProjectRpc({ chains: [{ key: "solana", rpc: { envPrefix: "SOLANA_RPC" } }] })).toThrow(/SOLANA_RPC_RPC_0/);
+    expect(() => configureProjectRpc({ chains: [{ key: "solana", rpc: { envPrefix: "SOLANA_RPC" } }] })).toThrow(/must not end in _RPC \(use SOLANA/);
   });
 });

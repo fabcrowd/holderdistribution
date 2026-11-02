@@ -10,7 +10,7 @@ export const HistoryStartNote = ({ firstTimestamp, rangeDays }: { firstTimestamp
   const start = historyStartsAfterRange(firstTimestamp, rangeDays);
   if (start == null) return null;
   return (
-    <p className="text-[11px] leading-4 text-muted-foreground" data-testid="history-start-note">
+    <p className="text-xs text-muted-foreground" data-testid="history-start-note">
       History tracked from {fmt.format(start)}
     </p>
   );
