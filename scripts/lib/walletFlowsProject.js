@@ -16,6 +16,7 @@
  *   dexVenues        extra DEX routers / aggregators (on top of classification.dexContracts)
  *   logSpan          { <chainKey>: initial getLogs span }
  */
+import fs from "node:fs";
 import path from "node:path";
 import { BRIDGE_INFRA, DEX_VENUES } from "./telEndpoint.js";
 import { projectChains, projectClassificationPath, projectPaths, projectWork } from "./projects.js";
@@ -102,4 +103,33 @@ export function tokenSlots(tokens) {
   const m = new Map([[tokens.legacy.address, { decimals: tokens.legacy.decimals, slot: "legacy" }]]);
   if (tokens.v3) m.set(tokens.v3.address, { decimals: tokens.v3.decimals, slot: "v3" });
   return m;
+}
+
+/**
+ * Problems blocking a GATED project's forensics registry (`knownWallets`).
+ * Returns [] when the project is not gated or the registry is usable. Unlike
+ * walletFlowsPlan this never throws for Solana-only projects.
+ */
+export function forensicsRegistryProblems(project, { root = process.cwd(), readFile = fs.readFileSync } = {}) {
+  if (project.config?.gated?.forensics !== true) return [];
+  const file = projectWork(project, root)(WALLET_FLOWS_REGISTRY_FILE);
+  const fix = `run node scripts/init-forensics-registry.js --project ${project.slug}`;
+  const missing = [`forensics registry missing or empty for ${project.slug}: ${fix}`];
+
+  let raw;
+  try {
+    raw = readFile(file, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return missing;
+    throw error;
+  }
+
+  let doc;
+  try {
+    doc = JSON.parse(raw);
+  } catch {
+    return [`forensics registry for ${project.slug} is not valid JSON (${file}): ${fix}`];
+  }
+  const known = doc?.knownWallets;
+  return Array.isArray(known) && known.length > 0 ? [] : missing;
 }

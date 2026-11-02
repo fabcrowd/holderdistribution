@@ -21,6 +21,9 @@ import { getTransactionAnyVersion } from "./getTransaction.js";
 export const SIGNATURE_PAGE = 1000;
 const MAX_PAGES = 500;
 export const DEFAULT_CHUNK = 60;
+// Newest unavailable signatures kept in the checkpoint; older ones are dropped
+// so a long-pruned history cannot grow the checkpoint without bound.
+export const UNAVAILABLE_CAP = 500;
 
 export const bySlotThenSig = (a, b) => (a.slot !== b.slot ? a.slot - b.slot : a.signature < b.signature ? -1 : 1);
 
@@ -107,11 +110,13 @@ export function classifyTransfers(transfers, roles, tx = null, mint = null) {
  * All non-failed signatures of one token account newer than `until` and not
  * older than `sinceSec`, newest first. Throws if the page cap is hit before the
  * start is reached (a partial list would corrupt the oldest-first resume).
+ * An explicit `maxPages` replaces the default cap and throws `PAGE_CAP`.
  */
-export async function listSignatures(call, account, { until = null, sinceSec = 0, pageSize = SIGNATURE_PAGE } = {}) {
+export async function listSignatures(call, account, { until = null, sinceSec = 0, pageSize = SIGNATURE_PAGE, maxPages = null } = {}) {
   const out = [];
   let before = null;
-  for (let page = 0; page < MAX_PAGES; page += 1) {
+  const pageCap = maxPages ?? MAX_PAGES;
+  for (let page = 0; page < pageCap; page += 1) {
     const opts = { limit: pageSize, commitment: "finalized" };
     if (before) opts.before = before;
     if (until) opts.until = until;
@@ -127,7 +132,17 @@ export async function listSignatures(call, account, { until = null, sinceSec = 0
     if (reachedFloor || rows.length < pageSize) return out;
     before = rows[rows.length - 1].signature;
   }
+  if (maxPages != null) throw new Error("PAGE_CAP");
   throw new Error(`getSignaturesForAddress ${account}: more than ${MAX_PAGES} pages; refusing a partial list`);
+}
+
+/**
+ * A null result is often a transient RPC miss rather than a pruned tx, so it
+ * gets one fresh request before the caller treats it as unavailable.
+ */
+async function fetchTransactionOnce(call, signature) {
+  const first = await getTransactionAnyVersion(call, signature);
+  return first ?? getTransactionAnyVersion(call, signature);
 }
 
 export async function mapLimit(items, limit, fn) {
@@ -155,7 +170,8 @@ export async function mapLimit(items, limit, fn) {
  * @param {{accounts?: Record<string, {owner: string, until: string|null}>}} p.state previous chain checkpoint
  * @param {number} p.sinceSec UTC seconds floor (first real snapshot day)
  * @param {number} p.maxTx transactions fetched this run
- * @returns {Promise<{ events: Array<object>, accounts: object, remaining: number, missing: number, processed: number }>}
+ * @param {Array<{signature: string, slot: number, blockTime: number}>} [p.state.unavailable] carried from the checkpoint
+ * @returns {Promise<{ events: Array<object>, accounts: object, remaining: number, missing: number, processed: number, unavailable: Array<object>, timedOut: boolean }>}
  */
 export async function scanVenueFlows({
   call, mint, cexWallets, dexOwners, stakingAddresses, state, sinceSec, maxTx, concurrency = 4,
@@ -196,6 +212,7 @@ export async function scanVenueFlows({
   const done = new Set();
   const events = [];
   let missing = 0;
+  let unavailable = [...(state?.unavailable ?? [])];
 
   // Per-account cursor = newest processed signature. Valid after any whole-slot
   // prefix, because processing is globally oldest-first.
@@ -223,14 +240,16 @@ export async function scanVenueFlows({
     }
     const end = wholeSlotEnd(start + Math.max(1, chunkSize), limit);
     const chunk = ordered.slice(start, end);
-    const txs = await mapLimit(chunk, concurrency, (s) => getTransactionAnyVersion(call, s.signature));
+    const txs = await mapLimit(chunk, concurrency, (s) => fetchTransactionOnce(call, s.signature));
     const fresh = [];
     chunk.forEach((s, i) => {
+      // The cursor advances even for an unavailable tx: it is recorded, not retried forever.
       done.add(s.signature);
       const tx = txs[i];
       if (!tx) {
         missing += 1;
-        logger.warn?.(`  getTransaction ${s.signature.slice(0, 12)}...: no result (pruned?); skipped`);
+        unavailable = [...unavailable, { signature: s.signature, slot: s.slot, blockTime: s.blockTime }].slice(-UNAVAILABLE_CAP);
+        logger.warn?.(`  getTransaction ${s.signature.slice(0, 12)}...: no result (pruned?); recorded as unavailable`);
         return;
       }
       const transfers = pairTransfers(mintDeltasByOwner(tx, mint));
@@ -240,9 +259,9 @@ export async function scanVenueFlows({
     });
     events.push(...fresh);
     start = end;
-    if (onProgress) await onProgress({ newEvents: fresh, ...cursors(), missing, processed: done.size });
+    if (onProgress) await onProgress({ newEvents: fresh, ...cursors(), missing, processed: done.size, unavailable });
   }
 
   const { accounts, remaining } = cursors();
-  return { events, accounts, remaining, missing, processed: done.size, timedOut };
+  return { events, accounts, remaining, missing, processed: done.size, unavailable, timedOut };
 }

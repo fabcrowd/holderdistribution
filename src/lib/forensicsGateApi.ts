@@ -71,7 +71,12 @@ const loadLocalPayload = async (address: string, project?: string): Promise<Gate
   if (address === SESSION_CHECK_KEY) return { ok: true };
   // Dev has local copies of the default project's (TEL's) gated files only.
   if (project && project !== DEFAULT_PROJECT_SLUG) {
-    return address === "wallet-flows" || isProjectReportKey(address) ? { report: null, project } : { analysis: null, project };
+    // Other projects: only the wallet-flows report has a local file (data/<slug>/forensics/, uncommitted until pushed).
+    if (address === "wallet-flows") {
+      const { loadProjectWalletFlowsDev } = await import("@/lib/loadForensicsDev");
+      return { report: await loadProjectWalletFlowsDev(project), project };
+    }
+    return isProjectReportKey(address) ? { report: null, project } : { analysis: null, project };
   }
   const { loadWalletAnalysisDev, loadAssociationFlowReportDev, loadDispositionLedgerDev, loadWalletFlowsDev } =
     await import("@/lib/loadForensicsDev");

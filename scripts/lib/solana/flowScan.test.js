@@ -201,6 +201,50 @@ describe("scanVenueFlows", () => {
     expect(res.events.map((e) => e.signature).sort()).toEqual(["s2", "s3"]);
     expect(res.missing).toBe(1);
   });
+
+  it("retries a null getTransaction once and keeps the event when the retry succeeds", async () => {
+    const chain = fakeChain(world());
+    let s1Calls = 0;
+    const flaky = async (method, params) => {
+      if (method === "getTransaction" && params[0] === "s1") {
+        s1Calls += 1;
+        if (s1Calls === 1) return null;
+      }
+      return chain.call(method, params);
+    };
+    const res = await scan({ call: flaky });
+    expect(s1Calls).toBe(2);
+    expect(res.events.map((e) => e.signature)).toContain("s1");
+    expect(res.missing).toBe(0);
+    expect(res.unavailable).toEqual([]);
+  });
+
+  it("records a permanently null transaction as unavailable, counts it as missing and advances the cursor", async () => {
+    const w = world();
+    delete w.txs.s1;
+    const chain = fakeChain(w);
+    const progress = [];
+    const res = await scan(chain, { onProgress: (p) => progress.push(p) });
+    expect(chain.calls.getTransaction).toBe(5); // s1 fetched twice (retry), s2, s3, s4 once each
+    expect(res.missing).toBe(1);
+    expect(res.unavailable).toEqual([{ signature: "s1", slot: 100, blockTime: T0 }]);
+    expect(progress[progress.length - 1].unavailable).toEqual(res.unavailable);
+    expect(res.remaining).toBe(0);
+    expect(res.accounts.MexcAta1.until).toBe("s4");
+    expect(res.events.map((e) => e.signature).sort()).toEqual(["s2", "s3", "s4"]);
+  });
+
+  it("carries unavailable entries from an older checkpoint and keeps only the newest 500", async () => {
+    const w = world();
+    delete w.txs.s1;
+    const old = Array.from({ length: 500 }, (_, i) => ({ signature: `old${i}`, slot: 1, blockTime: T0 }));
+    const res = await scan(fakeChain(w), { state: { accounts: {}, unavailable: old } });
+    expect(res.unavailable).toHaveLength(500);
+    expect(res.unavailable[0].signature).toBe("old1");
+    expect(res.unavailable[499].signature).toBe("s1");
+    const legacy = await scan(fakeChain(world()), { state: { accounts: {} } });
+    expect(legacy.unavailable).toEqual([]);
+  });
 });
 
 describe("listSignatures", () => {
@@ -210,6 +254,19 @@ describe("listSignatures", () => {
     const out = await listSignatures(call, "X", { sinceSec: T0 - 3600, pageSize: 2 });
     expect(out.map((s) => s.signature)).toEqual(["a", "b", "c", "d"]);
     expect(calls.getSignaturesForAddress).toBe(3);
+  });
+
+  it("throws PAGE_CAP when an explicit maxPages is hit on a full page", async () => {
+    const full = [sig("a", 5, 3), sig("b", 4, 2)];
+    const call = vi.fn(async () => full);
+    await expect(listSignatures(call, "X", { sinceSec: T0 - 3600, pageSize: 2, maxPages: 1 })).rejects.toThrow(new Error("PAGE_CAP"));
+    expect(call).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns normally with maxPages when the page is not full", async () => {
+    const call = vi.fn(async () => [sig("a", 5, 3)]);
+    const out = await listSignatures(call, "X", { sinceSec: T0 - 3600, pageSize: 2, maxPages: 1 });
+    expect(out.map((s) => s.signature)).toEqual(["a"]);
   });
 });
 

@@ -42,7 +42,44 @@ jobs:
         # public/data/<slug> + data/<slug> for any other project.
         run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
 
+      - name: Resolve projects to sync
+        # Scheduled runs (no input) sync every registry project; a dispatch with
+        # `project` syncs just that one. Slugs come from workflow-paths.js only.
+        id: projects
+        env:
+          SELECTION: ${{ inputs.project || 'all' }}
+        run: |
+          node scripts/workflow-paths.js matrix "$SELECTION" > "$RUNNER_TEMP/matrix.json"
+          SLUGS=$(node -e 'const m = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); console.log(m.include.map((p) => p.slug).join(" "))' "$RUNNER_TEMP/matrix.json")
+          echo "slugs=$SLUGS" >> "$GITHUB_OUTPUT"
+
+      - name: Import Dune spellbook CEX lists (every project)
+        # Public spellbook static lists: no Dune key or credits. EVM projects merge
+        # additions into their own CEX list. Projects with no EVM chain (HD_HAS_EVM
+        # from config) get --candidates, which never writes a production list.
+        # Non-fatal: a failure is reported by the Stage verdict step at the end.
+        id: spellbook
+        continue-on-error: true
+        env:
+          SLUGS: ${{ steps.projects.outputs.slugs }}
+        run: |
+          failed=""
+          for slug in $SLUGS; do
+            flags=$(node scripts/workflow-paths.js --project "$slug")
+            args=""
+            echo "$flags" | grep -qx 'HD_HAS_EVM=true' || args="--candidates"
+            if ! node scripts/sync-cex-wallets-dune.js --source spellbook --project "$slug" $args; then
+              echo "::error::Dune spellbook CEX import failed for $slug"
+              failed="${failed:+$failed }$slug"
+            fi
+          done
+          [ -z "$failed" ]
+
       - name: Sync CEX wallets from Dune
+        # Single project: the one selected by the dispatch input, or TEL on a
+        # schedule (HD_PROJECT above). Non-fatal, reported by the Stage verdict.
+        id: dune_sync
+        continue-on-error: true
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
         run: node scripts/sync-cex-wallets-dune.js
@@ -84,18 +121,29 @@ jobs:
       - name: Commit updated CEX wallet list
         id: commit
         run: |
-          # TEL: exactly the paths below; other projects: the project's own
-          # classification.cexWallets file and public/data/<slug>/** (see
-          # scripts/workflow-paths.js).
-          CHECK=$(node scripts/workflow-paths.js files config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json)
-          if git diff --quiet -- $CHECK; then
-            echo "No new CEX wallets found."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            ADDED=$(git diff -- ${HD_CEX_CONFIG:-config/cex-wallets.json} | grep '^+' | grep -c '"address"' || true)
+          # Each resolved project maps the TEL file list onto itself via
+          # workflow-paths.js (TEL: unchanged; others: their own classification
+          # CEX file, candidates file and public/data/<slug>/**). Paths that do
+          # not exist are dropped, so a Solana project without a CEX list is fine.
+          map_all() {
+            for slug in $SLUGS; do
+              for p in $(HD_PROJECT="$slug" node scripts/workflow-paths.js files "$@"); do
+                [ -e "$p" ] && printf '%s\n' "$p"
+              done
+            done | sort -u
+          }
+          CHECK=$(map_all config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json data/cex-dune-candidates.json)
+          if [ -n "$CHECK" ] && [ -n "$(git status --porcelain --untracked-files=all -- $CHECK)" ]; then
+            ADDED=0
+            for slug in $SLUGS; do
+              CEX_CFG=$(node scripts/workflow-paths.js --project "$slug" | grep '^HD_CEX_CONFIG=' | cut -d= -f2-)
+              if [ -n "$CEX_CFG" ]; then
+                ADDED=$((ADDED + $(git diff -- "$CEX_CFG" | grep '^+' | grep -c '"address"' || true)))
+              fi
+            done
             git fetch origin main
             git rebase --autostash origin/main
-            git add $(node scripts/workflow-paths.js files config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json \
+            git add $(map_all config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json data/cex-dune-candidates.json \
               public/data/tel-holders.json public/data/holders-summary.json public/data/holders-lite.json \
               public/data/holders-history.json public/data/holder-transitions.json \
               public/data/supply-reconciliation.json public/data/treasury-history.json \
@@ -113,6 +161,35 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLUGS: ${{ steps.projects.outputs.slugs }}
+
+      - name: Stage verdict
+        # Non-fatal stages (continue-on-error) cannot fail the run themselves, so
+        # this step runs last and fails it when one failed, the same convention as
+        # refresh-tel-holders.yml. Whatever succeeded is already committed above.
+        if: always()
+        env:
+          OUTCOME_SPELLBOOK: ${{ steps.spellbook.outcome }}
+          OUTCOME_DUNE_SYNC: ${{ steps.dune_sync.outcome }}
+        run: |
+          failed=""
+          while IFS='|' read -r id var label; do
+            [ -n "$id" ] || continue
+            if [ "${!var}" = "failure" ]; then
+              echo "::error::Stage '$id' failed: $label."
+              failed="${failed:+$failed, }$id ($label)"
+            fi
+          done <<'STAGES'
+          spellbook|OUTCOME_SPELLBOOK|Dune spellbook CEX import (CEX lists may be stale)
+          dune_sync|OUTCOME_DUNE_SYNC|Dune CEX wallet sync (TEL CEX list may be stale)
+          STAGES
+          if [ -n "$failed" ]; then
+            {
+              echo "### Failed stages for sync-cex-wallets"
+              echo "- $failed"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
       # Deliberately not dispatching refresh-tel-holders.yml here: it already
       # runs daily and re-reads config/cex-wallets.json fresh on every run, so

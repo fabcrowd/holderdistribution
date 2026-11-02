@@ -615,7 +615,7 @@ keys.
 
 | Piece | TEL (`legacyRoot`) | Any other project |
 | --- | --- | --- |
-| Wallet-flows registry (labels, bot cluster, watched sellers; hand-edited) | `data/forensics/wallet-flows.registry.json` | `data/<slug>/forensics/wallet-flows.registry.json` |
+| Wallet-flows registry (labels, bot cluster, watched sellers; hand-edited; `scripts/init-forensics-registry.js` seeds it from config contracts, and `check:feeds` requires it) | `data/forensics/wallet-flows.registry.json` | `data/<slug>/forensics/wallet-flows.registry.json` |
 | Wallet-flows report (generated) | `data/forensics/wallet-flows.json` | `data/<slug>/forensics/wallet-flows.json` |
 | Reconciliation it starts from | `public/data/supply-reconciliation.json` | `public/data/<slug>/supply-reconciliation.json` |
 | CEX / DEX lists | `classification.*` (= `config/` root files) | `classification.*`, none declared = empty |
@@ -756,6 +756,36 @@ its config, so onboarding a token needs no code change:
     Alchemy key pool to paid keys (a free-tier key fails wide `eth_getLogs`), and prefer one
     chain-level scan over per-token scans (todo 1g). Solana keys: `SOLANA_RPC_0` and `SOLANA_RPC_1`
     (separate accounts, per-call failover).
+11. Forensics registry (required for every project; `npm run check:feeds` fails a project with
+    `gated.forensics: true` and no registry). Set `gated.forensics: true` and `gated.walletFlows`
+    (`coingeckoId`, `chains`) in the project config, then:
+    - **Solana:** tag the team/treasury/reward wallets in `chains[].contracts` with `role` `treasury` or
+      `holdings` and a `$comment` that names the confidence ("high", "medium" or "low") and a Solscan link.
+      Run `node scripts/init-forensics-registry.js --project <slug>` (writes
+      `data/<slug>/forensics/wallet-flows.registry.json`), review and edit the labels, then
+      `node scripts/generate-wallet-flows-solana.js --project <slug> --dry-run` (signature counts and Helius
+      credit estimate, writes nothing) and without `--dry-run` to write the report and scan state. The same
+      run records swap proceeds and one-hop traces of unlabelled recipients (the `salesJournal` and
+      `unlabelledTrace` report sections; caps and caveats in [FORENSICS.md](FORENSICS.md)). A new Solana
+      token needs no extra config for this: DEX owners come from the project's `role: "dex"` contracts and
+      `classification.dexContracts`. Add the pools to config before the first run or sales to unlisted
+      pools show as unlabelled outflows.
+    - **EVM:** the init script reads the same `treasury` / `holdings` contract roles, but EVM configs such as
+      TEL's usually do not carry them. If it reports no wallets, hand-write the registry using
+      `data/forensics/wallet-flows.registry.json` as the template (`knownWallets` with `entityClass`,
+      `confidence`, `source`, `chains`; optional `botCluster`, `watchedSellers`, `extraCex`, `extraDex`).
+      Then run `node scripts/generate-wallet-flows.js --project <slug>` (keyless public RPCs, about 15 to 20
+      minutes for three chains; `--dry-run --skip-sellers` for a quick check).
+    - **Solana tracing knobs:** `WALLET_FLOWS_TRACE_DEPTH` (default 1, max 2; raising it seeds depth-2 tasks from hops stored by earlier runs, so no re-scan), `WALLET_FLOWS_TRACE_DESTINATIONS` (unlabelled destinations shown, default 25, max 200; totals always cover all). A transaction the RPC returns as null is retried once, then listed in the checkpoint's `unavailable` (last 500) and counted in `missing`; the cursor still advances.
+    - **CEX lists:** `sync-cex-wallets.yml` imports the spellbook list for every registry project on its schedule (EVM: additions; other VMs: review candidates only). Dune is optional, single-project and non-fatal.
+    - **Sales tracing on EVM is not built yet** (todo 1w, EVM variant): `generate-wallet-flows.js` already
+      classifies DEX outflows from swap events in transaction receipts, but does not record the proceeds
+      leg or follow it onward. Until then EVM projects get outflow totals only.
+    - **Mixed EVM + Solana token:** each generator skips the other VM's chains (exit 0), so run both; they
+      write the same report path, so a mixed project needs the lane-merge work in todo 1m before both can
+      share one file.
+    - Either way, the weekly `refresh-wallet-flows.yml` runs for TEL only; dispatch it with `project=<slug>`
+      for others. Details and cost caps: [FORENSICS.md](FORENSICS.md).
 
 The landing page and the sitemap pick the new project up automatically.
 

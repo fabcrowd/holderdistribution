@@ -11,7 +11,8 @@ import { useChartZoom } from "@/hooks/useChartZoom";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { useProject } from "@/hooks/useProject";
-import { EXCHANGE_FLOW_FEED, PARTIAL_DAY_LABEL, flowUnavailableText, isFlowPlaceholder, settledEntries } from "@/lib/flowFeeds";
+import { PARTIAL_DAY_LABEL, settledEntries } from "@/lib/flowFeeds";
+import { flowEmptyMessage } from "@/lib/flowEmptyState";
 
 type ExchangeNetflowProps = {
   rangeDays: number;
@@ -64,10 +65,9 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
   // skeleton and the retry. A settled empty feed is the empty state.
   if (isPending || isError) return null;
   if (!view) {
-    const unavailable = isFlowPlaceholder(project, EXCHANGE_FLOW_FEED);
     return (
       <p className="py-6 text-center text-sm text-muted-foreground" data-testid="exchange-flow-empty">
-        {unavailable ? flowUnavailableText(project) : "No flow data for this period."}
+        {flowEmptyMessage(project, "exchange")}
       </p>
     );
   }

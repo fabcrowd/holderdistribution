@@ -57,6 +57,69 @@ export type WalletFlowsSeller = {
   note?: string;
 };
 
+export type WalletFlowsHop = {
+  hop: number;
+  from: string;
+  to: string;
+  kind: string;
+  venue: string | null;
+  mint: string;
+  symbol: string | null;
+  amount: number;
+  sig: string;
+  url: string;
+  t: string;
+};
+
+export type WalletFlowsSaleProceeds = {
+  mint: string;
+  symbol: string | null;
+  raw: string;
+  decimals: number;
+  amount: number;
+  usd: number | null;
+  source?: "token" | "native";
+};
+
+export type WalletFlowsSale = {
+  wallet: string;
+  label: string;
+  sig: string;
+  url: string;
+  t: string;
+  zbcnSold: number;
+  proceeds: WalletFlowsSaleProceeds[];
+  proceedsUsd: number | null;
+  effectivePriceUsd: number | null;
+  onwardStatus: "none-seen" | "partial" | "complete" | "untracked";
+  onward: WalletFlowsHop[];
+};
+
+export type WalletFlowsSalesJournal = {
+  window: string;
+  valuedAtReportTime: boolean;
+  totals: { count: number; zbcnSold: number; proceedsUsd: number | null };
+  sales: WalletFlowsSale[];
+};
+
+export type WalletFlowsTraceDestination = {
+  wallet: string;
+  label: string;
+  dest: string;
+  received: number;
+  t: string;
+  status: "open" | "done" | "busy" | "budget" | "error" | "untracked";
+  onward: WalletFlowsHop[];
+  byKind: Record<string, number>;
+  unaccounted: number;
+};
+
+export type WalletFlowsUnlabelledTrace = {
+  window: string;
+  totals: { received: number; byKind: Record<string, number> };
+  destinations: WalletFlowsTraceDestination[];
+};
+
 export type WalletFlowsReport = {
   version: 1;
   generated: string;
@@ -86,6 +149,8 @@ export type WalletFlowsReport = {
   };
   largeSellers: WalletFlowsSeller[];
   largeSellersWindow?: string;
+  salesJournal?: WalletFlowsSalesJournal;
+  unlabelledTrace?: WalletFlowsUnlabelledTrace;
 };
 
 const ADDRESS_EXPLORER: Record<string, string> = {

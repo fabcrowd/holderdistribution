@@ -26,6 +26,8 @@ import {
   addressExplorerUrl,
   type WalletFlowsKnownWallet,
   type WalletFlowsReport,
+  type WalletFlowsSale,
+  type WalletFlowsTraceDestination,
 } from "@/lib/walletFlowsTypes";
 import { explorerTemplates, resolveChainVm } from "@/lib/explorerLinks";
 
@@ -137,10 +139,10 @@ const DistributionBars = ({ report }: { report: WalletFlowsReport }) => {
         Supply distribution by entity
       </h4>
       <p className="mt-0.5 text-xs text-muted-foreground">
-        {`${formatTel(distribution.counted)} ${ticker} counted${distribution.asOf ? ` · as of ${distribution.asOf}` : ""}. Tracked wallets the public reconciliation leaves in "retail" (staking contract, deposit relays, tracked bots and sellers) are moved to their class.`}
+        {`${formatTel(distribution.counted)} ${ticker} counted${distribution.asOf ? ` · as of ${distribution.asOf}` : ""}. Built from the public supply reconciliation; any tracked wallets it leaves in "retail" are moved to their class.`}
       </p>
       <ul className="mt-3 space-y-2">
-        {distribution.classes.map((c) => (
+        {distribution.classes.filter((c) => c.tel > 0).map((c) => (
           <li key={c.key} className="text-xs">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-foreground">{c.label}</span>
@@ -359,8 +361,13 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
 const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
   const bot = report.botCluster;
   const { ticker } = useProjectCopy();
+  const hasBot = bot.addresses.length > 0;
+  const hasFunding = report.fundingLinks.length > 0;
+  // A project with no tracked bot cluster or funding trail (e.g. a Solana report) shows neither empty card.
+  if (!hasBot && !hasFunding) return null;
   return (
-    <section className="grid gap-3 lg:grid-cols-2">
+    <section className={`grid gap-3 ${hasBot && hasFunding ? "lg:grid-cols-2" : ""}`}>
+      {hasBot && (
       <div className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-bot">
         <h4 id="wf-bot" className="text-base font-semibold text-foreground">
           {bot.label}
@@ -386,6 +393,8 @@ const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
           ))}
         </ul>
       </div>
+      )}
+      {hasFunding && (
       <div className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-funding">
         <h4 id="wf-funding" className="text-base font-semibold text-foreground">
           Funding links
@@ -412,6 +421,7 @@ const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
           ))}
         </ul>
       </div>
+      )}
     </section>
   );
 };
@@ -426,6 +436,11 @@ const LargeSellers = ({ report }: { report: WalletFlowsReport }) => {
     <p className="mt-0.5 text-xs text-muted-foreground">
       Net {ticker} sent to exchanges and DEXs. Upgrades, bridges and arbitrage bots that bought as much as they sold are excluded.
     </p>
+    {report.largeSellers.length === 0 ? (
+      <p className="mt-2 text-xs text-muted-foreground" data-testid="wf-sellers-empty">
+        No large sellers reported for this window.
+      </p>
+    ) : (
     <div className="mt-2 overflow-x-auto">
       <Table className="text-xs">
         <TableHeader>
@@ -460,7 +475,7 @@ const LargeSellers = ({ report }: { report: WalletFlowsReport }) => {
               <TableCell>
                 {s.sampleTx ? (
                   <a href={s.sampleTx} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-primary hover:underline">
-                    tx <ExternalLink className="h-3 w-3" />
+                    tx <ExternalLink className="h-3 w-3" aria-hidden="true" />
                   </a>
                 ) : (
                   "—"
@@ -471,7 +486,191 @@ const LargeSellers = ({ report }: { report: WalletFlowsReport }) => {
         </TableBody>
       </Table>
     </div>
+    )}
   </section>
+  );
+};
+
+const SALE_NEXT_LABEL: Record<WalletFlowsSale["onwardStatus"], string> = {
+  "none-seen": "Not moved yet",
+  partial: "Tracing",
+  complete: "Followed",
+  untracked: "Not tracked",
+};
+
+const TRACE_STATUS_LABEL: Record<WalletFlowsTraceDestination["status"], string> = {
+  open: "Tracing",
+  done: "Followed",
+  busy: "Busy address: label it",
+  budget: "Waiting for next run",
+  error: "Error",
+  untracked: "Not tracked",
+};
+
+const PRICE_SIGNIFICANT_DIGITS = 6;
+/** Token legs (stablecoin, SOL) can be small: keep decimals below 1,000 where formatTel would round to whole units. */
+const formatLeg = (value: number) =>
+  Math.abs(value) >= 1000 ? formatTel(value) : new Intl.NumberFormat(undefined, { maximumFractionDigits: 4 }).format(value);
+
+const formatPrice = (value: number) =>
+  `$${new Intl.NumberFormat(undefined, { maximumSignificantDigits: PRICE_SIGNIFICANT_DIGITS }).format(value)}`;
+
+const SaleProceeds = ({ sale }: { sale: WalletFlowsSale }) => (
+  <span>
+    {sale.proceeds.map((leg, i) => (
+      <Fragment key={leg.mint}>
+        {i > 0 && " + "}
+        {formatLeg(leg.amount)} {leg.symbol ?? shortAddress(leg.mint)}
+        {leg.usd !== null && <span className="text-muted-foreground"> (≈ {formatUsd(leg.usd)})</span>}
+      </Fragment>
+    ))}
+  </span>
+);
+
+const SaleNext = ({ sale }: { sale: WalletFlowsSale }) => (
+  <span className="flex flex-col items-start gap-1">
+    <Badge variant="outline" className="text-xs">
+      {SALE_NEXT_LABEL[sale.onwardStatus]}
+    </Badge>
+    {sale.onward.slice(0, 2).map((hop) => (
+      <span key={`${hop.hop}-${hop.sig}`} className="text-muted-foreground">
+        {formatLeg(hop.amount)} {hop.symbol ?? shortAddress(hop.mint)} → {hop.kind}
+      </span>
+    ))}
+  </span>
+);
+
+const SaleRow = ({ sale, chains }: { sale: WalletFlowsSale; chains: string[] }) => (
+  <TableRow data-testid="wf-sale-row">
+    <TableCell className="whitespace-nowrap">{new Date(sale.t).toLocaleDateString()}</TableCell>
+    <TableCell className="min-w-[10rem]">
+      <span className="block font-medium text-foreground">{sale.label}</span>
+      <AddressLinks address={sale.wallet} chains={chains} />
+    </TableCell>
+    <TableCell className="text-right tabular-nums">{formatTel(sale.zbcnSold)}</TableCell>
+    <TableCell className="min-w-[10rem] tabular-nums">
+      <SaleProceeds sale={sale} />
+    </TableCell>
+    <TableCell className="text-right tabular-nums">
+      {sale.proceedsUsd !== null ? formatUsd(sale.proceedsUsd) : <span className="text-muted-foreground">unpriced</span>}
+    </TableCell>
+    <TableCell className="text-right tabular-nums">
+      {sale.effectivePriceUsd !== null ? formatPrice(sale.effectivePriceUsd) : "—"}
+    </TableCell>
+    <TableCell className="min-w-[12rem]">
+      <SaleNext sale={sale} />
+    </TableCell>
+    <TableCell>
+      <a href={sale.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-primary hover:underline">
+        tx <ExternalLink className="h-3 w-3" aria-hidden="true" />
+      </a>
+    </TableCell>
+  </TableRow>
+);
+
+export const SalesJournal = ({ report }: { report: WalletFlowsReport }) => {
+  const { ticker } = useProjectCopy();
+  const journal = report.salesJournal;
+  if (!journal) return null;
+  const { sales, totals, valuedAtReportTime } = journal;
+  return (
+    <section className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-sales">
+      <h4 id="wf-sales" className="text-base font-semibold text-foreground">
+        {`Sales of ${ticker} for other tokens (last 90 days)`}
+      </h4>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {`Times a tracked wallet swapped ${ticker} on a DEX, what came back, and where the proceeds went next. `}
+        {valuedAtReportTime && "Proceeds in SOL are valued at report time."}
+      </p>
+      <p className="mt-2 text-xs tabular-nums text-foreground">
+        {`${totals.count} sales · ${formatTel(totals.zbcnSold)} ${ticker} sold`}
+        {totals.proceedsUsd !== null && <span className="text-muted-foreground"> · ≈ {formatUsd(totals.proceedsUsd)}</span>}
+      </p>
+      <div className="mt-2 overflow-x-auto">
+        <Table className="text-xs">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Wallet</TableHead>
+              <TableHead className="text-right">{ticker} sold</TableHead>
+              <TableHead>Proceeds</TableHead>
+              <TableHead className="text-right">≈ USD</TableHead>
+              <TableHead className="text-right">Price</TableHead>
+              <TableHead>Next</TableHead>
+              <TableHead>Tx</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sales.map((sale) => (
+              <SaleRow key={sale.sig} sale={sale} chains={report.chains} />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </section>
+  );
+};
+
+const TraceRow = ({ d, chains }: { d: WalletFlowsTraceDestination; chains: string[] }) => {
+  const onward = Object.entries(d.byKind)
+    .map(([kind, value]) => `${kind} ${formatTel(value)}`)
+    .join(" · ");
+  return (
+    <TableRow data-testid="wf-trace-row">
+      <TableCell className="min-w-[10rem]">
+        <span className="block font-medium text-foreground">{d.label}</span>
+        <AddressLinks address={d.wallet} chains={chains} />
+      </TableCell>
+      <TableCell className="whitespace-nowrap">
+        <AddressLinks address={d.dest} chains={chains} />
+      </TableCell>
+      <TableCell className="text-right tabular-nums">{formatTel(d.received)}</TableCell>
+      <TableCell className="min-w-[10rem] tabular-nums">
+        {onward || <span className="text-muted-foreground">none seen</span>}
+      </TableCell>
+      <TableCell className="text-right tabular-nums">{formatTel(d.unaccounted)}</TableCell>
+      <TableCell>
+        <Badge variant="outline" className="text-xs">
+          {TRACE_STATUS_LABEL[d.status]}
+        </Badge>
+      </TableCell>
+    </TableRow>
+  );
+};
+
+export const UnlabelledTrace = ({ report }: { report: WalletFlowsReport }) => {
+  const { ticker } = useProjectCopy();
+  const trace = report.unlabelledTrace;
+  if (!trace) return null;
+  return (
+    <section className="rounded-xl border border-border/50 bg-card p-3 sm:p-4" aria-labelledby="wf-trace">
+      <h4 id="wf-trace" className="text-base font-semibold text-foreground">
+        Sent to unlabelled wallets (last 90 days)
+      </h4>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {`${ticker} that left tracked wallets for addresses the registry does not label, and where it went one hop later. Not necessarily a sale.`}
+      </p>
+      <p className="mt-2 text-xs tabular-nums text-foreground">{`${formatTel(trace.totals.received)} ${ticker} in total`}</p>
+      <div className="mt-2 overflow-x-auto">
+        <Table className="text-xs">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Wallet</TableHead>
+              <TableHead>Destination</TableHead>
+              <TableHead className="text-right">Received</TableHead>
+              <TableHead>Traced onward</TableHead>
+              <TableHead className="text-right">Unaccounted</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {trace.destinations.map((d) => (
+              <TraceRow key={`${d.wallet}|${d.dest}`} d={d} chains={report.chains} />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </section>
   );
 };
 
@@ -614,6 +813,8 @@ export const WalletFlowsPanel = () => {
           <KnownWalletsTable report={report} />
           <BotAndFunding report={report} />
           <LargeSellers report={report} />
+          {report.salesJournal && report.salesJournal.sales.length > 0 && <SalesJournal report={report} />}
+          {report.unlabelledTrace && report.unlabelledTrace.destinations.length > 0 && <UnlabelledTrace report={report} />}
           <ul className="list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
             {report.notes.map((n) => (
               <li key={n}>{n}</li>

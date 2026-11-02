@@ -14,6 +14,9 @@ name: Refresh gated wallet-flows report (optional)
 # this job is continue-on-error, so it can never break or block other workflows.
 # It does not trigger a Netlify build (netlify.toml ignores git pushes); with
 # LIVE_DATA_GITHUB_TOKEN set in Netlify, the gate serves the new file within an hour.
+#
+# A project with a Solana chain also runs generate-wallet-flows-solana.js in this job
+# (Helius credits, capped per run, a few minutes); it has no schedule of its own.
 
 on:
   schedule:
@@ -55,6 +58,11 @@ jobs:
         env:
           RPC_PREFER_PUBLIC: '1'
         run: node scripts/generate-wallet-flows.js
+      - name: Generate Solana report (keeps previous file on failure)
+        env:
+          SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
+          SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
+        run: node scripts/generate-wallet-flows-solana.js
       - name: Commit if changed
         run: |
           git config user.email "action@github.com"
@@ -62,6 +70,10 @@ jobs:
           # TEL: data/forensics/wallet-flows.json (unchanged); others: data/<slug>/forensics/…
           FILES=$(node scripts/workflow-paths.js files data/forensics/wallet-flows.json)
           if [ -z "$FILES" ]; then echo "No report for $HD_PROJECT_SLUG"; exit 0; fi
+          # Solana scan state (cursors + 90-day events) is written only by the Solana generator; the
+          # TEL pass-through of workflow-paths.js does not check existence, so add it only when present.
+          STATE="$HD_WORK_DIR/forensics/wallet-flows-state.json"
+          if [ -f "$STATE" ]; then FILES="$FILES $STATE"; fi
           git add $FILES
           if git diff --cached --quiet; then echo "No change"; exit 0; fi
           git commit -m "Refresh gated wallet-flows report [skip netlify]"

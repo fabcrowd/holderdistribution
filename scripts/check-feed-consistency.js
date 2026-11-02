@@ -32,6 +32,7 @@ import path from "node:path";
 import process from "node:process";
 import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
 import { holderDayChanges, placeholderLag, resolveConsistencyOptions, resolveFeedHealth, runForEachProject, seriesBreakDates } from "./lib/feedHealth.js";
+import { forensicsRegistryProblems } from "./lib/walletFlowsProject.js";
 
 // `--all`: once per registered project; fail if any project fails.
 if (process.argv.includes("--all")) {
@@ -99,6 +100,12 @@ const lastEntry = (doc) => {
 };
 
 const main = async () => {
+  // --- 0. A gated project's forensics registry must exist and list wallets
+  // before any feed is trusted; skipped silently for ungated projects.
+  const registryProblems = forensicsRegistryProblems(project, { root: ROOT });
+  if (registryProblems.length > 0) failures.push(...registryProblems);
+  else if (project.config?.gated?.forensics === true) checks.push("forensics registry present");
+
   const supply = await read("supply-reconciliation.json");
   const lite = await read("holders-lite.json");
   const summary = await read("holders-summary.json");

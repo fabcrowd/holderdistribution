@@ -17,6 +17,7 @@
     "check:feeds": "node scripts/validate-outputs.js --all && node scripts/check-feed-consistency.js --all",
     "pipeline:health": "node scripts/pipeline-health.js --all",
     "audit:deploys": "node scripts/audit-deploy-triggers.js --strict",
+    "init:forensics": "node scripts/init-forensics-registry.js",
     "receipt": "node scripts/change-receipt.js"
   },
   "dependencies": {

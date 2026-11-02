@@ -37,3 +37,18 @@ export const loadWalletFlowsDev = async (): Promise<WalletFlowsReport> => {
   const mod = await import("../../data/forensics/wallet-flows.json");
   return (mod.default ?? mod) as unknown as WalletFlowsReport;
 };
+
+/**
+ * Other projects' reports (e.g. Solana ZBCN) from the local, uncommitted
+ * `data/<slug>/forensics/wallet-flows.json`, so the panel can be checked in dev
+ * before the file is committed. `null` when the project has no local report.
+ * Same DEV-only guard as the rest of this module (see the header).
+ */
+const PROJECT_WALLET_FLOWS = import.meta.glob("../../data/*/forensics/wallet-flows.json");
+
+export const loadProjectWalletFlowsDev = async (slug: string): Promise<WalletFlowsReport | null> => {
+  const load = PROJECT_WALLET_FLOWS[`../../data/${slug}/forensics/wallet-flows.json`];
+  if (!load) return null;
+  const mod = (await load()) as { default?: unknown };
+  return (mod.default ?? mod) as unknown as WalletFlowsReport;
+};
