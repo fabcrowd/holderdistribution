@@ -94,6 +94,66 @@
       "confidence": "medium",
       "source": "https://etherscan.io/address/0x118919e891D0205A7492650AD32E727617FA9452#readProxyContract",
       "note": "Safe 3-of-5; getOwners() shares 0x60f030d6... with Management Multisig and 0x108c052b... with legacy MultiSig (public RPC eth_call, 2026-11-03). Funded Safe C with 9.8M ONDO (tx 0x4c5adfa6...)."
+    },
+    {
+      "address": "0xc5d9221eb9c28a69859264c0a2fe0d3272228296",
+      "label": "Ondo distributor 0xc5d9 (funded by Multisig 2)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "confidence": "medium",
+      "source": "https://etherscan.io/tx/0x762bdbe8ee744e12ec40c1e97512a25e794b93677a48a29174df319830843175",
+      "chains": [
+        "ethereum"
+      ],
+      "note": "313.8M ONDO from Multisig 2 (2022-04-28); sends to 0x0d37\u2026, 0xac7d\u2026, 0x7fd8\u2026."
+    },
+    {
+      "address": "0xac7dc31d7eab8a15267a386151d851c992f14690",
+      "label": "Ondo allocation wallet 0xac7d (funded by distributor 0xc5d9)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "confidence": "medium",
+      "source": "https://etherscan.io/tx/0xfbdd3519bb04287ee1f961bcca31db7cea4585edf9aed868035c5999b05d4b9a",
+      "chains": [
+        "ethereum"
+      ],
+      "note": "95.7M ONDO from 0xc5d9 (2024-12-19); no outflows."
+    },
+    {
+      "address": "0x0d37bf9ef9254f73e75dcfe2da5837e22d9f3553",
+      "label": "Ondo allocation wallet 0x0d37 (funded by distributor 0xc5d9)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "confidence": "medium",
+      "source": "https://etherscan.io/tx/0x43c101252d777937495af6f53e1ff8bd822b2cf95938dad10e5a90f640963359",
+      "chains": [
+        "ethereum"
+      ],
+      "note": "173,971,280 ONDO from 0xc5d9 (2024-01-19); outflows only back to Multisig 2 (tx 0xef45f74e\u2026) and Safe A (tx 0xfa7b3d8b\u2026), 62.76M each."
+    },
+    {
+      "address": "0x7fd83e87b449422507299ba3f1d12207242d9607",
+      "label": "Ondo allocation wallet 0x7fd8 (funded by distributor 0xc5d9)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "confidence": "medium",
+      "source": "https://etherscan.io/tx/0x093887f6154627b950be5433973b0b1e361d315bf87b0e0cfbd51009e114a718",
+      "chains": [
+        "ethereum"
+      ],
+      "note": "44,109,630 ONDO from 0xc5d9 (2025-06-10); all sent to 0xb165 (tx 0x06e06fa7\u2026, 2026-04-30)."
+    },
+    {
+      "address": "0xb165986ae836d0ef7a909db4087df1e38d365947",
+      "label": "Ondo allocation wallet 0xb165 (funded by 0x7fd8 and Safe A)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "confidence": "medium",
+      "source": "https://etherscan.io/tx/0x06e06fa739e2b3e84fa016bb4ff742f80aad36ca1fcde0718dc5b42ebe960f17",
+      "chains": [
+        "ethereum"
+      ],
+      "note": "44,109,630 ONDO from 0x7fd8 (2026-04-30); earlier 8,203,471 from Safe A (tx 0xec817a9d\u2026, 2025-01-15) forwarded to Coinbase Prime deposit address 0xd9d7 (exchange deposit; tx 0x2447d3a2\u2026, 2025-02-02)."
     }
   ],
   "botCluster": null,

@@ -753,6 +753,15 @@ Then:
    `node scripts/detect-token-chains.js --address 0x… --chain <origin> --ticker <T> --coingecko`
    first so `chains[]` includes every chain the token is on (see "Chain
    discovery"). Each extra chain gets a picker view automatically.
+   **Always trace unknown large holders before finalizing tags.** For every
+   top non-CEX holder that is not already labelled, record on-chain: the
+   first token funding tx (hash), whether it came from the deployer, a
+   developer/foundation multisig, another tagged dev wallet or a CEX, its
+   outflow destinations, contract vs EOA, and public labels (Etherscan /
+   Blockscout / Arkham). Tag it when the trace ties it to developer funds
+   (cite the funding tx as `source`); otherwise list it with its trace in
+   `docs/<slug>-wallet-candidates.md`. Never leave a large holder untagged
+   without a recorded trace.
    For each extra chain, confirm `bridge` (`native` / `lock-mint` / `burn-mint`)
    from the project's bridge docs and mark the `origin`. Add a Solana chain
    only if the token is actually deployed there (see "Solana chains").
