@@ -30,7 +30,7 @@ import { pathToFileURL } from "node:url";
 import { projectPaths, projectWork, selectPipelineProject } from "./lib/projects.js";
 import { solanaFlowChains, solanaFlowVenues } from "./lib/solana/flowConfig.js";
 import { WALLET_FLOWS_FILE, WALLET_FLOWS_REGISTRY_FILE, walletFlowsNotes } from "./lib/walletFlowsProject.js";
-import { validateWalletFlowsReport } from "./lib/walletFlows.js";
+import { WINDOWS, validateWalletFlowsReport } from "./lib/walletFlows.js";
 import {
   aggregateWalletOutflows,
   buildSolanaWalletRows,
@@ -255,8 +255,8 @@ function buildReport({ project, chain, registry, scan, rows, priceUsd, priceSour
       chain: chain.key,
       addresses: [],
       balance: 0,
-      dexSales: { "72h": 0, "30d": 0, "90d": 0 },
-      cexDeposits: { "72h": 0, "30d": 0, "90d": 0 },
+      dexSales: Object.fromEntries(WINDOWS.map((w) => [w, 0])),
+      cexDeposits: Object.fromEntries(WINDOWS.map((w) => [w, 0])),
     },
     largeSellers: [],
   };

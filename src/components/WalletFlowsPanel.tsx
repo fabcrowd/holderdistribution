@@ -262,7 +262,7 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={5 + FLOW_WINDOWS.length} className="py-8 text-center text-sm text-muted-foreground">
                   No wallets match{query ? ` "${query}"` : ""}.
                 </TableCell>
               </TableRow>
@@ -298,8 +298,8 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{formatTel(w.balance)}</TableCell>
                     {FLOW_WINDOWS.map((win) => (
-                      <TableCell key={win} className={`text-right tabular-nums ${w.sellVenue[win] > 0 ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
-                        {w.sellVenue[win] > 0 ? formatTel(w.sellVenue[win]) : "—"}
+                      <TableCell key={win} className={`text-right tabular-nums ${(w.sellVenue[win] ?? 0) > 0 ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                        {(w.sellVenue[win] ?? 0) > 0 ? formatTel(w.sellVenue[win]) : "—"}
                       </TableCell>
                     ))}
                     <TableCell className="min-w-[10rem]">
@@ -308,7 +308,7 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
                   </TableRow>
                   {expanded && (
                     <TableRow id={detailId} className="bg-muted/20 hover:bg-muted/20">
-                      <TableCell colSpan={8} className="space-y-1.5 text-xs">
+                      <TableCell colSpan={5 + FLOW_WINDOWS.length} className="space-y-1.5 text-xs">
                         <p>
                           <span className="font-semibold">Label source:</span> {w.source}
                         </p>
@@ -324,7 +324,7 @@ const KnownWalletsTable = ({ report }: { report: WalletFlowsReport }) => {
                         </p>
                         {FLOW_WINDOWS.map((win) => (
                           <p key={win}>
-                            <span className="font-semibold">All outflows {win}:</span> <Breakdown values={w.outflows[win]} />
+                            <span className="font-semibold">All outflows {win}:</span> <Breakdown values={w.outflows[win] ?? {}} />
                           </p>
                         ))}
                         {w.sellVenueUsd90d > 0 && <p>≈ {formatUsd(w.sellVenueUsd90d)} to sell venues in 90d</p>}
@@ -373,7 +373,7 @@ const BotAndFunding = ({ report }: { report: WalletFlowsReport }) => {
           {bot.label}
         </h4>
         {bot.note && <p className="mt-0.5 text-xs text-muted-foreground">{bot.note}</p>}
-        <dl className="mt-2 grid grid-cols-4 gap-2 text-xs">
+        <dl className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5 text-xs">
           <div>
             <dt className="text-muted-foreground">Holds</dt>
             <dd className="font-semibold tabular-nums">{formatTel(bot.balance)}</dd>
@@ -684,7 +684,7 @@ const Summary = ({ report }: { report: WalletFlowsReport }) => {
       </h4>
       <AsOfBadge iso={report.generated} testId="wallet-flows-asof" />
     </div>
-    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:gap-3">
       {FLOW_WINDOWS.map((w) => (
         <div key={w} className="rounded-xl border border-border/50 bg-card p-3 sm:p-4">
           <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last {w}</dt>

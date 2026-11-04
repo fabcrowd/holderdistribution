@@ -23,7 +23,7 @@ export const isGateToken = (credential: string | null | undefined): credential i
 export const SESSION_CHECK_KEY = "session-check";
 
 /** Gate keys whose payload is a project-level `report` (not a wallet write-up). */
-const PROJECT_REPORT_KEYS = new Set(["association-stablecoin-flows", "tel-disposition-ledger", "disposition-ledger"]);
+const PROJECT_REPORT_KEYS = new Set(["association-stablecoin-flows", "tel-disposition-ledger", "disposition-ledger", "project-ledger", "bot-proceeds"]);
 const isProjectReportKey = (key: string) => PROJECT_REPORT_KEYS.has(key);
 
 async function gateHeaders(): Promise<Record<string, string>> {
@@ -69,6 +69,8 @@ const loadLocalPayload = async (address: string, project?: string): Promise<Gate
     throw new ForensicsGateError("Could not load gated content", 503);
   }
   if (address === SESSION_CHECK_KEY) return { ok: true };
+  // Ledger reports have no local dev copy (data/<slug>/ledger is generated in CI only).
+  if (address === "project-ledger" || address === "bot-proceeds") return { report: null, project };
   // Dev has local copies of the default project's (TEL's) gated files only.
   if (project && project !== DEFAULT_PROJECT_SLUG) {
     // Other projects: only the wallet-flows report has a local file (data/<slug>/forensics/, uncommitted until pushed).

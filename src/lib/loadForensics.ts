@@ -52,3 +52,18 @@ export const loadWalletFlows = async (password: string | null, project?: string)
   if (!("report" in res)) throw new ForensicsGateError("Missing wallet flows report", 500);
   return (res.report as WalletFlowsReport | null) ?? null;
 };
+
+/** Developer-wallet ledger (scripts/build-ledger.js). Gate only; null = not generated yet. See docs/LEDGER.md. */
+export const PROJECT_LEDGER_KEY = "project-ledger";
+export const BOT_PROCEEDS_KEY = "bot-proceeds";
+export const loadProjectLedger = async (password: string | null, project?: string): Promise<import("@/lib/projectWallets").LedgerReport | null> => {
+  const res = await fetchForensicsGate(PROJECT_LEDGER_KEY, password, project);
+  if (!("report" in res)) throw new ForensicsGateError("Missing ledger report", 500);
+  return (res.report as import("@/lib/projectWallets").LedgerReport | null) ?? null;
+};
+/** Bot-cluster proceeds trace (scripts/trace-bot-proceeds.js). Gate only; null = none. */
+export const loadBotProceeds = async (password: string | null, project?: string): Promise<import("@/lib/projectWallets").BotProceedsReport | null> => {
+  const res = await fetchForensicsGate(BOT_PROCEEDS_KEY, password, project);
+  if (!("report" in res)) throw new ForensicsGateError("Missing bot proceeds report", 500);
+  return (res.report as import("@/lib/projectWallets").BotProceedsReport | null) ?? null;
+};

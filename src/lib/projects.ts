@@ -64,6 +64,8 @@ export type ProjectConfig = ProjectEntry & {
   capabilities?: {
     /** Council-wallet sales journal (src/components/TelDispositionLedger.tsx). */
     dispositionLedger?: boolean;
+    /** Gated Developer wallets tab (src/components/projectWallets/ProjectWalletsView.tsx; data/<slug>/ledger, docs/LEDGER.md). */
+    projectWallets?: boolean;
   };
   supply?: {
     /** reconcile-supply: keep the traced CoinGecko snapshot when the live read is missing (TEL only). */

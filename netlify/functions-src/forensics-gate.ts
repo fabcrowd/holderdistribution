@@ -11,6 +11,7 @@ import type { Handler } from "@netlify/functions";
 import { WindowLimiter, corsHeaders, issueToken, originAllowed, passwordMatches, verifyToken } from "./gateAuth.ts";
 import { loadWalletFlows } from "./walletFlowsSource.ts";
 import { resolveGatedProject } from "./gatedProjects.ts";
+import { LEDGER_KEYS, loadLedgerFile } from "./ledgerSource.ts";
 
 /**
  * Gated forensics endpoint. POST {address, password | token, project?}. Every
@@ -174,6 +175,11 @@ export async function handler(event: GateEvent): ReturnType<Handler> {
     if (address === WALLET_FLOWS_KEY) {
       const { report, source } = await loadWalletFlows(process.env, fetch, Date.now(), project);
       return json(200, { report, ...scoped }, { "X-Wallet-Flows-Source": source });
+    }
+    // Developer-wallet ledger ("project-ledger") and bot proceeds trace ("bot-proceeds"), see docs/LEDGER.md.
+    if (Object.hasOwn(LEDGER_KEYS, address)) {
+      const { report, source } = await loadLedgerFile(project, LEDGER_KEYS[address]);
+      return json(200, { report, ...scoped }, { "X-Ledger-Source": source });
     }
 
     const analysis = gated?.writeups[address] ?? null;

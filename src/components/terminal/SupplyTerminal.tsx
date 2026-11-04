@@ -27,6 +27,8 @@ type Props = {
   reconciliation: ReactNode;
   history: ReactNode;
   walletFlows: ReactNode;
+  /** Gated Developer wallets tab (capabilities.projectWallets); absent = no tab. */
+  projectWallets?: ReactNode;
 };
 
 /**
@@ -63,7 +65,8 @@ const ReadySupply = (p: Props) => {
   const intro = useIntro();
   // History is always on screen here (its own panel), so a #supply/history
   // deep link simply lands on the default tab beside it.
-  const tabBase = TABS.some((t) => t.id === p.panel) ? p.panel : "breakdown";
+  const tabs: ReadonlyArray<{ id: string; label: string }> = p.projectWallets ? [...TABS, { id: "project-wallets", label: "Developer wallets" }] : TABS;
+  const tabBase = tabs.some((t) => t.id === p.panel) ? p.panel : "breakdown";
   // ...but the link should still take the reader there: move focus (and the
   // outline) to the history panel so #supply/history isn't a silent no-op.
   const wantsHistory = p.panel === "history";
@@ -102,7 +105,7 @@ const ReadySupply = (p: Props) => {
           {/* The ✕ sits beside the tablist, not in it: a tablist may only
               own tabs (axe aria-required-children). */}
           <div role="tablist" aria-label="Supply analysis" className="flex items-center gap-1">
-          {TABS.map((t) => {
+          {tabs.map((t) => {
             const selected = tabBase === t.id;
             return (
               <button
@@ -116,8 +119,8 @@ const ReadySupply = (p: Props) => {
                 onClick={() => p.onPanelChange(t.id)}
                 onKeyDown={(e) => {
                   if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-                  const i = TABS.findIndex((x) => x.id === t.id);
-                  const next = TABS[(i + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length];
+                  const i = tabs.findIndex((x) => x.id === t.id);
+                  const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
                   p.onPanelChange(next.id);
                   document.getElementById(`supply-tab-${next.id}`)?.focus();
                 }}
@@ -152,6 +155,7 @@ const ReadySupply = (p: Props) => {
             (p.detail ?? <PanelMessage>Select a category on the left to see its wallets and notes.</PanelMessage>)}
           {tabBase === "reconciliation" && <div className="space-y-4">{p.reconciliation}</div>}
           {tabBase === "wallet-flows" && p.walletFlows}
+          {tabBase === "project-wallets" && p.projectWallets}
         </div>
       </section>
       <TerminalPanel

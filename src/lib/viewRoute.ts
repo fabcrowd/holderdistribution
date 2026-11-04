@@ -24,7 +24,7 @@ export const HOLDER_PANEL_IDS = [
   "flows",
   "exchanges",
 ] as const;
-export const SUPPLY_PANEL_IDS = ["breakdown", "reconciliation", "history", "wallet-flows"] as const;
+export const SUPPLY_PANEL_IDS = ["breakdown", "reconciliation", "history", "wallet-flows", "project-wallets"] as const;
 
 export const DEFAULT_PANEL: Record<ViewId, string | null> = {
   holders: "trends",
