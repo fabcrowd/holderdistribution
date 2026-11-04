@@ -58,7 +58,7 @@ const workflowNames = () =>
  * running the stages as ordered steps, instead of three workflows linked by
  * workflow_run plus a fallback cron each. These guard that consolidation: the
  * order, and that no former stage quietly regains its own schedule (each one
- * was a second billed run every day on a minutes-capped plan).
+ * was a second, overlapping run of the same stages every day).
  */
 const FORMER_STAGES = ["scan-exchange-flows.yml", "generate-tier-outflows.yml", "fill-history-gaps.yml"];
 const dailyCrons = (doc) =>
@@ -73,22 +73,31 @@ const dailyCrons = (doc) =>
  * its (publishing) commit only run when a feed is actually stale.
  */
 const DAILY_MONITORS = ["pipeline-watchdog.yml"];
+/**
+ * The repo is public (2026-11), so Actions minutes are free and there is no
+ * minutes budget or daily-job allowlist any more. What is still enforced: the
+ * daily holders refresh is the only daily job that publishes (deploys), every
+ * other daily job commits with [skip netlify].
+ */
 
 describe("data pipeline workflow chain", () => {
-  it("only the consolidated daily workflow (plus the watchdog monitor) runs on a daily schedule", () => {
-    const daily = fs
-      .readdirSync(DIR)
-      .filter((f) => f.endsWith(".yml"))
-      .filter((f) => dailyCrons(load(f)).length > 0);
-    expect(daily.sort()).toEqual(["refresh-tel-holders.yml", ...DAILY_MONITORS].sort());
+  it("the consolidated daily refresh runs once a day, and other daily data jobs never publish", () => {
     expect(dailyCrons(load("refresh-tel-holders.yml"))).toHaveLength(1);
+    const others = fs
+      .readdirSync(DIR)
+      .filter((f) => f.endsWith(".yml") && f !== "refresh-tel-holders.yml" && !DAILY_MONITORS.includes(f))
+      .filter((f) => dailyCrons(load(f)).length > 0);
+    for (const f of others) {
+      const src = fs.readFileSync(path.join(DIR, f), "utf8");
+      if (/git commit/.test(src)) expect(src, `${f} commits daily without [skip netlify]`).toMatch(/\[skip netlify\]/);
+    }
   });
 
   it("no per-project refresh workflow exists: onboarding a token is config only", () => {
     expect(fs.existsSync(path.join(DIR, "refresh-zebec-network.yml"))).toBe(false);
     const files = fs.readdirSync(DIR).filter((f) => /^refresh-.*\.yml$/.test(f));
     // Only the registry-driven refresh and the manual staker tool; a refresh-<slug>.yml would double-run.
-    expect(files.sort()).toEqual(["refresh-staker-balances.yml", "refresh-tel-holders.yml", "refresh-wallet-flows.yml"]);
+    expect(files.sort()).toEqual(["refresh-ledger.yml", "refresh-staker-balances.yml", "refresh-tel-holders.yml", "refresh-wallet-flows.yml"]);
   });
 
   describe("registry-driven matrix", () => {

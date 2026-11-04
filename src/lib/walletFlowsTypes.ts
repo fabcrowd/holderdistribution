@@ -4,8 +4,10 @@
  * function after password verification — never import the JSON from src/ outside
  * the DEV-only loader (src/lib/loadForensicsDev.ts), or it ships in the bundle.
  */
-export type FlowWindow = "72h" | "30d" | "90d";
-export const FLOW_WINDOWS: FlowWindow[] = ["72h", "30d", "90d"];
+export type FlowWindow = "24h" | "72h" | "30d" | "90d";
+// "24h" added 2026-11-03; reports generated before then have no 24h key, so
+// readers must treat a missing window as "not computed", not as an error.
+export const FLOW_WINDOWS: FlowWindow[] = ["24h", "72h", "30d", "90d"];
 
 export type WalletFlowsDistributionClass = {
   key: string;

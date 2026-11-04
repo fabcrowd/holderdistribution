@@ -12,6 +12,9 @@
   "pipeline": {
     "workflowTimeoutMinutes": 75
   },
+  "capabilities": {
+    "projectWallets": true
+  },
   "supply": {
     "circulating": { "subtract": ["treasury"] },
     "developerHoldings": {

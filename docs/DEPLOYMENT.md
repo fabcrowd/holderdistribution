@@ -90,9 +90,9 @@ consistency gate → commit. `scan-exchange-flows`, `generate-tier-outflows` and
 runs weekly (Mon), `detect-cex-candidates` weekly, `sync-cex-wallets` on the 1st/15th.
 The log scanners run with `RPC_PREFER_PUBLIC=1` (keyless public RPCs take wide `eth_getLogs`
 ranges; the Alchemy free tier's 10-block cap made the holders step alone ~23 min/day) and
-retry on the Alchemy keys if that fails. Expected cost: ~15–30 Actions min/day, i.e.
-~500–900 of the 2,000 free minutes/month (was ~2,500/month with the chained jobs, fallback
-crons and daily watchdog).
+retry on the Alchemy keys if that fails. Expected runtime: ~15–30 Actions min/day. The repo is public, so
+Actions minutes are free; there is no monthly minutes budget (the old 2,000-minute private-plan
+cap no longer applies).
 
 **Live data.** Data commits do not rebuild Netlify. The browser fetches feeds from
 `/live-data/<file>` (`netlify/functions/live-data.mjs`), which reads the latest

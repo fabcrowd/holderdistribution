@@ -1,0 +1,115 @@
+name: Refresh developer-wallet ledger (gated)
+
+# Nightly developer-wallet ledger for EVERY project in config/projects.json that
+# has config/projects/<slug>/ledger.json (others exit 0 with a notice):
+#   scripts/build-ledger.js        -> data/<slug>/ledger/ledger.json (+ ledger-checkpoint.json)
+#   scripts/trace-bot-proceeds.js  -> data/<slug>/ledger/bot-proceeds.json
+# Served ONLY by the forensics gate function (keys "project-ledger" / "bot-proceeds"),
+# never from public/data. See docs/LEDGER.md.
+#
+# Runs at 02:30 UTC, after the 00:00 refresh-tel-holders run has normally finished.
+# Own concurrency group (not holders-refresh): GitHub keeps only one PENDING run per
+# group, so sharing it could drop the nightly holders run. Pushes go through
+# scripts/push-main.sh, which retries a lost race. Commits carry [skip netlify].
+#
+# Runtime: incremental after the first run (checkpointed per chain), ~3-8 minutes
+# per project per night; the first run backfills 90 days and takes longer. The
+# repo is public, so Actions minutes are free (no minutes budget). Providers: Alchemy (decrypted from
+# .env.enc via ENV_PASSPHRASE) for EVM, Etherscan free tier as a count cross-check,
+# SOLANA_RPC_0 (Helius) / SOLANA_RPC_1 (public) for Solana.
+#
+# NON-FATAL: a chain that fails keeps its previous data and is marked stale; the
+# job is continue-on-error so it never blocks other workflows.
+
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Project slug from config/projects.json, or 'all'"
+        required: false
+        default: 'all'
+      rebuild:
+        description: 'Ignore the checkpoint and rescan the full history window'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ledger-refresh
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: List projects from config/projects.json
+        id: matrix
+        env:
+          SELECTION: ${{ inputs.project }}
+        run: echo "matrix=$(node scripts/workflow-paths.js matrix "$SELECTION")" >> "$GITHUB_OUTPUT"
+
+  ledger:
+    name: Ledger ${{ matrix.slug }}
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      HD_PROJECT: ${{ matrix.slug }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Resolve project data paths
+        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
+      - name: Skip projects without a ledger config
+        id: has
+        run: |
+          if [ -f "config/projects/$HD_PROJECT_SLUG/ledger.json" ]; then echo "run=1" >> "$GITHUB_OUTPUT";
+          else echo "::notice::no config/projects/$HD_PROJECT_SLUG/ledger.json; skipping"; fi
+      - name: Build ledger (keeps previous data per chain on failure)
+        if: steps.has.outputs.run == '1'
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
+          SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
+        run: node scripts/build-ledger.js --project "$HD_PROJECT_SLUG" ${{ inputs.rebuild == 'true' && '--rebuild' || '' }}
+      - name: Trace bot proceeds
+        if: steps.has.outputs.run == '1'
+        continue-on-error: true
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+        run: node scripts/trace-bot-proceeds.js --project "$HD_PROJECT_SLUG"
+      - name: Commit if changed
+        if: steps.has.outputs.run == '1'
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "github-actions[bot]"
+          DIR="data/$HD_PROJECT_SLUG/ledger"
+          if [ ! -d "$DIR" ]; then echo "No ledger output for $HD_PROJECT_SLUG"; exit 0; fi
+          git add "$DIR"
+          if git diff --cached --quiet; then echo "No change"; exit 0; fi
+          git commit -m "Refresh $HD_PROJECT_SLUG developer-wallet ledger [skip netlify]"
+          git checkout -- .
+          bash scripts/push-main.sh

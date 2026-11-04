@@ -11,6 +11,8 @@ import { SubscriptionGate } from "@/components/SubscriptionGate";
 
 // Own chunk: holds only UI code (no wallet data); loaded when the tab opens.
 const WalletFlowsPanel = lazy(() => import("@/components/WalletFlowsPanel"));
+import { showsProjectWallets } from "@/lib/projectWallets";
+const ProjectWalletsView = lazy(() => import("@/components/projectWallets/ProjectWalletsView"));
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -699,6 +701,15 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                 </Suspense>
   );
 
+  // Flagged: only projects with capabilities.projectWallets get the Developer wallets tab.
+  const showProjectWallets = showsProjectWallets(project);
+  const projectWalletsBody = showProjectWallets ? (
+                <Suspense fallback={<p className="text-xs text-muted-foreground">Loading…</p>}>
+                  <ProjectWalletsView rangeDays={rangeDays} />
+                </Suspense>
+  ) : null;
+  const supplyPanels = showProjectWallets ? [...SUPPLY_PANELS, { id: "project-wallets", label: "Developer wallets" }] : SUPPLY_PANELS;
+
   if (layout === "terminal") {
     return (
       <ForensicsUnlockProvider singleGate>
@@ -716,6 +727,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
         reconciliation={reconciliationBody}
         history={historyBody}
         walletFlows={walletFlowsBody}
+        projectWallets={projectWalletsBody}
       />
       </ForensicsUnlockProvider>
     );
@@ -752,7 +764,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
               <p className="text-sm text-muted-foreground">No supply data available.</p>
             )}
             {buckets.length > 0 && (
-              <SubPanelTabs panels={SUPPLY_PANELS} value={panel} onValueChange={setPanel}>
+              <SubPanelTabs panels={supplyPanels} value={panel} onValueChange={setPanel}>
               <TabsContent value="breakdown" className="mt-4 space-y-5 focus-visible:outline-none">
                 <div>
                   <div className="flex items-baseline justify-between mb-3 gap-2">
@@ -818,6 +830,11 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
               <TabsContent value="wallet-flows" className="mt-4 focus-visible:outline-none">
                 {walletFlowsBody}
               </TabsContent>
+              {showProjectWallets && (
+                <TabsContent value="project-wallets" className="mt-4 focus-visible:outline-none">
+                  {projectWalletsBody}
+                </TabsContent>
+              )}
               </SubPanelTabs>
             )}
           </CardContent>

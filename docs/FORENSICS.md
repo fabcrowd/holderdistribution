@@ -95,9 +95,9 @@ node scripts/generate-wallet-flows.js --dry-run --skip-sellers       # quick che
   (`--strict` exits 1).
 - Edit labels, sources, confidence, the bot cluster and watched sellers in
   `data/forensics/wallet-flows.registry.json`, not in the generated report.
-- **Schedule:** `.github/workflows/refresh-wallet-flows.yml` runs **weekly** (Mon) and on
-  demand. It is not in the daily job because one run costs about 15 to 20 Actions minutes,
-  and daily would push the monthly total close to the 2,000 free minutes.
+- **Schedule:** `.github/workflows/refresh-wallet-flows.yml` runs **daily** (13:41 UTC) and on
+  demand, so the 24h window is fresh. One run is about 15 to 20 Actions minutes; the repo is
+  public, so minutes are free and there is no budget to fit.
 - **Reaching the live site:** with `LIVE_DATA_GITHUB_TOKEN` set in Netlify, the gate
   fetches the latest committed report from GitHub (1 h in-memory cache, falls back to
   the bundled copy). The `X-Wallet-Flows-Source: github|bundled` response header shows

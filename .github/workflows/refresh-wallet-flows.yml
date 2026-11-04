@@ -5,10 +5,8 @@ name: Refresh gated wallet-flows report (optional)
 # (served only by the forensics gate function, never from public/data). A project
 # without data/<slug>/forensics/wallet-flows.registry.json is skipped (exit 0).
 #
-# WEEKLY, NOT DAILY, on purpose: one run is ~15-20 billed minutes on the keyless
-# public RPCs (90-day log scans on three chains + a full 72h transfer scan). Daily
-# would add ~450-600 min/month on top of the daily pipeline's ~500-900, too close
-# to the 2,000 free minutes. Weekly adds ~80. Run it by hand for a fresh 72h view.
+# DAILY (the 24h window needs it). One run is ~15-20 Actions minutes; the repo is
+# public, so Actions minutes are free and there is no minutes budget to fit.
 #
 # NON-FATAL: the script keeps the previous report on any error and exits 0, and
 # this job is continue-on-error, so it can never break or block other workflows.
@@ -20,7 +18,7 @@ name: Refresh gated wallet-flows report (optional)
 
 on:
   schedule:
-    - cron: '41 13 * * 1'
+    - cron: '41 13 * * *'
   workflow_dispatch:
     inputs:
       project:

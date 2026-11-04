@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import {
+  WINDOWS,
+  WINDOW_SECONDS,
   aggregateOutflows,
   buildDistribution,
   buildKnownWalletRows,
@@ -43,7 +45,7 @@ const index = buildVenueIndex({
   recon: { items: [{ address: TREASURY, category: "treasury" }] },
   upgradeContracts: [UPGRADE],
 });
-const startBlocks = { polygon: { "72h": 900, "30d": 500, "90d": 100 } };
+const startBlocks = { polygon: { "24h": 951, "72h": 900, "30d": 500, "90d": 100 } };
 const tr = (from, to, tel, block, extra = {}) => ({ chain: "polygon", from, to, tel, block, tx: "0x" + block.toString(16).padStart(64, "0"), ...extra });
 
 describe("classifyOutflow", () => {
@@ -75,7 +77,7 @@ describe("aggregateOutflows + rows + totals", () => {
   const hub = rows.find((r) => r.address === HUB);
 
   it("splits windows by block", () => {
-    expect(hub.sellVenue).toEqual({ "72h": 100, "30d": 400, "90d": 450 });
+    expect(hub.sellVenue).toEqual({ "24h": 0, "72h": 100, "30d": 400, "90d": 450 });
     expect(hub.outflows["90d"].internal).toBe(999);
     expect(hub.verdict).toBe("selling / sending to sell venues");
     expect(hub.balance).toBe(20);
@@ -262,5 +264,21 @@ describe("validateWalletFlowsReport optional sections", () => {
     expect(validateWalletFlowsReport(report)).toEqual([
       "unlabelledTrace must be an object with a destinations array",
     ]);
+  });
+});
+
+describe("24h window", () => {
+  it("is the first window and one day long", () => {
+    expect(WINDOWS).toEqual(["24h", "72h", "30d", "90d"]);
+    expect(WINDOW_SECONDS["24h"]).toBe(86400);
+  });
+
+  it("validator accepts reports without 24h but rejects unknown windows", () => {
+    const base = { version: 1, generated: "2026-11-03T00:00:00Z", distribution: { classes: [{}] }, largeSellers: [] };
+    const addr = "0x" + "a".repeat(40);
+    expect(validateWalletFlowsReport({ ...base, knownWallets: [{ address: addr, sellVenue: { "72h": 1, "30d": 1, "90d": 1 } }] })).toEqual([]);
+    expect(validateWalletFlowsReport({ ...base, knownWallets: [{ address: addr, sellVenue: { "24h": 1, "72h": 1 } }] })).toEqual([]);
+    expect(validateWalletFlowsReport({ ...base, knownWallets: [{ address: addr, sellVenue: { "7d": 1 } }] })).toEqual([`unknown window 7d on ${addr}`]);
+    expect(validateWalletFlowsReport({ ...base, knownWallets: [{ address: addr, sellVenue: { "24h": null } }] })).toEqual([`sellVenue.24h not a number on ${addr}`]);
   });
 });
