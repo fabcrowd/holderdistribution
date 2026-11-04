@@ -16,15 +16,15 @@ describe("workflowMatrix", () => {
   it("all: every registered project, default (TEL) first, with its configured timeout", () => {
     const { include, skipped } = workflowMatrix("all", repo);
     expect(skipped).toEqual([]);
-    expect(include.map((p) => p.slug)).toEqual(["tel", "zebec-network"]);
+    expect(include.map((p) => p.slug)).toEqual(["tel", "zebec-network", "ondo"]);
     const configured = include.map((p) => resolveProject(p.slug, repo).config?.pipeline?.workflowTimeoutMinutes);
     expect(include.map((p) => p.timeout)).toEqual(configured);
     expect(include[0].ticker).toBe("TEL");
   });
 
   it("empty or missing selection means all (scheduled runs have no inputs)", () => {
-    expect(workflowMatrix("", repo).include).toHaveLength(2);
-    expect(workflowMatrix(undefined, repo).include).toHaveLength(2);
+    expect(workflowMatrix("", repo).include).toHaveLength(3);
+    expect(workflowMatrix(undefined, repo).include).toHaveLength(3);
   });
 
   it("a slug selects exactly that project; an unknown slug throws", () => {
@@ -38,10 +38,10 @@ describe("workflowMatrix", () => {
       fs.mkdirSync(path.join(tmp, "config/projects"), { recursive: true });
       fs.copyFileSync(path.join(repo, "config/projects.json"), path.join(tmp, "config/projects.json"));
       fs.copyFileSync(path.join(repo, "config/projects/tel.json"), path.join(tmp, "config/projects/tel.json"));
-      // zebec-network is registered but its config file is missing here.
+      // zebec-network (and ondo) are registered but their config files are missing here.
       const out = workflowMatrix("all", tmp);
       expect(out.include.map((p) => p.slug)).toEqual(["tel"]);
-      expect(out.skipped.map((p) => p.slug)).toEqual(["zebec-network"]);
+      expect(out.skipped.map((p) => p.slug)).toEqual(["zebec-network", "ondo"]);
       expect(() => workflowMatrix("zebec-network", tmp)).toThrow();
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });

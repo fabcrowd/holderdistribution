@@ -1,6 +1,6 @@
 name: Refresh gated wallet-flows report (optional)
 
-# Regenerates the gated "Wallet flows" report for one project — TEL:
+# Regenerates the gated "Wallet flows" report for each scheduled project (TEL, ONDO) — TEL:
 # data/forensics/wallet-flows.json, others: data/<slug>/forensics/wallet-flows.json
 # (served only by the forensics gate function, never from public/data). A project
 # without data/<slug>/forensics/wallet-flows.registry.json is skipped (exit 0).
@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scheduled runs: tel). Needs that project''s forensics registry.'
+        description: 'Project slug from config/projects.json (scheduled runs: tel and ondo). Needs that project''s forensics registry.'
         required: false
         default: 'tel'
 
@@ -34,12 +34,19 @@ concurrency:
   cancel-in-progress: false
 
 # Every pipeline script reads HD_PROJECT as its default `--project` (see
-# scripts/lib/projects.js); scheduled runs have no inputs and stay on TEL.
-env:
-  HD_PROJECT: ${{ inputs.project || 'tel' }}
-
+# scripts/lib/projects.js). Scheduled runs have no inputs and run TEL then ONDO,
+# one at a time (max-parallel 1, so the two commits never race); a manual run
+# does only the project it names. ONDO is skipped (exit 0) until its holders
+# feed has produced supply-reconciliation.json.
 jobs:
   wallet-flows:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        project: ${{ fromJSON(inputs.project && format('["{0}"]', inputs.project) || '["tel","ondo"]') }}
+    env:
+      HD_PROJECT: ${{ matrix.project }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     continue-on-error: true
