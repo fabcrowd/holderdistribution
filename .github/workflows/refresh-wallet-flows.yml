@@ -1,6 +1,7 @@
 name: Refresh gated wallet-flows report (optional)
 
-# Regenerates the gated "Wallet flows" report for each scheduled project (TEL, ONDO) — TEL:
+# Regenerates the gated "Wallet flows" report for every project with a forensics registry
+# (config/nightly-jobs.json job "wallet-flows"; today TEL, ZBCN, ONDO) — TEL:
 # data/forensics/wallet-flows.json, others: data/<slug>/forensics/wallet-flows.json
 # (served only by the forensics gate function, never from public/data). A project
 # without data/<slug>/forensics/wallet-flows.registry.json is skipped (exit 0).
@@ -22,9 +23,9 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Project slug from config/projects.json (scheduled runs: tel and ondo). Needs that project''s forensics registry.'
+        description: 'Project slug from config/projects.json (scheduled runs: every project config/nightly-jobs.json schedules for wallet-flows). Needs that project''s forensics registry.'
         required: false
-        default: 'tel'
+        default: ''
 
 permissions:
   contents: write
@@ -34,19 +35,37 @@ concurrency:
   cancel-in-progress: false
 
 # Every pipeline script reads HD_PROJECT as its default `--project` (see
-# scripts/lib/projects.js). Scheduled runs have no inputs and run TEL then ONDO,
-# one at a time (max-parallel 1, so the two commits never race); a manual run
+# scripts/lib/projects.js). Scheduled runs have no inputs and run every planned
+# project one at a time (max-parallel 1, so the commits never race); a manual run
 # does only the project it names. ONDO is skipped (exit 0) until its holders
 # feed has produced supply-reconciliation.json.
 jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Projects scheduled for this job (config/nightly-jobs.json)
+        id: matrix
+        env:
+          SELECTION: ${{ inputs.project }}
+        run: echo "matrix=$(node scripts/workflow-paths.js matrix "$SELECTION" --job wallet-flows)" >> "$GITHUB_OUTPUT"
+
   wallet-flows:
+    name: wallet-flows (${{ matrix.slug }})
+    needs: plan
     strategy:
       fail-fast: false
       max-parallel: 1
-      matrix:
-        project: ${{ fromJSON(inputs.project && format('["{0}"]', inputs.project) || '["tel","ondo"]') }}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
-      HD_PROJECT: ${{ matrix.project }}
+      HD_PROJECT: ${{ matrix.slug }}
+      HD_JOB_ID: wallet-flows
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     continue-on-error: true

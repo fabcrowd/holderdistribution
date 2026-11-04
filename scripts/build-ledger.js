@@ -24,7 +24,8 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { loadEnv } from "./loadEnv.js";
-import { getAllRpcUrls, rpcCall } from "./lib/rpc.js";
+import { getAllRpcUrls, getPublicFallbackUrls, getLogs, rpcCall } from "./lib/rpc.js";
+import { resolveJobEnv } from "./lib/rpcMetrics.js";
 import { projectChainsAllVms, selectPipelineProject } from "./lib/projects.js";
 import {
   buildLedgerIndex,
@@ -36,7 +37,7 @@ import {
 } from "./lib/ledger/config.js";
 import { classifyBotTransfer, classifyTransfer } from "./lib/ledger/classify.js";
 import { buildLedgerReport, validateLedgerReport } from "./lib/ledger/aggregate.js";
-import { alchemyOnly, evmAssetMap, scanEvmChain } from "./lib/ledger/evmSource.js";
+import { alchemyOnly, evmAssetMap, ledgerEvmProviderOrder, logsAssetTransfers, scanEvmChain } from "./lib/ledger/evmSource.js";
 import { scanSolanaChain } from "./lib/ledger/solanaSource.js";
 
 export const CHECKPOINT_VERSION = 1;
@@ -155,11 +156,30 @@ export async function main(argv = process.argv.slice(2), { root = process.cwd(),
         ck.chains[chain] = res.cursor;
         coverage[chain] = { status: res.stats.backlog ? `partial (${res.stats.backlog} signatures left for the next run)` : "ok", provider: "solana-rpc", ...res.stats, headTime: res.cursor.headTime };
       } else {
-        const urls = alchemyOnly(getAllRpcUrls(chain));
-        if (!urls.length) throw new Error(`no Alchemy key in ${chain} RPC env (alchemy_getAssetTransfers needs an alchemy.com <PREFIX>_RPC_n URL)`);
-        const url = urls[0];
         const assets = evmAssetMap(chainCfg, stables, ticker);
-        const res = await scanEvmChain({ chain, url, rpc: rpcCall, assets, wallets, botAddresses: botAddrs, checkpoint: ck.chains[chain], nowSec, historyDays, isLabelled, logger });
+        // Provider order from config/nightly-jobs.json (job "ledger"): keyless
+        // public eth_getLogs first, Alchemy last. Same rows either way
+        // (evmSource.js logsAssetTransfers). No job env -> Alchemy, as before.
+        const attempts = [];
+        for (const p of ledgerEvmProviderOrder(resolveJobEnv(process.env))) {
+          if (p === "public") for (const u of getPublicFallbackUrls(chain)) attempts.push({ provider: "public-rpc", url: u, assetTransfers: logsAssetTransfers({ rpc: rpcCall, getLogs }) });
+          if (p === "alchemy") for (const u of alchemyOnly(getAllRpcUrls(chain)).slice(0, 1)) attempts.push({ provider: "alchemy", url: u });
+        }
+        if (!attempts.length) throw new Error(`no ledger provider for ${chain}: no public RPC listed and no Alchemy key in ${chain} RPC env (alchemy_getAssetTransfers needs an alchemy.com <PREFIX>_RPC_n URL)`);
+        let res;
+        let provider;
+        let lastErr;
+        for (const a of attempts) {
+          try {
+            res = await scanEvmChain({ chain, url: a.url, rpc: rpcCall, assets, wallets, botAddresses: botAddrs, checkpoint: ck.chains[chain], nowSec, historyDays, isLabelled, logger, ...(a.assetTransfers ? { assetTransfers: a.assetTransfers } : {}) });
+            provider = a.provider;
+            break;
+          } catch (err) {
+            lastErr = err;
+            logger.warn?.(`${chain}: ledger scan via ${a.provider} failed (${String(err?.message ?? err).slice(0, 120)}) — trying the next provider`);
+          }
+        }
+        if (!res) throw lastErr;
         for (const t of res.transfers) {
           const ev = classifyTransfer(t, ix, types);
           if (ev) newEvents.push({ ...ev, uniqueId: t.uniqueId, blockNumber: t.blockNumber });
@@ -169,7 +189,7 @@ export async function main(argv = process.argv.slice(2), { root = process.cwd(),
           if (b) newBot.push({ ...b, uniqueId: t.uniqueId, blockNumber: t.blockNumber });
         }
         ck.chains[chain] = res.cursor;
-        coverage[chain] = { status: "ok", provider: "alchemy", ...res.stats, headTime: res.cursor.headTime };
+        coverage[chain] = { status: "ok", provider, ...res.stats, headTime: res.cursor.headTime };
         if (!flag(argv, "--skip-cross-check") && res.transfers.length) {
           crossCheck.push(await crossCheckEtherscan({ chain, chainCfg, wallets, transfers: res.transfers, fromBlock: res.stats.fromBlock, toBlock: res.stats.head, assets, logger }));
         }

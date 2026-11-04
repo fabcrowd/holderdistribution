@@ -5,13 +5,19 @@
  *   node scripts/add-project.js --slug foo --name "Foo Network" --ticker FOO \
  *     --chain ethereum:0xTOKEN:18[:chainId[:deployBlock]] [--chain solana:MINT:6] \
  *     [--wallet <address>:<label>[:treasury|holdings|association]] ... \
+ *     --inventory chains-inventory.json \
  *     [--coingecko foo-network] [--stable ethereum:0xUSDC:USDC:6] [--dry-run] [--force] [--root <dir>]
+ *
+ * --inventory is required (onboarding step 1, chain & contract discovery; see
+ * scripts/lib/chainInventory.js): every --chain must be in it as "configured",
+ * and every other chain it lists must be "excluded"/"not-found" with a reason.
  *
  * Writes (refuses to overwrite without --force):
  *   config/projects.json                                   + registry entry (appended)
  *   config/projects/<slug>.json                            project config
  *   config/projects/<slug>/ledger.json                     developer-wallet ledger config
  *   data/<slug>/forensics/wallet-flows.registry.json       wallet registry (empty unless --wallet given)
+ *   config/projects/<slug>/chains-inventory.json           the validated --inventory
  *
  * Then validates the project config (scripts/lib/projects.js) and the ledger
  * config (scripts/lib/ledger/config.js) and prints what is left to do by hand
@@ -24,6 +30,8 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { SLUG_RE, validateProjectConfig } from "./lib/projects.js";
 import { isEvmAddress, isSolanaAddress, LEDGER_WINDOWS, validateLedgerConfig } from "./lib/ledger/config.js";
+import { nightlyPlan } from "./lib/nightlyPlan.js";
+import { inventoryRelPath, validateInventory } from "./lib/chainInventory.js";
 
 const KNOWN_EVM = {
   ethereum: { name: "Ethereum", chainId: 1, explorer: "https://etherscan.io" },
@@ -69,6 +77,7 @@ export function parseArgs(argv) {
     else if (a === "--wallet") out.wallets.push(v());
     else if (a === "--stable") out.stables.push(v());
     else if (a === "--root") out.root = v();
+    else if (a === "--inventory") out.inventory = v();
     else if (a === "--dry-run") out.dryRun = true;
     else if (a === "--force") out.force = true;
     else throw new Error(`unknown argument ${a}`);
@@ -155,6 +164,10 @@ export function scaffold(args, registry) {
     gated: { forensics: true, walletFlows: { ...(args.coingecko ? { coingeckoId: args.coingecko } : {}), chains: chains.map((c) => c.key) } },
     // Always on: the tab shows an empty state until the first ledger run, so no per-token code edit is needed.
     capabilities: { projectWallets: true },
+    // Parity by default: every job in config/nightly-jobs.json that this project's
+    // chains support runs nightly. Opt out only with a reason:
+    //   "nightly": { "waivers": { "<jobId>": "why this job cannot apply" } }
+    nightly: { waivers: {} },
   };
 
   const stables = {};
@@ -216,6 +229,21 @@ export function main(argv = process.argv.slice(2), { logger = console } = {}) {
   const root = path.resolve(args.root ?? process.cwd());
   const registry = JSON.parse(fs.readFileSync(path.join(root, "config/projects.json"), "utf8"));
   const result = scaffold(args, registry);
+  // Step 1 (docs/MULTI-TOKEN.md): chain & contract discovery comes BEFORE seeding.
+  // The inventory must list every --chain, and decide every other chain found.
+  if (!args.inventory) {
+    throw new Error(
+      "--inventory <chains-inventory.json> is required: run chain & contract discovery first\n" +
+        "  node scripts/detect-token-chains.js --address <token> --chain <chain> --ticker <T> --coingecko --out /tmp/d.json\n" +
+        "  then build the inventory (scripts/chain-inventory.js, or by hand: config/projects/<slug>/chains-inventory.json schema)",
+    );
+  }
+  const inventory = JSON.parse(fs.readFileSync(path.resolve(args.inventory), "utf8"));
+  inventory.slug ??= result.slug;
+  const invErrors = validateInventory(result.files[`config/projects/${result.slug}.json`], inventory);
+  if (invErrors.length) throw new Error(`chains inventory does not cover this project:\n  - ${invErrors.join("\n  - ")}`);
+  result.files[inventoryRelPath(result.slug)] = inventory;
+  logger.log(`Chains inventory: ${inventory.chains.map((r) => `${r.chain}=${r.status}`).join(", ")}`);
   const { errors, warnings } = validateScaffold(result);
   for (const w of warnings) logger.warn(`warning: ${w}`);
   if (errors.length) throw new Error(`scaffold is invalid:\n  - ${errors.join("\n  - ")}`);
@@ -229,12 +257,24 @@ export function main(argv = process.argv.slice(2), { logger = console } = {}) {
     fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
     fs.writeFileSync(path.join(root, rel), JSON.stringify(doc, null, 2) + "\n");
   }
+  if (!args.dryRun) {
+    try {
+      const entry = nightlyPlan(root).projects.find((p) => p.slug === result.slug);
+      logger.log(`\nNightly jobs (config/nightly-jobs.json) for ${result.slug}:`);
+      for (const j of entry?.jobs ?? []) logger.log(`  ${j.status.padEnd(6)} ${j.id}${j.reason ? ` — ${j.reason}` : ""}`);
+    } catch (err) {
+      logger.warn(`warning: nightly plan unavailable (${err.message})`);
+    }
+  }
   logger.log(`\n${result.slug} scaffolded and valid. Next, by hand:
   1. Verify every address; add the token image (public/tokens/${result.slug}.<ext>) and "image" in config/projects/${result.slug}.json.
   2. Add classification.cexWallets / dexContracts files (or contracts with role "dex"/"staking").
   3. Add developer wallets (--wallet, or edit config/projects/${result.slug}/ledger.json) and a botCluster if one is known.
   4. node scripts/build-ledger.js --project ${result.slug} --dry-run
-  5. npm run typecheck && npx vitest run && npm run build`);
+  5. Nightly parity: every "n/a" job above needs the missing capability or a
+     nightly.waivers.<jobId> reason; check providers/budgets in config/nightly-jobs.json
+     (docs/MULTI-TOKEN.md, "Nightly run checklist").
+  6. npm run typecheck && npx vitest run && npm run build`);
   return result;
 }
 

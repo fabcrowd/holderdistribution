@@ -618,5 +618,9 @@
         ]
       }
     }
+  },
+  "nightly": {
+    "$comment": "Waivers from the shared nightly job list (config/nightly-jobs.json). Every other applicable job runs nightly; a waiver needs a reason (scripts/lib/nightlyPlan.js).",
+    "waivers": {}
   }
 }

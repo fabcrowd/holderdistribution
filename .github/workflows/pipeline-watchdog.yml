@@ -252,6 +252,36 @@ jobs:
               await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body, labels: ["pipeline-stale"] });
             }
 
+      - name: Nightly job status for every project
+        # config/nightly-jobs.json × config/projects.json: any scheduled job whose
+        # output is missing or past its freshness SLA, or whose Alchemy CU went over
+        # its per-job budget, in ANY registered project (scripts/write-pipeline-status.js).
+        id: nightly_status
+        run: node scripts/write-pipeline-status.js --all --no-write --json > /tmp/nightly-status.json || true
+
+      - name: File or update an issue for nightly job problems
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            let reports = [];
+            try { reports = JSON.parse(fs.readFileSync("/tmp/nightly-status.json", "utf8")).reports ?? []; } catch { return; }
+            const bad = reports.filter((r) => !r.healthy);
+            if (bad.length === 0) return;
+            const { owner, repo } = context.repo;
+            const title = "Nightly jobs: missing, stale or over-budget outputs";
+            const body = [
+              "From scripts/write-pipeline-status.js (config/nightly-jobs.json):",
+              "",
+              ...bad.map((r) => `- **${r.project}**: ${r.problems.join("; ")}`),
+              "",
+              "Waive a job that genuinely does not apply in config/projects/<slug>.json `nightly.waivers.<jobId>` with a reason; otherwise run it (docs/MULTI-TOKEN.md, nightly checklist).",
+            ].join("\n");
+            const { data: existing } = await github.rest.issues.listForRepo({ owner, repo, state: "open", labels: "pipeline-stale" });
+            const match = existing.find((issue) => issue.title === title);
+            if (match) await github.rest.issues.createComment({ owner, repo, issue_number: match.number, body });
+            else await github.rest.issues.create({ owner, repo, title, body, labels: ["pipeline-stale"] });
+
       - name: Detect data workflows that never started (billing block)
         # An account-level Actions block ("recent account payments have failed")
         # fails every job in seconds with ZERO completed steps and no logs

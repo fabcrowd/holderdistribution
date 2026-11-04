@@ -78,7 +78,7 @@ jobs:
         # a slug named on dispatch that is broken fails here.
         env:
           SELECTION: ${{ inputs.project }}
-        run: echo "matrix=$(node scripts/workflow-paths.js matrix "$SELECTION")" >> "$GITHUB_OUTPUT"
+        run: echo "matrix=$(node scripts/workflow-paths.js matrix "$SELECTION" --job holders)" >> "$GITHUB_OUTPUT"
 
   refresh:
     name: Refresh ${{ matrix.slug }}
@@ -151,6 +151,11 @@ jobs:
         # Etherscan path it must not spend ~50 billed minutes before giving up.
         timeout-minutes: 20
         env:
+          HD_JOB_ID: staker-balances   # config/nightly-jobs.json: provider order + Alchemy budget guard
+          # Stays on the keys (~618 CU/day, 33 calls, per data/rpc-usage.json): the
+          # StakeChanged log scan over all of Polygon takes >20 min on keyless public
+          # nodes (measured), which would blow timeout-minutes. The guard caps it at
+          # 1,000 CU (enforce) and falls back to public if the cap is hit.
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           # Lets pull-staker-balances.js's stakedBy() calls go through Alchemy
           # Polygon RPC instead of Etherscan's 3/sec-capped proxy module —
@@ -166,6 +171,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
         env:
+          HD_JOB_ID: solana-staking   # config/nightly-jobs.json: provider order + Alchemy budget guard
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           # loadEnv (scripts/decrypt-env.js) only overwrites keys that exist
           # inside .env.enc, which has no SOLANA_RPC_*, so the secret survives.
@@ -183,6 +189,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 20
         env:
+          HD_JOB_ID: holders   # config/nightly-jobs.json: provider order + Alchemy budget guard
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
@@ -193,6 +200,7 @@ jobs:
         if: ${{ steps.holders_public.outcome == 'failure' }}
         timeout-minutes: 35
         env:
+          HD_JOB_ID: holders   # config/nightly-jobs.json: provider order + Alchemy budget guard
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
@@ -322,6 +330,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 45
         env:
+          HD_JOB_ID: solana-flows   # config/nightly-jobs.json: provider order + Alchemy budget guard
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
@@ -332,6 +341,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 25
         env:
+          HD_JOB_ID: exchange-flows   # config/nightly-jobs.json: provider order + Alchemy budget guard
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           RPC_PREFER_PUBLIC: '1'
         run: node scripts/scan-exchange-flows.js
@@ -341,6 +351,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 25
         env:
+          HD_JOB_ID: tier-outflows   # config/nightly-jobs.json: provider order + Alchemy budget guard
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           RPC_PREFER_PUBLIC: '1'
           NODE_OPTIONS: --max-old-space-size=6144
@@ -354,6 +365,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         env:
+          HD_JOB_ID: history-gaps   # config/nightly-jobs.json: provider order + Alchemy budget guard
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         run: node scripts/fill-history-gaps.js --days=14
@@ -373,9 +385,18 @@ jobs:
         continue-on-error: true
         run: node scripts/summarize-run-metrics.js
 
+      - name: Write nightly job status
+        id: nightly_status
+        # <dataDir>/pipeline-status.json: every config/nightly-jobs.json job for this
+        # project (run / waived / n/a), output freshness vs SLA and Alchemy CU vs
+        # budget. Reads feeds only; non-fatal.
+        if: always()
+        continue-on-error: true
+        run: node scripts/write-pipeline-status.js --project "$HD_PROJECT_SLUG"
+
       - name: Commit downstream feeds
         run: |
-          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json data/solana-flow-days.json public/data/holders-history.json data/holders-asof-blocks.json data/rpc-usage.json)
+          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json data/solana-flow-days.json public/data/holders-history.json data/holders-asof-blocks.json data/rpc-usage.json public/data/pipeline-status.json)
           for f in $FILES; do [ -e "$f" ] && git add "$f"; done
           if git diff --cached --quiet; then
             echo "No downstream changes to commit"
@@ -405,6 +426,7 @@ jobs:
           OUTCOME_TIERS: ${{ steps.tiers.outcome }}
           OUTCOME_GAPS: ${{ steps.gaps.outcome }}
           OUTCOME_USAGE: ${{ steps.usage.outcome }}
+          OUTCOME_NIGHTLY_STATUS: ${{ steps.nightly_status.outcome }}
         run: |
           failed=""
           summary=""
@@ -423,6 +445,7 @@ jobs:
           tiers|OUTCOME_TIERS|Tier outflows generation
           gaps|OUTCOME_GAPS|Holders-history gap fill
           usage|OUTCOME_USAGE|monthly RPC budget exceeded or usage summary crashed (config/budgets.json, see the Summarize RPC usage step)
+          nightly_status|OUTCOME_NIGHTLY_STATUS|pipeline-status.json writer crashed (scripts/write-pipeline-status.js)
           STAGES
           if [ -n "$failed" ]; then
             {

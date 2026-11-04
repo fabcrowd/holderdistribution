@@ -1,5 +1,5 @@
 import process from "node:process";
-import { recordCall } from "./rpcMetrics.js";
+import { recordCall, classifyProvider, guardAlchemyCall, alchemyBlocked, AlchemyBudgetError, resolveJobEnv } from "./rpcMetrics.js";
 
 /**
  * Key pools: chain `<key>` reads env vars `<PREFIX>_RPC_0` … `<PREFIX>_RPC_9`
@@ -242,8 +242,26 @@ export async function getUsableRpcUrls(chainKey, { logger = console, logRange = 
     }
   }
 
-  const configured = getAllRpcUrls(chainKey);
+  let configured = getAllRpcUrls(chainKey);
+  // Budget guard (config/nightly-jobs.json): when this job's enforced Alchemy
+  // budget is spent, drop the Alchemy keys so the pool falls through to the next
+  // provider (keyless public). An alchemyOnly job has nowhere to go: refuse it,
+  // so its step skips instead of silently degrading.
+  if (alchemyBlocked()) {
+    const kept = configured.filter((u) => classifyProvider(u) !== "alchemy");
+    if (resolveJobEnv().HD_JOB_ALCHEMY_ONLY === "true" && kept.length === 0) {
+      throw new AlchemyBudgetError(`[budget] ${process.env.HD_JOB_ID}: Alchemy budget spent and the job is alchemyOnly — skipping ${chainKey}`);
+    }
+    if (kept.length < configured.length) logger.warn(`RPC pool ${chainKey}: Alchemy budget spent — ${configured.length - kept.length} Alchemy key(s) withheld`);
+    configured = kept;
+  }
   if (configured.length === 0) {
+    const publicUrls = getPublicFallbackUrls(chainKey);
+    if (alchemyBlocked() && publicUrls.length > 0) {
+      const publicUsable = (await probeUrls(publicUrls)).filter((r) => r.ok).map((r) => r.url);
+      usableUrlCache.set(cacheKey, publicUsable);
+      return publicUsable;
+    }
     usableUrlCache.set(cacheKey, []);
     return [];
   }
@@ -345,6 +363,9 @@ function isRetryableNetworkError(err) {
  */
 export async function rpcCall(rpcUrl, method, params = [], attempt = 0) {
   let response;
+  // Throws AlchemyBudgetError (not retryable) past an enforced budget; failover
+  // callers move to the next URL. No-op outside nightly job steps (HD_JOB_ID unset).
+  if (classifyProvider(rpcUrl) === "alchemy") guardAlchemyCall(method);
   recordCall(rpcUrl, method);
   try {
     response = await fetch(rpcUrl, {

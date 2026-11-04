@@ -28,11 +28,19 @@ const TOKENS = [
   { slug: "fake-sol", ticker: "FSOL", chain: "solana:75hbt6uvDqjPZ9WgFtMhBnTeyHw7cinoHiz4FD2vEz2d:6", wallet: "8EKdKDq6GunEvgmJfxuK8fad7zWY4oTjnfKDEfo6weWe:Team wallet", vm: "solana" },
 ];
 
+// Onboarding step 1: a chains inventory covering the --chain (scripts/lib/chainInventory.js).
+function inventoryFor(root, t) {
+  const [chain, address] = t.chain.split(":");
+  const file = path.join(root, `${t.slug}-inventory.json`);
+  fs.writeFileSync(file, JSON.stringify({ chains: [{ chain, vm: t.vm, status: "configured", tokens: [{ address }], source: "test fixture" }] }));
+  return file;
+}
+
 describe("add-project wires a new token end to end", () => {
   for (const t of TOKENS) {
     it(`${t.vm}: tab, gate keys and workflow matrix pick up ${t.slug}`, () => {
       const root = sandbox();
-      main(["--slug", t.slug, "--name", `Fake ${t.vm}`, "--ticker", t.ticker, "--chain", t.chain, "--wallet", t.wallet, "--root", root], { logger: quiet });
+      main(["--slug", t.slug, "--name", `Fake ${t.vm}`, "--ticker", t.ticker, "--chain", t.chain, "--wallet", t.wallet, "--root", root, "--inventory", inventoryFor(root, t)], { logger: quiet });
       const reg = JSON.parse(fs.readFileSync(path.join(root, "config/projects.json"), "utf8"));
       const cfg = JSON.parse(fs.readFileSync(path.join(root, `config/projects/${t.slug}.json`), "utf8"));
 

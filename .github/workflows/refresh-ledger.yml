@@ -57,7 +57,7 @@ jobs:
         id: matrix
         env:
           SELECTION: ${{ inputs.project }}
-        run: echo "matrix=$(node scripts/workflow-paths.js matrix "$SELECTION")" >> "$GITHUB_OUTPUT"
+        run: echo "matrix=$(node scripts/workflow-paths.js matrix "$SELECTION" --job ledger)" >> "$GITHUB_OUTPUT"
 
   ledger:
     name: Ledger ${{ matrix.slug }}
@@ -71,6 +71,9 @@ jobs:
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       HD_PROJECT: ${{ matrix.slug }}
+      # config/nightly-jobs.json "ledger": public eth_getLogs first, Alchemy last,
+      # 0 Alchemy CU budget (enforced), so the nightly ledger spends no CU.
+      HD_JOB_ID: ledger
     steps:
       - uses: actions/checkout@v5
         with:

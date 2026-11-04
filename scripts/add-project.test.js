@@ -41,11 +41,32 @@ describe("add-project", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "addproj-"));
     fs.mkdirSync(path.join(tmp, "config"), { recursive: true });
     fs.writeFileSync(path.join(tmp, "config/projects.json"), JSON.stringify(registry));
-    const argv = ["--slug", "foo", "--name", "Foo", "--ticker", "FOO", "--chain", "polygon:0x" + "ab".repeat(20) + ":18", "--root", tmp];
+    const inv = path.join(tmp, "inv.json");
+    fs.writeFileSync(inv, JSON.stringify({ chains: [{ chain: "polygon", vm: "evm", status: "configured", tokens: [{ address: "0x" + "ab".repeat(20) }], source: "test" }, { chain: "base", status: "not-found", reason: "no code at the address", source: "detect-token-chains" }] }));
+    const argv = ["--slug", "foo", "--name", "Foo", "--ticker", "FOO", "--chain", "polygon:0x" + "ab".repeat(20) + ":18", "--root", tmp, "--inventory", inv];
     main(argv, { logger: quiet });
     expect(JSON.parse(fs.readFileSync(path.join(tmp, "config/projects/foo/ledger.json"), "utf8")).chains).toEqual(["polygon"]);
     expect(fs.existsSync(path.join(tmp, "data/foo/forensics/wallet-flows.registry.json"))).toBe(true);
     expect(() => main(argv, { logger: quiet })).toThrow(/already/);
     main([...argv, "--dry-run", "--force"], { logger: quiet });
+    expect(JSON.parse(fs.readFileSync(path.join(tmp, "config/projects/foo/chains-inventory.json"), "utf8")).chains.map((c) => c.status)).toEqual(["configured", "not-found"]);
+  });
+
+  it("chain & contract discovery comes first: no inventory, or an inventory that misses a chain, is refused", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "addproj-inv-"));
+    fs.mkdirSync(path.join(tmp, "config"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "config/projects.json"), JSON.stringify(registry));
+    const base = ["--slug", "foo", "--name", "Foo", "--ticker", "FOO", "--chain", "polygon:0x" + "ab".repeat(20) + ":18", "--root", tmp];
+    expect(() => main(base, { logger: quiet })).toThrow(/--inventory .* is required/);
+    const write = (rows) => {
+      const f = path.join(tmp, `inv-${Math.random()}.json`);
+      fs.writeFileSync(f, JSON.stringify({ chains: rows }));
+      return f;
+    };
+    expect(() => main([...base, "--inventory", write([{ chain: "base", status: "not-found", reason: "x", source: "s" }])], { logger: quiet })).toThrow(/polygon: configured chain missing/);
+    const pol = { chain: "polygon", status: "configured", tokens: [{ address: "0x" + "ab".repeat(20) }], source: "s" };
+    expect(() => main([...base, "--inventory", write([pol, { chain: "solana", status: "candidate", source: "coingecko" }])], { logger: quiet })).toThrow(/undecided candidate/);
+    expect(() => main([...base, "--inventory", write([pol, { chain: "bsc", status: "excluded", source: "bscscan" }])], { logger: quiet })).toThrow(/needs a reason/);
+    expect(fs.existsSync(path.join(tmp, "config/projects/foo.json"))).toBe(false);
   });
 });
