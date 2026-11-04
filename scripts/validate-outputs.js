@@ -7,6 +7,7 @@
  * the derived artifact written by pull-cex-wallets.js (not pull-cex-wallets-static.js).
  */
 import fs from "node:fs/promises";
+import nodeFs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { selectPipelineProject, projectPaths } from "./lib/projects.js";
@@ -22,6 +23,14 @@ if (process.argv.includes("--all")) {
 const project = selectPipelineProject("validate-outputs", { ported: true });
 
 const DATA_DIR = projectPaths(project, process.cwd()).dir;
+
+// A scaffolded project (config/projects/<slug>.json `pipeline.feedsPending`)
+// has no snapshot committed yet. Skip only while that directory is absent;
+// once any feed lands, the shape gate applies even if the flag was left on.
+if (project.config?.pipeline?.feedsPending === true && !nodeFs.existsSync(DATA_DIR)) {
+  console.log(`SKIP ${project.slug}: pipeline.feedsPending and ${project.dataDir} is not committed yet`);
+  process.exit(0);
+}
 
 const required = [
   { file: "tel-holders.json", keys: ["generatedAt", "chains", "combined", "wallets", "source", "chainOrder"] },
