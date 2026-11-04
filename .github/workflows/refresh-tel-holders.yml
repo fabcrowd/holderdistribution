@@ -179,6 +179,20 @@ jobs:
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
         run: node scripts/pull-solana-staking.js
 
+      - name: Restore partial holders checkpoint
+        # A scan killed mid-way (timeout-minutes, a dead endpoint) leaves
+        # $HD_WORK_DIR/holders-partial-<chain>.json (scripts/lib/partialCheckpoint.js);
+        # the next run resumes from it instead of from genesis. Kept in the Actions
+        # cache, not in git: the file is only needed by the next run, it can be MBs
+        # (full raw balance map), committing it would put scratch next to feeds and
+        # churn main, and a failed holders step never reaches the commit steps.
+        # Same steps for every project (paths come from workflow-paths.js).
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.HD_WORK_DIR }}/holders-partial-*.json
+          key: holders-partial-${{ matrix.slug }}-${{ github.run_id }}
+          restore-keys: holders-partial-${{ matrix.slug }}-
+
       - name: Refresh holders snapshot (public RPC first)
         # Log scan. The Alchemy free tier caps eth_getLogs at 10 blocks, which
         # made this step ~23 billed minutes a day; the public nodes take wide
@@ -205,6 +219,17 @@ jobs:
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
         run: node scripts/pull-holders-rpc.js
+
+      - name: Save partial holders checkpoint
+        # always(): the point is to keep progress from a failed or timed-out scan.
+        # A finished scan deletes its partial, so nothing is saved then and the
+        # next restore finds only older keys whose files a finished scan rejects
+        # (partialUsable checks token, start block and base checkpoint).
+        if: ${{ always() && hashFiles(format('{0}/holders-partial-*.json', env.HD_WORK_DIR)) != '' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.HD_WORK_DIR }}/holders-partial-*.json
+          key: holders-partial-${{ matrix.slug }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Refresh CEX wallets and flows
         run: node scripts/pull-cex-wallets.js

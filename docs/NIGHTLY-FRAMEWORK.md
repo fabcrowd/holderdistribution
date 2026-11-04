@@ -257,38 +257,44 @@ Main's CI was already red before this branch. Run [41781822880](https://github.c
 
 ## Known issues / open items
 
-Measured 4 Nov 2026. Not fixed in this PR. A probe script and tests for the log-range limits exist locally and are not in this branch.
+Measured 4 Nov 2026 with `scripts/probe-log-ranges.js` (public endpoints, 0 Alchemy CU). The follow-up commit fixes the log-range items below; the tests are `scripts/lib/logRangeLimits.test.js` and `scripts/lib/rpcParity.test.js`.
 
-### Public log-range limits
+### Public log-range limits (fixed)
 
-`getLogs` in `scripts/lib/rpc.js` shrinks a rejected `eth_getLogs` range and retries. Hosts differ:
+Limits live in `config/public-rpc-limits.json`, keyed by **host** (never by project), and every scanner that calls `rpc.js` `rpcCall`/`getLogs` gets them: holders, wallet-flows, ledger (`logsAssetTransfers`), exchange flows, tier outflows and gap-fill (`fill-history-gaps.js` via `rpcCall`).
 
-| Host | What was measured |
-|---|---|
-| Tenderly Ethereum | 20k-result cap |
-| mevblocker | 10k blocks, HTTP 429, `Retry-After: 0` |
-| polygon publicnode | 10k blocks |
-| pocket | 10,001 |
-| Tenderly Polygon | 100k |
-| Tenderly Base | 1,000 blocks |
-| blxrbdn Base | slow |
-| polkachu | down |
+| Host | Measured | Config |
+|---|---|---|
+| Tenderly Ethereum / Polygon | 20k-result cap, suggests a sub-range | `maxGetLogsResults: 20000` |
+| Tenderly Base | 1,000 blocks without an access key | `maxBlockRange: 1000` |
+| mevblocker | 10k blocks or 10k logs; HTML 429 with `Retry-After: 0` | `maxBlockRange: 10000`, 2 rps, 1 concurrent |
+| polygon publicnode | 10k blocks | `maxBlockRange: 10000` |
+| pocket | 10,001 blocks | `maxBlockRange: 10001` |
+| blxrbdn Base | wide but slow | rate only |
+| polkachu | down | rate only |
+| Alchemy (keyed, not listed) | Free plan: 10 blocks on every chain | learned per key URL |
 
-Alchemy's Free plan allows a 10-block `eth_getLogs`. The code already matches that wording (`FREE_TIER_RANGE_PATTERN`, "up to a 10 block range") and chunks to the number in the error. It does not store that number on the URL (see below).
+- **Stated caps are used as-is.** "maximum 1000 blocks", "maximum block range: 10000", "max 10001 blocks" set the span to that number (`statedBlockCap`); nothing halves 10000 → 625 any more. A configured `maxBlockRange` is used from the first request.
+- **Result-count caps are density-dependent.** A rejection shrinks only the current stretch; the span doubles back after each success. Only if a regrow is rejected again does it hold (and re-probe 2x every 8 wins), and that held span is where the next call on the URL starts.
+- **`Retry-After: 0` or missing is a minimum backoff** (500 ms floor, exponential with jitter), and a 429 halves the host's rate for every caller.
+- **Alchemy's 10-block limit is remembered per key URL**, so only the first call on a free-tier key pays the rejection; other keys are not affected.
 
-### Shrink-on-error inefficiencies
+### Mid-scan holders checkpoint (fixed)
 
-The shrink works: a range the host rejects is bisected (`span = floor((to - from + 1) / 2)`), the working span is remembered per URL (`learnedSpanByUrl`), and the sub-ranges are fetched. Three leftovers:
+`pull-holders-rpc.js` writes `holders-partial-<chain>.json` in the project's work dir (`projectWork(project)`, `data/` for TEL, `data/<slug>/` otherwise) every `HD_PARTIAL_CHECKPOINT_SECS` (300) seconds, on SIGINT/SIGTERM and on a scan error, and deletes it when the chain finishes. The next run resumes at `lastBlock + 1` if the partial was built on the same token, start block and base checkpoint. `refresh-tel-holders.yml` restores it from the Actions cache before the holders steps and saves it with `if: always()` after them, for every project. It is not committed, because:
 
-- **10k halving lands on 625, not 1000.** A vague "range too large" error (no numeric cap) halves. 10000 → 5000 → 2500 → 1250 → 625. If the host would have accepted 1000, the remembered span stays 625 because nothing steps back up.
-- **`Retry-After: 0` retries immediately.** `rpcCall` treats any `retry-after` header as the wait: `Math.ceil(Number(retryAfter) * 1000)`. The string `"0"` is present, so the wait is 0 ms instead of the exponential backoff (`RETRY_DELAY_MS * 2 ** attempt`, `RETRY_DELAY_MS` is 2000). mevblocker answered 429 with `Retry-After: 0`.
-- **Alchemy's 10-block limit is not remembered.** The free-tier branch reads the allowed span and chunks that one call. It does not write `learnedSpanByUrl`. The next top-level `getLogs` on the same URL tries the wide range again, pays another rejection, and re-chunks. Only the vague `RANGE_LIMIT_PATTERN` branch stores a span.
+- the file is scratch for the next run only, and can be several MB (the full raw balance map);
+- a failed holders step never reaches the commit steps;
+- keeping it out of git means feeds, `check:feeds` and the committed paths stay exactly as before.
 
-### ONDO's first holders run
+**Waivers:**
 
-`refresh-tel-holders.yml` gives each project `pipeline.workflowTimeoutMinutes` (ONDO: 60). Main has no partial holders checkpoint for ONDO (`public/data/ondo/` is absent, and there is no committed `holders-checkpoint.json` for it). The first holders scan is a full history, not an incremental catch-up, and is likely to hit the job timeout before it can write a checkpoint the next night can resume from.
+- *TEL v3 scan* (`v3Scan.js`): it is sparse and resumes from the final checkpoint's `v3` section.
+- *Wallet-flows*: these are windowed per-wallet scans, re-run in full each night.
+- *Ledger*: it already keeps a per-chain cursor (`ledger-checkpoint.json`) and a chain that fails keeps its previous cursor.
+- *Solana holders*: these are a token-account snapshot, not a block-range scan, so there is nothing to resume.
 
-Proposed fixes, neither in this PR: persist a partial checkpoint and add a per-host limiter (so one slow or 429-happy endpoint cannot consume the hour), or do a one-time public backfill that commits the checkpoint before the nightly job is expected to finish.
+Solana calls go through `rpc.js` `rpcCall` (`scripts/lib/solana/rpc.js`), so the public `api.mainnet-beta.solana.com` endpoint gets the same host limiter (3.5 rps, 4 concurrent, as published). Solana never uses Alchemy.
 
 ### Staker step stays on keys
 
