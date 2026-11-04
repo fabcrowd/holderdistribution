@@ -1,3 +1,4 @@
+import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { buildLedgerReport } from "../../../scripts/lib/ledger/aggregate.js";
@@ -32,7 +33,8 @@ const report = buildLedgerReport({
 describe("ProjectWalletsView", () => {
   it("renders the 30d default with headline, flow map and linked transactions", () => {
     const html = renderToStaticMarkup(<LedgerBody report={report} initialWindow="30d" />);
-    expect(html.replace(/<[^>]+>/g, "")).toContain("Developer wallets sold 3.0M TEL in the last 30d");
+    const text = new JSDOM(html).window.document.body.textContent ?? "";
+    expect(text).toContain("Developer wallets sold 3.0M TEL in the last 30d");
     expect(html).toContain('data-testid="pw-flow-map"');
     expect(html).toContain("https://polygonscan.com/tx/0xdex_sell3600");
     expect(html).toMatch(/internal shuffles?/);
