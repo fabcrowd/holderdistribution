@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "description": "Registry for the gated Wallet flows report. Scaffolded by scripts/add-project.js; add knownWallets (or run init-forensics-registry.js after tagging contracts with treasury/holdings roles).",
+  "knownWallets": [
+    {
+      "address": "0x677fd4ed8ae623f2f625deb2d64f2070e46ca1a1",
+      "label": "Ondo Foundation Group - Multisig 2",
+      "group": "Ondo Foundation Group",
+      "entityClass": "treasury",
+      "confidence": "confirmed",
+      "source": "https://blog.ondo.foundation/ondo-foundation-group-wallet-address-disclosure/",
+      "chains": [
+        "ethereum"
+      ],
+      "note": "Disclosed by the Ondo Foundation Group (4,422,519,707 locked ONDO, updated 2026-08-26). Safe 4-of-7."
+    },
+    {
+      "address": "0x524083970c7a1e62fbaa61d38781f87a4f191fd0",
+      "label": "Ondo distribution Safe A (funded by Multisig 2)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "confidence": "medium",
+      "source": "https://etherscan.io/address/0x677FD4Ed8aE623f2f625DEB2D64F2070E46cA1A1#tokentxns",
+      "chains": [
+        "ethereum"
+      ],
+      "note": "Owner-confirmed developer-held (2026-11-03). Safe 3-of-6; funded only by Multisig 2 (~1.55B ONDO, e.g. tx 0xa4aff968... is its 29.3M to Safe D2e6). Multisig 2 <-> this Safe = internal_shuffle; only flows leaving the dev set count. Signers do not overlap Multisig 2 signers."
+    },
+    {
+      "address": "0xea5785e1727de2ba2cefd102cb2dd91e018675e1",
+      "label": "Ondo distribution Safe B (funded by Multisig 2)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "confidence": "medium",
+      "source": "https://etherscan.io/address/0x677FD4Ed8aE623f2f625DEB2D64F2070E46cA1A1#tokentxns",
+      "chains": [
+        "ethereum"
+      ],
+      "note": "Owner-confirmed developer-held (2026-11-03). Safe 3-of-6; funded only by Multisig 2 (725M, Apr-Sep 2026); Arkham/press 'team-linked wallet' feeding Coinbase. Multisig 2 <-> this Safe = internal_shuffle. Signers do not overlap Multisig 2 signers."
+    },
+    {
+      "address": "0xaed4caf2e535d964165b4392342f71bac77e8367",
+      "label": "Ondo Finance Management Multisig",
+      "group": "Ondo Finance (company)",
+      "entityClass": "association",
+      "confidence": "high",
+      "source": "https://etherscan.io/address/0xAEd4caF2E535D964165B4392342F71bac77e8367",
+      "chains": [
+        "ethereum"
+      ]
+    },
+    {
+      "address": "0x7eba8a9cacb4bfbf7e1258b402a8e7aa004ed9fd",
+      "label": "Ondo Finance MultiSig (legacy)",
+      "group": "Ondo Finance (company)",
+      "entityClass": "association",
+      "confidence": "high",
+      "source": "https://etherscan.io/address/0x7EBa8a9cAcb4bFbf7e1258b402A8e7aA004ED9FD",
+      "chains": [
+        "ethereum"
+      ]
+    },
+    {
+      "address": "0xe2d0f9dcc81267c36a47d9e26adf479501124bbe",
+      "label": "ONDO token deployer",
+      "group": "Ondo Finance (company)",
+      "entityClass": "association",
+      "confidence": "medium",
+      "source": "https://etherscan.io/tx/0x5fb4e0aa8ce500648fa53e5ab19053859ff9a5f74f8e8f5a7d5fc498e625ce29",
+      "chains": [
+        "ethereum"
+      ]
+    },
+    {
+      "address": "0xd2e6e930e25456ffcd4df0124563cc334f3284f4",
+      "label": "Ondo distribution Safe C (funded by Multisig 2)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "chains": [
+        "ethereum"
+      ],
+      "confidence": "medium",
+      "source": "https://eth.blockscout.com/tx/0x514af793d909627ec5e7bd02668f9f478d7e6ec657b80db09c54bd52bf44abd9",
+      "note": "Safe 4-of-7. ONDO inflows only from Ondo wallets: 101M from Multisig 2 (tx 0x514af793..., 2023-01-30), 29.3M from Safe A (tx 0xa4aff968...), 9.8M from Safe 0x1189...9452 (tx 0x4c5adfa6...). Sent 12-ONDO test transfers to the seven tranche recipients (tx 0x09f85464...) a month before Multisig 2 paid them."
+    },
+    {
+      "address": "0x118919e891d0205a7492650ad32e727617fa9452",
+      "label": "Ondo Safe 0x1189 (shares signers with Ondo Management/legacy multisigs)",
+      "group": "Ondo Finance (company)",
+      "entityClass": "association",
+      "chains": [
+        "ethereum"
+      ],
+      "confidence": "medium",
+      "source": "https://etherscan.io/address/0x118919e891D0205A7492650AD32E727617FA9452#readProxyContract",
+      "note": "Safe 3-of-5; getOwners() shares 0x60f030d6... with Management Multisig and 0x108c052b... with legacy MultiSig (public RPC eth_call, 2026-11-03). Funded Safe C with 9.8M ONDO (tx 0x4c5adfa6...)."
+    }
+  ],
+  "botCluster": null,
+  "watchedSellers": [],
+  "extraCex": {},
+  "extraDex": {}
+}

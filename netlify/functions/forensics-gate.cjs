@@ -107911,6 +107911,11 @@ var projects_default = {
       slug: "zebec-network",
       name: "Zebec Network",
       ticker: "ZBCN"
+    },
+    {
+      slug: "ondo",
+      name: "Ondo",
+      ticker: "ONDO"
     }
   ]
 };

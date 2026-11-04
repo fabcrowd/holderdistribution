@@ -1,0 +1,181 @@
+{
+  "$comment": "Developer-wallet ledger config for ONDO, scaffolded by scripts/add-project.js. Add relays, extra venues and a botCluster (with funding split) by hand; see docs/LEDGER.md.",
+  "version": 1,
+  "slug": "ondo",
+  "windows": [
+    "24h",
+    "72h",
+    "30d",
+    "90d"
+  ],
+  "historyDays": 90,
+  "providers": {
+    "evm": {
+      "primary": "alchemy",
+      "method": "alchemy_getAssetTransfers",
+      "crossCheck": "etherscan"
+    },
+    "solana": {
+      "envKeys": [
+        "SOLANA_RPC_0",
+        "SOLANA_RPC_1"
+      ]
+    }
+  },
+  "chains": [
+    "ethereum"
+  ],
+  "developerWallets": [
+    {
+      "address": "0x677fd4ed8ae623f2f625deb2d64f2070e46ca1a1",
+      "label": "Ondo Foundation Group - Multisig 2",
+      "group": "Ondo Foundation Group",
+      "entityClass": "treasury",
+      "chains": [
+        "ethereum"
+      ],
+      "confidence": "confirmed",
+      "source": "https://blog.ondo.foundation/ondo-foundation-group-wallet-address-disclosure/",
+      "note": "Disclosed by the Ondo Foundation Group (4,422,519,707 locked ONDO, updated 2026-08-26). Safe 4-of-7."
+    },
+    {
+      "address": "0x524083970c7a1e62fbaa61d38781f87a4f191fd0",
+      "label": "Ondo distribution Safe A (funded by Multisig 2)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "chains": [
+        "ethereum"
+      ],
+      "confidence": "medium",
+      "source": "https://etherscan.io/address/0x677FD4Ed8aE623f2f625DEB2D64F2070E46cA1A1#tokentxns",
+      "note": "Owner-confirmed developer-held (2026-11-03). Safe 3-of-6; funded only by Multisig 2 (~1.55B ONDO, e.g. tx 0xa4aff968... is its 29.3M to Safe D2e6). Multisig 2 <-> this Safe = internal_shuffle; only flows leaving the dev set count. Signers do not overlap Multisig 2 signers."
+    },
+    {
+      "address": "0xea5785e1727de2ba2cefd102cb2dd91e018675e1",
+      "label": "Ondo distribution Safe B (funded by Multisig 2)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "chains": [
+        "ethereum"
+      ],
+      "confidence": "medium",
+      "source": "https://etherscan.io/address/0x677FD4Ed8aE623f2f625DEB2D64F2070E46cA1A1#tokentxns",
+      "note": "Owner-confirmed developer-held (2026-11-03). Safe 3-of-6; funded only by Multisig 2 (725M, Apr-Sep 2026); Arkham/press 'team-linked wallet' feeding Coinbase. Multisig 2 <-> this Safe = internal_shuffle. Signers do not overlap Multisig 2 signers."
+    },
+    {
+      "address": "0xaed4caf2e535d964165b4392342f71bac77e8367",
+      "label": "Ondo Finance Management Multisig",
+      "group": "Ondo Finance (company)",
+      "entityClass": "association",
+      "chains": [
+        "ethereum"
+      ],
+      "confidence": "high",
+      "source": "https://etherscan.io/address/0xAEd4caF2E535D964165B4392342F71bac77e8367"
+    },
+    {
+      "address": "0x7eba8a9cacb4bfbf7e1258b402a8e7aa004ed9fd",
+      "label": "Ondo Finance MultiSig (legacy)",
+      "group": "Ondo Finance (company)",
+      "entityClass": "association",
+      "chains": [
+        "ethereum"
+      ],
+      "confidence": "high",
+      "source": "https://etherscan.io/address/0x7EBa8a9cAcb4bFbf7e1258b402A8e7aA004ED9FD"
+    },
+    {
+      "address": "0xe2d0f9dcc81267c36a47d9e26adf479501124bbe",
+      "label": "ONDO token deployer",
+      "group": "Ondo Finance (company)",
+      "entityClass": "association",
+      "chains": [
+        "ethereum"
+      ],
+      "confidence": "medium",
+      "source": "https://etherscan.io/tx/0x5fb4e0aa8ce500648fa53e5ab19053859ff9a5f74f8e8f5a7d5fc498e625ce29"
+    },
+    {
+      "address": "0xd2e6e930e25456ffcd4df0124563cc334f3284f4",
+      "label": "Ondo distribution Safe C (funded by Multisig 2)",
+      "group": "Ondo Foundation Group",
+      "entityClass": "holdings",
+      "chains": [
+        "ethereum"
+      ],
+      "confidence": "medium",
+      "source": "https://eth.blockscout.com/tx/0x514af793d909627ec5e7bd02668f9f478d7e6ec657b80db09c54bd52bf44abd9",
+      "note": "Safe 4-of-7. ONDO inflows only from Ondo wallets: 101M from Multisig 2 (tx 0x514af793..., 2023-01-30), 29.3M from Safe A (tx 0xa4aff968...), 9.8M from Safe 0x1189...9452 (tx 0x4c5adfa6...). Sent 12-ONDO test transfers to the seven tranche recipients (tx 0x09f85464...) a month before Multisig 2 paid them."
+    },
+    {
+      "address": "0x118919e891d0205a7492650ad32e727617fa9452",
+      "label": "Ondo Safe 0x1189 (shares signers with Ondo Management/legacy multisigs)",
+      "group": "Ondo Finance (company)",
+      "entityClass": "association",
+      "chains": [
+        "ethereum"
+      ],
+      "confidence": "medium",
+      "source": "https://etherscan.io/address/0x118919e891D0205A7492650AD32E727617FA9452#readProxyContract",
+      "note": "Safe 3-of-5; getOwners() shares 0x60f030d6... with Management Multisig and 0x108c052b... with legacy MultiSig (public RPC eth_call, 2026-11-03). Funded Safe C with 9.8M ONDO (tx 0x4c5adfa6...)."
+    }
+  ],
+  "stablecoins": {
+    "ethereum": [
+      {
+        "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "symbol": "USDC",
+        "decimals": 6
+      },
+      {
+        "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+        "symbol": "USDT",
+        "decimals": 6
+      }
+    ]
+  },
+  "venues": {
+    "useProjectCexList": true,
+    "useProjectDexList": true,
+    "projectRoles": {
+      "dex": [
+        "dex"
+      ],
+      "staking": [
+        "staking"
+      ]
+    },
+    "cex": {
+      "0xa63eace47618b9677261b09b32e3ca2b5c0a0182": "Bithumb (Etherscan: Bithumb 79)",
+      "0xf977814e90da44bfa03b6295a0616a897441acec": "Binance (Etherscan: Binance Hot Wallet 20)",
+      "0x5a52e96bacdabb82fd05763e25335261b270efcb": "Binance (Etherscan: Binance Hot Wallet / Binance 28)",
+      "0xb829e684df8e31b402a4d4aedf3bbc18a52e7589": "Bybit (deposit address)",
+      "0xf197c6f2ac14d25ee2789a73e4847732c7f16bc9": "Bitpanda (hot wallet)",
+      "0x7dafba1d69f6c01ae7567ffd7b046ca03b706f83": "Kraken (Kraken 245)",
+      "0xd2dd7b597fd2435b6db61ddf48544fd931e6869f": "Kraken (Kraken 246)",
+      "0x611f7bf868a6212f871e89f7e44684045ddfb09d": "OKX (cold wallet)",
+      "0x0d0707963952f2fba59dd06f2b425ace40b492fe": "Gate.io (Etherscan public tag: Gate Deposit)",
+      "0xd9b1d34494f7fc317c31e825a4039d14ff4d0f49": "Binance (deposit address)",
+      "0x26b3663abc1e2e478ef60055713b1d5811be085e": "Bybit (deposit address)"
+    },
+    "dex": {},
+    "bridges": {},
+    "custody": {},
+    "staking": {}
+  },
+  "relays": {},
+  "botCluster": null,
+  "trace": {
+    "maxHops": 2,
+    "stopAt": [
+      "cex",
+      "bridge",
+      "developer",
+      "custody",
+      "known"
+    ],
+    "minUsd": 100,
+    "proceedAssets": {},
+    "maxSales": 300
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "$comment": "Scaffolded by scripts/add-project.js on 2026-11-04. Verify every address before publishing; see docs/MULTI-TOKEN.md \"Adding the next project\".",
+  "slug": "ondo",
+  "name": "Ondo",
+  "ticker": "ONDO",
+  "description": "Ondo Finance governance token (ERC-20 on Ethereum). Ondo Foundation Group treasury disclosed at blog.ondo.foundation.",
+  "image": "/tokens/ondo.png",
+  "data": {
+    "legacyRoot": false,
+    "dir": "public/data/ondo"
+  },
+  "supply": {
+    "generationsSumOneToOne": false,
+    "coingeckoId": "ondo-finance"
+  },
+  "chains": [
+    {
+      "key": "ethereum",
+      "name": "Ethereum",
+      "vm": "evm",
+      "chainId": 1,
+      "origin": true,
+      "fromBlock": 14670968,
+      "explorer": "https://etherscan.io",
+      "tokens": [
+        {
+          "address": "0xfaba6f8e4a5e8ab82f62fe7c39859fa577269be3",
+          "decimals": 18,
+          "status": "canonical",
+          "deployBlock": 14670968
+        }
+      ],
+      "contracts": {}
+    }
+  ],
+  "gated": {
+    "forensics": true,
+    "walletFlows": {
+      "coingeckoId": "ondo-finance",
+      "chains": [
+        "ethereum"
+      ]
+    }
+  },
+  "capabilities": {
+    "projectWallets": true
+  },
+  "pipeline": {
+    "workflowTimeoutMinutes": 60
+  },
+  "classification": {
+    "cexWallets": "config/projects/ondo/cex-wallets.json"
+  }
+}
