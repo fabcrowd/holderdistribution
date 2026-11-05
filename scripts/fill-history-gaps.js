@@ -53,6 +53,7 @@ import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
 import { findBlockAtTime } from "./lib/historicalReplay.js";
 import { selectPipelineProject, projectPaths, projectChains, projectWork } from "./lib/projects.js";
+import { missingHistoryDates } from "./lib/missingHistoryDates.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir, its chain map and its own as-of block cache (TEL: public/data/ +
@@ -82,15 +83,12 @@ const readArg = (flag, fallback = null) => {
 const DRY_RUN = process.argv.includes("--dry-run");
 const WINDOW_DAYS = Number(readArg("--days", "14"));
 
-const isoDate = (d) => d.toISOString().slice(0, 10);
-
 const run = (script, args = []) => {
   execFileSync("node", [`scripts/${script}`, ...PROJECT_ARGS, ...args], { cwd: ROOT, stdio: "inherit" });
 };
 
 const main = async () => {
   const history = JSON.parse(await fs.readFile(HISTORY_PATH, "utf8"));
-  const present = new Set(history.entries.map((e) => e.date));
   const latest = history.entries[history.entries.length - 1]?.date;
   if (!latest) throw new Error("holders-history.json has no entries");
 
@@ -99,14 +97,7 @@ const main = async () => {
   // window slides back with the row that stopped moving. Today itself is the
   // daily refresh's job and its day boundary has not passed yet.
   const todayUtc = new Date().toISOString().slice(0, 10);
-  const missing = [];
-  for (let back = 1; back <= WINDOW_DAYS; back++) {
-    const day = new Date(`${todayUtc}T00:00:00Z`);
-    day.setUTCDate(day.getUTCDate() - back);
-    const date = isoDate(day);
-    if (!present.has(date)) missing.push(date);
-  }
-  missing.sort();
+  const missing = missingHistoryDates(history.entries, todayUtc, WINDOW_DAYS);
 
   if (missing.length === 0) {
     console.log(`No gaps in the last ${WINDOW_DAYS} days (latest row ${latest}). Nothing to do.`);

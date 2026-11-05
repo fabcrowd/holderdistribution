@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "project": "zebec-network",
+  "generatedAt": "2026-11-05T06:39:42.488Z",
+  "healthy": true,
+  "problems": [],
+  "jobs": [
+    {
+      "id": "holders",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "helius"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/zebec-network/holders-summary.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.6,
+          "generatedAt": "2026-11-05T06:05:13.348Z",
+          "status": "fresh"
+        },
+        {
+          "path": "public/data/zebec-network/holders-history.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.6,
+          "generatedAt": "2026-11-05T06:05:28.323Z",
+          "status": "fresh"
+        },
+        {
+          "path": "public/data/zebec-network/supply-reconciliation.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.6,
+          "generatedAt": "2026-11-05T06:05:44.000Z",
+          "status": "fresh"
+        },
+        {
+          "path": "public/data/zebec-network/cex-wallets.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.6,
+          "generatedAt": "2026-11-05T06:05:15.012Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "exchange-flows",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "helius"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/zebec-network/exchange-flow-history.json",
+          "maxAgeHours": 30,
+          "ageHours": 0,
+          "generatedAt": "2026-11-05T06:39:37.578Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "tier-outflows",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "helius"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/zebec-network/tier-outflows.json",
+          "maxAgeHours": 30,
+          "ageHours": 0,
+          "generatedAt": "2026-11-05T06:39:41.778Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "solana-flows",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "helius",
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "staker-balances",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "n/a",
+      "reason": "lacks stakeChanged",
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "n/a",
+      "outputs": []
+    },
+    {
+      "id": "solana-staking",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "helius",
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/zebec-network/solana-staking.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.6,
+          "generatedAt": "2026-11-05T06:05:07.102Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "history-gaps",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "waived",
+      "reason": "fill-history-gaps.js only repairs EVM block-timestamp gaps; ZBCN is Solana-only and has no gap-fill equivalent yet.",
+      "providers": [],
+      "alchemyOnly": true,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "waived",
+      "outputs": []
+    },
+    {
+      "id": "wallet-flows",
+      "workflow": "refresh-wallet-flows.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "helius",
+        "coingecko"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "data/zebec-network/forensics/wallet-flows.json",
+          "maxAgeHours": 30,
+          "ageHours": 6.5,
+          "generatedAt": "2026-11-05T00:08:44.462Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "ledger",
+      "workflow": "refresh-ledger.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "etherscan",
+        "helius"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "data/zebec-network/ledger/ledger.json",
+          "maxAgeHours": 30,
+          "ageHours": 6.5,
+          "generatedAt": "2026-11-05T00:12:28.000Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "cex-candidates",
+      "workflow": "detect-cex-candidates.yml",
+      "status": "waived",
+      "reason": "detect-cex-candidates.js scans an EVM transfer graph only; no Solana port yet, so ZBCN exchange wallets come from the Dune sync (cex-sync).",
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "waived",
+      "outputs": []
+    },
+    {
+      "id": "cex-sync",
+      "workflow": "sync-cex-wallets.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "helius"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    }
+  ]
+}

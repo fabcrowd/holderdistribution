@@ -111,6 +111,12 @@
   "capabilities": {
     "projectWallets": true
   },
+  "treasury": {
+    "$comment": "append-treasury-history reads only these supply-reconciliation categories. ONDO has no council or escrow bucket (the TEL default would abort the refresh), and reconcile-supply omits a category whose balance is 0, so the holdings Safes stay out: they can be emptied and would abort the daily refresh.",
+    "categories": [
+      "treasury"
+    ]
+  },
   "pipeline": {
     "workflowTimeoutMinutes": 60
   },
