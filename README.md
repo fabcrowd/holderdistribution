@@ -136,6 +136,16 @@ that already cost a run or a PR.
 - `council` is a naming tag on some TEL wallets (Compliance Council, TELx Council). It carries no logic
   and is not a bucket other tokens need. Do not build behaviour on it.
 
+**Discovery decides staking, per token**
+- Staking differs by project: none (ONDO), a `StakeChanged` contract (TEL), a receipt module, or a different contract
+  model on another VM (ZBCN's `zebec-stake` program). The discovery phase of onboarding must find out which applies
+  and tag it in `config/projects/<slug>.json` (`staking[]` entry with its `kind`, or contracts with role `staking`).
+  Never copy TEL's staking assumptions to a new token, and never assume a token has none without checking its contracts.
+- A token with no staking contract waives the `staker-balances` job in `nightly.waivers` with a reason, and must also set
+  `health.feeds["funding-wallets.json"].disabled: true`. Otherwise `pipeline-health.js` reports the staker feed MISSING
+  and exits 1, which the watchdog reads as a broken pipeline. `scripts/lib/healthMatchesNightlyPlan.test.js` enforces
+  that the health feed is monitored exactly when the nightly plan runs the job, for every registered project.
+
 **First run of a new token (each of these failed a real run, about 20 minutes each)**
 - `supply.target` must exist in the project config before any refresh (`reconcile-supply` throws without it).
 - `generate-holder-transitions.js` builds windows from the git history of the committed snapshot, which a
@@ -194,6 +204,7 @@ that already cost a run or a PR.
   through `live-data.mjs` without a deploy.
 
 ## Recent work
+- **2026-11-05: ONDO health follows its nightly plan.** The first scheduled-path ONDO refresh succeeded (26 minutes, two commits to `main`), but `pipeline-health.js --project ondo` exited 1 with "Staker balances MISSING": ONDO has no staking contract and waives the staker job, yet the health check still expected `funding-wallets.json`. ONDO now disables that feed, and a test keeps health feeds and the nightly plan in step for every project.
 - **2026-11-05: ZBCN flow feeds are no longer placeholders.** `exchange-flow-history.json` and `tier-outflows.json` were flagged `placeholder` in `config/projects/zebec-network.json` although the nightly has committed them every day since 2026-11-02, so `check-go-live.js` failed ZBCN and `pipeline-health.js` could never report them stale. The flags are removed; the feeds now use the default freshness limits (5.7h old against 48h and 96h) and `check-go-live.js --all` passes for TEL, ZBCN and ONDO. Solana tier outflows stay venue-anchored by design (`scripts/lib/solana/flowFeeds.js`): wallet-to-wallet moves and counterparty-tier attribution are not measured, so `attributedDays` is 0 for ZBCN and the UI shows its existing coverage caveat.
 - **Merged to `main`:** #128 developer wallets ledger and view, #129 developer-wallets headline from DOM text, #130 ONDO project, #132 nightly framework, #135 go-live gate (ONDO is live, `check-go-live.js` is the single completeness gate), #137-#140 ONDO first-feed fixes (config, range-limit retry, first-run transitions, gap fill), and #127 Solana replay fixes (fail fast without a keyed RPC, history-start note; supersedes #105).
 - 2026-11-01 forensics: every project now needs a forensics registry (`npm run init:forensics`, enforced by `check:feeds`). Solana tokens get a gated Wallet flows report (`scripts/generate-wallet-flows-solana.js`) with swap proceeds and one- or two-hop tracing of unlabelled recipients (`WALLET_FLOWS_TRACE_DEPTH`, call-budgeted). `sync-cex-wallets.yml` now imports the spellbook CEX list for every registry project. Merged in #126. See `docs/FORENSICS.md` and `docs/MULTI-TOKEN.md` step 11.
