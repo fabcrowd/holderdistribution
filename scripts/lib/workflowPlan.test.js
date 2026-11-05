@@ -6,7 +6,7 @@ import { resolveProject } from "./projects.js";
 import { workflowMatrix, workflowPlan, DEFAULT_TIMEOUT_MINUTES } from "../workflow-paths.js";
 
 /**
- * The registry-driven refresh (.github/workflows/refresh-tel-holders.yml) takes
+ * The registry-driven refresh (.github/workflows/refresh-holders.yml) takes
  * its project list and every per-project stage difference from these helpers,
  * so onboarding a token is config only (docs/MULTI-TOKEN.md "Onboarding").
  */

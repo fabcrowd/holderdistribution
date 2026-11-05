@@ -49,6 +49,6 @@ describe("deploy frequency", () => {
     expect(
       publishing.map((w) => w.name).sort(),
       "exactly one recurring workflow should publish unconditionally — the daily refresh",
-    ).toEqual(["refresh-tel-holders"]);
+    ).toEqual(["refresh-holders"]);
   });
 });

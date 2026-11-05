@@ -259,7 +259,7 @@ describe("RPC_PREFER_PUBLIC", () => {
 describe("workflow cost guards", () => {
   // Private-repo Actions minutes are billed; an unbounded job (360-minute default)
   // that fails slowly is how the included minutes were exhausted in October 2026.
-  for (const file of ["refresh-tel-holders.yml", "pipeline-watchdog.yml"]) {
+  for (const file of ["refresh-holders.yml", "pipeline-watchdog.yml"]) {
     it(`${file} has a timeout on every job and shares the holders-refresh concurrency group`, () => {
       const wf = yaml.parse(fs.readFileSync(path.resolve(process.cwd(), ".github/workflows", file), "utf8"));
       for (const job of Object.values(wf.jobs)) {

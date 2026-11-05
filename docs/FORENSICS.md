@@ -119,12 +119,12 @@ node scripts/generate-wallet-flows-solana.js --project <slug>                   
 - **Cost:** about 1 Helius credit per call. The first ZBCN dry run found 109 signatures (about 119 credits) in 90 days. A run is capped by `--max-tx` / `WALLET_FLOWS_MAX_TX` (2,500), `WALLET_FLOWS_PER_WALLET_MAX` (400) and `WALLET_FLOWS_MAX_MS` (20 min). A dry estimate above `config/budgets.json` `perRunWarn.heliusCredits` stops the run unless `--force`.
 - **Sales tracing (Solana):** when a registry wallet sends the token to a DEX, the scan reads every token balance change of the same transaction (no program parsing) and records the sale: what came back (USDC/USDT, or SOL from native lamports plus wSOL), then follows the proceeds' token account for onward sends. Outflows to unlabelled wallets are also followed one more hop (`WALLET_FLOWS_TRACE_DEPTH`, default 1, max 2). Two optional report sections hold the result and are hidden in the panel when empty: `salesJournal` (last 50 sales, ZBCN sold, proceeds, effective price, onward status) and `unlabelledTrace` (top 25 unlabelled destinations with where the funds went next). Stablecoins count 1 USD; SOL is valued at report time with the CoinGecko `solana` price (`valuedAtReportTime`); other mints stay unpriced. Native SOL proceeds are not followed onward (shown as "Not tracked"). A destination with more than 100 new signatures is marked "busy" (probably an exchange or a program): label it in the registry or CEX list instead of tracing it.
 - **Sales tracing caps:** `WALLET_FLOWS_FOLLOW_MAX_CALLS` (300 calls per run, counted exactly), `WALLET_FLOWS_FOLLOW_MAX_TASKS` (40), `WALLET_FLOWS_FOLLOW_MAX_TX` (30 per task), `WALLET_FLOWS_SALE_DEPTH` (2), `WALLET_FLOWS_TRACE_MIN_TOKENS` (100,000 tokens), `WALLET_FLOWS_FOLLOW_MAX_MS` (10 min, separate from the scan budget). State lives in `wallet-flows-state.json` (`sales`, `follow.tasks`, `follow.hops`; additive, older state files load as they are). Heuristic caveats: aggregator and multi-hop routes can credit a different owner than the wallet, and unrelated tokens received in the same transaction count as proceeds.
-- **Workflow:** `refresh-wallet-flows.yml` runs the Solana generator after the EVM one. Dispatch it with `project=zebec-network`; the schedule stays TEL-only.
+- **Workflow:** `refresh-wallet-flows.yml` runs the Solana generator after the EVM one. The daily schedule runs every project in `config/projects.json`, and a missing or stale report turns that project's job red.
 
 ## Backfill via SQD Portal
 
 `scripts/generate-wallet-flows.js` can take its large-log scan from the SQD Portal instead of
-RPC `eth_getLogs`. The default stays `rpc`, and the weekly workflow (`refresh-wallet-flows.yml`)
+RPC `eth_getLogs`. The default stays `rpc`, and the daily workflow (`refresh-wallet-flows.yml`)
 is unchanged.
 
 **Flags**

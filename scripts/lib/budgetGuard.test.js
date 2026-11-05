@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { __resetBudgetGuardForTests, __resetRpcMetricsForTests, alchemyBlocked, guardAlchemyCall, isAlchemyBudgetError, recordCall, resolveJobEnv } from "./rpcMetrics.js";
+import { __resetBudgetGuardForTests, __resetRpcMetricsForTests, alchemyBlocked, guardAlchemyCall, isAlchemyBudgetError, jobPrefersPublic, recordCall, resolveJobEnv } from "./rpcMetrics.js";
 
 const A = "https://polygon-mainnet.g.alchemy.com/v2/k";
 afterEach(() => {
@@ -11,6 +11,41 @@ afterEach(() => {
 });
 
 describe("Alchemy budget guard", () => {
+  it("counts earlier processes of the same job and project in this run", () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "budget-")), "m.ndjson");
+    const line = (over) => JSON.stringify({ job: "t", project: "p", pid: -1, alchemyCu: 90, ...over });
+    fs.writeFileSync(file, [line(), line({ job: "other" }), line({ project: "q" })].join("\n") + "\n");
+    const env = { HD_JOB_ID: "t", HD_PROJECT: "p", HD_METRICS_FILE: file, HD_JOB_ALCHEMY_CU_BUDGET: "100", HD_JOB_BUDGET_MODE: "enforce" };
+    expect(() => guardAlchemyCall("eth_call", env)).toThrow(/budget 100/);
+    expect(() => guardAlchemyCall("eth_blockNumber", { ...env, HD_JOB_ALCHEMY_CU_BUDGET: "110" })).not.toThrow();
+  });
+
+  it("the monthly ceiling also stops warn jobs", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "budget-"));
+    const month = new Date().toISOString().slice(0, 7);
+    fs.mkdirSync(path.join(root, "config"));
+    fs.mkdirSync(path.join(root, "data"));
+    fs.writeFileSync(path.join(root, "config/budgets.json"), JSON.stringify({ monthly: { alchemyCu: 10 } }));
+    fs.writeFileSync(path.join(root, "data/rpc-usage.json"), JSON.stringify({ days: { [`${month}-01`]: { alchemyCu: 10 } } }));
+    const cwd = process.cwd();
+    process.chdir(root);
+    try {
+      const env = { HD_JOB_ID: "t", HD_JOB_ALCHEMY_CU_BUDGET: "100", HD_JOB_BUDGET_MODE: "warn" };
+      expect(() => guardAlchemyCall("eth_call", env)).toThrow(/monthly/);
+      expect(alchemyBlocked(env)).toBe(true);
+    } finally {
+      process.chdir(cwd);
+    }
+  });
+
+  it("job provider order decides public-first", () => {
+    const job = (HD_JOB_PROVIDERS) => ({ HD_JOB_ID: "t", HD_JOB_PROVIDERS });
+    expect(jobPrefersPublic(job("public,alchemy"))).toBe(true);
+    expect(jobPrefersPublic(job("alchemy,public"))).toBe(false);
+    expect(jobPrefersPublic(job("alchemy"))).toBe(false);
+    expect(jobPrefersPublic({})).toBe(false);
+  });
+
   it("is a no-op outside a nightly job step", () => {
     for (let i = 0; i < 100; i++) recordCall(A, "alchemy_getAssetTransfers");
     expect(() => guardAlchemyCall("eth_call", {})).not.toThrow();

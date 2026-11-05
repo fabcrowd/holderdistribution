@@ -162,8 +162,8 @@ export function scaffold(args, registry) {
     supply: { generationsSumOneToOne: false, ...(args.coingecko ? { coingeckoId: args.coingecko } : {}) },
     chains,
     gated: { forensics: true, walletFlows: { ...(args.coingecko ? { coingeckoId: args.coingecko } : {}), chains: chains.map((c) => c.key) } },
-    // Always on: the tab shows an empty state until the first ledger run, so no per-token code edit is needed.
-    capabilities: { projectWallets: true },
+    // Off until the first ledger report is committed: a live project never shows an empty tab.
+    capabilities: { projectWallets: false },
     // Parity by default: every job in config/nightly-jobs.json that this project's
     // chains support runs nightly. Opt out only with a reason:
     //   "nightly": { "waivers": { "<jobId>": "why this job cannot apply" } }
@@ -270,11 +270,12 @@ export function main(argv = process.argv.slice(2), { logger = console } = {}) {
   1. Verify every address; add the token image (public/tokens/${result.slug}.<ext>) and "image" in config/projects/${result.slug}.json.
   2. Add classification.cexWallets / dexContracts files (or contracts with role "dex"/"staking").
   3. Add developer wallets (--wallet, or edit config/projects/${result.slug}/ledger.json) and a botCluster if one is known.
-  4. node scripts/build-ledger.js --project ${result.slug} --dry-run
-  5. Nightly parity: every "n/a" job above needs the missing capability or a
+  4. Nightly parity: every "n/a" job above needs the missing capability or a
      nightly.waivers.<jobId> reason; check providers/budgets in config/nightly-jobs.json
      (docs/MULTI-TOKEN.md, "Nightly run checklist").
-  6. npm run typecheck && npx vitest run && npm run build`);
+  5. Follow docs/MULTI-TOKEN.md "Adding the next project" through the wallet-flows and ledger steps.
+  6. Set capabilities.projectWallets to true once data/${result.slug}/ledger/ledger.json is committed.
+  7. node scripts/check-go-live.js --project ${result.slug} must PASS before the project goes live.`);
   return result;
 }
 

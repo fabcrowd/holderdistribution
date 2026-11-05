@@ -45,7 +45,8 @@ describe("add-project wires a new token end to end", () => {
       const cfg = JSON.parse(fs.readFileSync(path.join(root, `config/projects/${t.slug}.json`), "utf8"));
 
       // Dashboard: the Developer wallets tab + deep link.
-      expect(showsProjectWallets(cfg)).toBe(true);
+      expect(showsProjectWallets(cfg)).toBe(false);
+      expect(showsProjectWallets({ ...cfg, capabilities: { projectWallets: true } })).toBe(true);
       expect(parseViewHash("#supply/project-wallets")).toEqual({ view: "supply", panel: "project-wallets" });
       expect(cfg.chains[0].explorer).toBe(t.vm === "solana" ? "https://solscan.io" : "https://basescan.org");
 

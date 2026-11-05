@@ -1,5 +1,5 @@
 import process from "node:process";
-import { recordCall, classifyProvider, guardAlchemyCall, alchemyBlocked, AlchemyBudgetError, resolveJobEnv } from "./rpcMetrics.js";
+import { recordCall, classifyProvider, guardAlchemyCall, alchemyBlocked, AlchemyBudgetError, jobPrefersPublic, resolveJobEnv } from "./rpcMetrics.js";
 import {
   isLimitedPublicUrl,
   acquire as acquireSlot,
@@ -226,7 +226,11 @@ async function probeUrls(urls, { logRange = false } = {}) {
  * archive-state calls (see ARCHIVE_UNAVAILABLE_PATTERN), so anything that reads
  * historical balances keeps the keys. Scoped per workflow step, never global.
  */
-export const preferPublicRpc = () => /^(1|true|yes|on)$/i.test(process.env.RPC_PREFER_PUBLIC ?? "");
+/** RPC_PREFER_PUBLIC wins when set (a step can pin keys with 0); otherwise the nightly job's provider order decides. */
+export const preferPublicRpc = () => {
+  const explicit = process.env.RPC_PREFER_PUBLIC;
+  return explicit ? /^(1|true|yes|on)$/i.test(explicit) : jobPrefersPublic();
+};
 
 /**
  * @param {string} chainKey

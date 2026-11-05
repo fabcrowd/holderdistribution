@@ -190,7 +190,7 @@ jobs:
       - name: Stage verdict
         # Non-fatal stages (continue-on-error) cannot fail the run themselves, so
         # this step runs last and fails it when one failed, the same convention as
-        # refresh-tel-holders.yml. Whatever succeeded is already committed above.
+        # refresh-holders.yml. Whatever succeeded is already committed above.
         if: always()
         env:
           OUTCOME_SPELLBOOK: ${{ steps.spellbook.outcome }}
@@ -215,7 +215,7 @@ jobs:
             exit 1
           fi
 
-      # Deliberately not dispatching refresh-tel-holders.yml here: it already
+      # Deliberately not dispatching refresh-holders.yml here: it already
       # runs daily and re-reads config/cex-wallets.json fresh on every run, so
       # the newly-synced list is picked up within 24h regardless. Firing it
       # immediately would run pull-staker-balances.js a second time same-day
