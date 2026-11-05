@@ -6,11 +6,13 @@ import { clampToRange, shortBucketLabel } from "@/lib/chartRange";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { settledEntries } from "@/lib/flowFeeds";
+import { hasNoStaking, stakingNoneText } from "@/lib/stakingNote";
 import { flowEmptyMessage } from "@/lib/flowEmptyState";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { formatCompact, formatSignedCompact } from "@/lib/format";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
+import { StakingNoneNote } from "./StakingNoneNote";
 import { TimeChart, StackedTimeCharts, StackedBody, SignedBars, CategoryBars, type ChartMarker } from "./MiniCharts";
 import { DetailsButton } from "./DetailsButton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -88,6 +90,7 @@ const firstLast = <T,>(rows: T[]) => (rows.length ? { first: rows[0], last: rows
 
 export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDays, onExplore }: Props) => {
   const { project } = useProject();
+  const noStaking = hasNoStaking(project);
   const tk = project.ticker;
   const pn = project.name;
   const growth = useHolderGrowth({ view: selectedView, days: rangeDays });
@@ -382,7 +385,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         chart="standard"
         title={`Staked ${tk}`}
-        info={<StakedPanelTip />}
+        info={noStaking ? stakingNoneText(project) : <StakedPanelTip />}
         stat={
           s &&
           stakedNow != null && (
@@ -396,9 +399,11 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             </>
           )
         }
-        actions={<DetailsButton onClick={() => onExplore("staking")} label="Staking" />}
+        actions={noStaking ? undefined : <DetailsButton onClick={() => onExplore("staking")} label="Staking" />}
       >
-        {!isCombined ? (
+        {noStaking ? (
+          <StakingNoneNote />
+        ) : !isCombined ? (
           <PanelMessage>Available for all chains combined only.</PanelMessage>
         ) : (
           series(
