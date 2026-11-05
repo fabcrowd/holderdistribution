@@ -3,7 +3,7 @@
 On-chain holder analytics for multiple tokens — holder distribution and tiers, supply
 breakdown, exchange flows, staking and historical growth — published at
 [holderdistribution.com](https://holderdistribution.com) under the **Holder Distribution** brand.
-Mapped so far: **TEL** (Telcoin; Ethereum, Polygon, Base) and **ZBCN** (Zebec Network; Solana).
+Mapped so far: **TEL** (Telcoin; Ethereum, Polygon, Base), **ZBCN** (Zebec Network; Solana) and **ONDO** (Ondo; Ethereum, feeds pending their first nightly run).
 ZBCN history starts at 2026-10-25; there is no backfill yet.
 
 A single-page React app: `/` is the token picker and `/<slug>` (e.g. `/tel`,
@@ -81,6 +81,7 @@ opt-in, EVM only, completeness-gated, no Alchemy CU). See "Backfill via SQD Port
 
 ## Recent work
 
+- **2026-11-05: ONDO config for its first feeds.** The ONDO refresh failed at `reconcile-supply` because `main`'s `config/projects/ondo.json` had no `supply.target`. This brings over the ONDO config from #133 (10B target, Foundation treasury and distribution-Safe roles, circulating and developer-holdings rules, CEX wallets, developer-wallet ledger). `pipeline.feedsPending` stays on until the first feeds are committed; the go-live gate (#135) removes it.
 - **2026-10-31 22:29 (ET): UI and landing page.** Header is one row: "Holder Distribution" title, the open token's mark beside the chain and timeframe selectors, and a Stale/Delayed pill only when the refresh is behind (no date badge). Brand text is "Holder Distribution" across UI, meta and docs; asset file names are unchanged. SEO descriptor is "Token Holder Distribution & Supply Data". Landing page has a hero with the tagline "Blockchain without the BS.", a "Cutting through the noise" band and the token list. Raw green/red/amber classes moved to semantic tokens; shared `Callout` component added; unused badge variants and the violet/sky tab accents removed. Typecheck, lint and the full suite (173 files, 1541 tests) pass. Not yet checked in a browser at phone width.
 - **SQD Portal backfill (opt-in, local):** `generate-wallet-flows.js --source portal` reads EVM logs from SQD Portal instead of Alchemy, with a completeness gate against RPC; `--as-of <date> --out <path>` builds historical reports. See [docs/FORENSICS.md](docs/FORENSICS.md).
 - **Solana RPC redundancy:** `SOLANA_RPC_0` and `SOLANA_RPC_1` (separate accounts) are tried after the public endpoint with per-call failover.
