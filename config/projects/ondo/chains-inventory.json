@@ -1,0 +1,98 @@
+{
+  "$comment": "Onboarding step 1 (docs/MULTI-TOKEN.md): every chain the token is on, configured or not, with sources. Regenerate with scripts/chain-inventory.js; add/override rows with --extra. Excluded/not-found rows need a reason.",
+  "schemaVersion": 1,
+  "slug": "ondo",
+  "ticker": "ONDO",
+  "generatedAt": "2026-11-04T21:49:21.915Z",
+  "coingecko": {
+    "id": "ondo-finance",
+    "platforms": {
+      "ethereum": "0xfaba6f8e4a5e8ab82f62fe7c39859fa577269be3"
+    },
+    "circulatingSupply": 4869330647,
+    "totalSupply": 10000000000,
+    "source": "https://api.coingecko.com/api/v3/coins/ondo-finance"
+  },
+  "chains": [
+    {
+      "chain": "ethereum",
+      "vm": "evm",
+      "status": "configured",
+      "tokens": [
+        {
+          "address": "0xfaba6f8e4a5e8ab82f62fe7c39859fa577269be3",
+          "decimals": 18,
+          "generation": null,
+          "tokenStatus": "canonical",
+          "explorer": "https://etherscan.io/token/0xfaba6f8e4a5e8ab82f62fe7c39859fa577269be3",
+          "totalSupply": 10000000000,
+          "supplyShare": 1
+        }
+      ],
+      "source": "config/projects/ondo.json chains[]; totalSupply via public RPC"
+    },
+    {
+      "chain": "polygon",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:34.430Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "base",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:34.430Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "arbitrum",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:34.430Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "optimism",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:34.430Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "bsc",
+      "vm": "evm",
+      "status": "excluded",
+      "tokens": [
+        {
+          "address": "0x93265b1754f7eb40a4f7a4d8677afccb8e0d7512",
+          "decimals": 9,
+          "explorer": "https://bscscan.com/token/0x93265B1754f7eb40A4f7a4D8677AfcCB8E0D7512",
+          "totalSupply": null
+        }
+      ],
+      "source": "https://bscscan.com/token/0x93265B1754f7eb40A4f7a4D8677AfcCB8E0D7512; https://docs.ondo.foundation/ondo-token; CoinGecko ondo-finance platforms",
+      "reason": "Unofficial BEP-20 named 'Ondo Finance (ONDO)': 9 decimals, 1,000,000,000,000 max supply, ~359 holders, not listed by Ondo Foundation docs (Ethereum 0xfaba…9be3 only) or CoinGecko platforms. Not the ONDO token."
+    },
+    {
+      "chain": "avalanche",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:34.430Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "solana",
+      "vm": "solana",
+      "status": "not-found",
+      "tokens": [],
+      "source": "CoinGecko ondo-finance platforms (ethereum only); https://docs.ondo.foundation/ondo-token; https://docs.ondo.finance/tools/ondo-bridge (bridges USDY / Ondo Stocks, not ONDO)",
+      "reason": "No official ONDO mint on Solana: Ondo's Solana addresses are USDY/OUSG/Ondo Stocks, and its LayerZero bridge does not carry ONDO."
+    }
+  ]
+}

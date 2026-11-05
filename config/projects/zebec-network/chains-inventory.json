@@ -1,0 +1,91 @@
+{
+  "$comment": "Onboarding step 1 (docs/MULTI-TOKEN.md): every chain the token is on, configured or not, with sources. Regenerate with scripts/chain-inventory.js; add/override rows with --extra. Excluded/not-found rows need a reason.",
+  "schemaVersion": 1,
+  "slug": "zebec-network",
+  "ticker": "ZBCN",
+  "generatedAt": "2026-11-04T21:49:22.961Z",
+  "coingecko": {
+    "id": "zebec-network",
+    "platforms": {
+      "solana": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU"
+    },
+    "circulatingSupply": 99998768534.56294,
+    "totalSupply": 99998768534.56294,
+    "source": "https://api.coingecko.com/api/v3/coins/zebec-network"
+  },
+  "chains": [
+    {
+      "chain": "solana",
+      "vm": "solana",
+      "status": "configured",
+      "tokens": [
+        {
+          "address": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+          "decimals": 6,
+          "generation": null,
+          "tokenStatus": "canonical",
+          "explorer": "https://solscan.io/token/ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+          "totalSupply": 99998768534.56245,
+          "supplyShare": 1
+        }
+      ],
+      "source": "config/projects/zebec-network.json chains[]; totalSupply via public RPC"
+    },
+    {
+      "chain": "ethereum",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.374Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "polygon",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.374Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "base",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.374Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "arbitrum",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.374Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "optimism",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.374Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "bsc",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.374Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "avalanche",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.374Z",
+      "reason": "detect-token-chains: not-found"
+    }
+  ]
+}

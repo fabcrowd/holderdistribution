@@ -26,6 +26,10 @@ import { selectPipelineProject, projectPaths, projectChainsAllVms, projectRoleAd
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 import { writeWindow, transferWindowName, SHARED_WINDOW_MAX_BLOCKS } from "./lib/transferWindow.js";
 import { sharedScanEnabled } from "./lib/sharedTransferLogs.js";
+import { partialName, serializePartial, writePartial, readPartial, removePartial, partialUsable, partialRaw, buildChunks, streamChunks } from "./lib/partialCheckpoint.js";
+
+// Mid-scan checkpoint cadence (seconds); 0 disables. See lib/partialCheckpoint.js.
+const PARTIAL_CHECKPOINT_SECS = Number(process.env.HD_PARTIAL_CHECKPOINT_SECS ?? 300);
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: chain/token
 // addresses come from the project's chain map (TEL: config/chains.json),
@@ -145,41 +149,36 @@ const getLogsWithFailover = createLogsFailover(getLogs);
  *
  * @param {string[]} rpcUrls - One or more RPC endpoint URLs for this chain.
  */
-async function streamTransferLogs(rpcUrls, tokenAddress, topic0, fromBlock, chunkSize, onBatch, toBlock = null) {
+async function streamTransferLogs(rpcUrls, tokenAddress, topic0, fromBlock, chunkSize, onBatch, toBlock = null, onProgress = null) {
   // `toBlock` lets the caller pin both tokens (legacy + v3) to ONE head block,
   // so a swap's two legs can never straddle the scan boundary.
   const latest = Number.isFinite(toBlock)
     ? toBlock
     : Number.parseInt(String(await rpcCall(rpcUrls[0], "eth_blockNumber", [])), 16);
-  let totalLogs = 0;
 
   // Pre-build the full list of block ranges so we can slice them into parallel batches.
-  const chunks = [];
-  for (let from = fromBlock; from <= latest; from += chunkSize) {
-    chunks.push({ from, to: Math.min(from + chunkSize - 1, latest) });
-  }
-
+  const chunks = buildChunks(fromBlock, latest, chunkSize);
   const concurrency = rpcUrls.length; // one chunk per available key
-  for (let i = 0; i < chunks.length; i += concurrency) {
-    const slice = chunks.slice(i, i + concurrency);
-    const results = await Promise.all(
-      slice.map(({ from, to }, idx) =>
-        getLogsWithFailover(rpcUrls, idx % concurrency, {
-          fromBlock: "0x" + from.toString(16),
-          toBlock: "0x" + to.toString(16),
-          address: tokenAddress.toLowerCase(),
-          topics: [topic0],
-        }).then((logs) => ({ from, to, logs }))
-      )
-    );
-    for (const { from, to, logs } of results) {
-      if (logs.length > 0) {
-        onBatch(logs);
-        totalLogs += logs.length;
-        console.log(`  Logs ${from}-${to}: ${logs.length} (total so far: ${totalLogs})`);
-      }
-    }
-  }
+  let totalLogs = 0;
+  // Slices are applied in block order; onProgress(lastAppliedBlock) runs after
+  // each whole slice (the only safe point for a partial checkpoint).
+  await streamChunks({
+    chunks,
+    concurrency,
+    fetchChunk: ({ from, to }, idx) =>
+      getLogsWithFailover(rpcUrls, idx % concurrency, {
+        fromBlock: "0x" + from.toString(16),
+        toBlock: "0x" + to.toString(16),
+        address: tokenAddress.toLowerCase(),
+        topics: [topic0],
+      }),
+    onLogs: (logs, { from, to }) => {
+      onBatch(logs);
+      totalLogs += logs.length;
+      console.log(`  Logs ${from}-${to}: ${logs.length} (total so far: ${totalLogs})`);
+    },
+    onProgress,
+  });
 
   return { totalLogs, latestBlock: latest };
 }
@@ -220,10 +219,11 @@ async function saveCheckpoint(chainCheckpoints) {
  * @param {Record<string,string>} [initialRaw] - address -> BigInt-as-string from checkpoint
  */
 function buildBalanceMap(decimals, initialRaw = {}) {
-  // Seed from checkpoint (BigInt stored as strings to survive JSON serialisation)
-  const raw = new Map(
-    Object.entries(initialRaw).map(([addr, val]) => [addr, BigInt(val)])
-  );
+  // Seed from checkpoint (BigInt stored as strings to survive JSON serialisation),
+  // or from a partial checkpoint's exact raw Map.
+  const raw = initialRaw instanceof Map
+    ? new Map(initialRaw)
+    : new Map(Object.entries(initialRaw).map(([addr, val]) => [addr, BigInt(val)]));
   return {
     onBatch(batch) {
       for (const log of batch) {
@@ -393,7 +393,19 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
     );
   }
   const legacyCheckpoint = legacyCheck.usable ? checkpoint : null;
-  const fromBlock = legacyCheckpoint ? legacyCheckpoint.lastBlock + 1 : genesisBlock;
+  const checkpointFromBlock = legacyCheckpoint ? legacyCheckpoint.lastBlock + 1 : genesisBlock;
+
+  // Mid-scan partial checkpoint (work dir): resume an interrupted scan from the
+  // last fully applied block instead of from the base checkpoint/genesis.
+  const partialPath = projectWork(project)(partialName(chainKey));
+  const partialBase = { chainKey, token: tokenAddress, genesisBlock, baseLastBlock: legacyCheckpoint ? legacyCheckpoint.lastBlock : null };
+  const partial = ARG_AS_OF ? null : await readPartial(partialPath);
+  const partialOk = partialUsable(partial, partialBase);
+  if (partial && !partialOk) {
+    console.warn(`${chainKey}: ignoring partial checkpoint ${partialPath} (built on a different base) — removing it.`);
+    await removePartial(partialPath);
+  }
+  const fromBlock = partialOk ? partial.lastBlock + 1 : checkpointFromBlock;
   const resuming = legacyCheckpoint && Object.keys(legacyCheckpoint.rawBalances ?? {}).length > 0;
 
   let chunkSize = settings.defaultChunkSize;
@@ -405,20 +417,23 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
     }
   }
 
-  if (resuming) {
+  if (partialOk) {
+    console.log(`Resuming ${chainKey} from partial checkpoint: block ${fromBlock} (${Object.keys(partial.rawBalances).length} addresses, saved ${partial.savedAt}).`);
+  } else if (resuming) {
     console.log(`Resuming ${chainKey} from block ${fromBlock} (checkpoint has ${Object.keys(checkpoint.rawBalances).length} addresses)...`);
   } else {
     console.log(`Full scan: ${chainKey} Transfer logs from block ${fromBlock} (chunk ${chunkSize})...`);
   }
 
-  const builder = buildBalanceMap(decimals, legacyCheckpoint?.rawBalances ?? {});
+  const builder = buildBalanceMap(decimals, partialOk ? partialRaw(partial) : legacyCheckpoint?.rawBalances ?? {});
 
   // One head block for both tokens (see streamTransferLogs).
   const headBlock = Number.parseInt(String(await rpcCall(rpcUrls[0], "eth_blockNumber", [])), 16);
 
   // Keep the logs for the shared window only on a nightly incremental run; a cold
   // rebuild would write a huge file that other feeds do not need.
-  const keepWindow = sharedScanEnabled() && !ARG_AS_OF && headBlock - fromBlock + 1 <= SHARED_WINDOW_MAX_BLOCKS;
+  // (Not after a partial resume: the window would lack the logs applied before it.)
+  const keepWindow = !partialOk && sharedScanEnabled() && !ARG_AS_OF && headBlock - fromBlock + 1 <= SHARED_WINDOW_MAX_BLOCKS;
   const windowLogs = [];
   const onBatch = keepWindow
     ? (logs) => {
@@ -426,9 +441,43 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
       builder.onBatch(logs);
     }
     : builder.onBatch;
-  const { totalLogs, latestBlock } = await streamTransferLogs(
-    rpcUrls, tokenAddress, topic0, fromBlock, chunkSize, onBatch, headBlock
-  );
+  let appliedThrough = fromBlock - 1;
+  let lastPartialAt = Date.now();
+  const savePartial = async () => {
+    if (ARG_AS_OF || appliedThrough < fromBlock) return;
+    await writePartial(partialPath, serializePartial({ ...partialBase, lastBlock: appliedThrough, raw: builder.rawBalances() }));
+    lastPartialAt = Date.now();
+    console.log(`  ${chainKey}: partial checkpoint saved through block ${appliedThrough} → ${partialPath}`);
+  };
+  const onProgress = async (lastBlock) => {
+    appliedThrough = lastBlock;
+    if (PARTIAL_CHECKPOINT_SECS > 0 && Date.now() - lastPartialAt >= PARTIAL_CHECKPOINT_SECS * 1000) await savePartial();
+  };
+  // timeout-minutes / cancel send SIGINT then SIGTERM: write the partial first.
+  // (A hard kill still keeps the last periodic save, HD_PARTIAL_CHECKPOINT_SECS.)
+  const onSignal = (sig) => {
+    savePartial()
+      .catch((e) => console.error(`  ${chainKey}: could not save partial checkpoint on ${sig}: ${e.message}`))
+      .finally(() => process.exit(sig === "SIGINT" ? 130 : 143));
+  };
+  process.once("SIGINT", onSignal);
+  process.once("SIGTERM", onSignal);
+  let streamed;
+  try {
+    streamed = await streamTransferLogs(rpcUrls, tokenAddress, topic0, fromBlock, chunkSize, onBatch, headBlock, onProgress);
+  } catch (error) {
+    // Keep everything applied so far; the re-run resumes from here.
+    try {
+      await savePartial();
+    } catch (saveError) {
+      console.error(`  ${chainKey}: could not save partial checkpoint: ${saveError.message}`);
+    }
+    throw new Error(`${chainKey}: log scan failed after block ${appliedThrough}: ${error.message}`);
+  } finally {
+    process.removeListener("SIGINT", onSignal);
+    process.removeListener("SIGTERM", onSignal);
+  }
+  const { totalLogs, latestBlock } = streamed;
   if (keepWindow && fromBlock <= latestBlock) {
     try {
       await writeWindow(projectWork(project)(transferWindowName(chainKey)), {
@@ -751,6 +800,12 @@ async function main() {
     // the scan — discarded a completed multi-hour scan for nothing.
     if (Object.keys(newCheckpointChains).length > 0) {
       await saveCheckpoint(newCheckpointChains);
+      // A completed chain's progress now lives in the real checkpoint.
+      for (const settled of chainSettled) {
+        if (settled.status === "fulfilled" && settled.value?.checkpointData) {
+          await removePartial(projectWork(project)(partialName(settled.value.chainKey)));
+        }
+      }
       console.log(`Saved checkpoint to ${CHECKPOINT_PATH} (${chainSettled.length - failedChains.length}/${chainSettled.length} chains succeeded this run).`);
     }
 

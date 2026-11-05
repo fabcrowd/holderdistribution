@@ -15,7 +15,7 @@
  */
 import process from "node:process";
 import { configureProjectRpc, getAllRpcUrls, getPublicFallbackUrls, rpcCall } from "../rpc.js";
-import { recordCall } from "../rpcMetrics.js";
+import { recordCall, classifyProvider } from "../rpcMetrics.js";
 
 export const SOLANA_PUBLIC_RPC = Object.freeze(["https://api.mainnet-beta.solana.com"]);
 
@@ -44,8 +44,15 @@ export function solanaPublicUrls(chainKey = "solana") {
 
 /** Public endpoints first, then the key pool. Deduplicated, order kept. */
 export function solanaRpcCandidates(chainKey = "solana") {
-  return [...new Set([...solanaPublicUrls(chainKey), ...getAllRpcUrls(chainKey)])];
+  return [...new Set([...solanaPublicUrls(chainKey), ...getAllRpcUrls(chainKey)])].filter(notAlchemy);
 }
+
+/**
+ * Solana never uses Alchemy (no Alchemy Solana nodes on this account): an
+ * alchemy.com URL in SOLANA_RPC_* or chains[].rpc is dropped from every pool,
+ * and solanaCall refuses one outright. Helius first, then public RPC.
+ */
+export const notAlchemy = (u) => classifyProvider(u) !== "alchemy";
 
 /**
  * Reorders a usable-URL list so keyed endpoints come before public ones.
@@ -75,6 +82,7 @@ async function probe(url, call) {
 
 /** One-shot JSON-RPC call (no retry ladder) for the health probe. */
 async function probeCall(url, method, params) {
+  if (!notAlchemy(url)) throw new Error("Solana RPC: Alchemy is not a Solana provider here (use Helius / public RPC)");
   recordCall(url, method);
   const res = await fetch(url, {
     method: "POST",
@@ -121,7 +129,7 @@ export async function getUsableSolanaRpcUrls(chainKey = "solana", { logger = con
  */
 export async function solanaCallWithFailover(urls, method, params, { call = rpcCall, chainKey = "solana", logger = console } = {}) {
   const errors = [];
-  for (const url of urls) {
+  for (const url of urls.filter(notAlchemy)) {
     try {
       return await call(url, method, params);
     } catch (err) {

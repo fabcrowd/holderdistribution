@@ -5,6 +5,12 @@
  * recipient is unlabelled. Etherscan v2 (free tier) is the cross-check only;
  * its rows are never merged into the ledger (see etherscanMultiKey.js header).
  *
+ * Keyless alternative (logsAssetTransfers): the same rows from eth_getLogs on
+ * any RPC (public nodes first, per config/nightly-jobs.json `providers`), shaped
+ * exactly like Alchemy's response (uniqueId `<hash>:log:<logIndex>`, raw hex
+ * value, ISO block timestamp), so normalizeAlchemyTransfer and every downstream
+ * row are byte-identical whichever source served the scan.
+ *
  * Network calls are injected (`rpc`, `assetTransfers`) so tests run offline.
  */
 import { callGetAssetTransfers } from "../alchemyTransfers.js";
@@ -78,6 +84,71 @@ export async function fetchWalletTransfers({ url, address, direction, contracts,
     pageKey = res?.pageKey;
   } while (pageKey);
   return rows;
+}
+
+export const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+const topicAddr = (a) => "0x" + a.toLowerCase().replace(/^0x/, "").padStart(64, "0");
+const addrFromTopic = (t) => "0x" + String(t).slice(-40).toLowerCase();
+
+/**
+ * alchemy_getAssetTransfers stand-in over eth_getLogs (ERC-20 Transfer events).
+ * Same call signature as callGetAssetTransfers(url, params); returns every row in
+ * one page (no pageKey). `getLogs(url, filter)` is rpc.js getLogs (bisects ranges
+ * a public node refuses); block timestamps come from eth_getBlockByNumber,
+ * cached per block across calls.
+ */
+export function logsAssetTransfers({ rpc, getLogs, blockTimes = new Map() }) {
+  const blockTime = async (url, n) => {
+    if (!blockTimes.has(n)) {
+      const b = await rpc(url, "eth_getBlockByNumber", ["0x" + n.toString(16), false]);
+      blockTimes.set(n, parseInt(b?.timestamp ?? "0x0", 16));
+    }
+    return blockTimes.get(n);
+  };
+  return async function assetTransfers(url, params) {
+    let toBlock = params.toBlock;
+    if (typeof toBlock !== "string" || !toBlock.startsWith("0x")) toBlock = await rpc(url, "eth_blockNumber", []);
+    const topics = [TRANSFER_TOPIC, params.fromAddress ? topicAddr(params.fromAddress) : null, params.toAddress ? topicAddr(params.toAddress) : null];
+    while (topics.length && topics.at(-1) === null) topics.pop();
+    const logs = await getLogs(url, { fromBlock: params.fromBlock, toBlock, address: params.contractAddresses, topics });
+    const rows = [];
+    for (const l of logs) {
+      if (!Array.isArray(l?.topics) || l.topics.length < 3 || String(l.topics[0]).toLowerCase() !== TRANSFER_TOPIC) continue;
+      let value;
+      try {
+        value = BigInt(l.data && l.data !== "0x" ? l.data : "0x0");
+      } catch {
+        continue;
+      }
+      if (params.excludeZeroValue && value === 0n) continue;
+      const block = parseInt(l.blockNumber, 16);
+      const ts = await blockTime(url, block);
+      rows.push({
+        blockNum: "0x" + block.toString(16),
+        uniqueId: `${l.transactionHash}:log:${parseInt(l.logIndex, 16)}`,
+        hash: l.transactionHash,
+        from: addrFromTopic(l.topics[1]),
+        to: addrFromTopic(l.topics[2]),
+        category: "erc20",
+        rawContract: { address: String(l.address).toLowerCase(), value: "0x" + value.toString(16) },
+        metadata: { blockTimestamp: new Date(ts * 1000).toISOString() },
+        _logIndex: parseInt(l.logIndex, 16),
+      });
+    }
+    rows.sort((a, b) => parseInt(a.blockNum, 16) - parseInt(b.blockNum, 16) || a._logIndex - b._logIndex);
+    for (const r of rows) delete r._logIndex;
+    return { transfers: rows };
+  };
+}
+
+/**
+ * Ledger EVM providers in job order. HD_JOB_PROVIDERS (config/nightly-jobs.json
+ * via rpcMetrics.resolveJobEnv) opts a run into "public"; without it the scan
+ * stays on Alchemy, exactly as before.
+ */
+export function ledgerEvmProviderOrder(env = {}) {
+  const order = String(env.HD_JOB_PROVIDERS ?? "").split(",").map((s) => s.trim()).filter((p) => p === "public" || p === "alchemy");
+  return order.length ? order : ["alchemy"];
 }
 
 /** True when the receipt has a DEX Swap event (walletFlows SWAP_TOPICS). */

@@ -714,6 +714,38 @@ its config, so onboarding a token needs no code change:
 
 ## Adding the next project
 
+### Step 1 (required first): chain & contract discovery → `chains-inventory.json`
+
+Before any config, seeding or scans, inventory **every chain the token is on**
+and commit it as `config/projects/<slug>/chains-inventory.json`. Each row
+(`chain`, `vm`, `status`, `tokens[]`, `source`, `reason`) records the
+contract / mint per chain, decimals, explorer link, total supply on that chain
+and its share, and where each fact came from (official docs, CoinGecko
+`platforms`, explorer, RPC). The statuses are:
+
+| status | meaning |
+| --- | --- |
+| `configured` | in `chains[]`, so it gets seeded and shown in the UI |
+| `excluded` | found but deliberately left out (unofficial copy, deprecated bridge…). Needs a `reason` |
+| `not-found` | checked, with no deployment. Needs a `reason` |
+| `candidate` | found but not decided yet. **Fails validation** |
+
+```bash
+node scripts/detect-token-chains.js --address 0x… --chain <origin> --ticker <T> --coingecko --out /tmp/d.json
+node scripts/chain-inventory.js --project <slug> --discovery /tmp/d.json [--extra manual-rows.json]   # public RPC supply, 0 Alchemy CU
+node scripts/chain-inventory.js --project <slug> --check                                              # offline gate
+```
+
+`scripts/add-project.js` **requires** `--inventory <file>` and refuses to scaffold
+when the inventory misses one of the `--chain`s, has an undecided `candidate`, or
+has an excluded/not-found row with no reason. It then writes the inventory next to the
+project. `scripts/lib/chainInventory.test.js` runs the same check for every
+registered project, so CI fails when a chain is added to `chains[]` without one.
+Add a chain to the project later by adding it to `chains[]` *and* flipping its
+inventory row to `configured` (which also needs seeding and, for a new VM, a nightly plan check).
+
+Then:
+
 1. Add `{ "slug": "<slug>", "name": "...", "ticker": "..." }` to `config/projects.json`.
    Slugs are lowercase `[a-z0-9-]`.
 2. Add `config/projects/<slug>.json` using `tel.json` as the template. Use only
@@ -788,6 +820,48 @@ its config, so onboarding a token needs no code change:
       for others. Details and cost caps: [FORENSICS.md](FORENSICS.md).
 
 The landing page and the sitemap pick the new project up automatically.
+
+## Nightly run requirements (`config/nightly-jobs.json`)
+
+Every project gets the same nightly data sets. The job list lives in **one** file,
+`config/nightly-jobs.json`; `scripts/lib/nightlyPlan.js` applies it to every project in
+`config/projects.json`, and the scheduled workflows build their matrices from it
+(`node scripts/workflow-paths.js matrix all --job <id>`). No workflow names a slug.
+
+| Field | Meaning |
+|---|---|
+| `dataset` | The data set the job produces. Chain-specific variants share one (`staker-balances` / `solana-staking` → `staking`). |
+| `requires` | Capabilities derived from config: `evm`, `solana`, `stakeChanged`, `zebecStakeV1`, `forensicsRegistry`, `ledgerConfig`. |
+| `providers` | Data sources in order, cheapest first; `alchemy` is always last. |
+| `alchemyOnly` | No free source exists (archive-state reads). Skipped, not degraded, when the budget is spent. |
+| `alchemyCuPerNight` | Per-project, per-run Alchemy CU budget enforced by `scripts/lib/rpc.js` (via `rpcMetrics.guardAlchemyCall`). `config/budgets.json` keeps the monthly ceiling across all projects. |
+| `budgetMode` | `enforce`: refuse Alchemy past the budget and fall through to the next provider. `warn`: log only. |
+| `outputs[].maxAgeHours` | Freshness SLA. `scripts/write-pipeline-status.js` writes `<dataDir>/pipeline-status.json`; `pipeline-watchdog.yml` files a `pipeline-stale` issue for any project that misses one. |
+
+A workflow step opts into the guard with `HD_JOB_ID: <id>`. Without `HD_JOB_ID` (local
+runs, tests) nothing changes. Waive a job only when it cannot apply, and give a reason:
+
+```json
+"nightly": { "waivers": { "staker-balances": "No staking contract, so there is no staking data set." } }
+```
+
+`scripts/lib/nightlyPlan.test.js` (CI) fails when a project neither runs nor waives a job
+for every `dataset`, when a waiver has no reason, or when a scheduled workflow
+hardcodes `'tel'`.
+
+### Nightly run checklist (new project)
+
+1. `node scripts/add-project.js …` prints the project's nightly plan (run / waived / n/a).
+2. For each `n/a` data set, add the missing capability (staking contract, forensics registry,
+   `ledger.json`) or a `nightly.waivers.<jobId>` reason.
+3. Check that each job's first provider serves the new chain keylessly (`chains[].rpc.publicUrls`
+   or the `PUBLIC_RPC_FALLBACKS` in rpc.js). Add Alchemy only when no free source returns identical data.
+4. If the project needs more than the per-job budget, raise `alchemyCuPerNight` deliberately.
+   Keep the monthly total under `config/budgets.json`.
+5. Run `npx vitest run scripts/lib/nightlyPlan.test.js` and
+   `node scripts/write-pipeline-status.js --project <slug> --no-write`.
+6. After the first scheduled night, `<dataDir>/pipeline-status.json` must show every job
+   `ok` or `waived`.
 
 ## Solana CEX wallets
 

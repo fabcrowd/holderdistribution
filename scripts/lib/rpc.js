@@ -1,5 +1,17 @@
 import process from "node:process";
-import { recordCall } from "./rpcMetrics.js";
+import { recordCall, classifyProvider, guardAlchemyCall, alchemyBlocked, AlchemyBudgetError, resolveJobEnv } from "./rpcMetrics.js";
+import {
+  isLimitedPublicUrl,
+  acquire as acquireSlot,
+  penalize as penalizeHost,
+  reward as rewardHost,
+  parseRetryAfter,
+  backoffMs,
+  minSplitBlocks,
+  hostMaxBlockRange,
+  hostOf,
+  __resetLimiterForTests,
+} from "./rpcLimiter.js";
 
 /**
  * Key pools: chain `<key>` reads env vars `<PREFIX>_RPC_0` … `<PREFIX>_RPC_9`
@@ -242,8 +254,26 @@ export async function getUsableRpcUrls(chainKey, { logger = console, logRange = 
     }
   }
 
-  const configured = getAllRpcUrls(chainKey);
+  let configured = getAllRpcUrls(chainKey);
+  // Budget guard (config/nightly-jobs.json): when this job's enforced Alchemy
+  // budget is spent, drop the Alchemy keys so the pool falls through to the next
+  // provider (keyless public). An alchemyOnly job has nowhere to go: refuse it,
+  // so its step skips instead of silently degrading.
+  if (alchemyBlocked()) {
+    const kept = configured.filter((u) => classifyProvider(u) !== "alchemy");
+    if (resolveJobEnv().HD_JOB_ALCHEMY_ONLY === "true" && kept.length === 0) {
+      throw new AlchemyBudgetError(`[budget] ${process.env.HD_JOB_ID}: Alchemy budget spent and the job is alchemyOnly — skipping ${chainKey}`);
+    }
+    if (kept.length < configured.length) logger.warn(`RPC pool ${chainKey}: Alchemy budget spent — ${configured.length - kept.length} Alchemy key(s) withheld`);
+    configured = kept;
+  }
   if (configured.length === 0) {
+    const publicUrls = getPublicFallbackUrls(chainKey);
+    if (alchemyBlocked() && publicUrls.length > 0) {
+      const publicUsable = (await probeUrls(publicUrls)).filter((r) => r.ok).map((r) => r.url);
+      usableUrlCache.set(cacheKey, publicUsable);
+      return publicUsable;
+    }
     usableUrlCache.set(cacheKey, []);
     return [];
   }
@@ -305,6 +335,8 @@ export function getPolygonRpcUrl() {
 }
 
 const MAX_RETRIES = 5;
+// Limited (keyless public) hosts only — see scripts/lib/rpcLimiter.js.
+const PUBLIC_MAX_RETRIES = Number(process.env.RPC_PUBLIC_MAX_RETRIES) || 6;
 
 /** A node that does not serve old blocks (publicnode 403, "pruned history unavailable"). Not retryable. */
 export const ARCHIVE_UNAVAILABLE_PATTERN = /archive requests|pruned history|missing trie node|header not found/i;
@@ -344,7 +376,11 @@ function isRetryableNetworkError(err) {
  * @returns {Promise<unknown>}
  */
 export async function rpcCall(rpcUrl, method, params = [], attempt = 0) {
+  if (isLimitedPublicUrl(rpcUrl)) return publicRpcCall(rpcUrl, method, params);
   let response;
+  // Throws AlchemyBudgetError (not retryable) past an enforced budget; failover
+  // callers move to the next URL. No-op outside nightly job steps (HD_JOB_ID unset).
+  if (classifyProvider(rpcUrl) === "alchemy") guardAlchemyCall(method);
   recordCall(rpcUrl, method);
   try {
     response = await fetch(rpcUrl, {
@@ -424,6 +460,75 @@ export async function rpcCall(rpcUrl, method, params = [], attempt = 0) {
   return data.result;
 }
 
+/**
+ * rpcCall() for a keyless public endpoint listed in config/public-rpc-limits.json.
+ * Same request/response contract as rpcCall(); differences, all aimed at not
+ * getting (and staying) rate-limited:
+ *  - every request waits for the host's shared token bucket + concurrency cap;
+ *  - 429/403/5xx/-32005 and network errors/timeouts back off exponentially with
+ *    full jitter, never below Retry-After and never 0 ms (mevblocker sends
+ *    `Retry-After: 0`, which made the old ladder retry 5x instantly);
+ *  - a 429 also halves the host's rate (AIMD) and pauses the host for everyone.
+ * Keyed/Alchemy URLs never come here, so their behaviour is unchanged.
+ */
+async function publicRpcCall(rpcUrl, method, params) {
+  for (let attempt = 0; ; attempt++) {
+    const release = await acquireSlot(rpcUrl);
+    recordCall(rpcUrl, method);
+    let outcome;
+    try {
+      const response = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+      });
+      if (!response.ok) {
+        let bodyText = "";
+        try { bodyText = await response.text(); } catch { /* unreadable body */ }
+        if (response.status === 403 && ARCHIVE_UNAVAILABLE_PATTERN.test(bodyText)) {
+          outcome = { fatal: new Error(`RPC HTTP 403: ${bodyText.slice(0, 200)}`) };
+        } else if ([429, 403, 502, 503, 504].includes(response.status)) {
+          outcome = {
+            retry: `HTTP ${response.status}`,
+            retryAfterMs: parseRetryAfter(response.headers.get("retry-after")),
+            throttled: response.status === 429 || response.status === 503,
+            error: new Error(`RPC HTTP ${response.status}: ${response.statusText}${bodyText ? ` - ${bodyText.slice(0, 200)}` : ""}`),
+          };
+        } else {
+          outcome = { fatal: new Error(`RPC HTTP ${response.status}: ${response.statusText}${bodyText ? ` - ${bodyText}` : ""}`) };
+        }
+      } else {
+        const data = await response.json();
+        if (data.error) {
+          if (data.error.code === -32005 || /rate limit|too many requests/i.test(String(data.error.message ?? ""))) {
+            outcome = { retry: `RPC error ${data.error.code}`, throttled: true, error: new Error(data.error.message || JSON.stringify(data.error)) };
+          } else {
+            const detail = typeof data.error.data === "string" ? ` - ${data.error.data}` : "";
+            outcome = { fatal: new Error((data.error.message || JSON.stringify(data.error)) + detail) };
+          }
+        } else {
+          outcome = { ok: data.result };
+        }
+      }
+    } catch (err) {
+      outcome = isRetryableNetworkError(err) ? { retry: err?.name === "TimeoutError" ? `timeout ${REQUEST_TIMEOUT_MS}ms` : "network error", error: err } : { fatal: err };
+    } finally {
+      release();
+    }
+    if ("ok" in outcome) {
+      rewardHost(rpcUrl);
+      return outcome.ok;
+    }
+    if (outcome.fatal) throw outcome.fatal;
+    if (attempt >= PUBLIC_MAX_RETRIES) throw outcome.error;
+    const waitMs = Math.round(backoffMs(attempt, { baseMs: RETRY_DELAY_MS, retryAfterMs: outcome.retryAfterMs }));
+    if (outcome.throttled) penalizeHost(rpcUrl, waitMs);
+    console.warn(`${outcome.retry} from ${hostOf(rpcUrl)}. Retrying in ${waitMs}ms (attempt ${attempt + 1}/${PUBLIC_MAX_RETRIES}).`);
+    await new Promise((r) => setTimeout(r, waitMs));
+  }
+}
+
 // Matches Alchemy's free-tier eth_getLogs rejection, e.g. "Under the Free
 // tier plan, you can make eth_getLogs requests with up to a 10 block range."
 // A daily-catchup run hit this on ETH_RPC_0 — a key that had been running
@@ -443,6 +548,9 @@ const RANGE_LIMIT_PATTERN =
 // Widest span each URL has been seen to accept, learned from bisection, so one
 // rejection per URL per process is paid once instead of on every chunk.
 const learnedSpanByUrl = new Map();
+// Span that last fit under a host's result-count cap (public hosts only).
+const softSpanByUrl = new Map();
+const SOFT_REPROBE_AFTER = 8;
 
 /**
  * Fetch logs (eth_getLogs) for a single block range. Self-adjusts to a
@@ -457,6 +565,7 @@ const learnedSpanByUrl = new Map();
  * @returns {Promise<{ address: string; topics: string[]; data: string }[]>}
  */
 export async function getLogs(rpcUrl, filter) {
+  if (isLimitedPublicUrl(rpcUrl)) return getLogsPublic(rpcUrl, filter);
   const from = Number.parseInt(filter.fromBlock, 16);
   const to = Number.parseInt(filter.toBlock, 16);
   const known = learnedSpanByUrl.get(rpcUrl);
@@ -473,6 +582,9 @@ export async function getLogs(rpcUrl, filter) {
       if (!Number.isFinite(allowedSpan) || allowedSpan < 1 || !Number.isFinite(from) || !Number.isFinite(to) || to < from) {
         throw err;
       }
+      // Remember it per key: a free-tier key (Alchemy Free = 10 blocks on every
+      // chain) would otherwise pay one rejected call on every later chunk.
+      learnedSpanByUrl.set(rpcUrl, Math.min(allowedSpan, learnedSpanByUrl.get(rpcUrl) ?? allowedSpan));
       console.warn(`  eth_getLogs range too wide for this key's tier — retrying ${from}-${to} in ${allowedSpan}-block sub-chunks.`);
       return getLogsInSpans(rpcUrl, filter, from, to, allowedSpan);
     }
@@ -500,9 +612,127 @@ async function getLogsInSpans(rpcUrl, filter, from, to, span) {
   return results;
 }
 
+/** Raised when a range at the split floor is still rejected — the caller rotates endpoints or gives up. */
+export class RangeFloorError extends Error {
+  constructor(message, { from, to } = {}) {
+    super(message);
+    this.name = "RangeFloorError";
+    this.code = "RANGE_FLOOR";
+    this.from = from;
+    this.to = to;
+  }
+}
+
+// "Try with this block range [0x16C2C44, 0x16C2C6A]" (Tenderly, mevblocker).
+const SUGGESTED_RANGE = /\[\s*(0x[0-9a-f]+)\s*,\s*(0x[0-9a-f]+)\s*\]/i;
+// Result-count rejections depend on log DENSITY in that range, not on a fixed
+// per-endpoint span limit, so they must not shrink the span for the rest of the run.
+const RESULT_COUNT_PATTERN = /more than \d+ results|too many results|response size/i;
+// A hard block-range cap that states its number (measured 2026-11-04 with
+// scripts/probe-log-ranges.js): Tenderly base "maximum 1000 blocks without an
+// access key", publicnode "exceed maximum block range: 10000", Pocket "(max 10001
+// blocks)". Use the number as-is instead of halving (10000 -> 625 on a 1000 cap).
+const STATED_BLOCK_CAP = /max(?:imum)?(?: block range)?:?\s*\(?\s*(\d[\d,]*)\s*(?:blocks?\b|$)|max(?:imum)? block range:?\s*(\d[\d,]*)/i;
+export function statedBlockCap(message) {
+  const m = STATED_BLOCK_CAP.exec(String(message ?? ""));
+  const n = m ? Number(String(m[1] ?? m[2]).replace(/,/g, "")) : NaN;
+  return Number.isFinite(n) && n >= 1 ? n : null;
+}
+
+/**
+ * eth_getLogs on a limited public host, with adaptive range sizing.
+ *
+ * The ONDO cold scan stalled at block ~23.85M: one dense block cluster made both
+ * public nodes answer "more than 10000/20000 results"; the bisection then recorded
+ * 39 blocks as that URL's permanent span (learnedSpanByUrl, min only), so the rest
+ * of the multi-million-block scan crawled at 39 blocks per request into 429s. Here:
+ *  - the provider's suggested sub-range is used when it is given;
+ *  - result-count rejections shrink only the current range; the span grows back
+ *    (doubling) after each success;
+ *  - a hard per-endpoint range cap is still learned, but also re-grows;
+ *  - nothing is split below minSplitBlocks: a range at the floor that is still
+ *    rejected throws RangeFloorError so the failover can try another endpoint.
+ * The set of logs returned for [from, to] is identical either way.
+ */
+async function getLogsPublic(rpcUrl, filter) {
+  const from = Number.parseInt(filter.fromBlock, 16);
+  const to = Number.parseInt(filter.toBlock, 16);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to < from) {
+    const logs = await rpcCall(rpcUrl, "eth_getLogs", [filter]);
+    return Array.isArray(logs) ? logs : [];
+  }
+  const floor = minSplitBlocks(rpcUrl);
+  const requested = to - from + 1;
+  const results = [];
+  // Ceiling for this host: a learned hard cap, else the configured
+  // maxBlockRange (config/public-rpc-limits.json, keyed by host), else the ask.
+  const capFor = () => Math.min(requested, learnedSpanByUrl.get(rpcUrl) ?? hostMaxBlockRange(rpcUrl) ?? requested);
+  // Result-count caps depend on log density. Within a call the span regrows
+  // (doubling) after a dense stretch; only when a regrow is rejected again does
+  // it hold at the last size that fit (re-probing 2x every SOFT_REPROBE_AFTER
+  // wins). The span in effect at the end is where the next call on this URL
+  // starts, so a uniformly dense token is not re-rejected chunk after chunk
+  // while a one-off cluster leaves no trace.
+  let hold = softSpanByUrl.get(rpcUrl) ?? null;
+  let span = Math.min(capFor(), hold ?? Infinity);
+  let wins = 0;
+  let lastOk = null;
+  let start = from;
+  while (start <= to) {
+    const end = Math.min(start + span - 1, to);
+    const size = end - start + 1;
+    try {
+      const logs = await rpcCall(rpcUrl, "eth_getLogs", [{ ...filter, fromBlock: "0x" + start.toString(16), toBlock: "0x" + end.toString(16) }]);
+      if (Array.isArray(logs)) results.push(...logs);
+      start = end + 1;
+      // Grow back after a dense stretch, never past the host's hard cap.
+      lastOk = size;
+      if (hold !== null) {
+        if (size > hold) hold = size;
+        wins++;
+        span = Math.min(capFor(), wins >= SOFT_REPROBE_AFTER ? hold * 2 : hold);
+        if (wins >= SOFT_REPROBE_AFTER) wins = 0;
+      } else if (span < capFor()) span = Math.min(capFor(), span * 2);
+    } catch (err) {
+      const message = String(err?.message ?? err);
+      const tier = FREE_TIER_RANGE_PATTERN.exec(message);
+      const rangeLimited = tier || RANGE_LIMIT_PATTERN.test(message);
+      if (!rangeLimited) throw err;
+      if (size <= floor) {
+        throw new RangeFloorError(
+          `eth_getLogs ${start}-${end} (${size} blocks, split floor ${floor}) still rejected by ${new URL(rpcUrl).hostname}: ${message.slice(0, 160)}`,
+          { from: start, to: end },
+        );
+      }
+      const resultCount = RESULT_COUNT_PATTERN.test(message);
+      const stated = resultCount ? null : statedBlockCap(message);
+      let next;
+      if (tier) next = Number(tier[1]);
+      else if (stated) next = stated;
+      else {
+        const hint = SUGGESTED_RANGE.exec(message);
+        const hFrom = hint ? Number.parseInt(hint[1], 16) : NaN;
+        const hTo = hint ? Number.parseInt(hint[2], 16) : NaN;
+        next = hFrom === start && hTo >= hFrom && hTo < end ? hTo - hFrom + 1 : Math.floor(size / 2);
+      }
+      next = Math.max(floor, Math.min(size - 1, next));
+      if (!resultCount) learnedSpanByUrl.set(rpcUrl, next);
+      else if (hold !== null) { next = Math.max(floor, Math.min(next, hold)); wins = 0; }
+      else if (lastOk !== null && size > lastOk && size <= lastOk * 2) { hold = lastOk; next = Math.max(floor, Math.min(next, hold)); wins = 0; }
+      console.warn(`  eth_getLogs rejected ${size}-block range on ${new URL(rpcUrl).hostname} (${message.slice(0, 80)}) — retrying ${start}-${start + next - 1}.`);
+      span = next;
+    }
+  }
+  if (hold !== null) softSpanByUrl.set(rpcUrl, hold);
+  else softSpanByUrl.delete(rpcUrl);
+  return results;
+}
+
 /** Test hook: forget learned spans and the probed-URL cache. */
 export function __resetRpcCachesForTests() {
   learnedSpanByUrl.clear();
+  softSpanByUrl.clear();
+  __resetLimiterForTests();
   usableUrlCache.clear();
   registeredChains.clear();
 }

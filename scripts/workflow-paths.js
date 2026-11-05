@@ -35,6 +35,10 @@
  * Project selection is the same as every pipeline script: --project <slug>,
  * then HD_PROJECT, then the registry default (TEL). Exits 2 on an unknown slug.
  *
+ * `matrix [<slug>|all] [--job <id>]`: with --job, "all" keeps only the projects
+ * config/nightly-jobs.json schedules for that job. `job <id>` prints HD_JOB_*
+ * (provider order, Alchemy CU budget, alchemyOnly) for scripts/lib/rpc.js.
+ *
  * Run: node scripts/workflow-paths.js [--project <slug>] >> "$GITHUB_ENV"
  *      node scripts/workflow-paths.js [--project <slug>] files <path>...
  */
@@ -53,6 +57,7 @@ import {
   resolveProject,
   CLASSIFICATION_KINDS,
 } from "./lib/projects.js";
+import { jobEnv, projectRunsJob } from "./lib/nightlyPlan.js";
 
 export function workflowPaths(project, root = process.cwd()) {
   return {
@@ -75,7 +80,7 @@ export const DEFAULT_TIMEOUT_MINUTES = 60;
  * broken is reported in `skipped` instead of throwing, so a half-onboarded
  * token can never stop the others from refreshing; a named slug throws.
  */
-export function workflowMatrix(selection, root = process.cwd()) {
+export function workflowMatrix(selection, root = process.cwd(), { job } = {}) {
   const sel = (selection ?? "").trim();
   const registry = loadRegistry(root);
   const ordered = [...registry].sort((a, b) => Number(b.default === true) - Number(a.default === true));
@@ -87,11 +92,14 @@ export function workflowMatrix(selection, root = process.cwd()) {
       timeout: Number(project.config?.pipeline?.workflowTimeoutMinutes) || DEFAULT_TIMEOUT_MINUTES,
     };
   };
+  // A named slug always runs (manual dispatch); "all" keeps only the projects
+  // config/nightly-jobs.json schedules for `job` (scripts/lib/nightlyPlan.js).
   if (sel && sel !== "all") return { include: [toEntry(sel)], skipped: [] };
   const include = [];
   const skipped = [];
   for (const { slug } of ordered) {
     try {
+      if (job && !projectRunsJob(slug, job, root)) continue;
       include.push(toEntry(slug));
     } catch (err) {
       skipped.push({ slug, error: err.message });
@@ -161,19 +169,30 @@ if (isDirectRun) {
   }
   // Strip --project <slug> / --project=<slug> before looking for the mode.
   const rest = [];
+  let job;
   const argv = process.argv.slice(2);
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--project") { i++; continue; }
     if (argv[i].startsWith("--project=")) continue;
+    if (argv[i] === "--job") { job = argv[++i]; continue; }
+    if (argv[i].startsWith("--job=")) { job = argv[i].slice(6); continue; }
     rest.push(argv[i]);
   }
   if (rest[0] === "matrix") {
     // node scripts/workflow-paths.js matrix [<slug>|all] -> {"include":[...]} for a GitHub matrix.
     try {
-      const { include, skipped } = workflowMatrix(rest[1]);
+      const { include, skipped } = workflowMatrix(rest[1], process.cwd(), { job });
       for (const s of skipped) console.error(`::warning::project ${s.slug} skipped: ${s.error}`);
       if (include.length === 0) throw new Error("no runnable projects in config/projects.json");
       console.log(JSON.stringify({ include }));
+    } catch (err) {
+      console.error(`[workflow-paths] ${err.message}`);
+      process.exit(2);
+    }
+  } else if (rest[0] === "job") {
+    // node scripts/workflow-paths.js job <id> >> "$GITHUB_ENV" -> HD_JOB_* for rpc.js's budget guard.
+    try {
+      for (const [k, v] of Object.entries(jobEnv(rest[1], process.cwd(), project.slug))) console.log(`${k}=${v}`);
     } catch (err) {
       console.error(`[workflow-paths] ${err.message}`);
       process.exit(2);

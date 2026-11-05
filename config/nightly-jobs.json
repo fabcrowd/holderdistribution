@@ -1,0 +1,269 @@
+{
+  "$comment": "Shared nightly job list. Every project in config/projects.json runs every job whose `requires` capabilities it has (scripts/lib/nightlyPlan.js), unless config/projects/<slug>.json declares nightly.waivers.<jobId> with a reason. `providers` is the order a job's scripts try data sources (cheapest first; 'alchemy' last). `alchemyOnly` jobs have no free source and are skipped, not degraded, when the Alchemy budget is spent. `alchemyCuPerNight` is the per-project per-run budget the rpc.js guard enforces (HD_JOB_ALCHEMY_CU_BUDGET); config/budgets.json keeps the monthly ceiling. `outputs[].maxAgeHours` is the freshness SLA pipeline-health.js checks; paths are TEL-layout and are mapped per project (public/data/<f> -> <dataDir>/<f>, data/<f> -> data/<slug>/<f>). `budgetMode`: 'enforce' = the guard refuses Alchemy calls past the budget (next provider, or skip for alchemyOnly); 'warn' = it only logs ::warning:: and records the overrun (used where a hard stop could leave a feed stale; tighten to enforce once the job has run within budget for a month). `dataset`: the data set a job produces; the parity test (scripts/lib/nightlyPlan.test.js) requires every project to run, or explicitly waive, at least one job per dataset (chain-specific variants such as staker-balances / solana-staking share a dataset). Per project, scripts/lib/nightlyPlan.js providersFor() drops 'alchemy' when the project has no EVM chain (Alchemy serves no Solana chain here) and 'helius' when it has no Solana chain.",
+  "schemaVersion": 1,
+  "jobs": [
+    {
+      "id": "holders",
+      "dataset": "holders",
+      "workflow": "refresh-tel-holders.yml",
+      "scripts": [
+        "pull-holders-rpc.js",
+        "pull-cex-wallets.js",
+        "generate-holders-lite.js",
+        "reconcile-supply.js",
+        "append-treasury-history.js",
+        "validate-outputs.js"
+      ],
+      "requires": [],
+      "providers": [
+        "public",
+        "helius",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 5000,
+      "outputs": [
+        {
+          "path": "public/data/holders-summary.json",
+          "maxAgeHours": 30
+        },
+        {
+          "path": "public/data/holders-history.json",
+          "maxAgeHours": 30
+        },
+        {
+          "path": "public/data/supply-reconciliation.json",
+          "maxAgeHours": 30
+        },
+        {
+          "path": "public/data/cex-wallets.json",
+          "maxAgeHours": 30
+        }
+      ],
+      "budgetMode": "warn"
+    },
+    {
+      "id": "exchange-flows",
+      "dataset": "exchange-flows",
+      "workflow": "refresh-tel-holders.yml",
+      "scripts": [
+        "scan-exchange-flows.js"
+      ],
+      "requires": [],
+      "providers": [
+        "public",
+        "helius",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 2000,
+      "outputs": [
+        {
+          "path": "public/data/exchange-flow-history.json",
+          "maxAgeHours": 30
+        }
+      ],
+      "budgetMode": "warn"
+    },
+    {
+      "id": "tier-outflows",
+      "dataset": "tier-outflows",
+      "workflow": "refresh-tel-holders.yml",
+      "scripts": [
+        "generate-tier-outflows.js"
+      ],
+      "requires": [],
+      "providers": [
+        "public",
+        "helius",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 2000,
+      "outputs": [
+        {
+          "path": "public/data/tier-outflows.json",
+          "maxAgeHours": 30
+        }
+      ],
+      "budgetMode": "warn"
+    },
+    {
+      "id": "solana-flows",
+      "dataset": "exchange-flows",
+      "workflow": "refresh-tel-holders.yml",
+      "scripts": [
+        "scan-solana-flows.js"
+      ],
+      "requires": [
+        "solana"
+      ],
+      "providers": [
+        "helius",
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 0,
+      "outputs": [],
+      "budgetMode": "enforce"
+    },
+    {
+      "id": "staker-balances",
+      "dataset": "staking",
+      "workflow": "refresh-tel-holders.yml",
+      "scripts": [
+        "pull-staker-balances.js"
+      ],
+      "requires": [
+        "stakeChanged"
+      ],
+      "providers": [
+        "public",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 1000,
+      "outputs": [
+        {
+          "path": "public/data/funding-wallets.json",
+          "maxAgeHours": 30
+        }
+      ],
+      "budgetMode": "enforce"
+    },
+    {
+      "id": "solana-staking",
+      "dataset": "staking",
+      "workflow": "refresh-tel-holders.yml",
+      "scripts": [
+        "pull-solana-staking.js"
+      ],
+      "requires": [
+        "zebecStakeV1"
+      ],
+      "providers": [
+        "helius",
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 0,
+      "outputs": [
+        {
+          "path": "public/data/solana-staking.json",
+          "maxAgeHours": 30
+        }
+      ],
+      "budgetMode": "enforce"
+    },
+    {
+      "id": "history-gaps",
+      "dataset": "history-gaps",
+      "workflow": "refresh-tel-holders.yml",
+      "scripts": [
+        "fill-history-gaps.js"
+      ],
+      "requires": [
+        "evm"
+      ],
+      "providers": [
+        "alchemy"
+      ],
+      "alchemyOnly": true,
+      "alchemyCuPerNight": 5000,
+      "outputs": [],
+      "budgetMode": "warn"
+    },
+    {
+      "id": "wallet-flows",
+      "dataset": "wallet-flows",
+      "workflow": "refresh-wallet-flows.yml",
+      "scripts": [
+        "generate-wallet-flows.js",
+        "generate-wallet-flows-solana.js"
+      ],
+      "requires": [
+        "forensicsRegistry"
+      ],
+      "providers": [
+        "public",
+        "helius",
+        "coingecko",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 0,
+      "outputs": [
+        {
+          "path": "data/forensics/wallet-flows.json",
+          "maxAgeHours": 30
+        }
+      ],
+      "budgetMode": "enforce"
+    },
+    {
+      "id": "ledger",
+      "dataset": "ledger",
+      "workflow": "refresh-ledger.yml",
+      "scripts": [
+        "build-ledger.js",
+        "trace-bot-proceeds.js"
+      ],
+      "requires": [
+        "ledgerConfig"
+      ],
+      "providers": [
+        "public",
+        "etherscan",
+        "helius",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 0,
+      "outputs": [
+        {
+          "path": "data/{slug}/ledger/ledger.json",
+          "maxAgeHours": 30
+        }
+      ],
+      "budgetMode": "enforce"
+    },
+    {
+      "id": "cex-candidates",
+      "dataset": "cex-candidates",
+      "workflow": "detect-cex-candidates.yml",
+      "cadence": "weekly",
+      "scripts": [
+        "detect-cex-candidates.js"
+      ],
+      "requires": [
+        "evm"
+      ],
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 0,
+      "outputs": [],
+      "budgetMode": "enforce"
+    },
+    {
+      "id": "cex-sync",
+      "dataset": "cex-sync",
+      "workflow": "sync-cex-wallets.yml",
+      "cadence": "semimonthly",
+      "scripts": [
+        "sync-cex-wallets-dune.js",
+        "pull-cex-wallets.js"
+      ],
+      "requires": [],
+      "providers": [
+        "public",
+        "helius"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 0,
+      "outputs": [],
+      "budgetMode": "enforce"
+    }
+  ]
+}

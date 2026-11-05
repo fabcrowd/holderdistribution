@@ -1,4 +1,5 @@
 import { ARCHIVE_UNAVAILABLE_PATTERN } from "./rpc.js";
+import { isLimitedPublicUrl, backoffMs } from "./rpcLimiter.js";
 
 const EARLIEST_AVAILABLE = /earliest available (\d+)/i;
 
@@ -23,7 +24,7 @@ const EARLIEST_AVAILABLE = /earliest available (\d+)/i;
  * @param {(url: string, filter: object) => Promise<object[]>} getLogsImpl
  * @param {{warn?: Function}} [logger]
  */
-export function createLogsFailover(getLogsImpl, logger = console) {
+export function createLogsFailover(getLogsImpl, logger = console, { sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
   const noHistoryBelow = new Map();
   const demoted = new Set();
 
@@ -39,21 +40,34 @@ export function createLogsFailover(getLogsImpl, logger = console) {
     // Every URL ruled out for this range: still try them all rather than fail unasked.
     const attempts = candidates.length > 0 ? candidates : order;
 
+    // Keyless public pools get extra rounds: when every endpoint failed a range
+    // (rate-limited, timed out, or at the split floor), wait with jittered
+    // backoff and rotate through them again, then give up with the error so the
+    // scan exits non-zero (with its partial checkpoint) instead of looping.
+    // Keyed pools keep exactly one pass, as before.
+    const rounds = attempts.some((u) => isLimitedPublicUrl(u)) ? Math.max(1, Number(process.env.RPC_FAILOVER_ROUNDS) || 3) : 1;
     let lastError;
-    for (let i = 0; i < attempts.length; i++) {
-      const url = attempts[i];
-      try {
-        return await getLogsImpl(url, filter);
-      } catch (error) {
-        lastError = error;
-        const message = String(error?.message ?? error);
-        if (ARCHIVE_UNAVAILABLE_PATTERN.test(message)) {
-          const boundary = EARLIEST_AVAILABLE.exec(message);
-          if (boundary) noHistoryBelow.set(url, Number(boundary[1]));
-          else demoted.add(url);
-        }
-        if (i < attempts.length - 1) {
-          logger.warn?.(`  getLogs failed on …${url.slice(-4)} (${message.slice(0, 80)}) — trying next RPC URL.`);
+    for (let round = 0; round < rounds; round++) {
+      if (round > 0) {
+        const waitMs = Math.round(backoffMs(round + 1, { baseMs: 2000, capMs: 60_000 }));
+        logger.warn?.(`  getLogs ${from}: every RPC URL failed — round ${round + 1}/${rounds} in ${waitMs}ms (${String(lastError?.message ?? lastError).slice(0, 80)}).`);
+        await sleep(waitMs);
+      }
+      for (let i = 0; i < attempts.length; i++) {
+        const url = attempts[i];
+        try {
+          return await getLogsImpl(url, filter);
+        } catch (error) {
+          lastError = error;
+          const message = String(error?.message ?? error);
+          if (ARCHIVE_UNAVAILABLE_PATTERN.test(message)) {
+            const boundary = EARLIEST_AVAILABLE.exec(message);
+            if (boundary) noHistoryBelow.set(url, Number(boundary[1]));
+            else demoted.add(url);
+          }
+          if (i < attempts.length - 1) {
+            logger.warn?.(`  getLogs failed on …${url.slice(-4)} (${message.slice(0, 80)}) — trying next RPC URL.`);
+          }
         }
       }
     }

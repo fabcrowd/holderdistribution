@@ -46,9 +46,17 @@
     "projectWallets": true
   },
   "pipeline": {
-    "workflowTimeoutMinutes": 60
+    "$comment": "feedsPending: ONDO is registered and on the nightly plan, but public/data/ondo has no snapshot yet. validate-outputs and check-feed-consistency skip it only while that directory is absent. Remove feedsPending in the commit that adds the first feeds.",
+    "workflowTimeoutMinutes": 60,
+    "feedsPending": true
   },
   "classification": {
     "cexWallets": "config/projects/ondo/cex-wallets.json"
+  },
+  "nightly": {
+    "$comment": "Waivers from the shared nightly job list (config/nightly-jobs.json). Every other applicable job runs nightly; a waiver needs a reason (scripts/lib/nightlyPlan.js).",
+    "waivers": {
+      "staker-balances": "ONDO has no staking contract in its config (no StakeChanged contract or Zebec stake program), so there is no staking data set to produce."
+    }
   }
 }
