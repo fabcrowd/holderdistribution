@@ -1,0 +1,41 @@
+{
+ "version": 1,
+ "slug": "zebec-network",
+ "generated": "2026-11-05T00:14:57.129Z",
+ "status": "no bot cluster mapped",
+ "botCluster": null,
+ "note": "No bot cluster is mapped for this project.",
+ "evidence": null,
+ "chains": [],
+ "summary": {
+  "salesTraced": 0,
+  "tokenSold": 0,
+  "tokenSoldDevShare": 0,
+  "byAsset": {},
+  "destinations": []
+ },
+ "detection": {
+  "candidates": [
+   {
+    "chain": "solana",
+    "address": "GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J",
+    "label": null,
+    "fundings": 3,
+    "amount": 853000000,
+    "funders": [
+     "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine"
+    ],
+    "firstTime": 1787339759,
+    "lastTime": 1791082638,
+    "sampleHashes": [
+     "2PFXnM3qzmjNVJko4eazSLK5pi5t3A2Jt3RzjjAbXg39Pr7BYmDEcMT99hCwAsk1kfx5hA4FpmxdJT5FjGq2FgGi",
+     "42HjjYQnSkaWm8HD2MSy3c1sE8Ywh7pPcr8uWVsJfEcXdNqGoTMxfUx7DTePMbJi6j7Rb6JzihyPartfX6mCsZnH",
+     "yakoepseFx3q6TGrjwpUTiMQ49GHf3p9VNzaneyj5JFFFSb9Skf6wmzawgrryj29WtQZxQjVto1pPoX6Lj2EoqR"
+    ],
+    "shareOfOutflow": 0.4683,
+    "reason": "Funded 3 times by 1 developer wallet(s); review for a botCluster entry."
+   }
+  ],
+  "rule": "Candidates are never counted; confirm one by adding a botCluster to the ledger config (docs/LEDGER.md)."
+ }
+}
