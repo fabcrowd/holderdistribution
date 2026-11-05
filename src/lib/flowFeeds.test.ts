@@ -30,13 +30,23 @@ describe("isPartialOutflowWindow", () => {
 });
 
 describe("flow placeholder state", () => {
-  it("is driven by config health.feeds, so ZBCN is a placeholder and TEL is not", () => {
-    const zbcn = getProject("zebec-network");
-    const tel = getProject("tel");
-    expect(isFlowPlaceholder(zbcn, EXCHANGE_FLOW_FEED)).toBe(true);
-    expect(isFlowPlaceholder(zbcn, TIER_OUTFLOWS_FEED)).toBe(true);
-    expect(isFlowPlaceholder(tel, EXCHANGE_FLOW_FEED)).toBe(false);
-    expect(isFlowPlaceholder(tel, TIER_OUTFLOWS_FEED)).toBe(false);
+  it("is driven by the project's health.feeds, one feed at a time", () => {
+    const stubbed = { health: { feeds: { [EXCHANGE_FLOW_FEED]: { placeholder: true } } } };
+    expect(isFlowPlaceholder(stubbed, EXCHANGE_FLOW_FEED)).toBe(true);
+    expect(isFlowPlaceholder(stubbed, TIER_OUTFLOWS_FEED)).toBe(false);
+  });
+
+  it("is false when the project declares no health block or does not flag the feed", () => {
+    expect(isFlowPlaceholder({}, EXCHANGE_FLOW_FEED)).toBe(false);
+    expect(isFlowPlaceholder({ health: { feeds: { [EXCHANGE_FLOW_FEED]: { placeholder: false } } } }, EXCHANGE_FLOW_FEED)).toBe(false);
+  });
+
+  it("does not flag the registered projects whose flow feeds are populated", () => {
+    for (const slug of ["tel", "zebec-network", "ondo"]) {
+      const project = getProject(slug);
+      expect(isFlowPlaceholder(project, EXCHANGE_FLOW_FEED)).toBe(false);
+      expect(isFlowPlaceholder(project, TIER_OUTFLOWS_FEED)).toBe(false);
+    }
   });
 
   it("names the ticker, and a project copy.text override wins", () => {
