@@ -23,6 +23,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 import { loadEnv } from "./loadEnv.js";
 import { getAllRpcUrls, getPublicFallbackUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { resolveJobEnv } from "./lib/rpcMetrics.js";
@@ -237,7 +238,7 @@ export async function main(argv = process.argv.slice(2), { root = process.cwd(),
   return report;
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 if (isMain) {
   // CI: decrypts the Alchemy keys from .env.enc when ENV_PASSPHRASE is set (no-op locally).
   loadEnv().then(() => main()).catch((err) => {

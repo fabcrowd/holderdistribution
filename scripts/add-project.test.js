@@ -14,15 +14,15 @@ describe("add-project", () => {
     expect(Object.keys(r.files)).toEqual(["config/projects.json", "config/projects/foo.json", "config/projects/foo/ledger.json", "data/foo/forensics/wallet-flows.registry.json"]);
     expect(r.files["config/projects.json"].projects.map((p) => p.slug)).toEqual(["tel", "foo"]);
     expect(r.files["config/projects/foo.json"].ticker).toBe("FOO");
-    expect(r.files["config/projects/foo.json"].capabilities.projectWallets).toBe(true);
+    expect(r.files["config/projects/foo.json"].capabilities.projectWallets).toBe(false);
     expect(r.files["data/foo/forensics/wallet-flows.registry.json"].knownWallets).toEqual([]);
     expect(r.files["config/projects/foo/ledger.json"].stablecoins.ethereum.map((s) => s.symbol)).toEqual(["USDC", "USDT"]);
     expect(validateScaffold(r).errors).toEqual([]);
   });
 
-  it("wallets turn on the gated tab", () => {
+  it("wallets seed the ledger but leave the tab off until a report exists", () => {
     const r = scaffold(args({ wallets: ["0x" + "cd".repeat(20) + ":Treasury"] }), registry);
-    expect(r.files["config/projects/foo.json"].capabilities.projectWallets).toBe(true);
+    expect(r.files["config/projects/foo.json"].capabilities.projectWallets).toBe(false);
     expect(r.files["config/projects/foo/ledger.json"].developerWallets[0]).toMatchObject({ label: "Treasury", chains: ["ethereum"] });
   });
 

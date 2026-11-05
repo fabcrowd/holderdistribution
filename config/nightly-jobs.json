@@ -5,7 +5,7 @@
     {
       "id": "holders",
       "dataset": "holders",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "scripts": [
         "pull-holders-rpc.js",
         "pull-cex-wallets.js",
@@ -40,12 +40,13 @@
           "maxAgeHours": 30
         }
       ],
-      "budgetMode": "warn"
+      "budgetMode": "warn",
+      "budgetModeReviewBy": "2026-12-05"
     },
     {
       "id": "exchange-flows",
       "dataset": "exchange-flows",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "scripts": [
         "scan-exchange-flows.js"
       ],
@@ -63,12 +64,13 @@
           "maxAgeHours": 30
         }
       ],
-      "budgetMode": "warn"
+      "budgetMode": "warn",
+      "budgetModeReviewBy": "2026-12-05"
     },
     {
       "id": "tier-outflows",
       "dataset": "tier-outflows",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "scripts": [
         "generate-tier-outflows.js"
       ],
@@ -86,12 +88,13 @@
           "maxAgeHours": 30
         }
       ],
-      "budgetMode": "warn"
+      "budgetMode": "warn",
+      "budgetModeReviewBy": "2026-12-05"
     },
     {
       "id": "solana-flows",
       "dataset": "exchange-flows",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "scripts": [
         "scan-solana-flows.js"
       ],
@@ -110,7 +113,7 @@
     {
       "id": "staker-balances",
       "dataset": "staking",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "scripts": [
         "pull-staker-balances.js"
       ],
@@ -134,7 +137,7 @@
     {
       "id": "solana-staking",
       "dataset": "staking",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "scripts": [
         "pull-solana-staking.js"
       ],
@@ -158,7 +161,7 @@
     {
       "id": "history-gaps",
       "dataset": "history-gaps",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "scripts": [
         "fill-history-gaps.js"
       ],
@@ -171,7 +174,8 @@
       "alchemyOnly": true,
       "alchemyCuPerNight": 5000,
       "outputs": [],
-      "budgetMode": "warn"
+      "budgetMode": "warn",
+      "budgetModeReviewBy": "2026-12-05"
     },
     {
       "id": "wallet-flows",

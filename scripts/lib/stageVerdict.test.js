@@ -4,7 +4,7 @@ import path from "node:path";
 import yaml from "yaml";
 
 /**
- * Guards the "Stage verdict" step of refresh-tel-holders.yml.
+ * Guards the "Stage verdict" step of refresh-holders.yml.
  *
  * Non-fatal stages (continue-on-error) cannot fail the run on their own, so a
  * crashed stage would otherwise stay green. The verdict step runs last and fails
@@ -12,7 +12,7 @@ import yaml from "yaml";
  * not added to the verdict env would silently go unreported; these tests fail
  * instead.
  */
-const WORKFLOW = path.resolve(process.cwd(), ".github/workflows/refresh-tel-holders.yml");
+const WORKFLOW = path.resolve(process.cwd(), ".github/workflows/refresh-holders.yml");
 
 // covered by the fatal retry step
 const EXEMPT = new Set(["holders_public"]);

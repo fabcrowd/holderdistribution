@@ -27,7 +27,7 @@
  * the site: is what's on screen current.
  *
  * Thresholds are wider than the cron period so a single missed run doesn't
- * page. `refresh-tel-holders` runs daily → 36h. `scan-exchange-flows` and
+ * page. `refresh-holders` runs daily → 36h. `scan-exchange-flows` and
  * `generate-tier-outflows` are chained after it via workflow_run, and
  * tier-outflows in particular is allowed to run behind during a legitimate
  * incremental backfill (see generate-tier-outflows.js's own `complete` flag),

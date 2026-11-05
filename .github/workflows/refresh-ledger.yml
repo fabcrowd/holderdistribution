@@ -7,7 +7,7 @@ name: Refresh developer-wallet ledger (gated)
 # Served ONLY by the forensics gate function (keys "project-ledger" / "bot-proceeds"),
 # never from public/data. See docs/LEDGER.md.
 #
-# Runs at 02:30 UTC, after the 00:00 refresh-tel-holders run has normally finished.
+# Runs at 02:30 UTC, after the 00:00 refresh-holders run has normally finished.
 # Own concurrency group (not holders-refresh): GitHub keeps only one PENDING run per
 # group, so sharing it could drop the nightly holders run. Pushes go through
 # scripts/push-main.sh, which retries a lost race. Commits carry [skip netlify].
@@ -18,8 +18,9 @@ name: Refresh developer-wallet ledger (gated)
 # .env.enc via ENV_PASSPHRASE) for EVM, Etherscan free tier as a count cross-check,
 # SOLANA_RPC_0 (Helius) / SOLANA_RPC_1 (public) for Solana.
 #
-# NON-FATAL: a chain that fails keeps its previous data and is marked stale; the
-# job is continue-on-error so it never blocks other workflows.
+# A chain that fails keeps its previous data and is marked stale. The last steps
+# turn the project's job red on a failed bot trace or a missing or stale ledger.
+# fail-fast is off, so other projects still run.
 
 on:
   schedule:
@@ -64,7 +65,6 @@ jobs:
     needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    continue-on-error: true
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -84,7 +84,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Resolve project data paths
-        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
+        run: |
+          node scripts/workflow-paths.js >> "$GITHUB_ENV"
+          echo "HD_METRICS_FILE=$RUNNER_TEMP/rpc-metrics.ndjson" >> "$GITHUB_ENV"
       - name: Skip projects without a ledger config
         id: has
         run: |
@@ -99,11 +101,16 @@ jobs:
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
         run: node scripts/build-ledger.js --project "$HD_PROJECT_SLUG" ${{ inputs.rebuild == 'true' && '--rebuild' || '' }}
       - name: Trace bot proceeds
+        id: trace
         if: steps.has.outputs.run == '1'
         continue-on-error: true
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
         run: node scripts/trace-bot-proceeds.js --project "$HD_PROJECT_SLUG"
+      - name: Record RPC usage
+        if: steps.has.outputs.run == '1'
+        continue-on-error: true
+        run: node scripts/summarize-run-metrics.js
       - name: Commit if changed
         if: steps.has.outputs.run == '1'
         run: |
@@ -112,7 +119,15 @@ jobs:
           DIR="data/$HD_PROJECT_SLUG/ledger"
           if [ ! -d "$DIR" ]; then echo "No ledger output for $HD_PROJECT_SLUG"; exit 0; fi
           git add "$DIR"
+          if [ -f "$HD_WORK_DIR/rpc-usage.json" ]; then git add "$HD_WORK_DIR/rpc-usage.json"; fi
           if git diff --cached --quiet; then echo "No change"; exit 0; fi
           git commit -m "Refresh $HD_PROJECT_SLUG developer-wallet ledger [skip netlify]"
           git checkout -- .
           bash scripts/push-main.sh
+      - name: Verify ledger
+        run: node scripts/check-go-live.js --project "$HD_PROJECT_SLUG" --section ledger
+      - name: Fail on a failed bot trace
+        if: steps.trace.outcome == 'failure'
+        run: |
+          echo "::error::trace-bot-proceeds failed for $HD_PROJECT_SLUG"
+          exit 1

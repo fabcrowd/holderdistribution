@@ -7,7 +7,7 @@ name: Generate tier outflows
 # Trigger manually; re-run until "complete=true" appears.
 on:
   # MANUAL ONLY since 2026-10-19: the daily run of this stage is a step in
-  # refresh-tel-holders.yml (the single scheduled data workflow), so it no
+  # refresh-holders.yml (the single scheduled data workflow), so it no
   # longer needs its own workflow_run chain or fallback cron, each of which
   # was a second billed run a day. Dispatch this for a bigger backfill.
   workflow_dispatch:

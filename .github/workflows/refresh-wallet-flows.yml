@@ -4,13 +4,14 @@ name: Refresh gated wallet-flows report (optional)
 # (config/nightly-jobs.json job "wallet-flows"; today TEL, ZBCN, ONDO) — TEL:
 # data/forensics/wallet-flows.json, others: data/<slug>/forensics/wallet-flows.json
 # (served only by the forensics gate function, never from public/data). A project
-# without data/<slug>/forensics/wallet-flows.registry.json is skipped (exit 0).
+# without data/<slug>/forensics/wallet-flows.registry.json fails the verify step.
 #
 # DAILY (the 24h window needs it). One run is ~15-20 Actions minutes; the repo is
 # public, so Actions minutes are free and there is no minutes budget to fit.
 #
-# NON-FATAL: the script keeps the previous report on any error and exits 0, and
-# this job is continue-on-error, so it can never break or block other workflows.
+# The generators keep the previous report on any error and exit 0, so the last
+# step checks the report with check-go-live.js: a missing or stale report turns
+# that project's job red. fail-fast is off, so other projects still run.
 # It does not trigger a Netlify build (netlify.toml ignores git pushes); with
 # LIVE_DATA_GITHUB_TOKEN set in Netlify, the gate serves the new file within an hour.
 #
@@ -37,8 +38,7 @@ concurrency:
 # Every pipeline script reads HD_PROJECT as its default `--project` (see
 # scripts/lib/projects.js). Scheduled runs have no inputs and run every planned
 # project one at a time (max-parallel 1, so the commits never race); a manual run
-# does only the project it names. ONDO is skipped (exit 0) until its holders
-# feed has produced supply-reconciliation.json.
+# does only the project it names.
 jobs:
   plan:
     runs-on: ubuntu-24.04
@@ -68,7 +68,6 @@ jobs:
       HD_JOB_ID: wallet-flows
     runs-on: ubuntu-24.04
     timeout-minutes: 40
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -77,7 +76,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Project paths
-        run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
+        run: |
+          node scripts/workflow-paths.js >> "$GITHUB_ENV"
+          echo "HD_METRICS_FILE=$RUNNER_TEMP/rpc-metrics.ndjson" >> "$GITHUB_ENV"
       - name: Generate report (keeps previous file on failure)
         env:
           RPC_PREFER_PUBLIC: '1'
@@ -87,6 +88,9 @@ jobs:
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
         run: node scripts/generate-wallet-flows-solana.js
+      - name: Record RPC usage
+        continue-on-error: true
+        run: node scripts/summarize-run-metrics.js
       - name: Commit if changed
         run: |
           git config user.email "action@github.com"
@@ -98,6 +102,7 @@ jobs:
           # TEL pass-through of workflow-paths.js does not check existence, so add it only when present.
           STATE="$HD_WORK_DIR/forensics/wallet-flows-state.json"
           if [ -f "$STATE" ]; then FILES="$FILES $STATE"; fi
+          if [ -f "$HD_WORK_DIR/rpc-usage.json" ]; then FILES="$FILES $HD_WORK_DIR/rpc-usage.json"; fi
           git add $FILES
           if git diff --cached --quiet; then echo "No change"; exit 0; fi
           git commit -m "Refresh gated wallet-flows report [skip netlify]"
@@ -105,3 +110,5 @@ jobs:
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
+      - name: Verify report
+        run: node scripts/check-go-live.js --project "$HD_PROJECT_SLUG" --section wallet-flows
