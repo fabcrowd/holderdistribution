@@ -501,7 +501,12 @@ async function publicRpcCall(rpcUrl, method, params) {
       } else {
         const data = await response.json();
         if (data.error) {
-          if (data.error.code === -32005 || /rate limit|too many requests/i.test(String(data.error.message ?? ""))) {
+          const message = String(data.error.message ?? "");
+          // mevblocker answers an over-wide eth_getLogs range with -32005 too. That answer never changes on
+          // retry, so fail at once and let the caller split the range instead of waiting out the backoff ladder.
+          if (data.error.code === -32005 && RANGE_LIMIT_PATTERN.test(message)) {
+            outcome = { fatal: new Error(message) };
+          } else if (data.error.code === -32005 || /rate limit|too many requests/i.test(message)) {
             outcome = { retry: `RPC error ${data.error.code}`, throttled: true, error: new Error(data.error.message || JSON.stringify(data.error)) };
           } else {
             const detail = typeof data.error.data === "string" ? ` - ${data.error.data}` : "";

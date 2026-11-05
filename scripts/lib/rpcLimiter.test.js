@@ -77,6 +77,23 @@ describe("Retry-After + jittered backoff", () => {
   });
 });
 
+describe("-32005 range-limit answers", () => {
+  it("fails at once on 'more than 10000 results' so the caller can split, with no retries", async () => {
+    globalThis.fetch = vi.fn(async () => json({ jsonrpc: "2.0", id: 1, error: { code: -32005, message: "query returned more than 10000 results" } }));
+    await expect(rpcCall(MEV, "eth_getLogs", [{}])).rejects.toThrow(/more than 10000 results/);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+  it("still retries a plain -32005 rate limit", async () => {
+    vi.useFakeTimers();
+    let n = 0;
+    globalThis.fetch = vi.fn(async () => (n++ < 1 ? json({ jsonrpc: "2.0", id: 1, error: { code: -32005, message: "rate limit exceeded" } }) : json({ jsonrpc: "2.0", id: 1, result: "0x10" })));
+    const p = rpcCall(MEV, "eth_blockNumber", []);
+    await vi.advanceTimersByTimeAsync(120_000);
+    await expect(p).resolves.toBe("0x10");
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("eth_getLogs split floor", () => {
   it("never requests a range below the floor and throws RangeFloorError", async () => {
     const seen = [];
