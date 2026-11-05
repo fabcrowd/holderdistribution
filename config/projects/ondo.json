@@ -120,6 +120,11 @@
   "pipeline": {
     "workflowTimeoutMinutes": 60
   },
+  "health": {
+    "feeds": {
+      "funding-wallets.json": { "disabled": true }
+    }
+  },
   "classification": {
     "cexWallets": "config/projects/ondo/cex-wallets.json"
   },
