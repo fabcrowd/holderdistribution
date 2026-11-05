@@ -118,9 +118,7 @@
     ]
   },
   "pipeline": {
-    "$comment": "feedsPending: ONDO is registered and on the nightly plan, but public/data/ondo has no snapshot yet. validate-outputs and check-feed-consistency skip it only while that directory is absent. Remove feedsPending in the commit that adds the first feeds.",
-    "workflowTimeoutMinutes": 60,
-    "feedsPending": true
+    "workflowTimeoutMinutes": 60
   },
   "classification": {
     "cexWallets": "config/projects/ondo/cex-wallets.json"

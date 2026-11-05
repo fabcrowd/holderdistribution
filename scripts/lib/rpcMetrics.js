@@ -113,6 +113,7 @@ function flush() {
     const calls = toNested(delta);
     const line = {
       script: path.basename(process.argv[1] ?? "unknown"),
+      job: process.env.HD_JOB_ID || null,
       project: process.env.HD_PROJECT_SLUG || process.env.HD_PROJECT || null,
       pid: process.pid,
       finishedAt: new Date().toISOString(),
@@ -157,12 +158,13 @@ export const __flushRpcMetricsForTests = flush;
 //
 // Active only when HD_JOB_ID is set (nightly workflow steps), so local runs and
 // tests behave exactly as before. Two limits:
-//   per run   HD_JOB_ALCHEMY_CU_BUDGET — this process's estimated Alchemy CU
+//   per run   HD_JOB_ALCHEMY_CU_BUDGET — estimated Alchemy CU of this process plus
+//             earlier processes of the same job in this run (HD_METRICS_FILE)
 //   monthly   config/budgets.json monthly.alchemyCu vs data/rpc-usage.json
 //             (this UTC month, every project) + this process
 // HD_JOB_BUDGET_MODE=enforce refuses the call (AlchemyBudgetError, so rpc.js
-// fails over to the next provider or the alchemyOnly job skips); "warn" only
-// logs one ::warning:: per process and lets the call through.
+// fails over to the next provider or the alchemyOnly job skips); "warn" logs one
+// ::warning:: per process for a per-run overrun. The monthly ceiling is always enforced.
 // ---------------------------------------------------------------------------
 
 export class AlchemyBudgetError extends Error {
@@ -215,6 +217,23 @@ export function monthlyAlchemy(root = process.cwd(), now = new Date()) {
   return monthCache;
 }
 
+/** Alchemy CU that earlier processes of this job already spent in this run. */
+function priorJobAlchemyCu(env) {
+  if (!env.HD_METRICS_FILE) return 0;
+  let raw;
+  try {
+    raw = fs.readFileSync(env.HD_METRICS_FILE, "utf8");
+  } catch {
+    return 0;
+  }
+  const project = env.HD_PROJECT_SLUG || env.HD_PROJECT || null;
+  return raw.split("\n").filter(Boolean).reduce((total, text) => {
+    const line = JSON.parse(text);
+    const sameJob = line.job === env.HD_JOB_ID && line.project === project && line.pid !== process.pid;
+    return sameJob ? total + (Number(line.alchemyCu) || 0) : total;
+  }, 0);
+}
+
 let jobCache = null;
 /**
  * HD_JOB_* with defaults filled from config/nightly-jobs.json, so a workflow step
@@ -250,6 +269,15 @@ export function resolveJobEnv(env = process.env, root = process.cwd()) {
   return out;
 }
 
+/** True when this nightly job lists a public provider ahead of Alchemy. */
+export function jobPrefersPublic(rawEnv = process.env) {
+  if (!rawEnv.HD_JOB_ID) return false;
+  const providers = String(resolveJobEnv(rawEnv).HD_JOB_PROVIDERS ?? "").split(",");
+  const publicAt = providers.indexOf("public");
+  const alchemyAt = providers.indexOf("alchemy");
+  return publicAt >= 0 && (alchemyAt < 0 || publicAt < alchemyAt);
+}
+
 const warned = new Set();
 /**
  * Called by rpc.js before every Alchemy request. Returns normally when the call
@@ -259,13 +287,14 @@ export function guardAlchemyCall(method, rawEnv = process.env) {
   if (!rawEnv.HD_JOB_ID) return;
   const env = resolveJobEnv(rawEnv);
   const cost = ALCHEMY_CU[method] ?? ALCHEMY_DEFAULT_CU;
-  const spent = processAlchemyCu();
+  const spent = processAlchemyCu() + priorJobAlchemyCu(env);
   const runBudget = Number(env.HD_JOB_ALCHEMY_CU_BUDGET);
   const { used, ceiling } = monthlyAlchemy();
-  let reason = null;
-  if (Number.isFinite(runBudget) && spent + cost > runBudget) reason = `job ${env.HD_JOB_ID} Alchemy budget ${runBudget} CU/run reached (${spent} spent)`;
-  else if (used + spent + cost > ceiling) reason = `monthly Alchemy ceiling ${ceiling} CU reached (${used + spent} this month)`;
-  if (!reason) return;
+  if (used + spent + cost > ceiling) {
+    throw new AlchemyBudgetError(`[budget] monthly Alchemy ceiling ${ceiling} CU reached (${used + spent} this month) — refusing ${method}`);
+  }
+  if (!(Number.isFinite(runBudget) && spent + cost > runBudget)) return;
+  const reason = `job ${env.HD_JOB_ID} Alchemy budget ${runBudget} CU/run reached (${spent} spent)`;
   if (env.HD_JOB_BUDGET_MODE === "warn") {
     if (!warned.has(reason.split(" (")[0])) {
       warned.add(reason.split(" (")[0]);
@@ -280,7 +309,6 @@ export function guardAlchemyCall(method, rawEnv = process.env) {
 export function alchemyBlocked(rawEnv = process.env) {
   if (!rawEnv.HD_JOB_ID) return false;
   const env = resolveJobEnv(rawEnv);
-  if (env.HD_JOB_BUDGET_MODE === "warn") return false;
   try {
     guardAlchemyCall("eth_blockNumber", env);
     return false;

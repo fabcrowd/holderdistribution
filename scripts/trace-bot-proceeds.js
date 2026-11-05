@@ -16,6 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 import { loadEnv } from "./loadEnv.js";
 import { getAllRpcUrls, rpcCall } from "./lib/rpc.js";
 import { selectPipelineProject } from "./lib/projects.js";
@@ -150,7 +151,7 @@ async function traceSolana({ argv, cfg, chain, chainCfg, ix, devShare, sales, ba
   write({ ...base, status: "ok", chains, summary });
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 if (isMain) {
   // CI: decrypts the Alchemy keys from .env.enc when ENV_PASSPHRASE is set (no-op locally).
   loadEnv().then(() => main()).catch((err) => {

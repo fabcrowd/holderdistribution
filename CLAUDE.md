@@ -4,11 +4,13 @@
 
 Never create a branch, commit or push unless the owner explicitly says so. Edit locally, show the diff, stop. Approval of a plan, a placement or "do it" is not approval to commit.
 
+**README rule (owner, standing):** every PR that is pushed must update `README.md` in the same PR: the project list, the layout map, and "Recent work" with the merged PR numbers and what changed. A PR without that update is not ready to push.
+
 ---
 
 ## What this repo is
 
-A single-page React app that shows on-chain analytics for the TEL token: holder distribution, supply breakdown, exchange flows, and historical growth trends. It lives at **holderdistribution.com** and is deployed on Netlify.
+A single-page React app that shows on-chain analytics for every registered token (`config/projects.json`): holder distribution, supply breakdown, exchange flows, and historical growth trends. The site is the product; each token is a page at `/<slug>`, and TEL is one of them, not the product. It lives at **holderdistribution.com** and is deployed on Netlify.
 
 The site was originally extracted from a larger Telcoin Hub multi-page app. It is now its own standalone product under the **Holder Distribution** brand — rebranded from "TelcoinHub" to "Holder Distribution".
 
@@ -101,7 +103,7 @@ Live site: `https://holderdistribution.com`
 - `scripts/*.js`: feed generators and pipeline CLIs. `scripts/lib/`: shared logic with sibling `*.test.js` (rpc, replay, supply, circulating, holders).
 - `scripts/check-feed-consistency.js` (`npm run check:feeds`), `pipeline-health.js`: feed gates.
 - `public/data/` (TEL legacy root) and `public/data/<slug>/`: generated feeds. Never hand-edit; regenerate by script. `data/`: caches and checkpoints.
-- `.github/workflows/`: nightly refresh (`refresh-tel-holders.yml`), backfills, replays.
+- `.github/workflows/`: nightly refresh (`refresh-holders.yml`), backfills, replays.
 - `src/lib/`: pure helpers (charts: `chartAxes`, `chartZoom`; supply: `supplyBreakdown`, `chainViews`; staking: `staking*`; `projects.ts` registry reader).
 - `src/components/`: widgets; `chart/`, `terminal/`, `tierflow/`, `ui/` subfolders. `src/pages/`: routes.
 - `netlify/functions/`: `live-data.mjs` (serves latest feeds from GitHub), `forensics-gate.cjs`. `netlify.toml`: manual-deploy rules.

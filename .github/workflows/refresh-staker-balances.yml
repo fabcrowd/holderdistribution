@@ -68,7 +68,7 @@ jobs:
             # This job can run 25min-6h (see the timeout-minutes comment above),
             # during which other scheduled workflows push to main several times
             # a day — rebase rather than risk a rejected non-fast-forward push
-            # after the whole run. Same pattern as refresh-tel-holders.yml /
+            # after the whole run. Same pattern as refresh-holders.yml /
             # recompute-holders-history.yml / rebuild-holders-history.yml.
             git fetch origin main
             git rebase origin/main

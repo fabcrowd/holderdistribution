@@ -89,7 +89,7 @@ export const DEFAULT_FEEDS = [
     file: "funding-wallets.json",
     label: "Staker balances (staking attribution)",
     // Wider than the others on purpose: pull-staker-balances.js is now
-    // non-fatal in both workflows (see refresh-tel-holders.yml), so a day or
+    // non-fatal in both workflows (see refresh-holders.yml), so a day or
     // two of quota exhaustion costs freshness here instead of costing the
     // whole holders feed. That trade is only safe if the staleness is VISIBLE,
     // which is what this entry is for — without it, stale staking attribution

@@ -177,27 +177,6 @@ describe("ported scripts end to end for a non-legacy project (fixture repo, no n
     expect(rootLeaks("demo")).toEqual([]);
   });
 
-  it("validate-outputs and check-feed-consistency skip a feedsPending project with no data dir", () => {
-    const reg = JSON.parse(fs.readFileSync(path.join(tmp, "config/projects.json"), "utf8"));
-    if (!reg.projects.some((p) => p.slug === "pending")) {
-      reg.projects.push({ slug: "pending", name: "Pending", ticker: "PND" });
-      write("config/projects.json", reg);
-    }
-    write("config/projects/pending.json", {
-      slug: "pending", name: "Pending", ticker: "PND",
-      data: { legacyRoot: false, dir: "public/data/pending" },
-      pipeline: { feedsPending: true },
-      supply: { target: 1 },
-      chains: DEMO.chains.slice(0, 1),
-    });
-    for (const script of ["validate-outputs.js", "check-feed-consistency.js"]) {
-      const r = run(script, ["--project", "pending"]);
-      expect(r.status, `${script}\n${r.stderr}\n${r.stdout}`).toBe(0);
-      expect(r.stdout).toMatch(/SKIP pending: pipeline\.feedsPending/);
-    }
-    expect(exists("public/data/pending")).toBe(false);
-  });
-
   it("validate-outputs checks public/data/<slug>/, not TEL's root", () => {
     const r = run("validate-outputs.js", ["--project", "demo"]);
     expect(r.status).toBe(1); // holders-history / holders-lite not generated in this fixture
@@ -309,7 +288,7 @@ describe("workflow commit paths (scripts/workflow-paths.js)", () => {
     const dir = path.join(repo, ".github/workflows");
     const COMMITTING = [
       "detect-cex-candidates", "fill-history-gaps", "generate-tier-outflows", "pipeline-watchdog", "rebuild-holders-history",
-      "recompute-holders-history", "refresh-staker-balances", "refresh-tel-holders", "scan-exchange-flows",
+      "recompute-holders-history", "refresh-staker-balances", "refresh-holders", "scan-exchange-flows",
       "sync-cex-wallets",
     ];
     for (const name of COMMITTING) {

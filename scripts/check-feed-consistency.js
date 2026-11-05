@@ -28,7 +28,6 @@
  *   --strict also fails on staleness warnings (feeds more than STALE_DAYS old).
  */
 import fs from "node:fs/promises";
-import nodeFs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
@@ -51,12 +50,6 @@ const project = selectPipelineProject("check-feed-consistency", { ported: true }
 const ROOT = process.cwd();
 const DATA = projectPaths(project, ROOT).dir;
 
-// Same contract as validate-outputs.js: a scaffolded project with no
-// committed data dir is not a failed feed, it has not been published yet.
-if (project.config?.pipeline?.feedsPending === true && !nodeFs.existsSync(DATA)) {
-  console.log(`SKIP ${project.slug}: pipeline.feedsPending and ${project.dataDir} is not committed yet`);
-  process.exit(0);
-}
 const DATA_REL = project.dataDir;
 const CHANGELOG_PATH = projectClassificationPath(project, "changelog", ROOT);
 const CHANGELOG_REL = CHANGELOG_PATH ? path.relative(ROOT, CHANGELOG_PATH).split(path.sep).join("/") : "(none declared)";

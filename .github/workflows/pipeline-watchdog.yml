@@ -1,7 +1,7 @@
 name: Pipeline watchdog (self-heal stale feeds)
 
 # Durable, independent-of-any-Claude-session redundancy for the daily chain
-# (refresh-tel-holders -> scan-exchange-flows -> generate-tier-outflows).
+# (refresh-holders -> scan-exchange-flows -> generate-tier-outflows).
 # Runs on its OWN schedule rather than workflow_run off any of them, so a
 # failure anywhere in that chain — a transient RPC error, a rate limit, a
 # script bug — does not also take this out. Reuses only already-proven paths:
@@ -47,7 +47,7 @@ permissions:
   # Read-only: the run-health step lists workflow runs and their jobs.
   actions: read
 
-# Same group as refresh-tel-holders.yml: both run the holders chain and push.
+# Same group as refresh-holders.yml: both run the holders chain and push.
 concurrency:
   group: holders-refresh
   cancel-in-progress: false
@@ -108,7 +108,7 @@ jobs:
             console.log(JSON.stringify(r.results.map((x) => [x.file, x.status])));
           '
 
-      # --- Holders chain: identical to refresh-tel-holders.yml's own steps.
+      # --- Holders chain: identical to refresh-holders.yml's own steps.
       # This is deliberately NOT a different recipe — if the primary workflow
       # failed on a transient error, running the exact same trusted commands a
       # second time is the safest possible self-heal.
@@ -118,13 +118,13 @@ jobs:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
         run: |
-          # Non-fatal for the same reason refresh-tel-holders.yml makes it
+          # Non-fatal for the same reason refresh-holders.yml makes it
           # non-fatal: it is the heaviest RPC consumer here and the first
           # casualty of an Alchemy monthly-capacity limit, and losing it should
           # cost one day of staking freshness, not the entire self-heal.
-          node scripts/pull-staker-balances.js || echo "staker balances failed — continuing with the last committed funding-wallets.json"
-          node scripts/pull-holders-rpc.js
-          node scripts/pull-cex-wallets.js
+          HD_JOB_ID=staker-balances RPC_PREFER_PUBLIC=0 node scripts/pull-staker-balances.js || echo "staker balances failed — continuing with the last committed funding-wallets.json"
+          HD_JOB_ID=holders node scripts/pull-holders-rpc.js
+          HD_JOB_ID=holders node scripts/pull-cex-wallets.js
           node scripts/generate-holders-lite.js
           node scripts/generate-holders-history.js
           node scripts/generate-holder-transitions.js
@@ -140,7 +140,7 @@ jobs:
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
         run: |
-          node scripts/extend-transfer-caches.js
+          HD_JOB_ID=exchange-flows RPC_PREFER_PUBLIC=0 node scripts/extend-transfer-caches.js
           node scripts/append-exchange-flows-from-cache.js
 
       # --- Missing dates: the same driver the dedicated "Fill holders-history
@@ -153,7 +153,7 @@ jobs:
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
-        run: node scripts/fill-history-gaps.js
+        run: HD_JOB_ID=history-gaps node scripts/fill-history-gaps.js
 
       - name: Re-sync served classification changelog
         if: steps.decide.outputs.holders == 'true' || steps.decide.outputs.flows == 'true' || steps.decide.outputs.gaps == 'true'

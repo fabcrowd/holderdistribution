@@ -1,6 +1,5 @@
 name: Refresh holders snapshots
 # THE single daily data workflow for EVERY project in config/projects.json
-# (file name kept: scripts/lib/deployTriggers.test.js and the docs key on it).
 # Onboarding a token is config only: add it to config/projects.json plus its
 # config/projects/<slug>.json, and the next run includes it. No new workflow.
 #
@@ -156,6 +155,7 @@ jobs:
           # StakeChanged log scan over all of Polygon takes >20 min on keyless public
           # nodes (measured), which would blow timeout-minutes. The guard caps it at
           # 1,000 CU (enforce) and falls back to public if the cap is hit.
+          RPC_PREFER_PUBLIC: '0'
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           # Lets pull-staker-balances.js's stakedBy() calls go through Alchemy
           # Polygon RPC instead of Etherscan's 3/sec-capped proxy module —
@@ -215,6 +215,7 @@ jobs:
         timeout-minutes: 35
         env:
           HD_JOB_ID: holders   # config/nightly-jobs.json: provider order + Alchemy budget guard
+          RPC_PREFER_PUBLIC: '0'   # the public attempt just failed
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
@@ -232,6 +233,8 @@ jobs:
           key: holders-partial-${{ matrix.slug }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Refresh CEX wallets and flows
+        env:
+          HD_JOB_ID: holders
         run: node scripts/pull-cex-wallets.js
 
       - name: Generate holders lite snapshot

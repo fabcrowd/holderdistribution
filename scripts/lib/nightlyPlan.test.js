@@ -1,11 +1,34 @@
 import fs from "node:fs";
+import yaml from "js-yaml";
 import { describe, expect, it } from "vitest";
 import { jobEnv, loadNightlyJobs, nightlyPlan, projectOutputPath, jobStatusFor } from "./nightlyPlan.js";
 import { workflowMatrix } from "../workflow-paths.js";
 import { loadRegistry, resolveProject } from "./projects.js";
 
+const ALCHEMY_SCRIPTS = /node scripts\/(pull-staker-balances|pull-holders-rpc|pull-cex-wallets|fill-history-gaps|extend-transfer-caches)\.js/;
+
 describe("nightly job list (config/nightly-jobs.json)", () => {
   const jobs = loadNightlyJobs();
+
+  it("warn mode always has a review date that has not passed", () => {
+    for (const j of jobs.filter((job) => job.budgetMode === "warn")) {
+      expect(Date.parse(j.budgetModeReviewBy), `${j.id} needs budgetModeReviewBy`).toBeGreaterThan(Date.now());
+    }
+  });
+
+  it("every workflow command that can reach Alchemy names its job", () => {
+    for (const file of ["refresh-holders.yml", "pipeline-watchdog.yml"]) {
+      const doc = yaml.load(fs.readFileSync(`.github/workflows/${file}`, "utf8"));
+      for (const job of Object.values(doc.jobs)) {
+        for (const step of job.steps ?? []) {
+          const scoped = job.env?.HD_JOB_ID || step.env?.HD_JOB_ID;
+          for (const line of String(step.run ?? "").split("\n").filter((text) => ALCHEMY_SCRIPTS.test(text))) {
+            expect(scoped || /HD_JOB_ID=/.test(line), `${file}: ${line.trim()}`).toBeTruthy();
+          }
+        }
+      }
+    }
+  });
 
   it("every job declares a dataset, providers, a budget and a workflow that exists", () => {
     for (const j of jobs) {
@@ -68,7 +91,7 @@ describe("matrices come from the plan", () => {
   });
 
   it("scheduled data workflows no longer hardcode TEL", () => {
-    for (const f of ["refresh-wallet-flows.yml", "detect-cex-candidates.yml", "sync-cex-wallets.yml", "refresh-ledger.yml", "refresh-tel-holders.yml"]) {
+    for (const f of ["refresh-wallet-flows.yml", "detect-cex-candidates.yml", "sync-cex-wallets.yml", "refresh-ledger.yml", "refresh-holders.yml"]) {
       const y = fs.readFileSync(`.github/workflows/${f}`, "utf8");
       expect(y, f).not.toMatch(/inputs\.project \|\| 'tel'/);
       expect(y, f).not.toMatch(/\["tel"/);

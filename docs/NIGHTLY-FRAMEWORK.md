@@ -121,7 +121,7 @@ Writes `<dataDir>/pipeline-status.json` (TEL: `public/data/pipeline-status.json`
 
 ### Workflows
 
-Scheduled data workflows no longer default `HD_PROJECT` to `tel`. A `plan` job runs `node scripts/workflow-paths.js matrix "$SELECTION" --job <id>`. `SELECTION` empty means every project the plan marks `run`. Each matrix job exports `HD_PROJECT` and `HD_JOB_ID`. `refresh-tel-holders.yml` is still the one daily workflow (the filename is load-bearing for deploy-trigger tests); its stages set their own `HD_JOB_ID` (`staker-balances`, `solana-staking`, `holders`, `solana-flows`, `exchange-flows`, `tier-outflows`, `history-gaps`). The other per-job workflows are `refresh-wallet-flows.yml`, `refresh-ledger.yml`, `detect-cex-candidates.yml` (weekly), and `sync-cex-wallets.yml` (semimonthly).
+Scheduled data workflows no longer default `HD_PROJECT` to `tel`. A `plan` job runs `node scripts/workflow-paths.js matrix "$SELECTION" --job <id>`. `SELECTION` empty means every project the plan marks `run`. Each matrix job exports `HD_PROJECT` and `HD_JOB_ID`. `refresh-holders.yml` is still the one daily workflow; its stages set their own `HD_JOB_ID` (`staker-balances`, `solana-staking`, `holders`, `solana-flows`, `exchange-flows`, `tier-outflows`, `history-gaps`). The other per-job workflows are `refresh-wallet-flows.yml`, `refresh-ledger.yml`, `detect-cex-candidates.yml` (weekly), and `sync-cex-wallets.yml` (semimonthly).
 
 Manual `workflow_dispatch` with a project slug still runs that slug even when the plan would skip it.
 
@@ -188,7 +188,7 @@ ONDO, recorded in `config/projects/ondo/chains-inventory.json`: Ethereum only, `
 | `config/projects/tel.json` | `nightly.waivers: {}` so the empty set is explicit. |
 | `config/projects/zebec-network.json` | Waivers for `history-gaps` and `cex-candidates`, each with a reason. |
 | `config/projects/ondo.json` | Waiver for `staker-balances`. `pipeline.feedsPending` is the follow-up commit. |
-| `.github/workflows/refresh-tel-holders.yml` | Matrix from `--job holders`. Each stage sets `HD_JOB_ID`. Staker step comment records the 618 CU/day measurement and why it stays on keys. |
+| `.github/workflows/refresh-holders.yml` | Matrix from `--job holders`. Each stage sets `HD_JOB_ID`. Staker step comment records the 618 CU/day measurement and why it stays on keys. |
 | `.github/workflows/refresh-wallet-flows.yml` | Matrix `--job wallet-flows`, `HD_JOB_ID=wallet-flows` (0 CU, enforce). |
 | `.github/workflows/refresh-ledger.yml` | Matrix `--job ledger`, `HD_JOB_ID=ledger` (public first, 0 CU, enforce). |
 | `.github/workflows/detect-cex-candidates.yml` | Matrix `--job cex-candidates` instead of a hardcoded TEL default. |
@@ -253,7 +253,7 @@ The monthly ceiling stays 30,000,000 CU in `config/budgets.json`, summed across 
 
 Main's CI was already red before this branch. Run [41781822880](https://github.com/fabcrowd/holderdistribution/actions/runs/41781822880) ("Add the ONDO project") failed `npm run check:feeds` because `public/data/ondo/` does not exist (`tel-holders.json`, `holders-summary.json`, `holders-history.json`, `cex-wallets.json`, `holders-lite.json` all ENOENT). ONDO is a registered project, so `--all` includes it. Generating those feeds would be a live scan and a `public/data` change; both were out of scope for this PR.
 
-`config/projects/ondo.json` sets `pipeline.feedsPending: true`. `validate-outputs.js` and `check-feed-consistency.js` exit 0 with a `SKIP` line only when that flag is true **and** the data directory is absent. TEL and ZBCN do not set the flag, so their gates are unchanged. If the directory exists, the flag does not skip: shape and consistency checks run. Remove `feedsPending` in the commit that adds the first ONDO snapshot.
+Removed: the owner ruled out skips, so `feedsPending` no longer exists and `check:feeds` fails until ONDO has real feeds. Original behavior: `config/projects/ondo.json` set `pipeline.feedsPending: true`. `validate-outputs.js` and `check-feed-consistency.js` exit 0 with a `SKIP` line only when that flag is true **and** the data directory is absent. TEL and ZBCN do not set the flag, so their gates are unchanged. If the directory exists, the flag does not skip: shape and consistency checks run. Remove `feedsPending` in the commit that adds the first ONDO snapshot.
 
 ## Known issues / open items
 
@@ -293,6 +293,7 @@ Limits live in `config/public-rpc-limits.json`, keyed by **host** (never by proj
 - *Wallet-flows*: these are windowed per-wallet scans, re-run in full each night.
 - *Ledger*: it already keeps a per-chain cursor (`ledger-checkpoint.json`) and a chain that fails keeps its previous cursor.
 - *Solana holders*: these are a token-account snapshot, not a block-range scan, so there is nothing to resume.
+`refresh-holders.yml` gives each project `pipeline.workflowTimeoutMinutes` (ONDO: 60). Main has no partial holders checkpoint for ONDO (`public/data/ondo/` is absent, and there is no committed `holders-checkpoint.json` for it). The first holders scan is a full history, not an incremental catch-up, and is likely to hit the job timeout before it can write a checkpoint the next night can resume from.
 
 Solana calls go through `rpc.js` `rpcCall` (`scripts/lib/solana/rpc.js`), so the public `api.mainnet-beta.solana.com` endpoint gets the same host limiter (3.5 rps, 4 concurrent, as published). Solana never uses Alchemy.
 
@@ -302,4 +303,4 @@ Solana calls go through `rpc.js` `rpcCall` (`scripts/lib/solana/rpc.js`), so the
 
 ### `RPC_PREFER_PUBLIC=1` and `rpc` tests
 
-Three cases in the `rpc` tests fail only when `RPC_PREFER_PUBLIC=1` is set. They pass with the variable unset, which is how CI runs `npm test`. One case asserts the keyless default (keys first, public as fallback). Set the variable only on the log-scanner workflow steps that already do (`pull-holders-rpc`, `scan-exchange-flows`, `generate-tier-outflows` in `refresh-tel-holders.yml`). Do not export it for the whole test run.
+Three cases in the `rpc` tests fail only when `RPC_PREFER_PUBLIC=1` is set. They pass with the variable unset, which is how CI runs `npm test`. One case asserts the keyless default (keys first, public as fallback). Set the variable only on the log-scanner workflow steps that already do (`pull-holders-rpc`, `scan-exchange-flows`, `generate-tier-outflows` in `refresh-holders.yml`). Do not export it for the whole test run.
