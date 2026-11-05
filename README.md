@@ -121,6 +121,78 @@ Wallet-flow history is 90 days, filled by the first run. The EVM seller scan can
 opt-in, EVM only, completeness-gated, no Alchemy CU). See "Backfill via SQD Portal" in
 [docs/FORENSICS.md](docs/FORENSICS.md) and step 9 of the onboarding checklist.
 
+## Design notes and pitfalls
+
+Read this before changing the pipeline, the config or the onboarding path. Each item is a mistake
+that already cost a run or a PR.
+
+**Registry-driven, never TEL-shaped**
+- Nothing may default to TEL. `append-treasury-history.js`, `backfill-treasury-cex-history.js` and
+  `check-feed-consistency.js` fall back to TEL's four categories (`treasury, council, holdings, escrow`)
+  when a project has no `treasury.categories`. A project with fewer buckets must declare its own
+  (ONDO: `["treasury"]`), or its first refresh aborts on a category it does not have.
+- List only categories that cannot reach 0: `reconcile-supply` omits a category whose balance is 0 and
+  `append-treasury-history` then aborts the whole daily refresh. That is why ONDO and ZBCN list `treasury` only.
+- `council` is a naming tag on some TEL wallets (Compliance Council, TELx Council). It carries no logic
+  and is not a bucket other tokens need. Do not build behaviour on it.
+
+**First run of a new token (each of these failed a real run, about 20 minutes each)**
+- `supply.target` must exist in the project config before any refresh (`reconcile-supply` throws without it).
+- `generate-holder-transitions.js` builds windows from the git history of the committed snapshot, which a
+  new token does not have until the commit step. It now writes `{ ranges: {} }` (`scripts/lib/emptyTransitions.js`);
+  the UI reads `ranges?.[key] ?? null`, so that is valid. The next night builds the real windows.
+- `fill-history-gaps.js` ignores days before a project's first history row (`scripts/lib/missingHistoryDates.js`).
+  It cannot rebuild them: the as-of rebuild needs a checkpoint committed at or before the day. History is
+  forward-only from the first snapshot (ZBCN from 2026-10-25, ONDO from 2026-11-05). A real backfill is
+  `rebuild-holders-history.yml`, which costs RPC budget and is a separate decision.
+- Expect the next token to expose the next gap. Run the whole chain once and read the failing step.
+- `pipeline.feedsPending` no longer exists. A project is live only when `node scripts/check-go-live.js --project <slug>`
+  passes: config, every feed, wallet-flows report, ledger, no placeholders, no skips.
+
+**Workflows and CI**
+- A workflow can only be dispatched by a name that exists on the default branch. Config a data run needs
+  must be on `main` first, or the run executes against the old config and fails. The nightly is
+  `refresh-holders.yml` (renamed from `refresh-tel-holders.yml`; old runs are filed under the old name).
+- The holders job has a per-project limit (`pipeline.workflowTimeoutMinutes`, 60 for ONDO) and a first scan from a
+  deploy block is long. A scan that times out or dies saves `holders-partial-<chain>.json` to the Actions cache
+  (`always()`), and the next dispatch resumes from it. Stage 2 (exchange flows, tier outflows, gap fill) shares
+  that job's time, so a job can finish the holders feed and still hit the limit in stage 2. `scan-exchange-flows.yml`,
+  `generate-tier-outflows.yml` and `fill-history-gaps.yml` have their own 330-minute limits and can be
+  dispatched separately (`project=<slug>`) once the holders feed is committed.
+- CI runs lint, typecheck, `npm test` (over `src/` and `scripts/`), `check:feeds`, the build and an audit. Run the
+  full suite locally (`npx vitest run`, `npm run typecheck`, `npm run lint`); a run limited to `scripts/` once let a
+  `src/` test fail in CI.
+- Tests assert invariants and use their own fixtures. Never pin live config or feed numbers: a test that
+  asserted ZBCN's real config flags its flow feeds as placeholders broke the moment the config was fixed.
+- This repo squash-merges, so a merged branch still looks unmerged to git. Classify branches by PR state
+  (`gh pr list --state all --head <branch>`) and delete them with `git branch -D`. Never force-remove a worktree.
+- `git commit` and `git merge` both need the author and committer identity as env vars on the same command
+  (`GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, `GIT_COMMITTER_EMAIL`); the machine has none configured.
+
+**RPC**
+- Free public RPCs are tried first; paid ones are allowed. Keys live in `.env.enc` (decrypted in the workflow with
+  `ENV_PASSPHRASE`). GitHub repo secrets hold only `SOLANA_RPC_0` and `SOLANA_RPC_1`, so an empty secrets list
+  does not mean no Ethereum keys.
+- `rpc.mevblocker.io` answers an over-wide `eth_getLogs` range with `-32005 "query returned more than 10000 results"`.
+  That is a range limit, not rate limiting: retrying never helps. `rpc.js` fails it at once (`RANGE_LIMIT_PATTERN`) so
+  the caller splits the range. A plain `-32005` rate limit still retries with backoff.
+
+**Forensics registry and ledger must agree**
+- `config/projects/<slug>/ledger.json` lists the developer wallets; `data/<slug>/forensics/wallet-flows.registry.json`
+  lists the known wallets. `check-go-live.js` fails when a treasury, holdings or association wallet is in the registry
+  but not the ledger, or a ledger wallet is not in the registry.
+- Do not regenerate the registry with `init-forensics-registry.js --force`: it overwrites hand-curated entries
+  (association wallets, `botCluster`, `watchedSellers`, `extraCex`, `extraDex`). Append the missing rows instead.
+
+**Feeds and health**
+- `health.feeds.<file>.placeholder: true` means "intentional stub, never alarms as stale". Remove it as soon as the
+  feed populates, or a dead feed looks healthy and `check-go-live.js` fails the project. Do not hand-edit generated feeds.
+- Solana tier outflows are venue-anchored by design (`scripts/lib/solana/flowFeeds.js`): CEX deposits and withdrawals
+  and DEX swaps are measured; wallet-to-wallet moves and counterparty-tier attribution are not. `attributedDays` is 0
+  for ZBCN and `sourceTierSince` is `null`. That is expected and the UI shows its coverage caveat. It is not a bug.
+- Config changes reach the browser at the next manual Netlify deploy (the config is bundled). Data reaches it
+  through `live-data.mjs` without a deploy.
+
 ## Recent work
 - **2026-11-05: ZBCN flow feeds are no longer placeholders.** `exchange-flow-history.json` and `tier-outflows.json` were flagged `placeholder` in `config/projects/zebec-network.json` although the nightly has committed them every day since 2026-11-02, so `check-go-live.js` failed ZBCN and `pipeline-health.js` could never report them stale. The flags are removed; the feeds now use the default freshness limits (5.7h old against 48h and 96h) and `check-go-live.js --all` passes for TEL, ZBCN and ONDO. Solana tier outflows stay venue-anchored by design (`scripts/lib/solana/flowFeeds.js`): wallet-to-wallet moves and counterparty-tier attribution are not measured, so `attributedDays` is 0 for ZBCN and the UI shows its existing coverage caveat.
 - **Merged to `main`:** #128 developer wallets ledger and view, #129 developer-wallets headline from DOM text, #130 ONDO project, #132 nightly framework, #135 go-live gate (ONDO is live, `check-go-live.js` is the single completeness gate), #137-#140 ONDO first-feed fixes (config, range-limit retry, first-run transitions, gap fill), and #127 Solana replay fixes (fail fast without a keyed RPC, history-start note; supersedes #105).
