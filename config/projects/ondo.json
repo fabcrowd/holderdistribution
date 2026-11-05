@@ -10,8 +10,28 @@
     "dir": "public/data/ondo"
   },
   "supply": {
+    "target": 10000000000,
+    "targetLabel": "10B",
     "generationsSumOneToOne": false,
-    "coingeckoId": "ondo-finance"
+    "coingeckoId": "ondo-finance",
+    "circulating": {
+      "subtract": [
+        "treasury"
+      ]
+    },
+    "developerHoldings": {
+      "subcategories": [
+        {
+          "category": "treasury",
+          "label": "Ondo Foundation Group (locked)"
+        },
+        {
+          "category": "holdings",
+          "label": "Foundation distribution Safes"
+        }
+      ]
+    },
+    "note": "Circulating holds out Ondo Foundation Group Multisig 2 (disclosed locked ONDO). Distribution Safes funded by Multisig 2 are developer holdings but counted circulating, like TEL holdings."
   },
   "chains": [
     {
@@ -30,7 +50,53 @@
           "deployBlock": 14670968
         }
       ],
-      "contracts": {}
+      "contracts": {
+        "foundationMultisig2": {
+          "address": "0x677fd4ed8ae623f2f625deb2d64f2070e46ca1a1",
+          "role": "treasury",
+          "$comment": "Ondo Foundation Group Multisig 2, Safe 4-of-7. Source: https://blog.ondo.foundation/ondo-foundation-group-wallet-address-disclosure/"
+        },
+        "distributionSafeA": {
+          "address": "0x524083970c7a1e62fbaa61d38781f87a4f191fd0",
+          "role": "holdings",
+          "$comment": "Safe 3-of-6. Funded only by Multisig 2 (0x677f...a1a1); see https://etherscan.io/address/0x677FD4Ed8aE623f2f625DEB2D64F2070E46cA1A1#tokentxns and data/ondo/forensics/wallet-flows.registry.json"
+        },
+        "distributionSafeB": {
+          "address": "0xea5785e1727de2ba2cefd102cb2dd91e018675e1",
+          "role": "holdings",
+          "$comment": "Funded only by Multisig 2 (0x677f...a1a1); see https://etherscan.io/address/0x677FD4Ed8aE623f2f625DEB2D64F2070E46cA1A1#tokentxns and data/ondo/forensics/wallet-flows.registry.json"
+        },
+        "distributionSafeC": {
+          "address": "0xd2e6e930e25456ffcd4df0124563cc334f3284f4",
+          "role": "holdings",
+          "$comment": "Funding tx https://eth.blockscout.com/tx/0x514af793d909627ec5e7bd02668f9f478d7e6ec657b80db09c54bd52bf44abd9. Funded only by Multisig 2 (0x677f...a1a1); see https://etherscan.io/address/0x677FD4Ed8aE623f2f625DEB2D64F2070E46cA1A1#tokentxns and data/ondo/forensics/wallet-flows.registry.json"
+        },
+        "distributorC5d9": {
+          "address": "0xc5d9221eb9c28a69859264c0a2fe0d3272228296",
+          "role": "holdings",
+          "$comment": "Funded 313,819,001 ONDO by Multisig 2 on 2022-04-28, tx https://etherscan.io/tx/0x762bdbe8ee744e12ec40c1e97512a25e794b93677a48a29174df319830843175; redistributes to allocation wallets (0x0d37\u2026, 0xac7d\u2026, 0x7fd8\u2026)."
+        },
+        "allocationAc7d": {
+          "address": "0xac7dc31d7eab8a15267a386151d851c992f14690",
+          "role": "holdings",
+          "$comment": "Received 95,738,091 ONDO from dev distributor 0xc5d9\u2026 (funded by Multisig 2), tx https://etherscan.io/tx/0xfbdd3519bb04287ee1f961bcca31db7cea4585edf9aed868035c5999b05d4b9a; no ONDO outflows."
+        },
+        "allocation0d37": {
+          "address": "0x0d37bf9ef9254f73e75dcfe2da5837e22d9f3553",
+          "role": "holdings",
+          "$comment": "Ondo allocation wallet 0x0d37 (funded by distributor 0xc5d9). Source https://etherscan.io/tx/0x43c101252d777937495af6f53e1ff8bd822b2cf95938dad10e5a90f640963359. 173,971,280 ONDO from 0xc5d9 (2024-01-19); outflows only back to Multisig 2 (tx 0xef45f74e\u2026) and Safe A (tx 0xfa7b3d8b\u2026), 62.76M each."
+        },
+        "allocation7fd8": {
+          "address": "0x7fd83e87b449422507299ba3f1d12207242d9607",
+          "role": "holdings",
+          "$comment": "Ondo allocation wallet 0x7fd8 (funded by distributor 0xc5d9). Source https://etherscan.io/tx/0x093887f6154627b950be5433973b0b1e361d315bf87b0e0cfbd51009e114a718. 44,109,630 ONDO from 0xc5d9 (2025-06-10); all sent to 0xb165 (tx 0x06e06fa7\u2026, 2026-04-30)."
+        },
+        "allocationB165": {
+          "address": "0xb165986ae836d0ef7a909db4087df1e38d365947",
+          "role": "holdings",
+          "$comment": "Ondo allocation wallet 0xb165 (funded by 0x7fd8 and Safe A). Source https://etherscan.io/tx/0x06e06fa739e2b3e84fa016bb4ff742f80aad36ca1fcde0718dc5b42ebe960f17. 44,109,630 ONDO from 0x7fd8 (2026-04-30); earlier 8,203,471 from Safe A (tx 0xec817a9d\u2026, 2025-01-15) forwarded to Coinbase Prime deposit address 0xd9d7 (exchange deposit; tx 0x2447d3a2\u2026, 2025-02-02)."
+        }
+      }
     }
   ],
   "gated": {
