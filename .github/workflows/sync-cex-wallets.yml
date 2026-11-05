@@ -9,18 +9,42 @@ on:
       project:
         description: 'Project slug from config/projects.json (scripts take --project; non-TEL runs commit public/data/<slug>/** and data/<slug>/**)'
         required: false
-        default: 'tel'
+        default: ''
 
 permissions:
   contents: write
 
 # Every pipeline script reads HD_PROJECT as its default `--project` (see
-# scripts/lib/projects.js); scheduled runs have no inputs and stay on TEL.
-env:
-  HD_PROJECT: ${{ inputs.project || 'tel' }}
+# scripts/lib/projects.js); scheduled runs have no inputs and run every project
+# config/nightly-jobs.json schedules for job "cex-sync" (one at a time).
 
 jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Projects scheduled for this job (config/nightly-jobs.json)
+        id: matrix
+        env:
+          SELECTION: ${{ inputs.project }}
+        run: echo "matrix=$(node scripts/workflow-paths.js matrix "$SELECTION" --job cex-sync)" >> "$GITHUB_OUTPUT"
+
   sync:
+    name: sync ${{ matrix.slug }}
+    needs: plan
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      HD_PROJECT: ${{ matrix.slug }}
+      HD_JOB_ID: cex-sync
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
@@ -166,7 +190,7 @@ jobs:
       - name: Stage verdict
         # Non-fatal stages (continue-on-error) cannot fail the run themselves, so
         # this step runs last and fails it when one failed, the same convention as
-        # refresh-tel-holders.yml. Whatever succeeded is already committed above.
+        # refresh-holders.yml. Whatever succeeded is already committed above.
         if: always()
         env:
           OUTCOME_SPELLBOOK: ${{ steps.spellbook.outcome }}
@@ -191,7 +215,7 @@ jobs:
             exit 1
           fi
 
-      # Deliberately not dispatching refresh-tel-holders.yml here: it already
+      # Deliberately not dispatching refresh-holders.yml here: it already
       # runs daily and re-reads config/cex-wallets.json fresh on every run, so
       # the newly-synced list is picked up within 24h regardless. Firing it
       # immediately would run pull-staker-balances.js a second time same-day

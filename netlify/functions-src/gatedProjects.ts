@@ -18,7 +18,9 @@ type Entry = { slug: string; default?: boolean; legacyRoot?: boolean };
 const ENTRIES = (registry as { projects: Entry[] }).projects;
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
-export const GATED_PROJECT_SLUGS: ReadonlySet<string> = new Set(ENTRIES.map((p) => p.slug).filter((s) => SLUG_RE.test(s)));
+/** Pure: gate allowlist for a registry (any project in config/projects.json is gated per project). */
+export const gatedSlugsFrom = (entries: readonly Entry[]): ReadonlySet<string> => new Set(entries.map((p) => p.slug).filter((s) => SLUG_RE.test(s)));
+export const GATED_PROJECT_SLUGS: ReadonlySet<string> = gatedSlugsFrom(ENTRIES);
 export const DEFAULT_GATED_PROJECT: string = ENTRIES.find((p) => p.default)?.slug ?? ENTRIES[0]?.slug ?? "tel";
 /** Projects whose working files still live at the data/ root (TEL). */
 export const LEGACY_ROOT_SLUGS: ReadonlySet<string> = new Set(ENTRIES.filter((p) => p.legacyRoot === true).map((p) => p.slug));
@@ -37,3 +39,7 @@ export function resolveGatedProject(raw: unknown): string | null {
 /** Repo path of a project's wallet-flows report (data/, never public/). */
 export const walletFlowsRepoPath = (slug: string): string =>
   LEGACY_ROOT_SLUGS.has(slug) ? "data/forensics/wallet-flows.json" : `data/${slug}/forensics/wallet-flows.json`;
+
+/** Developer-wallet ledger files (scripts/build-ledger.js, trace-bot-proceeds.js). Same layout for every project, TEL included. */
+export type LedgerFile = "ledger.json" | "bot-proceeds.json";
+export const ledgerRepoPath = (slug: string, file: LedgerFile): string => `data/${slug}/ledger/${file}`;

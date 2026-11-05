@@ -13,7 +13,8 @@ Written 2026-10-18 after the feeds sat stale since 2026-10-02.
    payments have failed or your spending limit needs to be increased. Please check the 'Billing &
    plans' section in your settings."* This repo is private, and the billed minutes for 2026-10-01..13
    total ~2,170 against the 2,000 included on the Free plan, with a $0 spending limit.
-   Nothing in the repo can bypass this.
+   Nothing in the repo can bypass this. *(Historical: the repo has since been made public, so
+   Actions minutes are free and this cap no longer applies.)*
 
 Also found: the staker-balance guard refused a real >40 % drop (TEL v3 upgrade forces holders to
 unstake legacy TEL; on-chain `totalStaked()` is ~0.80 B vs 4.17 B in the stale feed).
@@ -36,7 +37,7 @@ unstake legacy TEL; on-chain `totalStaked()` is ~0.80 B vs 4.17 B in the stale f
 1. GitHub → Settings → Billing and plans: fix any failed payment and/or raise the **Actions
    spending limit** above $0 (or wait for the monthly reset on the 1st). Or make the repo public
    (Actions minutes are free for public repos). Confirm with a single manual run of
-   "Refresh holders snapshots" (`gh workflow run refresh-tel-holders.yml -f project=all`).
+   "Refresh holders snapshots" (`gh workflow run refresh-holders.yml -f project=all`).
 2. Alchemy: the keys reset on their billing cycle; upgrade the plan or add keys. Until then the
    public fallback keeps a daily incremental run alive (a 16-day catch-up took ~7 min locally).
 3. TEL v3 is now tracked alongside legacy TEL (see `docs/TEL-CONTRACTS.md`, "Supply accounting"). The first v3-aware run scans v3 from its deploy block per chain (a one-off extra scan; keyless public RPCs need ~15 min for it).
@@ -47,9 +48,9 @@ unstake legacy TEL; on-chain `totalStaked()` is ~0.80 B vs 4.17 B in the stale f
   live site served the last manual deploy. Now served through `/live-data/*` (see
   `docs/DEPLOYMENT.md`, "Data pipeline (daily) and live data"), which needs the
   `LIVE_DATA_GITHUB_TOKEN` Netlify env var.
-* All daily stages are one job per project in `refresh-tel-holders.yml` (a registry-driven
+* All daily stages are one job per project in `refresh-holders.yml` (a registry-driven
   matrix, see `docs/MULTI-TOKEN.md`); the other data workflows are
-  manual-only and the watchdog is weekly, to fit the 2,000 free Actions minutes/month.
+  manual-only. (The repo is now public: Actions minutes are free and the old 2,000-minute cap is gone.)
 * Manual recovery: fix Actions billing, then run *Refresh holders snapshots*
   once (Actions → that workflow → Run workflow; `project` = a slug or `all`, default `all`). Its commits go live within ~1 h, no deploy.
 

@@ -1,0 +1,106 @@
+{
+  "$comment": "Developer-wallet ledger transaction types. Single source for scripts/lib/ledger/classify.js and src/lib/txTypes.ts (tooltips). `headline`: counts toward the 'developer selling' headline. `internal`: excluded from every headline (shuffles between developer wallets). Add a type here, then teach classify.js when to emit it.",
+  "version": 1,
+  "types": {
+    "dex_sell": {
+      "label": "DEX sale",
+      "group": "sell",
+      "headline": true,
+      "meaning": "A developer wallet sold the token on a decentralised exchange.",
+      "identifiedBy": "The token went to a known DEX pool, router or aggregator (ledger venues.dex, the project's DEX list, CoW/1inch/Kyber/0x/ParaSwap), or the transaction receipt emitted a Swap event."
+    },
+    "cex_deposit": {
+      "label": "Exchange deposit",
+      "group": "sell",
+      "headline": true,
+      "meaning": "A developer wallet sent the token to a centralised exchange, usually to sell it there.",
+      "identifiedBy": "The recipient (or the end of a known deposit relay) is a labelled exchange wallet from the project's CEX list or ledger venues.cex."
+    },
+    "bot_sell_dev_share": {
+      "label": "Bot sale (developer-funded share)",
+      "group": "sell",
+      "headline": true,
+      "meaning": "Sales by the flagged bot cluster, counted only in proportion to how much of the bot's funding came from developer wallets.",
+      "identifiedBy": "Bot cluster DEX sales multiplied by the developer share of its funding (ledger botCluster.funding, pro-rata)."
+    },
+    "bot_funding": {
+      "label": "Funded bot cluster",
+      "group": "transfer",
+      "headline": false,
+      "meaning": "A developer wallet sent the token to a wallet in the flagged bot cluster.",
+      "identifiedBy": "The recipient is one of ledger botCluster.addresses."
+    },
+    "internal_shuffle": {
+      "label": "Internal shuffle",
+      "group": "internal",
+      "headline": false,
+      "internal": true,
+      "meaning": "Tokens moved between two developer wallets. Ownership does not change, so this is not selling.",
+      "identifiedBy": "Both sender and recipient are in ledger developerWallets (relays count as their endpoint)."
+    },
+    "bridge": {
+      "label": "Bridge",
+      "group": "transfer",
+      "headline": false,
+      "meaning": "Tokens sent to a bridge to move them to another chain.",
+      "identifiedBy": "The recipient is listed in ledger venues.bridges."
+    },
+    "custody": {
+      "label": "Custody / escrow",
+      "group": "locked",
+      "headline": false,
+      "meaning": "Tokens placed with a custodian or escrow vault (for example BitGo or Anchorage). Not a sale.",
+      "identifiedBy": "The recipient (or relay endpoint) is listed in ledger venues.custody."
+    },
+    "staking": {
+      "label": "Staking / rewards contract",
+      "group": "locked",
+      "headline": false,
+      "meaning": "Tokens moved into or out of a staking or reward contract.",
+      "identifiedBy": "The counterparty is listed in ledger venues.staking."
+    },
+    "burn": {
+      "label": "Burn",
+      "group": "locked",
+      "headline": false,
+      "meaning": "Tokens destroyed (sent to the zero address).",
+      "identifiedBy": "Recipient is the zero address, or the token supply fell in the same transfer."
+    },
+    "transfer_out": {
+      "label": "Transfer to unlabelled wallet",
+      "group": "transfer",
+      "headline": false,
+      "meaning": "Tokens sent to a wallet we have not identified. Could be a payment, an OTC sale or a new internal wallet.",
+      "identifiedBy": "No label, venue or developer match for the recipient, and no Swap event in the receipt."
+    },
+    "receive": {
+      "label": "Received token",
+      "group": "inflow",
+      "headline": false,
+      "meaning": "A developer wallet received the token from outside the developer set (exchange withdrawal, buy, or other sender).",
+      "identifiedBy": "Recipient is a developer wallet and sender is not."
+    },
+    "stable_in": {
+      "label": "Stablecoin received",
+      "group": "payment",
+      "headline": false,
+      "meaning": "A developer wallet received a stablecoin, for example sale proceeds.",
+      "identifiedBy": "A transfer of a ledger stablecoin (USDC/USDT) into a developer wallet from outside the set."
+    },
+    "stable_out": {
+      "label": "Stablecoin payment",
+      "group": "payment",
+      "headline": false,
+      "meaning": "A developer wallet paid out a stablecoin.",
+      "identifiedBy": "A transfer of a ledger stablecoin out of a developer wallet to a wallet outside the set."
+    },
+    "stable_internal": {
+      "label": "Stablecoin internal shuffle",
+      "group": "internal",
+      "headline": false,
+      "internal": true,
+      "meaning": "A stablecoin moved between two developer wallets.",
+      "identifiedBy": "Both sides are developer wallets and the asset is a ledger stablecoin."
+    }
+  }
+}

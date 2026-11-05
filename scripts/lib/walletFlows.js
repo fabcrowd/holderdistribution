@@ -7,8 +7,8 @@
  * RPC work lives in scripts/generate-wallet-flows.js.
  */
 
-export const WINDOWS = ["72h", "30d", "90d"];
-export const WINDOW_SECONDS = { "72h": 72 * 3600, "30d": 30 * 86400, "90d": 90 * 86400 };
+export const WINDOWS = ["24h", "72h", "30d", "90d"];
+export const WINDOW_SECONDS = { "24h": 24 * 3600, "72h": 72 * 3600, "30d": 30 * 86400, "90d": 90 * 86400 };
 
 /** Outflow kinds that count as "sent to a sell venue". */
 export const SELL_VENUE_KINDS = ["CEX", "DEX", "bot-cluster"];
@@ -251,7 +251,7 @@ export function buildKnownWalletRows(registry, flows, balances, priceUsd) {
   const rows = [];
   for (const entry of registry.knownWallets ?? []) {
     const a = norm(entry.address);
-    const f = flows.get(a) ?? { out: { "72h": {}, "30d": {}, "90d": {} }, samples: [] };
+    const f = flows.get(a) ?? { out: Object.fromEntries(WINDOWS.map((k) => [k, {}])), samples: [] };
     const detail = balances.get(a) ?? {};
     const balance = Object.values(detail).reduce((s, v) => s + (v || 0), 0);
     const sell = Object.fromEntries(WINDOWS.map((w) => [w, round(sellVenueTotal(f.out[w]))]));
@@ -468,6 +468,14 @@ export function validateWalletFlowsReport(report, { addressKind = "evm" } = {}) 
     addressKind === "base58" ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/ : /^0x[0-9a-f]{40}$/;
   for (const w of report.knownWallets ?? []) {
     if (!addressPattern.test(w.address ?? "")) errors.push(`bad address ${w.address}`);
+  }
+  // Window keys (24h added 2026-11-03): reports written before then simply lack
+  // "24h", which is fine; an unknown key or a non-finite value is not.
+  for (const w of report.knownWallets ?? []) {
+    for (const [win, v] of Object.entries(w.sellVenue ?? {})) {
+      if (!WINDOWS.includes(win)) errors.push(`unknown window ${win} on ${w.address}`);
+      else if (!Number.isFinite(v)) errors.push(`sellVenue.${win} not a number on ${w.address}`);
+    }
   }
   if (report.salesJournal !== undefined) errors.push(...validateSalesJournal(report.salesJournal));
   if (report.unlabelledTrace !== undefined) errors.push(...validateUnlabelledTrace(report.unlabelledTrace));

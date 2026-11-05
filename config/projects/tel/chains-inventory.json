@@ -1,0 +1,128 @@
+{
+  "$comment": "Onboarding step 1 (docs/MULTI-TOKEN.md): every chain the token is on, configured or not, with sources. Regenerate with scripts/chain-inventory.js; add/override rows with --extra. Excluded/not-found rows need a reason.",
+  "schemaVersion": 1,
+  "slug": "tel",
+  "ticker": "TEL",
+  "generatedAt": "2026-11-04T21:49:22.570Z",
+  "coingecko": {
+    "id": "telcoin",
+    "platforms": {
+      "ethereum": "0x467bccd9d29f223bce8043b84e8c8b282827790f",
+      "base": "0x09be1692ca16e06f536f0038ff11d1da8524adb1",
+      "polygon-pos": "0xdf7837de1f2fa4631d716cf2502f8b230f1dcc32",
+      "arbitrum-one": "0x0419e8bfbbb2623728c3a6129090da4ff4e48113"
+    },
+    "circulatingSupply": 0,
+    "totalSupply": 100000000000,
+    "source": "https://api.coingecko.com/api/v3/coins/telcoin"
+  },
+  "chains": [
+    {
+      "chain": "ethereum",
+      "vm": "evm",
+      "status": "configured",
+      "tokens": [
+        {
+          "address": "0x467bccd9d29f223bce8043b84e8c8b282827790f",
+          "decimals": 2,
+          "generation": "legacy",
+          "tokenStatus": "deprecated",
+          "explorer": "https://etherscan.io/token/0x467bccd9d29f223bce8043b84e8c8b282827790f",
+          "totalSupply": 100000000000
+        },
+        {
+          "address": "0x7e13b43065380acdec1c2d138c579cbbbafa0731",
+          "decimals": 18,
+          "generation": "v3",
+          "tokenStatus": "canonical",
+          "explorer": "https://etherscan.io/token/0x7e13b43065380acdec1c2d138c579cbbbafa0731",
+          "totalSupply": 4060667717.0795984,
+          "supplyShare": 0.1658
+        }
+      ],
+      "source": "config/projects/tel.json chains[]; totalSupply via public RPC"
+    },
+    {
+      "chain": "polygon",
+      "vm": "evm",
+      "status": "configured",
+      "tokens": [
+        {
+          "address": "0xdf7837de1f2fa4631d716cf2502f8b230f1dcc32",
+          "decimals": 2,
+          "generation": "legacy",
+          "tokenStatus": "deprecated",
+          "explorer": "https://polygonscan.com/token/0xdf7837de1f2fa4631d716cf2502f8b230f1dcc32",
+          "totalSupply": 39358821666.2
+        },
+        {
+          "address": "0x7e13b43065380acdec1c2d138c579cbbbafa0731",
+          "decimals": 18,
+          "generation": "v3",
+          "tokenStatus": "canonical",
+          "explorer": "https://polygonscan.com/token/0x7e13b43065380acdec1c2d138c579cbbbafa0731",
+          "totalSupply": 20263204531.245163,
+          "supplyShare": 0.8273
+        }
+      ],
+      "source": "config/projects/tel.json chains[]; totalSupply via public RPC"
+    },
+    {
+      "chain": "base",
+      "vm": "evm",
+      "status": "configured",
+      "tokens": [
+        {
+          "address": "0x09be1692ca16e06f536f0038ff11d1da8524adb1",
+          "decimals": 2,
+          "generation": "legacy",
+          "tokenStatus": "deprecated",
+          "explorer": "https://basescan.org/token/0x09be1692ca16e06f536f0038ff11d1da8524adb1",
+          "totalSupply": 866127895.24
+        },
+        {
+          "address": "0x7e13b43065380acdec1c2d138c579cbbbafa0731",
+          "decimals": 18,
+          "generation": "v3",
+          "tokenStatus": "canonical",
+          "explorer": "https://basescan.org/token/0x7e13b43065380acdec1c2d138c579cbbbafa0731",
+          "totalSupply": 169763959.375239,
+          "supplyShare": 0.0069
+        }
+      ],
+      "source": "config/projects/tel.json chains[]; totalSupply via public RPC"
+    },
+    {
+      "chain": "arbitrum",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.000Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "optimism",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.000Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "bsc",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.000Z",
+      "reason": "detect-token-chains: not-found"
+    },
+    {
+      "chain": "avalanche",
+      "vm": "evm",
+      "status": "not-found",
+      "tokens": [],
+      "source": "scripts/detect-token-chains.js (same-address-rpc, coingecko-platforms) 2026-11-04T21:47:35.000Z",
+      "reason": "detect-token-chains: not-found"
+    }
+  ]
+}

@@ -1,0 +1,274 @@
+{
+ "version": 1,
+ "slug": "tel",
+ "generated": "2026-11-05T09:49:16.555Z",
+ "botCluster": {
+  "label": "Polygon 10-wallet ParaSwap sell bot (cluster)",
+  "chain": "polygon",
+  "addresses": [
+   "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
+   "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+   "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+   "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+   "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+   "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+   "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+   "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
+   "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+   "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e"
+  ],
+  "devShare": 0.3455
+ },
+ "rule": "Only the developer-funded share of the bot's sales and proceeds counts as developer selling (pro-rata by funding).",
+ "evidence": {
+  "summary": "Polygon 10-wallet ParaSwap sell bot (cluster): 10 wallets on polygon. 34.5% of its funding came from developer wallets, so that share of its sales and proceeds counts as developer selling.",
+  "points": [
+   "Ten wallets funded in the same blocks by the Settlement hub (a developer wallet): 10 x 30M v3 TEL on 2026-10-15 and 9 x 30M + 41.43M legacy on 2026-10-16.",
+   "About 1,535 ParaSwap sales of 50k-250k TEL each in one 72h window: fixed-size, high-frequency selling typical of an automated seller.",
+   "Also withdraws from KuCoin, where the Settlement hub deposited about 1.58B TEL in the same 90 days. That link is circumstantial (the exchange breaks the trail), so the KuCoin-funded share is NOT counted as developer selling."
+  ],
+  "funding": [
+   {
+    "source": "developer",
+    "label": "Settlement hub",
+    "address": "0x17fcc1f337fd68ff831017684798d08cbd424143",
+    "amount": 611434638,
+    "confidence": "high (direct on-chain transfers)",
+    "when": "2026-10-15 ~02:06-02:10 ET (10x30M v3) and 2026-10-16 ~04:56-04:59 ET (9x30M + 41.43M legacy)",
+    "txs": [
+     "0xe509091c642b47c862533197188cbea3291c1476c0565f19d15c2689aca7fe0f",
+     "0x69bb363650a5646de688f1c66601c61b1d325512961086b73a1ec4ec5ade496b"
+    ],
+    "counted": true
+   },
+   {
+    "source": "external",
+    "label": "KuCoin hot wallets (KuCoin 23/55 Polygon, KuCoin on Ethereum)",
+    "address": null,
+    "amount": 1158380277,
+    "confidence": "low",
+    "when": null,
+    "txs": [],
+    "counted": false
+   }
+  ],
+  "devShare": 0.3455
+ },
+ "detection": {
+  "candidates": [
+   {
+    "chain": "polygon",
+    "address": "0x2703e00cae30a7707e4d18c38f8cb6a4a40c2703",
+    "label": null,
+    "fundings": 4,
+    "amount": 334296246.9,
+    "funders": [
+     "0x583d596b0a79c0e83c87851ea9fb1a91e80290b2",
+     "0x84b94024463f01d5cbb3086f14f574d7ed83b794",
+     "0xe4ccf475a8ca5c96edbcdcf77a13ef29253d0878",
+     "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3"
+    ],
+    "firstTime": 1790294370,
+    "lastTime": 1793719434,
+    "sampleHashes": [
+     "0xa057f2c6c9cc76bae522f8ce6d2a4ab83984e5301ac3fdeae6a3366ce701e475",
+     "0x87b9acd2c334b6b13db525ff8f130971e82f405e3c6d8ab407f8cc458d0961b9",
+     "0xf4595ef5215bf0359c193923e6080e6d5bc9b902b9cda899d9887179ceba0fbf",
+     "0x8f1d79543f9c96449f3b71fb7f72d56179e82fd477545e535a6c2e65887db21e"
+    ],
+    "shareOfOutflow": 0.1114,
+    "reason": "Funded 4 times by 4 developer wallet(s); review for a botCluster entry."
+   },
+   {
+    "chain": "polygon",
+    "address": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+    "label": "Bot cluster",
+    "fundings": 4,
+    "amount": 112781756.74,
+    "funders": [
+     "0x17fcc1f337fd68ff831017684798d08cbd424143"
+    ],
+    "firstTime": 1792044646,
+    "lastTime": 1793594806,
+    "sampleHashes": [
+     "0x9f8d69526084d5b7fc06908d8e2fba0017fbb7038783d3b087798927cfa3eb16",
+     "0x69bb363650a5646de688f1c66601c61b1d325512961086b73a1ec4ec5ade496b",
+     "0x87a5dcd34b0a98d5db43537b58504096cf3ae61438d3ef519cd9aad51a000822",
+     "0x11c6e7b65da48d20ad298e207f77c125041c8d3fafc6587a4ab4355239c37bd6"
+    ],
+    "shareOfOutflow": 0.0376,
+    "reason": "Funded 4 times by 1 developer wallet(s); review for a botCluster entry."
+   },
+   {
+    "chain": "polygon",
+    "address": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+    "label": "Bot cluster",
+    "fundings": 4,
+    "amount": 90000000,
+    "funders": [
+     "0x17fcc1f337fd68ff831017684798d08cbd424143"
+    ],
+    "firstTime": 1792044404,
+    "lastTime": 1793594724,
+    "sampleHashes": [
+     "0xe509091c642b47c862533197188cbea3291c1476c0565f19d15c2689aca7fe0f",
+     "0x4430738ff1e50d9ab453e452ce80a0b408111a5b16e1e65c5ac559cf2b3b1490",
+     "0xa6117ef304f3f9812dec909b917209ef044f3b1b4c1ba140f9786cb80312610d",
+     "0xfe13bbbc05df40f7497ead878e976dc4f2c059c2ae4f4ce3e897cc61d96f7c01"
+    ],
+    "shareOfOutflow": 0.03,
+    "reason": "Funded 4 times by 1 developer wallet(s); review for a botCluster entry."
+   },
+   {
+    "chain": "polygon",
+    "address": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
+    "label": "Bot cluster",
+    "fundings": 4,
+    "amount": 90000000,
+    "funders": [
+     "0x17fcc1f337fd68ff831017684798d08cbd424143"
+    ],
+    "firstTime": 1792044422,
+    "lastTime": 1793594731,
+    "sampleHashes": [
+     "0xc7417c0ac60f13b9f3cb51a50deea041964026d9d2a633af646d83e8721a5677",
+     "0xd249120e5b6b4c25a433559ce85150f78eb2dc5fc7f5c59c815759499609d004",
+     "0x235a13aeb9b6d62cb15434f62b48446cdc584b39b83f5a568ca489d34590c591",
+     "0x2baba526cdedc55aa8bb22e640ee0a604f37d81276320df0fca627cb1fde17e0"
+    ],
+    "shareOfOutflow": 0.03,
+    "reason": "Funded 4 times by 1 developer wallet(s); review for a botCluster entry."
+   },
+   {
+    "chain": "polygon",
+    "address": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+    "label": "Bot cluster",
+    "fundings": 4,
+    "amount": 90000000,
+    "funders": [
+     "0x17fcc1f337fd68ff831017684798d08cbd424143"
+    ],
+    "firstTime": 1792044502,
+    "lastTime": 1793594740,
+    "sampleHashes": [
+     "0xea4e00229fceacae6a533c1fdd648241378e7deaa120f8441a700eb63a103cfa",
+     "0xfce35b79a07c8e946324979b5cc39e89938bf170307f840f4b34c3be25c27307",
+     "0xfa8ac9acff680dcd2850d9ae57d3c53f939740f802711c6a5eff4a8d66872344",
+     "0x07c89380b3444ea8cff752ae6512221ee22505aca2e596a72a8666a8ef822ab7"
+    ],
+    "shareOfOutflow": 0.03,
+    "reason": "Funded 4 times by 1 developer wallet(s); review for a botCluster entry."
+   },
+   {
+    "chain": "polygon",
+    "address": "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+    "label": "Bot cluster",
+    "fundings": 4,
+    "amount": 90000000,
+    "funders": [
+     "0x17fcc1f337fd68ff831017684798d08cbd424143"
+    ],
+    "firstTime": 1792044520,
+    "lastTime": 1793594748,
+    "sampleHashes": [
+     "0x9f76831ec6503388bcbb5d8bb4bfdb3ace406ba825faceab8593130b1870dd1a",
+     "0x7376a718794296d93c3019f20a7010ee5a109bd207ddd0da72e7be4a32d60fdb",
+     "0x051a42f5de7523510ff10ea45c06603d7198297c4d29732b515fdd9e4a075c48",
+     "0x4cdcff9473a65ef3380f2380b3aedd0b29853f6a85e15e6d1d99bba1408f3c7b"
+    ],
+    "shareOfOutflow": 0.03,
+    "reason": "Funded 4 times by 1 developer wallet(s); review for a botCluster entry."
+   },
+   {
+    "chain": "polygon",
+    "address": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
+    "label": "Bot cluster",
+    "fundings": 4,
+    "amount": 90000000,
+    "funders": [
+     "0x17fcc1f337fd68ff831017684798d08cbd424143"
+    ],
+    "firstTime": 1792044536,
+    "lastTime": 1793594757,
+    "sampleHashes": [
+     "0xc479be10e8daab309ca4a450856e9fdedf3b008824c96043074bdfae0cd59e24",
+     "0x1da37551db2bd4a35393f3ff9fb1456d4430e78e039528c4ca1c3a419bf5bc34",
+     "0xaa15d15fe0af6a0a48bac853ed7f4347ee3bd923049edfa8fa1b106a16187c69",
+     "0xa056c76ba5b908a6826e58be3568cec4179417d997bb94ba828d7793a3719705"
+    ],
+    "shareOfOutflow": 0.03,
+    "reason": "Funded 4 times by 1 developer wallet(s); review for a botCluster entry."
+   },
+   {
+    "chain": "polygon",
+    "address": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+    "label": "Bot cluster",
+    "fundings": 4,
+    "amount": 90000000,
+    "funders": [
+     "0x17fcc1f337fd68ff831017684798d08cbd424143"
+    ],
+    "firstTime": 1792044553,
+    "lastTime": 1793594764,
+    "sampleHashes": [
+     "0x18d842b7cc63aebe24e43dbde8ebffb604b74c345fc3ce1378bd7129ab2a68f7",
+     "0x58fe8284e0d1b770c11ebd90ffc40d13dec5b2c55a346cd47b9fa0d8c1a95508",
+     "0x9b8ec3180ced6bdf403b88fad577cccb9944cc04f2bd9fc19754c2482e946b17",
+     "0x756b484a75a57cdd7a51a45f0c5e8239ef7f3980e678c695d7d1a0201b2319dd"
+    ],
+    "shareOfOutflow": 0.03,
+    "reason": "Funded 4 times by 1 developer wallet(s); review for a botCluster entry."
+   },
+   {
+    "chain": "polygon",
+    "address": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+    "label": "Bot cluster",
+    "fundings": 4,
+    "amount": 90000000,
+    "funders": [
+     "0x17fcc1f337fd68ff831017684798d08cbd424143"
+    ],
+    "firstTime": 1792044575,
+    "lastTime": 1793594775,
+    "sampleHashes": [
+     "0x42c490c50c559408156e284ab7d7b03a0b06bb8836de41cc71810deb870ba902",
+     "0xf5ad010a7174a16e9f1bb71ca7ba17137e084a4e0f29c9ea1058f790ffa1a345",
+     "0xbab15852371107ee082a2d6d63bdf8c47ef92c755a128ed264298e47325995d3",
+     "0x0766543b4086cb9e58d312fced35fa7ef67385c9b95cb5fdf2e5878318f36d16"
+    ],
+    "shareOfOutflow": 0.03,
+    "reason": "Funded 4 times by 1 developer wallet(s); review for a botCluster entry."
+   },
+   {
+    "chain": "polygon",
+    "address": "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
+    "label": "Bot cluster",
+    "fundings": 4,
+    "amount": 90000000,
+    "funders": [
+     "0x17fcc1f337fd68ff831017684798d08cbd424143"
+    ],
+    "firstTime": 1792044599,
+    "lastTime": 1793594785,
+    "sampleHashes": [
+     "0x8c1df5d7b73f76e27ccc2391db8aa50ab46041e1a61fc7c5dbc27c5fdd899958",
+     "0xc45c5bf0e4c437d529c0eda591dcbd9f6c8ecbb2149a0bc0cab68d2997dc4819",
+     "0x0158e33e891fcad37ba6262d1c6862e4bd9c5659acda0a74110d4d58d69eecc8",
+     "0x40f8c4bf8cc735abf2d279d0eb48d856e767e7dc68c9446a6527bb77092cb651"
+    ],
+    "shareOfOutflow": 0.03,
+    "reason": "Funded 4 times by 1 developer wallet(s); review for a botCluster entry."
+   }
+  ],
+  "rule": "Candidates are never counted; confirm one by adding a botCluster to the ledger config (docs/LEDGER.md)."
+ },
+ "status": "ok",
+ "chains": [],
+ "summary": {
+  "salesTraced": 0,
+  "tokenSold": 0,
+  "tokenSoldDevShare": 0,
+  "byAsset": {},
+  "destinations": []
+ }
+}

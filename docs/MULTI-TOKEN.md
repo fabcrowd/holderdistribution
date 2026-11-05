@@ -111,12 +111,12 @@ must be in `config/projects.json`; the script loads `config/projects/<slug>.json
 and its data dir (`projectDataDir`).
 
 The data workflows have a `project` input on manual dispatch and export it as
-`HD_PROJECT` for every step. `refresh-tel-holders.yml` (the daily refresh) takes a
+`HD_PROJECT` for every step. `refresh-holders.yml` (the daily refresh) takes a
 slug or `all` (the default, and what the schedule runs):
 
 ```sh
 node scripts/pull-holders-rpc.js --project tel
-gh workflow run refresh-tel-holders.yml -f project=tel
+gh workflow run refresh-holders.yml -f project=tel
 ```
 
 ### Onboarding a token: config only
@@ -213,7 +213,7 @@ run for any registered project. Ported:
 - `rebuild-history-from-logs`: the StakeChanged chain/contract come from `resolveStakeChangedTarget` instead of a hardcoded Polygon check.
 - `recompute-history-from-git`
 - `resync-chain-holders`
-- `sync-cex-wallets-dune`: needs `classification.cexWallets` and a query id (`DUNE_QUERY_ID` env, then `pipeline.duneCexQueryId`; TEL keeps its built-in query). Missing either = exit 2. Address handling follows the project's VM (`scripts/lib/duneCex.js`): EVM rows stay 0x-hex lowercased (TEL unchanged); a Solana-only project keeps base58 exactly as written and skips rows whose `blockchain` is not `solana`. `--candidates` (forced when the project has no `classification.cexWallets`) never writes a production list: it intersects the labels with the holder snapshot and writes `data/<slug>/cex-dune-candidates.json` for owner review. `--source spellbook` (candidates-only, Solana-only, no key) reads the public Dune spellbook model behind `cex_solana.addresses` instead of the API.
+- `sync-cex-wallets-dune`: needs `classification.cexWallets` and a query id (`DUNE_QUERY_ID` env, then `pipeline.duneCexQueryId`; TEL keeps its built-in query). Missing either = exit 2. Address handling follows the project's VM (`scripts/lib/duneCex.js`): EVM rows stay 0x-hex lowercased (TEL unchanged); a Solana-only project keeps base58 exactly as written and skips rows whose `blockchain` is not `solana`. `--candidates` (forced when the project has no `classification.cexWallets`) never writes a production list: it intersects the labels with the holder snapshot and writes `data/<slug>/cex-dune-candidates.json` for owner review. `--source spellbook` (no key; EVM adds net-new addresses when the project has `classification.cexWallets`, otherwise it writes review candidates) reads the public Dune spellbook model behind `cex_solana.addresses` instead of the API.
 - `sync-classification-changelog`: no `classification.changelog` = an empty events feed.
 - `validate-outputs`
 - `generate-wallet-flows` (gated; see "Gated forensics" below): inputs and
@@ -246,7 +246,7 @@ after `npm ci`, which exports `HD_DATA_DIR` / `HD_WORK_DIR` (TEL:
   dropped and `public/data/<slug>` itself is added, so the commit covers
   `public/data/<slug>/**`. A path with no per-project mapping is refused.
 
-The `refresh-tel-holders` verify list is per project (`HD_REQUIRED_FILES`,
+The `refresh-holders` verify list is per project (`HD_REQUIRED_FILES`,
 derived from the project's staking config), so a mapped project needs no
 workflow of its own (see [zebec-network](#zebec-network-solana) below).
 
@@ -471,7 +471,7 @@ The first non-TEL project, mapped 2026-10-25
   Combined and Solana, and the explorer is Solscan. Feeds are in
   `public/data/zebec-network/` and the work dir is `data/zebec-network/`.
 - **Daily refresh:** the `zebec-network` leg of the registry-driven matrix in
-  `.github/workflows/refresh-tel-holders.yml` (00:00 UTC, right after TEL; the
+  `.github/workflows/refresh-holders.yml` (00:00 UTC, right after TEL; the
   separate `refresh-zebec-network.yml` and its 01:30 cron were retired). It
   commits with `[skip netlify]` (only the registry default publishes,
   `deployTriggers.test.js`); the data goes live through the live-data function.
@@ -621,7 +621,7 @@ keys.
 | CEX / DEX lists | `classification.*` (= `config/` root files) | `classification.*`, none declared = empty |
 | Price (USD columns) | `gated.walletFlows.coingeckoId` = `telcoin` | `gated.walletFlows.coingeckoId`; none = carried over / 0 |
 | Bridge infrastructure | TEL's `BRIDGE_INFRA` (`scripts/lib/telEndpoint.js`) | `gated.walletFlows.bridgeAddresses` only |
-| Disposition ledger, foundation stablecoin flows, wallet write-ups | bundled TEL files (unchanged) | none yet, so the gate returns `null` |
+| Disposition ledger, foundation stablecoin flows, wallet write-ups | bundled TEL files (unchanged) | none, so the gate returns `null`; the developer-wallet ledger ([LEDGER.md](LEDGER.md)) is the per-project report |
 
 Optional `gated.walletFlows` keys: `coingeckoId`, `chains` (default: every
 chain in the project's chain map), `bridgeAddresses`, `dexVenues` (on top of
@@ -629,8 +629,8 @@ chain in the project's chain map), `bridgeAddresses`, `dexVenues` (on top of
 always apply), `logSpan.<chainKey>`.
 
 **Pipeline:** `node scripts/generate-wallet-flows.js --project <slug>`, or
-dispatch `refresh-wallet-flows.yml` with `project=<slug>` (the weekly schedule
-stays TEL). The commit step maps `data/forensics/wallet-flows.json` through
+dispatch `refresh-wallet-flows.yml` with `project=<slug>` (the daily schedule
+runs every registry project). The commit step maps `data/forensics/wallet-flows.json` through
 `workflow-paths.js files`, so a TEL run stages exactly what it did before. To
 start a project's forensics, commit its registry under `data/<slug>/forensics/`.
 
@@ -673,7 +673,7 @@ one unlock still covers every project.
 4. Keep the admin bypass. Retire `FORENSICS_PASSWORD*` once subscribers have
    been moved over.
 
-Not yet generalized: the ledger and wallet write-up generators
+Not generalized: TEL's disposition ledger and wallet write-up generators
 (`supabase/functions/wallet-analysis-gate/tel-disposition.generated.ts`,
 `src/data/forensicsWriteups.ts`) are TEL's hand-built sources; another
 project's equivalents get an entry in `STATIC_GATED` (or a committed
@@ -714,6 +714,43 @@ its config, so onboarding a token needs no code change:
 
 ## Adding the next project
 
+A project goes live only when `node scripts/check-go-live.js --project <slug>` passes. It has no
+skip flags: missing feeds, placeholder feeds, a missing or stale wallet-flows report, a missing or
+stale ledger, and ledger wallets absent from the forensics registry all fail. Keep the project out
+of `config/projects.json` on the deployed site until it passes.
+
+### Step 1 (required first): chain & contract discovery → `chains-inventory.json`
+
+Before any config, seeding or scans, inventory **every chain the token is on**
+and commit it as `config/projects/<slug>/chains-inventory.json`. Each row
+(`chain`, `vm`, `status`, `tokens[]`, `source`, `reason`) records the
+contract / mint per chain, decimals, explorer link, total supply on that chain
+and its share, and where each fact came from (official docs, CoinGecko
+`platforms`, explorer, RPC). The statuses are:
+
+| status | meaning |
+| --- | --- |
+| `configured` | in `chains[]`, so it gets seeded and shown in the UI |
+| `excluded` | found but deliberately left out (unofficial copy, deprecated bridge…). Needs a `reason` |
+| `not-found` | checked, with no deployment. Needs a `reason` |
+| `candidate` | found but not decided yet. **Fails validation** |
+
+```bash
+node scripts/detect-token-chains.js --address 0x… --chain <origin> --ticker <T> --coingecko --out /tmp/d.json
+node scripts/chain-inventory.js --project <slug> --discovery /tmp/d.json [--extra manual-rows.json]   # public RPC supply, 0 Alchemy CU
+node scripts/chain-inventory.js --project <slug> --check                                              # offline gate
+```
+
+`scripts/add-project.js` **requires** `--inventory <file>` and refuses to scaffold
+when the inventory misses one of the `--chain`s, has an undecided `candidate`, or
+has an excluded/not-found row with no reason. It then writes the inventory next to the
+project. `scripts/lib/chainInventory.test.js` runs the same check for every
+registered project, so CI fails when a chain is added to `chains[]` without one.
+Add a chain to the project later by adding it to `chains[]` *and* flipping its
+inventory row to `configured` (which also needs seeding and, for a new VM, a nightly plan check).
+
+Then:
+
 1. Add `{ "slug": "<slug>", "name": "...", "ticker": "..." }` to `config/projects.json`.
    Slugs are lowercase `[a-z0-9-]`.
 2. Add `config/projects/<slug>.json` using `tel.json` as the template. Use only
@@ -721,6 +758,15 @@ its config, so onboarding a token needs no code change:
    `node scripts/detect-token-chains.js --address 0x… --chain <origin> --ticker <T> --coingecko`
    first so `chains[]` includes every chain the token is on (see "Chain
    discovery"). Each extra chain gets a picker view automatically.
+   **Always trace unknown large holders before finalizing tags.** For every
+   top non-CEX holder that is not already labelled, record on-chain: the
+   first token funding tx (hash), whether it came from the deployer, a
+   developer/foundation multisig, another tagged dev wallet or a CEX, its
+   outflow destinations, contract vs EOA, and public labels (Etherscan /
+   Blockscout / Arkham). Tag it when the trace ties it to developer funds
+   (cite the funding tx as `source`); otherwise list it with its trace in
+   `docs/<slug>-wallet-candidates.md`. Never leave a large holder untagged
+   without a recorded trace.
    For each extra chain, confirm `bridge` (`native` / `lock-mint` / `burn-mint`)
    from the project's bridge docs and mark the `origin`. Add a Solana chain
    only if the token is actually deployed there (see "Solana chains").
@@ -742,9 +788,14 @@ its config, so onboarding a token needs no code change:
    `chains[].rpc` for chains other than ethereum, polygon and base (Solana:
    `SOLANA_RPC_0..9` if public RPC refuses the holder scan).
 7. Optional: add `copy` overrides for wording the generic templates get wrong.
-8. Run `npm run typecheck && npx vitest run && npm run build`.
-9. Historical backfill for the new token (optional, local, cheap on RPC credits): the wallet-flow
-   scanner can read logs from SQD Portal instead of Alchemy/public RPC, which costs no Alchemy CU.
+8. Run `npm run typecheck && npx vitest run`, then `npx vite build --outDir <scratch>` with
+   `VITE_LIVE_DATA=off` (`npm run build` rewrites `public/sitemap.xml`).
+9. Wallet-flow history: the required depth is **90 days**, on every chain. There is no separate
+   backfill step: the first run fills it. EVM scans the 24h, 72h, 30d and 90d windows in one run.
+   Solana looks back 90 days at 2,500 transactions a run and resumes from `wallet-flows-state.json`,
+   so repeat `refresh-wallet-flows.yml` with `project=<slug>` until the report no longer says coverage
+   is partial. `--as-of --out` is an offline audit only: its output cannot reach the gated report.
+   Optional source for the seller scan: SQD Portal instead of Alchemy/public RPC, which costs no Alchemy CU.
    Run `node scripts/generate-wallet-flows.js --project <slug> --source portal` (or set
    `HD_BACKFILL_SOURCE=portal`). It is opt-in; the default stays `rpc`, and nightly runs never use it.
    Only public-registry addresses go to Portal (sender lists stay on RPC), the end block trails the
@@ -784,10 +835,61 @@ its config, so onboarding a token needs no code change:
     - **Mixed EVM + Solana token:** each generator skips the other VM's chains (exit 0), so run both; they
       write the same report path, so a mixed project needs the lane-merge work in todo 1m before both can
       share one file.
-    - Either way, the weekly `refresh-wallet-flows.yml` runs for TEL only; dispatch it with `project=<slug>`
-      for others. Details and cost caps: [FORENSICS.md](FORENSICS.md).
+    - Either way, the daily `refresh-wallet-flows.yml` runs for every registry project, and its last step
+      fails a project whose report is missing or stale. Details and cost caps: [FORENSICS.md](FORENSICS.md).
+12. Developer wallets ([LEDGER.md](LEDGER.md)). `add-project.js` scaffolds
+    `config/projects/<slug>/ledger.json`. Confirm `developerWallets` with the owner; each must also be in
+    the forensics registry. Add relays, venues and a `botCluster` if known. Dispatch `refresh-ledger.yml`
+    with `project=<slug>` (the first run backfills 90 days), confirm `data/<slug>/ledger/ledger.json` and
+    `bot-proceeds.json` are committed, then set `capabilities.projectWallets: true`. Serving needs
+    `LIVE_DATA_GITHUB_TOKEN` in Netlify.
+13. Confirm every flow: exchange and tier feeds have real data and no `placeholder` in `health.feeds`, the
+    wallet-flows report covers 90 days, and each developer wallet's movements match a spot check on the explorer.
+14. Run `node scripts/check-go-live.js --project <slug>`. It must pass before the owner deploys.
 
 The landing page and the sitemap pick the new project up automatically.
+
+## Nightly run requirements (`config/nightly-jobs.json`)
+
+Every project gets the same nightly data sets. The job list lives in **one** file,
+`config/nightly-jobs.json`; `scripts/lib/nightlyPlan.js` applies it to every project in
+`config/projects.json`, and the scheduled workflows build their matrices from it
+(`node scripts/workflow-paths.js matrix all --job <id>`). No workflow names a slug.
+
+| Field | Meaning |
+|---|---|
+| `dataset` | The data set the job produces. Chain-specific variants share one (`staker-balances` / `solana-staking` → `staking`). |
+| `requires` | Capabilities derived from config: `evm`, `solana`, `stakeChanged`, `zebecStakeV1`, `forensicsRegistry`, `ledgerConfig`. |
+| `providers` | Data sources in order, cheapest first; `alchemy` is always last. |
+| `alchemyOnly` | No free source exists (archive-state reads). Skipped, not degraded, when the budget is spent. |
+| `alchemyCuPerNight` | Per-project, per-run Alchemy CU budget enforced by `scripts/lib/rpc.js` (via `rpcMetrics.guardAlchemyCall`). `config/budgets.json` keeps the monthly ceiling across all projects. |
+| `budgetMode` | `enforce`: refuse Alchemy past the budget and fall through to the next provider. `warn`: log only. |
+| `outputs[].maxAgeHours` | Freshness SLA. `scripts/write-pipeline-status.js` writes `<dataDir>/pipeline-status.json`; `pipeline-watchdog.yml` files a `pipeline-stale` issue for any project that misses one. |
+
+A workflow step opts into the guard with `HD_JOB_ID: <id>`. Without `HD_JOB_ID` (local
+runs, tests) nothing changes. Waive a job only when it cannot apply, and give a reason:
+
+```json
+"nightly": { "waivers": { "staker-balances": "No staking contract, so there is no staking data set." } }
+```
+
+`scripts/lib/nightlyPlan.test.js` (CI) fails when a project neither runs nor waives a job
+for every `dataset`, when a waiver has no reason, or when a scheduled workflow
+hardcodes `'tel'`.
+
+### Nightly run checklist (new project)
+
+1. `node scripts/add-project.js …` prints the project's nightly plan (run / waived / n/a).
+2. For each `n/a` data set, add the missing capability (staking contract, forensics registry,
+   `ledger.json`) or a `nightly.waivers.<jobId>` reason.
+3. Check that each job's first provider serves the new chain keylessly (`chains[].rpc.publicUrls`
+   or the `PUBLIC_RPC_FALLBACKS` in rpc.js). Add Alchemy only when no free source returns identical data.
+4. If the project needs more than the per-job budget, raise `alchemyCuPerNight` deliberately.
+   Keep the monthly total under `config/budgets.json`.
+5. Run `npx vitest run scripts/lib/nightlyPlan.test.js` and
+   `node scripts/write-pipeline-status.js --project <slug> --no-write`.
+6. After the first scheduled night, `<dataDir>/pipeline-status.json` must show every job
+   `ok` or `waived`.
 
 ## Solana CEX wallets
 

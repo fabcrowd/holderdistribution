@@ -33,6 +33,7 @@ import { loadNonRetailSet } from "./lib/nonRetailSet.js";
 import { selectPipelineProject, projectPaths, projectNonRetailPaths } from "./lib/projects.js";
 import { projectHolderTiers, rangeLabelOf } from "./lib/holderTiers.js";
 import { normalizeAnyAddress } from "./lib/address.js";
+import { emptyTransitions } from "./lib/emptyTransitions.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk and in git history) and its own non-retail lists. Tier
@@ -77,7 +78,12 @@ const main = async () => {
   const fundCommits = commitsByDate(FUND_REL);
   const snapDates = [...snapCommits.keys()].sort();
   const fundDates = [...fundCommits.keys()].sort();
-  if (snapDates.length === 0) { console.warn("No snapshots."); return; }
+  if (snapDates.length === 0) {
+    console.warn("No snapshots in git history yet (first run); writing an empty transitions feed.");
+    await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
+    await fs.writeFile(OUT_PATH, `${JSON.stringify(emptyTransitions(), null, 2)}\n`, "utf8");
+    return;
+  }
 
   const nearestOnOrBefore = (dates, target) => {
     let best = null;

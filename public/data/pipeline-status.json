@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 1,
+  "project": "tel",
+  "generatedAt": "2026-11-05T06:03:53.615Z",
+  "healthy": true,
+  "problems": [],
+  "jobs": [
+    {
+      "id": "holders",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 5000,
+      "budgetMode": "warn",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/holders-summary.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.1,
+          "generatedAt": "2026-11-05T05:59:21.468Z",
+          "status": "fresh"
+        },
+        {
+          "path": "public/data/holders-history.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.1,
+          "generatedAt": "2026-11-05T05:59:24.343Z",
+          "status": "fresh"
+        },
+        {
+          "path": "public/data/supply-reconciliation.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.1,
+          "generatedAt": "2026-11-05T05:59:28.000Z",
+          "status": "fresh"
+        },
+        {
+          "path": "public/data/cex-wallets.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.1,
+          "generatedAt": "2026-11-05T05:59:22.661Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "exchange-flows",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 2000,
+      "budgetMode": "warn",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/exchange-flow-history.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.1,
+          "generatedAt": "2026-11-05T05:59:35.268Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "tier-outflows",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 2000,
+      "budgetMode": "warn",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/tier-outflows.json",
+          "maxAgeHours": 30,
+          "ageHours": 0,
+          "generatedAt": "2026-11-05T06:03:52.997Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "solana-flows",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "n/a",
+      "reason": "lacks solana",
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "n/a",
+      "outputs": []
+    },
+    {
+      "id": "staker-balances",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 1000,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/funding-wallets.json",
+          "maxAgeHours": 30,
+          "ageHours": 0.1,
+          "generatedAt": "2026-11-05T05:58:57.567Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 618
+      }
+    },
+    {
+      "id": "solana-staking",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "n/a",
+      "reason": "lacks zebecStakeV1",
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "n/a",
+      "outputs": []
+    },
+    {
+      "id": "history-gaps",
+      "workflow": "refresh-tel-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "alchemy"
+      ],
+      "alchemyOnly": true,
+      "alchemyCuBudget": 5000,
+      "budgetMode": "warn",
+      "health": "ok",
+      "outputs": [],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "wallet-flows",
+      "workflow": "refresh-wallet-flows.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "coingecko",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "data/forensics/wallet-flows.json",
+          "maxAgeHours": 30,
+          "ageHours": 9.2,
+          "generatedAt": "2026-11-04T20:50:59.498Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "ledger",
+      "workflow": "refresh-ledger.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "etherscan",
+        "alchemy"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "data/tel/ledger/ledger.json",
+          "maxAgeHours": 30,
+          "ageHours": 5.9,
+          "generatedAt": "2026-11-05T00:09:02.000Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "cex-candidates",
+      "workflow": "detect-cex-candidates.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    },
+    {
+      "id": "cex-sync",
+      "workflow": "sync-cex-wallets.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [],
+      "alchemyCuLatest": {
+        "day": "2026-11-05",
+        "cu": 0
+      }
+    }
+  ]
+}

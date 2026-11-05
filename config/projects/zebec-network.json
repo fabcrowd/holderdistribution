@@ -12,6 +12,9 @@
   "pipeline": {
     "workflowTimeoutMinutes": 75
   },
+  "capabilities": {
+    "projectWallets": true
+  },
   "supply": {
     "circulating": { "subtract": ["treasury"] },
     "developerHoldings": {
@@ -420,5 +423,12 @@
   "classification": {
     "cexWallets": "config/projects/zebec-network/cex-wallets.json",
     "changelog": "config/projects/zebec-network/classification-changelog.json"
+  },
+  "nightly": {
+    "$comment": "Waivers from the shared nightly job list (config/nightly-jobs.json). Every other applicable job runs nightly; a waiver needs a reason (scripts/lib/nightlyPlan.js).",
+    "waivers": {
+      "history-gaps": "fill-history-gaps.js only repairs EVM block-timestamp gaps; ZBCN is Solana-only and has no gap-fill equivalent yet.",
+      "cex-candidates": "detect-cex-candidates.js scans an EVM transfer graph only; no Solana port yet, so ZBCN exchange wallets come from the Dune sync (cex-sync)."
+    }
   }
 }

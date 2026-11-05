@@ -32,7 +32,7 @@
  */
 
 import { setTimeout as delay } from "node:timers/promises";
-import { recordCall } from "./rpcMetrics.js";
+import { guardAlchemyCall, recordCall } from "./rpcMetrics.js";
 
 const CATEGORY = ["erc20"];
 const MAX_COUNT_HEX = "0x3e8"; // 1000, Alchemy's per-page maximum
@@ -75,6 +75,8 @@ export const callGetAssetTransfers = async (rpcUrl, params, fetchImpl = fetch, d
   let lastError = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // Outside the try: a budget refusal must stop the scan, not be retried as a network error.
+    guardAlchemyCall("alchemy_getAssetTransfers");
     let json;
     try {
       recordCall(rpcUrl, "alchemy_getAssetTransfers");

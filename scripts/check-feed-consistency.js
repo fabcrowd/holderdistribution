@@ -49,6 +49,7 @@ const project = selectPipelineProject("check-feed-consistency", { ported: true }
 
 const ROOT = process.cwd();
 const DATA = projectPaths(project, ROOT).dir;
+
 const DATA_REL = project.dataDir;
 const CHANGELOG_PATH = projectClassificationPath(project, "changelog", ROOT);
 const CHANGELOG_REL = CHANGELOG_PATH ? path.relative(ROOT, CHANGELOG_PATH).split(path.sep).join("/") : "(none declared)";

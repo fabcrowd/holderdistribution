@@ -59,7 +59,7 @@ jobs:
             # Rebase onto whatever landed on main since checkout — other scheduled
             # workflows push to main too, so a plain push here can be rejected as
             # non-fast-forward. Matches the pattern already used by
-            # refresh-tel-holders.yml / backfill-dex-liquidity-history.yml.
+            # refresh-holders.yml / backfill-dex-liquidity-history.yml.
             git fetch origin main
             git rebase origin/main
             git push origin HEAD:main

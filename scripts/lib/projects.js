@@ -214,6 +214,11 @@ export function validateProjectConfig(config) {
   if (config?.supply?.generationsSumOneToOne && chains.some((c) => c?.bridge !== undefined)) {
     warnings.push("supply.generationsSumOneToOne is set: chains[].bridge is ignored (the TEL-style supply path is used).");
   }
+  // nightly.waivers.<jobId>: a non-empty reason (scripts/lib/nightlyPlan.js).
+  for (const [id, w] of Object.entries(config?.nightly?.waivers ?? {})) {
+    const reason = typeof w === "string" ? w : w?.reason;
+    if (!reason || !String(reason).trim()) errors.push(`nightly.waivers.${id}: needs a reason`);
+  }
   return { errors, warnings };
 }
 

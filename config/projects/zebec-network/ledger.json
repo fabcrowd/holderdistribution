@@ -1,0 +1,196 @@
+{
+  "$comment": "Developer-wallet ledger config for ZBCN. Wallets copied from data/zebec-network/forensics/wallet-flows.registry.json on 2026-11-03; DEX and staking venues come from the project's chains[].contracts roles, CEX wallets from classification.cexWallets. No bot cluster is mapped yet (botCluster: null).",
+  "version": 1,
+  "slug": "zebec-network",
+  "windows": [
+    "24h",
+    "72h",
+    "30d",
+    "90d"
+  ],
+  "historyDays": 90,
+  "providers": {
+    "evm": {
+      "primary": "alchemy",
+      "method": "alchemy_getAssetTransfers",
+      "crossCheck": "etherscan"
+    },
+    "solana": {
+      "envKeys": [
+        "SOLANA_RPC_0",
+        "SOLANA_RPC_1"
+      ]
+    }
+  },
+  "chains": [
+    "solana"
+  ],
+  "developerWallets": [
+    {
+      "address": "EkXEg6de172aoLvr7w86YzQ2rf5oEFD3iUt8uQsLQuQW",
+      "label": "Buyback treasury (candidate)",
+      "group": "Treasury",
+      "entityClass": "treasury",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "low"
+    },
+    {
+      "address": "H8Hr964ApEP3ie1rwRTT7wkSrgvUqJQb8oNAKspkDDfR",
+      "label": "Treasury multisig vault H8Hr",
+      "group": "Treasury",
+      "entityClass": "treasury",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "address": "3J7n5Usmei8BqgUHan5xuBiJkAx6M1AQQhGwbKiVdQ17",
+      "label": "Treasury multisig vault 3J7n",
+      "group": "Treasury",
+      "entityClass": "treasury",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "address": "71LxiE4PvxdZxLmtGcoKAJEWKofPqYw5Wdn6PSpXHodV",
+      "label": "Treasury multisig vault 71Lx",
+      "group": "Treasury",
+      "entityClass": "treasury",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "address": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+      "label": "Team ops and admin wallet",
+      "group": "Team",
+      "entityClass": "holdings",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "high"
+    },
+    {
+      "address": "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+      "label": "Team signer EsDV",
+      "group": "Team",
+      "entityClass": "holdings",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "address": "FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM",
+      "label": "Team signer FNuq",
+      "group": "Team",
+      "entityClass": "holdings",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "address": "G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7",
+      "label": "Team signer G82t",
+      "group": "Team",
+      "entityClass": "holdings",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "address": "6enQZWHkQ5ayxyFbJXgrNdUwDZpcUon98SNCuVNSRbd2",
+      "label": "Team signer 6enQ",
+      "group": "Team",
+      "entityClass": "holdings",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "address": "8vKiBgHFgR7BTUTwjNXj91P95GrRDCt3xNt6iLgHVMJw",
+      "label": "Team signer 8vKi",
+      "group": "Team",
+      "entityClass": "holdings",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "address": "9jRRKgb69WSMRLrqrPsk1byunMhD5tXxixYAdoESHdM3",
+      "label": "Team signer 9jRR",
+      "group": "Team",
+      "entityClass": "holdings",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "low"
+    },
+    {
+      "address": "56veXoivcbZNwkN4MCvhdyromDrp6cp9EuJZ9arknGSF",
+      "label": "Team allocation recipient (40M/month)",
+      "group": "Holdings",
+      "entityClass": "holdings",
+      "chains": [
+        "solana"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "stablecoins": {
+    "solana": [
+      {
+        "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "symbol": "USDC",
+        "decimals": 6
+      },
+      {
+        "address": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+        "symbol": "USDT",
+        "decimals": 6
+      }
+    ]
+  },
+  "venues": {
+    "useProjectCexList": true,
+    "useProjectDexList": true,
+    "projectRoles": {
+      "dex": [
+        "dex"
+      ],
+      "staking": [
+        "staking"
+      ]
+    },
+    "cex": {},
+    "dex": {},
+    "bridges": {},
+    "custody": {},
+    "staking": {}
+  },
+  "relays": {},
+  "botCluster": null,
+  "trace": {
+    "maxHops": 2,
+    "stopAt": [
+      "cex",
+      "bridge",
+      "developer",
+      "custody",
+      "known"
+    ],
+    "minUsd": 100,
+    "proceedAssets": {},
+    "maxSales": 300
+  }
+}
