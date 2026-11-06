@@ -3,7 +3,7 @@
  "slug": "ondo",
  "name": "Ondo",
  "ticker": "ONDO",
- "generated": "2026-11-05T09:51:16.000Z",
+ "generated": "2026-11-06T09:59:05.000Z",
  "windows": [
   "24h",
   "72h",
@@ -119,21 +119,21 @@
   "ethereum": {
    "status": "ok",
    "provider": "public-rpc",
-   "fromBlock": 26346120,
-   "head": 26347850,
+   "fromBlock": 26347851,
+   "head": 26355067,
    "wallets": 13,
    "transfers": 0,
    "botTransfers": 0,
    "receipts": 0,
-   "headTime": "2026-11-05T09:51:16.000Z"
+   "headTime": "2026-11-06T09:59:05.000Z"
   }
  },
  "crossCheck": null,
  "botCluster": null,
  "byWindow": {
   "24h": {
-   "from": "2026-11-04T09:51:16.000Z",
-   "to": "2026-11-05T09:51:16.000Z",
+   "from": "2026-11-05T09:59:05.000Z",
+   "to": "2026-11-06T09:59:05.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -161,8 +161,8 @@
    "byType": {}
   },
   "72h": {
-   "from": "2026-11-02T09:51:16.000Z",
-   "to": "2026-11-05T09:51:16.000Z",
+   "from": "2026-11-03T09:59:05.000Z",
+   "to": "2026-11-06T09:59:05.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -190,8 +190,8 @@
    "byType": {}
   },
   "30d": {
-   "from": "2026-10-06T09:51:16.000Z",
-   "to": "2026-11-05T09:51:16.000Z",
+   "from": "2026-10-07T09:59:05.000Z",
+   "to": "2026-11-06T09:59:05.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -258,8 +258,8 @@
    }
   },
   "90d": {
-   "from": "2026-08-07T09:51:16.000Z",
-   "to": "2026-11-05T09:51:16.000Z",
+   "from": "2026-08-08T09:59:05.000Z",
+   "to": "2026-11-06T09:59:05.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -397,8 +397,8 @@
    },
    "byType": {
     "transfer_out": {
-     "count": 17,
-     "amount": 319859494
+     "count": 16,
+     "amount": 299859494
     },
     "internal_shuffle": {
      "count": 2,
@@ -531,7 +531,7 @@
      "sold": 0,
      "stableOut": 0,
      "internal": 0,
-     "txs": 16
+     "txs": 15
     }
    },
    "lastActivity": "2026-10-13T15:21:23.000Z"
@@ -908,25 +908,6 @@
   }
  ],
  "daily": [
-  {
-   "date": "2026-08-08",
-   "devSold": 0,
-   "botSold": 0,
-   "botDevShare": 0,
-   "dexSell": 0,
-   "cexDeposit": 0,
-   "internal": 0,
-   "botFunding": 0,
-   "bridge": 0,
-   "custody": 0,
-   "staking": 0,
-   "burn": 0,
-   "transferOut": 20000000,
-   "receive": 0,
-   "stableIn": 0,
-   "stableOut": 0,
-   "stableInternal": 0
-  },
   {
    "date": "2026-08-09",
    "devSold": 0,
@@ -2617,6 +2598,25 @@
    "stableIn": 0,
    "stableOut": 0,
    "stableInternal": 0
+  },
+  {
+   "date": "2026-11-06",
+   "devSold": 0,
+   "botSold": 0,
+   "botDevShare": 0,
+   "dexSell": 0,
+   "cexDeposit": 0,
+   "internal": 0,
+   "botFunding": 0,
+   "bridge": 0,
+   "custody": 0,
+   "staking": 0,
+   "burn": 0,
+   "transferOut": 0,
+   "receive": 0,
+   "stableIn": 0,
+   "stableOut": 0,
+   "stableInternal": 0
   }
  ],
  "patterns": [],
@@ -2980,26 +2980,6 @@
    "headline": false,
    "uniqueId": "0x8d93734eca8831b503ec9388de2c4578c8625b43caf3e19e9d638207d1972771:log:703",
    "blockNumber": 25746884
-  },
-  {
-   "chain": "ethereum",
-   "hash": "0x68d08f78caeedacd0918cdf02a8e5aac36f242fd960596d2b7c9d0bdcb8f3e9d",
-   "time": 1786153595,
-   "date": "2026-08-08",
-   "type": "transfer_out",
-   "direction": "out",
-   "wallet": "0xea5785e1727de2ba2cefd102cb2dd91e018675e1",
-   "walletLabel": "Ondo distribution Safe B (funded by Multisig 2)",
-   "counterparty": "0xb3c76259767d13e8e5b5d0057e075ee473daec30",
-   "counterpartyLabel": null,
-   "asset": "token",
-   "symbol": "ONDO",
-   "amount": 20000000,
-   "reason": "Recipient 0xb3c7…ec30 has no label, is not a developer wallet and the receipt has no Swap event.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0x68d08f78caeedacd0918cdf02a8e5aac36f242fd960596d2b7c9d0bdcb8f3e9d:log:193",
-   "blockNumber": 25707060
   }
  ],
  "eventsTruncated": false
