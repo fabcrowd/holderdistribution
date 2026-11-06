@@ -81,10 +81,15 @@ const printProject = (p, heading) => {
     return;
   }
   for (const r of p.results) {
-    const ageStr = r.ageMs != null ? `${(r.ageMs / HOUR).toFixed(1)}h old (limit ${(r.thresholdMs / HOUR).toFixed(0)}h)` : "";
+    let ageStr = r.ageMs != null ? `${(r.ageMs / HOUR).toFixed(1)}h old (limit ${(r.thresholdMs / HOUR).toFixed(0)}h)` : "";
+    if (r.maxLastEntryAgeDays !== undefined && r.tailAgeDays !== undefined) {
+      ageStr += `, last row ${r.tailAgeDays === null ? "none" : `${r.tailAgeDays}d old`} (limit ${r.maxLastEntryAgeDays}d)`;
+    }
     const mark = r.status === "healthy" ? "ok  " : r.status === "stale" ? "STALE" : r.status.toUpperCase();
     console.log(`  ${mark.padEnd(6)} ${r.label.padEnd(38)} ${ageStr}`);
   }
+
+  for (const problem of p.statusProblems ?? []) console.log(`  PROBLEM pipeline-status: ${problem}`);
 
   const gaps = p.gaps;
   if (!gaps) return;
