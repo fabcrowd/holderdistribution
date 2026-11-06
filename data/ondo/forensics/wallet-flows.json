@@ -1,22 +1,22 @@
 {
  "version": 1,
- "generated": "2026-11-05T21:18:34.465Z",
+ "generated": "2026-11-06T20:38:30.723Z",
  "generator": "scripts/generate-wallet-flows.js",
  "project": "ondo",
- "priceUsd": 0.370284,
+ "priceUsd": 0.372467,
  "priceSource": "CoinGecko simple/price (ondo-finance)",
  "chains": [
   "ethereum"
  ],
  "windows": {
   "ethereum": {
-   "head": 26351256,
-   "headTime": "2026-11-05T21:14:59.000Z",
+   "head": 26358233,
+   "headTime": "2026-11-06T20:35:11.000Z",
    "startBlocks": {
-    "24h": 26344075,
-    "72h": 26329718,
-    "30d": 26135960,
-    "90d": 25705708
+    "24h": 26351059,
+    "72h": 26336701,
+    "30d": 26142936,
+    "90d": 25712670
    }
   }
  },
@@ -35,7 +35,7 @@
     "label": "Telcoin-linked: TEL Treasury",
     "group": "telcoin",
     "tel": 5179207574,
-    "share": 0.5179207574162524
+    "share": 0.517920757416251
    },
    {
     "key": "association",
@@ -49,7 +49,7 @@
     "label": "Telcoin-linked: Telcoin Holdings (company)",
     "group": "telcoin",
     "tel": 324719710,
-    "share": 0.03247197096556832
+    "share": 0.03247197096556823
    },
    {
     "key": "escrow",
@@ -69,8 +69,8 @@
     "key": "cex",
     "label": "Centralised exchanges (incl. deposit relays)",
     "group": "market",
-    "tel": 765511584,
-    "share": 0.07655115838872559
+    "tel": 767879659,
+    "share": 0.07678796594999406
    },
    {
     "key": "dex",
@@ -97,8 +97,8 @@
     "key": "retail",
     "label": "Retail & unlabelled holders",
     "group": "retail",
-    "tel": 3730561132,
-    "share": 0.3730561132294536
+    "tel": 3728193057,
+    "share": 0.37281930566818666
    }
   ],
   "movedFromRetail": [],
@@ -141,7 +141,7 @@
    "balanceDetail": {
     "ethereum_legacy": 5179207574
    },
-   "balanceUsd": 1917777697,
+   "balanceUsd": 1929083908,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -174,7 +174,7 @@
    "balanceDetail": {
     "ethereum_legacy": 100182196
    },
-   "balanceUsd": 37095864,
+   "balanceUsd": 37314562,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -204,7 +204,7 @@
    "balanceDetail": {
     "ethereum_legacy": 95738091
    },
-   "balanceUsd": 35450283,
+   "balanceUsd": 35659280,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -234,7 +234,7 @@
    "balanceDetail": {
     "ethereum_legacy": 48443680
    },
-   "balanceUsd": 17937920,
+   "balanceUsd": 18043672,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -264,7 +264,7 @@
    "balanceDetail": {
     "ethereum_legacy": 44109630
    },
-   "balanceUsd": 16333090,
+   "balanceUsd": 16429382,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -295,7 +295,7 @@
    "balanceDetail": {
     "ethereum_legacy": 36007902
    },
-   "balanceUsd": 13333150,
+   "balanceUsd": 13411755,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -303,7 +303,7 @@
      "unlabelled": 39106913
     },
     "90d": {
-     "unlabelled": 319726161
+     "unlabelled": 299726161
     }
    },
    "sellVenue": {
@@ -330,7 +330,7 @@
    "balanceDetail": {
     "ethereum_legacy": 238210
    },
-   "balanceUsd": 88205,
+   "balanceUsd": 88725,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -541,5 +541,21 @@
    "90d": 0
   }
  },
- "largeSellers": []
+ "largeSellers": [
+  {
+   "rank": 1,
+   "entity": "Unlabelled wallet",
+   "addresses": [
+    "0xefef30bd1cca520619306c95091ab18473febc5c"
+   ],
+   "chains": [
+    "ethereum"
+   ],
+   "destination": "Bybit, Gate.io via 0x42a1…b5ae, Gate.io via 0x8e10…ef94",
+   "tel": 15073732,
+   "netTel": 14802303,
+   "usd": 5614468,
+   "sampleTx": "https://etherscan.io/tx/0xb77e60ee8255ea6612a369598a6a24c483babf562f919e0479aaac10a067df35"
+  }
+ ]
 }
