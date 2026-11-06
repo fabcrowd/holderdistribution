@@ -8,6 +8,8 @@
  *   "health": {
  *     "feeds": {
  *       "holders-lite.json":    { "maxAgeHours": 36 },          // tighten/loosen
+ *       "exchange-flow-history.json": { "maxLastEntryAgeDays": 5 }, // dated-row series: newest row age
+ *       "treasury-history.json": { "maxAgeHours": 96, "maxLastEntryAgeDays": 3 }, // opt other series in
  *       "tier-outflows.json":   { "placeholder": true },        // intentional stub: never stale
  *       "funding-wallets.json": { "disabled": true },           // feed does not exist here
  *       "solana-staking.json":  { "maxAgeHours": 30, "label": "Staking", "workflow": "..." }
@@ -31,6 +33,8 @@ const FALLBACK_MAX_AGE_HOURS = 48;
 const DEFAULT_HOLDER_CHANGE_PCT = 2;
 const DEFAULT_LOOKBACK_DAYS = 30;
 const DEFAULT_PLACEHOLDER_SLACK_HOURS = 1;
+/** Dated-row series: newest `entries[].date` may trail today (UTC) by at most this many days. */
+const DEFAULT_MAX_LAST_ENTRY_AGE_DAYS = 3;
 
 /**
  * Baseline feeds. `thresholdMs` is deliberately wider than the cron period so a
@@ -63,6 +67,7 @@ export const DEFAULT_FEEDS = [
     label: "Exchange deposit/withdrawal flows",
     thresholdMs: 48 * HOUR,
     workflow: "Scan exchange flows",
+    maxLastEntryAgeDays: DEFAULT_MAX_LAST_ENTRY_AGE_DAYS,
     fallback: [
       "Needs ENV_PASSPHRASE only (uncapped alchemy_getAssetTransfers path, not the",
       "10-block-capped eth_getLogs scanner — see extend-transfer-caches.js header).",
@@ -132,6 +137,9 @@ export function resolveFeedHealth(config) {
   const merged = new Map(DEFAULT_FEEDS.map((f) => [f.file, { ...f, placeholder: false }]));
 
   for (const [file, o] of Object.entries(overrides)) {
+    if (o?.maxLastEntryAgeDays !== undefined && !isPositiveNumber(o.maxLastEntryAgeDays)) {
+      throw new Error(`health.feeds["${file}"].maxLastEntryAgeDays must be a positive number (got ${JSON.stringify(o.maxLastEntryAgeDays)})`);
+    }
     if (o?.maxAgeHours !== undefined && !isPositiveNumber(o.maxAgeHours)) {
       throw new Error(`health.feeds["${file}"].maxAgeHours must be a positive number (got ${JSON.stringify(o.maxAgeHours)})`);
     }
@@ -149,6 +157,7 @@ export function resolveFeedHealth(config) {
       ...(o.workflow ? { workflow: o.workflow } : {}),
       ...(Array.isArray(o.fallback) ? { fallback: o.fallback } : {}),
       ...(o.maxAgeHours !== undefined ? { thresholdMs: o.maxAgeHours * HOUR } : {}),
+      ...(o.maxLastEntryAgeDays !== undefined ? { maxLastEntryAgeDays: o.maxLastEntryAgeDays } : {}),
       placeholder: o.placeholder === true,
       disabled: o.disabled === true,
     });
@@ -156,14 +165,32 @@ export function resolveFeedHealth(config) {
   return [...merged.values()].filter((f) => !f.disabled).map(({ disabled: _d, ...f }) => f);
 }
 
-/** One feed's status: placeholder | missing | no-timestamp | stale | healthy. */
+const utcDay = (ms) => Math.floor(ms / DAY);
+
+/**
+ * Whole UTC days between the newest `entries[].date` and `now`; null when the
+ * feed has no parseable dated row. generatedAt can be fresh while the rows
+ * stopped months ago, so the tail is checked on its own.
+ */
+export function lastEntryAgeDays(doc, now) {
+  const entries = Array.isArray(doc?.entries) ? doc.entries : [];
+  const times = entries.map((e) => Date.parse(`${e?.date}T00:00:00Z`)).filter(Number.isFinite);
+  if (times.length === 0) return null;
+  return utcDay(now) - utcDay(Math.max(...times));
+}
+
+/** One feed's status: placeholder | missing | no-timestamp | stale | stale-tail | healthy. */
 export function evaluateFeed(feed, doc, now) {
   if (feed.placeholder) return { ...feed, status: "placeholder", ageMs: null };
   if (!doc) return { ...feed, status: "missing", ageMs: null };
   const generatedAt = Date.parse(doc.generatedAt ?? "");
   if (!Number.isFinite(generatedAt)) return { ...feed, status: "no-timestamp", ageMs: null };
   const ageMs = now - generatedAt;
-  return { ...feed, status: ageMs > feed.thresholdMs ? "stale" : "healthy", ageMs };
+  if (ageMs > feed.thresholdMs) return { ...feed, status: "stale", ageMs };
+  if (feed.maxLastEntryAgeDays === undefined) return { ...feed, status: "healthy", ageMs };
+  const tailAgeDays = lastEntryAgeDays(doc, now);
+  const stale = tailAgeDays === null || tailAgeDays > feed.maxLastEntryAgeDays;
+  return { ...feed, status: stale ? "stale-tail" : "healthy", ageMs, tailAgeDays };
 }
 
 export const isUnhealthy = (result) => result.status !== "healthy" && result.status !== "placeholder";
@@ -263,7 +290,7 @@ const readJsonSync = (file) => {
   }
 };
 
-/** Health of one resolved project: `{ slug, results, gaps, healthy }`. */
+/** Health of one resolved project: `{ slug, results, gaps, statusProblems, healthy }`. */
 export function evaluateProjectHealth(project, { root = process.cwd(), now = Date.now() } = {}) {
   const data = projectPaths(project, root);
   const results = resolveFeedHealth(project.config).map((feed) =>
@@ -273,7 +300,8 @@ export function evaluateProjectHealth(project, { root = process.cwd(), now = Dat
     today: new Date(now),
     knownGapDates: project.config?.health?.consistency?.knownGapDates ?? [],
   });
-  return { slug: project.slug, results, gaps, healthy: !results.some(isUnhealthy) };
+  const statusProblems = readJsonSync(data("pipeline-status.json"))?.problems ?? [];
+  return { slug: project.slug, results, gaps, statusProblems, healthy: !results.some(isUnhealthy) };
 }
 
 /**
