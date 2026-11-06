@@ -35,6 +35,11 @@ export function resolveAnchorDate(explicitAnchorDate, asOf) {
   return explicitAnchorDate ?? asOf;
 }
 
+/** Whether a day-boundary block needs the v3-aware scan rather than the legacy-only replay. */
+export function usesV3Scan(targetBlock, v3DeployBlock) {
+  return Number.isFinite(Number(v3DeployBlock)) && Number(v3DeployBlock) > 0 && targetBlock >= Number(v3DeployBlock);
+}
+
 /**
  * @returns {Promise<Map<string, bigint>>} address -> raw balance at `toBlock`
  */

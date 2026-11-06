@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { readCommittedJson, replayChainRawBalances, resolveAnchorDate } from "./holdersAsOfReplay.js";
+import { readCommittedJson, replayChainRawBalances, resolveAnchorDate, usesV3Scan } from "./holdersAsOfReplay.js";
 
 describe("resolveAnchorDate", () => {
   it("uses the target date so each project anchors on its own newest checkpoint", () => {
@@ -55,5 +55,19 @@ describe("readCommittedJson with a young project", () => {
 
     expect(() => readCommittedJson("cp.json", "2026-08-21")).toThrow(/No commit of cp.json/);
     expect(readCommittedJson("cp.json", "2026-11-06").chains.ethereum.lastBlock).toBe(1);
+  });
+});
+
+describe("usesV3Scan", () => {
+  it("is false before the v3 deploy block and true from it on", () => {
+    expect(usesV3Scan(999, 1000)).toBe(false);
+    expect(usesV3Scan(1000, 1000)).toBe(true);
+    expect(usesV3Scan(5000, 1000)).toBe(true);
+  });
+
+  it("is false for a chain or project without a v3 token", () => {
+    expect(usesV3Scan(5000, undefined)).toBe(false);
+    expect(usesV3Scan(5000, null)).toBe(false);
+    expect(usesV3Scan(5000, 0)).toBe(false);
   });
 });
