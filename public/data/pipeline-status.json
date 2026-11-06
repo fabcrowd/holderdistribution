@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "project": "tel",
-  "generatedAt": "2026-11-05T06:03:53.615Z",
+  "generatedAt": "2026-11-06T04:26:36.334Z",
   "healthy": true,
   "problems": [],
   "jobs": [
     {
       "id": "holders",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "run",
       "reason": null,
       "providers": [
@@ -22,40 +22,40 @@
         {
           "path": "public/data/holders-summary.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-05T05:59:21.468Z",
+          "ageHours": 0.2,
+          "generatedAt": "2026-11-06T04:15:59.627Z",
           "status": "fresh"
         },
         {
           "path": "public/data/holders-history.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-05T05:59:24.343Z",
+          "ageHours": 0.2,
+          "generatedAt": "2026-11-06T04:16:02.461Z",
           "status": "fresh"
         },
         {
           "path": "public/data/supply-reconciliation.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-05T05:59:28.000Z",
+          "ageHours": 0.2,
+          "generatedAt": "2026-11-06T04:16:08.000Z",
           "status": "fresh"
         },
         {
           "path": "public/data/cex-wallets.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-05T05:59:22.661Z",
+          "ageHours": 0.2,
+          "generatedAt": "2026-11-06T04:16:00.763Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
     {
       "id": "exchange-flows",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "run",
       "reason": null,
       "providers": [
@@ -70,19 +70,19 @@
         {
           "path": "public/data/exchange-flow-history.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-05T05:59:35.268Z",
+          "ageHours": 0.2,
+          "generatedAt": "2026-11-06T04:16:45.458Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
     {
       "id": "tier-outflows",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "run",
       "reason": null,
       "providers": [
@@ -98,18 +98,18 @@
           "path": "public/data/tier-outflows.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-05T06:03:52.997Z",
+          "generatedAt": "2026-11-06T04:26:35.766Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
     {
       "id": "solana-flows",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "n/a",
       "reason": "lacks solana",
       "providers": [
@@ -123,7 +123,7 @@
     },
     {
       "id": "staker-balances",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "run",
       "reason": null,
       "providers": [
@@ -138,19 +138,19 @@
         {
           "path": "public/data/funding-wallets.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-05T05:58:57.567Z",
+          "ageHours": 0.2,
+          "generatedAt": "2026-11-06T04:14:17.663Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 618
       }
     },
     {
       "id": "solana-staking",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "n/a",
       "reason": "lacks zebecStakeV1",
       "providers": [
@@ -164,7 +164,7 @@
     },
     {
       "id": "history-gaps",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "run",
       "reason": null,
       "providers": [
@@ -176,7 +176,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
@@ -198,13 +198,13 @@
         {
           "path": "data/forensics/wallet-flows.json",
           "maxAgeHours": 30,
-          "ageHours": 9.2,
-          "generatedAt": "2026-11-04T20:50:59.498Z",
+          "ageHours": 7.2,
+          "generatedAt": "2026-11-05T21:12:37.124Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
@@ -226,13 +226,13 @@
         {
           "path": "data/tel/ledger/ledger.json",
           "maxAgeHours": 30,
-          "ageHours": 5.9,
-          "generatedAt": "2026-11-05T00:09:02.000Z",
+          "ageHours": 18.7,
+          "generatedAt": "2026-11-05T09:47:32.000Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
@@ -250,7 +250,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
@@ -268,7 +268,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     }
