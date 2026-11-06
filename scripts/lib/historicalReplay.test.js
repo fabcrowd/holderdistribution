@@ -7,6 +7,7 @@ import {
   partitionLogsByBoundary,
   shardRange,
 } from "./historicalReplay.js";
+import { rawToTel, roundTel } from "./telTokens.js";
 
 const log = (block) => ({ blockNumber: "0x" + block.toString(16), block });
 
@@ -154,6 +155,56 @@ describe("createReplayLedger", () => {
     const snap = ledger.snapshot();
     expect(snap.has(A)).toBe(false);
     expect(snap.has(B)).toBe(true);
+  });
+
+  describe("dropRoundedDust (snapshot holder definition)", () => {
+    const run = (decimals, value, opts = { dropRoundedDust: true }) => {
+      const ledger = createReplayLedger({ decimals, ...opts });
+      ledger.apply([{ from: null, to: A, value }]);
+      return ledger.snapshot();
+    };
+
+    it("excludes 4.9e-7 and includes 5e-7 for an 18-decimal token", () => {
+      expect(run(18, 490_000_000_000n).has(A)).toBe(false);
+      expect(run(18, 499_999_999_999n).has(A)).toBe(false);
+      expect(run(18, 500_000_000_000n).has(A)).toBe(true);
+    });
+
+    it("agrees with roundTel > 0 across the boundary", () => {
+      for (const value of [1n, 4n * 10n ** 11n, 5n * 10n ** 11n, 10n ** 12n, 10n ** 18n]) {
+        expect(run(18, value).has(A)).toBe(roundTel(rawToTel(value, 18)) > 0);
+      }
+    });
+
+    it("is a no-op for tokens with <= 6 decimals", () => {
+      expect(run(2, 1n).get(A)).toBe(0.01);
+      expect(run(6, 1n).has(A)).toBe(true);
+      expect(run(6, 1n).get(A)).toBe(run(6, 1n, {}).get(A));
+      expect(run(9, 1n).has(A)).toBe(false);
+    });
+
+    it("leaves balances unchanged for kept wallets", () => {
+      const transfers = [
+        { from: null, to: A, value: 3n * 10n ** 18n + 123n },
+        { from: null, to: B, value: 490_000_000_000n },
+      ];
+      const on = createReplayLedger({ decimals: 18, dropRoundedDust: true });
+      const off = createReplayLedger({ decimals: 18 });
+      on.apply(transfers);
+      off.apply(transfers);
+      expect(on.snapshot().get(A)).toBe(off.snapshot().get(A));
+      expect(on.snapshot().has(B)).toBe(false);
+      expect(off.snapshot().has(B)).toBe(true);
+    });
+
+    it("keeps sub-floor balances in the checkpoint so later transfers can lift them", () => {
+      const ledger = createReplayLedger({ decimals: 18, dropRoundedDust: true });
+      ledger.apply([{ from: null, to: A, value: 400_000_000_000n }]);
+      const revived = createReplayLedger({ decimals: 18, dropRoundedDust: true });
+      revived.restore(ledger.serialize());
+      revived.apply([{ from: null, to: A, value: 100_000_000_000n }]);
+      expect(revived.snapshot().has(A)).toBe(true);
+    });
   });
 
   it("excludes a wallet that has been fully spent", () => {

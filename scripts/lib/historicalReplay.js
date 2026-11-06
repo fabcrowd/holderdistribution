@@ -1,3 +1,5 @@
+import { rawToTel, roundTel } from "./telTokens.js";
+
 /**
  * historicalReplay.js
  *
@@ -152,13 +154,19 @@ export const shardRange = (from, to, n) => {
  * `getRawState()` drops anything below the dust threshold. A historical replay
  * needs to read the map repeatedly and keep accumulating afterwards.
  *
- * `minRaw` matches pull-holders-rpc.js's MIN_TEL_RAW so the rebuilt history
- * uses the same dust floor as the live pipeline — that floor being uniform
- * across the series is the whole point of the rebuild.
+ * `minRaw` is a raw-unit floor. `dropRoundedDust` additionally applies the
+ * live snapshot's holder definition (combineChainBalances in telTokens.js): an
+ * address is a holder only if roundTel(balance) > 0, i.e. its balance rounded
+ * to 6 dp is positive. For tokens with <= 6 decimals that is a no-op (any raw
+ * >= 1 is >= 1e-6); for 18-decimal tokens it drops wallets under 5e-7 token.
+ * The rebuild passes it so the rebuilt history uses the same definition as the
+ * live pipeline, uniform across the series.
  */
-export const createReplayLedger = ({ decimals = 2, minRaw = 1n } = {}) => {
+export const createReplayLedger = ({ decimals = 2, minRaw = 1n, dropRoundedDust = false } = {}) => {
   const raw = new Map();
   const scale = 10 ** decimals;
+  const isHolder = (balance) =>
+    balance >= minRaw && (!dropRoundedDust || roundTel(rawToTel(balance, decimals)) > 0);
 
   return {
     apply(parsedTransfers) {
@@ -171,7 +179,7 @@ export const createReplayLedger = ({ decimals = 2, minRaw = 1n } = {}) => {
     snapshot() {
       const out = new Map();
       for (const [address, balance] of raw) {
-        if (balance < minRaw) continue;
+        if (!isHolder(balance)) continue;
         out.set(address, Number(balance) / scale);
       }
       return out;
