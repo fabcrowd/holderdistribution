@@ -100,7 +100,7 @@ design-system/                     brand spec, tokens.json/tokens.css, logos, co
 audit/                             standalone Node audit scripts against the live site (own package.json)
 ```
 
-**Local only (not committed):** `tasks/` (todo, lessons, handoff, receipt), `.claude/`, `.cursor/`.
+**Tracked:** `.claude/skills/` (the onboarding runbook) and `.claude/agents/` (the verifier). **Local only (not committed):** `tasks/` (todo, lessons, handoff, receipt), the rest of `.claude/` (settings, handoff, hooks, worktrees) and `.cursor/`.
 
 ### Reading the Distribution tier flows
 

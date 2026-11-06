@@ -107,5 +107,5 @@ Live site: `https://holderdistribution.com`
 - `src/lib/`: pure helpers (charts: `chartAxes`, `chartZoom`; supply: `supplyBreakdown`, `chainViews`; staking: `staking*`; `projects.ts` registry reader).
 - `src/components/`: widgets; `chart/`, `terminal/`, `tierflow/`, `ui/` subfolders. `src/pages/`: routes.
 - `netlify/functions/`: `live-data.mjs` (serves latest feeds from GitHub), `forensics-gate.cjs`. `netlify.toml`: manual-deploy rules.
-- `tasks/`, `.claude/`, `scripts/CLAUDE.md`: local-only, uncommitted. `design-system/`, `docs/`: specs.
+- `.claude/skills/`, `.claude/agents/`: tracked (shared skills and agents). `tasks/`, `scripts/CLAUDE.md`, and the machine-local `.claude/` files (`settings.local.json`, `HANDOFF.md`, `session-end.json`, `hooks/`, `worktrees/`): local-only, uncommitted, excluded in `.git/info/exclude`. `design-system/`, `docs/`: specs.
 - Harness: `.claude/HANDOFF.md` (session facts, decisions, progress); `npm run receipt -- --objective "..." [--verify]` writes `tasks/receipt.md` (what changed, what passed); `.claude/agents/verifier.md` (adversarial check before a slice is marked done); `tasks/harness-audit.md` (which gates caught which lessons). Git commit, push, branch, merge and reset are set to `ask` in `.claude/settings.local.json`.
