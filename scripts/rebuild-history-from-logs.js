@@ -163,7 +163,7 @@ const transfersCachePath = (chainKey) => work(`rebuild-transfers-${chainKey}.ndj
 const STAKE_TARGET = resolveStakeChangedTarget(project);
 const STAKING_CONTRACT = STAKE_TARGET?.contract ?? null;
 const STAKE_CHAIN = STAKE_TARGET?.chain ?? null;
-const MIN_TEL_RAW = 1n; // matches pull-holders-rpc.js — any positive balance
+const MIN_TEL_RAW = 1n; // raw floor only; the holder rule is dropRoundedDust (roundTel(balance) > 0, as in telTokens.js)
 const TOP_N = Math.max(...CONCENTRATION_BUCKETS);
 
 const args = process.argv.slice(2);
@@ -419,7 +419,7 @@ async function main() {
     // come straight from normalizeTransfer(), and readTransfersCache()
     // restores it from the cache's serialized string form itself.
 
-    const ledger = createReplayLedger({ decimals, minRaw: MIN_TEL_RAW });
+    const ledger = createReplayLedger({ decimals, minRaw: MIN_TEL_RAW, dropRoundedDust: true });
     const runs = partitionLogsByBoundary(transfers, dateBlocks);
     for (const { logs, boundary } of runs) {
       ledger.apply(logs);
