@@ -10,7 +10,7 @@ import { getUsableRpcUrls, rpcCall, getLogs } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
 import { residualCustodyBalance, attributeStakingReceipts } from "./lib/stakingCustody.js";
 import { attributeSolanaStakingBalances } from "./lib/solanaStaking.js";
-import { ensureWindowCache, readCommittedJson, replayChainRawBalances } from "./lib/holdersAsOfReplay.js";
+import { ensureWindowCache, readCommittedJson, replayChainRawBalances, resolveAnchorDate } from "./lib/holdersAsOfReplay.js";
 import { computeSupplyTotals, computeBridgeNettedSupply, selectSupplyMethod } from "./lib/supply.js";
 import { loadChainAdapter, resolveChainVm } from "./lib/chainAdapters.js";
 import { resolveChainTokens, combineChainBalances, v3StateToCheckpoint, legacyCheckpointUsable } from "./lib/telTokens.js";
@@ -60,7 +60,7 @@ const CHECKPOINT_PATH = data("holders-checkpoint.json");
 // pipeline's own, untouched, so the reconstructed row is not a parallel
 // definition of the metrics.
 const ARG_AS_OF = readArg("--as-of");
-const ARG_ANCHOR_DATE = readArg("--anchor-date") ?? "2026-08-21";
+const ARG_ANCHOR_DATE = resolveAnchorDate(readArg("--anchor-date"), ARG_AS_OF);
 // Working files (not served): TEL data/, others data/<slug>/.
 const AS_OF_BLOCKS_PATH = projectWork(project)("holders-asof-blocks.json");
 
