@@ -61,6 +61,7 @@ import { solanaFlowChains, solanaFlowVenues } from "./lib/solana/flowConfig.js";
 import { buildSolanaTierDays } from "./lib/solana/flowFeeds.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 import { projectHolderTiers, rangeLabelOf } from "./lib/holderTiers.js";
+import { tierFingerprint, shouldResetForTiers } from "./lib/tierFingerprint.js";
 import { partialDateFor } from "./lib/partialDay.js";
 import { readWindow, transferWindowName } from "./lib/transferWindow.js";
 import { getTransferLogsCached, sharedScanEnabled } from "./lib/sharedTransferLogs.js";
@@ -662,6 +663,14 @@ const main = async () => {
     existing = { days: [] };
     checkpoint = { chains: {} };
   }
+  // Day buckets are keyed by tier label: if the project's tiers changed, the
+  // old buckets can never join the new labels, so rescan from scratch.
+  const tierReset = shouldResetForTiers(existing, TIERS);
+  if (tierReset.reset) {
+    console.log(`Distribution tiers changed (${tierReset.reason}): resetting the per-day store and checkpoint.`);
+    existing = { days: [] };
+    checkpoint = { chains: {} };
+  }
 
   // Seed per-day buckets from the existing store so we accumulate across runs.
   const dayBuckets = new Map();
@@ -867,8 +876,8 @@ const main = async () => {
 
   await fs.mkdir(path.dirname(DAYS_STORE_PATH), { recursive: true });
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
-  await fs.writeFile(DAYS_STORE_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, days }, null, 2)}\n`, "utf8");
-  await fs.writeFile(OUT_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, generatedAt: new Date().toISOString(), latestDate: latestDate ?? null, partialDate: partialDateFor(latestDate), complete, sourceTierSince, ranges }, null, 2)}\n`, "utf8");
+  await fs.writeFile(DAYS_STORE_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, tierFingerprint: tierFingerprint(TIERS), days }, null, 2)}\n`, "utf8");
+  await fs.writeFile(OUT_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, tierFingerprint: tierFingerprint(TIERS), generatedAt: new Date().toISOString(), latestDate: latestDate ?? null, partialDate: partialDateFor(latestDate), complete, sourceTierSince, ranges }, null, 2)}\n`, "utf8");
   await fs.writeFile(CHECKPOINT_PATH, `${JSON.stringify(checkpoint, null, 2)}\n`, "utf8");
   // Delete the pre-split legacy checkpoint once the new one exists, so a
   // future run doesn't keep reading two sources of truth. Safe to no-op if
