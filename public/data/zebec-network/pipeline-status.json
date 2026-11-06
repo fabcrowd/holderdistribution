@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "project": "zebec-network",
-  "generatedAt": "2026-11-05T06:39:42.488Z",
+  "generatedAt": "2026-11-06T04:53:39.392Z",
   "healthy": true,
   "problems": [],
   "jobs": [
     {
       "id": "holders",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "run",
       "reason": null,
       "providers": [
@@ -22,40 +22,40 @@
         {
           "path": "public/data/zebec-network/holders-summary.json",
           "maxAgeHours": 30,
-          "ageHours": 0.6,
-          "generatedAt": "2026-11-05T06:05:13.348Z",
+          "ageHours": 0.4,
+          "generatedAt": "2026-11-06T04:27:51.650Z",
           "status": "fresh"
         },
         {
           "path": "public/data/zebec-network/holders-history.json",
           "maxAgeHours": 30,
-          "ageHours": 0.6,
-          "generatedAt": "2026-11-05T06:05:28.323Z",
+          "ageHours": 0.4,
+          "generatedAt": "2026-11-06T04:28:06.300Z",
           "status": "fresh"
         },
         {
           "path": "public/data/zebec-network/supply-reconciliation.json",
           "maxAgeHours": 30,
-          "ageHours": 0.6,
-          "generatedAt": "2026-11-05T06:05:44.000Z",
+          "ageHours": 0.4,
+          "generatedAt": "2026-11-06T04:28:32.000Z",
           "status": "fresh"
         },
         {
           "path": "public/data/zebec-network/cex-wallets.json",
           "maxAgeHours": 30,
-          "ageHours": 0.6,
-          "generatedAt": "2026-11-05T06:05:15.012Z",
+          "ageHours": 0.4,
+          "generatedAt": "2026-11-06T04:27:53.258Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
     {
       "id": "exchange-flows",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "run",
       "reason": null,
       "providers": [
@@ -71,18 +71,18 @@
           "path": "public/data/zebec-network/exchange-flow-history.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-05T06:39:37.578Z",
+          "generatedAt": "2026-11-06T04:53:34.093Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
     {
       "id": "tier-outflows",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "run",
       "reason": null,
       "providers": [
@@ -98,18 +98,18 @@
           "path": "public/data/zebec-network/tier-outflows.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-05T06:39:41.778Z",
+          "generatedAt": "2026-11-06T04:53:38.755Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
     {
       "id": "solana-flows",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "run",
       "reason": null,
       "providers": [
@@ -122,13 +122,13 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
     {
       "id": "staker-balances",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "n/a",
       "reason": "lacks stakeChanged",
       "providers": [
@@ -142,7 +142,7 @@
     },
     {
       "id": "solana-staking",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "run",
       "reason": null,
       "providers": [
@@ -157,19 +157,19 @@
         {
           "path": "public/data/zebec-network/solana-staking.json",
           "maxAgeHours": 30,
-          "ageHours": 0.6,
-          "generatedAt": "2026-11-05T06:05:07.102Z",
+          "ageHours": 0.4,
+          "generatedAt": "2026-11-06T04:27:45.874Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
     {
       "id": "history-gaps",
-      "workflow": "refresh-tel-holders.yml",
+      "workflow": "refresh-holders.yml",
       "status": "waived",
       "reason": "fill-history-gaps.js only repairs EVM block-timestamp gaps; ZBCN is Solana-only and has no gap-fill equivalent yet.",
       "providers": [],
@@ -197,13 +197,13 @@
         {
           "path": "data/zebec-network/forensics/wallet-flows.json",
           "maxAgeHours": 30,
-          "ageHours": 6.5,
-          "generatedAt": "2026-11-05T00:08:44.462Z",
+          "ageHours": 7.7,
+          "generatedAt": "2026-11-05T21:14:01.409Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
@@ -225,13 +225,13 @@
         {
           "path": "data/zebec-network/ledger/ledger.json",
           "maxAgeHours": 30,
-          "ageHours": 6.5,
-          "generatedAt": "2026-11-05T00:12:28.000Z",
+          "ageHours": 19.1,
+          "generatedAt": "2026-11-05T09:50:14.000Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     },
@@ -264,7 +264,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-05",
+        "day": "2026-11-06",
         "cu": 0
       }
     }
