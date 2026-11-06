@@ -69,6 +69,8 @@ import { StatTile } from "@/components/ui/stat-tile";
 import { BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, ReferenceLine, Line } from "recharts";
 import { chainViewOptions, type ChainView } from "@/lib/chainViews";
 import { stakingSplitSub } from "@/lib/stakingSplit";
+import { hasNoStaking } from "@/lib/stakingNote";
+import { StakingNoneCard } from "@/components/terminal/StakingNoneNote";
 import { RETAIL_WALLETS_LABEL, retailWalletsInfo, uniqueWalletCount } from "@/lib/holderCounts";
 import { StakingSupplyTie } from "@/components/StakingSupplyTie";
 import "@/lib/rechartsMotion";
@@ -1524,7 +1526,11 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
               </TabsContent>
 
               <TabsContent value="staking" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>
-                {renderStakingInsights(copy, display.stakingStats, display.stakingDistribution, rangeCtl)}
+                {hasNoStaking(project) ? (
+                  <StakingNoneCard />
+                ) : (
+                  renderStakingInsights(copy, display.stakingStats, display.stakingDistribution, rangeCtl)
+                )}
               </TabsContent>
 
               <TabsContent value="growth" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>

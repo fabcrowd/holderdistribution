@@ -18,6 +18,17 @@ describe("fmtTel", () => {
   });
 });
 
+describe("non-finite guards", () => {
+  it("renders an em dash for NaN / Infinity / undefined, never NaN", () => {
+    for (const v of [NaN, Infinity, -Infinity, undefined as unknown as number]) {
+      expect(fmtInt(v)).toBe("—");
+      expect(fmtTel(v)).toBe("—");
+      expect(signed(v, fmtTel)).toBe("—");
+    }
+    expect(fmtInt(0)).toBe("0");
+  });
+});
+
 describe("signed", () => {
   it("signs non-zero values", () => {
     expect(signed(5, fmtInt)).toBe("+5");

@@ -8,6 +8,8 @@ import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { settledEntries } from "@/lib/flowFeeds";
 import { hasNoStaking, stakingNoneText } from "@/lib/stakingNote";
 import { flowEmptyMessage } from "@/lib/flowEmptyState";
+import { flowOutOfRangeMessage, flowWindow, staleFeedNote } from "@/lib/flowWindow";
+import { emptyHistoryMessage } from "@/lib/historyEmpty";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { formatCompact, formatSignedCompact } from "@/lib/format";
@@ -164,11 +166,13 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const holderBreaks = useMemo(() => getSeriesBreaks(changelog, ["retail.count", "holderCount"], holders[0]?.t), [changelog, holders]);
   const balanceBreaks = useMemo(() => getSeriesBreaks(changelog, ["retail.balance"], balance[0]?.t), [changelog, balance]);
   const stakingBreaks = useMemo(() => getSeriesBreaks(changelog, ["stakingBalance"], staking[0]?.t), [changelog, staking]);
-  const netflow = useMemo(() => {
+  const flowWin = useMemo(() => {
     // Finished days only: today's hours-so-far would draw as a false collapse.
-    const rows = settledEntries(flow.data ?? []).map((e) => ({ t: Date.parse(e.date), value: e.net, in: e.in, out: e.out }));
-    return withinRange(rows, (r) => r.t, Math.max(rangeDays, 1));
+    // The window ends today (UTC); a stale feed is not summed as the range.
+    const win = flowWindow(settledEntries(flow.data ?? []), rangeDays);
+    return { ...win, rows: win.rows.map((e) => ({ t: Date.parse(e.date), value: e.net, in: e.in, out: e.out })) };
   }, [flow.data, rangeDays]);
+  const netflow = flowWin.rows;
   const flowTotals = netflow.reduce((a, r) => ({ in: a.in + r.in, out: a.out + r.out }), { in: 0, out: 0 });
 
   const exchanges = useMemo(() => {
@@ -199,14 +203,24 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const loading = growth.isLoading;
   const growthFailed = !!growth.error && !growth.data;
 
-  const series = (content: React.ReactNode, has: boolean) =>
-    loading ? <PanelSkeleton /> : growthFailed ? <PanelError>Couldn't load holder history.</PanelError> : has ? content : <PanelMessage>No data for this period.</PanelMessage>;
+  // A line needs two points; below that, say why (none yet / one snapshot / range predates history).
+  const series = (content: React.ReactNode, count: number, firstMs: string | undefined) =>
+    loading ? (
+      <PanelSkeleton />
+    ) : growthFailed ? (
+      <PanelError>Couldn't load holder history.</PanelError>
+    ) : count > 1 ? (
+      content
+    ) : (
+      <PanelMessage>{emptyHistoryMessage(count, firstMs ? Date.parse(firstMs) : undefined, rangeDays)}</PanelMessage>
+    );
 
   const stats = view?.balanceStats;
   const buckets = stats?.distributionBuckets ?? [];
   const top = view?.concentration?.top ?? {};
   const prevTop = view?.concentration?.previousTop ?? {};
-  const retailTotal = stats?.total ?? 0;
+  // Unknown stays null: "—" in the table, never a 0% share.
+  const retailTotal = stats?.total ?? null;
 
   return (
     <div className={`flex flex-col gap-3 ${intro ? "ha-stagger" : ""}`} data-testid="holders-terminal">
@@ -238,7 +252,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             markers={holderMarkers}
             breaks={holderBreaks}
           />,
-          holders.length > 1,
+          holders.length,
+          growth.data?.series?.[0]?.timestamp,
         )}
       </TerminalPanel>
 
@@ -284,7 +299,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                 breaks={balanceBreaks}
                 highlight={balanceFocus}
               />,
-              balance.length > 1,
+              balance.length,
+              growth.data?.balanceSeries?.[0]?.timestamp,
             )
           )}
         </StackedBody>
@@ -303,6 +319,9 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
               <span className="text-xs text-muted-foreground">
                 in {formatCompact(flowTotals.in)} · out {formatCompact(flowTotals.out)}
               </span>
+              {flowWin.stale && flowWin.lastMs != null && (
+                <span className="text-xs font-medium text-warning" data-testid="flow-stale-note">{staleFeedNote(flowWin.lastMs)}</span>
+              )}
             </>
           )
         }
@@ -321,7 +340,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
           />
         ) : (
           <PanelMessage>
-            {flowEmptyMessage(project, "exchange")}
+            {flowWin.lastMs != null ? flowOutOfRangeMessage(flowWin.lastMs) : flowEmptyMessage(project, "exchange")}
           </PanelMessage>
         )}
       </TerminalPanel>
@@ -330,7 +349,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         fit
         title="Concentration"
         info={`Share of retail ${tk} held by the largest N retail wallets. Change is against the previous snapshot.`}
-        stat={stats && <span className="text-xs text-muted-foreground">Gini <span className="font-semibold text-foreground">{stats.gini.toFixed(3)}</span></span>}
+        stat={stats && <span className="text-xs text-muted-foreground">Gini <span className="font-semibold text-foreground">{Number.isFinite(stats.gini) ? stats.gini.toFixed(3) : "—"}</span></span>}
         actions={<DetailsButton onClick={() => onExplore("concentration")} label="Concentration" />}
         flush
       >
@@ -350,7 +369,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
               {Object.entries(top)
                 .sort((a, z) => Number(a[0]) - Number(z[0]))
                 .map(([n, bal]) => {
-                  const share = retailTotal > 0 ? (bal / retailTotal) * 100 : 0;
+                  const share = retailTotal != null && retailTotal > 0 ? (bal / retailTotal) * 100 : null;
                   const prev = prevTop[n];
                   return (
                     <tr key={n} className="border-t border-border/50">
@@ -358,9 +377,9 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                       <td className="px-2 py-1">
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-full min-w-[3rem] overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(share, 100)}%` }} />
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(share ?? 0, 100)}%` }} />
                           </div>
-                          <span className="w-12 shrink-0 text-right">{pct(share)}</span>
+                          <span className="w-12 shrink-0 text-right">{share == null ? "—" : pct(share)}</span>
                         </div>
                       </td>
                       <td className="px-3 py-1 text-right">
@@ -454,7 +473,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                 label={s ? `Staked ${tk} ${formatCompact(s.last.stakingTotal ?? s.last.staking ?? s.last.stakingV3 ?? 0)} at the end of the period.` : `Staked ${tk}`}
               />
             ),
-            staking.length > 1,
+            staking.length,
+            growth.data?.stakingSeries?.[0]?.timestamp,
           )
         )}
       </TerminalPanel>

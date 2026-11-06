@@ -15,19 +15,24 @@ const CARD = "flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-car
 /** Three answer cards that replace the old KPI strip and headline sentence. */
 export const AnswerCards = ({ tiles, selectedView, isError }: Props) => {
   const cards = pickAnswerTiles(tiles);
+  if (cards.length === 0 && isError) {
+    return (
+      <div data-testid="answer-cards" className="grid grid-cols-1 gap-3">
+        <div className={CARD}>
+          <p className="text-sm text-muted-foreground">Headline numbers are unavailable right now.</p>
+        </div>
+      </div>
+    );
+  }
   if (cards.length === 0) {
     return (
       <div data-testid="answer-cards" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[0, 1, 2].map((i) => (
           <div key={i} className={CARD}>
-            {isError ? (
-              i === 0 && <p className="text-sm text-muted-foreground">Headline numbers are unavailable right now.</p>
-            ) : (
-              <div aria-hidden="true" className="space-y-2">
-                <div className="h-3 w-24 animate-pulse rounded bg-muted/70" />
-                <div className="h-7 w-32 animate-pulse rounded bg-muted/70" />
-              </div>
-            )}
+            <div aria-hidden="true" className="space-y-2">
+              <div className="h-3 w-24 animate-pulse rounded bg-muted/70" />
+              <div className="h-7 w-32 animate-pulse rounded bg-muted/70" />
+            </div>
           </div>
         ))}
       </div>
