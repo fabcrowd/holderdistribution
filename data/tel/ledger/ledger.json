@@ -3,7 +3,7 @@
  "slug": "tel",
  "name": "Telcoin",
  "ticker": "TEL",
- "generated": "2026-11-05T09:47:32.000Z",
+ "generated": "2026-11-06T09:46:20.000Z",
  "windows": [
   "24h",
   "72h",
@@ -119,38 +119,63 @@
   "ethereum": {
    "status": "ok",
    "provider": "public-rpc",
-   "fromBlock": 26344944,
-   "head": 26347831,
+   "fromBlock": 26347832,
+   "head": 26355003,
    "wallets": 12,
    "transfers": 0,
    "botTransfers": 0,
    "receipts": 0,
-   "headTime": "2026-11-05T09:47:32.000Z"
+   "headTime": "2026-11-06T09:46:20.000Z"
   },
   "polygon": {
    "status": "ok",
    "provider": "public-rpc",
-   "fromBlock": 96754595,
-   "head": 96777733,
+   "fromBlock": 96777734,
+   "head": 96835287,
    "wallets": 20,
-   "transfers": 0,
-   "botTransfers": 195,
+   "transfers": 6,
+   "botTransfers": 448,
    "receipts": 0,
-   "headTime": "2026-11-05T09:47:32.000Z"
+   "headTime": "2026-11-06T09:46:20.000Z"
   },
   "base": {
    "status": "ok",
    "provider": "public-rpc",
-   "fromBlock": 53524007,
-   "head": 53541388,
+   "fromBlock": 53541389,
+   "head": 53840821,
    "wallets": 5,
    "transfers": 0,
    "botTransfers": 0,
    "receipts": 0,
-   "headTime": "2026-11-05T09:47:32.000Z"
+   "headTime": "2026-11-06T09:46:20.000Z"
   }
  },
- "crossCheck": null,
+ "crossCheck": [
+  {
+   "chain": "polygon",
+   "status": "checked",
+   "fromBlock": 96777734,
+   "toBlock": 96835287,
+   "rows": [
+    {
+     "address": "0x17fcc1f337fd68ff831017684798d08cbd424143",
+     "alchemy": 0,
+     "etherscan": 0
+    },
+    {
+     "address": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
+     "alchemy": 0,
+     "etherscan": 0
+    },
+    {
+     "address": "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
+     "alchemy": 0,
+     "etherscan": 0
+    }
+   ],
+   "mismatches": 0
+  }
+ ],
  "botCluster": {
   "label": "Polygon 10-wallet ParaSwap sell bot (cluster)",
   "chain": "polygon",
@@ -195,692 +220,692 @@
   ],
   "windows": {
    "24h": {
-    "sold": 43265977,
-    "sales": 490,
-    "devShare": 14947505
+    "sold": 35531934,
+    "sales": 449,
+    "devShare": 12275552
    },
    "72h": {
-    "sold": 143279505,
-    "sales": 1477,
-    "devShare": 49500121
+    "sold": 127733128,
+    "sales": 1435,
+    "devShare": 44129168
    },
    "30d": {
-    "sold": 756910151,
-    "sales": 5182,
-    "devShare": 261496883
+    "sold": 792098263,
+    "sales": 5626,
+    "devShare": 273653652
    },
    "90d": {
-    "sold": 2286282390,
-    "sales": 25251,
-    "devShare": 789863524
+    "sold": 2302519396,
+    "sales": 25265,
+    "devShare": 795473075
    }
   },
   "recentSales": [
    {
     "chain": "polygon",
-    "hash": "0xcf782f9a6363de96c1287cf3fbcba9441d4f7d6bc5220945090eec2b4861a275",
-    "time": 1793872002,
-    "date": "2026-11-05",
-    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 81436.56,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xcf782f9a6363de96c1287cf3fbcba9441d4f7d6bc5220945090eec2b4861a275:log:2372",
-    "blockNumber": 96777697
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xdb5a65ccc3ed5a6c5b8490d74fc6d22777060fd8951a41c2fa637a21c9fb7ee1",
-    "time": 1793871826,
-    "date": "2026-11-05",
-    "wallet": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 81062.87,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xdb5a65ccc3ed5a6c5b8490d74fc6d22777060fd8951a41c2fa637a21c9fb7ee1:log:881",
-    "blockNumber": 96777580
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x40556853c815b5570d38a1dfe911ffa619076cd39a0a14d9ba7a2559892af2b9",
-    "time": 1793871661,
-    "date": "2026-11-05",
-    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 81129.5,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x40556853c815b5570d38a1dfe911ffa619076cd39a0a14d9ba7a2559892af2b9:log:433",
-    "blockNumber": 96777470
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x96e8b136d1c47d35449d69a805ea75a884345e19fcb9754c6aa0e7128a3931ed",
-    "time": 1793871435,
-    "date": "2026-11-05",
-    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 79122.73,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x96e8b136d1c47d35449d69a805ea75a884345e19fcb9754c6aa0e7128a3931ed:log:719",
-    "blockNumber": 96777319
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x5f36fda2f41e58f35fab3907ce6ea7630f4f6f961cd932f392df758eabed130f",
-    "time": 1793871264,
-    "date": "2026-11-05",
-    "wallet": "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 75395.62,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x5f36fda2f41e58f35fab3907ce6ea7630f4f6f961cd932f392df758eabed130f:log:618",
-    "blockNumber": 96777205
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x14ebaa1f75bac76ddb1c6f8bdb21754aac5ee29b451715c788db1791993c2370",
-    "time": 1793871157,
-    "date": "2026-11-05",
-    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 73729.21,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x14ebaa1f75bac76ddb1c6f8bdb21754aac5ee29b451715c788db1791993c2370:log:353",
-    "blockNumber": 96777134
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x9b53b1a0759c05be3c88a5e22ff785d72ac549fa5c8449925d3b0bc31287d43f",
-    "time": 1793871061,
-    "date": "2026-11-05",
-    "wallet": "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 72091.2,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x9b53b1a0759c05be3c88a5e22ff785d72ac549fa5c8449925d3b0bc31287d43f:log:510",
-    "blockNumber": 96777070
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x516a8449d16d845bf9498439e131b0aa17ee32c00709f1480ae6bb705fc9cdb7",
-    "time": 1793870907,
-    "date": "2026-11-05",
-    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 69784.36,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x516a8449d16d845bf9498439e131b0aa17ee32c00709f1480ae6bb705fc9cdb7:log:491",
-    "blockNumber": 96776967
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xcaa5ca2323bb52817cc094ff19d606c3d2a921980f46f3329b10947ccfacaa6c",
-    "time": 1793870662,
-    "date": "2026-11-05",
-    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71563.22,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xcaa5ca2323bb52817cc094ff19d606c3d2a921980f46f3329b10947ccfacaa6c:log:585",
-    "blockNumber": 96776804
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xa8e7d1c9a9bfc14cac1aaeb41342957920aa48ab07af37b00c4bdb06afcc9ad9",
-    "time": 1793870527,
-    "date": "2026-11-05",
-    "wallet": "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71564.69,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xa8e7d1c9a9bfc14cac1aaeb41342957920aa48ab07af37b00c4bdb06afcc9ad9:log:2591",
-    "blockNumber": 96776714
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x7a39d2fafaa88356de8a16a3b0dbac5faec8fd4ea0064c5a71a6292d1aefc7ca",
-    "time": 1793870251,
-    "date": "2026-11-05",
-    "wallet": "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71956.83,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x7a39d2fafaa88356de8a16a3b0dbac5faec8fd4ea0064c5a71a6292d1aefc7ca:log:678",
-    "blockNumber": 96776530
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xa4f8494cae7d89f7c047ae9f288a0cc955d33befe1960fefbb258fa2de2b9807",
-    "time": 1793870148,
-    "date": "2026-11-05",
-    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71846.57,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xa4f8494cae7d89f7c047ae9f288a0cc955d33befe1960fefbb258fa2de2b9807:log:555",
-    "blockNumber": 96776461
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x45c6fb0b9e291de059fb08edae73f0dc58d9ccbe5abea1563348f61e70ea16dc",
-    "time": 1793869915,
-    "date": "2026-11-05",
-    "wallet": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71764.25,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x45c6fb0b9e291de059fb08edae73f0dc58d9ccbe5abea1563348f61e70ea16dc:log:798",
-    "blockNumber": 96776306
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x56272605beb06415af6bf44ccef15d8cbf8e0053adc0a98c054e584e77018dd7",
-    "time": 1793869593,
-    "date": "2026-11-05",
-    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71851.65,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x56272605beb06415af6bf44ccef15d8cbf8e0053adc0a98c054e584e77018dd7:log:4659",
-    "blockNumber": 96776091
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xb83cef8f32f45dd7184a66270bacf20ebd0146cff65c35035219618abd082a04",
-    "time": 1793869425,
-    "date": "2026-11-05",
+    "hash": "0x65b6e5a2c43885144abd090587fe1cc1e3816218f7bec820dc9094edd925f2fc",
+    "time": 1793958252,
+    "date": "2026-11-06",
     "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
     "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71827.21,
+    "amount": 82196.24840309379,
     "venue": "DEX (swap-detected, Polygon)",
     "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xb83cef8f32f45dd7184a66270bacf20ebd0146cff65c35035219618abd082a04:log:1648",
-    "blockNumber": 96775979
+    "uniqueId": "0x65b6e5a2c43885144abd090587fe1cc1e3816218f7bec820dc9094edd925f2fc:log:774",
+    "blockNumber": 96835197
    },
    {
     "chain": "polygon",
-    "hash": "0x854c7f977758c8d21acac4893197e692165e8f6e50507e29f2c603c2aa85cd51",
-    "time": 1793869366,
-    "date": "2026-11-05",
-    "wallet": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71948.38,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x854c7f977758c8d21acac4893197e692165e8f6e50507e29f2c603c2aa85cd51:log:314",
-    "blockNumber": 96775940
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x7b84530abd4afb9394e075fdbf45728bc383e211ced013dac12412078ce5205d",
-    "time": 1793868903,
-    "date": "2026-11-05",
-    "wallet": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71709.82,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x7b84530abd4afb9394e075fdbf45728bc383e211ced013dac12412078ce5205d:log:788",
-    "blockNumber": 96775631
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xedcb6f8c6b56ce9cee779b588e1934d036f3805e59f2be1156b239b2ede28969",
-    "time": 1793868702,
-    "date": "2026-11-05",
-    "wallet": "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71768.81,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xedcb6f8c6b56ce9cee779b588e1934d036f3805e59f2be1156b239b2ede28969:log:654",
-    "blockNumber": 96775497
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x9ca8bb13802ac5b43f0027e9ef13bda83eb09ca616ce95f6e9b5947d03290304",
-    "time": 1793868460,
-    "date": "2026-11-05",
-    "wallet": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71712.6,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x9ca8bb13802ac5b43f0027e9ef13bda83eb09ca616ce95f6e9b5947d03290304:log:643",
-    "blockNumber": 96775336
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xf0e0bbf31881423403574bd2bca3695102875034f01fc1184f5af138633a6772",
-    "time": 1793868313,
-    "date": "2026-11-05",
-    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71302.12,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xf0e0bbf31881423403574bd2bca3695102875034f01fc1184f5af138633a6772:log:731",
-    "blockNumber": 96775238
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xce2daa2dccd31d821aacccc18e033aac452b46f481b29770641a0b6daf3b359c",
-    "time": 1793868132,
-    "date": "2026-11-05",
-    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 71038.53,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xce2daa2dccd31d821aacccc18e033aac452b46f481b29770641a0b6daf3b359c:log:887",
-    "blockNumber": 96775117
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xb98f851c40bc7735851355f6f2962952b687aec19a92747d016b64c290227b23",
-    "time": 1793867908,
-    "date": "2026-11-05",
-    "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 72976.58,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xb98f851c40bc7735851355f6f2962952b687aec19a92747d016b64c290227b23:log:1754",
-    "blockNumber": 96774968
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xdb8c5b3f09973661f74e53993e74dd6c52bee9a057aa84321cf1594288e3d9f1",
-    "time": 1793867650,
-    "date": "2026-11-05",
-    "wallet": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 73608.18,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xdb8c5b3f09973661f74e53993e74dd6c52bee9a057aa84321cf1594288e3d9f1:log:839",
-    "blockNumber": 96774796
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x9e0a963af31edb0f1fef496f1dc2c6bc0c155da2f7832b32f48378b345c8f1f4",
-    "time": 1793867502,
-    "date": "2026-11-05",
-    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 74275.73,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x9e0a963af31edb0f1fef496f1dc2c6bc0c155da2f7832b32f48378b345c8f1f4:log:577",
-    "blockNumber": 96774697
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x5fe6b0cbc5ee37fca83764a2d866eb31349c2f6ac65890c5919a408b8b563c8b",
-    "time": 1793867362,
-    "date": "2026-11-05",
-    "wallet": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 76711.53,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x5fe6b0cbc5ee37fca83764a2d866eb31349c2f6ac65890c5919a408b8b563c8b:log:540",
-    "blockNumber": 96774604
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x54d25b126ed5d6307971c61f5b1f4eb91c7ad7ca80e049472b1cfbac07c6c4be",
-    "time": 1793867233,
-    "date": "2026-11-05",
-    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 77122.79,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x54d25b126ed5d6307971c61f5b1f4eb91c7ad7ca80e049472b1cfbac07c6c4be:log:812",
-    "blockNumber": 96774518
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x4178a1f3e47d2bf32a2927766225f2156f87c1069d1d2e8553eb213eaf9054d7",
-    "time": 1793867139,
-    "date": "2026-11-05",
-    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 76267.06,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x4178a1f3e47d2bf32a2927766225f2156f87c1069d1d2e8553eb213eaf9054d7:log:817",
-    "blockNumber": 96774455
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x20443e40578e2769162c5f636547fce9cf55dc392fbc060c37d1299bdc5af897",
-    "time": 1793867013,
-    "date": "2026-11-05",
-    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 75290.41,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x20443e40578e2769162c5f636547fce9cf55dc392fbc060c37d1299bdc5af897:log:855",
-    "blockNumber": 96774371
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x53b466ba53e05209b8e111be0090bf55eb64b3bcfbb33450d79d89da1856d2f5",
-    "time": 1793866846,
-    "date": "2026-11-05",
-    "wallet": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 75592.39,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x53b466ba53e05209b8e111be0090bf55eb64b3bcfbb33450d79d89da1856d2f5:log:805",
-    "blockNumber": 96774260
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x4ca1350bb281c68878717cff32572f5f3da75de2df0b13596dc58f5101b73fb4",
-    "time": 1793866674,
-    "date": "2026-11-05",
-    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 76405.09,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x4ca1350bb281c68878717cff32572f5f3da75de2df0b13596dc58f5101b73fb4:log:733",
-    "blockNumber": 96774145
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x6adba24d0069bcd8abab72de72af1378fdf3e16441bf945ca37a82b0f591e87b",
-    "time": 1793866395,
-    "date": "2026-11-05",
-    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 76788.93,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x6adba24d0069bcd8abab72de72af1378fdf3e16441bf945ca37a82b0f591e87b:log:504",
-    "blockNumber": 96773959
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x8b345597ae7a25d415e59351087896b91839be1dc811356e822956b5e461b61d",
-    "time": 1793866245,
-    "date": "2026-11-05",
-    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 77415.2,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x8b345597ae7a25d415e59351087896b91839be1dc811356e822956b5e461b61d:log:373",
-    "blockNumber": 96773859
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xbbc682c70b9328241c164a1b95c4f6a11119f9f4cb6b1dfa932233878c11b974",
-    "time": 1793866057,
-    "date": "2026-11-05",
-    "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 76770.17,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xbbc682c70b9328241c164a1b95c4f6a11119f9f4cb6b1dfa932233878c11b974:log:519",
-    "blockNumber": 96773734
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x3ccbbde97b6e925b1c07193d8aaa98504488094a9565e9dcd743441bf7187e99",
-    "time": 1793865919,
-    "date": "2026-11-05",
-    "wallet": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 76410.75,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x3ccbbde97b6e925b1c07193d8aaa98504488094a9565e9dcd743441bf7187e99:log:644",
-    "blockNumber": 96773642
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x6a4eed56d72748e2b0360ee3bfbd86a03c05714202a313bc5173bc5cf28e40a8",
-    "time": 1793865826,
-    "date": "2026-11-05",
-    "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 76415.03,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x6a4eed56d72748e2b0360ee3bfbd86a03c05714202a313bc5173bc5cf28e40a8:log:531",
-    "blockNumber": 96773580
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x1d0c4c2bc45dc61a333374e03c9b921c0908dd1587aabb7c4a90afd3271907f6",
-    "time": 1793865682,
-    "date": "2026-11-05",
-    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 76556.87,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x1d0c4c2bc45dc61a333374e03c9b921c0908dd1587aabb7c4a90afd3271907f6:log:571",
-    "blockNumber": 96773484
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x7980fec515c3fc15d1e4ef325a9dd2997189433a722f94088043f60a49740849",
-    "time": 1793865432,
-    "date": "2026-11-05",
-    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 75664.06,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x7980fec515c3fc15d1e4ef325a9dd2997189433a722f94088043f60a49740849:log:1268",
-    "blockNumber": 96773317
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x7da587c7bfda2dfc2afd142eaec33b572a27b60de89398f6dda3bfeae9a864b2",
-    "time": 1793865157,
-    "date": "2026-11-05",
-    "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 75863.75,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x7da587c7bfda2dfc2afd142eaec33b572a27b60de89398f6dda3bfeae9a864b2:log:678",
-    "blockNumber": 96773134
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x11dd97f5d7cf57ea91a5111edd410ab5bab3eb90b5ddb9e848e4f110033428b6",
-    "time": 1793864952,
-    "date": "2026-11-05",
-    "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 75031.12,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x11dd97f5d7cf57ea91a5111edd410ab5bab3eb90b5ddb9e848e4f110033428b6:log:446",
-    "blockNumber": 96772997
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xe829b09444baf2b057cd27741b6b654ec337923812e1b797cfbab30a4053b095",
-    "time": 1793864878,
-    "date": "2026-11-05",
-    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 74838.03,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xe829b09444baf2b057cd27741b6b654ec337923812e1b797cfbab30a4053b095:log:706",
-    "blockNumber": 96772948
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xbd37efd7417d5f7afdaae4e62000829a3c8edfc274493e77b4fdd990de7ce0f8",
-    "time": 1793864764,
-    "date": "2026-11-05",
-    "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 74841.32,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xbd37efd7417d5f7afdaae4e62000829a3c8edfc274493e77b4fdd990de7ce0f8:log:462",
-    "blockNumber": 96772872
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x30e849cc8c0ba5b600c7f2a9f49e2b8b88f013545ca77ed8e004eebb366915cb",
-    "time": 1793864496,
-    "date": "2026-11-05",
-    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 73790.41,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x30e849cc8c0ba5b600c7f2a9f49e2b8b88f013545ca77ed8e004eebb366915cb:log:578",
-    "blockNumber": 96772693
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x968cb77cc335bb9449f9a46235eae62a9c13baf7d3e436f87ba1549657e2b943",
-    "time": 1793864400,
-    "date": "2026-11-05",
-    "wallet": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 74291.6,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x968cb77cc335bb9449f9a46235eae62a9c13baf7d3e436f87ba1549657e2b943:log:560",
-    "blockNumber": 96772629
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x77fe2bba63f3bd726b5ab231cb7a594d4cc887d18f33fc8f4929770c174d34d2",
-    "time": 1793864242,
-    "date": "2026-11-05",
-    "wallet": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 74294.45,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x77fe2bba63f3bd726b5ab231cb7a594d4cc887d18f33fc8f4929770c174d34d2:log:580",
-    "blockNumber": 96772524
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xbe3d4525a16fb47764765476d0500daf1339bd3f77f1ae18ff8765a1d800a56a",
-    "time": 1793863777,
-    "date": "2026-11-05",
-    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 72916.01,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xbe3d4525a16fb47764765476d0500daf1339bd3f77f1ae18ff8765a1d800a56a:log:382",
-    "blockNumber": 96772214
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xbdf57fb66326f30ed86e731fa2612120427d3ba75b1ab15a5a0b14f6b7f56f8f",
-    "time": 1793863528,
-    "date": "2026-11-05",
-    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 73000.73,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xbdf57fb66326f30ed86e731fa2612120427d3ba75b1ab15a5a0b14f6b7f56f8f:log:683",
-    "blockNumber": 96772048
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x613560cd6a570efc97f9036f2a0eb4ac14af030f657103b1a45d13f3b2d25cb6",
-    "time": 1793863263,
-    "date": "2026-11-05",
-    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 72511.62,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x613560cd6a570efc97f9036f2a0eb4ac14af030f657103b1a45d13f3b2d25cb6:log:453",
-    "blockNumber": 96771871
-   },
-   {
-    "chain": "polygon",
-    "hash": "0xb0ca7976e33b64dd3f701d7402b4a845e1b4b52832e430faaf0ae72cd00b0164",
-    "time": 1793863063,
-    "date": "2026-11-05",
-    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 72760.71,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0xb0ca7976e33b64dd3f701d7402b4a845e1b4b52832e430faaf0ae72cd00b0164:log:444",
-    "blockNumber": 96771738
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x347e6aea93978817d1e9f1dd92a8eaa2fd8f8ae908e132f3f0225f9443958771",
-    "time": 1793862894,
-    "date": "2026-11-05",
-    "wallet": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
-    "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 77586.27,
-    "venue": "DEX (swap-detected, Polygon)",
-    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x347e6aea93978817d1e9f1dd92a8eaa2fd8f8ae908e132f3f0225f9443958771:log:413",
-    "blockNumber": 96771625
-   },
-   {
-    "chain": "polygon",
-    "hash": "0x39765debfac0f2369164395e347cb8e8bc1c502646ba8a63290fb4f9433cb48a",
-    "time": 1793862783,
-    "date": "2026-11-05",
+    "hash": "0x44651a208f7e559648babaa6ac6d0ea2bf9a613f58fcbca0a8590ad90bd32f06",
+    "time": 1793958049,
+    "date": "2026-11-06",
     "wallet": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
     "to": "0x082738d007001080a00099a000004f3006152085",
-    "amount": 77680.4,
+    "amount": 83961.55325324199,
     "venue": "DEX (swap-detected, Polygon)",
     "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
-    "uniqueId": "0x39765debfac0f2369164395e347cb8e8bc1c502646ba8a63290fb4f9433cb48a:log:886",
-    "blockNumber": 96771551
+    "uniqueId": "0x44651a208f7e559648babaa6ac6d0ea2bf9a613f58fcbca0a8590ad90bd32f06:log:467",
+    "blockNumber": 96835062
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x81dd49c902a1702673d047f1f332564bc13906c46d82b15ebbd4ec14d639c4b9",
+    "time": 1793957689,
+    "date": "2026-11-06",
+    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 85203.80449485667,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x81dd49c902a1702673d047f1f332564bc13906c46d82b15ebbd4ec14d639c4b9:log:451",
+    "blockNumber": 96834822
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x4f7ab829d928dedbb1c77492bab5ac1d71bc9fcf850a74e63e287aa895fc8148",
+    "time": 1793957577,
+    "date": "2026-11-06",
+    "wallet": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 86305.50472457852,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x4f7ab829d928dedbb1c77492bab5ac1d71bc9fcf850a74e63e287aa895fc8148:log:532",
+    "blockNumber": 96834747
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x7c184ed74ef4b763a80518052045e3034b086537af7a08d393b80dee7a17bc07",
+    "time": 1793957416,
+    "date": "2026-11-06",
+    "wallet": "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 85848.89714825287,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x7c184ed74ef4b763a80518052045e3034b086537af7a08d393b80dee7a17bc07:log:904",
+    "blockNumber": 96834640
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x15fcb77884aefe03bd9c0781a0ce4e7ab42b1214574878f2f71edef566285195",
+    "time": 1793957289,
+    "date": "2026-11-06",
+    "wallet": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 86041.58307366267,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x15fcb77884aefe03bd9c0781a0ce4e7ab42b1214574878f2f71edef566285195:log:802",
+    "blockNumber": 96834555
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xa5c56a4f8dd6a453a2cb1bfd375ddfe82886c4c512abd59cd32a7fbe929a5d96",
+    "time": 1793957074,
+    "date": "2026-11-06",
+    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 85519.25891488226,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xa5c56a4f8dd6a453a2cb1bfd375ddfe82886c4c512abd59cd32a7fbe929a5d96:log:1117",
+    "blockNumber": 96834412
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x9d7f127c039b075763fb92c1aae00055058e196de44d74a58ddf5e463f0c2dbc",
+    "time": 1793956756,
+    "date": "2026-11-06",
+    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 86569.08730905433,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x9d7f127c039b075763fb92c1aae00055058e196de44d74a58ddf5e463f0c2dbc:log:647",
+    "blockNumber": 96834200
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xe5d49482d603ae23773deed6456076bc9cb0fceee934d43dc10515e6fa937657",
+    "time": 1793956588,
+    "date": "2026-11-06",
+    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 87035.60962781166,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xe5d49482d603ae23773deed6456076bc9cb0fceee934d43dc10515e6fa937657:log:456",
+    "blockNumber": 96834088
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x27e752099db8f463b409ef9e7c77925b52050d91ee605ae7781624e9fc91a505",
+    "time": 1793956395,
+    "date": "2026-11-06",
+    "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 88659.9878514467,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x27e752099db8f463b409ef9e7c77925b52050d91ee605ae7781624e9fc91a505:log:1104",
+    "blockNumber": 96833959
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x755335e6fc22044f17bc2b7ded3ca68003f1c46c910ff41fbdd4c8dc05efe1aa",
+    "time": 1793956153,
+    "date": "2026-11-06",
+    "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 88572.74241661816,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x755335e6fc22044f17bc2b7ded3ca68003f1c46c910ff41fbdd4c8dc05efe1aa:log:368",
+    "blockNumber": 96833798
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x756302b71013d1c61097ad6c07ab9c224e1cc6296a9f801dab2edc7618a2b1b1",
+    "time": 1793956036,
+    "date": "2026-11-06",
+    "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 87727.95931842847,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x756302b71013d1c61097ad6c07ab9c224e1cc6296a9f801dab2edc7618a2b1b1:log:658",
+    "blockNumber": 96833720
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x45cf7d190d1c18661e289ddce345c502a63e8b3ec2f672c29b75ccf56b8bc2df",
+    "time": 1793955952,
+    "date": "2026-11-06",
+    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 88176.94701052814,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x45cf7d190d1c18661e289ddce345c502a63e8b3ec2f672c29b75ccf56b8bc2df:log:386",
+    "blockNumber": 96833664
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x44f37f72d906d7da9bf46d54fc59ed6b0ca52278486bd3a46a88a282e598e7ea",
+    "time": 1793955802,
+    "date": "2026-11-06",
+    "wallet": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 88273.83088848431,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x44f37f72d906d7da9bf46d54fc59ed6b0ca52278486bd3a46a88a282e598e7ea:log:830",
+    "blockNumber": 96833564
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xef65214dc8fbe2a2855bbd49ec6ea700958e9390af0c7c8fc593dbbc6d2a181d",
+    "time": 1793955523,
+    "date": "2026-11-06",
+    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 87528.00712703638,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xef65214dc8fbe2a2855bbd49ec6ea700958e9390af0c7c8fc593dbbc6d2a181d:log:893",
+    "blockNumber": 96833378
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x3203b3db4ec81df3d3123e0903a3bc12413e28d238e85ba4b737b0721a80f205",
+    "time": 1793955178,
+    "date": "2026-11-06",
+    "wallet": "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 88792.69242283332,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x3203b3db4ec81df3d3123e0903a3bc12413e28d238e85ba4b737b0721a80f205:log:697",
+    "blockNumber": 96833148
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x39666822c0f8ece790e46353c73c8b89feb13b5f2a01e2c11832aefaab7c8355",
+    "time": 1793955067,
+    "date": "2026-11-06",
+    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 88255.81999870803,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x39666822c0f8ece790e46353c73c8b89feb13b5f2a01e2c11832aefaab7c8355:log:677",
+    "blockNumber": 96833074
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xa3e8b73dcb1defcbd3efbcca06e3a7ba06443f7514164f3ada4f35d938a6c937",
+    "time": 1793954932,
+    "date": "2026-11-06",
+    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 87867.10575941432,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xa3e8b73dcb1defcbd3efbcca06e3a7ba06443f7514164f3ada4f35d938a6c937:log:1175",
+    "blockNumber": 96832984
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x90f4c12f3f1c2da026b86006be2ecbb451521d87664432c5eb7e8078b0dcad4b",
+    "time": 1793954776,
+    "date": "2026-11-06",
+    "wallet": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 89702.7886077711,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x90f4c12f3f1c2da026b86006be2ecbb451521d87664432c5eb7e8078b0dcad4b:log:315",
+    "blockNumber": 96832880
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x79fdd8708a5d8b4e681bcc5b5bf799caea91e1182c7dd0757e0e80344a68b448",
+    "time": 1793954683,
+    "date": "2026-11-06",
+    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 89751.236103626,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x79fdd8708a5d8b4e681bcc5b5bf799caea91e1182c7dd0757e0e80344a68b448:log:568",
+    "blockNumber": 96832818
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x97cb30fc20141b74fdd6b9332ea4ea08153cd6326fb766e8ff583fdb4bc621d2",
+    "time": 1793954478,
+    "date": "2026-11-06",
+    "wallet": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 89036.24229740445,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x97cb30fc20141b74fdd6b9332ea4ea08153cd6326fb766e8ff583fdb4bc621d2:log:929",
+    "blockNumber": 96832681
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x5313f10021c55c7024c45c8b5f2a9d49118e39fbcf3bc0d2fb0a934a59da7b69",
+    "time": 1793954254,
+    "date": "2026-11-06",
+    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 89259.7694868487,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x5313f10021c55c7024c45c8b5f2a9d49118e39fbcf3bc0d2fb0a934a59da7b69:log:722",
+    "blockNumber": 96832532
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x297ec38b7c7322a04ffe08dee19b2b289b91f6188502085ebdda897282736552",
+    "time": 1793954115,
+    "date": "2026-11-06",
+    "wallet": "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 89534.66439642356,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x297ec38b7c7322a04ffe08dee19b2b289b91f6188502085ebdda897282736552:log:892",
+    "blockNumber": 96832439
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x10550e3ac46d795862bc07cc4a53a09e29275756d1e86afd217bbd13bbd2bc41",
+    "time": 1793954052,
+    "date": "2026-11-06",
+    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 89888.6541200428,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x10550e3ac46d795862bc07cc4a53a09e29275756d1e86afd217bbd13bbd2bc41:log:637",
+    "blockNumber": 96832397
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x4211cf496bd0e0c34ae9ef9632cdbbbe3f52f0bd42aad2c40f7a36a81f44430c",
+    "time": 1793953680,
+    "date": "2026-11-06",
+    "wallet": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 89376.92177112371,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x4211cf496bd0e0c34ae9ef9632cdbbbe3f52f0bd42aad2c40f7a36a81f44430c:log:729",
+    "blockNumber": 96832149
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x50088328de5348d36f47e3d14445137c806e37589e224b6abb8323baabc096d9",
+    "time": 1793953528,
+    "date": "2026-11-06",
+    "wallet": "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 89551.67304529027,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x50088328de5348d36f47e3d14445137c806e37589e224b6abb8323baabc096d9:log:574",
+    "blockNumber": 96832048
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x7ade7a980c058a13e0d860df040ffc14f66eb26b8e47d130be11c4bf219a007b",
+    "time": 1793953387,
+    "date": "2026-11-06",
+    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 89802.73718542334,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x7ade7a980c058a13e0d860df040ffc14f66eb26b8e47d130be11c4bf219a007b:log:548",
+    "blockNumber": 96831954
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x862925bde0646eea02e38adbe066e099901a64bd2cc9001a5c3c9ba0a25b3d88",
+    "time": 1793953164,
+    "date": "2026-11-06",
+    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 89747.75615277352,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x862925bde0646eea02e38adbe066e099901a64bd2cc9001a5c3c9ba0a25b3d88:log:423",
+    "blockNumber": 96831805
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xe6259e779f50451cd23d189e979904c63bc467b08e44acbdff797b3c2be43cad",
+    "time": 1793953069,
+    "date": "2026-11-06",
+    "wallet": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 89592.12025780306,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xe6259e779f50451cd23d189e979904c63bc467b08e44acbdff797b3c2be43cad:log:833",
+    "blockNumber": 96831742
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x9658137b1a1c52addc42afcfc1cc1a4a1c65c91dd2f2b6125eff380950178b59",
+    "time": 1793952966,
+    "date": "2026-11-06",
+    "wallet": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 89639.09926301289,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x9658137b1a1c52addc42afcfc1cc1a4a1c65c91dd2f2b6125eff380950178b59:log:557",
+    "blockNumber": 96831673
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x5098a818ac5bf444f57723cad893ea21c24a37859e89e5c5c1004cae20aafb85",
+    "time": 1793952738,
+    "date": "2026-11-06",
+    "wallet": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 89609.2353883385,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x5098a818ac5bf444f57723cad893ea21c24a37859e89e5c5c1004cae20aafb85:log:676",
+    "blockNumber": 96831521
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x2c10f88d3732eb15c1c8404c284381a0ce004363d5d6e4c1d7e07cc5eccad2c6",
+    "time": 1793952636,
+    "date": "2026-11-06",
+    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 90345.52176765513,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x2c10f88d3732eb15c1c8404c284381a0ce004363d5d6e4c1d7e07cc5eccad2c6:log:624",
+    "blockNumber": 96831453
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xe721b7b9e60504ade7bda2123fed761a1341acd9c16852b71100409ee8dcf03e",
+    "time": 1793952450,
+    "date": "2026-11-06",
+    "wallet": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 91185.19737128804,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xe721b7b9e60504ade7bda2123fed761a1341acd9c16852b71100409ee8dcf03e:log:559",
+    "blockNumber": 96831329
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xdbce4c8702839c9e2121b41a5ae7bf19de1cf831297b3f813ef8a2bea7112f59",
+    "time": 1793952280,
+    "date": "2026-11-06",
+    "wallet": "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 91795.83711916175,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xdbce4c8702839c9e2121b41a5ae7bf19de1cf831297b3f813ef8a2bea7112f59:log:580",
+    "blockNumber": 96831216
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x3b5f0fdc2d1e0adf03e303977348a6b386cd53f9077f17fb3be5796fe3b0bf1c",
+    "time": 1793952124,
+    "date": "2026-11-06",
+    "wallet": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 87219.78362267412,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x3b5f0fdc2d1e0adf03e303977348a6b386cd53f9077f17fb3be5796fe3b0bf1c:log:807",
+    "blockNumber": 96831112
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xf035de6e74a7c227a0c0e0549ace9a49d2ae93e9651c56cb2935dd4208ae4f92",
+    "time": 1793951904,
+    "date": "2026-11-06",
+    "wallet": "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 87160.26172055813,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xf035de6e74a7c227a0c0e0549ace9a49d2ae93e9651c56cb2935dd4208ae4f92:log:644",
+    "blockNumber": 96830965
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x4b364b8a6bcd1555f32d64d49ddb96a093b5841c0d8f3f72646cc35403864ef7",
+    "time": 1793951734,
+    "date": "2026-11-06",
+    "wallet": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 88018.92129682301,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x4b364b8a6bcd1555f32d64d49ddb96a093b5841c0d8f3f72646cc35403864ef7:log:1010",
+    "blockNumber": 96830852
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x08641e1403c967fbfbecda20fe1a898cd4db2f907b511dd866234aff1faea51e",
+    "time": 1793951541,
+    "date": "2026-11-06",
+    "wallet": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 88956.85819963037,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x08641e1403c967fbfbecda20fe1a898cd4db2f907b511dd866234aff1faea51e:log:714",
+    "blockNumber": 96830723
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x7253771404bd15ccf35569f26f2a47550231c9e049997d1d57bd21eb321acf0f",
+    "time": 1793951368,
+    "date": "2026-11-06",
+    "wallet": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 89926.0092855823,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x7253771404bd15ccf35569f26f2a47550231c9e049997d1d57bd21eb321acf0f:log:467",
+    "blockNumber": 96830608
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xd15f7d1cba6ffe92a374ab726b9a5cf8eb78fc8b3bed1f8f506c1ba6469dfbbc",
+    "time": 1793951286,
+    "date": "2026-11-06",
+    "wallet": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 90179.09705252151,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xd15f7d1cba6ffe92a374ab726b9a5cf8eb78fc8b3bed1f8f506c1ba6469dfbbc:log:440",
+    "blockNumber": 96830553
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xf908fdc49e0595f6b89b151da649a5a60184e8a434726d92642650ae232cfe81",
+    "time": 1793951085,
+    "date": "2026-11-06",
+    "wallet": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 91254.22124279199,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xf908fdc49e0595f6b89b151da649a5a60184e8a434726d92642650ae232cfe81:log:202",
+    "blockNumber": 96830419
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x6fdf8f83499a0df9440ee97ea49a970fa30eddaf7c602d42b505d006a14cbca8",
+    "time": 1793950899,
+    "date": "2026-11-06",
+    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 91045.67420650928,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x6fdf8f83499a0df9440ee97ea49a970fa30eddaf7c602d42b505d006a14cbca8:log:399",
+    "blockNumber": 96830295
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xfc7bd7b4c9c6cf742e6b597392a65937dc836bf3c6428beea772e815de554e10",
+    "time": 1793950807,
+    "date": "2026-11-06",
+    "wallet": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 89602.4119652295,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xfc7bd7b4c9c6cf742e6b597392a65937dc836bf3c6428beea772e815de554e10:log:649",
+    "blockNumber": 96830234
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x6b6cafcc2a2392996023796d4294c88988d50a85739137b40e18081267fc4169",
+    "time": 1793950666,
+    "date": "2026-11-06",
+    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 88702.29975721978,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x6b6cafcc2a2392996023796d4294c88988d50a85739137b40e18081267fc4169:log:540",
+    "blockNumber": 96830140
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x03e6578859cb7044d0107e43bccd431a96f42f00b2d7f25a133f8a26dcc23214",
+    "time": 1793950474,
+    "date": "2026-11-06",
+    "wallet": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 91368.0603922372,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x03e6578859cb7044d0107e43bccd431a96f42f00b2d7f25a133f8a26dcc23214:log:307",
+    "blockNumber": 96830012
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xd7bc4bb2eb47afec5f3a7d0dd6b000c378183d78dd72726d967dd631d4ce1995",
+    "time": 1793950291,
+    "date": "2026-11-06",
+    "wallet": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 89435.50480721012,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xd7bc4bb2eb47afec5f3a7d0dd6b000c378183d78dd72726d967dd631d4ce1995:log:1458",
+    "blockNumber": 96829890
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x917ebc3d9b36086f4fc1254c1fa4985b2158dae03e093384ff7b90b29a6faa5c",
+    "time": 1793950105,
+    "date": "2026-11-06",
+    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 89867.96118299563,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x917ebc3d9b36086f4fc1254c1fa4985b2158dae03e093384ff7b90b29a6faa5c:log:1391",
+    "blockNumber": 96829766
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xcd517e230926cd4993fbd6199c00b9382fe3d5830d8ef206436b736fe4795bb1",
+    "time": 1793949910,
+    "date": "2026-11-06",
+    "wallet": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 87955.39900461696,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xcd517e230926cd4993fbd6199c00b9382fe3d5830d8ef206436b736fe4795bb1:log:555",
+    "blockNumber": 96829636
+   },
+   {
+    "chain": "polygon",
+    "hash": "0xd53bc3f2624f4b05993568c4f5ce9b418a247d79681b1d44f4396e341931bfc5",
+    "time": 1793949793,
+    "date": "2026-11-06",
+    "wallet": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+    "to": "0x082738d007001080a00099a000004f3006152085",
+    "amount": 88202.42645198562,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0xd53bc3f2624f4b05993568c4f5ce9b418a247d79681b1d44f4396e341931bfc5:log:878",
+    "blockNumber": 96829558
+   },
+   {
+    "chain": "polygon",
+    "hash": "0x2e5900b17d0f7ca8f4efbbeb640c1270a1ddf382c36eefca0f66acee8d5d11c5",
+    "time": 1793949690,
+    "date": "2026-11-06",
+    "wallet": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
+    "to": "0x006d0e0d006109f0020f3050000a713780b7b000",
+    "amount": 88427.14711947062,
+    "venue": "DEX (swap-detected, Polygon)",
+    "reason": "Bot wallet sent to DEX venue \"DEX (swap-detected, Polygon)\".",
+    "uniqueId": "0x2e5900b17d0f7ca8f4efbbeb640c1270a1ddf382c36eefca0f66acee8d5d11c5:log:715",
+    "blockNumber": 96829489
    }
   ]
  },
  "byWindow": {
   "24h": {
-   "from": "2026-11-04T09:47:32.000Z",
-   "to": "2026-11-05T09:47:32.000Z",
+   "from": "2026-11-05T09:46:20.000Z",
+   "to": "2026-11-06T09:46:20.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
-    "botDevShare": 14947505,
-    "total": 14947505
+    "botDevShare": 12275552,
+    "total": 12275552
    },
    "sellCount": 0,
-   "botSaleCount": 490,
-   "botSold": 43265977,
+   "botSaleCount": 449,
+   "botSold": 35531934,
    "sellDays": 2,
    "internal": {
     "count": 0,
@@ -888,28 +913,51 @@
    },
    "received": 0,
    "payments": {
-    "stableOut": 0,
-    "stableOutCount": 0,
+    "stableOut": 6220,
+    "stableOutCount": 1,
     "stableIn": 0,
-    "stableInCount": 0,
-    "bySymbol": {},
-    "topStableRecipients": [],
+    "stableInCount": 5,
+    "bySymbol": {
+     "USDC": 6220
+    },
+    "topStableRecipients": [
+     {
+      "address": "0xe77ab658b9ffa986583767f631c886698f6a312e",
+      "label": null,
+      "asset": "stable",
+      "symbol": "USDC",
+      "type": "stable_out",
+      "count": 1,
+      "amount": 6220,
+      "lastHash": "0x0e4d59e5539f4d6e1c5d4da93aac81b1060ed0ff2eb786cdd1c41fbacca19f8a",
+      "lastTime": 1793873325
+     }
+    ],
     "topTokenDestinations": []
    },
-   "byType": {}
+   "byType": {
+    "stable_in": {
+     "count": 5,
+     "amount": 0
+    },
+    "stable_out": {
+     "count": 1,
+     "amount": 6220
+    }
+   }
   },
   "72h": {
-   "from": "2026-11-02T09:47:32.000Z",
-   "to": "2026-11-05T09:47:32.000Z",
+   "from": "2026-11-03T09:46:20.000Z",
+   "to": "2026-11-06T09:46:20.000Z",
    "devSold": {
-    "dex": 30500000,
+    "dex": 6000000,
     "cex": 0,
-    "botDevShare": 49500121,
-    "total": 80000121
+    "botDevShare": 44129168,
+    "total": 50129168
    },
-   "sellCount": 57,
-   "botSaleCount": 1477,
-   "botSold": 143279505,
+   "sellCount": 12,
+   "botSaleCount": 1435,
+   "botSold": 127733128,
    "sellDays": 4,
    "internal": {
     "count": 1,
@@ -917,12 +965,12 @@
    },
    "received": 359600,
    "payments": {
-    "stableOut": 30404,
+    "stableOut": 36524,
     "stableOutCount": 5,
-    "stableIn": 41067,
-    "stableInCount": 71,
+    "stableIn": 7919,
+    "stableInCount": 30,
     "bySymbol": {
-     "USDC": 30405
+     "USDC": 36525
     },
     "topStableRecipients": [
      {
@@ -948,6 +996,17 @@
       "lastTime": 1793709153
      },
      {
+      "address": "0xe77ab658b9ffa986583767f631c886698f6a312e",
+      "label": null,
+      "asset": "stable",
+      "symbol": "USDC",
+      "type": "stable_out",
+      "count": 1,
+      "amount": 6220,
+      "lastHash": "0x0e4d59e5539f4d6e1c5d4da93aac81b1060ed0ff2eb786cdd1c41fbacca19f8a",
+      "lastTime": 1793873325
+     },
+     {
       "address": "0x9246b2c653015e28087b63db3b9a7afe4c6eb408",
       "label": null,
       "asset": "stable",
@@ -957,17 +1016,6 @@
       "amount": 4176,
       "lastHash": "0xe1e64eafca8ce1cb234b6f2d4b1cc8d59a10bf995ad088ea20c7b72eaab284ee",
       "lastTime": 1793713078
-     },
-     {
-      "address": "0xe77ab658b9ffa986583767f631c886698f6a312e",
-      "label": null,
-      "asset": "stable",
-      "symbol": "USDC",
-      "type": "stable_out",
-      "count": 1,
-      "amount": 100,
-      "lastHash": "0xd9e1f90c3610c4290e57b2cb49ca2c48e2a7a4361cee73c1a48c753140fb6127",
-      "lastTime": 1793632399
      }
     ],
     "topTokenDestinations": [
@@ -977,8 +1025,8 @@
       "asset": "token",
       "symbol": "TEL (legacy)",
       "type": "dex_sell",
-      "count": 57,
-      "amount": 30500000,
+      "count": 12,
+      "amount": 6000000,
       "lastHash": "0x420dc8fa2739bf5b328d8b6136b3d858a2f84e12edea469de5cb294ba4ba5dcc",
       "lastTime": 1793715630
      },
@@ -1008,8 +1056,12 @@
    },
    "byType": {
     "stable_in": {
-     "count": 71,
-     "amount": 41067
+     "count": 30,
+     "amount": 7919
+    },
+    "stable_out": {
+     "count": 5,
+     "amount": 36524
     },
     "transfer_out": {
      "count": 2,
@@ -1028,27 +1080,23 @@
      "amount": 40967
     },
     "dex_sell": {
-     "count": 57,
-     "amount": 30500000
-    },
-    "stable_out": {
-     "count": 5,
-     "amount": 30404
+     "count": 12,
+     "amount": 6000000
     }
    }
   },
   "30d": {
-   "from": "2026-10-06T09:47:32.000Z",
-   "to": "2026-11-05T09:47:32.000Z",
+   "from": "2026-10-07T09:46:20.000Z",
+   "to": "2026-11-06T09:46:20.000Z",
    "devSold": {
     "dex": 55059122,
     "cex": 0,
-    "botDevShare": 261496883,
-    "total": 316556005
+    "botDevShare": 273653652,
+    "total": 328712774
    },
    "sellCount": 118,
-   "botSaleCount": 5182,
-   "botSold": 756910151,
+   "botSaleCount": 5626,
+   "botSold": 792098263,
    "sellDays": 18,
    "internal": {
     "count": 8,
@@ -1056,12 +1104,12 @@
    },
    "received": 1357226537,
    "payments": {
-    "stableOut": 70691,
-    "stableOutCount": 11,
+    "stableOut": 76911,
+    "stableOutCount": 12,
     "stableIn": 83751,
-    "stableInCount": 140,
+    "stableInCount": 145,
     "bySymbol": {
-     "USDC": 70391,
+     "USDC": 76611,
      "USDT": 301
     },
     "topStableRecipients": [
@@ -1099,6 +1147,17 @@
       "lastTime": 1793709153
      },
      {
+      "address": "0xe77ab658b9ffa986583767f631c886698f6a312e",
+      "label": null,
+      "asset": "stable",
+      "symbol": "USDC",
+      "type": "stable_out",
+      "count": 2,
+      "amount": 6320,
+      "lastHash": "0x0e4d59e5539f4d6e1c5d4da93aac81b1060ed0ff2eb786cdd1c41fbacca19f8a",
+      "lastTime": 1793873325
+     },
+     {
       "address": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
       "label": "CoW Protocol settlement",
       "asset": "stable",
@@ -1119,17 +1178,6 @@
       "amount": 247,
       "lastHash": "0x80ee881db5f7c8385fe8423cea59457bd27724b945322d4c12775f3df6604542",
       "lastTime": 1792605653
-     },
-     {
-      "address": "0xe77ab658b9ffa986583767f631c886698f6a312e",
-      "label": null,
-      "asset": "stable",
-      "symbol": "USDC",
-      "type": "stable_out",
-      "count": 1,
-      "amount": 100,
-      "lastHash": "0xd9e1f90c3610c4290e57b2cb49ca2c48e2a7a4361cee73c1a48c753140fb6127",
-      "lastTime": 1793632399
      }
     ],
     "topTokenDestinations": [
@@ -1225,8 +1273,12 @@
    },
    "byType": {
     "stable_in": {
-     "count": 140,
+     "count": 145,
      "amount": 83751
+    },
+    "stable_out": {
+     "count": 12,
+     "amount": 76911
     },
     "transfer_out": {
      "count": 9,
@@ -1248,10 +1300,6 @@
      "count": 118,
      "amount": 55059122
     },
-    "stable_out": {
-     "count": 11,
-     "amount": 70691
-    },
     "bot_funding": {
      "count": 40,
      "amount": 922781757
@@ -1259,17 +1307,17 @@
    }
   },
   "90d": {
-   "from": "2026-08-07T09:47:32.000Z",
-   "to": "2026-11-05T09:47:32.000Z",
+   "from": "2026-08-08T09:46:20.000Z",
+   "to": "2026-11-06T09:46:20.000Z",
    "devSold": {
     "dex": 269103901,
     "cex": 1255701308,
-    "botDevShare": 789863524,
-    "total": 2314668732
+    "botDevShare": 795473075,
+    "total": 2320278284
    },
    "sellCount": 420,
-   "botSaleCount": 25251,
-   "botSold": 2286282390,
+   "botSaleCount": 25265,
+   "botSold": 2302519396,
    "sellDays": 70,
    "internal": {
     "count": 23,
@@ -1277,12 +1325,12 @@
    },
    "received": 2888834337,
    "payments": {
-    "stableOut": 458595,
-    "stableOutCount": 25,
+    "stableOut": 464815,
+    "stableOutCount": 26,
     "stableIn": 449799,
-    "stableInCount": 461,
+    "stableInCount": 466,
     "bySymbol": {
-     "USDC": 457765,
+     "USDC": 463985,
      "USDT": 831
     },
     "topStableRecipients": [
@@ -1342,6 +1390,17 @@
       "lastTime": 1793713078
      },
      {
+      "address": "0xe77ab658b9ffa986583767f631c886698f6a312e",
+      "label": null,
+      "asset": "stable",
+      "symbol": "USDC",
+      "type": "stable_out",
+      "count": 2,
+      "amount": 6320,
+      "lastHash": "0x0e4d59e5539f4d6e1c5d4da93aac81b1060ed0ff2eb786cdd1c41fbacca19f8a",
+      "lastTime": 1793873325
+     },
+     {
       "address": "0xb08ab4332ad871f89da24df4751968a61e58013c",
       "label": null,
       "asset": "stable",
@@ -1384,17 +1443,6 @@
       "amount": 247,
       "lastHash": "0x80ee881db5f7c8385fe8423cea59457bd27724b945322d4c12775f3df6604542",
       "lastTime": 1792605653
-     },
-     {
-      "address": "0xe77ab658b9ffa986583767f631c886698f6a312e",
-      "label": null,
-      "asset": "stable",
-      "symbol": "USDC",
-      "type": "stable_out",
-      "count": 1,
-      "amount": 100,
-      "lastHash": "0xd9e1f90c3610c4290e57b2cb49ca2c48e2a7a4361cee73c1a48c753140fb6127",
-      "lastTime": 1793632399
      }
     ],
     "topTokenDestinations": [
@@ -1492,8 +1540,8 @@
       "asset": "token",
       "symbol": "TEL (legacy)",
       "type": "transfer_out",
-      "count": 16,
-      "amount": 9665184,
+      "count": 14,
+      "amount": 8457036,
       "lastHash": "0x5bb82f959a1368fba2d0729713376b7a4f7e856153e4f30401451671aaf84378",
       "lastTime": 1790247453
      },
@@ -1512,12 +1560,16 @@
    },
    "byType": {
     "stable_in": {
-     "count": 461,
+     "count": 466,
      "amount": 449799
     },
+    "stable_out": {
+     "count": 26,
+     "amount": 464815
+    },
     "transfer_out": {
-     "count": 39,
-     "amount": 534953964
+     "count": 37,
+     "amount": 533745815
     },
     "receive": {
      "count": 18,
@@ -1535,17 +1587,13 @@
      "count": 413,
      "amount": 269103901
     },
-    "stable_out": {
-     "count": 25,
-     "amount": 458595
-    },
     "bot_funding": {
      "count": 40,
      "amount": 922781757
     },
     "staking": {
-     "count": 14,
-     "amount": 18031756
+     "count": 13,
+     "amount": 17997246
     },
     "cex_deposit": {
      "count": 7,
@@ -1556,30 +1604,31 @@
  },
  "headlines": {
   "24h": [
-   "Developer wallets sold 14.9M TEL in the last 24h: 14.9M via the bot cluster (developer-funded 35% of its 43.3M sold).",
-   "Selling happened on 2 of 1 day (0 direct sale/deposit transactions, 490 bot sales)."
+   "Developer wallets sold 12.3M TEL in the last 24h: 12.3M via the bot cluster (developer-funded 35% of its 35.5M sold).",
+   "Selling happened on 2 of 1 day (0 direct sale/deposit transactions, 449 bot sales).",
+   "They paid out $6.2k in stablecoins (1 payment); the largest recipient was 0xe77ab658b9ffa986583767f631c886698f6a312e ($6.2k)."
   ],
   "72h": [
-   "Developer wallets sold 80.0M TEL in the last 72h: 30.5M on DEXs, 49.5M via the bot cluster (developer-funded 35% of its 143.3M sold).",
-   "Selling happened on 4 of 3 days (57 direct sale/deposit transactions, 1477 bot sales).",
-   "They paid out $30.4k in stablecoins (5 payments); the largest recipient was 0x10f7835f827d6cf035115e10c50a853d7fb2d2ec ($17.0k).",
-   "They received $41.1k in stablecoins (71 transfers).",
-   "Largest TEL destination: CoW Protocol settlement (30.5M TEL, 57 transfers).",
+   "Developer wallets sold 50.1M TEL in the last 72h: 6.0M on DEXs, 44.1M via the bot cluster (developer-funded 35% of its 127.7M sold).",
+   "Selling happened on 4 of 3 days (12 direct sale/deposit transactions, 1435 bot sales).",
+   "They paid out $36.5k in stablecoins (5 payments); the largest recipient was 0x10f7835f827d6cf035115e10c50a853d7fb2d2ec ($17.0k).",
+   "They received $7.9k in stablecoins (30 transfers).",
+   "Largest TEL destination: CoW Protocol settlement (6.0M TEL, 12 transfers).",
    "1 internal shuffle between developer wallets (359.6k TEL) are noted but not counted as selling."
   ],
   "30d": [
-   "Developer wallets sold 316.6M TEL in the last 30d: 55.1M on DEXs, 261.5M via the bot cluster (developer-funded 35% of its 756.9M sold).",
-   "Selling happened on 18 of 30 days (118 direct sale/deposit transactions, 5182 bot sales).",
-   "They paid out $70.7k in stablecoins (11 payments); the largest recipient was 0x10f7835f827d6cf035115e10c50a853d7fb2d2ec ($48.6k).",
-   "They received $83.8k in stablecoins (140 transfers).",
+   "Developer wallets sold 328.7M TEL in the last 30d: 55.1M on DEXs, 273.7M via the bot cluster (developer-funded 35% of its 792.1M sold).",
+   "Selling happened on 18 of 30 days (118 direct sale/deposit transactions, 5626 bot sales).",
+   "They paid out $76.9k in stablecoins (12 payments); the largest recipient was 0x10f7835f827d6cf035115e10c50a853d7fb2d2ec ($48.6k).",
+   "They received $83.8k in stablecoins (145 transfers).",
    "Largest TEL destination: 0x97d925ca7377fadd9a119f57e2e0bbff9791cabf (122.9M TEL, 1 transfer).",
    "8 internal shuffles between developer wallets (895.2M TEL) are noted but not counted as selling."
   ],
   "90d": [
-   "Developer wallets sold 2.31B TEL in the last 90d: 269.1M on DEXs, 1.26B sent to exchanges, 789.9M via the bot cluster (developer-funded 35% of its 2.29B sold).",
-   "Selling happened on 70 of 90 days (420 direct sale/deposit transactions, 25251 bot sales).",
-   "They paid out $458.6k in stablecoins (25 payments); the largest recipient was 0x10f7835f827d6cf035115e10c50a853d7fb2d2ec ($367.2k).",
-   "They received $449.8k in stablecoins (461 transfers).",
+   "Developer wallets sold 2.32B TEL in the last 90d: 269.1M on DEXs, 1.26B sent to exchanges, 795.5M via the bot cluster (developer-funded 35% of its 2.30B sold).",
+   "Selling happened on 70 of 90 days (420 direct sale/deposit transactions, 25265 bot sales).",
+   "They paid out $464.8k in stablecoins (26 payments); the largest recipient was 0x10f7835f827d6cf035115e10c50a853d7fb2d2ec ($367.2k).",
+   "They received $449.8k in stablecoins (466 transfers).",
    "Largest TEL destination: KuCoin (via relay) (1.06B TEL, 5 transfers).",
    "23 internal shuffles between developer wallets (1.84B TEL) are noted but not counted as selling."
   ]
@@ -1639,10 +1688,10 @@
      "txs": 0
     },
     "72h": {
-     "sold": 30500000,
-     "stableOut": 100,
+     "sold": 6000000,
+     "stableOut": 0,
      "internal": 3,
-     "txs": 121
+     "txs": 29
     },
     "30d": {
      "sold": 51350538,
@@ -1747,30 +1796,30 @@
    "windows": {
     "24h": {
      "sold": 0,
-     "stableOut": 0,
+     "stableOut": 6220,
      "internal": 0,
-     "txs": 0
+     "txs": 6
     },
     "72h": {
      "sold": 0,
-     "stableOut": 30304,
+     "stableOut": 36524,
      "internal": 0,
-     "txs": 18
+     "txs": 24
     },
     "30d": {
      "sold": 3411424,
-     "stableOut": 68343,
+     "stableOut": 74563,
      "internal": 4,
-     "txs": 33
+     "txs": 39
     },
     "90d": {
      "sold": 18789864,
-     "stableOut": 456247,
+     "stableOut": 462467,
      "internal": 7,
-     "txs": 99
+     "txs": 105
     }
    },
-   "lastActivity": "2026-11-03T16:15:24.000Z"
+   "lastActivity": "2026-11-05T12:30:22.000Z"
   },
   {
    "address": "0xc44784b1ace0830a82ceac529cc98d1b38640413",
@@ -2029,7 +2078,7 @@
      "sold": 0,
      "stableOut": 0,
      "internal": 1,
-     "txs": 28
+     "txs": 26
     }
    },
    "lastActivity": "2026-10-28T16:13:56.000Z"
@@ -2066,7 +2115,7 @@
      "sold": 0,
      "stableOut": 0,
      "internal": 0,
-     "txs": 8
+     "txs": 7
     }
    },
    "lastActivity": "2026-09-30T18:03:36.000Z"
@@ -2560,25 +2609,6 @@
   }
  ],
  "daily": [
-  {
-   "date": "2026-08-08",
-   "devSold": 15431590,
-   "botSold": 23270975,
-   "botDevShare": 8039643,
-   "dexSell": 7391947,
-   "cexDeposit": 0,
-   "internal": 0,
-   "botFunding": 0,
-   "bridge": 0,
-   "custody": 0,
-   "staking": 0,
-   "burn": 0,
-   "transferOut": 0,
-   "receive": 100000000,
-   "stableIn": 11787,
-   "stableOut": 0,
-   "stableInternal": 0
-  },
   {
    "date": "2026-08-09",
    "devSold": 21716600,
@@ -4253,9 +4283,28 @@
   },
   {
    "date": "2026-11-05",
-   "devSold": 5709699,
-   "botSold": 16526887,
-   "botDevShare": 5709699,
+   "devSold": 13595800,
+   "botSold": 39353429,
+   "botDevShare": 13595800,
+   "dexSell": 0,
+   "cexDeposit": 0,
+   "internal": 0,
+   "botFunding": 0,
+   "bridge": 0,
+   "custody": 0,
+   "staking": 0,
+   "burn": 0,
+   "transferOut": 0,
+   "receive": 0,
+   "stableIn": 0,
+   "stableOut": 6220,
+   "stableInternal": 0
+  },
+  {
+   "date": "2026-11-06",
+   "devSold": 4361317,
+   "botSold": 12623955,
+   "botDevShare": 4361317,
    "dexSell": 0,
    "cexDeposit": 0,
    "internal": 0,
@@ -4276,19 +4325,19 @@
    "kind": "fixed_size",
    "wallet": "bot-cluster",
    "walletLabel": "Bot cluster",
-   "count": 25251,
-   "typicalAmount": 89251,
+   "count": 25265,
+   "typicalAmount": 89775,
    "range": [
-    37914,
-    160955
+    38325,
+    160913
    ],
-   "description": "The bot cluster made 25251 sales, 80% of them between 37.9k and 161.0k TEL: the narrow, repeated size of an automated seller.",
+   "description": "The bot cluster made 25265 sales, 80% of them between 38.3k and 160.9k TEL: the narrow, repeated size of an automated seller.",
    "sampleHashes": [
-    "0x91ced663130c28b83e6f78ecd9a65e6c14793961e354098c6dfa24af45a398fd",
-    "0x281b0a0c107d9eb9cdec2e6e48b40b9fa15f6093d80d715a454309d364ac9217",
-    "0xce362e0c676411259d579ab5a732af43b79055cacd4e1ccd817dfbd00607dd04",
-    "0xd9cb6e73830c504f15ec468c4666b96219c312f67a9d46ca2745424aaa4a22f5",
-    "0x7367d4a56f8e4cce3005b0acae1fece97b17840e5624f0d0bd254aa577f983cc"
+    "0x09a2278ed2f4bd346653c7192ba29edc62538df49e354d0a361c11f9850c1171",
+    "0x772acd152bc00b7338c88978caba7e0f87c581842c516d114427a43c0df3d46e",
+    "0x600f1f14f25316331d7ae6ee858dec397554e3dd74a5d455fa46348715a62bf0",
+    "0x190e1ea2d2b71c622b1f21e42a61d9a319ec1cafe4cd9c0cbc89e40b33dc911e",
+    "0x012f352b2dc0e3f3e1c31b2b417f6c2c866dc6c99054e05ebef5fba9d84cdf7f"
    ]
   },
   {
@@ -4475,11 +4524,11 @@
    "counterparty": "0x2c33fc9c09cfac5431e754b8fe708b1da3f5b954",
    "counterpartyLabel": null,
    "type": "transfer_out",
-   "count": 8,
+   "count": 7,
    "typicalAmount": 648148,
-   "total": 5185185,
-   "intervalDays": 6.9,
-   "description": "TELx Council sent about 648.1k TEL to the same wallet 8 times, roughly every 7 days.",
+   "total": 4537037,
+   "intervalDays": 6.73,
+   "description": "TELx Council sent about 648.1k TEL to the same wallet 7 times, roughly every 7 days.",
    "sampleHashes": [
     "0xf351585b8821d107579783296e56174b78a37600edf503bd5fa2b679274d8fb6",
     "0xb08590c9e114a124c20ee8c43928ceb7c057f451397dbae95a851cf09650ffc3",
@@ -4495,11 +4544,11 @@
    "counterparty": "0x2c33fc9c09cfac5431e754b8fe708b1da3f5b954",
    "counterpartyLabel": null,
    "type": "transfer_out",
-   "count": 8,
+   "count": 7,
    "typicalAmount": 560000,
-   "total": 4480000,
-   "intervalDays": 6.9,
-   "description": "TELx Council sent about 560.0k TEL to the same wallet 8 times, roughly every 7 days.",
+   "total": 3920000,
+   "intervalDays": 6.74,
+   "description": "TELx Council sent about 560.0k TEL to the same wallet 7 times, roughly every 7 days.",
    "sampleHashes": [
     "0xc8d54e6bb04d60d7bf762e06d08bf2b11a25dfd7361ea154f36f95ddfcf36e9b",
     "0x93fe15376d6ce59352fb729bb42586206836981e7b9d940c872e31697b9abadd",
@@ -4564,6 +4613,126 @@
   }
  ],
  "events": [
+  {
+   "chain": "polygon",
+   "hash": "0x5cdf9a9896a2bceeafe8f0c8d5dd7013d1f2e4a908fb4a39aa18d6858f3b94b0",
+   "time": 1793881822,
+   "date": "2026-11-05",
+   "type": "stable_in",
+   "direction": "in",
+   "wallet": "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
+   "walletLabel": "TA Sale Wallet ('Conduit')",
+   "counterparty": "0xe775332a439adf3aa0e81a6801502d27b287312e",
+   "counterpartyLabel": null,
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 0.000062,
+   "reason": "USDC arrived at TA Sale Wallet ('Conduit') from unlabelled wallet 0xe775…312e.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "0x5cdf9a9896a2bceeafe8f0c8d5dd7013d1f2e4a908fb4a39aa18d6858f3b94b0:log:746",
+   "blockNumber": 96784244
+  },
+  {
+   "chain": "polygon",
+   "hash": "0x56163923c1aa84b163dfde1052d710ab08f01974130dddbf14e9e583d3a7330f",
+   "time": 1793881506,
+   "date": "2026-11-05",
+   "type": "stable_in",
+   "direction": "in",
+   "wallet": "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
+   "walletLabel": "TA Sale Wallet ('Conduit')",
+   "counterparty": "0xe77ab9d81de49f31c2e7ea13c341f6a1cdc8312e",
+   "counterpartyLabel": null,
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 0.000622,
+   "reason": "USDC arrived at TA Sale Wallet ('Conduit') from unlabelled wallet 0xe77a…312e.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "0x56163923c1aa84b163dfde1052d710ab08f01974130dddbf14e9e583d3a7330f:log:904",
+   "blockNumber": 96784033
+  },
+  {
+   "chain": "polygon",
+   "hash": "0x6aa043c8746fe5aa320d3460084f63cffae488809cf3b09ca5f73fa349e7a3dc",
+   "time": 1793874285,
+   "date": "2026-11-05",
+   "type": "stable_in",
+   "direction": "in",
+   "wallet": "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
+   "walletLabel": "TA Sale Wallet ('Conduit')",
+   "counterparty": "0xe775332a439adf3aa0e81a6801502d27b287312e",
+   "counterpartyLabel": null,
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 0.000062,
+   "reason": "USDC arrived at TA Sale Wallet ('Conduit') from unlabelled wallet 0xe775…312e.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "0x6aa043c8746fe5aa320d3460084f63cffae488809cf3b09ca5f73fa349e7a3dc:log:1102",
+   "blockNumber": 96779219
+  },
+  {
+   "chain": "polygon",
+   "hash": "0xcf85d47685b26f18fc448cc83a92ff1bec10439e0f1e190ef400dde9b5124b1d",
+   "time": 1793874106,
+   "date": "2026-11-05",
+   "type": "stable_in",
+   "direction": "in",
+   "wallet": "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
+   "walletLabel": "TA Sale Wallet ('Conduit')",
+   "counterparty": "0xe77ab9d81de49f31c2e7ea13c341f6a1cdc8312e",
+   "counterpartyLabel": null,
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 0.000622,
+   "reason": "USDC arrived at TA Sale Wallet ('Conduit') from unlabelled wallet 0xe77a…312e.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "0xcf85d47685b26f18fc448cc83a92ff1bec10439e0f1e190ef400dde9b5124b1d:log:1043",
+   "blockNumber": 96779100
+  },
+  {
+   "chain": "polygon",
+   "hash": "0x42914b1569e5a7605d99eb5e474d40cafd88593d3225f9c8428ba009ad023ff8",
+   "time": 1793873392,
+   "date": "2026-11-05",
+   "type": "stable_in",
+   "direction": "in",
+   "wallet": "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
+   "walletLabel": "TA Sale Wallet ('Conduit')",
+   "counterparty": "0xe775332a439adf3aa0e81a6801502d27b287312e",
+   "counterpartyLabel": null,
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 0.000062,
+   "reason": "USDC arrived at TA Sale Wallet ('Conduit') from unlabelled wallet 0xe775…312e.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "0x42914b1569e5a7605d99eb5e474d40cafd88593d3225f9c8428ba009ad023ff8:log:395",
+   "blockNumber": 96778624
+  },
+  {
+   "chain": "polygon",
+   "hash": "0x0e4d59e5539f4d6e1c5d4da93aac81b1060ed0ff2eb786cdd1c41fbacca19f8a",
+   "time": 1793873325,
+   "date": "2026-11-05",
+   "type": "stable_out",
+   "direction": "out",
+   "wallet": "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
+   "walletLabel": "TA Sale Wallet ('Conduit')",
+   "counterparty": "0xe77ab658b9ffa986583767f631c886698f6a312e",
+   "counterpartyLabel": null,
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 6220,
+   "reason": "USDC left TA Sale Wallet ('Conduit') for unlabelled wallet 0xe77a…312e.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "0x0e4d59e5539f4d6e1c5d4da93aac81b1060ed0ff2eb786cdd1c41fbacca19f8a:log:422",
+   "blockNumber": 96778579
+  },
   {
    "chain": "polygon",
    "hash": "0x56efb2426374483eedf489373c8f8a3f8812730e75ee7528b957413ffb525697",
@@ -25503,66 +25672,6 @@
    "headline": false,
    "uniqueId": "0xde4de9c6f6206fe1ca804ff8689627d636713ae3483d37cdf04d2ab656e873e5:log:366",
    "blockNumber": 91665884
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x618b5d3cd12bf96795d07085ec9c91891ffae17cb5081c6d2cdb9e0c579d392c",
-   "time": 1786123129,
-   "date": "2026-08-07",
-   "type": "staking",
-   "direction": "out",
-   "wallet": "0x8dcf8d134f22ac625a7afb39514695801cd705b5",
-   "walletLabel": "TAN Council",
-   "counterparty": "0xe533911f00f1c3b58bb8d821131c9b6e2452fc27",
-   "counterpartyLabel": "TELx reward contract",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 34510.56,
-   "reason": "Recipient is staking/reward contract \"TELx reward contract\" (ledger venues.staking).",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0x618b5d3cd12bf96795d07085ec9c91891ffae17cb5081c6d2cdb9e0c579d392c:log:1053",
-   "blockNumber": 91612068
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x90599d0c85e9fe241bf0d0815e0da7225a8274139ee24536204bbb06493d7f4f",
-   "time": 1786123083,
-   "date": "2026-08-07",
-   "type": "transfer_out",
-   "direction": "out",
-   "wallet": "0x583d596b0a79c0e83c87851ea9fb1a91e80290b2",
-   "walletLabel": "TELx Council",
-   "counterparty": "0x2c33fc9c09cfac5431e754b8fe708b1da3f5b954",
-   "counterpartyLabel": null,
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 559999.96,
-   "reason": "Recipient 0x2c33…b954 has no label, is not a developer wallet and the receipt has no Swap event.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0x90599d0c85e9fe241bf0d0815e0da7225a8274139ee24536204bbb06493d7f4f:log:1236",
-   "blockNumber": 91612037
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xc4bccf894a71bf74169a2c88116992f3078702bd55b012ee7fe74469fe8e392e",
-   "time": 1786123060,
-   "date": "2026-08-07",
-   "type": "transfer_out",
-   "direction": "out",
-   "wallet": "0x583d596b0a79c0e83c87851ea9fb1a91e80290b2",
-   "walletLabel": "TELx Council",
-   "counterparty": "0x2c33fc9c09cfac5431e754b8fe708b1da3f5b954",
-   "counterpartyLabel": null,
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 648148.1,
-   "reason": "Recipient 0x2c33…b954 has no label, is not a developer wallet and the receipt has no Swap event.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0xc4bccf894a71bf74169a2c88116992f3078702bd55b012ee7fe74469fe8e392e:log:76",
-   "blockNumber": 91612022
   }
  ],
  "eventsTruncated": false
