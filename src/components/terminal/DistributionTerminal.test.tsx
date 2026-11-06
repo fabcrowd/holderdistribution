@@ -77,6 +77,18 @@ describe("DistributionTerminal", () => {
     flow.ready = true;
     baseline.data = { distribution: [{ label: "1-10", count: 3, totalBalance: 8 }, { label: "10+", count: 2, totalBalance: 20 }] };
   });
+  it("renders a dash, not NaN or 0, for a tier whose count and percent are unknown", () => {
+    const holes = { views: { combined: { distribution: [{ label: "1-10", totalBalance: 10 }] } } } as unknown as HolderLiteSnapshot;
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <DistributionTerminal snapshot={holes} snapshotError={false} selectedView="combined" rangeDays={7} />
+      </QueryClientProvider>,
+    );
+    expect(html).not.toContain("NaN");
+    const row = html.slice(html.indexOf('data-tier="1-10"'));
+    expect(row.slice(0, row.indexOf("</tr>"))).toContain("—");
+    expect(row.slice(0, row.indexOf("</tr>"))).not.toContain("%</td>");
+  });
   it("gives the Tiers table the full row when nothing is selected", () => {
     expect(render()).toContain("grid-cols-1");
   });

@@ -5,7 +5,10 @@ export const signed = (v: number, f: (n: number) => string) => {
   return `${v < 0 ? "−" : "+"}${body}`;
 };
 
+const UNKNOWN = "—";
+
 export const fmtTel = (v: number) => {
+  if (!Number.isFinite(v)) return UNKNOWN;
   const a = Math.abs(v);
   // Compare the rounded value so 999,500 reads 1.0M rather than 1000K.
   if (a >= 1e9 || Number((a / 1e6).toFixed(1)) >= 1000) return `${(v / 1e9).toFixed(2)}B`;
@@ -14,7 +17,7 @@ export const fmtTel = (v: number) => {
   return `${Math.round(v)}`;
 };
 
-export const fmtInt = (v: number) => new Intl.NumberFormat().format(Math.round(v));
+export const fmtInt = (v: number) => (Number.isFinite(v) ? new Intl.NumberFormat().format(Math.round(v)) : UNKNOWN);
 
 export type Formatters = {
   signed: typeof signed;

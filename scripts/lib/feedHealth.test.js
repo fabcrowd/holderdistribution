@@ -293,3 +293,57 @@ describe("multi-project iteration", () => {
     expect(() => evaluateAllProjects({ root, now: NOW, slugs: ["nope"] })).toThrow(/unknown project/);
   });
 });
+
+describe("last-entry age (stale dated rows behind a fresh generatedAt)", () => {
+  const flow = resolveFeedHealth({}).find((f) => f.file === "exchange-flow-history.json");
+  const doc = (lastDate) => ({ generatedAt: hoursAgo(1), entries: [{ date: "2025-01-01" }, { date: lastDate }] });
+
+  it("defaults exchange-flow-history to a 3 day tail limit", () => {
+    expect(flow.maxLastEntryAgeDays).toBe(3);
+  });
+
+  it("flags a stale tail even though generatedAt is fresh", () => {
+    const r = evaluateFeed(flow, doc("2025-10-27"), NOW);
+    expect(r.status).toBe("stale-tail");
+    expect(isUnhealthy(r)).toBe(true);
+    expect(r.tailAgeDays).toBeGreaterThan(300);
+  });
+
+  it("passes a fresh tail, including exactly at the limit", () => {
+    expect(evaluateFeed(flow, doc("2026-10-28"), NOW).status).toBe("healthy");
+    expect(evaluateFeed(flow, doc("2026-10-25"), NOW).status).toBe("healthy");
+    expect(evaluateFeed(flow, doc("2026-10-24"), NOW).status).toBe("stale-tail");
+  });
+
+  it("flags a feed with no dated rows", () => {
+    expect(evaluateFeed(flow, { generatedAt: hoursAgo(1), entries: [] }, NOW).status).toBe("stale-tail");
+  });
+
+  it("reports a missing file as missing", () => {
+    expect(evaluateFeed(flow, null, NOW).status).toBe("missing");
+  });
+
+  it("honours maxLastEntryAgeDays overrides and rejects bad values", () => {
+    const loose = resolveFeedHealth({ health: { feeds: { "exchange-flow-history.json": { maxLastEntryAgeDays: 400 } } } }).find(
+      (f) => f.file === flow.file,
+    );
+    expect(evaluateFeed(loose, doc("2025-10-27"), NOW).status).toBe("healthy");
+    expect(() => resolveFeedHealth({ health: { feeds: { "exchange-flow-history.json": { maxLastEntryAgeDays: 0 } } } })).toThrow(
+      /maxLastEntryAgeDays/,
+    );
+  });
+
+  it("skips the tail check for placeholder and drops disabled feeds", () => {
+    const feeds = resolveFeedHealth({
+      health: { feeds: { "exchange-flow-history.json": { placeholder: true }, "tier-outflows.json": { disabled: true } } },
+    });
+    const ph = feeds.find((f) => f.file === "exchange-flow-history.json");
+    expect(evaluateFeed(ph, doc("2025-10-27"), NOW).status).toBe("placeholder");
+    expect(feeds.some((f) => f.file === "tier-outflows.json")).toBe(false);
+  });
+
+  it("does not apply a tail check to feeds without one", () => {
+    const lite = resolveFeedHealth({}).find((f) => f.file === "holders-lite.json");
+    expect(evaluateFeed(lite, { generatedAt: hoursAgo(1), entries: [{ date: "2020-01-01" }] }, NOW).status).toBe("healthy");
+  });
+});

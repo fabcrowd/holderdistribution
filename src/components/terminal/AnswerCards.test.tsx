@@ -68,4 +68,10 @@ describe("AnswerCards", () => {
     expect(renderToStaticMarkup(<AnswerCards tiles={[]} selectedView="combined" isError={false} />)).toContain("animate-pulse");
     expect(renderToStaticMarkup(<AnswerCards tiles={[]} selectedView="combined" isError />)).toContain("unavailable");
   });
+  it("on error renders one full-width message card, not empty boxes", () => {
+    const html = renderToStaticMarkup(<AnswerCards tiles={[]} selectedView="combined" isError />);
+    expect(html.match(/rounded-lg border/g)).toHaveLength(1);
+    expect(html).not.toContain("sm:grid-cols-3");
+    expect(html).not.toContain("animate-pulse");
+  });
 });

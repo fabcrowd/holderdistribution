@@ -346,7 +346,7 @@ Select a tier here or in the Tiers table to see where its wallets and ${tk} came
                         {tierDisplayLabel(r.label)}
                       </button>
                     </th>
-                    <td className="px-2 py-1 text-right">{int.format(r.count)}</td>
+                    <td className="px-2 py-1 text-right">{Number.isFinite(r.count) ? int.format(r.count) : "—"}</td>
                     <td className="px-2 py-1 text-right">
                       <Delta value={r.previousCount != null ? r.count - r.previousCount : null} format={(n) => int.format(n)} relabel={countRelabel} />
                     </td>
@@ -354,7 +354,7 @@ Select a tier here or in the Tiers table to see where its wallets and ${tk} came
                     <td className="px-2 py-1 text-right">
                       <Delta value={r.previousTotalBalance != null ? r.totalBalance - r.previousTotalBalance : null} format={(n) => formatCompact(n, 1)} relabel={balanceRelabel} />
                     </td>
-                    <td className="px-3 py-1 text-right">{r.percent.toFixed(1)}%</td>
+                    <td className="px-3 py-1 text-right">{Number.isFinite(r.percent) ? `${r.percent.toFixed(1)}%` : "—"}</td>
                   </tr>
                 );
               })}

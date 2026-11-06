@@ -13,6 +13,7 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { useProject } from "@/hooks/useProject";
 import { PARTIAL_DAY_LABEL, settledEntries } from "@/lib/flowFeeds";
 import { flowEmptyMessage } from "@/lib/flowEmptyState";
+import { flowOutOfRangeMessage, flowWindow, staleFeedNote } from "@/lib/flowWindow";
 
 type ExchangeNetflowProps = {
   rangeDays: number;
@@ -45,17 +46,18 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
     const settled = settledEntries(entries);
     const rows = settled.length > 0 ? settled : entries;
     const partialOnly = settled.length === 0;
-    const latestTs = Date.parse(rows[rows.length - 1].date);
-    const cutoff = latestTs - rangeDays * 86400000;
-    const inRange = rows.filter((e) => Date.parse(e.date) >= cutoff);
-    if (inRange.length === 0) return null;
+    // Window ends today (UTC), not at the feed's last row: a stale feed must
+    // not be summed as if it were the selected range.
+    const { rows: inRange, lastMs, stale } = flowWindow(rows, rangeDays);
+    if (inRange.length === 0) return { kind: "outOfRange" as const, outOfRangeLastMs: lastMs as number };
     const totalIn = inRange.reduce((s, e) => s + (e.in ?? 0), 0);
     const totalOut = inRange.reduce((s, e) => s + (e.out ?? 0), 0);
     const series = inRange.map((e) => ({ timestamp: Date.parse(e.date), net: (e.in ?? 0) - (e.out ?? 0) }));
-    return { totalIn, totalOut, net: totalIn - totalOut, series, partialOnly, excludesToday: !partialOnly && settled.length < entries.length };
+    const spansYears = new Date(series[0].timestamp).getUTCFullYear() !== new Date(series[series.length - 1].timestamp).getUTCFullYear();
+    return { kind: "ok" as const, totalIn, totalOut, net: totalIn - totalOut, series, partialOnly, excludesToday: !partialOnly && settled.length < entries.length, staleLastMs: stale ? (lastMs as number) : null, spansYears };
   }, [entries, rangeDays]);
 
-  const zoom = useChartZoom(view?.series ?? NO_ROWS, (d) => d.timestamp);
+  const zoom = useChartZoom(view?.kind === "ok" ? view.series : NO_ROWS, (d) => d.timestamp);
   // Signed daily bars: zero baseline fitted to the visible days only.
   const netScale = computeYAxisFromRows(zoom.rows, ["net"], { kind: "bar" });
   const netFmt = distinctTickFormatter(netScale.ticks, formatCompact);
@@ -64,10 +66,10 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
   // Still fetching, or a real failure (5xx): the terminal panel owns the
   // skeleton and the retry. A settled empty feed is the empty state.
   if (isPending || isError) return null;
-  if (!view) {
+  if (view?.kind !== "ok") {
     return (
       <p className="py-6 text-center text-sm text-muted-foreground" data-testid="exchange-flow-empty">
-        {flowEmptyMessage(project, "exchange")}
+        {view ? flowOutOfRangeMessage(view.outOfRangeLastMs) : flowEmptyMessage(project, "exchange")}
       </p>
     );
   }
@@ -79,6 +81,11 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
           Exchange Netflow — measured deposits &amp; withdrawals
         </div>
         <InfoTooltip text={t(INFO_TEMPLATE)} />
+        {view.staleLastMs != null && (
+          <span className="text-xs font-medium text-warning" data-testid="exchange-flow-stale">
+            ({staleFeedNote(view.staleLastMs)})
+          </span>
+        )}
         {(view.partialOnly || view.excludesToday) && (
           <span className="text-xs text-muted-foreground" data-testid="exchange-flow-partial">
             {view.partialOnly ? `(${PARTIAL_DAY_LABEL})` : "(finished days only; today is still in progress)"}
@@ -117,7 +124,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
               type="number"
               domain={["dataMin", "dataMax"]}
               scale="time"
-              tickFormatter={(v) => new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })}
+              tickFormatter={(v) => new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", ...(view.spansYears ? { year: "2-digit" as const } : {}), timeZone: "UTC" })}
               tick={CHART_TICK}
               tickMargin={8}
             />
