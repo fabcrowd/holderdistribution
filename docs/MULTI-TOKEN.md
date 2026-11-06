@@ -207,7 +207,7 @@ run for any registered project. Ported:
 - `detect-cex-candidates`: writes `data/<slug>/cex-candidates.json`; chains it has no tuning for use chunk 2,000 / lookback 300,000 blocks.
 - `extend-transfer-caches`: every chain in the project's chain map; caches under `data/<slug>/`.
 - `fill-history-gaps`: runs its child scripts with `--project <slug>`.
-- `generate-holder-transitions`: tier ranges are still TEL-sized (see limits below).
+- `generate-holder-transitions`: uses the project's `holders` tiers (TEL's defaults when the block is absent, so every non-100B token needs its own block).
 - `generate-tier-outflows`: TEL keeps exactly ethereum/polygon/base with its chunk and blocks-per-day table and divisor 100; other projects scan every mapped chain with `chains[].blocksPerDay` (default 43,200), divisor `10 ** decimals`, `FLOW_CHUNK_<CHAIN>`. Staking contract from `resolveStakeChangedTarget` (none = no staking split).
 - `pull-cex-wallets`: no `classification.cexWallets` = an empty `cex-wallets.json`.
 - `rebuild-history-from-logs`: the StakeChanged chain/contract come from `resolveStakeChangedTarget` instead of a hardcoded Polygon check.
@@ -284,7 +284,12 @@ explicit copy, and `scripts/lib/holderTiers.test.js` pins it to the old literals
 - Distribution tier labels are join keys between `holders.json`,
   `holders-history.json`, `holder-transitions.json` and `tier-outflows.json`.
   If you change a project's tiers, regenerate its history as well. Old
-  snapshots keep their old labels.
+  snapshots keep their old labels. `generate-tier-outflows` stores a tier
+  fingerprint (`scripts/lib/tierFingerprint.js`) and resets its day store when
+  it changes. A project without a `holders` block inherits TEL's 100B-sized
+  tiers: ONDO (10B) has its own block for that reason.
+- The history replay drops balances that round to zero at 6 dp
+  (`dropRoundedDust`) so it counts the same holders as the snapshot.
 - `pull-holders-rpc` now checks the supply sanity tolerance against
   `supply.target` instead of the 100B TEL constant.
 
@@ -601,7 +606,7 @@ non-retail paths and feed outputs are byte-identical (`bridgeNetting.test.js`,
 | `scripts/lib/supply.js`, `reconcileSupply` | `EXPECTED_MAX_SUPPLY` / `TEL_TOTAL_SUPPLY` (100B) | These are defaults only. Callers pass `supply.target`. |
 | `scripts/verify-tel-supply.js` | 100B | This script only checks TEL. |
 | `scripts/generate-tier-outflows.js` | `CHAIN_TUNING` (log-window sizes per chain) | Unknown chains fall back to the chain's `blocksPerDay`. |
-| `MIN_TEL_RAW = 1` | Dust floor of 1 raw unit | This is a chain-level floor, not a value sized for TEL. |
+| `MIN_TEL_RAW = 1` | Dust floor of 1 raw unit | Chain-level floor. The history replay also drops balances that round to 0 at 6 dp, matching the snapshot. |
 | `scripts/lib/stakingDiscovery.js` | `STAKE_SCAN_SPAN` | This is a block span, not a supply amount. |
 | CEX balance / Dune query | Per-project query | A new project needs its own Dune query id. The current Dune key keeps being used. Solana: see "Solana CEX wallets" below. |
 
@@ -784,7 +789,7 @@ Then:
    `classification.*` files.
 5. Nothing to do for `netlify/functions/live-data.mjs`: it reads the slugs from `config/projects.json` (only a `legacyRoot` project needs `"legacyRoot": true` on its registry entry).
    A test fails if it is missing.
-6. Optional: add a `holders` block if TEL's tier sizes don't fit the supply, and
+6. Add a `holders` block unless supply is about 100B (TEL's tiers are sized for it), and
    `chains[].rpc` for chains other than ethereum, polygon and base (Solana:
    `SOLANA_RPC_0..9` if public RPC refuses the holder scan).
 7. Optional: add `copy` overrides for wording the generic templates get wrong.
