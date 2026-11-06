@@ -1,9 +1,38 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-06T03:52:22.518Z",
+  "generatedAt": "2026-11-06T04:17:57.262Z",
   "source": {
     "type": "static",
-    "configPath": null
+    "configPath": "config/projects/ondo/classification-changelog.json"
   },
-  "events": []
+  "events": [
+    {
+      "id": "2026-11-06-ondo-history-method-change",
+      "date": "2026-11-06",
+      "type": "other",
+      "summary": "ONDO holders history before 2026-11-06 was rebuilt from Transfer-log replay; from 2026-11-06 the nightly snapshot method applies. The two count holders differently: the holder count steps from 220,198 to 214,346 (-2.7%) across the boundary and retail balance moves by about 1%. The step is a methodology change, not a market move.",
+      "affects": {
+        "artifacts": [
+          "holders-history",
+          "holders-lite",
+          "tel-holders"
+        ],
+        "metrics": [
+          "retail.count",
+          "retail.balance"
+        ]
+      },
+      "breaksSeries": {
+        "metrics": [
+          "retail.count",
+          "holderCount",
+          "retail.balance"
+        ],
+        "at": "2026-11-06",
+        "note": "Methodology change (history rebuilt from Transfer logs; snapshot counts holders differently) — not a market move"
+      },
+      "backfillStatus": "not-possible",
+      "backfillNote": "Replay rows (2024-01-18 to 2026-11-05) are left as rebuilt. Restating them to the snapshot's holder definition is tracked separately once the cause of the difference is confirmed."
+    }
+  ]
 }
