@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "days": {
     "2026-11-05": {
-      "runs": 2,
+      "runs": 3,
       "alchemyCu": 5734,
       "heliusCredits": 0,
       "alchemyCalls": 367,
       "heliusCalls": 0,
-      "publicCalls": 7698,
+      "publicCalls": 8958,
       "byScript": {
         "pull-holders-rpc.js": {
           "processes": 2,
@@ -32,6 +32,40 @@
           "alchemyCu": 5734,
           "heliusCredits": 0,
           "publicCalls": 0
+        },
+        "generate-wallet-flows.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 1260
+        }
+      }
+    },
+    "2026-11-06": {
+      "runs": 1,
+      "alchemyCu": 0,
+      "heliusCredits": 0,
+      "alchemyCalls": 0,
+      "heliusCalls": 0,
+      "publicCalls": 16,
+      "byScript": {
+        "pull-holders-rpc.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 4
+        },
+        "scan-exchange-flows.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 6
+        },
+        "generate-tier-outflows.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 6
         }
       }
     }

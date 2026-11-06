@@ -1,22 +1,22 @@
 {
  "version": 1,
- "generated": "2026-11-05T04:06:32.122Z",
+ "generated": "2026-11-05T21:18:34.465Z",
  "generator": "scripts/generate-wallet-flows.js",
  "project": "ondo",
- "priceUsd": 0.410263,
+ "priceUsd": 0.370284,
  "priceSource": "CoinGecko simple/price (ondo-finance)",
  "chains": [
   "ethereum"
  ],
  "windows": {
   "ethereum": {
-   "head": 26346118,
-   "headTime": "2026-11-05T04:04:23.000Z",
+   "head": 26351256,
+   "headTime": "2026-11-05T21:14:59.000Z",
    "startBlocks": {
-    "24h": 26338940,
-    "72h": 26324583,
-    "30d": 26130828,
-    "90d": 25700581
+    "24h": 26344075,
+    "72h": 26329718,
+    "30d": 26135960,
+    "90d": 25705708
    }
   }
  },
@@ -35,7 +35,7 @@
     "label": "Telcoin-linked: TEL Treasury",
     "group": "telcoin",
     "tel": 5179207574,
-    "share": 0.5179207574162522
+    "share": 0.5179207574162524
    },
    {
     "key": "association",
@@ -49,7 +49,7 @@
     "label": "Telcoin-linked: Telcoin Holdings (company)",
     "group": "telcoin",
     "tel": 324719710,
-    "share": 0.03247197096556831
+    "share": 0.03247197096556832
    },
    {
     "key": "escrow",
@@ -69,8 +69,8 @@
     "key": "cex",
     "label": "Centralised exchanges (incl. deposit relays)",
     "group": "market",
-    "tel": 766546392,
-    "share": 0.07665463923975578
+    "tel": 765511584,
+    "share": 0.07655115838872559
    },
    {
     "key": "dex",
@@ -97,8 +97,8 @@
     "key": "retail",
     "label": "Retail & unlabelled holders",
     "group": "retail",
-    "tel": 3729526324,
-    "share": 0.37295263237842374
+    "tel": 3730561132,
+    "share": 0.3730561132294536
    }
   ],
   "movedFromRetail": [],
@@ -141,7 +141,7 @@
    "balanceDetail": {
     "ethereum_legacy": 5179207574
    },
-   "balanceUsd": 2124837237,
+   "balanceUsd": 1917777697,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -174,7 +174,97 @@
    "balanceDetail": {
     "ethereum_legacy": 100182196
    },
-   "balanceUsd": 41101048,
+   "balanceUsd": 37095864,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {},
+    "90d": {}
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "inactive (no outflows in window)"
+  },
+  {
+   "label": "Ondo allocation wallet 0xac7d (funded by distributor 0xc5d9)",
+   "group": "Ondo Foundation Group",
+   "entityClass": "holdings",
+   "confidence": "medium",
+   "address": "0xac7dc31d7eab8a15267a386151d851c992f14690",
+   "chains": [
+    "ethereum"
+   ],
+   "balance": 95738091,
+   "balanceDetail": {
+    "ethereum_legacy": 95738091
+   },
+   "balanceUsd": 35450283,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {},
+    "90d": {}
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "inactive (no outflows in window)"
+  },
+  {
+   "label": "Ondo allocation wallet 0x0d37 (funded by distributor 0xc5d9)",
+   "group": "Ondo Foundation Group",
+   "entityClass": "holdings",
+   "confidence": "medium",
+   "address": "0x0d37bf9ef9254f73e75dcfe2da5837e22d9f3553",
+   "chains": [
+    "ethereum"
+   ],
+   "balance": 48443680,
+   "balanceDetail": {
+    "ethereum_legacy": 48443680
+   },
+   "balanceUsd": 17937920,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {},
+    "90d": {}
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "inactive (no outflows in window)"
+  },
+  {
+   "label": "Ondo allocation wallet 0xb165 (funded by 0x7fd8 and Safe A)",
+   "group": "Ondo Foundation Group",
+   "entityClass": "holdings",
+   "confidence": "medium",
+   "address": "0xb165986ae836d0ef7a909db4087df1e38d365947",
+   "chains": [
+    "ethereum"
+   ],
+   "balance": 44109630,
+   "balanceDetail": {
+    "ethereum_legacy": 44109630
+   },
+   "balanceUsd": 16333090,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -205,7 +295,7 @@
    "balanceDetail": {
     "ethereum_legacy": 36007902
    },
-   "balanceUsd": 14772710,
+   "balanceUsd": 13333150,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -240,7 +330,7 @@
    "balanceDetail": {
     "ethereum_legacy": 238210
    },
-   "balanceUsd": 97729,
+   "balanceUsd": 88205,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -355,6 +445,62 @@
    "source": "https://etherscan.io/address/0x118919e891D0205A7492650AD32E727617FA9452#readProxyContract",
    "confidence": "medium",
    "address": "0x118919e891d0205a7492650ad32e727617fa9452",
+   "chains": [
+    "ethereum"
+   ],
+   "balance": 0,
+   "balanceDetail": {},
+   "balanceUsd": 0,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {},
+    "90d": {}
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "inactive (no outflows in window)"
+  },
+  {
+   "label": "Ondo distributor 0xc5d9 (funded by Multisig 2)",
+   "group": "Ondo Foundation Group",
+   "entityClass": "holdings",
+   "confidence": "medium",
+   "address": "0xc5d9221eb9c28a69859264c0a2fe0d3272228296",
+   "chains": [
+    "ethereum"
+   ],
+   "balance": 0,
+   "balanceDetail": {},
+   "balanceUsd": 0,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {},
+    "90d": {}
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "inactive (no outflows in window)"
+  },
+  {
+   "label": "Ondo allocation wallet 0x7fd8 (funded by distributor 0xc5d9)",
+   "group": "Ondo Foundation Group",
+   "entityClass": "holdings",
+   "confidence": "medium",
+   "address": "0x7fd83e87b449422507299ba3f1d12207242d9607",
    "chains": [
     "ethereum"
    ],
