@@ -26,9 +26,24 @@ export function readCommittedJson(file, date) {
 }
 
 /**
+ * Date whose committed checkpoint anchors a replay to `asOf`. An explicit
+ * `--anchor-date` wins; otherwise the target date itself, so each project uses
+ * its own newest checkpoint at or before the gap. A fixed default breaks every
+ * project whose first checkpoint is newer than it (ONDO, any new token).
+ */
+export function resolveAnchorDate(explicitAnchorDate, asOf) {
+  return explicitAnchorDate ?? asOf;
+}
+
+/**
  * @returns {Promise<Map<string, bigint>>} address -> raw balance at `toBlock`
  */
 export async function replayChainRawBalances({ anchorChain, transfersPath, toBlock }) {
+  // An anchor past the target block would replay nothing and publish a
+  // balance sheet from the wrong day, with no error.
+  if (anchorChain.lastBlock > toBlock) {
+    throw new Error(`Anchor checkpoint block ${anchorChain.lastBlock} is after the target block ${toBlock}`);
+  }
   const raw = new Map(
     Object.entries(anchorChain.rawBalances).map(([addr, v]) => [addr.toLowerCase(), BigInt(v)]),
   );
