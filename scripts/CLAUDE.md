@@ -13,7 +13,7 @@ therefore tracks **both** tokens (`config/chains.json` `tokens.legacy` / `tokens
   the contract's wallet); legacy sent there with no swap stays counted once. `TokenMigration` and
   `MigrationVault` are labelled `escrow` in `config/exclusions.json`.
 - v3 is checkpointed separately (`holders-checkpoint.json` → `chains.<chain>.v3`) and scanned from its deploy
-  block. `--as-of` rebuilds are legacy-only and refuse dates on/after the v3 deploy.
+  block. `--as-of` rebuilds replay legacy only before the v3 deploy; from the deploy block on they run the live scan pinned to the day-boundary block.
 - Supply identity (`scripts/lib/supply.js`): total = legacy supply on Ethereum (100B); `totals.crossCheckTotal`
   (Σ chains of legacy+v3 − Ethereum bridge locks) must land on it. `node scripts/verify-tel-supply.js` re-derives
   the whole proof from public RPCs. Derivation and numbers: `docs/TEL-CONTRACTS.md`, "Supply accounting".

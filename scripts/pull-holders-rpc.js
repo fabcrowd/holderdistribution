@@ -10,7 +10,7 @@ import { getUsableRpcUrls, rpcCall, getLogs } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
 import { residualCustodyBalance, attributeStakingReceipts } from "./lib/stakingCustody.js";
 import { attributeSolanaStakingBalances } from "./lib/solanaStaking.js";
-import { ensureWindowCache, readCommittedJson, replayChainRawBalances, resolveAnchorDate } from "./lib/holdersAsOfReplay.js";
+import { ensureWindowCache, readCommittedJson, replayChainRawBalances, resolveAnchorDate, usesV3Scan } from "./lib/holdersAsOfReplay.js";
 import { computeSupplyTotals, computeBridgeNettedSupply, selectSupplyMethod } from "./lib/supply.js";
 import { loadChainAdapter, resolveChainVm } from "./lib/chainAdapters.js";
 import { resolveChainTokens, combineChainBalances, v3StateToCheckpoint, legacyCheckpointUsable } from "./lib/telTokens.js";
@@ -363,7 +363,7 @@ const formatDate = (value) => {
  * @param {string} topic0
  * @param {{ lastBlock: number, rawBalances: Record<string,string> } | null} checkpoint
  */
-async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = null) {
+async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = null, { pinBlock = null } = {}) {
   const settings = rpcSettingsFor(chainKey);
   const rpcUrls = await getUsableRpcUrls(chainKey, { logRange: true });
   if (rpcUrls.length === 0) {
@@ -427,8 +427,12 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
 
   const builder = buildBalanceMap(decimals, partialOk ? partialRaw(partial) : legacyCheckpoint?.rawBalances ?? {});
 
-  // One head block for both tokens (see streamTransferLogs).
-  const headBlock = Number.parseInt(String(await rpcCall(rpcUrls[0], "eth_blockNumber", [])), 16);
+  // One head block for both tokens (see streamTransferLogs). `pinBlock` (an --as-of
+  // reconstruction) replaces the live head so the scan stops at a past day boundary.
+  if (pinBlock != null && legacyCheckpoint && legacyCheckpoint.lastBlock > pinBlock) {
+    throw new Error(`${chainKey}: anchor checkpoint block ${legacyCheckpoint.lastBlock} is after the target block ${pinBlock}`);
+  }
+  const headBlock = pinBlock ?? Number.parseInt(String(await rpcCall(rpcUrls[0], "eth_blockNumber", [])), 16);
 
   // Keep the logs for the shared window only on a nightly incremental run; a cold
   // rebuild would write a huge file that other feeds do not need.
@@ -690,19 +694,25 @@ async function main() {
     const anchor = readCommittedJson(data.rel("holders-checkpoint.json"), ARG_ANCHOR_DATE);
     console.log(`Reconstructing ${ARG_AS_OF} from the ${ARG_ANCHOR_DATE} checkpoint + cached transfer logs.`);
     for (const chainKey of Object.keys(chainBalancesRaw)) {
-      // A reconstructed day is legacy-only (the anchor checkpoint and the cached
-      // transfer logs predate v3). That is exactly right BEFORE v3 existed (v3
-      // balances are zero), and silently wrong after — swapped TEL would sit in
-      // the upgrade contract with no v3 counterpart. Refuse rather than publish.
-      const v3Deploy = resolveChainTokens({ ...chainConfig[chainKey], key: chainKey }).v3?.deployBlock;
-      if (v3Deploy && blockMap[chainKey] >= v3Deploy) {
-        throw new Error(
-          `--as-of=${ARG_AS_OF} is at or after the TEL v3 deployment on ${chainKey} (block ${v3Deploy}); ` +
-            `historical reconstruction only covers the legacy token. Dates before v3 are unaffected.`
-        );
-      }
       const anchorChain = anchor.chains?.[chainKey];
       if (!anchorChain) throw new Error(`Anchor checkpoint has no ${chainKey} chain`);
+      // The cached-log replay below is legacy-only. That is right BEFORE v3 existed
+      // (v3 balances are zero) and wrong after: swapped TEL would sit in the upgrade
+      // contract with no v3 counterpart. From the v3 deploy block on, run the live
+      // scan (legacy + v3 + staking) from the anchor checkpoint, pinned to the
+      // day-boundary block instead of the chain head. Nothing is saved: the
+      // checkpoint tracks the live frontier.
+      const v3Deploy = resolveChainTokens({ ...chainConfig[chainKey], key: chainKey }).v3?.deployBlock;
+      if (usesV3Scan(blockMap[chainKey], v3Deploy)) {
+        console.log(`  ${chainKey}: ${ARG_AS_OF} is at or after the v3 deploy (block ${v3Deploy}); scanning legacy + v3 from the anchor to block ${blockMap[chainKey]}.`);
+        const scanned = await fetchChainBalances(chainKey, chainConfig, topic0, anchorChain, { pinBlock: blockMap[chainKey] });
+        chainBalancesRaw[chainKey] = scanned.balances;
+        if (scanned.v3ByAddress) v3ByChain[chainKey] = scanned.v3ByAddress;
+        if (scanned.stakingReceipts?.length) stakingReceiptsByChain[chainKey] = scanned.stakingReceipts;
+        if (scanned.tokenTotals) tokenTotalsByChain[chainKey] = scanned.tokenTotals;
+        console.log(`  ${chainKey}: ${scanned.balances.size} holders at block ${blockMap[chainKey]}`);
+        continue;
+      }
       // Prefers the local cache, falls back to fetching just this window so a
       // CI runner (where the multi-GB caches are gitignored) can do this too.
       const transfersPath = await ensureWindowCache({
