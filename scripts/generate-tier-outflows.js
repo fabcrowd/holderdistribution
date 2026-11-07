@@ -65,7 +65,8 @@ import { tierFingerprint, shouldResetForTiers } from "./lib/tierFingerprint.js";
 import { partialDateFor } from "./lib/partialDay.js";
 import { readWindow, transferWindowName } from "./lib/transferWindow.js";
 import { getTransferLogsCached, sharedScanEnabled } from "./lib/sharedTransferLogs.js";
-import { cutoffScanWindow, readCutoffMap, flowFeedAsOf } from "./lib/dayBlocks.js";
+import { cutoffScanWindow, readCutoffMap, flowFeedAsOf, settledEndBlock } from "./lib/dayBlocks.js";
+import { chainCaughtUp } from "./lib/tierOutflowsComplete.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk + git history), work dir (day store / checkpoint), chain
@@ -315,7 +316,9 @@ const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
   // computed in main() without re-fetching the tip: "caught up" means the
   // checkpoint's lastBlock is within a day of blocks of this recorded tip.
   checkpoint.chains = checkpoint.chains ?? {};
-  checkpoint.chains[chainKey] = { ...(checkpoint.chains[chainKey] ?? {}), latest };
+  // settledTarget is the uncapped end this chain should reach (cutoff[today]-1).
+  const settledTarget = settledEndBlock(readCutoffMap(project)[chainKey], new Date().toISOString().slice(0, 10));
+  checkpoint.chains[chainKey] = { ...(checkpoint.chains[chainKey] ?? {}), latest, settledTarget };
   if (from > end) { console.log(`  ${chainKey}: up to date (block ${from - 1}).`); return; }
 
   console.log(`  ${chainKey}: scanning ${from}..${end} (latest ${latest}) across ${rpcUrls.length} keys`);
@@ -853,9 +856,7 @@ const main = async () => {
   // signal the UI uses to stop showing "data may be incomplete for Polygon/Base".
   const chainComplete = {};
   for (const chainKey of Object.keys(CHAINS)) {
-    const c = checkpoint.chains?.[chainKey];
-    chainComplete[chainKey] = !!c && c.latest != null && c.lastBlock != null
-      && (c.latest - c.lastBlock) <= CHAINS[chainKey].blocksPerDay;
+    chainComplete[chainKey] = chainCaughtUp(checkpoint.chains?.[chainKey], CHAINS[chainKey].blocksPerDay);
   }
   // Zero chains is vacuously "every chain caught up", which would mark an
   // unscanned Solana project complete and present unmeasured flows as a
