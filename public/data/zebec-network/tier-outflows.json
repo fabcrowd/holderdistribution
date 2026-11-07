@@ -1,7 +1,12 @@
 {
   "schema": 9,
   "tierFingerprint": "30fe7feae1bb406b",
-  "generatedAt": "2026-11-07T04:13:31.586Z",
+  "generatedAt": "2026-11-07T04:22:11.136Z",
+  "asOf": {
+    "date": "2026-11-06",
+    "blocks": {},
+    "settled": true
+  },
   "latestDate": "2026-11-07",
   "partialDate": "2026-11-07",
   "complete": true,
@@ -11,6 +16,45 @@
       "from": "2026-11-07",
       "to": "2026-11-07",
       "tiers": {
+        "1-250K": {
+          "dex": 3679677,
+          "dexSwap": 3679677,
+          "dexLp": 0,
+          "cex": 975671,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "Kraken": 975671
+          },
+          "inflows": {
+            "dex": 448933,
+            "dexSwap": 448933,
+            "dexLp": 0,
+            "cex": 2094783,
+            "wallet": 0
+          },
+          "byChain": {
+            "solana": {
+              "dex": 3679677,
+              "dexSwap": 3679677,
+              "dexLp": 0,
+              "cex": 975671,
+              "moved": 0,
+              "inflows": {
+                "dex": 448933,
+                "dexSwap": 448933,
+                "dexLp": 0,
+                "cex": 2094783,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
         "1M-5M": {
           "dex": 638668,
           "dexSwap": 638668,
@@ -50,45 +94,6 @@
           "movedByDestTier": {},
           "splitDestinationSlots": 0
         },
-        "1-250K": {
-          "dex": 3500289,
-          "dexSwap": 3500289,
-          "dexLp": 0,
-          "cex": 975671,
-          "moved": 0,
-          "splitWallets": 0,
-          "splitEvents": 0,
-          "splitTel": 0,
-          "byExchange": {
-            "Kraken": 975671
-          },
-          "inflows": {
-            "dex": 445173,
-            "dexSwap": 445173,
-            "dexLp": 0,
-            "cex": 2068756,
-            "wallet": 0
-          },
-          "byChain": {
-            "solana": {
-              "dex": 3500289,
-              "dexSwap": 3500289,
-              "dexLp": 0,
-              "cex": 975671,
-              "moved": 0,
-              "inflows": {
-                "dex": 445173,
-                "dexSwap": 445173,
-                "dexLp": 0,
-                "cex": 2068756,
-                "wallet": 0
-              }
-            }
-          },
-          "inflowsBySourceTier": {},
-          "movedByDestTier": {},
-          "splitDestinationSlots": 0
-        },
         "250K-1M": {
           "dex": 653004,
           "dexSwap": 653004,
@@ -100,8 +105,8 @@
           "splitTel": 0,
           "byExchange": {},
           "inflows": {
-            "dex": 1614915,
-            "dexSwap": 1614915,
+            "dex": 2088704,
+            "dexSwap": 2088704,
             "dexLp": 0,
             "cex": 60921,
             "wallet": 0
@@ -114,8 +119,8 @@
               "cex": 0,
               "moved": 0,
               "inflows": {
-                "dex": 1614915,
-                "dexSwap": 1614915,
+                "dex": 2088704,
+                "dexSwap": 2088704,
                 "dexLp": 0,
                 "cex": 60921,
                 "wallet": 0
@@ -224,8 +229,8 @@
             "MEXC": 539821
           },
           "inflows": {
-            "dex": 51486353,
-            "dexSwap": 51486353,
+            "dex": 51960142,
+            "dexSwap": 51960142,
             "dexLp": 0,
             "cex": 54670894,
             "wallet": 0
@@ -238,8 +243,8 @@
               "cex": 9636504,
               "moved": 0,
               "inflows": {
-                "dex": 51486353,
-                "dexSwap": 51486353,
+                "dex": 51960142,
+                "dexSwap": 51960142,
                 "dexLp": 0,
                 "cex": 54670894,
                 "wallet": 0
@@ -251,8 +256,8 @@
           "splitDestinationSlots": 0
         },
         "1-250K": {
-          "dex": 128331933,
-          "dexSwap": 128331933,
+          "dex": 128511321,
+          "dexSwap": 128511321,
           "dexLp": 0,
           "cex": 20241720,
           "moved": 0,
@@ -270,24 +275,24 @@
             "Crypto.com": 199491
           },
           "inflows": {
-            "dex": 111261147,
-            "dexSwap": 111261147,
+            "dex": 111264907,
+            "dexSwap": 111264907,
             "dexLp": 0,
-            "cex": 114235533,
+            "cex": 114261560,
             "wallet": 0
           },
           "byChain": {
             "solana": {
-              "dex": 128331933,
-              "dexSwap": 128331933,
+              "dex": 128511321,
+              "dexSwap": 128511321,
               "dexLp": 0,
               "cex": 20241720,
               "moved": 0,
               "inflows": {
-                "dex": 111261147,
-                "dexSwap": 111261147,
+                "dex": 111264907,
+                "dexSwap": 111264907,
                 "dexLp": 0,
-                "cex": 114235533,
+                "cex": 114261560,
                 "wallet": 0
               }
             }
@@ -633,8 +638,8 @@
             "MEXC": 539821
           },
           "inflows": {
-            "dex": 101980377,
-            "dexSwap": 101980377,
+            "dex": 102454166,
+            "dexSwap": 102454166,
             "dexLp": 0,
             "cex": 111919048,
             "wallet": 0
@@ -647,8 +652,8 @@
               "cex": 9977253,
               "moved": 0,
               "inflows": {
-                "dex": 101980377,
-                "dexSwap": 101980377,
+                "dex": 102454166,
+                "dexSwap": 102454166,
                 "dexLp": 0,
                 "cex": 111919048,
                 "wallet": 0
@@ -660,8 +665,8 @@
           "splitDestinationSlots": 0
         },
         "1-250K": {
-          "dex": 191590555,
-          "dexSwap": 191590555,
+          "dex": 191769943,
+          "dexSwap": 191769943,
           "dexLp": 0,
           "cex": 26935739,
           "moved": 0,
@@ -680,24 +685,24 @@
             "Crypto.com": 199491
           },
           "inflows": {
-            "dex": 172823898,
-            "dexSwap": 172823898,
+            "dex": 172827658,
+            "dexSwap": 172827658,
             "dexLp": 0,
-            "cex": 181266565,
+            "cex": 181292592,
             "wallet": 0
           },
           "byChain": {
             "solana": {
-              "dex": 191590555,
-              "dexSwap": 191590555,
+              "dex": 191769943,
+              "dexSwap": 191769943,
               "dexLp": 0,
               "cex": 26935739,
               "moved": 0,
               "inflows": {
-                "dex": 172823898,
-                "dexSwap": 172823898,
+                "dex": 172827658,
+                "dexSwap": 172827658,
                 "dexLp": 0,
-                "cex": 181266565,
+                "cex": 181292592,
                 "wallet": 0
               }
             }
@@ -1046,8 +1051,8 @@
             "MEXC": 539821
           },
           "inflows": {
-            "dex": 101980377,
-            "dexSwap": 101980377,
+            "dex": 102454166,
+            "dexSwap": 102454166,
             "dexLp": 0,
             "cex": 111919048,
             "wallet": 0
@@ -1060,8 +1065,8 @@
               "cex": 9977253,
               "moved": 0,
               "inflows": {
-                "dex": 101980377,
-                "dexSwap": 101980377,
+                "dex": 102454166,
+                "dexSwap": 102454166,
                 "dexLp": 0,
                 "cex": 111919048,
                 "wallet": 0
@@ -1073,8 +1078,8 @@
           "splitDestinationSlots": 0
         },
         "1-250K": {
-          "dex": 191590555,
-          "dexSwap": 191590555,
+          "dex": 191769943,
+          "dexSwap": 191769943,
           "dexLp": 0,
           "cex": 26935739,
           "moved": 0,
@@ -1093,24 +1098,24 @@
             "Crypto.com": 199491
           },
           "inflows": {
-            "dex": 172823898,
-            "dexSwap": 172823898,
+            "dex": 172827658,
+            "dexSwap": 172827658,
             "dexLp": 0,
-            "cex": 181266565,
+            "cex": 181292592,
             "wallet": 0
           },
           "byChain": {
             "solana": {
-              "dex": 191590555,
-              "dexSwap": 191590555,
+              "dex": 191769943,
+              "dexSwap": 191769943,
               "dexLp": 0,
               "cex": 26935739,
               "moved": 0,
               "inflows": {
-                "dex": 172823898,
-                "dexSwap": 172823898,
+                "dex": 172827658,
+                "dexSwap": 172827658,
                 "dexLp": 0,
-                "cex": 181266565,
+                "cex": 181292592,
                 "wallet": 0
               }
             }
@@ -1459,8 +1464,8 @@
             "MEXC": 539821
           },
           "inflows": {
-            "dex": 101980377,
-            "dexSwap": 101980377,
+            "dex": 102454166,
+            "dexSwap": 102454166,
             "dexLp": 0,
             "cex": 111919048,
             "wallet": 0
@@ -1473,8 +1478,8 @@
               "cex": 9977253,
               "moved": 0,
               "inflows": {
-                "dex": 101980377,
-                "dexSwap": 101980377,
+                "dex": 102454166,
+                "dexSwap": 102454166,
                 "dexLp": 0,
                 "cex": 111919048,
                 "wallet": 0
@@ -1486,8 +1491,8 @@
           "splitDestinationSlots": 0
         },
         "1-250K": {
-          "dex": 191590555,
-          "dexSwap": 191590555,
+          "dex": 191769943,
+          "dexSwap": 191769943,
           "dexLp": 0,
           "cex": 26935739,
           "moved": 0,
@@ -1506,24 +1511,24 @@
             "Crypto.com": 199491
           },
           "inflows": {
-            "dex": 172823898,
-            "dexSwap": 172823898,
+            "dex": 172827658,
+            "dexSwap": 172827658,
             "dexLp": 0,
-            "cex": 181266565,
+            "cex": 181292592,
             "wallet": 0
           },
           "byChain": {
             "solana": {
-              "dex": 191590555,
-              "dexSwap": 191590555,
+              "dex": 191769943,
+              "dexSwap": 191769943,
               "dexLp": 0,
               "cex": 26935739,
               "moved": 0,
               "inflows": {
-                "dex": 172823898,
-                "dexSwap": 172823898,
+                "dex": 172827658,
+                "dexSwap": 172827658,
                 "dexLp": 0,
-                "cex": 181266565,
+                "cex": 181292592,
                 "wallet": 0
               }
             }
@@ -1872,8 +1877,8 @@
             "MEXC": 539821
           },
           "inflows": {
-            "dex": 101980377,
-            "dexSwap": 101980377,
+            "dex": 102454166,
+            "dexSwap": 102454166,
             "dexLp": 0,
             "cex": 111919048,
             "wallet": 0
@@ -1886,8 +1891,8 @@
               "cex": 9977253,
               "moved": 0,
               "inflows": {
-                "dex": 101980377,
-                "dexSwap": 101980377,
+                "dex": 102454166,
+                "dexSwap": 102454166,
                 "dexLp": 0,
                 "cex": 111919048,
                 "wallet": 0
@@ -1899,8 +1904,8 @@
           "splitDestinationSlots": 0
         },
         "1-250K": {
-          "dex": 191590555,
-          "dexSwap": 191590555,
+          "dex": 191769943,
+          "dexSwap": 191769943,
           "dexLp": 0,
           "cex": 26935739,
           "moved": 0,
@@ -1919,24 +1924,24 @@
             "Crypto.com": 199491
           },
           "inflows": {
-            "dex": 172823898,
-            "dexSwap": 172823898,
+            "dex": 172827658,
+            "dexSwap": 172827658,
             "dexLp": 0,
-            "cex": 181266565,
+            "cex": 181292592,
             "wallet": 0
           },
           "byChain": {
             "solana": {
-              "dex": 191590555,
-              "dexSwap": 191590555,
+              "dex": 191769943,
+              "dexSwap": 191769943,
               "dexLp": 0,
               "cex": 26935739,
               "moved": 0,
               "inflows": {
-                "dex": 172823898,
-                "dexSwap": 172823898,
+                "dex": 172827658,
+                "dexSwap": 172827658,
                 "dexLp": 0,
-                "cex": 181266565,
+                "cex": 181292592,
                 "wallet": 0
               }
             }
