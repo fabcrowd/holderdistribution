@@ -29,13 +29,6 @@ Full spec lives in `design-system/` and `BRAND.md` inside it.
 - `warning` — caution, separate from accent
 - `ha-accent` — alias for gold accent in Tailwind
 
-**Fonts:** Inter (UI text) + IBM Plex Mono (chain-native values: amounts, addresses, hashes)
-
-**Logos:** Three lockups in `src/assets/` and `design-system/logos/`:
-- `holder-analytics-icon.svg` — mark only (favicon, avatars)
-- `holder-analytics-stacked.svg` — icon above wordmark (portrait/square placements)
-- `holder-analytics-horizontal.svg` — icon beside wordmark (nav bar)
-
 ---
 
 ## Deployment
@@ -47,12 +40,6 @@ To deploy:
 2. Go to the Netlify dashboard → trigger a manual deploy
 
 Why: data refresh commits run frequently and shouldn't trigger full rebuilds.
-
-**Build command:** `npm run build`
-**Publish dir:** `dist`
-**Functions dir:** `netlify/functions`
-
-The `prebuild` script runs `generate-sitemap.ts` and `bundle-forensics-gate.js` automatically before `vite build`.
 
 ---
 
@@ -73,19 +60,8 @@ Secrets are encrypted via `scripts/encrypt-env.js` / `decrypt-env.js`.
 
 ## Current goals / active work
 
-- **Rebrand status (2026-10-18):** the UI, theme tokens, logo, favicons, OG image, meta tags and canonical URLs are now Holder Distribution / holderdistribution.com. `src/index.css` maps the shadcn variables to the Holder Distribution palette; `--ha-*` tokens are defined there. See `README.md` and `docs/DEPLOYMENT.md` for run/deploy/security notes.
-
-- **Rebranding** from "TelcoinHub" → "Holder Distribution" is complete across the UI, copy, meta tags and design-system docs. Remaining "Holder Analytics" text is limited to asset file names and the `HolderAnalytics` design-system bundle namespace.
 - **Design system rollout** — tokens are in `tailwind.config.ts` and `design-system/tokens.css`. Components should progressively adopt the semantic tokens (`brand`, `positive`, `negative`, `ha-accent`, etc.) instead of raw Tailwind color classes.
 - **Forensics Gate** — premium content gate in `netlify/functions/forensics-gate.cjs`. Gated via `ForensicsGate.tsx` + `SubscriptionGate.tsx` components.
-
----
-
-## Repo
-
-GitHub: `https://github.com/fabcrowd/holderdistribution`
-Branch: `main`
-Live site: `https://holderdistribution.com`
 
 
 ---
