@@ -35,7 +35,7 @@ permissions:
 # One at a time: two runs filling the same date would each rewrite
 # holders-history.json from a different starting point.
 concurrency:
-  group: fill-history-gaps
+  group: holders-refresh
   cancel-in-progress: false
 
 # Every pipeline script reads HD_PROJECT as its default `--project` (see

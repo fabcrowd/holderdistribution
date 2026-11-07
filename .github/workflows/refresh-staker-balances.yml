@@ -8,6 +8,11 @@ on:
         default: 'tel'
 permissions:
   contents: write
+
+# Shared with every other writer of public/data on main (see refresh-holders.yml).
+concurrency:
+  group: holders-refresh
+  cancel-in-progress: false
 # Every pipeline script reads HD_PROJECT as its default `--project` (see
 # scripts/lib/projects.js); scheduled runs have no inputs and stay on TEL.
 env:
@@ -16,10 +21,11 @@ env:
 jobs:
   refresh:
     runs-on: ubuntu-24.04
-    # No explicit timeout-minutes — 30min proved too tight for a full cold
+    timeout-minutes: 330
+    # 330 cap (was unbounded) — 30min proved too tight for a full cold
     # run (~6,144 sequential stakedBy calls, 25+min baseline) under any
     # Etherscan free-tier throttling, and even 90min is still a guess at
-    # worst-case backoff. Falls back to GitHub's default 360min cap. See
+    # worst-case backoff. Capped at 330min. See
     # scripts/pull-staker-balances.js's checkpoint comment.
     steps:
       - name: Check out repository

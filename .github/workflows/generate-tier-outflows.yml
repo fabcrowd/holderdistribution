@@ -26,7 +26,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: generate-tier-outflows
+  group: holders-refresh
   cancel-in-progress: false
 
 # Every pipeline script reads HD_PROJECT as its default `--project` (see
