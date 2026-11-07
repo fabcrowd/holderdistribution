@@ -91,7 +91,7 @@ jobs:
         run: |
           git config user.email "action@github.com"
           git config user.name "github-actions[bot]"
-          FILES=$(node scripts/workflow-paths.js files public/data/holders-history.json data/holders-asof-blocks.json)
+          FILES=$(node scripts/workflow-paths.js files public/data/holders-history.json public/data/date-blocks.json data/holders-asof-blocks.json)
           git add $FILES
           if git diff --cached --quiet -- $FILES; then
             echo "No gaps to fill"

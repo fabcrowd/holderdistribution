@@ -54,18 +54,18 @@ describe("planPins / finalizeAsOf", () => {
     expect(999 + 1 > plan.pins.ethereum).toBe(true);
     expect(aheadAction({ ahead: plan.ahead, settledDate: "2026-11-05", history: { entries: [] } })).toBe("scan");
   });
-  it("checkpoint past the pin: no-op when the settled row exists, fails loudly when it does not", () => {
+  it("checkpoint past the pin: no-op when the settled row exists, otherwise snapshot unpinned", () => {
     const { ahead } = planPins({ settledDate: "2026-11-05", cutoffMap: cutoffs, chains: [{ key: "ethereum", checkpointBlock: 1200 }] });
     expect(ahead).toEqual(["ethereum"]);
     expect(aheadAction({ ahead, settledDate: "2026-11-05", history: { entries: [{ date: "2026-11-05", asOf: { settled: true } }] } })).toBe("noop");
-    expect(() => aheadAction({ ahead, settledDate: "2026-11-05", history: { entries: [{ date: "2026-11-04" }] } })).toThrow(/no settled 2026-11-05 row/);
-    expect(() => aheadAction({ ahead, settledDate: "2026-11-05", history: { entries: [{ date: "2026-11-05", asOf: { settled: false } }] } })).toThrow();
+    expect(aheadAction({ ahead, settledDate: "2026-11-05", history: { entries: [{ date: "2026-11-04" }] } })).toBe("unpin");
+    expect(aheadAction({ ahead, settledDate: "2026-11-05", history: { entries: [{ date: "2026-11-05", asOf: { settled: false } }] } })).toBe("unpin");
     expect(hasSettledRow(null, "2026-11-05")).toBe(false);
   });
   it("a legacy unstamped row is not settled; only a row marked settled:true counts", () => {
     expect(hasSettledRow({ entries: [{ date: "2026-11-05", combined: { holderCount: 5 } }] }, "2026-11-05")).toBe(false);
     expect(hasSettledRow({ entries: [{ date: "2026-11-05", settled: true }] }, "2026-11-05")).toBe(true);
-    expect(() => aheadAction({ ahead: ["ethereum"], settledDate: "2026-11-05", history: { entries: [{ date: "2026-11-05" }] } })).toThrow();
+    expect(aheadAction({ ahead: ["ethereum"], settledDate: "2026-11-05", history: { entries: [{ date: "2026-11-05" }] } })).toBe("unpin");
   });
   it("settled only when every chain is pinned; otherwise dated the run day", () => {
     expect(finalizeAsOf({ settledDate: "2026-11-05", runDay: "2026-11-06", blocks: { ethereum: 999 } })).toEqual({

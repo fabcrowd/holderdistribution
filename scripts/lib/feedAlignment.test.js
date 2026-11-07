@@ -55,9 +55,29 @@ describe("compareFeeds", () => {
     expect(live).toMatchObject({ settled: false, live: ["solana"] });
     const r = compareFeeds([f("a", "2026-11-05", { ethereum: 5, solana: 1 }), live]);
     expect(r.ok).toBe(true);
-    expect(r.skipped).toEqual(["sol: live chain: block comparison skipped (solana)", "solana blocks: live chain: block comparison skipped"]);
+    expect(r.skipped).toEqual(["sol: live chain: block comparison skipped (solana)", "solana blocks: live feeds skipped; settled feeds with a solana block are still compared"]);
     expect(r.blockSpread).toEqual({ ethereum: 0 });
     expect(compareFeeds([f("a", "2026-11-05"), live], { strict: true }).ok).toBe(true);
+  });
+  it("settled flow feeds stamped with a solana slot are compared with each other on blocks, even when a live snapshot feed lists solana", () => {
+    const flow = (name, solana) => summarizeFeed(name, { generatedAt: gen, asOf: { date: "2026-11-05", blocks: { solana }, settled: true } });
+    expect(compareFeeds([flow("exchange-flow", 199), flow("tier-outflows", 199)])).toMatchObject({ ok: true, blockSpread: { solana: 0 } });
+    const bad = compareFeeds([flow("exchange-flow", 199), flow("tier-outflows", 150)]);
+    expect(bad.ok).toBe(false);
+    expect(bad.problems).toEqual([expect.stringContaining("solana blocks differ by 49")]);
+    const live = summarizeFeed("lite", { generatedAt: gen, asOf: { date: "2026-11-06", blocks: { solana: 9 }, settled: false, live: ["solana"] } });
+    const mixed = compareFeeds([flow("exchange-flow", 199), flow("tier-outflows", 150), live]);
+    expect(mixed.blockSpread).toEqual({ solana: 49 });
+    expect(mixed.ok).toBe(false);
+    expect(compareFeeds([flow("exchange-flow", 199), flow("tier-outflows", 199), live])).toMatchObject({ ok: true, blockSpread: { solana: 0 } });
+  });
+  it("asOf.noBlock is surfaced: a warning, a problem under strict", () => {
+    const s = summarizeFeed("flows", { generatedAt: gen, asOf: { date: "2026-11-05", blocks: {}, settled: true, noBlock: ["solana"] } });
+    expect(s.noBlock).toEqual(["solana"]);
+    expect(compareFeeds([s])).toMatchObject({ ok: true, warnings: ["flows: no block recorded for solana (asOf.noBlock)"] });
+    const strict = compareFeeds([s], { strict: true });
+    expect(strict.ok).toBe(false);
+    expect(strict.problems).toEqual(["flows: no block recorded for solana (asOf.noBlock)"]);
   });
   it("a live feed more than 1 day off the others is a warning, a failure under strict", () => {
     const stale = summarizeFeed("sol", { generatedAt: gen, asOf: { date: "2026-11-02", blocks: {}, settled: false, live: ["solana"] } });
