@@ -49,6 +49,11 @@ on:
 permissions:
   contents: write
 
+# Shared with every other writer of public/data on main (see refresh-holders.yml).
+concurrency:
+  group: holders-refresh
+  cancel-in-progress: false
+
 # Every pipeline script reads HD_PROJECT as its default `--project` (see
 # scripts/lib/projects.js); scheduled runs have no inputs and stay on TEL.
 env:

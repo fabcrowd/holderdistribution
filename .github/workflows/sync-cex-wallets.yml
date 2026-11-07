@@ -14,6 +14,13 @@ on:
 permissions:
   contents: write
 
+# Shared with every other writer of public/data on main. GitHub keeps one pending
+# run per group: if a pending sync run is replaced, re-dispatch it by hand (its cron
+# runs only on the 1st and the 15th).
+concurrency:
+  group: holders-refresh
+  cancel-in-progress: false
+
 # Every pipeline script reads HD_PROJECT as its default `--project` (see
 # scripts/lib/projects.js); scheduled runs have no inputs and run every project
 # config/nightly-jobs.json schedules for job "cex-sync" (one at a time).
@@ -38,6 +45,8 @@ jobs:
   sync:
     name: sync ${{ matrix.slug }}
     needs: plan
+    # Per matrix job; overlap with refresh-holders is prevented by the shared group.
+    timeout-minutes: 240
     strategy:
       fail-fast: false
       max-parallel: 1
