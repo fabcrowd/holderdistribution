@@ -102,6 +102,9 @@ jobs:
           # TEL pass-through of workflow-paths.js does not check existence, so add it only when present.
           STATE="$HD_WORK_DIR/forensics/wallet-flows-state.json"
           if [ -f "$STATE" ]; then FILES="$FILES $STATE"; fi
+          # EVM scan state (cursor + 90-day outflows per chain), written by generate-wallet-flows.js.
+          EVM_STATE="$HD_WORK_DIR/forensics/wallet-flows-evm-state.json"
+          if [ -f "$EVM_STATE" ]; then FILES="$FILES $EVM_STATE"; fi
           if [ -f "$HD_WORK_DIR/rpc-usage.json" ]; then FILES="$FILES $HD_WORK_DIR/rpc-usage.json"; fi
           git add $FILES
           if git diff --cached --quiet; then echo "No change"; exit 0; fi

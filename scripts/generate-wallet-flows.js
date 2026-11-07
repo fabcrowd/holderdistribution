@@ -67,7 +67,16 @@ import {
   telcoinSellTotals,
   validateWalletFlowsReport,
 } from "./lib/walletFlows.js";
-import { loadProjectClassification, selectPipelineProject } from "./lib/projects.js";
+import { MIN_SWAP_CANDIDATE_TEL, markSwaps } from "./lib/walletFlowsSwaps.js";
+import {
+  WALLET_FLOWS_EVM_STATE_FILE,
+  buildState,
+  configHash,
+  scanChainOutflows,
+  stateLogic,
+  tokenConfigFingerprint,
+} from "./lib/walletFlowsState.js";
+import { loadProjectClassification, projectWork, selectPipelineProject } from "./lib/projects.js";
 import { tokenSlots, walletFlowsNotes, walletFlowsPlan } from "./lib/walletFlowsProject.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Every path and address
@@ -219,25 +228,13 @@ function toTransfers(chain, logs, slotByToken) {
       tel: rawToTel(raw, decimals),
       tx: norm(log.transactionHash),
       block: Number.parseInt(log.blockNumber, 16),
+      logIndex: Number.parseInt(log.logIndex ?? "0x0", 16),
     });
   }
   return out;
 }
 
-async function markSwaps(urls, transfers, budget) {
-  const txs = [...new Set(transfers.map((t) => t.tx))].slice(0, budget.left);
-  budget.left -= txs.length;
-  const swapped = new Set();
-  await pool(txs, 4, async (tx) => {
-    try {
-      const r = await viaPool(urls, (u) => rpcCall(u, "eth_getTransactionReceipt", [tx]));
-      if ((r?.logs ?? []).some((l) => SWAP_TOPICS.has(norm(l.topics?.[0])))) swapped.add(tx);
-    } catch {
-      /* unknown → left unlabelled */
-    }
-  });
-  for (const t of transfers) if (swapped.has(t.tx)) t.swapped = true;
-}
+const receiptFetcher = (urls) => (tx) => viaPool(urls, (u) => rpcCall(u, "eth_getTransactionReceipt", [tx]));
 
 async function balanceOf(urls, token, holder) {
   const data = "0x70a08231" + pad(holder).slice(2);
@@ -291,6 +288,21 @@ async function main() {
   const sellerAddrs = (registry.watchedSellers ?? []).map((s) => norm(s.address));
   const balanceAddrs = [...new Set([...knownAddrs, ...botAddrs, ...sellerAddrs])];
 
+  // Incremental outflow scan: not for --as-of backfills (their head is historical).
+  const stateFile = projectWork(PROJECT, ROOT)(WALLET_FLOWS_EVM_STATE_FILE);
+  const prevState = AS_OF ? null : await readJsonOr(stateFile, null);
+  const stateHash = configHash({
+    logic: stateLogic({ swapTopics: SWAP_TOPICS, minCandidateTel: MIN_SWAP_CANDIDATE_TEL }),
+    registry,
+    cex: (cexCfg.wallets ?? cexCfg).map((w) => [norm(w.address), w.label ?? w.walletName ?? null]),
+    dexAddresses: dexAddresses.map(norm).sort(),
+    upgradeContracts: upgradeContracts.map(norm).sort(),
+    bridgeAddresses: PLAN.bridgeAddresses.map(norm).sort(),
+    recon: (recon.items ?? []).map((i) => [norm(i.address), i.category]).sort(),
+    // Every configured chain, so a `--chains` subset run keeps the other chains' cursors.
+    tokens: tokenConfigFingerprint(chainsCfg),
+  });
+  const nextStateChains = {};
   const startBlocks = {};
   const windows = {};
   const tracked = [];
@@ -298,6 +310,7 @@ async function main() {
   const allTransfers = [];
   const sellerTransfers = [];
   const budget = { left: MAX_RECEIPTS };
+  const sellerBudget = { left: MAX_RECEIPTS };
   const now = anchorSeconds(AS_OF, Date.now());
   const failover = createLogsFailover(getLogs);
   if (AS_OF) console.log(`as-of ${AS_OF.iso}: windows anchored there; balances and USD values will be null`);
@@ -325,19 +338,37 @@ async function main() {
     // 1+3. Outflows from registry wallets and the bot cluster (topic1 = sender).
     // Always RPC: sender lists are never sent to Portal (decision D2).
     const senders = [...new Set([...knownAddrs, ...botAddrs])].map(pad);
-    const logs = await scanLogs(
-      scanner,
-      { address: tokenList.map((t) => t.address), topics: [TRANSFER, senders] },
-      startBlocks[chain]["90d"],
+    const start90 = startBlocks[chain]["90d"];
+    const { plan, fresh, events: transfers, entry } = await scanChainOutflows({
+      state: prevState,
+      chain,
+      hash: stateHash,
+      start90,
       head,
+      scan: async (from, to) =>
+        toTransfers(
+          chain,
+          await scanLogs(scanner, { address: tokenList.map((t) => t.address), topics: [TRANSFER, senders] }, from, to),
+          slotByToken,
+        ),
+      // Verdicts are stored per event (true/false reused, null/absent retried); budget exhaustion keeps null.
+      mark: (events) =>
+        markSwaps({
+          fetchReceipt: receiptFetcher(urls),
+          transfers: events.filter(
+            (t) => t.tel >= MIN_SWAP_CANDIDATE_TEL && !index.bots.has(t.from) && classifyOutflow(t.from, t.to, index) === "unlabelled",
+          ),
+          budget,
+        }),
+    });
+    console.log(
+      plan.full
+        ? `${chain}: full outflow scan from ${start90}${prevState ? ` (${plan.reason})` : ""}`
+        : `${chain}: incremental outflow scan from ${plan.from} (${plan.events.length} stored events)`,
     );
-    const transfers = toTransfers(chain, logs, slotByToken);
-    const unlabelled = transfers.filter(
-      (t) => t.tel >= 1e6 && !index.bots.has(t.from) && classifyOutflow(t.from, t.to, index) === "unlabelled",
-    );
-    await markSwaps(urls, unlabelled, budget);
+    nextStateChains[chain] = entry;
     allTransfers.push(...transfers);
-    console.log(`${chain}: ${transfers.length} outflows from tracked wallets`);
+    console.log(`${chain}: ${fresh.length} fetched, ${transfers.length} outflows from tracked wallets in 90d`);
 
     // 4. 72h large-seller discovery (every TEL transfer in the window).
     if (!SKIP_SELLERS) {
@@ -354,7 +385,7 @@ async function main() {
           perSender.set(t.from, (perSender.get(t.from) ?? 0) + t.tel);
         }
         const heavy = new Set([...perSender].filter(([, v]) => v >= MIN_SELLER_TEL).map(([a]) => a));
-        await markSwaps(urls, all.filter((t) => heavy.has(t.from)), budget);
+        await markSwaps({ fetchReceipt: receiptFetcher(urls), transfers: all.filter((t) => heavy.has(t.from)), budget: sellerBudget });
         sellerTransfers.push(...all);
         console.log(`${chain}: ${all.length} transfers in 72h`);
       } catch (error) {
@@ -399,7 +430,13 @@ async function main() {
     priceSource,
     chains: CHAINS,
     windows,
-    notes: [...walletFlowsNotes(PLAN), ...(SOURCE === "portal" ? ["source: portal"] : [])],
+    notes: [
+      ...walletFlowsNotes(PLAN),
+      ...(SOURCE === "portal" ? ["source: portal"] : []),
+      ...(budget.exhausted || sellerBudget.exhausted
+        ? ["Receipt budget exhausted: some large transfers were not checked for DEX swaps and stay unlabelled until the next run."]
+        : []),
+    ],
     distribution: { ...buildDistribution(recon, tracked), source: path.relative(ROOT, RECON).split(path.sep).join("/") },
     telcoinTotals: telcoinSellTotals(knownWallets, priceUsd),
     knownWallets,
@@ -425,6 +462,13 @@ async function main() {
   }
   await fs.mkdir(path.dirname(OUT), { recursive: true });
   await fs.writeFile(OUT, JSON.stringify(report, null, 1) + "\n");
+  if (!AS_OF) {
+    // Cursors advance only after every chain scanned and the report validated; tmp + rename so a crash keeps the old state.
+    await fs.mkdir(path.dirname(stateFile), { recursive: true });
+    // Compact JSON (no indent): the file is committed daily.
+    await fs.writeFile(`${stateFile}.tmp`, JSON.stringify(buildState({ hash: stateHash, chains: nextStateChains, previous: prevState, validChains: Object.keys(chainsCfg) })) + "\n");
+    await fs.rename(`${stateFile}.tmp`, stateFile);
+  }
   console.log(`Wrote ${path.relative(ROOT, OUT)} (${knownWallets.length} wallets, ${largeSellers.length} sellers)`);
 }
 
