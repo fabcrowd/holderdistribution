@@ -1,9 +1,11 @@
 {
   "schemaVersion": 1,
   "project": "tel",
-  "generatedAt": "2026-11-07T03:58:38.215Z",
-  "healthy": true,
-  "problems": [],
+  "generatedAt": "2026-11-07T13:53:46.660Z",
+  "healthy": false,
+  "problems": [
+    "staker-balances: over-budget"
+  ],
   "jobs": [
     {
       "id": "holders",
@@ -22,29 +24,29 @@
         {
           "path": "public/data/holders-summary.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-07T03:51:13.916Z",
+          "ageHours": 0,
+          "generatedAt": "2026-11-07T13:53:31.858Z",
           "status": "fresh"
         },
         {
           "path": "public/data/holders-history.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-07T03:51:17.286Z",
+          "ageHours": 0,
+          "generatedAt": "2026-11-07T13:53:34.696Z",
           "status": "fresh"
         },
         {
           "path": "public/data/supply-reconciliation.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-07T03:51:22.000Z",
+          "ageHours": 0,
+          "generatedAt": "2026-11-07T13:53:38.000Z",
           "status": "fresh"
         },
         {
           "path": "public/data/cex-wallets.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-07T03:51:15.197Z",
+          "ageHours": 0,
+          "generatedAt": "2026-11-07T13:53:33.123Z",
           "status": "fresh"
         }
       ],
@@ -70,8 +72,8 @@
         {
           "path": "public/data/exchange-flow-history.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-07T03:52:22.649Z",
+          "ageHours": 0,
+          "generatedAt": "2026-11-07T13:53:43.970Z",
           "status": "fresh"
         }
       ],
@@ -98,7 +100,7 @@
           "path": "public/data/tier-outflows.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-07T03:58:37.498Z",
+          "generatedAt": "2026-11-07T13:53:46.039Z",
           "status": "fresh"
         }
       ],
@@ -133,19 +135,19 @@
       "alchemyOnly": false,
       "alchemyCuBudget": 1000,
       "budgetMode": "enforce",
-      "health": "ok",
+      "health": "over-budget",
       "outputs": [
         {
           "path": "public/data/funding-wallets.json",
           "maxAgeHours": 30,
-          "ageHours": 0.2,
-          "generatedAt": "2026-11-07T03:48:21.575Z",
+          "ageHours": 0,
+          "generatedAt": "2026-11-07T13:52:12.432Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
         "day": "2026-11-07",
-        "cu": 618
+        "cu": 1236
       }
     },
     {
@@ -198,7 +200,7 @@
         {
           "path": "data/forensics/wallet-flows.json",
           "maxAgeHours": 30,
-          "ageHours": 7.4,
+          "ageHours": 17.3,
           "generatedAt": "2026-11-06T20:33:19.509Z",
           "status": "fresh"
         }
@@ -226,8 +228,8 @@
         {
           "path": "data/tel/ledger/ledger.json",
           "maxAgeHours": 30,
-          "ageHours": 18.2,
-          "generatedAt": "2026-11-06T09:46:20.000Z",
+          "ageHours": 4.7,
+          "generatedAt": "2026-11-07T09:10:21.000Z",
           "status": "fresh"
         }
       ],
