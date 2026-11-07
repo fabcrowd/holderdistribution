@@ -115,7 +115,13 @@ const main = async () => {
   const treasury = await read("treasury-history.json", { optional: true });
 
   // --- 1. Retail balance. Four feeds carry it; on 2026-08-29 two were stale.
-  const histLast = lastEntry(history);
+  // An unpinned snapshot (some EVM chain read at head, lib/asOf.js) writes no
+  // history row by design, so the newest row is an older day and cannot match
+  // it; the gap fill rebuilds that day's settled row. Compare history only when
+  // the snapshot is one a row is written from.
+  const snapshotUnpinned = (summary?.asOf?.unpinned ?? holders?.asOf?.unpinned ?? []).length > 0;
+  const histLast = snapshotUnpinned ? null : lastEntry(history);
+  if (snapshotUnpinned) checks.push(`holders-history not compared: snapshot is unpinned (${(summary?.asOf?.unpinned ?? holders?.asOf?.unpinned).join(", ")}), no row written this run`);
   agree("retail balance", [
     ["supply-reconciliation.categories.retail", supply?.categories?.retail],
     ["holders-lite.views.combined", lite?.views?.combined?.metrics?.totalBalance],
