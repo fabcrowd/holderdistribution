@@ -80,6 +80,40 @@
           "publicCalls": 1319
         }
       }
+    },
+    "2026-11-07": {
+      "runs": 1,
+      "alchemyCu": 670,
+      "heliusCredits": 0,
+      "alchemyCalls": 23,
+      "heliusCalls": 0,
+      "publicCalls": 63,
+      "byScript": {
+        "pull-holders-rpc.js": {
+          "processes": 2,
+          "alchemyCu": 570,
+          "heliusCredits": 0,
+          "publicCalls": 4
+        },
+        "scan-exchange-flows.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 55
+        },
+        "generate-tier-outflows.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 4
+        },
+        "fill-history-gaps.js": {
+          "processes": 1,
+          "alchemyCu": 100,
+          "heliusCredits": 0,
+          "publicCalls": 0
+        }
+      }
     }
   }
 }
