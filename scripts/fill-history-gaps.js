@@ -85,6 +85,7 @@ const readArg = (flag, fallback = null) => {
 };
 const DRY_RUN = process.argv.includes("--dry-run");
 const WINDOW_DAYS = Number(readArg("--days", "14"));
+const MAX_REBUILDS_PER_RUN = 1;
 
 const run = (script, args = []) => {
   execFileSync("node", [`scripts/${script}`, ...PROJECT_ARGS, ...args], { cwd: ROOT, stdio: "inherit" });
@@ -100,7 +101,14 @@ const main = async () => {
   // window slides back with the row that stopped moving. Today itself is the
   // daily refresh's job and its day boundary has not passed yet.
   const todayUtc = new Date().toISOString().slice(0, 10);
-  const missing = missingHistoryDates(history.entries, todayUtc, WINDOW_DAYS);
+  const unsettled = missingHistoryDates(history.entries, todayUtc, WINDOW_DAYS);
+  // Forward only: rebuild just the newest unsettled day. Older unsettled days are
+  // left as they are; alignment only needs the feeds to end on a settled day from
+  // here on, and each night's gap fill writes that day's settled row.
+  const missing = unsettled.slice(-MAX_REBUILDS_PER_RUN);
+  if (unsettled.length > missing.length) {
+    console.log(`${unsettled.length} unsettled day(s); rebuilding the newest ${missing.length} this run.`);
+  }
 
   if (missing.length === 0) {
     console.log(`No gaps in the last ${WINDOW_DAYS} days (latest row ${latest}). Nothing to do.`);
@@ -168,7 +176,8 @@ const main = async () => {
   }
 
   const after = JSON.parse(await fs.readFile(HISTORY_PATH, "utf8"));
-  const stillMissing = missing.filter((d) => !after.entries.some((e) => e.date === d));
+  const stillUnsettled = new Set(missingHistoryDates(after.entries, todayUtc, WINDOW_DAYS));
+  const stillMissing = missing.filter((d) => stillUnsettled.has(d));
   console.log(`Filled ${missing.length - stillMissing.length} of ${missing.length} date(s).`);
   if (stillMissing.length) {
     throw new Error(`Still missing after the run: ${stillMissing.join(", ")}`);
