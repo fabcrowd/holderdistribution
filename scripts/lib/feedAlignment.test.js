@@ -114,3 +114,12 @@ describe("compareFeeds", () => {
     expect(compareFeeds(feeds, { missing: ["tier-outflows"], strict: true })).toMatchObject({ ok: false, problems: ["missing feed: tier-outflows"] });
   });
 });
+
+describe("unpinned chains are not block-compared", () => {
+  it("skips a chain listed as unpinned on a feed, the same way as a live chain", () => {
+    const flows = summarizeFeed("flows", { generatedAt: gen, asOf: { date: "2026-11-06", blocks: { ethereum: 100 }, settled: true }, entries: [{ date: "2026-11-06" }] });
+    const snapshot = summarizeFeed("holders-lite", { generatedAt: gen, asOf: { date: "2026-11-07", blocks: { ethereum: 900 }, settled: false, unpinned: ["ethereum"] }, entries: [{ date: "2026-11-07" }] });
+    const result = compareFeeds([flows, snapshot]);
+    expect(result.problems.filter((p) => /ethereum blocks differ/.test(p))).toEqual([]);
+  });
+});

@@ -64,7 +64,11 @@ export function summarizeFeed(name, json, checkpoint = null) {
       blockSource = "checkpoint";
     }
   }
-  const live = stamped && Array.isArray(json.asOf.live) ? [...json.asOf.live] : [];
+  // Unpinned chains (read at head because their settled block was unavailable) are
+  // not at a settled block either, so they are left out of block comparison like live ones.
+  const live = stamped
+    ? [...new Set([...(Array.isArray(json.asOf.live) ? json.asOf.live : []), ...(Array.isArray(json.asOf.unpinned) ? json.asOf.unpinned : [])])]
+    : [];
   const noBlock = stamped && Array.isArray(json.asOf.noBlock) ? [...json.asOf.noBlock] : [];
   const settled = stamped ? json.asOf.settled !== false : null;
   return { name, endDate, rawLastDate, generatedAt: json?.generatedAt ?? null, stamped, blocks, blockSource, settled, live, noBlock };
