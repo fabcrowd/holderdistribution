@@ -1,0 +1,40 @@
+name: Diagnose TEL council transfers
+
+# One-off, manual only. Investigates the 2026-11-07 TEL council-category mismatch
+# (supply-reconciliation 461.7M vs treasury-history 561.7M). Reads Transfer logs
+# and balances with the RPC keys in .env.enc and prints the result to the job log.
+# It writes no data, commits nothing and pushes nothing.
+on:
+  workflow_dispatch:
+    inputs:
+      from_block:
+        description: 'First Ethereum block to scan for council transfers'
+        required: false
+        default: '26363000'
+      scan_block:
+        description: 'Block the failed snapshot scanned to (balances are also read here)'
+        required: false
+        default: '26363394'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Scan council transfers and balances
+        env:
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          DIAG_FROM_BLOCK: ${{ inputs.from_block }}
+          DIAG_SCAN_BLOCK: ${{ inputs.scan_block }}
+        run: node scripts/diagnose-council-transfers.js
