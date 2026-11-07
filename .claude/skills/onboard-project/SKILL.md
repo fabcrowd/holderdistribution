@@ -96,7 +96,10 @@ Each command below is a workflow dispatch with `-f project=<slug>` (`gh workflow
    - Mixed EVM + Solana: both generators write one report path; flag this to the owner instead of letting the second run overwrite the first.
    **Pass:** the report covers 90 days on every chain (repeat the dispatch until coverage is not partial) and `validateWalletFlowsReport` passes.
 9. **Developer ledger.** Confirm `developerWallets` in `config/projects/<slug>/ledger.json` (each must be in the forensics registry), dispatch `refresh-ledger.yml`, confirm `data/<slug>/ledger/ledger.json` and `bot-proceeds.json`, then set `capabilities.projectWallets: true`.
-10. **Scheduling.** Nothing to edit: `node scripts/workflow-paths.js --project <slug>` and `node scripts/workflow-paths.js matrix all` must list the project. `refresh-holders.yml` loops every registry project. Any new non-fatal stage needs an `id` and an entry in the Stage verdict step (`stageVerdict.test.js` enforces it).
+10. **Day cutoffs and asOf alignment** (right after the feeds above first exist). `node scripts/build-cutoffs.js --project <slug> --from <first holders date>` (fills `date-blocks.json` `cutoffs` for every chain), then run the first settled nightly (or `node scripts/fill-history-gaps.js --project <slug>`) so every feed is regenerated and stamped with `asOf`, then `npm run check:alignment -- --project <slug> --strict`.
+    **Pass:** the alignment check prints ALIGNED (every feed stamped, settled end dates equal, live-chain dates within 1 day, blocks equal) and `date-blocks.json` has a `cutoffs` entry for every chain.
+    **Stop if:** a feed stays unstamped or misaligned after a regeneration; fix its writer, never hand-edit the feed.
+11. **Scheduling.** Nothing to edit: `node scripts/workflow-paths.js --project <slug>` and `node scripts/workflow-paths.js matrix all` must list the project. `refresh-holders.yml` loops every registry project. Any new non-fatal stage needs an `id` and an entry in the Stage verdict step (`stageVerdict.test.js` enforces it).
 
 ## Step 7 - Gates (all must pass)
 ```
@@ -105,7 +108,7 @@ npm run typecheck
 npm run lint
 node scripts/check-feed-consistency.js --all --strict
 node scripts/pipeline-health.js
-node scripts/check-go-live.js --project <slug>
+node scripts/check-go-live.js --project <slug> --alignment strict
 ```
 Also: no `placeholder` or `feedsPending` anywhere for the project; TEL feeds unchanged; no hardcoded feed numbers in tests (assert shape and invariants).
 **Stop if:** any gate fails. Fix the cause and re-run the gate. After the same failure twice, change approach instead of patching the symptom.
@@ -135,6 +138,9 @@ Then update, in the same change: `README.md` (project list, layout map, "Recent 
 - Default tiers on a non-100B token (ONDO): see Step 5.1.
 - Replay vs snapshot holder definition (18-decimal dust, -2.7% step): Step 6.3.
 - Nightly `fill-history-gaps` replays a missed day from the project's own newest committed checkpoint (`pull-holders-rpc.js --as-of`; fixed in #151, it used to anchor on TEL's 2026-08-21 and failed for ONDO). Never put a fixed date, block or address default in a shared script: derive it per project. After onboarding, confirm one nightly's "Fill holders-history gaps" step is green for the new project.
+- Never label a snapshot row with the run time. Row D means end of D: the state at `cutoff[D+1] - 1`.
+- Solana flow feeds (`exchange-flow-history`, `tier-outflows`) stamp from slot cutoffs (`asOfFromSolanaScan`): a complete scan stamps a settled day; an incomplete scan stamps `date: null, settled: false, incomplete` and claims no day. Solana holder snapshots are live reads and stay `asOf.settled: false` with `live: ["<chain>"]` until slot pinning exists; the alignment check allows those 1 day.
+- A rebuild that produced `T00:00` rows: run `node scripts/relabel-midnight-history.js --project <slug>` (dry run by default, prints what it would change), then add `--apply` to write.
 - A feed's last row used as "now" makes a year-old feed look current: gate on `stale-tail`.
 - `breaksSeries` daggers every Distribution Change cell: never use it to explain a bug.
 - `envPrefix` ending in `_RPC` read the wrong env vars and ran public-only: Step 5.2.

@@ -58,7 +58,7 @@ import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
 import { normalizeAddress } from "./lib/nonRetailSet.js";
 import { markPartialDay } from "./lib/partialDay.js";
-import { findBlockAtTime } from "./lib/historicalReplay.js";
+import { ensureCutoffs, findFirstBlockAtOrAfter, nextDate, readOnlyIo, asOfFromCutoffs, requireDayBounds } from "./lib/dayBlocks.js";
 import {
   selectPipelineProject,
   projectPaths,
@@ -79,7 +79,6 @@ await loadEnv();
 const ROOT = process.cwd();
 const data = projectPaths(project, ROOT);
 const HISTORY_PATH = data("exchange-flow-history.json");
-const DATE_BLOCKS_PATH = data("date-blocks.json");
 const work = projectWork(project, ROOT);
 const cachePath = (chainKey) => work(`rebuild-transfers-${chainKey}.ndjson`);
 
@@ -97,7 +96,6 @@ const isoDate = (ms) => new Date(ms).toISOString().slice(0, 10);
 
 const main = async () => {
   const history = await readJson(HISTORY_PATH);
-  const dateBlocks = await readJson(DATE_BLOCKS_PATH);
   const entries = history.entries ?? [];
   if (entries.length === 0) throw new Error("exchange-flow-history.json has no entries — refusing to guess a start.");
 
@@ -118,36 +116,26 @@ const main = async () => {
   }
   console.log(`History ends ${lastDate}; deriving ${wanted.length} date(s): ${wanted[0]}..${wanted[wanted.length - 1]} (first replaces a likely-partial day)`);
 
-  // --- 1. Resolve each new date's start block per chain, extending date-blocks.
+  // --- 1. Resolve each date's shared cutoff (first block >= D 00:00Z) per chain.
+  // Resolve one day PAST the range too: a day's bucket is [cutoff(d),
+  // cutoff(d+1)), so without the upper edge the final day would absorb every
+  // later transfer. That edge, cutoff[today], is also the settled end.
+  const needed = [...wanted, nextDate(wanted[wanted.length - 1])];
+  const resolvers = {};
   for (const chainKey of CHAIN_KEYS) {
-    const known = dateBlocks[chainKey] ?? {};
     const rpcUrls = await getUsableRpcUrls(chainKey, { logRange: true });
     if (rpcUrls.length === 0) throw new Error(`${chainKey}: no RPC URLs (is ENV_PASSPHRASE set?)`);
     const rpcUrl = rpcUrls[0];
-
-    const knownDates = Object.keys(known).sort();
-    let low = known[knownDates[knownDates.length - 1]];
     const head = Number.parseInt(await rpcCall(rpcUrl, "eth_blockNumber", []), 16);
-
     const getTimestamp = async (block) =>
       Number.parseInt((await rpcCall(rpcUrl, "eth_getBlockByNumber", [`0x${block.toString(16)}`, false]))?.timestamp, 16);
-
-    // Resolve one day PAST the range too: a day's bucket is [boundary(d),
-    // boundary(d+1)), so without the upper edge the final day would absorb
-    // every later transfer.
-    const needed = [...wanted, isoDate(Date.parse(`${wanted[wanted.length - 1]}T00:00:00Z`) + 86_400_000)];
-    for (const date of needed) {
-      if (known[date] != null) continue;
-      const block = await findBlockAtTime(Date.parse(`${date}T00:00:00Z`) / 1000, { low, high: head, getTimestamp });
-      if (block == null) {
-        console.log(`  ${chainKey} ${date}: boundary not resolvable — stopping this chain here.`);
-        break;
-      }
-      known[date] = block;
-      low = block;
-    }
-    dateBlocks[chainKey] = known;
-    console.log(`  ${chainKey}: date-blocks now covers through ${Object.keys(known).sort().pop()}`);
+    resolvers[chainKey] = (target) => findFirstBlockAtOrAfter(target, getTimestamp, 0, head);
+  }
+  // --dry-run resolves but never writes the cutoff map.
+  const io = dryRun ? readOnlyIo : undefined;
+  const cutoffs = await ensureCutoffs(project, needed, { resolvers, root: ROOT, io });
+  for (const chainKey of CHAIN_KEYS) {
+    console.log(`  ${chainKey}: cutoffs cover through ${Object.keys(cutoffs[chainKey] ?? {}).sort().pop()}`);
   }
 
   // --- 2. Stream each cache, bucketing transfers into the new dates.
@@ -156,20 +144,9 @@ const main = async () => {
   const firstWantedMs = Date.parse(`${wanted[0]}T00:00:00Z`);
 
   for (const chainKey of CHAIN_KEYS) {
-    const known = dateBlocks[chainKey] ?? {};
-    // Ascending [block, date] for the dates we are deriving, so a transfer's
-    // date is the last boundary at or below its block.
-    const bounds = wanted
-      .filter((d) => known[d] != null)
-      .map((d) => ({ block: known[d], date: d }))
-      .sort((a, b) => a.block - b.block);
-    // Exclusive upper edge, so the last day is a real day rather than
-    // "everything from here on".
-    const endBoundary = known[isoDate(Date.parse(`${wanted[wanted.length - 1]}T00:00:00Z`) + 86_400_000)] ?? Infinity;
-    if (bounds.length === 0) {
-      console.log(`  ${chainKey}: no resolved boundaries — skipping.`);
-      continue;
-    }
+    // Every wanted boundary plus the exclusive end edge must be resolved, or a
+    // missing middle day's transfers would land in the previous day: throws.
+    const { bounds, endBoundary } = requireDayBounds(chainKey, cutoffs[chainKey], wanted);
     const startBlock = bounds[0].block;
 
     let scanned = 0;
@@ -266,8 +243,9 @@ const main = async () => {
       source: `${projectWorkDir(project)}/rebuild-transfers-<chain>.ndjson via alchemy_getAssetTransfers`,
     },
   };
+  history.asOf = asOfFromCutoffs(Object.fromEntries(CHAIN_KEYS.map((c) => [c, cutoffs[c] ?? {}])), nextDate(endDate));
+  // date-blocks.json (cutoffs key) was already written by ensureCutoffs.
   await fs.writeFile(HISTORY_PATH, `${JSON.stringify(history, null, 2)}\n`);
-  await fs.writeFile(DATE_BLOCKS_PATH, `${JSON.stringify(dateBlocks, null, 2)}\n`);
   console.log(`Wrote ${newEntries.length} entries; history now ${history.entries.length} through ${history.entries[history.entries.length - 1].date}.`);
 };
 

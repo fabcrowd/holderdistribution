@@ -26,6 +26,8 @@ import { selectPipelineProject, projectPaths, projectChainsAllVms, projectRoleAd
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 import { writeWindow, transferWindowName, SHARED_WINDOW_MAX_BLOCKS } from "./lib/transferWindow.js";
 import { sharedScanEnabled } from "./lib/sharedTransferLogs.js";
+import { ensureCutoffs, findFirstBlockAtOrAfter, nextDate } from "./lib/dayBlocks.js";
+import { resolveSettledDate, planPins, finalizeAsOf, utcDay, aheadAction } from "./lib/asOf.js";
 import { partialName, serializePartial, writePartial, readPartial, removePartial, partialUsable, partialRaw, buildChunks, streamChunks } from "./lib/partialCheckpoint.js";
 
 // Mid-scan checkpoint cadence (seconds); 0 disables. See lib/partialCheckpoint.js.
@@ -639,6 +641,38 @@ async function scanV3(chainKey, rpcUrls, tokens, topic0, toBlock, legacyChunkSiz
   return result;
 }
 
+/**
+ * Settled-day pins for a live run: resolves (and caches in date-blocks.json
+ * "cutoffs") cutoff[settledDate + 1] for every EVM chain, then lib/asOf.js
+ * planPins decides which chains can be read there. A chain whose cutoff cannot
+ * be resolved is reported unpinned rather than failing the run.
+ */
+async function planLivePins(chainConfig, chainKeys, vmOf, checkpoint, settledDate) {
+  const evmKeys = chainKeys.filter((k) => vmOf(k) === "evm");
+  const resolvers = {};
+  for (const chainKey of evmKeys) {
+    resolvers[chainKey] = async (targetSeconds) => {
+      try {
+        const [rpcUrl] = await getUsableRpcUrls(chainKey);
+        if (!rpcUrl) return null;
+        const head = Number.parseInt(String(await rpcCall(rpcUrl, "eth_blockNumber", [])), 16);
+        const genesis = Number.isFinite(Number(chainConfig[chainKey]?.fromBlock)) ? Number(chainConfig[chainKey].fromBlock) : DEFAULT_FROM_BLOCK[chainKey] ?? 0;
+        const ts = async (n) => Number(BigInt((await rpcCall(rpcUrl, "eth_getBlockByNumber", [`0x${n.toString(16)}`, false])).timestamp));
+        return await findFirstBlockAtOrAfter(targetSeconds, ts, genesis, head);
+      } catch (error) {
+        console.warn(`${chainKey}: could not resolve the ${nextDate(settledDate)} cutoff: ${error.message}`);
+        return null;
+      }
+    };
+  }
+  const cutoffMap = await ensureCutoffs(project, [nextDate(settledDate)], { resolvers });
+  return planPins({
+    settledDate,
+    cutoffMap,
+    chains: chainKeys.map((key) => ({ key, vm: vmOf(key), checkpointBlock: checkpoint?.chains?.[key]?.lastBlock ?? null })),
+  });
+}
+
 async function main() {
   const [chainConfig, exclusions, fundingWallets, checkpoint] = await Promise.all([
     loadChainConfig(),
@@ -680,6 +714,8 @@ async function main() {
   // what's on disk), so if this started empty, one failed chain would erase
   // every other chain's un-related, already-scanned checkpoint on write.
   const newCheckpointChains = { ...(checkpoint?.chains ?? {}) };
+  // Published `asOf` stamp (lib/asOf.js); set by whichever branch below runs.
+  let asOf = null;
 
   if (ARG_AS_OF && solanaKeys.length > 0) {
     throw new Error(
@@ -744,7 +780,24 @@ async function main() {
     // No checkpoint write: the checkpoint tracks the LIVE scan frontier, and
     // rewinding it to a past block would make the next incremental run replay
     // (and double-count) everything since.
+    // holders-asof-blocks.json holds the last block <= D 23:59:59Z, which is
+    // exactly cutoff[D+1] - 1 (lib/dayBlocks.js).
+    asOf = { date: ARG_AS_OF, blocks: { ...blockMap }, settled: true };
   } else {
+    // Settled-day snapshot: each EVM chain is scanned to cutoff[today] - 1 (end
+    // of yesterday UTC), not to the run-time head. The checkpoint then sits at
+    // that block, and the next run resumes from it.
+    const settledDate = resolveSettledDate();
+    const plan = await planLivePins(chainConfig, chainKeys, vmOf, checkpoint, settledDate);
+    // A checkpoint already past the settled block (e.g. a second run the same
+    // day) must not scan to head: no-op if the settled row exists, else fail.
+    const history = await fs.readFile(data("holders-history.json"), "utf8").then(JSON.parse, () => null);
+    if (aheadAction({ ahead: plan.ahead, settledDate, history }) === "noop") {
+      console.log(`Checkpoint for ${plan.ahead.join(", ")} is past the ${settledDate} settled block and its settled row exists; nothing to do (checkpoint and outputs unchanged).`);
+      return;
+    }
+    if (plan.unpinned.length) console.warn(`Settled-day pin unavailable for ${plan.unpinned.join(", ")}; scanning to head (no history row will be emitted).`);
+    const readBlocks = { ...plan.pins };
     // Chains run concurrently — they hit entirely separate RPC endpoints (their
     // own dedicated key pools), so one chain's rate limiting never throttles
     // another's. Sequential used to be justified as "avoid holding all three
@@ -778,7 +831,7 @@ async function main() {
             }
           }
           const chainCheckpoint = checkpoint?.chains?.[chainKey] ?? null;
-          const result = await fetchChainBalances(chainKey, chainConfig, topic0, chainCheckpoint);
+          const result = await fetchChainBalances(chainKey, chainConfig, topic0, chainCheckpoint, { pinBlock: plan.pins[chainKey] ?? null });
           return { chainKey, ...result };
         }),
     );
@@ -800,7 +853,10 @@ async function main() {
       if (stakingReceipts?.length) stakingReceiptsByChain[chainKey] = stakingReceipts;
       if (tokenTotals) tokenTotalsByChain[chainKey] = tokenTotals;
       if (checkpointData) newCheckpointChains[chainKey] = checkpointData;
+      // Live (Solana) and unpinned chains: record the slot / head actually read.
+      if (readBlocks[chainKey] == null && Number.isInteger(checkpointData?.lastBlock)) readBlocks[chainKey] = checkpointData.lastBlock;
     }
+    asOf = finalizeAsOf({ settledDate, runDay: utcDay(), blocks: readBlocks, live: plan.live, unpinned: plan.unpinned });
 
     // Save whatever succeeded BEFORE anything else can throw and lose it — the
     // RPC scan is the expensive, rate-limited part of this script by orders of
@@ -1104,10 +1160,13 @@ async function main() {
 
   output.source = {
     type: "rpc",
-    snapshotDate: ARG_AS_OF ?? formatDate(new Date()),
+    // A settled snapshot is dated the day it closes (end of D-1), not the run day.
+    snapshotDate: asOf?.date ?? ARG_AS_OF ?? formatDate(new Date()),
     refreshedAt: output.generatedAt,
     upstream: "rpc",
   };
+
+  output.asOf = asOf;
 
   await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
 
@@ -1146,7 +1205,7 @@ async function main() {
     console.log(`Found ${uniqueStakerCount} unique staker addresses (merged into holder count)`);
   }
 
-  const summary = buildSummary(output, { snapshotDate: output.source.snapshotDate });
+  const summary = { ...buildSummary(output, { snapshotDate: output.source.snapshotDate }), asOf };
 
   await fs.writeFile(SUMMARY_PATH, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
   console.log(`Wrote ${SUMMARY_PATH}`);

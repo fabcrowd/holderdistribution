@@ -1,4 +1,5 @@
 import { ytdDays, ytdStartMs } from "./timeRange";
+import { windowBounds } from "./settledEnd";
 
 const DAY_MS = 86_400_000;
 
@@ -18,7 +19,7 @@ export const rangeStartMs = (rangeDays: number, lastMs: number, now: Date = new 
     // A feed so stale its last point predates Jan 1 still gets a window.
     return lastMs >= jan1 ? jan1 : lastMs - rangeDays * DAY_MS;
   }
-  return lastMs - Math.max(rangeDays, 1) * DAY_MS;
+  return windowBounds(lastMs, rangeDays)[0];
 };
 
 /** Rows on or after the range start (rows sorted ascending by time). */

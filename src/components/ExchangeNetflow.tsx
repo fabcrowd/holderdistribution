@@ -9,11 +9,13 @@ import { CHART_TICK } from "@/lib/terminalLayout";
 import { ZoomFrame } from "@/components/chart/ZoomFrame";
 import { useChartZoom } from "@/hooks/useChartZoom";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
+import { feedAsOf } from "@/hooks/useFeedAsOf";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { useProject } from "@/hooks/useProject";
 import { PARTIAL_DAY_LABEL, settledEntries } from "@/lib/flowFeeds";
 import { flowEmptyMessage } from "@/lib/flowEmptyState";
 import { flowOutOfRangeMessage, flowWindow, staleFeedNote } from "@/lib/flowWindow";
+import { settledEndMs } from "@/lib/settledEnd";
 
 type ExchangeNetflowProps = {
   rangeDays: number;
@@ -36,6 +38,7 @@ const INFO_TEMPLATE =
 
 export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
   const { data: entries, isPending, isError } = useExchangeFlow();
+  const asOf = feedAsOf(entries);
   const { ticker, t } = useProjectCopy();
   const { project } = useProject();
 
@@ -48,14 +51,14 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
     const partialOnly = settled.length === 0;
     // Window ends today (UTC), not at the feed's last row: a stale feed must
     // not be summed as if it were the selected range.
-    const { rows: inRange, lastMs, stale } = flowWindow(rows, rangeDays);
+    const { rows: inRange, lastMs, stale } = flowWindow(rows, rangeDays, undefined, partialOnly ? undefined : settledEndMs({ asOf }, undefined, Date.parse(settled[settled.length - 1].date)));
     if (inRange.length === 0) return { kind: "outOfRange" as const, outOfRangeLastMs: lastMs as number };
     const totalIn = inRange.reduce((s, e) => s + (e.in ?? 0), 0);
     const totalOut = inRange.reduce((s, e) => s + (e.out ?? 0), 0);
     const series = inRange.map((e) => ({ timestamp: Date.parse(e.date), net: (e.in ?? 0) - (e.out ?? 0) }));
     const spansYears = new Date(series[0].timestamp).getUTCFullYear() !== new Date(series[series.length - 1].timestamp).getUTCFullYear();
     return { kind: "ok" as const, totalIn, totalOut, net: totalIn - totalOut, series, partialOnly, excludesToday: !partialOnly && settled.length < entries.length, staleLastMs: stale ? (lastMs as number) : null, spansYears };
-  }, [entries, rangeDays]);
+  }, [entries, rangeDays, asOf]);
 
   const zoom = useChartZoom(view?.kind === "ok" ? view.series : NO_ROWS, (d) => d.timestamp);
   // Signed daily bars: zero baseline fitted to the visible days only.

@@ -56,10 +56,14 @@ import {
 import { useUserRole } from "@/hooks/useUserRole";
 import { CexHistoryTiles } from "@/components/CexHistoryTiles";
 import { useCexBalanceHistory, type CexHistoryEntry } from "@/hooks/useCexBalanceHistory";
+import { feedAsOf, type FeedAsOf } from "@/hooks/useFeedAsOf";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { pickBaseline, baselineLabel } from "@/lib/baseline";
-import { type ClassificationEvent } from "@/hooks/useClassificationChangelog";
+import { type ClassificationEvent, useClassificationChangelog } from "@/hooks/useClassificationChangelog";
+import { pickWindowBaseline, settledEndMs, walletSetChangesFor } from "@/lib/settledEnd";
+import type { ClassificationChangelog } from "@/lib/classificationChangelog";
+import { ExchangeNetDiff } from "@/components/ExchangeNetDiff";
 import { useHeadlineTiles } from "@/hooks/useHeadlineTiles";
 import { ChainStatusBar, CompactProvenance } from "@/components/ChainStatusBar";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -984,6 +988,8 @@ const renderCexFlows = (
   rangeDays: number,
   onRangeDaysChange: (days: number) => void,
   cexHistory?: CexHistoryEntry[],
+  changelog?: ClassificationChangelog | null,
+  cexAsOf?: FeedAsOf | null,
 ) => {
   if (selection !== "combined" || !cex?.overall) return null;
 
@@ -995,18 +1001,26 @@ const renderCexFlows = (
   // A gap in the archive shouldn't silently relabel a far-off point as
   // "vs {rangeLabel}" — fall back to the snapshot-over-snapshot values
   // (the existing !rangeStart branch below) instead.
-  const rangeStart = cexHistory
-    ? pickBaseline(cexHistory, rangeDays, (e) => Date.parse(e.date))
+  // Same window end as Exchange Netflow (settledEndMs): the balance change
+  // brackets exactly [end - rangeDays, end).
+  const lastCexRow = cexHistory?.[cexHistory.length - 1];
+  const windowEndMs = settledEndMs({ asOf: cexAsOf }, undefined, lastCexRow ? Date.parse(lastCexRow.date) : null);
+  const windowPick = cexHistory
+    ? pickWindowBaseline(cexHistory, windowEndMs, rangeDays, (e) => Date.parse(e.date))
     : null;
+  const rangeStart = windowPick?.start ?? null;
+  const rangeLatest = windowPick?.end ?? null;
 
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
   const exchangeNet = (name: string, fallback: number) =>
-    rangeStart ? (cexHistory![cexHistory!.length - 1].exchanges[name] ?? 0) - (rangeStart.exchanges[name] ?? 0) : fallback;
+    rangeStart && rangeLatest ? (rangeLatest.exchanges[name] ?? 0) - (rangeStart.exchanges[name] ?? 0) : fallback;
+  const walletSetEvents = (name: string) =>
+    windowPick ? walletSetChangesFor(changelog, name, windowPick.startTs, windowPick.endTs) : [];
   const overallRange = (() => {
-    if (!rangeStart) {
+    if (!rangeStart || !rangeLatest) {
       return { previousBalance: overall.previousBalance, inflow: overall.inflow, outflow: overall.outflow, net: overall.net };
     }
-    const latest = cexHistory![cexHistory!.length - 1];
+    const latest = rangeLatest;
     let inflow = 0, outflow = 0;
     const names = new Set([...Object.keys(latest.exchanges), ...Object.keys(rangeStart.exchanges)]);
     for (const n of names) {
@@ -1094,7 +1108,7 @@ const renderCexFlows = (
               <InfoTooltip text={copy.t("How much the tracked exchange balances moved over this window — a change in STOCK, not measured flow.\n\nIt also shifts when an exchange reshuffles {ticker} between tagged and untagged wallets, so it won't exactly equal deposits minus withdrawals.\n\nFor measured FLOW — actual deposits and withdrawals counted from on-chain Transfer logs — see Exchange Netflow below.")} />
             </div>
             <div className="text-2xl font-semibold text-primary">{formatSignedTokenAmount(overallRange.net)}</div>
-            <div className="text-xs text-muted-foreground">Gained {formatTokenAmount(overallRange.inflow)} • Declined {formatTokenAmount(overallRange.outflow)}</div>
+            <div className="text-xs text-muted-foreground">Exchanges up {formatTokenAmount(overallRange.inflow)} • down {formatTokenAmount(overallRange.outflow)}{windowPick?.approximate ? " (nearest snapshot)" : ""}</div>
           </div>
         </div>
 
@@ -1146,7 +1160,22 @@ const renderCexFlows = (
                             )
                           ) : null}
                         </TableCell>
-                        <TableCell className="px-1 sm:px-4 py-2 max-sm:text-xs text-sm font-medium text-foreground max-sm:max-w-[5.5rem] max-sm:truncate">{exchange.name}</TableCell>
+                        <TableCell className="px-1 sm:px-4 py-2 max-sm:text-xs text-sm font-medium text-foreground max-sm:max-w-[5.5rem] max-sm:truncate">
+                          {exchange.name}
+                          {(() => {
+                            const changed = walletSetEvents(exchange.name);
+                            return changed.length > 0 ? (
+                              <span
+                                className="ml-1 text-warning cursor-help"
+                                title={`Wallet set changed in this window: ${changed.map((e) => `${e.date} ${e.summary}`).join("; ")}`}
+                                aria-label="Wallet set changed in this window"
+                                data-testid="cex-wallet-set-changed"
+                              >
+                                †
+                              </span>
+                            ) : null;
+                          })()}
+                        </TableCell>
                         <TableCell className="hidden sm:table-cell px-2 sm:px-4 py-2 text-right text-sm text-muted-foreground">{formatInteger(exchange.walletCountWithBalance)}</TableCell>
                         <TableCell className="px-1 sm:px-4 py-2 max-sm:text-xs text-right text-sm text-muted-foreground whitespace-nowrap">{formatTokenAmount(exchange.currentBalance)}</TableCell>
                         {(() => {
@@ -1343,6 +1372,8 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
   const { historicalDelta, cexPrevious: cexHistoricalPrevious, events } = useHeadlineTiles({ view: selectedView, rangeDays });
   const snapshot = data as import('../hooks/useHolderSnapshot').HolderLiteSnapshot | undefined;
   const { data: cexHistory } = useCexBalanceHistory();
+  const cexAsOf = feedAsOf(cexHistory);
+  const { data: changelog } = useClassificationChangelog();
   const { data: growth } = useHolderGrowth({ view: selectedView, days: 365 });
   // All-time-high check needs the FULL archive, not the 365-day series above
   // — that only proves "higher than any day in the last year", which only
@@ -1562,7 +1593,8 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
               </TabsContent>
 
               <TabsContent value="exchanges" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>
-                {renderCexFlows(copy, snapshot.cex, selectedView, expandedCexExchange, (name) => setExpandedCexExchange((prev) => (prev === name ? null : name)), rangeDays, onRangeDaysChange, cexHistory)}
+                {renderCexFlows(copy, snapshot.cex, selectedView, expandedCexExchange, (name) => setExpandedCexExchange((prev) => (prev === name ? null : name)), rangeDays, onRangeDaysChange, cexHistory, changelog, cexAsOf)}
+                {selectedView === "combined" && <ExchangeNetDiff rangeDays={rangeDays} />}
                 <CexHistoryTiles rangeDays={rangeDays} />
               </TabsContent>
               </SubPanelTabs>

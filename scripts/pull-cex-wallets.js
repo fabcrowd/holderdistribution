@@ -15,6 +15,7 @@ import path from "node:path";
 import process from "node:process";
 import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
 import { normalizeValidAddress } from "./lib/address.js";
+import { inheritAsOf, rowDateOf, shouldEmitRow } from "./lib/asOf.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads the
 // project's own `classification.cexWallets` list and writes its data dir
@@ -205,13 +206,18 @@ const main = async () => {
     return;
   }
 
+  // Balances are the holder snapshot's, so the flows carry its stamp.
+  const asOf = inheritAsOf(snapshot);
+  if (asOf) cexFlows.asOf = asOf;
   await fs.writeFile(CEX_FLOWS_PATH, `${JSON.stringify(cexFlows, null, 2)}\n`, "utf8");
   console.log(`Wrote ${CEX_FLOWS_PATH}`);
 
   // Upsert today's per-exchange balances into cex-balance-history.json
-  const snapshotDate = snapshot?.source?.snapshotDate ?? null;
+  const snapshotDate = rowDateOf(snapshot);
   const hasBalances = cexFlows.exchanges.some((ex) => ex.currentBalance > 0);
-  if (snapshotDate && hasBalances) {
+  const emitRow = shouldEmitRow(snapshot?.asOf);
+  if (!emitRow) console.warn(`Snapshot ${snapshotDate} is not settled; cex-balance-history row skipped.`);
+  if (snapshotDate && hasBalances && emitRow) {
     const history = (await readOptionalJson(CEX_HISTORY_PATH)) ?? { entries: [] };
     const exchanges = {};
     for (const ex of cexFlows.exchanges) {
@@ -226,6 +232,7 @@ const main = async () => {
     entryMap.set(entry.date, entry);
     history.entries = Array.from(entryMap.values()).sort((a, b) => a.date.localeCompare(b.date));
     history.generatedAt = generatedAt;
+    if (asOf) history.asOf = asOf;
     await fs.writeFile(CEX_HISTORY_PATH, `${JSON.stringify(history, null, 2)}\n`, "utf8");
     console.log(`Updated ${CEX_HISTORY_PATH} (${history.entries.length} entries)`);
   }

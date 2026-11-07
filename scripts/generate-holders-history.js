@@ -7,6 +7,7 @@ import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
 import { selectPipelineProject, projectChainEntries, projectPaths, projectClassificationPath, projectNonRetailPaths } from "./lib/projects.js";
 import { normalizeAnyAddress } from "./lib/address.js";
+import { shouldEmitRow, inheritAsOf, mergeTopLevelAsOf } from "./lib/asOf.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
 // the project's data dir (TEL: public/data/, others: public/data/<slug>/) and
@@ -155,6 +156,10 @@ const upsertEntry = (map, entry, { skipIfExists = false } = {}) => {
   if (existing?.combined && entry.combined && entry.combined.dexLiquidity == null && existing.combined.dexLiquidity != null) {
     entry.combined.dexLiquidity = existing.combined.dexLiquidity;
   }
+  // A same-date replacement the ever-checkpoint could not advance (date at or
+  // before it) keeps the counts the earlier write placed.
+  if (existing && entry.newHolders == null && existing.newHolders != null) entry.newHolders = existing.newHolders;
+  if (existing && entry.cumulativeHolders == null && existing.cumulativeHolders != null) entry.cumulativeHolders = existing.cumulativeHolders;
   map.set(entry.date, entry);
 };
 
@@ -220,6 +225,10 @@ const main = async () => {
 
   const summaryEntry = parseSummaryEntry(summary, currentStaking, liteBalanceForSummary);
   const snapshotEntry = parseSnapshotEntry(snapshot, currentStaking, liteBalanceForSnapshot);
+  // Rows are end-of-day state: a snapshot whose EVM chains could not be read at
+  // the settled-day block is an intraday read and is not emitted.
+  const emitRow = shouldEmitRow(snapshot?.asOf);
+  if (!emitRow) console.warn(`Snapshot ${snapshotDate} is not settled (unpinned: ${snapshot.asOf.unpinned.join(", ")}); no history row written.`);
   const previousEntry = parseSnapshotEntry(previousSnapshot);
 
   // Embed concentration and distribution from holders-lite so history entries
@@ -314,15 +323,16 @@ const main = async () => {
   // non-retail set here keeps the daily incremental checkpoint from drifting
   // back out of sync with a bulk recompute after the next reclassification.
   const EVER_CHECKPOINT_PATH = data("holders-ever-checkpoint.json");
-  if (snapshot?.wallets && snapshotDate) {
+  if (snapshot?.wallets && snapshotDate && emitRow) {
     const everData = await readOptionalJson(EVER_CHECKPOINT_PATH);
     // Forward-only. A reconstructed past day (pull-holders-rpc.js --as-of, via
     // fill-history-gaps.js) must not fold its wallets into a set that has
     // already moved past it, and must never stamp the checkpoint back to its
     // own date — the next daily run would then re-add everything since as
-    // "new". Such a row ships without newHolders/cumulativeHolders instead;
-    // only a continuous recompute can place those correctly, and
-    // pipeline-health.js reports how many rows are waiting for one.
+    // "new". This run sets no newHolders/cumulativeHolders for such a row: a
+    // new row ships without them, a same-date replacement keeps the counts an
+    // earlier write placed (upsertEntry). Only a continuous recompute can
+    // place missing ones, and pipeline-health.js reports how many rows wait.
     const everDate = everData?.generatedAt ?? null;
     const isForward = !everDate || snapshotDate > everDate;
     if (!isForward) {
@@ -358,8 +368,16 @@ const main = async () => {
 
   // previousEntry fills gaps only — never overwrites an entry already written by a prior run
   upsertEntry(historyMap, previousEntry, { skipIfExists: true });
-  upsertEntry(historyMap, snapshotEntry);
-  upsertEntry(historyMap, summaryEntry);
+  if (emitRow) {
+    // Row-level marker read by lib/asOf.js hasSettledRow: this row is the
+    // settled end-of-day state of snapshot.asOf.date (legacy rows carry none).
+    const settledDate = snapshot?.asOf?.settled === true ? snapshot.asOf.date : null;
+    for (const entry of [snapshotEntry, summaryEntry]) {
+      if (entry && settledDate && entry.date === settledDate) entry.settled = true;
+    }
+    upsertEntry(historyMap, snapshotEntry);
+    upsertEntry(historyMap, summaryEntry);
+  }
 
   // Self-heal archive drift: fold any holderCount−distribution count gap into
   // the lowest bucket so hero KPI and Distribution Analysis share one baseline.
@@ -371,8 +389,10 @@ const main = async () => {
       return left - right;
     });
 
+  const asOf = mergeTopLevelAsOf(existingHistory?.asOf, emitRow ? inheritAsOf(snapshot) : null);
   const payload = {
     generatedAt: new Date().toISOString(),
+    ...(asOf ? { asOf } : {}),
     entries,
   };
 

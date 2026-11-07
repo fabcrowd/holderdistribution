@@ -42,9 +42,14 @@ function configProblems(project, root) {
   return problems;
 }
 
-function feedProblems(project, root) {
+/** Feed files `project` must publish: the refresh workflow's required files plus the flow feeds. */
+export function requiredFeedFiles(project, root = process.cwd()) {
   const required = workflowPlan(project, root).HD_REQUIRED_FILES.split(/\s+/).filter(Boolean);
-  const problems = [...new Set([...required, ...FLOW_FEEDS])]
+  return [...new Set([...required, ...FLOW_FEEDS])];
+}
+
+function feedProblems(project, root) {
+  const problems = requiredFeedFiles(project, root)
     .filter((file) => !fs.existsSync(projectDataPath(project, file, root)))
     .map((file) => `${project.slug}: feed ${file} is missing`);
   for (const [file, rule] of Object.entries(project.config.health?.feeds ?? {})) {

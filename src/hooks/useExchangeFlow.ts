@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { dataUrl } from "@/lib/dataUrl";
 import { useProject } from "@/hooks/useProject";
 import { FeedError } from "@/lib/fetchJson";
+import { withFeedAsOf, type FeedAsOf, type WithAsOf } from "@/hooks/useFeedAsOf";
 
 export type ExchangeFlowEntry = {
   date: string;
@@ -20,6 +21,7 @@ export type ExchangeFlowEntry = {
 
 type ExchangeFlowPayload = {
   generatedAt?: string;
+  asOf?: FeedAsOf;
   entries?: ExchangeFlowEntry[];
 };
 
@@ -29,25 +31,28 @@ const resolveUrl = (slug: string) => dataUrl(slug, "exchange-flow-history.json")
  * Daily exchange inflow / outflow / net, measured directly from TEL Transfer
  * logs (deposits to and withdrawals from known exchange wallets). Neutral
  * "netflow" series — a deposit is not a sale, only supply moving toward the
- * market; a withdrawal is supply leaving it.
+ * market; a withdrawal is supply leaving it. The array also carries the
+ * feed's `asOf` (read with feedAsOf).
  */
 export const useExchangeFlow = () => {
   const { slug } = useProject();
   return useQuery({
     queryKey: ["exchange-flow-history", slug],
-    queryFn: async (): Promise<ExchangeFlowEntry[]> => {
+    queryFn: async (): Promise<WithAsOf<ExchangeFlowEntry>> => {
       const res = await fetch(resolveUrl(slug));
       // Missing feed: nothing measured yet. Same empty list as a published
       // file with no days, so the panel says so instead of spinning.
-      if (res.status === 404) return [];
+      if (res.status === 404) return withFeedAsOf([], null);
       if (!res.ok) throw new FeedError(res.url || "feed", res.status);
       const payload = (await res.json()) as ExchangeFlowPayload;
-      return (payload.entries ?? [])
+      const rows = (payload.entries ?? [])
         .filter((e) => e?.date)
         .sort((a, b) => a.date.localeCompare(b.date));
+      return withFeedAsOf(rows, payload);
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
+    structuralSharing: false,
   });
 };

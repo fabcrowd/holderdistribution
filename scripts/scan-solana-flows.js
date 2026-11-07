@@ -70,6 +70,7 @@ const concurrency = Number(process.env.SOLANA_FLOW_CONCURRENCY) || 4;
 const { configureSolanaChain, getUsableSolanaRpcUrls, keyedFirst, solanaCallWithFailover } = await import("./lib/solana/rpc.js");
 const { scanVenueFlows } = await import("./lib/solana/flowScan.js");
 const { applyFlowEventsOnce, emptyFlowStore } = await import("./lib/solana/flowFeeds.js");
+const { datesFromTo, ensureCutoffs, findFirstSlotAtOrAfter, solanaBlockTimeOrNull, solanaSearchLow, utcDate } = await import("./lib/dayBlocks.js");
 
 // Stop cleanly before the workflow step's 45-minute timeout so progress is kept.
 const deadlineMs = Date.now() + (Number(process.env.SOLANA_FLOW_MAX_MS) || 40 * 60 * 1000);
@@ -121,11 +122,36 @@ for (const c of chains) {
   const baseMissing = checkpoint.chains[c.key]?.missingTx ?? 0;
   // Saved after every chunk: a crash, 429 storm or the deadline keeps all
   // progress made so far (the old end-of-run write lost a whole 25-minute run).
+  // scanStartedAt: a complete scan covers every day before this one
+  // (scan-exchange-flows stamps asOf from it, lib/dayBlocks asOfFromSolanaScan).
+  const scanStartedAt = new Date().toISOString();
   const save = async ({ newEvents, accounts, remaining, missing, unavailable }) => {
     applyFlowEventsOnce(store, c.key, newEvents);
-    checkpoint.chains[c.key] = { mint: c.mint, since, accounts, complete: remaining === 0, missingTx: baseMissing + missing, unavailable };
+    checkpoint.chains[c.key] = { mint: c.mint, since, accounts, complete: remaining === 0, scanStartedAt, missingTx: baseMissing + missing, unavailable };
     await persist();
   };
+  // Shared day cutoffs (first produced slot >= D 00:00Z) into date-blocks.json
+  // "cutoffs", so the published feeds stamp asOf with this chain's settled
+  // slot. Only the last few days per run (each date is ~30 getBlockTime
+  // calls); older dates come from scripts/build-cutoffs.js.
+  if (Date.now() < deadlineMs) {
+    try {
+      const head = Number(await call("getSlot", [{ commitment: "finalized" }]));
+      const today = utcDate();
+      const days = Number(process.env.SOLANA_CUTOFF_DAYS) || 3;
+      const dates = datesFromTo(utcDate(Date.parse(`${today}T00:00:00Z`) - (days - 1) * 86_400_000), today).filter((d) => d >= since);
+      // Skipped slots map to null; other errors fail the search, so
+      // ensureCutoffs stores nothing (no guess).
+      const blockTime = solanaBlockTimeOrNull(call);
+      // Bounded floor: never probe pruned history below the requested days.
+      const low = solanaSearchLow(head, days);
+      await ensureCutoffs(project, dates, {
+        resolvers: { [c.key]: (target) => findFirstSlotAtOrAfter(target, blockTime, low, head) },
+      });
+    } catch (e) {
+      console.warn(`  ${c.key}: slot cutoffs not resolved this run (${e.message}); feeds keep the previous asOf.`);
+    }
+  }
   const res = await scanVenueFlows({
     call, mint: c.mint, ...venues, state: checkpoint.chains[c.key], sinceSec, maxTx, concurrency, deadlineMs, onProgress: save,
   });

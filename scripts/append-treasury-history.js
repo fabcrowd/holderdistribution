@@ -27,6 +27,7 @@ import { fileURLToPath } from "node:url";
 import { selectPipelineProject, projectPaths } from "./lib/projects.js";
 import { projectExclusions, reconcilePaths } from "./reconcile-supply.js";
 import { vanishedLabelledWallets } from "./lib/labelledWalletGuard.js";
+import { inheritAsOf, shouldEmitRow } from "./lib/asOf.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
 // the project's data dir (TEL: public/data/, others: public/data/<slug>/).
@@ -72,7 +73,12 @@ const main = async () => {
   // Date the entry by the snapshot the balances actually came from, not by
   // "now" — a run at 00:10 UTC would otherwise label yesterday's scan as today.
   const holders = await readJson(HOLDERS_PATH).catch(() => null);
-  const date = (holders?.generatedAt ?? new Date().toISOString()).slice(0, 10);
+  // A settled snapshot (asOf) is dated the day it closes; older ones by generatedAt.
+  const date = holders?.asOf?.date ?? (holders?.generatedAt ?? new Date().toISOString()).slice(0, 10);
+  if (!shouldEmitRow(holders?.asOf)) {
+    console.warn(`Snapshot ${date} is not settled (unpinned: ${holders.asOf.unpinned.join(", ")}); no treasury row written.`);
+    return;
+  }
 
   const categories = {};
   for (const key of CATEGORIES) {
@@ -142,6 +148,7 @@ const main = async () => {
   else history.entries.push(entry);
   history.entries.sort((a, b) => a.date.localeCompare(b.date));
   history.generatedAt = new Date().toISOString();
+  if (holders?.asOf) history.asOf = inheritAsOf(holders);
 
   console.log(
     `${isUpdate ? "Updated" : "Appended"} ${date}: ` +

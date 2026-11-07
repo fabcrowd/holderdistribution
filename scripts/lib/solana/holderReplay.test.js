@@ -182,7 +182,7 @@ describe("buildDayEntry", () => {
       retailThreshold: RETAIL_THRESHOLD,
     });
     expect(entry.date).toBe("2026-07-01");
-    expect(entry.generatedAt).toBe("2026-07-01T00:00:00.000Z");
+    expect(entry.generatedAt).toBe("2026-07-01T23:59:59.000Z");
     expect(entry.combined).toMatchObject({
       holderCount: 2,
       retailHolderCount: 1,
