@@ -790,11 +790,18 @@ async function main() {
     const settledDate = resolveSettledDate();
     const plan = await planLivePins(chainConfig, chainKeys, vmOf, checkpoint, settledDate);
     // A checkpoint already past the settled block (e.g. a second run the same
-    // day) must not scan to head: no-op if the settled row exists, else fail.
+    // day) is a no-op if the settled row exists; otherwise those chains scan
+    // to head unpinned, so the run still publishes a snapshot and the gap fill
+    // rebuilds the settled row.
     const history = await fs.readFile(data("holders-history.json"), "utf8").then(JSON.parse, () => null);
-    if (aheadAction({ ahead: plan.ahead, settledDate, history }) === "noop") {
+    const ahead = aheadAction({ ahead: plan.ahead, settledDate, history });
+    if (ahead === "noop") {
       console.log(`Checkpoint for ${plan.ahead.join(", ")} is past the ${settledDate} settled block and its settled row exists; nothing to do (checkpoint and outputs unchanged).`);
       return;
+    }
+    if (ahead === "unpin") {
+      console.warn(`::warning::Checkpoint for ${plan.ahead.join(", ")} is past the ${settledDate} settled block with no settled row; snapshotting to head unpinned (gap fill rebuilds ${settledDate}).`);
+      plan.unpinned.push(...plan.ahead);
     }
     if (plan.unpinned.length) console.warn(`Settled-day pin unavailable for ${plan.unpinned.join(", ")}; scanning to head (no history row will be emitted).`);
     const readBlocks = { ...plan.pins };

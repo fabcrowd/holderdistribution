@@ -81,7 +81,7 @@ and an empty browser console on all three tabs.
 ## Data pipeline (daily) and live data (no rebuild)
 
 **Schedule.** One scheduled workflow, *Refresh holders snapshots*
-(`refresh-holders.yml`, 00:00 UTC daily), runs once per project in `config/projects.json`
+(`refresh-holders.yml`, 06:00 UTC daily, 1am EST), runs once per project in `config/projects.json`
 (one matrix job each, one at a time, TEL first; a failing project never blocks the others;
 onboarding a token needs no new workflow). Each job runs every stage: staker balances →
 holders scan → derived feeds → commit → exchange flows → tier outflows → history-gap fill →

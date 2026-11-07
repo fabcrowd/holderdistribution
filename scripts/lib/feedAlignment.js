@@ -65,8 +65,9 @@ export function summarizeFeed(name, json, checkpoint = null) {
     }
   }
   const live = stamped && Array.isArray(json.asOf.live) ? [...json.asOf.live] : [];
+  const noBlock = stamped && Array.isArray(json.asOf.noBlock) ? [...json.asOf.noBlock] : [];
   const settled = stamped ? json.asOf.settled !== false : null;
-  return { name, endDate, rawLastDate, generatedAt: json?.generatedAt ?? null, stamped, blocks, blockSource, settled, live };
+  return { name, endDate, rawLastDate, generatedAt: json?.generatedAt ?? null, stamped, blocks, blockSource, settled, live, noBlock };
 }
 
 /**
@@ -78,8 +79,11 @@ export function summarizeFeed(name, json, checkpoint = null) {
  * A feed stamped asOf.settled === false is read at run time (live chain, e.g.
  * Solana): its date is the run day, so it may sit up to 1 day past the
  * settled feeds. Beyond that it is a warning, a problem under `strict`.
- * Chains any feed lists in asOf.live are left out of the block comparison
- * ("live chain: block comparison skipped").
+ * A chain a feed lists in asOf.live is left out of the block comparison for
+ * that feed only; settled feeds carrying a block for it (e.g. Solana flow
+ * feeds stamped with their settled slot) are still compared with each other.
+ * A stamp with asOf.noBlock (a chain without a recorded block) is a warning,
+ * a problem under `strict`.
  */
 const LIVE_DATE_TOLERANCE_DAYS = 1;
 const dayDiff = (a, b) => Math.round(Math.abs(Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86_400_000);
@@ -108,16 +112,22 @@ export function compareFeeds(feeds, { blockTolerance = 0, strict = false, missin
   }
   for (const f of feeds) if (!f.endDate) problems.push(`${f.name}: no settled end date`);
 
-  for (const c of [...liveChains].sort()) skipped.push(`${c} blocks: live chain: block comparison skipped`);
+  // A stamp that names a chain without a recorded block cannot be block-compared.
+  for (const f of feeds) {
+    if (f.noBlock?.length) (strict ? problems : warnings).push(`${f.name}: no block recorded for ${f.noBlock.join(", ")} (asOf.noBlock)`);
+  }
+  for (const c of [...liveChains].sort()) skipped.push(`${c} blocks: live feeds skipped; settled feeds with a ${c} block are still compared`);
   // A checkpoint lastBlock is a scan head, not a day cutoff: report it, never compare it.
   const comparable = feeds.filter((f) => f.blockSource !== "checkpoint");
   for (const f of feeds.filter((x) => x.blockSource === "checkpoint")) {
     for (const [c, b] of Object.entries(f.blocks ?? {})) info.push(`${f.name}: ${c} scan head ${b} (checkpoint, not a day cutoff): not compared`);
   }
-  const chains = [...new Set(comparable.flatMap((f) => Object.keys(f.blocks ?? {})))].filter((c) => !liveChains.has(c)).sort();
+  // A chain a feed lists as live is skipped for that feed only; feeds that
+  // carry a settled block for it (e.g. stamped Solana flow feeds) still compare.
+  const chains = [...new Set(comparable.flatMap((f) => Object.keys(f.blocks ?? {})))].sort();
   const blockSpread = {};
   for (const c of chains) {
-    const vals = comparable.filter((f) => f.blocks?.[c] != null).map((f) => ({ name: f.name, b: f.blocks[c] }));
+    const vals = comparable.filter((f) => f.blocks?.[c] != null && !(f.live ?? []).includes(c)).map((f) => ({ name: f.name, b: f.blocks[c] }));
     if (vals.length < 2) continue;
     const min = Math.min(...vals.map((v) => v.b));
     const max = Math.max(...vals.map((v) => v.b));

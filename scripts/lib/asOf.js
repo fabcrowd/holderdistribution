@@ -94,16 +94,15 @@ export const hasSettledRow = (history, date) =>
  * What a live run does when chains are `ahead` (checkpoint already past the
  * settled block, e.g. a second run the same day): "scan" when none are;
  * "noop" when the settled row for `settledDate` already exists (keep the
- * checkpoint and outputs unchanged); otherwise throws, because scanning to
- * head would silently skip that day's settled row.
+ * checkpoint and outputs unchanged); otherwise "unpin": the run still takes a
+ * snapshot, scanning those chains to head and stamping them unpinned (no
+ * settled row), and the nightly gap fill rebuilds the settled row with --as-of.
+ * Failing the whole run here left the project with no snapshot at all.
  */
 export function aheadAction({ ahead = [], settledDate, history }) {
   if (ahead.length === 0) return "scan";
   if (hasSettledRow(history, settledDate)) return "noop";
-  throw new Error(
-    `checkpoint for ${ahead.join(", ")} is already past the ${settledDate} settled block and no settled ${settledDate} row exists; ` +
-      `rebuild it with --as-of ${settledDate} (refusing to scan to head and skip the day)`,
-  );
+  return "unpin";
 }
 
 /**

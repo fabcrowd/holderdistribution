@@ -130,8 +130,9 @@ A daily row dated D holds the state at the **end** of D. The day cutoff `cutoff[
 ```
 
 - `live: [chain]`: a chain that cannot be read at a past block (Solana live scan). Its run-time slot is in `blocks`, `settled` is false and `date` is the run day.
+- **Solana rule (owner decision, 2026-11-07), applies to every Solana project:** balance snapshots (holders, lite, transitions, CEX/treasury balances) are live at run time, a few hours past 00:00 UTC; exact end-of-day balances are not required. Rolling back to the cutoff slot costs ~36k–112k Helius credits a night, over budget. Solana flow feeds are exact: they end at slot `cutoff[D+1]-1`, with cutoffs persisted in `date-blocks.json`. `check-feed-alignment.js` gives live feeds a 1-day date tolerance. Nothing per project to configure; it follows from the chain's `vm`.
 - `unpinned: [chain]`: an EVM chain whose cutoff could not be resolved. It is read at head and no daily row is written from that snapshot (holders, CEX balance, treasury history).
-- A chain whose checkpoint is already past the settled block (e.g. a second run the same day) is not scanned to head: the run is a no-op when the settled row for that day exists, and fails (exit 1) when it does not; rebuild that day with `--as-of`. "Settled row" means a `holders-history.json` row marked `settled: true` (written by `generate-holders-history.js` from a settled snapshot); legacy unmarked rows do not count.
+- A chain whose checkpoint is already past the settled block (e.g. a second run the same day) is not scanned to head: the run is a no-op when the settled row for that day exists. When it does not, those chains are snapshotted to head as `unpinned` (a snapshot is always published) and the nightly gap fill rebuilds the settled row with `--as-of`. "Settled row" means a `holders-history.json` row marked `settled: true` (written by `generate-holders-history.js` from a settled snapshot); legacy unmarked rows do not count.
 - Solana-only `exchange-flow-history.json` stamps from `scan-solana-flows.js`'s checkpoint: only a `complete` scan claims a day (the day before its `scanStartedAt`). An incomplete scan writes `"asOf": { "date": null, "settled": false, "incomplete": [chain] }`, which `check-feed-alignment.js` reports as "no settled end date".
 - Solana day cutoffs: only the precise skipped-slot error ("…was skipped, or missing due to ledger jump to recent snapshot") counts as an unproduced slot; pruned / long-term-storage errors fail the search. The search starts a bounded window below the finalized head (`solanaSearchLow`), never at slot 0.
 
@@ -499,7 +500,7 @@ The first non-TEL project, mapped 2026-10-25
   Combined and Solana, and the explorer is Solscan. Feeds are in
   `public/data/zebec-network/` and the work dir is `data/zebec-network/`.
 - **Daily refresh:** the `zebec-network` leg of the registry-driven matrix in
-  `.github/workflows/refresh-holders.yml` (00:00 UTC, right after TEL; the
+  `.github/workflows/refresh-holders.yml` (06:00 UTC, right after TEL; the
   separate `refresh-zebec-network.yml` and its 01:30 cron were retired). It
   commits with `[skip netlify]` (only the registry default publishes,
   `deployTriggers.test.js`); the data goes live through the live-data function.

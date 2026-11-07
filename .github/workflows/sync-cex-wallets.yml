@@ -219,6 +219,6 @@ jobs:
       # runs daily and re-reads config/cex-wallets.json fresh on every run, so
       # the newly-synced list is picked up within 24h regardless. Firing it
       # immediately would run pull-staker-balances.js a second time same-day
-      # against the same free-tier Etherscan key as the 00:00 UTC cron —
+      # against the same free-tier Etherscan key as the 06:00 UTC nightly cron —
       # plausible root cause of the ~400/6144 stakedBy rate-limit hit noted in
       # tasks/handoff.md. See lessons.md for the incident.
