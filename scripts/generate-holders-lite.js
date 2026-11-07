@@ -13,6 +13,7 @@ import { loadNonRetailSet, createNonRetailChecker } from "./lib/nonRetailSet.js"
 import { loadV3StakingPositions } from "./lib/v3Staking.js";
 import { loadSolanaStakingPositions } from "./lib/solanaStaking.js";
 import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
+import { inheritAsOf } from "./lib/asOf.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
 // the project's data dir (TEL: public/data/, others: public/data/<slug>/) and
@@ -123,6 +124,7 @@ const main = async () => {
 
   const liteSnapshot = {
     generatedAt: current?.generatedAt ?? null,
+    ...(snapshot?.asOf ? { asOf: inheritAsOf(snapshot) } : {}),
     thresholds: current?.thresholds ?? { retail: 0, megaHolder: 0 },
     totals: current?.totals ?? { totalSupply: 0 },
     source: current?.source ?? null,

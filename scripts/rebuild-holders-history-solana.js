@@ -73,6 +73,8 @@ import {
   takeWholeSlots,
   trackedTokenAccounts,
 } from "./lib/solana/holderReplay.js";
+import { readCutoffMap } from "./lib/dayBlocks.js";
+import { buildAsOf } from "./lib/asOf.js";
 
 await loadEnv();
 const project = selectPipelineProject("rebuild-holders-history-solana", { ported: true });
@@ -310,9 +312,13 @@ async function main() {
   }
   const existing = (await readOptionalJson(HISTORY_PATH))?.entries ?? [];
   const entries = mergeHistoryEntries(existing, replayed);
+  // Replay is time-based (blockTime), not slot-based: the closing slot is known
+  // only when date-blocks.json "cutoffs" has it; otherwise asOf.noBlock says so.
+  const asOf = last?.date ? buildAsOf(last.date, readCutoffMap(project), { chains: [chainKey] }) : null;
+  if (asOf?.noBlock) console.warn(`asOf ${asOf.date}: no ${chainKey} cutoff slot recorded; stamped without a slot.`);
   await fs.writeFile(
     HISTORY_PATH,
-    `${JSON.stringify({ generatedAt: new Date().toISOString(), source: "rebuild-holders-history-solana", entries }, null, 2)}\n`,
+    `${JSON.stringify({ generatedAt: new Date().toISOString(), source: "rebuild-holders-history-solana", ...(asOf ? { asOf } : {}), entries }, null, 2)}\n`,
     "utf8",
   );
   console.log(`Wrote ${HISTORY_PATH} (${entries.length} entries).`);

@@ -59,6 +59,7 @@
 import process from "node:process";
 import { loadRegistry, resolveProject } from "./lib/projects.js";
 import { evaluateAllProjects, fallbackFor, isUnhealthy } from "./lib/feedHealth.js";
+import { alignmentReport } from "./check-feed-alignment.js";
 
 const HOUR = 3_600_000;
 const argv = process.argv.slice(2);
@@ -138,6 +139,20 @@ const printRecovery = (projects) => {
   console.log("push straight to main (per CLAUDE.md — no PR needed). Netlify deploys on push.");
 };
 
+// Cross-feed settled-day alignment (scripts/check-feed-alignment.js). Report
+// only: it never changes the exit code; `npm run check:alignment` is the gate.
+const printAlignment = (slug) => {
+  try {
+    for (const { slug: s, result } of alignmentReport({ only: slug })) {
+      for (const p of result.problems) console.log(`  WARN alignment ${s}: ${p}`);
+      for (const w of result.warnings) console.log(`  WARN alignment ${s}: ${w}`);
+      for (const k of result.skipped) console.log(`  INFO alignment ${s}: ${k}`);
+    }
+  } catch (error) {
+    console.log(`  WARN alignment check could not run: ${error.message}`);
+  }
+};
+
 const main = () => {
   let report;
   let slug;
@@ -168,6 +183,7 @@ const main = () => {
     printProject(p, multi ? `== ${p.slug} (${name}) ==` : null);
     if (multi) console.log();
   }
+  printAlignment(slug);
 
   if (report.healthy) {
     console.log(multi ? "All feeds within threshold for every project. Nothing to do." : "\nAll feeds within threshold. Nothing to do.");

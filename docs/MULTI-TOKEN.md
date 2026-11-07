@@ -119,6 +119,29 @@ node scripts/pull-holders-rpc.js --project tel
 gh workflow run refresh-holders.yml -f project=tel
 ```
 
+### Settled days and `asOf`
+
+A daily row dated D holds the state at the **end** of D. The day cutoff `cutoff[chain][D]` is the first block (Solana: slot) with timestamp >= D 00:00:00Z, cached under `"cutoffs"` in the project's `date-blocks.json` (`scripts/lib/dayBlocks.js`); end of D-1 is block `cutoff[D] - 1`.
+
+`pull-holders-rpc.js` targets yesterday UTC (or `--as-of`): each EVM chain is scanned to `cutoff[today] - 1`, not the run-time head, and the snapshot is dated yesterday. Snapshot feeds carry a top-level stamp (`scripts/lib/asOf.js`):
+
+```json
+"asOf": { "date": "2026-11-05", "blocks": { "ethereum": 23741234 }, "settled": true }
+```
+
+- `live: [chain]`: a chain that cannot be read at a past block (Solana live scan). Its run-time slot is in `blocks`, `settled` is false and `date` is the run day.
+- `unpinned: [chain]`: an EVM chain whose cutoff could not be resolved. It is read at head and no daily row is written from that snapshot (holders, CEX balance, treasury history).
+- A chain whose checkpoint is already past the settled block (e.g. a second run the same day) is not scanned to head: the run is a no-op when the settled row for that day exists, and fails (exit 1) when it does not; rebuild that day with `--as-of`. "Settled row" means a `holders-history.json` row marked `settled: true` (written by `generate-holders-history.js` from a settled snapshot); legacy unmarked rows do not count.
+- Solana-only `exchange-flow-history.json` stamps from `scan-solana-flows.js`'s checkpoint: only a `complete` scan claims a day (the day before its `scanStartedAt`). An incomplete scan writes `"asOf": { "date": null, "settled": false, "incomplete": [chain] }`, which `check-feed-alignment.js` reports as "no settled end date".
+- Solana day cutoffs: only the precise skipped-slot error ("…was skipped, or missing due to ledger jump to recent snapshot") counts as an unproduced slot; pruned / long-term-storage errors fail the search. The search starts a bounded window below the finalized head (`solanaSearchLow`), never at slot 0.
+
+The UI end (`src/lib/settledEnd.ts`) is exclusive: `asOf.date + 1` day, or `asOf.date` 00:00Z when `settled` is false (the run day is in progress). `check-feed-alignment.js` skips block comparison for live chains but still compares a live feed's date: more than 1 day off the other feeds is a warning, and fails `--strict`.
+- `noBlock: [chain]`: no block/slot is recorded for `date` (e.g. `rebuild-holders-history-solana.js` without a Solana cutoff).
+
+`tel-holders.json`, `holders-summary.json`, `holders-lite.json`, `holders-history.json`, `cex-flows.json`, `cex-balance-history.json`, `treasury-history.json` and `holder-transitions.json` copy the snapshot's stamp. Rebuilt rows (`--as-of`, Solana replay) are labelled `generatedAt: <D>T23:59:59.000Z`. `scripts/check-feed-alignment.js` compares the stamps.
+
+**Break date.** Rows written before the first settled-cutoff run are labelled with the run day, and their state was read at run time (the chain head when the job ran). From the switchover on, row D means end of D. Older midnight-labelled rows are relabelled by `scripts/relabel-midnight-history.js --project <slug>` (dry run by default; `--apply` writes); this has been done for ondo. A series not yet relabelled can show a one-day shift at the break.
+
 ### Onboarding a token: config only
 
 The daily refresh is registry-driven: a `plan` job runs
@@ -850,7 +873,11 @@ Then:
     `LIVE_DATA_GITHUB_TOKEN` in Netlify.
 13. Confirm every flow: exchange and tier feeds have real data and no `placeholder` in `health.feeds`, the
     wallet-flows report covers 90 days, and each developer wallet's movements match a spot check on the explorer.
-14. Run `node scripts/check-go-live.js --project <slug>`. It must pass before the owner deploys.
+14. Align day cutoffs: `node scripts/build-cutoffs.js --project <slug> --from <first holders date>`, run the
+    settled nightly (or `fill-history-gaps`), then `npm run check:alignment -- --project <slug> --strict` must
+    pass. See "Settled days and `asOf`" and the onboard-project skill Step 6.10.
+15. Run `node scripts/check-go-live.js --project <slug> --alignment strict`. It must pass before the owner
+    deploys (the default `--alignment warn` only reports alignment, so registered projects keep the nightly green).
 
 The landing page and the sitemap pick the new project up automatically.
 

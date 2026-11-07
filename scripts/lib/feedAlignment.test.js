@@ -1,0 +1,96 @@
+import { describe, it, expect } from "vitest";
+import { summarizeFeed, compareFeeds } from "./feedAlignment.js";
+
+const gen = "2026-11-06T04:16:00.000Z";
+
+describe("summarizeFeed", () => {
+  it("skips partial and same-day rows", () => {
+    const s = summarizeFeed("flows", {
+      generatedAt: gen,
+      entries: [{ date: "2026-11-04" }, { date: "2026-11-05", partial: true }, { date: "2026-11-06" }],
+    });
+    expect(s).toMatchObject({ endDate: "2026-11-04", rawLastDate: "2026-11-06", stamped: false });
+  });
+  it("latestDate with partialDate steps back one day", () => {
+    expect(summarizeFeed("t", { generatedAt: gen, latestDate: "2026-11-06", partialDate: "2026-11-06" }).endDate).toBe("2026-11-05");
+  });
+  it("snapshot feed settles the day before generatedAt", () => {
+    expect(summarizeFeed("lite", { generatedAt: gen }).endDate).toBe("2026-11-05");
+  });
+  it("asOf wins and carries blocks", () => {
+    const s = summarizeFeed("x", { generatedAt: gen, asOf: { date: "2026-11-05", blocks: { ethereum: 10 } }, entries: [] });
+    expect(s).toMatchObject({ endDate: "2026-11-05", stamped: true, blocks: { ethereum: 10 }, blockSource: "asOf" });
+  });
+  it("records checkpoint lastBlock as a scan head (blockSource checkpoint, info only), never as asOf blocks", () => {
+    const s = summarizeFeed("x", { generatedAt: gen, entries: [] }, { chains: { ethereum: { lastBlock: 7 }, solana: {} } });
+    expect(s).toMatchObject({ blocks: { ethereum: 7 }, blockSource: "checkpoint" });
+    const stamped = summarizeFeed("y", { generatedAt: gen, asOf: { date: "2026-11-05", blocks: { ethereum: 5 } } }, { chains: { ethereum: { lastBlock: 7 } } });
+    expect(stamped).toMatchObject({ blocks: { ethereum: 5 }, blockSource: "asOf" });
+  });
+});
+
+describe("compareFeeds", () => {
+  const f = (name, endDate, blocks = null, stamped = true) => ({ name, endDate, blocks, stamped });
+  it("passes when aligned", () => {
+    const r = compareFeeds([f("a", "2026-11-05", { eth: 5 }), f("b", "2026-11-05", { eth: 5 })]);
+    expect(r).toMatchObject({ ok: true, problems: [], warnings: [], blockSpread: { eth: 0 } });
+  });
+  it("fails on differing end dates", () => {
+    const r = compareFeeds([f("a", "2026-11-05"), f("b", "2026-11-04")]);
+    expect(r.ok).toBe(false);
+    expect(r.endDates).toEqual(["2026-11-04", "2026-11-05"]);
+  });
+  it("fails on block spread beyond tolerance, passes within", () => {
+    const feeds = [f("a", "2026-11-05", { eth: 5 }), f("b", "2026-11-05", { eth: 8 })];
+    expect(compareFeeds(feeds).ok).toBe(false);
+    expect(compareFeeds(feeds, { blockTolerance: 3 }).ok).toBe(true);
+  });
+  it("unstamped is a warning, an error under strict", () => {
+    const feeds = [f("a", "2026-11-05", null, false)];
+    expect(compareFeeds(feeds)).toMatchObject({ ok: true, warnings: [expect.stringContaining("a")] });
+    expect(compareFeeds(feeds, { strict: true }).ok).toBe(false);
+  });
+  it("live (unsettled) feeds: blocks of live chains skipped, dates still compared (1 day allowed)", () => {
+    const live = summarizeFeed("sol", { generatedAt: gen, asOf: { date: "2026-11-06", blocks: { solana: 9, ethereum: 5 }, settled: false, live: ["solana"] } });
+    expect(live).toMatchObject({ settled: false, live: ["solana"] });
+    const r = compareFeeds([f("a", "2026-11-05", { ethereum: 5, solana: 1 }), live]);
+    expect(r.ok).toBe(true);
+    expect(r.skipped).toEqual(["sol: live chain: block comparison skipped (solana)", "solana blocks: live chain: block comparison skipped"]);
+    expect(r.blockSpread).toEqual({ ethereum: 0 });
+    expect(compareFeeds([f("a", "2026-11-05"), live], { strict: true }).ok).toBe(true);
+  });
+  it("a live feed more than 1 day off the others is a warning, a failure under strict", () => {
+    const stale = summarizeFeed("sol", { generatedAt: gen, asOf: { date: "2026-11-02", blocks: {}, settled: false, live: ["solana"] } });
+    const r = compareFeeds([f("a", "2026-11-05"), stale]);
+    expect(r.ok).toBe(true);
+    expect(r.warnings).toEqual([expect.stringContaining("sol=2026-11-02")]);
+    const s = compareFeeds([f("a", "2026-11-05"), stale], { strict: true });
+    expect(s.ok).toBe(false);
+    expect(s.problems).toEqual([expect.stringContaining("live feed date differs by 3 days")]);
+  });
+  it("an incomplete stamp (asOf.date null) is stamped but has no settled end date", () => {
+    const s = summarizeFeed("flows", { generatedAt: gen, asOf: { date: null, blocks: {}, settled: false, incomplete: ["solana"] }, entries: [{ date: "2026-11-05" }] });
+    expect(s).toMatchObject({ stamped: true, endDate: null });
+    expect(compareFeeds([f("a", "2026-11-05"), s]).ok).toBe(false);
+  });
+  it("missing end date is a problem", () => {
+    expect(compareFeeds([f("a", null)]).ok).toBe(false);
+  });
+  it("checkpoint scan heads are reported as info, never compared against day cutoffs", () => {
+    const cp = summarizeFeed("lite", { generatedAt: gen, entries: [] }, { chains: { ethereum: { lastBlock: 7 } } });
+    const r = compareFeeds([{ ...f("a", "2026-11-05", { ethereum: 5 }), blockSource: "asOf" }, { ...cp, endDate: "2026-11-05" }]);
+    expect(r.ok).toBe(true);
+    expect(r.problems).toEqual([]);
+    expect(r.info).toEqual(["lite: ethereum scan head 7 (checkpoint, not a day cutoff): not compared"]);
+    expect(r.blockSpread).toEqual({});
+  });
+  it("asOf-sourced blocks are still compared", () => {
+    const r = compareFeeds([{ ...f("a", "2026-11-05", { ethereum: 5 }), blockSource: "asOf" }, { ...f("b", "2026-11-05", { ethereum: 9 }), blockSource: "asOf" }]);
+    expect(r.ok).toBe(false);
+  });
+  it("a missing expected feed is a warning, a failure under strict", () => {
+    const feeds = [f("a", "2026-11-05")];
+    expect(compareFeeds(feeds, { missing: ["tier-outflows"] })).toMatchObject({ ok: true, warnings: ["missing feed: tier-outflows"] });
+    expect(compareFeeds(feeds, { missing: ["tier-outflows"], strict: true })).toMatchObject({ ok: false, problems: ["missing feed: tier-outflows"] });
+  });
+});

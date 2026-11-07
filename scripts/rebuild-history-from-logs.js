@@ -124,6 +124,7 @@ import {
 } from "./lib/historicalReplay.js";
 import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
+import { endOfDayLabel } from "./relabel-midnight-history.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir, work dir (transfer caches), chain map, non-retail lists and
@@ -301,6 +302,8 @@ async function main() {
 
   const chainConfig = projectChains(project, ROOT);
   const chainKeys = Object.keys(chainConfig).filter((k) => !onlyChain || k === onlyChain);
+  // Last boundary is today 00:00Z, emitted as yesterday's end-of-day row
+  // (endOfDayLabel), so the in-progress UTC day is never written.
   const endDate = new Date().toISOString().slice(0, 10);
   const boundaries = dailyBoundaries(startDate, endDate);
   console.log(`Rebuilding ${boundaries.length} dates (${startDate} .. ${endDate}) for: ${chainKeys.join(", ")}`);
@@ -511,9 +514,10 @@ async function main() {
     // entry. Without it, this rebuild's own MIN_TEL_RAW=1 wallets (the sub-
     // 1.01-TEL population this whole rebuild exists to recover uniformly)
     // would violate holderCount === Σdistribution[].count on every entry.
+    // The boundary `date` is D 00:00Z: state at the last block <= that instant
+    // is end-of-(D-1), so the row is labelled D-1 (see relabel-midnight-history.js).
     entries.push(reconcileHistoryEntry({
-      date,
-      generatedAt: `${date}T00:00:00.000Z`,
+      ...endOfDayLabel(date),
       combined,
       chains: Object.fromEntries(Object.entries(chains).map(([k, c]) => [k, {
         holderCount: c.holderCount,

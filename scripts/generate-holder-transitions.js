@@ -34,6 +34,7 @@ import { selectPipelineProject, projectPaths, projectNonRetailPaths } from "./li
 import { projectHolderTiers, rangeLabelOf } from "./lib/holderTiers.js";
 import { normalizeAnyAddress } from "./lib/address.js";
 import { emptyTransitions } from "./lib/emptyTransitions.js";
+import { inheritAsOf } from "./lib/asOf.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk and in git history) and its own non-retail lists. Tier
@@ -197,7 +198,7 @@ const main = async () => {
   }
 
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
-  await fs.writeFile(OUT_PATH, `${JSON.stringify({ generatedAt: new Date().toISOString(), latestDate: toDate, ranges }, null, 2)}\n`, "utf8");
+  await fs.writeFile(OUT_PATH, `${JSON.stringify({ generatedAt: new Date().toISOString(), latestDate: toDate, ...(onDiskSnap?.asOf ? { asOf: inheritAsOf(onDiskSnap) } : {}), ranges }, null, 2)}\n`, "utf8");
   console.log(`Wrote ${OUT_PATH} (${Object.keys(ranges).length} ranges)`);
 };
 

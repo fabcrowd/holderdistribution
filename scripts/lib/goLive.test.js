@@ -2,7 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { goLiveProblems, MAX_REPORT_AGE_HOURS } from "./goLive.js";
+import { goLiveProblems, MAX_REPORT_AGE_HOURS, requiredFeedFiles } from "./goLive.js";
+import { alignmentProblems } from "../check-go-live.js";
+import { alignmentReport } from "../check-feed-alignment.js";
 
 const NOW = Date.parse("2026-11-05T12:00:00Z");
 const FRESH = new Date(NOW - 3600_000).toISOString();
@@ -128,5 +130,65 @@ describe("goLiveProblems", () => {
 
   it("rejects an unknown section", () => {
     expect(() => check({}, { section: "nope" })).toThrow(/section/);
+  });
+});
+
+describe("alignmentProblems (check-go-live.js)", () => {
+  const asOf = (date, blocks = { ethereum: 100 }, extra = {}) => ({ generatedAt: "2026-11-05T01:00:00Z", asOf: { date, blocks, ...extra } });
+  const ALIGN_FEEDS = ["exchange-flow-history.json", "tier-outflows.json", "cex-balance-history.json", "holders-history.json", "treasury-history.json", "holder-transitions.json", "holders-lite.json"];
+  const align = () => alignmentProblems({ slug: "demo", dataDir: "public/data/demo", config: config() }, { root });
+
+  beforeEach(() => {
+    write("config/projects/demo.json", config());
+    for (const f of ALIGN_FEEDS) write(`public/data/demo/${f}`, asOf("2026-11-04"));
+    write("public/data/demo/date-blocks.json", { cutoffs: { ethereum: { "2026-11-05": 101 } } });
+  });
+
+  it("passes aligned, stamped feeds with cutoffs for every chain", () => {
+    expect(align()).toEqual([]);
+  });
+
+  it("fails an unstamped feed", () => {
+    write("public/data/demo/tier-outflows.json", { generatedAt: "2026-11-05T01:00:00Z", entries: [{ date: "2026-11-04" }] });
+    expect(align().join("\n")).toMatch(/unstamped \(no asOf\): tier-outflows.*fill-history-gaps/);
+  });
+
+  it("fails differing settled end dates and names the feeds", () => {
+    write("public/data/demo/holders-history.json", asOf("2026-11-03"));
+    expect(align().join("\n")).toMatch(/end dates differ:.*holders-history=2026-11-03/);
+  });
+
+  it("fails differing blocks on a comparable chain", () => {
+    write("public/data/demo/holders-lite.json", asOf("2026-11-04", { ethereum: 90 }));
+    expect(align().join("\n")).toMatch(/ethereum blocks differ by 10/);
+  });
+
+  it("allows a live (settled:false) feed within 1 day, fails beyond it", () => {
+    write("public/data/demo/holders-lite.json", asOf("2026-11-05", {}, { settled: false, live: ["solana"] }));
+    expect(align()).toEqual([]);
+    write("public/data/demo/holders-lite.json", asOf("2026-11-07", {}, { settled: false, live: ["solana"] }));
+    expect(align().join("\n")).toMatch(/live feed date differs by 3 days/);
+  });
+
+  it("fails a required feed that is missing instead of skipping it", () => {
+    fs.rmSync(path.join(root, "public/data/demo/tier-outflows.json"));
+    expect(align().join("\n")).toMatch(/alignment: missing feed: tier-outflows/);
+  });
+
+  it("alignmentReport warns on a missing required feed outside strict", () => {
+    fs.rmSync(path.join(root, "public/data/demo/holder-transitions.json"));
+    const [r] = alignmentReport({ root, only: "demo" });
+    expect(r.result.warnings).toContain("missing feed: holder-transitions");
+    expect(r.result.ok).toBe(true);
+  });
+
+  it("requiredFeedFiles lists the workflow's required files plus the flow feeds", () => {
+    const files = requiredFeedFiles({ slug: "demo", dataDir: "public/data/demo", config: config() }, root);
+    expect(files).toEqual(expect.arrayContaining(ALIGN_FEEDS));
+  });
+
+  it("fails a chain without cutoffs and points at build-cutoffs.js", () => {
+    write("public/data/demo/date-blocks.json", {});
+    expect(align().join("\n")).toMatch(/no cutoffs for chain ethereum.*build-cutoffs\.js --project demo/);
   });
 });

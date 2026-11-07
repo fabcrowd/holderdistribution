@@ -51,7 +51,10 @@ import process from "node:process";
 import { execFileSync } from "node:child_process";
 import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, rpcCall } from "./lib/rpc.js";
-import { findBlockAtTime } from "./lib/historicalReplay.js";
+import {
+  cutoffsFromEndOfDayMap, endOfDayMapFromCutoffs, ensureCutoffs, findFirstBlockAtOrAfter,
+  mergeCutoffMaps, nextDate, readCutoffMap, writeCutoffMap,
+} from "./lib/dayBlocks.js";
 import { selectPipelineProject, projectPaths, projectChains, projectWork } from "./lib/projects.js";
 import { missingHistoryDates } from "./lib/missingHistoryDates.js";
 
@@ -111,27 +114,30 @@ const main = async () => {
 
   // Day-boundary blocks, cached in the repo so a re-run (or a later manual
   // reconstruction) never re-searches a date it has already resolved.
+  // Source of truth is the shared cutoff map (date-blocks.json "cutoffs"); the
+  // old 23:59:59Z map is folded in exactly (cutoffsFromEndOfDayMap) so nothing
+  // resolved before is lost, and is still written as a mirror because
+  // pull-holders-rpc / generate-holders-lite read it: last block of D = cutoff[D+1]-1.
   const blocks = JSON.parse(await fs.readFile(BLOCKS_PATH, "utf8").catch(() => "{}"));
+  const known = readCutoffMap(project, { root: ROOT });
+  const seeded = mergeCutoffMaps(known, cutoffsFromEndOfDayMap(blocks));
+  if (JSON.stringify(seeded) !== JSON.stringify(known)) writeCutoffMap(project, seeded, { root: ROOT });
   const chainConfig = projectChains(project, ROOT);
-  for (const date of missing) {
-    if (blocks[date]) continue;
-    blocks[date] = {};
-    for (const chainKey of Object.keys(chainConfig)) {
-      const rpcUrls = await getUsableRpcUrls(chainKey);
-      if (!rpcUrls.length) throw new Error(`No RPC URLs for ${chainKey} — is ENV_PASSPHRASE set?`);
-      const head = Number(BigInt(await rpcCall(rpcUrls[0], "eth_blockNumber", [])));
-      const target = Math.floor(Date.parse(`${date}T23:59:59Z`) / 1000);
-      const getTimestamp = async (block) => {
-        const b = await rpcCall(rpcUrls[0], "eth_getBlockByNumber", [`0x${block.toString(16)}`, false]);
-        return parseInt(b.timestamp, 16);
-      };
-      blocks[date][chainKey] = await findBlockAtTime(target, {
-        low: Number(chainConfig[chainKey].fromBlock),
-        high: head,
-        getTimestamp,
-      });
-      console.log(`  ${date} ${chainKey}: block ${blocks[date][chainKey]}`);
-    }
+  const resolvers = {};
+  for (const chainKey of Object.keys(chainConfig)) {
+    const rpcUrls = await getUsableRpcUrls(chainKey);
+    if (!rpcUrls.length) throw new Error(`No RPC URLs for ${chainKey} — is ENV_PASSPHRASE set?`);
+    const head = Number(BigInt(await rpcCall(rpcUrls[0], "eth_blockNumber", [])));
+    const getTimestamp = async (block) => {
+      const b = await rpcCall(rpcUrls[0], "eth_getBlockByNumber", [`0x${block.toString(16)}`, false]);
+      return parseInt(b.timestamp, 16);
+    };
+    resolvers[chainKey] = (target) => findFirstBlockAtOrAfter(target, getTimestamp, Number(chainConfig[chainKey].fromBlock) || 0, head);
+  }
+  const cutoffs = await ensureCutoffs(project, missing.map(nextDate), { resolvers, root: ROOT });
+  for (const [date, chains] of Object.entries(endOfDayMapFromCutoffs(cutoffs, missing))) {
+    blocks[date] = { ...(blocks[date] ?? {}), ...chains };
+    for (const [chainKey, b] of Object.entries(chains)) console.log(`  ${date} ${chainKey}: block ${b}`);
   }
   await fs.mkdir(path.dirname(BLOCKS_PATH), { recursive: true });
   await fs.writeFile(

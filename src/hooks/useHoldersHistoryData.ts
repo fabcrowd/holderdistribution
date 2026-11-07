@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { dataUrl } from "@/lib/dataUrl";
 import { useProject } from "@/hooks/useProject";
+import type { FeedAsOf } from "@/hooks/useFeedAsOf";
 
 export type HolderHistoryChainEntry = {
   holderCount: number;
@@ -36,6 +37,7 @@ export type HolderHistoryEntry = {
 
 export type HolderHistoryPayload = {
   generatedAt?: string;
+  asOf?: FeedAsOf;
   entries?: HolderHistoryEntry[];
 };
 

@@ -27,8 +27,20 @@ export function pickBaseline<T>(
     .filter((x) => Number.isFinite(x.ts))
     .sort((a, b) => a.ts - b.ts);
   if (pts.length === 0) return null;
+  return pickNearestBaseline(pts, pts[pts.length - 1].ts, days);
+}
 
-  const latestTs = pts[pts.length - 1].ts;
+/**
+ * Tolerant core of pickBaseline, anchored at `anchorTs` instead of the
+ * latest point. `pts` must be sorted ascending with finite `ts`.
+ */
+export function pickNearestBaseline<T>(
+  pts: ReadonlyArray<{ p: T; ts: number }>,
+  anchorTs: number,
+  days: number,
+): T | null {
+  if (pts.length === 0) return null;
+  const latestTs = anchorTs;
   const targetTs = latestTs - days * 86400000;
   // Never the latest point itself: with a gap in the archive (e.g. nothing
   // between Oct 2 and Oct 23) a 1D request used to pick today's own row and

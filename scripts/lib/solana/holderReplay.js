@@ -91,7 +91,7 @@ export function buildDayEntry({ chainKey, date, holders, cexBalance, newHolders,
   };
   return reconcileHistoryEntry({
     date,
-    generatedAt: `${date}T00:00:00.000Z`,
+    generatedAt: `${date}T23:59:59.000Z`,
     combined,
     chains: {
       [chainKey]: {

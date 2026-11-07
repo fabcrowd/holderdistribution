@@ -39,6 +39,7 @@ import { exchangeFlowChains } from "./lib/exchangeFlowChains.js";
 import { markPartialDay } from "./lib/partialDay.js";
 import { readWindow, transferWindowName } from "./lib/transferWindow.js";
 import { getTransferLogsCached, sharedScanEnabled } from "./lib/sharedTransferLogs.js";
+import { cutoffScanWindow, readCutoffMap, asOfFromSolanaScan, asOfFromReached } from "./lib/dayBlocks.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: token addresses,
 // decimals and start blocks come from the project's chain map, CEX/DEX lists
@@ -109,41 +110,17 @@ const scanChain = async (chainKey, cexSet, dexSet, checkpoint, dayBuckets) => {
   const from = checkpoint.chains?.[chainKey]?.lastBlock != null
     ? checkpoint.chains[chainKey].lastBlock + 1
     : cfg.defaultStart;
-  const end = Math.min(latest, from + MAX_BLOCKS_PER_RUN - 1);
+  // UTC-day buckets are exactly [cutoff[D], cutoff[D+1]) and the scan stops at
+  // the settled end cutoff[today]-1 (scripts/lib/dayBlocks.js), so every
+  // chain and every feed ends on the same block of the same day.
+  const { end, dateOf } = await cutoffScanWindow({
+    project, chain: chainKey, from, latest, maxBlocks: MAX_BLOCKS_PER_RUN,
+    getBlockTimestamp: (b) => blockTimestampSec(rpcUrls[0], b),
+  });
   if (from > end) {
     console.log(`  ${chainKey}: up to date (block ${from - 1}).`);
     return;
   }
-
-  // Piecewise block→timestamp model: sample real timestamps ~once per day of
-  // blocks and interpolate within each segment. A single linear fit across
-  // millions of blocks drifts by days (block time isn't constant); piecewise
-  // sampling bounds the error to intra-day so each transfer gets the right date.
-  const roughSecPerBlock = 2;
-  const sampleStep = Math.max(1, Math.floor(86400 / roughSecPerBlock)); // ~1 day of blocks
-  const sampleBlocks = [];
-  for (let b = from; b < end; b += sampleStep) sampleBlocks.push(b);
-  sampleBlocks.push(end);
-  const sampleTs = await Promise.all(
-    sampleBlocks.map((b, i) => blockTimestampSec(rpcUrls[i % rpcUrls.length], b)),
-  );
-  const samples = sampleBlocks
-    .map((b, i) => ({ block: b, ts: sampleTs[i] }))
-    .filter((s) => s.ts != null);
-  const dateOf = (block) => {
-    if (samples.length === 0) return new Date(0).toISOString().slice(0, 10);
-    // find bracketing samples (samples are ascending in block)
-    let lo = 0;
-    for (let i = 1; i < samples.length; i++) {
-      if (samples[i].block <= block) lo = i;
-      else break;
-    }
-    const a = samples[lo];
-    const b = samples[Math.min(lo + 1, samples.length - 1)];
-    const span = b.block - a.block;
-    const ts = span > 0 ? a.ts + ((block - a.block) / span) * (b.ts - a.ts) : a.ts;
-    return new Date(ts * 1000).toISOString().slice(0, 10);
-  };
 
   console.log(`  ${chainKey}: scanning ${from}..${end} (latest ${latest}) across ${rpcUrls.length} keys`);
   if (sharedWindow) console.log(`  ${chainKey}: shared transfer window ${sharedWindow.meta.fromBlock}-${sharedWindow.meta.toBlock} available.`);
@@ -231,6 +208,18 @@ const solanaEntries = async () => {
   return buildExchangeHistory(store, { decimals: Object.fromEntries(chains.map((c) => [c.key, c.decimals])) });
 };
 
+// Stamp from the blocks the scan actually reached (a MAX_BLOCKS_PER_RUN-capped
+// backlog stamps its last complete day, not yesterday). Solana-only projects
+// stamp from scan-solana-flows' checkpoint (same file): only a complete scan
+// claims a settled day; an incomplete one stamps date null (asOfFromSolanaScan).
+const projectAsOf = async (checkpoint) => {
+  const all = readCutoffMap(project);
+  const reached = Object.fromEntries(Object.keys(CHAINS).map((c) => [c, checkpoint.chains?.[c]?.lastBlock]));
+  if (Object.keys(reached).length) return asOfFromReached(all, reached);
+  const { solanaFlowChains } = await import("./lib/solana/flowConfig.js");
+  return asOfFromSolanaScan(all, checkpoint.chains, solanaFlowChains(project.config).map((c) => c.key));
+};
+
 const main = async () => {
   const cexConfig = (await readOptionalJson(CEX_CONFIG_PATH)) ?? { wallets: [] };
   const cexSet = new Set(
@@ -303,7 +292,7 @@ const main = async () => {
     .sort((a, b) => a.date.localeCompare(b.date)));
 
   await fs.mkdir(path.dirname(HISTORY_PATH), { recursive: true });
-  await fs.writeFile(HISTORY_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, generatedAt: new Date().toISOString(), entries }, null, 2)}\n`, "utf8");
+  await fs.writeFile(HISTORY_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, generatedAt: new Date().toISOString(), asOf: await projectAsOf(checkpoint), entries }, null, 2)}\n`, "utf8");
   await fs.writeFile(CHECKPOINT_PATH, `${JSON.stringify(checkpoint, null, 2)}\n`, "utf8");
   console.log(`Wrote ${entries.length} daily flow entries → ${HISTORY_PATH}`);
 };

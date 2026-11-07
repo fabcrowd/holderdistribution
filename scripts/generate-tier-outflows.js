@@ -65,6 +65,7 @@ import { tierFingerprint, shouldResetForTiers } from "./lib/tierFingerprint.js";
 import { partialDateFor } from "./lib/partialDay.js";
 import { readWindow, transferWindowName } from "./lib/transferWindow.js";
 import { getTransferLogsCached, sharedScanEnabled } from "./lib/sharedTransferLogs.js";
+import { cutoffScanWindow, readCutoffMap, flowFeedAsOf } from "./lib/dayBlocks.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk + git history), work dir (day store / checkpoint), chain
@@ -302,33 +303,20 @@ const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
   const from = checkpoint.chains?.[chainKey]?.lastBlock != null
     ? checkpoint.chains[chainKey].lastBlock + 1
     : defaultStart;
-  const end = Math.min(latest, from + MAX_BLOCKS_PER_RUN - 1);
+  // Ends at the shared settled cutoff[today]-1, not the chain tip: ending at
+  // `latest` left each chain's checkpoint wherever its tip was when this step
+  // ran (Base ~2h past the holders snapshot), and the ~1-day timestamp
+  // interpolation put boundary transfers on the wrong day.
+  const { end, dateOf } = await cutoffScanWindow({
+    project, chain: chainKey, from, latest, maxBlocks: MAX_BLOCKS_PER_RUN,
+    getBlockTimestamp: (b) => blockTimestampSec(rpcUrls[0], b),
+  });
   // Recorded on every run (even when nothing to scan) so `complete` can be
   // computed in main() without re-fetching the tip: "caught up" means the
   // checkpoint's lastBlock is within a day of blocks of this recorded tip.
   checkpoint.chains = checkpoint.chains ?? {};
   checkpoint.chains[chainKey] = { ...(checkpoint.chains[chainKey] ?? {}), latest };
   if (from > end) { console.log(`  ${chainKey}: up to date (block ${from - 1}).`); return; }
-
-  // Piecewise block→timestamp sampling (~1 day of blocks per sample).
-  const sampleStep = Math.max(1, cfg.blocksPerDay);
-  const sampleBlocks = [];
-  for (let b = from; b < end; b += sampleStep) sampleBlocks.push(b);
-  sampleBlocks.push(end);
-  const sampleTs = await Promise.all(
-    sampleBlocks.map((b, i) => blockTimestampSec(rpcUrls[i % rpcUrls.length], b)),
-  );
-  const samples = sampleBlocks.map((b, i) => ({ block: b, ts: sampleTs[i] })).filter((s) => s.ts != null);
-  const dateOf = (block) => {
-    if (samples.length === 0) return new Date(0).toISOString().slice(0, 10);
-    let lo = 0;
-    for (let i = 1; i < samples.length; i++) { if (samples[i].block <= block) lo = i; else break; }
-    const a = samples[lo];
-    const b = samples[Math.min(lo + 1, samples.length - 1)];
-    const span = b.block - a.block;
-    const ts = span > 0 ? a.ts + ((block - a.block) / span) * (b.ts - a.ts) : a.ts;
-    return new Date(ts * 1000).toISOString().slice(0, 10);
-  };
 
   console.log(`  ${chainKey}: scanning ${from}..${end} (latest ${latest}) across ${rpcUrls.length} keys`);
   if (sharedWindow) console.log(`  ${chainKey}: shared transfer window ${sharedWindow.meta.fromBlock}-${sharedWindow.meta.toBlock} available.`);
@@ -874,10 +862,19 @@ const main = async () => {
   // finished zero. TEL always has its three chains, so this stays the same.
   const complete = solanaComplete !== null ? solanaComplete : Object.keys(CHAINS).length > 0 && Object.values(chainComplete).every(Boolean);
 
+  // Stamp the blocks actually reached: a MAX_BLOCKS_PER_RUN-capped backlog
+  // stamps its last complete day, not yesterday. Solana-only: stamp from
+  // scan-solana-flows' checkpoint, so an incomplete scan claims no day.
+  const cutoffMap = readCutoffMap(project);
+  const reached = Object.fromEntries(Object.keys(CHAINS).map((c) => [c, checkpoint.chains?.[c]?.lastBlock]));
+  const solanaKeys = solanaFlowChains(project.config).map((c) => c.key);
+  const scanState = Object.keys(reached).length ? null : (await readOptionalJson(data("exchange-flow-checkpoint.json")))?.chains ?? null;
+  const asOf = flowFeedAsOf(cutoffMap, { reached, scanState, solanaKeys });
+
   await fs.mkdir(path.dirname(DAYS_STORE_PATH), { recursive: true });
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
   await fs.writeFile(DAYS_STORE_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, tierFingerprint: tierFingerprint(TIERS), days }, null, 2)}\n`, "utf8");
-  await fs.writeFile(OUT_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, tierFingerprint: tierFingerprint(TIERS), generatedAt: new Date().toISOString(), latestDate: latestDate ?? null, partialDate: partialDateFor(latestDate), complete, sourceTierSince, ranges }, null, 2)}\n`, "utf8");
+  await fs.writeFile(OUT_PATH, `${JSON.stringify({ schema: SCHEMA_VERSION, tierFingerprint: tierFingerprint(TIERS), generatedAt: new Date().toISOString(), asOf, latestDate: latestDate ?? null, partialDate: partialDateFor(latestDate), complete, sourceTierSince, ranges }, null, 2)}\n`, "utf8");
   await fs.writeFile(CHECKPOINT_PATH, `${JSON.stringify(checkpoint, null, 2)}\n`, "utf8");
   // Delete the pre-split legacy checkpoint once the new one exists, so a
   // future run doesn't keep reading two sources of truth. Safe to no-op if

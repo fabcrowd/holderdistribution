@@ -20,6 +20,7 @@
 import fs from "node:fs";
 import readline from "node:readline";
 import { partitionLogsByBoundary, createReplayLedger } from "./historicalReplay.js";
+import { CUTOFF_KEY } from "./dayBlocks.js";
 
 /** Chains whose transfer cache is missing, so a caller can refuse to write. */
 export const missingCaches = (chains, transfersPathFor) =>
@@ -71,7 +72,9 @@ export const replayAddressBalances = async ({
 }) => {
   const perDate = new Map();
 
-  for (const chain of Object.keys(dateBlocks)) {
+  // date-blocks.json also holds the shared cutoff map under CUTOFF_KEY ("cutoffs",
+  // {chain:{D:block}}): not a chain, and a different convention.
+  for (const chain of Object.keys(dateBlocks).filter((c) => c !== CUTOFF_KEY)) {
     const boundaries = Object.entries(dateBlocks[chain])
       .map(([date, block]) => ({ date, block }))
       .sort((a, b) => a.block - b.block);

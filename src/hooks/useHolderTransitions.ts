@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { dataUrl } from "@/lib/dataUrl";
 import { useProject } from "@/hooks/useProject";
 import { FeedError } from "@/lib/fetchJson";
+import type { FeedAsOf } from "@/hooks/useFeedAsOf";
 
 export type TransitionCell = { count: number; tel: number };
 export type TransitionMatrix = Record<string, Record<string, TransitionCell>>;
@@ -10,6 +11,7 @@ export type TransitionRange = { from: string; to: string; matrix: TransitionMatr
 export type HolderTransitions = {
   generatedAt?: string;
   latestDate?: string;
+  asOf?: FeedAsOf;
   ranges: Record<string, TransitionRange>;
 };
 

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { dataUrl } from "@/lib/dataUrl";
 import { useProject } from "@/hooks/useProject";
 import { FeedError } from "@/lib/fetchJson";
+import type { FeedAsOf } from "@/hooks/useFeedAsOf";
 
 export type TierOutflowCell = {
   dex: number;
@@ -60,6 +61,7 @@ export type TierOutflows = {
   generatedAt?: string;
   complete?: boolean;
   latestDate?: string;
+  asOf?: FeedAsOf;
   /** Set when `latestDate` is still in progress, so the 1-day window holds hours-so-far. Absent on older feeds. */
   partialDate?: string | null;
   /** Earliest day with real counterparty-tier attribution, or null if none yet (schema v11+). */

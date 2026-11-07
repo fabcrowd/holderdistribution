@@ -5,12 +5,14 @@ import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClass
 import { clampToRange, shortBucketLabel } from "@/lib/chartRange";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { useExchangeFlow } from "@/hooks/useExchangeFlow";
+import { feedAsOf } from "@/hooks/useFeedAsOf";
 import { settledEntries } from "@/lib/flowFeeds";
 import { hasNoStaking, stakingNoneText } from "@/lib/stakingNote";
 import { flowEmptyMessage } from "@/lib/flowEmptyState";
 import { flowOutOfRangeMessage, flowWindow, staleFeedNote } from "@/lib/flowWindow";
 import { emptyHistoryMessage } from "@/lib/historyEmpty";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
+import { pickWindowBaseline, settledEndMs, walletSetChangesFor } from "@/lib/settledEnd";
 import type { DisplaySelection, HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 import { formatCompact, formatSignedCompact } from "@/lib/format";
 import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton, Delta } from "./TerminalPanel";
@@ -166,26 +168,36 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const holderBreaks = useMemo(() => getSeriesBreaks(changelog, ["retail.count", "holderCount"], holders[0]?.t), [changelog, holders]);
   const balanceBreaks = useMemo(() => getSeriesBreaks(changelog, ["retail.balance"], balance[0]?.t), [changelog, balance]);
   const stakingBreaks = useMemo(() => getSeriesBreaks(changelog, ["stakingBalance"], staking[0]?.t), [changelog, staking]);
+  const flowAsOf = feedAsOf(flow.data);
+  const cexAsOf = feedAsOf(cexHistory.data);
   const flowWin = useMemo(() => {
     // Finished days only: today's hours-so-far would draw as a false collapse.
     // The window ends today (UTC); a stale feed is not summed as the range.
-    const win = flowWindow(settledEntries(flow.data ?? []), rangeDays);
+    const settledFlow = settledEntries(flow.data ?? []);
+    const lastFlow = settledFlow[settledFlow.length - 1];
+    const win = flowWindow(settledFlow, rangeDays, undefined, settledEndMs({ asOf: flowAsOf }, undefined, lastFlow ? Date.parse(lastFlow.date) : null));
     return { ...win, rows: win.rows.map((e) => ({ t: Date.parse(e.date), value: e.net, in: e.in, out: e.out })) };
-  }, [flow.data, rangeDays]);
+  }, [flow.data, rangeDays, flowAsOf]);
   const netflow = flowWin.rows;
   const flowTotals = netflow.reduce((a, r) => ({ in: a.in + r.in, out: a.out + r.out }), { in: 0, out: 0 });
 
   const exchanges = useMemo(() => {
     const entries = cexHistory.data ?? [];
     if (!entries.length) return [];
-    const ranged = withinRange(entries, (e) => Date.parse(e.date), Math.max(rangeDays, 1));
-    const latest = entries[entries.length - 1];
-    const base = ranged[0] !== latest ? ranged[0] : null;
+    // Same interval as the netflow panel: [settled end - N days, settled end).
+    const pick = pickWindowBaseline(entries, settledEndMs({ asOf: cexAsOf }, undefined, Date.parse(entries[entries.length - 1].date)), Math.max(rangeDays, 1), (e) => Date.parse(e.date));
+    const latest = pick?.end ?? entries[entries.length - 1];
+    const base = pick?.start ?? null;
     return Object.entries(latest.exchanges)
-      .map(([name, bal]) => ({ name, bal, delta: base ? bal - (base.exchanges[name] ?? 0) : null }))
+      .map(([name, bal]) => ({
+        name,
+        bal,
+        delta: base ? bal - (base.exchanges[name] ?? 0) : null,
+        walletSetChanges: pick ? walletSetChangesFor(changelog, name, pick.startTs, pick.endTs) : [],
+      }))
       .filter((r) => r.bal > 0 || (r.delta ?? 0) !== 0)
       .sort((a, b) => b.bal - a.bal);
-  }, [cexHistory.data, rangeDays]);
+  }, [cexHistory.data, rangeDays, changelog, cexAsOf]);
   const cexTotal = exchanges.reduce((s, r) => s + r.bal, 0);
 
   const h = firstLast(holders);
@@ -533,7 +545,18 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             <tbody>
               {exchanges.map((r) => (
                 <tr key={r.name} className="border-t border-border/50">
-                  <th scope="row" className="max-w-[8rem] truncate px-3 py-1 text-left font-medium" title={r.name}>{r.name}</th>
+                  <th scope="row" className="max-w-[8rem] truncate px-3 py-1 text-left font-medium" title={r.name}>
+                    {r.name}
+                    {r.walletSetChanges.length > 0 && (
+                      <span
+                        className="ml-1 text-warning cursor-help"
+                        title={`Wallet set changed in this window: ${r.walletSetChanges.map((e) => `${e.date} ${e.summary}`).join("; ")}`}
+                        aria-label="Wallet set changed in this window"
+                      >
+                        †
+                      </span>
+                    )}
+                  </th>
                   <td className="px-2 py-1 text-right">{formatCompact(r.bal)}</td>
                   <td className="px-3 py-1 text-right"><Delta value={r.delta} format={(x) => formatCompact(x, 1)} /></td>
                 </tr>
