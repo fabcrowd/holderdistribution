@@ -141,7 +141,22 @@ const main = async () => {
   // --- 3. Every treasury-history category against the pie it renders beside.
   // This is the check that catches an append-treasury-history.js that did not
   // re-run after reconcile-supply.js.
-  const tLast = lastEntry(treasury);
+  // Same unpinned rule as (1): the newest treasury row is a settled day, while an
+  // unpinned run reads head, so any treasury or council move since then would
+  // read as a false mismatch.
+  const tLast = snapshotUnpinned ? null : lastEntry(treasury);
+  if (snapshotUnpinned) {
+    checks.push(`treasury-history not compared: snapshot is unpinned (${(summary?.asOf?.unpinned ?? holders?.asOf?.unpinned).join(", ")}), newest row is a settled day`);
+    // No row is written while unpinned and nothing else repairs treasury, so the
+    // skip must not hide a feed that stopped advancing: the last fully settled
+    // day (snapshot date - 1) has to be present.
+    const snapshotDate = summary?.asOf?.date ?? holders?.asOf?.date;
+    const lastSettled = snapshotDate ? new Date(Date.parse(snapshotDate) - 86_400_000).toISOString().slice(0, 10) : null;
+    const newest = lastEntry(treasury)?.date;
+    if (treasury && lastSettled && (!newest || newest < lastSettled)) {
+      failures.push(`treasury-history is stale: newest row ${newest ?? "(none)"}, but the last settled day before the unpinned snapshot (${snapshotDate}) is ${lastSettled}`);
+    }
+  }
   if (tLast) {
     for (const key of TREASURY_CATEGORIES) {
       agree(`category "${key}"`, [
