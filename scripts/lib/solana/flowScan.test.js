@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { classifyTransfers, listSignatures, pairTransfers, scanVenueFlows, utcDay } from "./flowScan.js";
+import { NULL_TX_RETRY_RUNS, classifyTransfers, listSignatures, pairTransfers, scanVenueFlows, utcDay } from "./flowScan.js";
 import { markPartialDay } from "../partialDay.js";
 import { applyFlowEvents, buildExchangeHistory, buildSolanaTierDays, emptyFlowStore } from "./flowFeeds.js";
 
@@ -197,7 +197,8 @@ describe("scanVenueFlows", () => {
     const w = world();
     w.sigsByAccount.MexcAta1[0] = { ...w.sigsByAccount.MexcAta1[0], err: { InstructionError: [0, "x"] } };
     delete w.txs.s1;
-    const res = await scan(fakeChain(w));
+    const state = { accounts: {}, unavailable: [{ signature: "s1", slot: 100, blockTime: T0, attempts: NULL_TX_RETRY_RUNS - 1 }] };
+    const res = await scan(fakeChain(w), { state });
     expect(res.events.map((e) => e.signature).sort()).toEqual(["s2", "s3"]);
     expect(res.missing).toBe(1);
   });
@@ -219,19 +220,111 @@ describe("scanVenueFlows", () => {
     expect(res.unavailable).toEqual([]);
   });
 
-  it("records a permanently null transaction as unavailable, counts it as missing and advances the cursor", async () => {
-    const w = world();
-    delete w.txs.s1;
-    const chain = fakeChain(w);
-    const progress = [];
-    const res = await scan(chain, { onProgress: (p) => progress.push(p) });
-    expect(chain.calls.getTransaction).toBe(5); // s1 fetched twice (retry), s2, s3, s4 once each
-    expect(res.missing).toBe(1);
-    expect(res.unavailable).toEqual([{ signature: "s1", slot: 100, blockTime: T0 }]);
-    expect(progress[progress.length - 1].unavailable).toEqual(res.unavailable);
-    expect(res.remaining).toBe(0);
-    expect(res.accounts.MexcAta1.until).toBe("s4");
-    expect(res.events.map((e) => e.signature).sort()).toEqual(["s2", "s3", "s4"]);
+  describe("a null transaction holds the cursor", () => {
+    const withoutS1 = () => {
+      const w = world();
+      delete w.txs.s1;
+      return w;
+    };
+    // s2 (slot 200) is the middle of the batch: s1 (null) < s2 < s3 < s4.
+    const midBatchNull = () => {
+      const w = world();
+      delete w.txs.s2;
+      return w;
+    };
+
+    it("(a) keeps the cursor below a mid-batch null and increments its attempts", async () => {
+      const chain = fakeChain(midBatchNull());
+      const progress = [];
+      const res = await scan(chain, { chunkSize: 1, onProgress: (p) => progress.push(p) });
+      expect(res.events.map((e) => e.signature)).toEqual(["s1"]);
+      expect(res.unavailable).toEqual([{ signature: "s2", slot: 200, blockTime: T0, attempts: 1 }]);
+      expect(res.missing).toBe(0);
+      expect(res.remaining).toBeGreaterThan(0);
+      // Cursor invariant: until never passes the first unprocessed signature (s2).
+      expect(res.accounts.MexcAta1.until).toBe("s1");
+      for (const p of progress) expect(["s1", undefined, null]).toContain(p.accounts.MexcAta1.until);
+      expect(res.accounts.PoolAta1.until).toBeNull();
+      expect(res.accounts.GateAta1.until).toBeNull();
+    });
+
+    it("(b) re-fetches the held signature on the next run and processes it once it resolves", async () => {
+      const first = await scan(fakeChain(midBatchNull()));
+      const chain = fakeChain(world());
+      const res = await scan(chain, { state: { accounts: first.accounts, unavailable: first.unavailable } });
+      expect(res.events.map((e) => e.signature)).toEqual(["s2", "s3", "s4"]);
+      expect(res.unavailable).toEqual([]);
+      expect(res.missing).toBe(0);
+      expect(res.remaining).toBe(0);
+      expect(res.accounts.MexcAta1.until).toBe("s4");
+    });
+
+    it("(c) advances past the null once the retry budget is spent and keeps it recorded as missing", async () => {
+      let state = null;
+      const runs = [];
+      for (let run = 1; run <= NULL_TX_RETRY_RUNS; run += 1) {
+        const res = await scan(fakeChain(withoutS1()), { state });
+        runs.push(res);
+        state = { accounts: res.accounts, unavailable: res.unavailable };
+      }
+      for (const held of runs.slice(0, -1)) {
+        expect(held.missing).toBe(0);
+        expect(held.accounts.MexcAta1.until).toBeNull();
+        expect(held.events).toEqual([]);
+      }
+      const last = runs[runs.length - 1];
+      expect(last.unavailable).toEqual([{ signature: "s1", slot: 100, blockTime: T0, attempts: NULL_TX_RETRY_RUNS }]);
+      expect(last.missing).toBe(1);
+      expect(last.remaining).toBe(0);
+      expect(last.accounts.MexcAta1.until).toBe("s4");
+      expect(last.events.map((e) => e.signature).sort()).toEqual(["s2", "s3", "s4"]);
+    });
+
+    it("charges every null in the chunk, so several pruned nulls are all settled after the budget", async () => {
+      const w = world();
+      delete w.txs.s1; // slot 100
+      delete w.txs.s2; // slot 200
+      let state = null;
+      let res;
+      for (let run = 1; run <= NULL_TX_RETRY_RUNS; run += 1) {
+        res = await scan(fakeChain(w), { state });
+        state = { accounts: res.accounts, unavailable: res.unavailable };
+      }
+      expect(res.remaining).toBe(0);
+      expect(res.missing).toBe(2);
+      expect(res.unavailable.map((u) => u.signature).sort()).toEqual(["s1", "s2"]);
+      expect(res.accounts.MexcAta1.until).toBe("s4");
+      expect(res.accounts.PoolAta1.until).toBe("s2");
+    });
+
+    it("leaves a slot-mate that sorts before the null for the run that resolves it, emitting it once", async () => {
+      const w = world();
+      w.sigsByAccount.MexcAta1 = [sig("s4", 400, 2), sig("s3", 300, 1), sig("s0", 100, 0), sig("s1", 100, 0)];
+      w.txs.s0 = tx([{ owner: ALICE, pre: 2_000_000, post: 1_000_000 }, { owner: MEXC, pre: 0, post: 1_000_000 }]);
+      const full = w.txs.s1;
+      delete w.txs.s1; // sorts after s0 in bySlotThenSig, same slot
+      const first = await scan(fakeChain(w));
+      expect(first.events.map((e) => e.signature)).toEqual([]);
+      expect(first.accounts.MexcAta1.until).toBeNull();
+      w.txs.s1 = full;
+      const second = await scan(fakeChain(w), { state: { accounts: first.accounts, unavailable: first.unavailable } });
+      const all = [...first.events, ...second.events].map((e) => e.signature);
+      expect(all.filter((s) => s === "s0")).toHaveLength(1);
+      expect(all.filter((s) => s === "s1")).toHaveLength(1);
+    });
+
+    it("(d) loads old state whose unavailable entries have no attempts field", async () => {
+      const legacy = { accounts: {}, unavailable: [{ signature: "old", slot: 1, blockTime: T0 }] };
+      const res = await scan(fakeChain(withoutS1()), { state: legacy });
+      expect(res.unavailable).toEqual([
+        { signature: "old", slot: 1, blockTime: T0 },
+        { signature: "s1", slot: 100, blockTime: T0, attempts: 1 },
+      ]);
+      // A legacy entry that is listed again counts from 0.
+      const w = withoutS1();
+      const res2 = await scan(fakeChain(w), { state: { accounts: {}, unavailable: [{ signature: "s1", slot: 100, blockTime: T0 }] } });
+      expect(res2.unavailable).toEqual([{ signature: "s1", slot: 100, blockTime: T0, attempts: 1 }]);
+    });
   });
 
   it("carries unavailable entries from an older checkpoint and keeps only the newest 500", async () => {

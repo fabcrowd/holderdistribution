@@ -24,6 +24,9 @@ export const DEFAULT_CHUNK = 60;
 // Newest unavailable signatures kept in the checkpoint; older ones are dropped
 // so a long-pruned history cannot grow the checkpoint without bound.
 export const UNAVAILABLE_CAP = 500;
+// A transaction that stays null after the in-run retry holds the cursor for this
+// many runs (counting the first); after that it is recorded as missing for good.
+export const NULL_TX_RETRY_RUNS = 3;
 
 export const bySlotThenSig = (a, b) => (a.slot !== b.slot ? a.slot - b.slot : a.signature < b.signature ? -1 : 1);
 
@@ -214,14 +217,23 @@ export async function scanVenueFlows({
   let missing = 0;
   let unavailable = [...(state?.unavailable ?? [])];
 
-  // Per-account cursor = newest processed signature. Valid after any whole-slot
+  // A missing `attempts` (older checkpoints) means 0.
+  const attemptsOf = (s) => unavailable.find((u) => u.signature === s.signature)?.attempts ?? 0;
+  const recordUnavailable = (s, attempts) => {
+    const entry = { signature: s.signature, slot: s.slot, blockTime: s.blockTime, attempts };
+    unavailable = [...unavailable.filter((u) => u.signature !== s.signature), entry].slice(-UNAVAILABLE_CAP);
+  };
+
+  // Per-account cursor = newest signature of the processed prefix (walked
+  // oldest-first, so a held signature stops it). Valid after any whole-slot
   // prefix, because processing is globally oldest-first.
   const cursors = () => {
     const accounts = {};
     let remaining = 0;
     for (const { account, owner } of tokenAccounts) {
       const sigs = lists.get(account);
-      const newestDone = sigs.find((s) => done.has(s.signature));
+      let newestDone = null;
+      for (let i = sigs.length - 1; i >= 0 && done.has(sigs[i].signature); i -= 1) newestDone = sigs[i];
       remaining += sigs.filter((s) => !done.has(s.signature)).length;
       accounts[account] = { owner, until: newestDone ? newestDone.signature : prev[account]?.until ?? null };
     }
@@ -242,24 +254,38 @@ export async function scanVenueFlows({
     const chunk = ordered.slice(start, end);
     const txs = await mapLimit(chunk, concurrency, (s) => fetchTransactionOnce(call, s.signature));
     const fresh = [];
-    chunk.forEach((s, i) => {
-      // The cursor advances even for an unavailable tx: it is recorded, not retried forever.
+    // A null that still has retry runs left stops the scan at its slot, so the
+    // cursor stays below it and the next run fetches it first. Its slot-mates
+    // are left for that run too (a slot is never split).
+    const heldIdx = chunk.findIndex((s, i) => !txs[i] && attemptsOf(s) + 1 < NULL_TX_RETRY_RUNS);
+    const stopAt = heldIdx < 0 ? chunk.length : chunk.findIndex((c) => c.slot === chunk[heldIdx].slot);
+    chunk.slice(0, stopAt).forEach((s, i) => {
       done.add(s.signature);
       const tx = txs[i];
       if (!tx) {
+        // Budget spent: advance past it, recorded permanently.
         missing += 1;
-        unavailable = [...unavailable, { signature: s.signature, slot: s.slot, blockTime: s.blockTime }].slice(-UNAVAILABLE_CAP);
-        logger.warn?.(`  getTransaction ${s.signature.slice(0, 12)}...: no result (pruned?); recorded as unavailable`);
+        recordUnavailable(s, NULL_TX_RETRY_RUNS);
+        logger.warn?.(`  getTransaction ${s.signature.slice(0, 12)}...: no result after ${NULL_TX_RETRY_RUNS} runs; recorded as unavailable`);
         return;
       }
+      unavailable = unavailable.filter((u) => u.signature !== s.signature);
       const transfers = pairTransfers(mintDeltasByOwner(tx, mint));
       for (const e of classifyTransfers(transfers, roles, tx, mint)) {
         fresh.push({ ...e, signature: s.signature, blockTime: s.blockTime, date: utcDay(s.blockTime), raw: e.raw.toString() });
       }
     });
+    // Every null left unprocessed in this chunk is charged an attempt, not just
+    // the first, so K pruned nulls exhaust their budget together in the same runs.
+    chunk.forEach((s, i) => {
+      if (i < stopAt || txs[i]) return;
+      recordUnavailable(s, Math.min(attemptsOf(s) + 1, NULL_TX_RETRY_RUNS));
+      if (i === heldIdx) logger.warn?.(`  getTransaction ${s.signature.slice(0, 12)}...: no result; holding the cursor (attempt ${attemptsOf(s)} of ${NULL_TX_RETRY_RUNS})`);
+    });
     events.push(...fresh);
     start = end;
     if (onProgress) await onProgress({ newEvents: fresh, ...cursors(), missing, processed: done.size, unavailable });
+    if (heldIdx >= 0) break;
   }
 
   const { accounts, remaining } = cursors();
