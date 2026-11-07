@@ -60,7 +60,7 @@ async function main() {
       const head = Number(await call("getSlot", [{ commitment: "finalized" }]));
       // Bounded floor (never probe pruned history): head minus the days back to --from, with margin.
       const daysBack = Math.ceil((Date.now() - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
-      chains.push({ key: c.key, vm: "solana", head, low: solanaSearchLow(head, daysBack), getTime: solanaBlockTimeOrNull(call) });
+      chains.push({ key: c.key, vm: "solana", head, low: solanaSearchLow(head, daysBack), getTime: solanaBlockTimeOrNull(call, head) });
     }
   }
   const map = await buildCutoffs(project, { from, to, chains });

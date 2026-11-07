@@ -58,6 +58,11 @@ const SKIPPED_SLOT_MESSAGE = /slot \d+ was skipped, or missing due to ledger jum
 // Pruned / unavailable history; never a skipped slot even if the text also says "was skipped".
 const PRUNED_MESSAGE = /long-term storage|cleaned up|purged|not available/i;
 
+// "Slot N was skipped, or missing in long-term storage": nodes (Helius,
+// api.mainnet) return it for a skipped slot AND for history they no longer
+// hold, so the message alone proves nothing; getBlocks decides (see below).
+const LONG_TERM_SKIPPED_MESSAGE = /^slot (\d+) was skipped, or missing in long-term storage$/i;
+
 /** True only for the node's precise skipped-slot error (code -32007/-32009 when the error carries one). */
 export const isSkippedSlotError = (e) => {
   const msg = String(e?.message ?? "");
@@ -65,21 +70,38 @@ export const isSkippedSlotError = (e) => {
   return SKIPPED_SLOT_MESSAGE.test(msg) && !PRUNED_MESSAGE.test(msg);
 };
 
+/** True for the ambiguous long-term-storage skipped-slot error (code -32007/-32009 when present). */
+export const isAmbiguousSkipError = (e) => {
+  if (e?.code != null && !SKIPPED_SLOT_CODES.has(Number(e.code))) return false;
+  return LONG_TERM_SKIPPED_MESSAGE.test(String(e?.message ?? "").trim());
+};
+
 /**
  * Wraps a Solana RPC `call(method, params)` into the `getBlockTime` shape
- * findFirstSlotAtOrAfter expects. Only the precise skipped-slot error
- * ("Slot N was skipped, or missing due to ledger jump to recent snapshot")
- * is a real null. -32009's "…or missing in long-term storage" cannot tell a
- * skipped slot from pruned history, so it is re-thrown with every other
- * error (429, timeout, "Block not available") and the search fails instead
- * of guessing.
+ * findFirstSlotAtOrAfter expects. A null is returned only when the slot is
+ * provably unproduced:
+ *   - the precise "…missing due to ledger jump to recent snapshot" error, or
+ *   - the ambiguous "…missing in long-term storage" error AND getBlocks(slot,
+ *     slot) lists nothing, or lists it but the node can't serve it (stepped
+ *     over with a warning; the capped walk bounds the shift to a few slots).
+ * All other errors (429, timeout, "Block not available", purged) and a slot
+ * above `head` throw.
  */
-export const solanaBlockTimeOrNull = (call) => async (slot) => {
+export const solanaBlockTimeOrNull = (call, head = null) => async (slot) => {
+  if (Number.isInteger(head) && slot > head) throw new Error(`getBlockTime(${slot}): slot is above the head ${head}`);
   try {
     return await call("getBlockTime", [slot]);
   } catch (e) {
     if (isSkippedSlotError(e)) return null;
-    throw e;
+    if (!isAmbiguousSkipError(e)) throw e;
+    const produced = await call("getBlocks", [slot, slot]);
+    if (!Array.isArray(produced)) throw new Error(`getBlocks(${slot}) returned no list; cannot tell a skipped slot from a retention gap: ${e.message}`);
+    if (produced.length === 0) return null;
+    // A produced block this node can't serve: step over it like a skip. The
+    // walk is capped (maxWalk), so the cutoff moves by a few slots at most,
+    // which is far better than failing the day's cutoff entirely.
+    console.warn(`  solana slot ${slot}: produced but not served by this node; stepping over it`);
+    return null;
   }
 };
 
@@ -319,7 +341,28 @@ export function asOfFromSolanaScan(cutoffs, scanState, keys, today = utcDate()) 
   const startDays = keys.map((k) => utcDate(Date.parse(scanState[k].scanStartedAt)));
   const asOfDay = [today, ...startDays].sort()[0];
   const wanted = new Set(keys);
-  return asOfFromCutoffs(Object.fromEntries(Object.entries(cutoffs ?? {}).filter(([c]) => wanted.has(c))), asOfDay);
+  const stamp = asOfFromCutoffs(Object.fromEntries(Object.entries(cutoffs ?? {}).filter(([c]) => wanted.has(c))), asOfDay);
+  // A missing slot is reported, not silently dropped (asOf.noBlock is informational).
+  const noBlock = keys.filter((k) => stamp.blocks[k] == null);
+  return noBlock.length ? { ...stamp, noBlock } : stamp;
+}
+
+/**
+ * Resolves and persists a Solana chain's recent day cutoffs (first produced
+ * slot >= D 00:00Z) into the project's date-blocks.json, same path EVM uses.
+ * `call(method, params)` is the chain's RPC; `head` its finalized slot. Only the
+ * last `days` days (not before `since`) are searched, with a bounded floor so
+ * pruned history is never probed; older dates come from build-cutoffs.js.
+ */
+export async function ensureSolanaCutoffs(project, { key, call, head, since, days = 3, today = utcDate(), root, io = defaultIo }) {
+  const dates = datesFromTo(utcDate(midnightSeconds(today) * 1000 - (days - 1) * DAY_MS), today).filter((d) => d >= since);
+  const blockTime = solanaBlockTimeOrNull(call, head);
+  const low = solanaSearchLow(head, days);
+  return ensureCutoffs(project, dates, {
+    resolvers: { [key]: (target) => findFirstSlotAtOrAfter(target, blockTime, low, head) },
+    root,
+    io,
+  });
 }
 
 /**

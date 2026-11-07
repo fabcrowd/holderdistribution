@@ -11,7 +11,7 @@ developer wallets, over 24h / 72h / 30d / 90d windows.
 | Per-project config | `config/projects/<slug>/ledger.json` |
 | Generator | `scripts/build-ledger.js` → `data/<slug>/ledger/ledger.json` + `ledger-checkpoint.json` |
 | Bot proceeds trace | `scripts/trace-bot-proceeds.js` → `data/<slug>/ledger/bot-proceeds.json` |
-| Nightly workflow | `.github/workflows/refresh-ledger.yml` (02:30 UTC, own concurrency group, `[skip netlify]`) |
+| Nightly workflow | `.github/workflows/refresh-ledger.yml` (07:30 UTC, after the 06:00 holders run, own concurrency group, `[skip netlify]`) |
 | Gate keys | `project-ledger`, `bot-proceeds` (`netlify/functions-src/ledgerSource.ts`) |
 | UI | Supply → **Developer wallets** tab (`capabilities.projectWallets`), `src/components/projectWallets/` |
 

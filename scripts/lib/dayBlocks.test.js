@@ -23,6 +23,7 @@ import {
   asOfFromSolanaScan,
   flowFeedAsOf,
   solanaSearchLow,
+  ensureSolanaCutoffs,
 } from "./dayBlocks.js";
 
 const ts = (times) => async (b) => times[b];
@@ -65,6 +66,43 @@ describe("solanaBlockTimeOrNull", () => {
       const get = solanaBlockTimeOrNull(async () => { throw new Error(msg); });
       await expect(get(5)).rejects.toThrow(msg);
     }
+  });
+  describe("the real -32009 'skipped, or missing in long-term storage' message is decided by getBlocks", () => {
+    const head = 466_000_000;
+    const msgFor = (s) => `Slot ${s} was skipped, or missing in long-term storage`;
+    const mk = (producedSlots) => {
+      const calls = [];
+      const call = async (method, params) => {
+        calls.push([method, params]);
+        if (method === "getBlocks") return producedSlots.filter((s) => s >= params[0] && s <= params[1]);
+        throw Object.assign(new Error(msgFor(params[0])), { code: -32009 });
+      };
+      return { call, calls };
+    };
+    it("slot absent from getBlocks -> null; slot present but unservable -> also null (stepped over)", async () => {
+      const { call, calls } = mk([465_898_228, 465_898_232]);
+      const get = solanaBlockTimeOrNull(call, head);
+      expect(await get(465_898_230)).toBeNull();
+      expect(calls.at(-1)).toEqual(["getBlocks", [465_898_230, 465_898_230]]);
+      expect(await get(465_898_232)).toBeNull();
+    });
+    it("works for old slots too (no age heuristic), fails when getBlocks fails or returns no list", async () => {
+      const old = head - 20 * 216_000;
+      expect(await solanaBlockTimeOrNull(mk([]).call, head)(old)).toBeNull();
+      const failing = async (method, p) => { if (method === "getBlocks") throw new Error("429"); throw Object.assign(new Error(msgFor(p[0])), { code: -32009 }); };
+      await expect(solanaBlockTimeOrNull(failing, head)(old)).rejects.toThrow(/429/);
+      const noList = async (method, p) => { if (method === "getBlocks") return null; throw Object.assign(new Error(msgFor(p[0])), { code: -32009 }); };
+      await expect(solanaBlockTimeOrNull(noList, head)(old)).rejects.toThrow(/cannot tell/);
+    });
+    it("purged / not-available texts stay fatal without consulting getBlocks; a slot above head throws", async () => {
+      const { call, calls } = mk([]);
+      const near = head - 10;
+      for (const msg of [`Slot ${near} was skipped, or missing in long-term storage; block cleaned up`, `Block not available for slot ${near}`]) {
+        await expect(solanaBlockTimeOrNull(async () => { throw new Error(msg); }, head)(near)).rejects.toThrow(msg);
+      }
+      await expect(solanaBlockTimeOrNull(call, head)(head + 1)).rejects.toThrow(/above the head/);
+      expect(calls).toEqual([]);
+    });
   });
   it("uses the JSON-RPC code when the error carries one", async () => {
     const withCode = (code, message) => async () => { throw Object.assign(new Error(message), { code }); };
@@ -227,6 +265,67 @@ describe("cutoff scan window (flow feeds)", () => {
     expect(asOfFromSolanaScan(cutoffs, partial, ["solana"], "2026-11-06")).toEqual({ date: null, blocks: {}, settled: false, incomplete: ["solana"] });
     expect(asOfFromSolanaScan(cutoffs, { solana: { complete: true } }, ["solana"], "2026-11-06").date).toBeNull();
     expect(asOfFromSolanaScan(cutoffs, {}, ["solana"], "2026-11-06").incomplete).toEqual(["solana"]);
+  });
+
+  it("asOfFromSolanaScan: stamps the settled end slot from the reached day; a chain with no cutoff is listed in noBlock, not silently dropped", () => {
+    const done = { solana: { complete: true, scanStartedAt: "2026-11-06T03:00:00.000Z" } };
+    const stamp = asOfFromSolanaScan({ solana: { "2026-11-06": 2940 } }, done, ["solana"], "2026-11-06");
+    expect(stamp.blocks).toEqual({ solana: 2939 });
+    const missing = asOfFromSolanaScan({}, done, ["solana"], "2026-11-06");
+    expect(missing).toMatchObject({ date: "2026-11-05", blocks: {}, noBlock: ["solana"] });
+  });
+
+  it("ensureSolanaCutoffs: writes cutoffs.solana for a Solana-only project through the shared date-blocks.json path", async () => {
+    const files = {};
+    const io = { read: (p) => files[p] ?? {}, write: (p, o) => { files[p] = o; } };
+    const project = { slug: "sol-only", dataDir: "public/data/sol-only" };
+    const t0 = midnightSeconds("2026-11-05") - 1800;
+    const skipped = (s) => Object.assign(new Error(`Slot ${s} was skipped, or missing due to ledger jump to recent snapshot`), { code: -32007 });
+    const call = async (method, [slot]) => {
+      expect(method).toBe("getBlockTime");
+      if (slot % 2) throw skipped(slot); // odd slots unproduced
+      return t0 + slot * 30;
+    };
+    const map = await ensureSolanaCutoffs(project, { key: "solana", call, head: 9000, since: "2026-11-01", days: 2, today: "2026-11-06", root: "/r", io });
+    expect(map.solana).toEqual({ "2026-11-05": 60, "2026-11-06": 2940 });
+    const written = Object.values(files)[0];
+    expect(Object.keys(files)[0].replaceAll("\\", "/")).toMatch(/public\/data\/sol-only\/date-blocks\.json$/);
+    expect(written[CUTOFF_KEY].solana).toEqual({ "2026-11-05": 60, "2026-11-06": 2940 });
+    // the stamp built from it carries the slot
+    const done = { solana: { complete: true, scanStartedAt: "2026-11-06T03:00:00.000Z" } };
+    expect(asOfFromSolanaScan(map, done, ["solana"], "2026-11-06").blocks).toEqual({ solana: 2939 });
+    // dates before the flow floor are not resolved
+    const floored = await ensureSolanaCutoffs({ slug: "b", dataDir: "d/b" }, { key: "solana", call, head: 9000, since: "2026-11-06", days: 2, today: "2026-11-06", root: "/r", io });
+    expect(floored.solana).toEqual({ "2026-11-06": 2940 });
+  });
+
+  it("ensureSolanaCutoffs: the real -32009 message persists a cutoff when getBlocks shows the slot skipped, incl. a skip exactly at midnight", async () => {
+    const files = {};
+    const io = { read: (p) => files[p] ?? {}, write: (p, o) => { files[p] = o; } };
+    const project = { slug: "sol-only", dataDir: "public/data/sol-only" };
+    const midnight = midnightSeconds("2026-11-06");
+    const t0 = midnight - 30 * 61; // slot 61 lands exactly on 00:00:00Z and is skipped
+    const produced = (s) => s % 2 === 0 || s === 63;
+    const call = async (method, params) => {
+      if (method === "getBlocks") return Array.from({ length: params[1] - params[0] + 1 }, (_, i) => params[0] + i).filter(produced);
+      if (!produced(params[0])) throw Object.assign(new Error(`Slot ${params[0]} was skipped, or missing in long-term storage`), { code: -32009 });
+      return t0 + params[0] * 30;
+    };
+    const map = await ensureSolanaCutoffs(project, { key: "solana", call, head: 9000, since: "2026-11-06", days: 1, today: "2026-11-06", root: "/r", io });
+    expect(map.solana).toEqual({ "2026-11-06": 62 }); // next produced slot after the skipped midnight slot
+  });
+
+  it("ensureSolanaCutoffs: a produced slot the node can't serve at midnight is stepped over and the cutoff still persists", async () => {
+    const files = {};
+    const io = { read: (p) => files[p] ?? {}, write: (p, o) => { files[p] = o; } };
+    const t0 = midnightSeconds("2026-11-06") - 1800;
+    const call = async (method, params) => {
+      if (method === "getBlocks") return [params[0]];
+      if (params[0] === 60) throw Object.assign(new Error("Slot 60 was skipped, or missing in long-term storage"), { code: -32009 });
+      return t0 + params[0] * 30;
+    };
+    await ensureSolanaCutoffs({ slug: "g", dataDir: "d/g" }, { key: "solana", call, head: 9000, since: "2026-11-06", days: 1, today: "2026-11-06", root: "/r", io });
+    expect(JSON.stringify(files)).toContain('"2026-11-06":61');
   });
 
   it("asOf stamps D-1 and cutoff[today]-1 per chain", () => {
