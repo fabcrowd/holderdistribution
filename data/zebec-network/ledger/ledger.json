@@ -3,7 +3,7 @@
  "slug": "zebec-network",
  "name": "Zebec Network",
  "ticker": "ZBCN",
- "generated": "2026-11-07T09:26:31.000Z",
+ "generated": "2026-11-07T14:03:55.000Z",
  "windows": [
   "24h",
   "72h",
@@ -119,19 +119,19 @@
   "solana": {
    "status": "ok",
    "provider": "solana-rpc",
-   "signatures": 13,
-   "processed": 13,
+   "signatures": 0,
+   "processed": 0,
    "backlog": 0,
-   "transfers": 10,
-   "headTime": "2026-11-07T09:26:31.000Z"
+   "transfers": 0,
+   "headTime": "2026-11-07T14:03:55.000Z"
   }
  },
  "crossCheck": null,
  "botCluster": null,
  "byWindow": {
   "24h": {
-   "from": "2026-11-06T09:26:31.000Z",
-   "to": "2026-11-07T09:26:31.000Z",
+   "from": "2026-11-06T14:03:55.000Z",
+   "to": "2026-11-07T14:03:55.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -143,31 +143,17 @@
    "botSold": 0,
    "sellDays": 0,
    "internal": {
-    "count": 1,
-    "amount": 15000000
+    "count": 0,
+    "amount": 0
    },
    "received": 0,
    "payments": {
-    "stableOut": 1500,
-    "stableOutCount": 1,
-    "stableIn": 14087,
-    "stableInCount": 5,
-    "bySymbol": {
-     "USDC": 1500
-    },
-    "topStableRecipients": [
-     {
-      "address": "5KhxoQ5T3e8a7DSMg7PMBBvhWUbWSyncp9tntVxfmaXT",
-      "label": null,
-      "asset": "stable",
-      "symbol": "USDC",
-      "type": "stable_out",
-      "count": 1,
-      "amount": 1500,
-      "lastHash": "2bUV6KRkVofpPjE8yYPtt3PCXx6X7QYPx86Qft8zMMk3diGoFjpg4mPY5hkG58WD6FD7EuavAVmLYjASJgpuREog",
-      "lastTime": 1793969120
-     }
-    ],
+    "stableOut": 0,
+    "stableOutCount": 0,
+    "stableIn": 0,
+    "stableInCount": 0,
+    "bySymbol": {},
+    "topStableRecipients": [],
     "topTokenDestinations": [
      {
       "address": "3uWEqNcNgUY8FpjPsH43Xq4prcyKAXhamo1amgy1trUw",
@@ -186,28 +172,12 @@
     "transfer_out": {
      "count": 2,
      "amount": 3521350
-    },
-    "stable_in": {
-     "count": 5,
-     "amount": 14087
-    },
-    "stable_out": {
-     "count": 1,
-     "amount": 1500
-    },
-    "receive": {
-     "count": 1,
-     "amount": 0
-    },
-    "internal_shuffle": {
-     "count": 1,
-     "amount": 15000000
     }
    }
   },
   "72h": {
-   "from": "2026-11-04T09:26:31.000Z",
-   "to": "2026-11-07T09:26:31.000Z",
+   "from": "2026-11-04T14:03:55.000Z",
+   "to": "2026-11-07T14:03:55.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -326,8 +296,8 @@
    }
   },
   "30d": {
-   "from": "2026-10-08T09:26:31.000Z",
-   "to": "2026-11-07T09:26:31.000Z",
+   "from": "2026-10-08T14:03:55.000Z",
+   "to": "2026-11-07T14:03:55.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -601,8 +571,8 @@
    }
   },
   "90d": {
-   "from": "2026-08-09T09:26:31.000Z",
-   "to": "2026-11-07T09:26:31.000Z",
+   "from": "2026-08-09T14:03:55.000Z",
+   "to": "2026-11-07T14:03:55.000Z",
    "devSold": {
     "dex": 3025637,
     "cex": 0,
@@ -883,10 +853,7 @@
  "headlines": {
   "24h": [
    "No developer selling found in the last 24h.",
-   "They paid out $1.5k in stablecoins (1 payment); the largest recipient was 5KhxoQ5T3e8a7DSMg7PMBBvhWUbWSyncp9tntVxfmaXT ($1.5k).",
-   "They received $14.1k in stablecoins (5 transfers).",
-   "Largest ZBCN destination: 3uWEqNcNgUY8FpjPsH43Xq4prcyKAXhamo1amgy1trUw (3.5M ZBCN, 2 transfers).",
-   "1 internal shuffle between developer wallets (15.0M ZBCN) are noted but not counted as selling."
+   "Largest ZBCN destination: 3uWEqNcNgUY8FpjPsH43Xq4prcyKAXhamo1amgy1trUw (3.5M ZBCN, 2 transfers)."
   ],
   "72h": [
    "No developer selling found in the last 72h.",
@@ -1036,8 +1003,8 @@
     "24h": {
      "sold": 0,
      "stableOut": 0,
-     "internal": 1,
-     "txs": 1
+     "internal": 0,
+     "txs": 0
     },
     "72h": {
      "sold": 0,
@@ -1074,7 +1041,7 @@
      "sold": 0,
      "stableOut": 0,
      "internal": 0,
-     "txs": 3
+     "txs": 2
     },
     "72h": {
      "sold": 0,
@@ -1183,9 +1150,9 @@
    "windows": {
     "24h": {
      "sold": 0,
-     "stableOut": 1500,
+     "stableOut": 0,
      "internal": 0,
-     "txs": 6
+     "txs": 0
     },
     "72h": {
      "sold": 0,
