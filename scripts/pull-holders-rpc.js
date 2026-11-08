@@ -22,7 +22,7 @@ import {
   computeChainMetrics,
   buildSummary,
 } from "./lib/holderMetrics.js";
-import { selectPipelineProject, projectPaths, projectChainsAllVms, projectRoleAddresses, projectClassificationPath, projectNonRetailPaths, projectWork, projectWorkDir } from "./lib/projects.js";
+import { selectPipelineProject, projectPaths, projectChainsAllVms, projectRoleAccounts, projectClassificationPath, projectNonRetailPaths, projectWork, projectWorkDir } from "./lib/projects.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 import { writeWindow, transferWindowName, SHARED_WINDOW_MAX_BLOCKS } from "./lib/transferWindow.js";
 import { sharedScanEnabled } from "./lib/sharedTransferLogs.js";
@@ -1029,12 +1029,11 @@ async function main() {
   const lockSet = new Set([...(byCategory["bridge-lock"] ?? []), ...(byCategory.escrow ?? [])]);
   if (supplyMethod === "bridge-netting") {
     const originKey = chainKeys.find((k) => chainConfig[k]?.origin) ?? null;
-    for (const [chainKey, entries] of Object.entries(projectRoleAddresses(project.config))) {
+    for (const [chainKey, entries] of Object.entries(projectRoleAccounts(project.config, tokenAccountOwnersByChain))) {
       if (!chainConfig[chainKey]) continue;
-      const owners = tokenAccountOwnersByChain[chainKey];
-      for (const { address, role } of entries) {
+      for (const { address, role, owner } of entries) {
         // A Solana contracts{} entry may name a token account; its owner is the holder row.
-        const ids = [address, owners?.get(address)].filter(Boolean);
+        const ids = [address, owner].filter(Boolean);
         for (const id of ids) {
           (chainSets[chainKey] ??= new Set()).add(id);
           if (chainKey === originKey && (role === "bridge" || role === "escrow")) lockSet.add(id);
@@ -1049,12 +1048,9 @@ async function main() {
   // contracts{} token account resolves to. Absent when nothing resolves (TEL).
   if (supplyMethod === "bridge-netting") {
     const persisted = {};
-    for (const [chainKey, entries] of Object.entries(projectRoleAddresses(project.config))) {
-      const owners = tokenAccountOwnersByChain[chainKey];
-      if (!owners) continue;
-      for (const { address } of entries) {
-        const owner = owners.get(address);
-        if (owner && owner !== address) (persisted[chainKey] ??= {})[address] = owner;
+    for (const [chainKey, entries] of Object.entries(projectRoleAccounts(project.config, tokenAccountOwnersByChain))) {
+      for (const { address, owner } of entries) {
+        if (owner) (persisted[chainKey] ??= {})[address] = owner;
       }
     }
     if (Object.keys(persisted).length) output.tokenAccountOwnersByChain = persisted;

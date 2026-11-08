@@ -297,7 +297,11 @@ async function resolveDateBlocks(chainKey, rpcUrls, boundaries, genesisBlock, he
 }
 
 async function main() {
-  const { set: nonRetail, sizes } = await loadNonRetailSet(projectNonRetailPaths(project, ROOT));
+  // Owners come from the current on-disk snapshot only: tokenAccountOwnersByChain is not
+  // kept per date, and vault ownership is stable, so history uses the same non-retail set.
+  const { set: nonRetail, sizes } = await loadNonRetailSet(
+    projectNonRetailPaths(project, ROOT, await readJsonOr(data("tel-holders.json"), null)),
+  );
   console.log(`Non-retail set: ${sizes.total} (exclusions ${sizes.exclusions}, CEX ${sizes.cex}, DEX ${sizes.dex}).`);
 
   const chainConfig = projectChains(project, ROOT);

@@ -118,7 +118,6 @@ if (!programId) throw new Error(`${project.slug}: unknown token program "${progr
 const tiers = projectHolderTiers(project);
 setHolderTiers(tiers);
 const retailThreshold = tiers.retailThreshold;
-const { set: nonRetail } = await loadNonRetailSet(projectNonRetailPaths(project));
 
 const data = projectPaths(project);
 const work = projectWork(project);
@@ -134,6 +133,13 @@ const readOptionalJson = async (p) => {
     throw err;
   }
 };
+
+// Owners come from the current on-disk snapshot only: tokenAccountOwnersByChain is not
+// kept per date, and vault ownership is stable, so history uses the same non-retail set.
+const { set: nonRetail } = await loadNonRetailSet(
+  projectNonRetailPaths(project, process.cwd(), await readOptionalJson(data("tel-holders.json"))),
+);
+console.log(`Non-retail set: ${nonRetail.size} addresses.`);
 
 const { configureSolanaChain, getUsableSolanaRpcUrls, requireKeyedSolanaRpc, solanaCallWithFailover } = await import("./lib/solana/rpc.js");
 configureSolanaChain(chain.chain);

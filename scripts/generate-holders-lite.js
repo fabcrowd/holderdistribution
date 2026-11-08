@@ -64,7 +64,7 @@ const main = async () => {
 
   const fundingWallets = await readJson(FUNDING_WALLETS_PATH);
   const cexFlows = await readJson(CEX_FLOWS_PATH);
-  const { set: nonRetailSet, sizes } = await loadNonRetailSet(projectNonRetailPaths(project));
+  const { set: nonRetailSet, sizes } = await loadNonRetailSet(projectNonRetailPaths(project, process.cwd(), snapshot));
   console.log(
     `Non-retail set: ${sizes.total} addresses ` +
       `(exclusions ${sizes.exclusions}, CEX config ${sizes.cex}, DEX config ${sizes.dex}).`,

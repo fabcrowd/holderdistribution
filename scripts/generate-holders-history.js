@@ -188,7 +188,7 @@ const main = async () => {
     readOptionalJson(DEX_CONFIG_PATH),
   ]);
   const cexFlows = await readOptionalJson(CEX_FLOWS_PATH);
-  const { set: nonRetailSet } = await loadNonRetailSet(projectNonRetailPaths(project));
+  const { set: nonRetailSet } = await loadNonRetailSet(projectNonRetailPaths(project, process.cwd(), snapshot));
   const dexLiquidity = sumDexLiquidity(snapshot, exclusions, dexConfig);
   // Total TEL held across all tracked wallets, INCLUDING exchanges: exchange
   // deposits are custody moves, not sales, so they must not reduce the total.

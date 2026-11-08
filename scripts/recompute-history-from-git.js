@@ -263,7 +263,11 @@ const asOfDate = (sortedDates, date) => {
 };
 
 const main = async () => {
-  const { set: excluded, sizes } = await loadNonRetailSet(projectNonRetailPaths(project, ROOT));
+  // Owners come from the current on-disk snapshot only: tokenAccountOwnersByChain is not
+  // kept per date, and vault ownership is stable, so history uses the same non-retail set.
+  const { set: excluded, sizes } = await loadNonRetailSet(
+    projectNonRetailPaths(project, ROOT, await readJson(data("tel-holders.json")).catch(() => null)),
+  );
   console.log(`Current non-retail set: ${sizes.total} addresses (exclusions ${sizes.exclusions}, CEX ${sizes.cex}, DEX ${sizes.dex}).`);
 
   const cexWallets = CEX_CONFIG_PATH ? await readJson(CEX_CONFIG_PATH) : { wallets: [] };
