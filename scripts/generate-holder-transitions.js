@@ -68,8 +68,13 @@ const commitsByDate = (file) => {
 
 const showJson = (commit, file) => JSON.parse(git(["show", `${commit}:${file}`]));
 
+const readOptionalJson = async (p) => {
+  try { return JSON.parse(await fs.readFile(p, "utf8")); }
+  catch (e) { if (e.code === "ENOENT") return null; throw e; }
+};
+
 const main = async () => {
-  const { set: excl, sizes } = await loadNonRetailSet(projectNonRetailPaths(project));
+  const { set: excl, sizes } = await loadNonRetailSet(projectNonRetailPaths(project, process.cwd(), await readOptionalJson(TEL_HOLDERS_PATH)));
   console.log(
     `Non-retail set: ${sizes.total} addresses ` +
       `(exclusions ${sizes.exclusions}, CEX config ${sizes.cex}, DEX config ${sizes.dex}).`,
@@ -134,11 +139,6 @@ const main = async () => {
     const fd = nearestOnOrBefore(fundDates, date);
     const fund = fd ? showJson(fundCommits.get(fd), FUND_REL) : { wallets: [] };
     return { bal: aggregateBalances(snap, fund), snapshotDate: (snap.source ?? {}).snapshotDate ?? sd };
-  };
-
-  const readOptionalJson = async (p) => {
-    try { return JSON.parse(await fs.readFile(p, "utf8")); }
-    catch (e) { if (e.code === "ENOENT") return null; throw e; }
   };
 
   // Prefer the on-disk snapshot for the CURRENT balances — it reflects this

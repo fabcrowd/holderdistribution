@@ -45,7 +45,7 @@ const main = async () => {
   const snapshot = await readJson(HOLDERS_PATH);
   if (!snapshot) throw new Error("tel-holders.json not found");
 
-  const { set: excluded, sizes } = await loadNonRetailSet(projectNonRetailPaths(project));
+  const { set: excluded, sizes } = await loadNonRetailSet(projectNonRetailPaths(project, process.cwd(), snapshot));
   console.log(
     `Non-retail set: ${sizes.total} addresses ` +
       `(exclusions ${sizes.exclusions}, CEX config ${sizes.cex}, DEX config ${sizes.dex}).`,

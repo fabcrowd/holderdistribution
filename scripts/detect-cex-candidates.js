@@ -139,11 +139,8 @@ const counterpartyStats = (logs, self) => {
 };
 
 const main = async () => {
-  const [snapshot, chains, { set: nonRetailSet }] = await Promise.all([
-    readJson(HOLDERS_PATH),
-    projectChains(project),
-    loadNonRetailSet(projectNonRetailPaths(project)),
-  ]);
+  const [snapshot, chains] = await Promise.all([readJson(HOLDERS_PATH), projectChains(project)]);
+  const { set: nonRetailSet } = await loadNonRetailSet(projectNonRetailPaths(project, process.cwd(), snapshot));
 
   const candidates = (snapshot.wallets ?? [])
     .map((w) => ({ address: normalizeAddress(w.address), balance: Number(w.total_telcoin_balance ?? 0), raw: w }))

@@ -523,8 +523,38 @@ export function loadProjectClassification(project, kind, fallback, root = proces
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
-/** loadNonRetailSet() paths for a project (null = none declared -> empty). */
-export function projectNonRetailPaths(project, root = process.cwd()) {
+/**
+ * Owner wallet of a contracts{} role account. A Solana contracts{} entry may
+ * name a token account whose holder row is its OWNER wallet. `owners` is the
+ * snapshot's `tokenAccountOwnersByChain[chainKey]` (plain object when persisted,
+ * Map while pull-holders-rpc.js is still building it). null when unresolved
+ * (always on EVM) or when the owner is the account itself.
+ */
+export const roleAccountOwner = (owners, address) => {
+  const owner = owners instanceof Map ? owners.get(address) : owners?.[address];
+  return owner && owner !== address ? owner : null;
+};
+
+/**
+ * Single source of truth for "which holder-row addresses does a contracts{}
+ * role account stand for": the account itself plus its token-account owner.
+ * `{ <chainKey>: [{ name, address, role, owner }] }` (owner may be null).
+ */
+export function projectRoleAccounts(config, ownersByChain = {}) {
+  const out = {};
+  for (const [chainKey, entries] of Object.entries(projectRoleAddresses(config))) {
+    out[chainKey] = entries.map((e) => ({ ...e, owner: roleAccountOwner(ownersByChain?.[chainKey], e.address) }));
+  }
+  return out;
+}
+
+/**
+ * loadNonRetailSet() paths for a project (null = none declared -> empty).
+ * `snapshot` (optional, the project's holders snapshot) supplies
+ * tokenAccountOwnersByChain so Solana staking/treasury vault OWNER wallets are
+ * non-retail too, matching reconcile-supply. No snapshot / no owners = no-op.
+ */
+export function projectNonRetailPaths(project, root = process.cwd(), snapshot = null) {
   // Generic (bridge-netting) projects: contracts{} entries with a non-retail
   // role (bridge, escrow, cex, dex, staking, treasury, council, holdings) are non-retail on every chain
   // without having to repeat them in an exclusions file. TEL (generations
@@ -532,7 +562,9 @@ export function projectNonRetailPaths(project, root = process.cwd()) {
   const extra =
     project.config?.supply?.generationsSumOneToOne === true
       ? []
-      : Object.values(projectRoleAddresses(project.config)).flat().map((e) => e.address);
+      : Object.values(projectRoleAccounts(project.config, snapshot?.tokenAccountOwnersByChain))
+          .flat()
+          .flatMap((e) => (e.owner ? [e.address, e.owner] : [e.address]));
   return {
     exclusionsPath: projectClassificationPath(project, "exclusions", root),
     cexPath: projectClassificationPath(project, "cexWallets", root),
