@@ -1,32 +1,32 @@
 {
   "totalSupply": 100000000000,
   "derivedOriginTotal": 100000000000,
-  "bridgeLocked": 40225638229.28999,
-  "mirrored": 40224906828.3,
-  "mirrorResidual": -731400.9899902344,
-  "residual": 731401.0042877197,
+  "bridgeLocked": 40226701599.5,
+  "mirrored": 40225970198.509995,
+  "mirrorResidual": -731400.9900054932,
+  "residual": 1068776.725189209,
   "residualParts": {
-    "bridgeInFlight": 731400.9899902344,
+    "bridgeInFlight": 731400.9900054932,
     "originDrift": 0,
-    "upgradeUnbacked": -0.000003814697265625
+    "upgradeUnbacked": 337375.72186279297
   },
   "upgrade": {
-    "retiredLegacy": 24769059121.76,
+    "retiredLegacy": 24810669945.06,
     "retiredLegacyByChain": {
-      "ethereum": 4657385566.08,
-      "polygon": 19974560519.3,
+      "ethereum": 4661164647.86,
+      "polygon": 20012392260.82,
       "base": 137113036.38
     },
-    "v3Supply": 24769059121.760002,
+    "v3Supply": 24810332569.33814,
     "v3SupplyByChain": {
-      "ethereum": 4180400294.775536,
-      "polygon": 20410142712.146763,
-      "base": 178516114.837703
+      "ethereum": 4187716688.273937,
+      "polygon": 20438321861.299484,
+      "base": 184294019.764716
     },
     "legacySupplyByChain": {
       "ethereum": 100000000000,
-      "polygon": 39358161084.23,
-      "base": 866745744.07
+      "polygon": 39359169182.81,
+      "base": 866801015.7
     },
     "strandedInUpgrade": 224744.38,
     "strandedInUpgradeByChain": {
@@ -37,20 +37,20 @@
   },
   "categories": {
     "escrow": 8084466545.38,
-    "cex": 21884925480.18,
-    "retail": 66507309264.71713,
-    "treasury": 758022173.1199999,
-    "holdings": 1348285594.5104988,
-    "council": 561703574.2800001,
+    "cex": 21853739327.34,
+    "retail": 66552628125.22386,
+    "treasury": 855799950.9599999,
+    "holdings": 1335446809.362854,
     "whale-unattributed": 247160998.63809398,
-    "dex": 584195498.3600001,
+    "dex": 584786422.28,
+    "council": 461703574.28000003,
     "dormant-whale": 12021453.74,
     "staking": 11102885.560000002,
     "excluded-unlabelled": 66371.59,
     "burn": 8758.92
   },
-  "counted": 99999268598.99571,
-  "circulating": 93679541851.59572,
+  "counted": 99998931223.27481,
+  "circulating": 93681426698.0348,
   "circulatingExclusions": {
     "total": 5000001000,
     "items": [
@@ -73,7 +73,7 @@
       "address": "0x40ec5b33f54e0e8a33a975908c5ba1c14e5bbbdf",
       "category": "bridge-lock",
       "name": "Polygon ERC20 Bridge (RootChain predicate)",
-      "balance": 39358464096.85,
+      "balance": 39359472195.43,
       "counted": false
     },
     {
@@ -187,7 +187,7 @@
       "address": "0x3154cf16ccdb4c6d922629664174b904d80f2c35",
       "category": "bridge-lock",
       "name": "Base L1 Standard Bridge",
-      "balance": 866946853.95,
+      "balance": 867002125.58,
       "counted": false
     },
     {
@@ -215,7 +215,7 @@
       "address": "0x6522b7f9d481eceb96557f44753a4b893f837e90",
       "category": "cex",
       "name": "Bybit cold",
-      "balance": 812124102.57,
+      "balance": 812368177.05,
       "counted": true
     },
     {
@@ -229,7 +229,7 @@
       "address": "0x6cc8dcbca746a6e4fdefb98e1d0df903b107fd21",
       "category": "cex",
       "name": "Bitrue",
-      "balance": 696671321.76,
+      "balance": 695293765.67,
       "counted": true
     },
     {
@@ -296,13 +296,6 @@
       "counted": true
     },
     {
-      "address": "0xf4bc288d616c4f57071a57f5a4050b5e516fe7e5",
-      "category": "council",
-      "name": "TAO Safe",
-      "balance": 265718343,
-      "counted": true
-    },
-    {
       "address": "0x9184aae0983e5ffbe06e41ca13c24033857b56cb",
       "category": "escrow",
       "name": "Escrow vault 5 (assumed)",
@@ -338,10 +331,10 @@
       "counted": true
     },
     {
-      "address": "0x9642b23ed1e01df1092b92641051881a322f5d4e",
-      "category": "cex",
-      "name": null,
-      "balance": 163511643.02,
+      "address": "0xf4bc288d616c4f57071a57f5a4050b5e516fe7e5",
+      "category": "council",
+      "name": "TAO Safe",
+      "balance": 165718343,
       "counted": true
     },
     {
@@ -352,17 +345,24 @@
       "counted": true
     },
     {
+      "address": "0x9642b23ed1e01df1092b92641051881a322f5d4e",
+      "category": "cex",
+      "name": null,
+      "balance": 160134611.27,
+      "counted": true
+    },
+    {
       "address": "0xba12222222228d8ba445958a75a0704d566bf2c8",
       "category": "dex",
       "name": "Balancer Vault",
-      "balance": 150384973.32999998,
+      "balance": 150719288.28,
       "counted": true
     },
     {
       "address": "0x51e3d44172868acc60d68ca99591ce4230bc75e0",
       "category": "cex",
       "name": "MEXC",
-      "balance": 128589557.52,
+      "balance": 104075149.04,
       "counted": true
     },
     {
@@ -373,17 +373,24 @@
       "counted": true
     },
     {
-      "address": "0x58edf78281334335effa23101bbe3371b6a36a51",
-      "category": "cex",
-      "name": "KuCoin",
-      "balance": 99040908.99,
-      "counted": true
-    },
-    {
       "address": "0xa9781d19e5611f65908dd6818fc1c276e2c6ac44",
       "category": "holdings",
       "name": "Telcoin Holdings cold Safe (Base)",
       "balance": 98142782,
+      "counted": true
+    },
+    {
+      "address": "0x9ac5637d295fea4f51e086c329d791cc157b1c84",
+      "category": "cex",
+      "name": null,
+      "balance": 98101838.07,
+      "counted": true
+    },
+    {
+      "address": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
+      "category": "treasury",
+      "name": "Association CoW Safe",
+      "balance": 97777777.89,
       "counted": true
     },
     {
@@ -394,10 +401,10 @@
       "counted": true
     },
     {
-      "address": "0x9ac5637d295fea4f51e086c329d791cc157b1c84",
+      "address": "0x58edf78281334335effa23101bbe3371b6a36a51",
       "category": "cex",
-      "name": null,
-      "balance": 89265886.58,
+      "name": "KuCoin",
+      "balance": 87764827.83,
       "counted": true
     },
     {
@@ -432,7 +439,7 @@
       "address": "0xf359492d26764481002ed88bd2acae83ca50b5c9",
       "category": "dex",
       "name": "Uniswap V3 TEL/WETH",
-      "balance": 46899746.98,
+      "balance": 46921347.54,
       "counted": true
     },
     {
@@ -460,14 +467,14 @@
       "address": "0x1c727a55ea3c11b0ab7d3a361fe0f3c47ce6de5d",
       "category": "cex",
       "name": null,
-      "balance": 24177004.17,
+      "balance": 24465302.84,
       "counted": true
     },
     {
       "address": "0xa5cabfc725dfa129f618d527e93702d10412f039",
       "category": "dex",
       "name": "QuickSwap TEL/USDC",
-      "balance": 23525886.46,
+      "balance": 23662515.68,
       "counted": true
     },
     {
@@ -485,17 +492,17 @@
       "counted": true
     },
     {
-      "address": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 2",
-      "balance": 13958420.164913,
-      "counted": true
-    },
-    {
       "address": "0x0b07f64abc342b68aec57c0936e4b6fd4452967e",
       "category": "cex",
       "name": "BingX 21",
       "balance": 13425427.3,
+      "counted": true
+    },
+    {
+      "address": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 2",
+      "balance": 12813606.811296,
       "counted": true
     },
     {
@@ -509,14 +516,7 @@
       "address": "0xfc2fc983a411c4b1e238f7eb949308cf0218c750",
       "category": "dex",
       "name": "Uniswap TEL/WETH LP (Polygon)",
-      "balance": 8324748.7,
-      "counted": true
-    },
-    {
-      "address": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 1",
-      "balance": 7409935.611821,
+      "balance": 8366907.21,
       "counted": true
     },
     {
@@ -527,73 +527,66 @@
       "counted": true
     },
     {
-      "address": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+      "address": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
       "category": "holdings",
-      "name": "Telcoin Holdings sell bot 3",
-      "balance": 6847126.878897,
+      "name": "Telcoin Holdings sell bot 1",
+      "balance": 6121848.186632,
       "counted": true
     },
     {
       "address": "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
       "category": "holdings",
       "name": "Telcoin Holdings sell bot 8",
-      "balance": 6792780.8477,
+      "balance": 5893873.187129,
       "counted": true
     },
     {
-      "address": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
+      "address": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
       "category": "holdings",
-      "name": "Telcoin Holdings sell bot 10",
-      "balance": 6165448.401903,
-      "counted": true
-    },
-    {
-      "address": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 4",
-      "balance": 6112196.182452,
-      "counted": true
-    },
-    {
-      "address": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 5",
-      "balance": 6054898.346471,
+      "name": "Telcoin Holdings sell bot 3",
+      "balance": 5310111.707706,
       "counted": true
     },
     {
       "address": "0xe88e24f49338f974b528ace10350ac4576c5c8a1",
       "category": "dex",
       "name": "QuickSwap TEL/QUICK",
-      "balance": 5269565.97,
+      "balance": 5293650.65,
       "counted": true
     },
     {
-      "address": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+      "address": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
       "category": "holdings",
-      "name": "Telcoin Holdings sell bot 6",
-      "balance": 5194123.963777,
+      "name": "Telcoin Holdings sell bot 10",
+      "balance": 4914270.657449,
       "counted": true
     },
     {
-      "address": "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+      "address": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
       "category": "holdings",
-      "name": "Telcoin Holdings sell bot 7",
-      "balance": 4647117.975654,
-      "counted": true
-    },
-    {
-      "address": "0xd91efec7e42f80156d1d9f660a69847188950747",
-      "category": "cex",
-      "name": null,
-      "balance": 4509046.42,
+      "name": "Telcoin Holdings sell bot 5",
+      "balance": 4795915.061326,
       "counted": true
     },
     {
       "address": "0x4917bc6b8e705ad462ef525937e7eb7c6c87c356",
       "category": "dex",
       "name": "QuickSwap TEL/AAVE",
-      "balance": 4501727.84,
+      "balance": 4527686.03,
+      "counted": true
+    },
+    {
+      "address": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 4",
+      "balance": 4522382.462202,
+      "counted": true
+    },
+    {
+      "address": "0xd91efec7e42f80156d1d9f660a69847188950747",
+      "category": "cex",
+      "name": null,
+      "balance": 4499646.42,
       "counted": true
     },
     {
@@ -611,10 +604,17 @@
       "counted": true
     },
     {
-      "address": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+      "address": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
       "category": "holdings",
-      "name": "Telcoin Holdings sell bot 9",
-      "balance": 3334479.146911,
+      "name": "Telcoin Holdings sell bot 6",
+      "balance": 3917852.833973,
+      "counted": true
+    },
+    {
+      "address": "0x2a96cb2abf5d72fc57acfafe22039462ce9172ad",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 7",
+      "balance": 3389989.257282,
       "counted": true
     },
     {
@@ -632,10 +632,17 @@
       "counted": true
     },
     {
+      "address": "0xd1ea76c5c2dfb3e6c5722456015b7d497595517e",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 9",
+      "balance": 1997892.207859,
+      "counted": true
+    },
+    {
       "address": "0x9b5c71936670e9f1f36e63f03384de7e06e60d2a",
       "category": "dex",
       "name": "QuickSwap TEL/WPOL",
-      "balance": 1274660.29,
+      "balance": 1280838.1,
       "counted": true
     },
     {
@@ -867,13 +874,6 @@
       "category": "cex",
       "name": null,
       "balance": 0.56,
-      "counted": true
-    },
-    {
-      "address": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-      "category": "treasury",
-      "name": "Association CoW Safe",
-      "balance": 0.05,
       "counted": true
     }
   ]
