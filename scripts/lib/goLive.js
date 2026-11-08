@@ -7,6 +7,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { projectClassificationPath, projectDataPath, projectWorkPath } from "./projects.js";
+import { projectHasVm } from "./chainAdapters.js";
+import { NULL_TX_RETRY_RUNS } from "./solana/flowScan.js";
 import { forensicsRegistryProblems } from "./walletFlowsProject.js";
 import { workflowPlan } from "../workflow-paths.js";
 
@@ -65,9 +67,29 @@ function reportProblems(name, doc, slug, now) {
   return [`${slug}: ${name} report is ${Math.round(ageHours)}h old (limit ${MAX_REPORT_AGE_HOURS}h)`];
 }
 
+/**
+ * A Solana transaction the RPC returns null for holds the flow cursor for
+ * NULL_TX_RETRY_RUNS runs (scripts/lib/solana/flowScan.js). While any entry is
+ * below that count the feed is incomplete on purpose, so it is not live-ready.
+ * Go-live only (the `feeds` section): no workflow calls that section, so a held
+ * cursor never fails the daily refresh-wallet-flows run.
+ */
+function heldCursorProblems(project, root) {
+  if (!projectHasVm(project.config, "solana")) return [];
+  const checkpoint = readJson(projectDataPath(project, "exchange-flow-checkpoint.json", root));
+  return Object.entries(checkpoint?.chains ?? {}).flatMap(([chain, state]) =>
+    (state?.unavailable ?? [])
+      .filter((tx) => (tx.attempts ?? 0) < NULL_TX_RETRY_RUNS)
+      .map((tx) => `${project.slug}: ${chain} flow cursor held, retrying transaction ${tx.signature} (attempt ${tx.attempts ?? 0} of ${NULL_TX_RETRY_RUNS})`),
+  );
+}
+
 function walletFlowProblems(project, root, now) {
   const report = readJson(projectWorkPath(project, "forensics/wallet-flows.json", root));
-  return [...forensicsRegistryProblems(project, { root }), ...reportProblems("wallet-flows", report, project.slug, now)];
+  return [
+    ...forensicsRegistryProblems(project, { root }),
+    ...reportProblems("wallet-flows", report, project.slug, now),
+  ];
 }
 
 const walletKey = (address) => (address.startsWith("0x") ? address.toLowerCase() : address);
@@ -96,7 +118,7 @@ export function goLiveProblems(project, { root = process.cwd(), now = Date.now()
   if (section && !GO_LIVE_SECTIONS.includes(section)) throw new Error(`unknown section ${section} (use ${GO_LIVE_SECTIONS.join(", ")})`);
   const checks = {
     config: () => configProblems(project, root),
-    feeds: () => feedProblems(project, root),
+    feeds: () => [...feedProblems(project, root), ...heldCursorProblems(project, root)],
     "wallet-flows": () => walletFlowProblems(project, root, now),
     ledger: () => ledgerProblems(project, root, now),
   };

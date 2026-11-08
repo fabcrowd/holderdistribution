@@ -164,6 +164,9 @@ export function scaffold(args, registry) {
     gated: { forensics: true, walletFlows: { ...(args.coingecko ? { coingeckoId: args.coingecko } : {}), chains: chains.map((c) => c.key) } },
     // Off until the first ledger report is committed: a live project never shows an empty tab.
     capabilities: { projectWallets: false },
+    // Every token needs its own exclusions file: it labels the ledger's association wallets
+    // (else they count as retail; scripts/lib/associationWalletsLabelled.test.js) and never inherits TEL's.
+    classification: { exclusions: `config/projects/${slug}/exclusions.json` },
     // Parity by default: every job in config/nightly-jobs.json that this project's
     // chains support runs nightly. Opt out only with a reason:
     //   "nightly": { "waivers": { "<jobId>": "why this job cannot apply" } }
@@ -192,6 +195,11 @@ export function scaffold(args, registry) {
     botCluster: null,
     trace: { maxHops: 2, stopAt: ["cex", "bridge", "developer", "custody", "known"], minUsd: 100, proceedAssets: {}, maxSales: 300 },
   };
+  const exclusions = {
+    $comment: `Classification labels for ${project.ticker}, scaffolded by scripts/add-project.js. Label every ledger association wallet here (category treasury; the owner decides, evidenceTier owner-supplied) and any other non-retail holder not already in a contracts{} role. See docs/MULTI-TOKEN.md.`,
+    addresses: [],
+    labels: {},
+  };
   const walletRegistry = {
     version: 1,
     description: "Registry for the gated Wallet flows report. Scaffolded by scripts/add-project.js; add knownWallets (or run init-forensics-registry.js after tagging contracts with treasury/holdings roles).",
@@ -211,6 +219,7 @@ export function scaffold(args, registry) {
       "config/projects.json": nextRegistry,
       [`config/projects/${slug}.json`]: project,
       [`config/projects/${slug}/ledger.json`]: ledger,
+      [`config/projects/${slug}/exclusions.json`]: exclusions,
       [`data/${slug}/forensics/wallet-flows.registry.json`]: walletRegistry,
     },
   };

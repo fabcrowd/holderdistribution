@@ -11,7 +11,9 @@ const args = (extra = {}) => ({ slug: "foo", name: "Foo", ticker: "foo", chains:
 describe("add-project", () => {
   it("scaffolds a valid registry entry, project config, ledger config and empty wallet registry", () => {
     const r = scaffold(args(), registry);
-    expect(Object.keys(r.files)).toEqual(["config/projects.json", "config/projects/foo.json", "config/projects/foo/ledger.json", "data/foo/forensics/wallet-flows.registry.json"]);
+    expect(Object.keys(r.files)).toEqual(["config/projects.json", "config/projects/foo.json", "config/projects/foo/ledger.json", "config/projects/foo/exclusions.json", "data/foo/forensics/wallet-flows.registry.json"]);
+    expect(r.files["config/projects/foo/exclusions.json"]).toMatchObject({ addresses: [], labels: {} });
+    expect(r.files["config/projects/foo.json"].classification.exclusions).toBe("config/projects/foo/exclusions.json");
     expect(r.files["config/projects.json"].projects.map((p) => p.slug)).toEqual(["tel", "foo"]);
     expect(r.files["config/projects/foo.json"].ticker).toBe("FOO");
     expect(r.files["config/projects/foo.json"].capabilities.projectWallets).toBe(false);
@@ -47,6 +49,7 @@ describe("add-project", () => {
     main(argv, { logger: quiet });
     expect(JSON.parse(fs.readFileSync(path.join(tmp, "config/projects/foo/ledger.json"), "utf8")).chains).toEqual(["polygon"]);
     expect(fs.existsSync(path.join(tmp, "data/foo/forensics/wallet-flows.registry.json"))).toBe(true);
+    expect(JSON.parse(fs.readFileSync(path.join(tmp, "config/projects/foo/exclusions.json"), "utf8"))).toMatchObject({ addresses: [], labels: {} });
     expect(() => main(argv, { logger: quiet })).toThrow(/already/);
     main([...argv, "--dry-run", "--force"], { logger: quiet });
     expect(JSON.parse(fs.readFileSync(path.join(tmp, "config/projects/foo/chains-inventory.json"), "utf8")).chains.map((c) => c.status)).toEqual(["configured", "not-found"]);
