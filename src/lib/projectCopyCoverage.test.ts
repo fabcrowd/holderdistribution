@@ -41,7 +41,6 @@ const PROJECT_AGNOSTIC_FILES = [
   "src/lib/stakedPanelTip.ts",
   "src/lib/heldPanelTip.ts",
   "src/lib/coingeckoComparison.ts",
-  "src/components/HeadlineBody.tsx",
   "src/components/LockedAnalysisTile.tsx",
 ];
 
