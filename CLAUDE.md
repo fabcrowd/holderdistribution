@@ -60,6 +60,8 @@ Secrets are encrypted via `scripts/encrypt-env.js` / `decrypt-env.js`.
 
 ## Current goals / active work
 
+- **Multi-token onboarding** — every check and feed is registry-driven (`config/projects.json` + `config/projects/<slug>.json`). No TEL-shaped logic in shared code. New tokens follow `.claude/skills/onboard-project/SKILL.md` and `docs/MULTI-TOKEN.md`.
+- **Prove the 2026-11-07 fixes (#165–#171) on the scheduled 06:00 UTC runs** — `check:feeds` and `check-go-live --all` green, `holders-summary.json` asOf restored, `cex-flows` rebuilt with the KuCoin relays, zebec retail agrees across feeds. Unproven until a scheduled run passes.
 - **Design system rollout** — tokens are in `tailwind.config.ts` and `design-system/tokens.css`. Components should progressively adopt the semantic tokens (`brand`, `positive`, `negative`, `ha-accent`, etc.) instead of raw Tailwind color classes.
 - **Forensics Gate** — premium content gate in `netlify/functions/forensics-gate.cjs`. Gated via `ForensicsGate.tsx` + `SubscriptionGate.tsx` components.
 
@@ -83,5 +85,5 @@ Secrets are encrypted via `scripts/encrypt-env.js` / `decrypt-env.js`.
 - `src/lib/`: pure helpers (charts: `chartAxes`, `chartZoom`; supply: `supplyBreakdown`, `chainViews`; staking: `staking*`; `projects.ts` registry reader).
 - `src/components/`: widgets; `chart/`, `terminal/`, `tierflow/`, `ui/` subfolders. `src/pages/`: routes.
 - `netlify/functions/`: `live-data.mjs` (serves latest feeds from GitHub), `forensics-gate.cjs`. `netlify.toml`: manual-deploy rules.
-- `tasks/`, `.claude/`, `scripts/CLAUDE.md`: local-only, uncommitted. `design-system/`, `docs/`: specs.
+- Local-only, uncommitted: `tasks/`, `.cursor/`, and `.claude/` except `.claude/skills/`; `scripts/CLAUDE.md` is tracked. `design-system/`, `docs/`: specs.
 - Harness: `.claude/HANDOFF.md` (session facts, decisions, progress); `npm run receipt -- --objective "..." [--verify]` writes `tasks/receipt.md` (what changed, what passed); `.claude/agents/verifier.md` (adversarial check before a slice is marked done); `tasks/harness-audit.md` (which gates caught which lessons). Git commit, push, branch, merge and reset are set to `ask` in `.claude/settings.local.json`.
