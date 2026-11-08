@@ -79,7 +79,7 @@ const CEX_CONFIG_REL = projectClassificationRelPath(project, "cexWallets", proce
 // No production list declared = candidates only; never invent one.
 const CANDIDATES = argv.includes("--candidates") || !CEX_CONFIG_PATH;
 const IS_LEGACY = project.config?.data?.legacyRoot === true;
-const QUERY_ID = process.env.DUNE_QUERY_ID ?? project.config?.pipeline?.duneCexQueryId ?? (IS_LEGACY ? "3761086" : null);
+const QUERY_ID = (process.env.DUNE_QUERY_ID || null) ?? project.config?.pipeline?.duneCexQueryId ?? (IS_LEGACY ? "3761086" : null);
 const LIMIT = Number(process.env.DUNE_RESULT_LIMIT ?? 5000);
 const API_KEY = process.env.DUNE_API_KEY;
 const CANDIDATES_PATH = projectWork(project)("cex-dune-candidates.json");
@@ -100,6 +100,10 @@ if (SOURCE === "spellbook") {
   }
 }
 if (SOURCE === "dune") {
+  if (!QUERY_ID && argv.includes("--skip-if-no-query")) {
+    console.log(`::notice::Skipping Dune CEX sync for "${project.slug}": no pipeline.duneCexQueryId configured.`);
+    process.exit(0);
+  }
   if (!QUERY_ID) {
     fail(
       2,
