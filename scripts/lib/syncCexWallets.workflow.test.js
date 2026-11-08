@@ -51,7 +51,7 @@ describe("sync-cex-wallets.yml", () => {
     const dune = readSteps().find((s) => s.id === "dune_sync");
     expect(dune, "dune_sync step").toBeDefined();
     expect(dune["continue-on-error"]).toBe(true);
-    expect(runOf(dune)).toMatch(/node scripts\/sync-cex-wallets-dune\.js\s*$/m);
+    expect(runOf(dune)).toMatch(/node scripts\/sync-cex-wallets-dune\.js --skip-if-no-query\s*$/m);
   });
 
   it("runs the spellbook pass before the Dune sync", () => {

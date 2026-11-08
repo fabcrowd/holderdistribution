@@ -109,13 +109,15 @@ jobs:
           [ -z "$failed" ]
 
       - name: Sync CEX wallets from Dune
-        # Single project: the one selected by the dispatch input, or TEL on a
-        # schedule (HD_PROJECT above). Non-fatal, reported by the Stage verdict.
+        # Runs once per matrix project (HD_PROJECT above). Non-fatal, reported by
+        # the Stage verdict.
         id: dune_sync
         continue-on-error: true
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
-        run: node scripts/sync-cex-wallets-dune.js
+        # Projects without pipeline.duneCexQueryId (and not legacy TEL) exit 0 with a
+        # notice instead of failing or spending Dune credits.
+        run: node scripts/sync-cex-wallets-dune.js --skip-if-no-query
 
       - name: Copy CEX wallets to public data
         run: node scripts/pull-cex-wallets.js
@@ -214,7 +216,7 @@ jobs:
             fi
           done <<'STAGES'
           spellbook|OUTCOME_SPELLBOOK|Dune spellbook CEX import (CEX lists may be stale)
-          dune_sync|OUTCOME_DUNE_SYNC|Dune CEX wallet sync (TEL CEX list may be stale)
+          dune_sync|OUTCOME_DUNE_SYNC|Dune CEX wallet sync (CEX list may be stale)
           STAGES
           if [ -n "$failed" ]; then
             {
