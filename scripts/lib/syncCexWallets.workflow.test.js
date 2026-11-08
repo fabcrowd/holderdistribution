@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import yaml from "yaml";
+import { loadRegistry, resolveProject } from "./projects.js";
 
 /**
  * Workflow-lint guard for sync-cex-wallets.yml.
@@ -99,6 +100,27 @@ describe("sync-cex-wallets.yml", () => {
       // A standalone token (--project tel, 'zebec-network'), not a substring of a file name like tel-holders.json.
       const token = new RegExp(`(^|[\\s'"=])${slug.replace(/[.*+?^${}()|[\]\\-]/g, "\\$&")}($|[\\s'"])`, "m");
       expect(token.test(runs), `slug "${slug}" must not be a literal in a run block`).toBe(false);
+    }
+  });
+
+  it("every Dune-query invocation in every workflow skips cleanly when the project has no query", () => {
+    const dir = path.resolve(process.cwd(), ".github/workflows");
+    const calls = fs
+      .readdirSync(dir)
+      .filter((name) => /\.ya?ml$/.test(name))
+      .flatMap((name) => fs.readFileSync(path.join(dir, name), "utf8").split("\n").map((line) => ({ name, line })))
+      .filter(({ line }) => line.includes("sync-cex-wallets-dune.js") && !/--source\s+spellbook/.test(line));
+    expect(calls.length, "at least one Dune sync call").toBeGreaterThan(0);
+    for (const { name, line } of calls) {
+      expect(line, `${name}: a Dune query call needs --skip-if-no-query`).toMatch(/--skip-if-no-query/);
+    }
+  });
+
+  it("no project reuses TEL's legacy Dune query id", () => {
+    const LEGACY_TEL_QUERY_ID = "3761086";
+    for (const { slug } of loadRegistry(process.cwd())) {
+      const id = resolveProject(slug, process.cwd()).config?.pipeline?.duneCexQueryId;
+      expect(String(id ?? ""), `${slug}: pipeline.duneCexQueryId must be the project's own query`).not.toBe(LEGACY_TEL_QUERY_ID);
     }
   });
 });

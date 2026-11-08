@@ -237,7 +237,7 @@ run for any registered project. Ported:
 - `rebuild-history-from-logs`: the StakeChanged chain/contract come from `resolveStakeChangedTarget` instead of a hardcoded Polygon check.
 - `recompute-history-from-git`
 - `resync-chain-holders`
-- `sync-cex-wallets-dune`: needs `classification.cexWallets` and a query id (`DUNE_QUERY_ID` env, then `pipeline.duneCexQueryId`; TEL keeps its built-in query). Missing either = exit 2. Address handling follows the project's VM (`scripts/lib/duneCex.js`): EVM rows stay 0x-hex lowercased (TEL unchanged); a Solana-only project keeps base58 exactly as written and skips rows whose `blockchain` is not `solana`. `--candidates` (forced when the project has no `classification.cexWallets`) never writes a production list: it intersects the labels with the holder snapshot and writes `data/<slug>/cex-dune-candidates.json` for owner review. `--source spellbook` (no key; EVM adds net-new addresses when the project has `classification.cexWallets`, otherwise it writes review candidates) reads the public Dune spellbook model behind `cex_solana.addresses` instead of the API.
+- `sync-cex-wallets-dune`: needs `classification.cexWallets` and a query id (`DUNE_QUERY_ID` env, then `pipeline.duneCexQueryId`; TEL keeps its built-in query). Missing `classification.cexWallets` = exit 2. No query id = exit 2, unless `--skip-if-no-query` is passed: then it prints a notice and exits 0 (a clean skip, no Dune credits). `sync-cex-wallets.yml` always passes it, so a project with no `pipeline.duneCexQueryId` skips cleanly; never copy TEL's 3761086 into another project (`syncCexWallets.workflow.test.js` fails on it). Address handling follows the project's VM (`scripts/lib/duneCex.js`): EVM rows stay 0x-hex lowercased (TEL unchanged); a Solana-only project keeps base58 exactly as written and skips rows whose `blockchain` is not `solana`. `--candidates` (forced when the project has no `classification.cexWallets`) never writes a production list: it intersects the labels with the holder snapshot and writes `data/<slug>/cex-dune-candidates.json` for owner review. `--source spellbook` (no key; EVM adds net-new addresses when the project has `classification.cexWallets`, otherwise it writes review candidates) reads the public Dune spellbook model behind `cex_solana.addresses` instead of the API.
 - `sync-classification-changelog`: no `classification.changelog` = an empty events feed.
 - `validate-outputs`
 - `generate-wallet-flows` (gated; see "Gated forensics" below): inputs and
@@ -559,8 +559,8 @@ The first non-TEL project, mapped 2026-10-25
   spellbook rows plus 33 Solscan name-tag wallets, PR #43). The daily job
   refreshes them with `pull-cex-wallets`. `pipeline.duneCexQueryId` is **not
   set** — do not invent one, and do not reuse TEL's 3761086. Until the owner
-  supplies a Solana `cex.addresses` query id, the list stays the hand-applied
-  file.
+  supplies a Solana `cex.addresses` query id, the scheduled Dune step skips
+  cleanly (`--skip-if-no-query`) and the list stays the hand-applied file.
 - **Exchange and tier flows come from `scan-solana-flows.js`:** see
   [Solana venue flows](#solana-venue-flows) below. Until that script has run,
   `exchange-flow-history.json` and `tier-outflows.json` stay empty
@@ -573,8 +573,9 @@ The first non-TEL project, mapped 2026-10-25
   changelog records the #43 CEX list and the #44 treasury/team relabel
   (`classification.changelog`).
 - **Supply:** `reconcile-supply.js` classifies from `contracts{}` roles and
-  token-account owners (the multi-token path). There is no per-token
-  exclusions file.
+  token-account owners (the multi-token path). ZBCN has no ZBCN-only
+  exclusions file because its ledger lists no association wallets; any token
+  whose ledger does list them needs one (see "Exclusions file per token").
 
 ## Wrapped / bridged tokens (`chains[].bridge`, `origin`)
 
@@ -611,9 +612,26 @@ origin, and the origin should list its lock contracts in `contracts{}` with
 `contracts{}` entries with role `bridge`, `escrow`, `cex`, `dex` or `staking`
 are non-retail on their chain for generic projects
 (`projectNonRetailPaths().extraAddresses`). On Solana, list the **owner**
-(wallet or PDA) address. `reconcileSupply` understands bridge-netting snapshots:
+(wallet or PDA) address in `contracts{}`; if you list a token account instead,
+its owner (from the snapshot's `tokenAccountOwnersByChain`) is treated as
+non-retail automatically, in the non-retail set and in `reconcile-supply`
+(`solanaRoleOwnersParity.test.js` checks this for every Solana project).
+
+`reconcileSupply` understands bridge-netting snapshots:
 only lock-mint chains are mirrors, and other non-origin chains count as their
 own supply.
+
+### Exclusions file per token
+
+Every token needs `classification.exclusions` (`add-project.js` scaffolds an
+empty `config/projects/<slug>/exclusions.json`; a non-legacy project never
+inherits TEL's). It must label every ledger `developerWallets` entry of class
+`association` (category `treasury`, `evidenceTier: "owner-supplied"`, a note
+citing the owner decision), otherwise those wallets count as retail.
+`associationWalletsLabelled.test.js` fails for any registry project that has
+an unlabelled association wallet; the only exemption is an entry (with a dated reason) in its
+`PENDING_OWNER_DECISION` list. Treasury and Team/developer-controlled are one
+bucket (owner decision 2026-11-07).
 
 **TEL is untouched.** It keeps `supply.generationsSumOneToOne` and the
 generations path (`computeSupplyTotals`, method `tel-generations`), and its
@@ -856,8 +874,8 @@ Then:
       `confidence`, `source`, `chains`; optional `botCluster`, `watchedSellers`, `extraCex`, `extraDex`).
       Then run `node scripts/generate-wallet-flows.js --project <slug>` (keyless public RPCs, about 15 to 20
       minutes for three chains; `--dry-run --skip-sellers` for a quick check).
-    - **Solana tracing knobs:** `WALLET_FLOWS_TRACE_DEPTH` (default 1, max 2; raising it seeds depth-2 tasks from hops stored by earlier runs, so no re-scan), `WALLET_FLOWS_TRACE_DESTINATIONS` (unlabelled destinations shown, default 25, max 200; totals always cover all). A transaction the RPC returns as null is retried once, then listed in the checkpoint's `unavailable` (last 500) and counted in `missing`; the cursor still advances.
-    - **CEX lists:** `sync-cex-wallets.yml` imports the spellbook list for every registry project on its schedule (EVM: additions; other VMs: review candidates only). Dune is optional, single-project and non-fatal.
+    - **Solana tracing knobs:** `WALLET_FLOWS_TRACE_DEPTH` (default 1, max 2; raising it seeds depth-2 tasks from hops stored by earlier runs, so no re-scan), `WALLET_FLOWS_TRACE_DESTINATIONS` (unlabelled destinations shown, default 25, max 200; totals always cover all). A transaction the RPC returns as null is retried once in the run. If it is still null it holds the cursor for `NULL_TX_RETRY_RUNS` = 3 runs (counting the first) and is recorded in `unavailable` with its `attempts`; after the third run it stays in `unavailable` (last 500) and `missing` for good and the cursor advances. `check-go-live` fails a Solana project while any `unavailable` entry has `attempts` below 3 ("held, retrying").
+    - **CEX lists:** `sync-cex-wallets.yml` imports the spellbook list for every registry project on its schedule (EVM: additions; other VMs: review candidates only). Dune is optional, single-project and non-fatal; a project with no `pipeline.duneCexQueryId` skips cleanly (`--skip-if-no-query`).
     - **Sales tracing on EVM is not built yet** (todo 1w, EVM variant): `generate-wallet-flows.js` already
       classifies DEX outflows from swap events in transaction receipts, but does not record the proceeds
       leg or follow it onward. Until then EVM projects get outflow totals only.

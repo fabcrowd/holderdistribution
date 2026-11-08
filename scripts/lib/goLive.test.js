@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { goLiveProblems, MAX_REPORT_AGE_HOURS, requiredFeedFiles } from "./goLive.js";
+import { NULL_TX_RETRY_RUNS } from "./solana/flowScan.js";
 import { alignmentProblems } from "../check-go-live.js";
 import { alignmentReport } from "../check-feed-alignment.js";
 
@@ -120,6 +121,60 @@ describe("goLiveProblems", () => {
     write("data/demo/forensics/wallet-flows.registry.json", { knownWallets: [{ address: wallet }] });
     write("config/projects/demo/ledger.json", { developerWallets: [{ address: wallet.toLowerCase() }] });
     expect(check().join("\n")).toMatch(/not in the forensics registry/);
+  });
+
+  describe("held Solana flow cursor", () => {
+    const SOLANA = { chains: [{ key: "solana", vm: "solana" }] };
+    const writeCheckpoint = (unavailable) =>
+      write("public/data/demo/exchange-flow-checkpoint.json", { chains: { solana: { complete: true, unavailable } } });
+
+    it("fails while an unavailable transaction is still being retried", () => {
+      writeCheckpoint([{ signature: "sig-held", slot: 1, blockTime: 1, attempts: NULL_TX_RETRY_RUNS - 1 }]);
+      const out = check(SOLANA, { section: "feeds" }).join("\n");
+      expect(out).toMatch(/held, retrying/);
+      expect(out).toContain("sig-held");
+    });
+
+    it("treats a missing attempts count as a first failure still held", () => {
+      writeCheckpoint([{ signature: "sig-new", slot: 1, blockTime: 1 }]);
+      expect(check(SOLANA, { section: "feeds" }).join("\n")).toMatch(/held, retrying/);
+    });
+
+    it("passes once every unavailable transaction reached the retry limit", () => {
+      writeCheckpoint([{ signature: "sig-gone", slot: 1, blockTime: 1, attempts: NULL_TX_RETRY_RUNS }]);
+      expect(check(SOLANA, { section: "feeds" })).toEqual([]);
+    });
+
+    it("passes with no checkpoint or no unavailable entries", () => {
+      expect(check(SOLANA, { section: "feeds" })).toEqual([]);
+      writeCheckpoint([]);
+      expect(check(SOLANA, { section: "feeds" })).toEqual([]);
+    });
+
+    it("is a go-live gate only: under feeds, never under wallet-flows or ledger", () => {
+      writeCheckpoint([{ signature: "sig-held", slot: 1, blockTime: 1, attempts: 1 }]);
+      expect(check(SOLANA, { section: "feeds" }).join("\n")).toMatch(/held, retrying/);
+      expect(check(SOLANA, { section: "wallet-flows" })).toEqual([]);
+      expect(check(SOLANA, { section: "ledger" })).toEqual([]);
+    });
+
+    it("no workflow invokes check-go-live with the feeds section (or without a section)", () => {
+      const dir = path.resolve(process.cwd(), ".github/workflows");
+      const calls = fs
+        .readdirSync(dir)
+        .filter((name) => /\.ya?ml$/.test(name))
+        .flatMap((name) => fs.readFileSync(path.join(dir, name), "utf8").split("\n").map((line) => ({ name, line })))
+        .filter(({ line }) => line.includes("check-go-live.js") && !line.trimStart().startsWith("#"));
+      expect(calls.length).toBeGreaterThan(0);
+      for (const { name, line } of calls) {
+        expect(line, `${name}: must pass --section wallet-flows or ledger`).toMatch(/--section\s+(wallet-flows|ledger)\b/);
+      }
+    });
+
+    it("ignores the checkpoint of an EVM-only project", () => {
+      writeCheckpoint([{ signature: "sig-held", slot: 1, blockTime: 1, attempts: 1 }]);
+      expect(check({}, { section: "feeds" })).toEqual([]);
+    });
   });
 
   it("limits the result to one section", () => {

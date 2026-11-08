@@ -123,6 +123,8 @@ Writes `<dataDir>/pipeline-status.json` (TEL: `public/data/pipeline-status.json`
 
 Scheduled data workflows no longer default `HD_PROJECT` to `tel`. A `plan` job runs `node scripts/workflow-paths.js matrix "$SELECTION" --job <id>`. `SELECTION` empty means every project the plan marks `run`. Each matrix job exports `HD_PROJECT` and `HD_JOB_ID`. `refresh-holders.yml` is still the one daily workflow; its stages set their own `HD_JOB_ID` (`staker-balances`, `solana-staking`, `holders`, `solana-flows`, `exchange-flows`, `tier-outflows`, `history-gaps`). The other per-job workflows are `refresh-wallet-flows.yml`, `refresh-ledger.yml`, `detect-cex-candidates.yml` (weekly), and `sync-cex-wallets.yml` (semimonthly).
 
+A new workflow that writes `main` (`push-main.sh` or `git push`) must join the concurrency group `holders-refresh`, so it cannot race another writer on the same `public/data` files. `scripts/workflowConcurrency.test.js` fails for any such workflow that is not in the group, unless it is on the test's allowlist with a stated reason.
+
 Manual `workflow_dispatch` with a project slug still runs that slug even when the plan would skip it.
 
 ### Chain inventory and `add-project.js`
