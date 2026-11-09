@@ -16,6 +16,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { configureProjectRpc } from "./rpc.js";
 import { isEvmAddress, isSolanaAddress } from "./address.js";
+import { canonicalAddressForVm } from "./address.js";
+import { assertChainVm } from "./chainVms.js";
 import { BRIDGE_MODES, CHAIN_VMS, SOLANA_CLUSTERS, defaultExplorerTemplates, resolveChainBridge, resolveChainVm } from "./chainAdapters.js";
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
@@ -241,7 +243,7 @@ export function projectRoleAddresses(config, { roles = NON_RETAIL_ROLES } = {}) 
   for (const c of projectChainEntries(config)) {
     for (const [name, v] of Object.entries(c.contracts ?? {})) {
       if (!v?.address || !wanted.has(v.role)) continue;
-      const address = c.vm === "solana" ? v.address.trim() : v.address.trim().toLowerCase();
+      const address = canonicalAddressForVm(c.vm, v.address);
       (out[c.key] ??= []).push({ name, address, role: v.role });
     }
   }
@@ -388,7 +390,7 @@ const lc = (v) => (typeof v === "string" ? v.trim().toLowerCase() : v);
 export function deriveChainsFromProject(config) {
   const out = {};
   for (const c of config?.chains ?? []) {
-    if (resolveChainVm(c) === "solana") {
+    if (assertChainVm(resolveChainVm(c)) === "solana") {
       out[c.key] = deriveSolanaChain(config, c);
       continue;
     }
@@ -503,7 +505,7 @@ export function projectStakingContracts(project, { kind, chain, token } = {}) {
   const vmOf = new Map((project.config?.chains ?? []).map((c) => [c.key, c.vm ?? "evm"]));
   return (project.config?.staking ?? [])
     .filter((s) => (kind ? s.kind === kind : true) && (chain ? s.chain === chain : true) && (token ? s.token === token : true))
-    .map((s) => ({ ...s, address: vmOf.get(s.chain) === "solana" ? s.address.trim() : lc(s.address) }));
+    .map((s) => ({ ...s, address: vmOf.has(s.chain) ? canonicalAddressForVm(vmOf.get(s.chain), s.address) : lc(s.address) }));
 }
 
 /** Token address for (chainKey, generation) from the project config, or null. */

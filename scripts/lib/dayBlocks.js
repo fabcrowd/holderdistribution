@@ -296,13 +296,15 @@ export const settledEndBlock = (chainCutoffs, today) =>
  * Cutoff-aligned scan window for one chain of an incremental flow scan.
  * Resolves (and persists) missing cutoffs from the day of block `from` through
  * `today`, ends the scan at min(latest, cutoff[today]-1, from+maxBlocks-1) and
- * buckets blocks by the cutoff map. `vm: "solana"` resolves slots instead.
+ * buckets blocks by the cutoff map. The vm adapter's clock picks the search (EVM blocks, Solana slots).
  * Returns { end, settledBlock, dateOf, cutoffs } (end < from = nothing to scan).
  */
 export async function cutoffScanWindow({
   project, chain, from, latest, maxBlocks = Infinity, today = utcDate(), getBlockTimestamp, vm = "evm", root, io = defaultIo,
 }) {
-  const first = vm === "solana" ? findFirstSlotAtOrAfter : findFirstBlockAtOrAfter;
+  // Lazy: chainAdapters imports this module, so a static import would be a cycle.
+  const { loadChainAdapter } = await import("./chainAdapters.js");
+  const first = (await loadChainAdapter(vm)).clock({ key: chain }).firstAtOrAfter;
   const fromTs = from <= latest ? await getBlockTimestamp(from) : null;
   const startDate = fromTs != null ? utcDate(Number(fromTs) * 1000) : today;
   const resolvers = { [chain]: (target) => first(target, getBlockTimestamp, 0, latest) };

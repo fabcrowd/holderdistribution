@@ -8,7 +8,8 @@
  * chains.<key> unchanged.
  */
 import { chainExplorerUrl } from "../chainAdapters.js";
-import { normalizeAddressForVm } from "../address.js";
+import { isAddressForVm, normalizeAddressForVm } from "../address.js";
+import { findFirstSlotAtOrAfter } from "../dayBlocks.js";
 import { fetchMintMetadata, PROGRAM_BY_NAME } from "./metadata.js";
 import { getUsableSolanaRpcUrls, solanaCallWithFailover, configureSolanaChain } from "./rpc.js";
 import { scanMintHolders } from "./splScanner.js";
@@ -35,6 +36,10 @@ export const solanaAdapter = {
   },
 
   normalizeAddress: (_chain, address) => normalizeAddressForVm("solana", address),
+
+  isAddress: (_chain, address) => isAddressForVm("solana", address),
+
+  clock: () => ({ firstAtOrAfter: findFirstSlotAtOrAfter }),
 
   explorerUrl: (chain, kind, id) => chainExplorerUrl({ ...chain, vm: "solana" }, kind, id),
 

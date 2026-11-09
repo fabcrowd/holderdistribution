@@ -18,6 +18,7 @@
  *
  * Pure; nothing here reads files or talks to a node.
  */
+import { vmPinsToBlock } from "./chainVms.js";
 import { midnightSeconds, nextDate } from "./dayBlocks.js";
 
 const DAY_MS = 86_400_000;
@@ -70,7 +71,7 @@ export function planPins({ chains, settledDate, cutoffMap }) {
   const unpinned = [];
   const ahead = [];
   for (const { key, vm = "evm", checkpointBlock = null } of chains) {
-    if (vm !== "evm") {
+    if (!vmPinsToBlock(vm)) {
       live.push(key);
       continue;
     }

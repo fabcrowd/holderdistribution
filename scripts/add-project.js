@@ -29,7 +29,8 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { SLUG_RE, validateProjectConfig } from "./lib/projects.js";
-import { isEvmAddress, isSolanaAddress, LEDGER_WINDOWS, validateLedgerConfig } from "./lib/ledger/config.js";
+import { canonicalAddressForVm } from "./lib/address.js";
+import { isEvmAddress, isSolanaAddress, LEDGER_WINDOWS, validateLedgerConfig, walletAddressVm } from "./lib/ledger/config.js";
 import { nightlyPlan } from "./lib/nightlyPlan.js";
 import { inventoryRelPath, validateInventory } from "./lib/chainInventory.js";
 
@@ -126,11 +127,11 @@ export function chainEntry(spec, i) {
 export function walletEntry(spec, chains) {
   const parts = spec.split(":");
   const [address, label, entityClass = "treasury"] = parts;
-  if (!isEvmAddress(address) && !isSolanaAddress(address)) throw new Error(`--wallet ${spec}: bad address`);
+  const vm = walletAddressVm(address);
+  if (!vm) throw new Error(`--wallet ${spec}: bad address`);
   if (!label) throw new Error(`--wallet ${spec}: needs a label (<address>:<label>[:class])`);
   if (!["treasury", "holdings", "association"].includes(entityClass)) throw new Error(`--wallet ${spec}: class must be treasury | holdings | association`);
-  const vm = isEvmAddress(address) ? "evm" : "solana";
-  const a = vm === "evm" ? address.toLowerCase() : address;
+  const a = canonicalAddressForVm(vm, address);
   return {
     address: a,
     label,

@@ -8,6 +8,7 @@
  * never lowercased) — lowercasing a base58 key turns it into a different key.
  */
 import { normalizeAddressForVm } from "./address.js";
+import { assertChainVm, CHAIN_VMS, resolveChainVm } from "./chainVms.js";
 
 /**
  * Raw spellbook models for CEX labels (what Dune serves as cex_<chain>.addresses / cex.addresses).
@@ -27,11 +28,16 @@ export function spellbookUrlForVm(vm) {
   return url;
 }
 
-/** "solana" when every chain the project maps is Solana; otherwise "evm" (TEL and any EVM project). */
+/**
+ * The single vm every chain the project maps shares (its CEX list model);
+ * "evm" for a project with no chains or a mix of vms (TEL and any EVM project).
+ * An unknown vm throws.
+ */
 export function cexVmForProject(project) {
   const chains = project?.config?.chains;
   if (!Array.isArray(chains) || chains.length === 0) return "evm";
-  return chains.every((c) => c?.vm === "solana") ? "solana" : "evm";
+  const vms = new Set(chains.map((c) => assertChainVm(resolveChainVm(c))));
+  return vms.size === 1 ? [...vms][0] : "evm";
 }
 
 const pick = (row, keys) => {
@@ -41,14 +47,16 @@ const pick = (row, keys) => {
 
 /**
  * One Dune row -> { address, label, walletName } for `vm`, or null.
- * A `blockchain` column (as in cex.addresses) must match: "solana" for the
- * Solana path, anything but "solana" for the EVM path.
+ * A `blockchain` column (as in cex.addresses) must match the vm's own name on a
+ * non-EVM path; the EVM path takes anything that is not another vm's name.
  */
 export function extractCexRow(row, vm = "evm") {
+  assertChainVm(vm);
   const chain = row?.blockchain != null ? String(row.blockchain).trim().toLowerCase() : null;
   if (chain) {
-    if (vm === "solana" && chain !== "solana") return null;
-    if (vm !== "solana" && chain === "solana") return null;
+    // A non-EVM vm only takes rows tagged with its own name; the EVM path takes any chain that is not another vm's.
+    if (vm !== "evm" && chain !== vm) return null;
+    if (vm === "evm" && CHAIN_VMS.includes(chain) && chain !== "evm") return null;
   }
   const address = normalizeAddressForVm(vm, pick(row, ["address", "wallet_address", "wallet", "addr"]));
   if (!address) return null;

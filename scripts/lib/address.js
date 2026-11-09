@@ -8,6 +8,8 @@
  * normalizeAnyAddress() instead, which lowercases hex and leaves base58 alone.
  * For TEL (all hex) the result is byte-for-byte what it was before.
  */
+import { assertChainVm } from "./chainVms.js";
+import { parseHederaAddress } from "./hedera/address.js";
 
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const BASE58_MAP = new Map([...BASE58_ALPHABET].map((c, i) => [c, BigInt(i)]));
@@ -90,10 +92,29 @@ export function normalizeValidAddress(value) {
   return null;
 }
 
-/** Address normalizer for one VM: "evm" lowercases (and requires hex), "solana" keeps case. */
+/** Per-vm address rules: validity test and canonical (map-key) form. Add a vm here and in chainVms.js. */
+const ADDRESS_RULES = {
+  evm: { test: (s) => EVM_RE.test(s), canonical: (s) => s.toLowerCase() },
+  solana: { test: (s) => isSolanaAddress(s), canonical: (s) => s },
+  // Folds the checksum and long-zero spellings to 0.0.N; the one implementation (pure, no imports) lives in hedera/address.js.
+  hedera: { test: (s) => parseHederaAddress(s) !== null, canonical: (s) => parseHederaAddress(s) ?? s },
+};
+
+const rulesFor = (vm) => ADDRESS_RULES[assertChainVm(vm)];
+
+/** True when `value` is a valid address for `vm`. Throws for an unknown vm. */
+export const isAddressForVm = (vm, value) => {
+  const rules = rulesFor(vm);
+  return typeof value === "string" && rules.test(value.trim());
+};
+
+/** Canonical form of an address for `vm` without validating it (trim, then lowercase for EVM). Throws for an unknown vm. */
+export const canonicalAddressForVm = (vm, value) => rulesFor(vm).canonical(String(value).trim());
+
+/** Address normalizer for one VM: "evm" lowercases (and requires hex), "solana" keeps case. Throws for an unknown vm. */
 export function normalizeAddressForVm(vm, value) {
+  const rules = rulesFor(vm);
   if (typeof value !== "string") return null;
   const s = value.trim();
-  if (vm === "solana") return isSolanaAddress(s) ? s : null;
-  return EVM_RE.test(s) ? s.toLowerCase() : null;
+  return rules.test(s) ? rules.canonical(s) : null;
 }
