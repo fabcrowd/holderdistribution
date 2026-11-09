@@ -1,7 +1,8 @@
 {
-  "$comment": "Monthly RPC budgets across ALL projects (UTC calendar month). Figures are estimates from scripts/lib/rpcMetrics.js rate cards; the Alchemy/Helius dashboards stay the billing source of truth. warnAt/failAt are fractions of the monthly budget. alchemyCu: the project target in docs/MULTI-TOKEN.md step 10. heliusCredits: free tier (verify the current allowance on Helius's pricing page).",
+  "$comment": "Monthly RPC budgets across ALL projects (UTC calendar month). Figures are estimates from scripts/lib/rpcMetrics.js rate cards; the Alchemy/Helius dashboards stay the billing source of truth. warnAt/failAt are fractions of the monthly budget. alchemyCu: the project target in docs/MULTI-TOKEN.md step 10. solanaBackupAlchemyCu: cap on Alchemy CU spent as the Solana flow-scan backup (scripts/lib/solana/flowBackup.js), a slice of the shared alchemyCu pool and counted in it. heliusCredits: free tier (verify the current allowance on Helius's pricing page).",
   "monthly": {
     "alchemyCu": 30000000,
+    "solanaBackupAlchemyCu": 10000000,
     "heliusCredits": 1000000
   },
   "warnAt": 0.8,

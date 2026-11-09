@@ -32,6 +32,9 @@ export const ALCHEMY_CU = Object.freeze({
   eth_getStorageAt: 17,
   alchemy_getTokenBalances: 20,
   alchemy_getAssetTransfers: 120,
+  // Solana (published Alchemy rate card); other Solana methods fall to the default.
+  getTransaction: 40,
+  getSignaturesForAddress: 40,
 });
 export const ALCHEMY_DEFAULT_CU = 26;
 
@@ -62,8 +65,12 @@ let hooked = false;
 let flushTimer = null;
 const startedMs = Date.now();
 
-export function recordCall(url, method) {
-  const key = `${classifyProvider(url)}|${method}`;
+/** Provider key for Alchemy calls made as the Solana flow-scan backup (see lib/solana/flowBackup.js). */
+export const SOLANA_BACKUP_PROVIDER = "alchemy-solana";
+
+/** @param {{ solanaBackup?: boolean }} [opts] solanaBackup: bill this call to the Solana flow-scan backup */
+export function recordCall(url, method, { solanaBackup = false } = {}) {
+  const key = `${solanaBackup ? SOLANA_BACKUP_PROVIDER : classifyProvider(url)}|${method}`;
   counts.set(key, (counts.get(key) ?? 0) + 1);
   installExitHook();
 }
@@ -88,10 +95,16 @@ export function snapshotCalls() {
 export function estimateUsage(calls) {
   let alchemyCu = 0;
   for (const [method, n] of Object.entries(calls.alchemy ?? {})) alchemyCu += n * (ALCHEMY_CU[method] ?? ALCHEMY_DEFAULT_CU);
+  // The Solana backup is Alchemy usage too (it counts toward alchemyCu and the shared pool),
+  // and is also reported on its own so its separate monthly cap can be enforced.
+  let solanaBackupCu = 0;
+  for (const [method, n] of Object.entries(calls[SOLANA_BACKUP_PROVIDER] ?? {})) solanaBackupCu += n * (ALCHEMY_CU[method] ?? ALCHEMY_DEFAULT_CU);
+  alchemyCu += solanaBackupCu;
   let heliusCredits = 0;
   for (const [method, n] of Object.entries(calls.helius ?? {})) heliusCredits += n * (HELIUS_CREDITS[method] ?? HELIUS_DEFAULT_CREDITS);
   const total = (p) => Object.values(calls[p] ?? {}).reduce((a, b) => a + b, 0);
-  return { alchemyCu, heliusCredits, alchemyCalls: total("alchemy"), heliusCalls: total("helius"), publicCalls: total("public") };
+  // Reported only when the backup was used, so usage lines and files of other projects keep their shape.
+  return { alchemyCu, ...(solanaBackupCu > 0 && { solanaBackupCu }), heliusCredits, alchemyCalls: total("alchemy") + total(SOLANA_BACKUP_PROVIDER), heliusCalls: total("helius"), publicCalls: total("public") };
 }
 
 /** Calls recorded since the last successful flush, keyed "provider|method". */
@@ -177,19 +190,14 @@ export class AlchemyBudgetError extends Error {
 
 export const isAlchemyBudgetError = (err) => err?.code === "ALCHEMY_BUDGET";
 
-/** Estimated Alchemy CU this process has sent so far. */
+/** Estimated Alchemy CU this process has sent so far, excluding the Solana backup (it has its own cap and no job budget). */
 export function processAlchemyCu() {
-  return estimateUsage(snapshotCalls()).alchemyCu;
+  const { alchemyCu, solanaBackupCu = 0 } = estimateUsage(snapshotCalls());
+  return alchemyCu - solanaBackupCu;
 }
 
-let monthCache = null;
-/** Alchemy CU already recorded this UTC month (data/rpc-usage.json) and the monthly ceiling. */
-export function monthlyAlchemy(root = process.cwd(), now = new Date()) {
-  if (monthCache) return monthCache;
-  const month = now.toISOString().slice(0, 7);
-  let used = 0;
-  let ceiling = Infinity;
-  // Every project's usage file: data/rpc-usage.json (TEL) + data/<slug>/rpc-usage.json.
+/** Every project's usage file: data/rpc-usage.json (TEL) + data/<slug>/rpc-usage.json. */
+function usageFiles(root) {
   const files = [path.resolve(root, "data/rpc-usage.json")];
   try {
     for (const d of fs.readdirSync(path.resolve(root, "data"), { withFileTypes: true })) {
@@ -198,14 +206,30 @@ export function monthlyAlchemy(root = process.cwd(), now = new Date()) {
   } catch {
     /* no data dir */
   }
-  for (const f of files) {
+  return files;
+}
+
+/** Sum of `field` over this UTC month's days in every project's usage file. */
+function monthSum(root, month, field) {
+  let total = 0;
+  for (const f of usageFiles(root)) {
     try {
       const usage = JSON.parse(fs.readFileSync(f, "utf8"));
-      for (const [day, d] of Object.entries(usage.days ?? {})) if (day.startsWith(month)) used += Number(d.alchemyCu) || 0;
+      for (const [day, d] of Object.entries(usage.days ?? {})) if (day.startsWith(month)) total += Number(d[field]) || 0;
     } catch {
       /* no usage yet */
     }
   }
+  return total;
+}
+
+let monthCache = null;
+/** Alchemy CU already recorded this UTC month (data/rpc-usage.json) and the monthly ceiling. */
+export function monthlyAlchemy(root = process.cwd(), now = new Date()) {
+  if (monthCache) return monthCache;
+  const month = now.toISOString().slice(0, 7);
+  const used = monthSum(root, month, "alchemyCu");
+  let ceiling = Infinity;
   try {
     const b = JSON.parse(fs.readFileSync(path.resolve(root, "config/budgets.json"), "utf8"));
     const c = Number(b?.monthly?.alchemyCu);
@@ -216,6 +240,40 @@ export function monthlyAlchemy(root = process.cwd(), now = new Date()) {
   monthCache = { month, used, ceiling };
   return monthCache;
 }
+
+/**
+ * Solana-backup Alchemy CU already spent this UTC month before this process: the usage files
+ * plus earlier processes of this run still sitting in HD_METRICS_FILE (not folded into the
+ * usage file until summarize-run-metrics runs). May over-count if a summary already ran on the
+ * same metrics file; that errs on the side of stopping the backup early.
+ */
+export function monthlySolanaBackupCu(root = process.cwd(), now = new Date(), env = process.env) {
+  return monthSum(root, now.toISOString().slice(0, 7), "solanaBackupCu") + earlierProcessesSum(env, "solanaBackupCu");
+}
+
+/** Sum of `field` over the metrics lines of OTHER processes of this run (HD_METRICS_FILE). */
+export function earlierProcessesSum(env, field) {
+  if (!env.HD_METRICS_FILE) return 0;
+  let raw = "";
+  try {
+    raw = fs.readFileSync(env.HD_METRICS_FILE, "utf8");
+  } catch {
+    return 0;
+  }
+  let total = 0;
+  for (const text of raw.split("\n").filter(Boolean)) {
+    try {
+      const line = JSON.parse(text);
+      if (line.pid !== process.pid) total += Number(line[field]) || 0;
+    } catch {
+      /* truncated line from a killed process */
+    }
+  }
+  return total;
+}
+
+/** Solana-backup Alchemy CU this process has sent so far. */
+export const processSolanaBackupCu = () => estimateUsage(snapshotCalls()).solanaBackupCu ?? 0;
 
 /** Alchemy CU that earlier processes of this job already spent in this run. */
 function priorJobAlchemyCu(env) {
@@ -230,7 +288,7 @@ function priorJobAlchemyCu(env) {
   return raw.split("\n").filter(Boolean).reduce((total, text) => {
     const line = JSON.parse(text);
     const sameJob = line.job === env.HD_JOB_ID && line.project === project && line.pid !== process.pid;
-    return sameJob ? total + (Number(line.alchemyCu) || 0) : total;
+    return sameJob ? total + (Number(line.alchemyCu) || 0) - (Number(line.solanaBackupCu) || 0) : total;
   }, 0);
 }
 

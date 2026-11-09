@@ -78,7 +78,8 @@ export function projectStatus(slug, { root = process.cwd(), now = Date.now(), pl
     };
     if (st.status === "run") {
       // rpc-usage.json is per script across projects; reported as the job's latest figure.
-      const cu = (job.scripts ?? []).reduce((a, s) => a + (Number(usage.byScript?.[s]?.alchemyCu) || 0), 0);
+      // The Solana flow-scan Alchemy backup has its own monthly cap and no per-night job budget.
+      const cu = (job.scripts ?? []).reduce((a, s) => a + (Number(usage.byScript?.[s]?.alchemyCu) || 0) - (Number(usage.byScript?.[s]?.solanaBackupCu) || 0), 0);
       row.alchemyCuLatest = { day: usage.day, cu };
       if (cu > row.alchemyCuBudget) row.health = "over-budget";
       for (const o of job.outputs ?? []) {

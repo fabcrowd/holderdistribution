@@ -46,12 +46,15 @@ export function aggregateRuns(lines) {
       runs += 1;
     }
     s.alchemyCu += Number(r.alchemyCu) || 0;
+    // Solana flow-scan backup CU (already inside alchemyCu); only present once a script used the backup.
+    if (Number(r.solanaBackupCu) > 0) s.solanaBackupCu = (s.solanaBackupCu ?? 0) + Number(r.solanaBackupCu);
     s.heliusCredits += Number(r.heliusCredits) || 0;
     s.publicCalls += Number(r.publicCalls) || 0;
   }
   return {
     runs,
     alchemyCu: sum(lines, "alchemyCu"),
+    solanaBackupCu: sum(lines, "solanaBackupCu"),
     heliusCredits: sum(lines, "heliusCredits"),
     alchemyCalls: sum(lines, "alchemyCalls"),
     heliusCalls: sum(lines, "heliusCalls"),
@@ -73,10 +76,12 @@ export function mergeUsage(existing, date, agg, { keepDays = KEEP_DAYS } = {}) {
     scripts[name] = {
       processes: p.processes + s.processes,
       alchemyCu: p.alchemyCu + s.alchemyCu,
+      ...((p.solanaBackupCu ?? 0) + (s.solanaBackupCu ?? 0) > 0 && { solanaBackupCu: (p.solanaBackupCu ?? 0) + (s.solanaBackupCu ?? 0) }),
       heliusCredits: p.heliusCredits + s.heliusCredits,
       publicCalls: p.publicCalls + s.publicCalls,
     };
   }
+  const backupCu = (prev.solanaBackupCu ?? 0) + (agg.solanaBackupCu ?? 0);
   days[date] = {
     runs: prev.runs + 1,
     alchemyCu: prev.alchemyCu + agg.alchemyCu,
@@ -85,6 +90,7 @@ export function mergeUsage(existing, date, agg, { keepDays = KEEP_DAYS } = {}) {
     heliusCalls: prev.heliusCalls + agg.heliusCalls,
     publicCalls: prev.publicCalls + agg.publicCalls,
     byScript: scripts,
+    ...(backupCu > 0 && { solanaBackupCu: backupCu }),
   };
   const cutoff = new Date(Date.parse(`${date}T00:00:00Z`) - keepDays * 86400000).toISOString().slice(0, 10);
   for (const d of Object.keys(days)) if (d < cutoff) delete days[d];
@@ -94,14 +100,16 @@ export function mergeUsage(existing, date, agg, { keepDays = KEEP_DAYS } = {}) {
 /** @param {{days?: Record<string, object>}[]} usages one per project @param {string} month "YYYY-MM" */
 export function monthToDate(usages, month) {
   const total = { alchemyCu: 0, heliusCredits: 0 };
+  let backup = 0;
   for (const u of usages) {
     for (const [d, v] of Object.entries(u?.days ?? {})) {
       if (!d.startsWith(month)) continue;
       total.alchemyCu += Number(v.alchemyCu) || 0;
       total.heliusCredits += Number(v.heliusCredits) || 0;
+      backup += Number(v.solanaBackupCu) || 0;
     }
   }
-  return total;
+  return backup > 0 ? { ...total, solanaBackupCu: backup } : total;
 }
 
 const pct = (n, d) => (d > 0 ? Math.round((n / d) * 1000) / 10 : 0);
@@ -151,6 +159,16 @@ export function evaluateBudget(mtd, run, budgets) {
       messages.push({ level: "warn", text: `${label}: this run used ${run[key].toLocaleString("en-US")}, above the per-run warning of ${perRun.toLocaleString("en-US")}` });
     }
   }
+  // Solana flow-scan Alchemy backup (inside the Alchemy figure above), shown only once used.
+  const backupUsed = mtd.solanaBackupCu ?? 0;
+  if (backupUsed > 0) {
+    const budget = budgets.monthly?.solanaBackupAlchemyCu ?? 0;
+    rows.push({ key: "solanaBackupCu", label: "Alchemy Solana flow backup", run: run.solanaBackupCu ?? 0, used: backupUsed, budget, percent: pct(backupUsed, budget) });
+    if (budget > 0 && backupUsed / budget >= warnAt) {
+      raise("warn");
+      messages.push({ level: "warn", text: `Alchemy Solana flow backup: ${pct(backupUsed, budget)}% of its monthly cap used (${backupUsed.toLocaleString("en-US")} of ${budget.toLocaleString("en-US")} CU); at the cap it switches off and the scan continues on Helius` });
+    }
+  }
   return { level, rows, messages };
 }
 
@@ -161,6 +179,8 @@ export function renderSummary({ project, date, agg, evaluation }) {
   const [cu, helius] = evaluation.rows;
   lines.push(`| Alchemy | ${n(agg.alchemyCalls)} | ${n(agg.alchemyCu)} CU | ${n(cu.used)} CU (${cu.percent}%) | ${n(cu.budget)} |`);
   lines.push(`| Helius | ${n(agg.heliusCalls)} | ${n(agg.heliusCredits)} credits | ${n(helius.used)} (${helius.percent}%) | ${n(helius.budget)} |`);
+  const backup = evaluation.rows.find((r) => r.key === "solanaBackupCu");
+  if (backup) lines.push(`| ↳ Solana flow backup (inside Alchemy) | — | ${n(backup.run)} CU | ${n(backup.used)} CU (${backup.percent}%) | ${n(backup.budget)} cap |`);
   lines.push(`| Public / other | ${n(agg.publicCalls)} | — | — | — |`, "");
   const top = Object.entries(agg.byScript).sort((a, b) => b[1].alchemyCu + b[1].heliusCredits - (a[1].alchemyCu + a[1].heliusCredits)).slice(0, 8);
   if (top.length) {
