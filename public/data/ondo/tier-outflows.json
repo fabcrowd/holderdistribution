@@ -1,360 +1,154 @@
 {
   "schema": 9,
   "tierFingerprint": "1e8b29b7fb244c6e",
-  "generatedAt": "2026-11-08T13:05:38.747Z",
+  "generatedAt": "2026-11-09T15:46:07.321Z",
   "asOf": {
-    "date": "2026-11-07",
+    "date": "2026-11-08",
     "blocks": {
-      "ethereum": 26366423
+      "ethereum": 26373602
     },
     "settled": true
   },
-  "latestDate": "2026-11-07",
+  "latestDate": "2026-11-08",
   "partialDate": null,
   "complete": true,
   "sourceTierSince": "2025-11-04",
   "ranges": {
     "1": {
-      "from": "2026-11-07",
-      "to": "2026-11-07",
+      "from": "2026-11-08",
+      "to": "2026-11-08",
       "tiers": {
-        "25M-50M": {
+        "2.5M-5M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 0,
-          "moved": 693021,
-          "splitWallets": 49,
-          "splitEvents": 1,
-          "splitTel": 355480,
-          "byExchange": {},
+          "cex": 214807,
+          "moved": 4729162,
+          "splitWallets": 377,
+          "splitEvents": 6,
+          "splitTel": 3443337,
+          "byExchange": {
+            "OKX": 214807
+          },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 518816,
-            "wallet": 667141
+            "cex": 644227,
+            "wallet": 3011835
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 0,
-              "moved": 693021,
+              "cex": 214807,
+              "moved": 4729162,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 518816,
-                "wallet": 667141
+                "cex": 644227,
+                "wallet": 3011835
               }
             }
           },
           "inflowsBySourceTier": {
-            "1-25K": 9066,
-            "5M-10M": 95793,
-            "100K-500K": 45708,
-            "untracked": 468907,
-            "2.5M-5M": 47667
+            "untracked": 1209840,
+            "1M-2.5M": 85996,
+            "2.5M-5M": 1265908,
+            "5M-10M": 379847,
+            "1-25K": 26186,
+            "100K-500K": 44058
           },
           "movedByDestTier": {
-            "1-25K": 62832,
-            "25K-100K": 80995,
-            "untracked": 211653,
-            "100K-500K": 302338,
-            "1M-2.5M": 35203
+            "5M-10M": 58526,
+            "untracked": 1906768,
+            "2.5M-5M": 1265908,
+            "100K-500K": 401405,
+            "25K-100K": 440775,
+            "1M-2.5M": 65262,
+            "1-25K": 113633,
+            "500K-1M": 437534,
+            "25M-50M": 39351
           },
-          "splitDestinationSlots": 49
+          "splitDestinationSlots": 377
         },
         "1-25K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 396,
-          "moved": 528064,
-          "splitWallets": 135,
-          "splitEvents": 33,
-          "splitTel": 230288,
+          "cex": 82521,
+          "moved": 1000542,
+          "splitWallets": 180,
+          "splitEvents": 54,
+          "splitTel": 421206,
           "byExchange": {
-            "Gate.io": 396
+            "Gate.io": 82521
           },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 1862,
-            "wallet": 1196282
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 396,
-              "moved": 528064,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 1862,
-                "wallet": 1196282
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "untracked": 321396,
-            "2.5M-5M": 103419,
-            "100K-500K": 58238,
-            "25M-50M": 62832,
-            "5M-10M": 22441,
-            "500K-1M": 106481,
-            "25K-100K": 45712,
-            "1-25K": 67982,
-            "1M-2.5M": 407781
-          },
-          "movedByDestTier": {
-            "1M-2.5M": 73093,
-            "100K-500K": 3482,
-            "25M-50M": 9066,
-            "500K-1M": 376,
-            "25K-100K": 1005,
-            "untracked": 359672,
-            "2.5M-5M": 5484,
-            "5M-10M": 7904,
-            "1-25K": 67982
-          },
-          "splitDestinationSlots": 135
-        },
-        "1M-2.5M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 0,
-          "moved": 5711154,
-          "splitWallets": 670,
-          "splitEvents": 14,
-          "splitTel": 4244899,
-          "byExchange": {},
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 0,
-            "wallet": 7444675
+            "wallet": 1674669
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 0,
-              "moved": 5711154,
+              "cex": 82521,
+              "moved": 1000542,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 0,
-                "wallet": 7444675
+                "wallet": 1674669
               }
             }
           },
           "inflowsBySourceTier": {
-            "5M-10M": 224330,
-            "1-25K": 73093,
-            "500K-1M": 18656,
-            "untracked": 1464839,
-            "2.5M-5M": 30141,
-            "100K-500K": 1511262,
-            "25K-100K": 7026,
-            "1M-2.5M": 1080125,
-            "25M-50M": 35203,
-            "10M-25M": 3000000
+            "25M-50M": 106514,
+            "100K-500K": 35060,
+            "500K-1M": 90701,
+            "25K-100K": 46813,
+            "5M-10M": 40157,
+            "2.5M-5M": 113633,
+            "1M-2.5M": 816416,
+            "1-25K": 184283,
+            "untracked": 241092
           },
           "movedByDestTier": {
-            "100K-500K": 1450813,
-            "25K-100K": 325135,
-            "untracked": 2378771,
-            "2.5M-5M": 68424,
-            "1M-2.5M": 1080125,
-            "5M-10M": 105,
-            "1-25K": 407781
+            "5M-10M": 25522,
+            "25K-100K": 2481,
+            "untracked": 521295,
+            "2.5M-5M": 26187,
+            "25M-50M": 3235,
+            "100K-500K": 12595,
+            "500K-1M": 2608,
+            "1-25K": 184283,
+            "1M-2.5M": 222336
           },
-          "splitDestinationSlots": 670
-        },
-        "2.5M-5M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 214758,
-          "moved": 1744330,
-          "splitWallets": 171,
-          "splitEvents": 4,
-          "splitTel": 1723944,
-          "byExchange": {
-            "OKX": 214758
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 367362,
-            "wallet": 4944882
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 214758,
-              "moved": 1744330,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 367362,
-                "wallet": 4944882
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "100K-500K": 354504,
-            "untracked": 4424743,
-            "5M-10M": 88820,
-            "500K-1M": 2907,
-            "1M-2.5M": 68424,
-            "1-25K": 5484
-          },
-          "movedByDestTier": {
-            "5M-10M": 331205,
-            "1-25K": 103419,
-            "100K-500K": 143433,
-            "1M-2.5M": 30141,
-            "untracked": 1067044,
-            "25K-100K": 21421,
-            "25M-50M": 47667
-          },
-          "splitDestinationSlots": 171
-        },
-        "500K-1M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 0,
-          "moved": 2117390,
-          "splitWallets": 122,
-          "splitEvents": 12,
-          "splitTel": 1683447,
-          "byExchange": {},
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 0,
-            "wallet": 1553923
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 0,
-              "moved": 2117390,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 0,
-                "wallet": 1553923
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "100K-500K": 10678,
-            "1-25K": 376,
-            "untracked": 1283785,
-            "25K-100K": 95803,
-            "5M-10M": 163281
-          },
-          "movedByDestTier": {
-            "1M-2.5M": 18656,
-            "25K-100K": 98233,
-            "untracked": 905279,
-            "10M-25M": 38342,
-            "2.5M-5M": 2907,
-            "1-25K": 106481,
-            "50M+": 947352,
-            "100K-500K": 140
-          },
-          "splitDestinationSlots": 122
-        },
-        "5M-10M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 0,
-          "moved": 1835673,
-          "splitWallets": 67,
-          "splitEvents": 4,
-          "splitTel": 1728213,
-          "byExchange": {},
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 0,
-            "wallet": 1533883
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 0,
-              "moved": 1835673,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 0,
-                "wallet": 1533883
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "2.5M-5M": 331205,
-            "10M-25M": 185787,
-            "untracked": 1008882,
-            "1-25K": 7904,
-            "1M-2.5M": 105
-          },
-          "movedByDestTier": {
-            "1M-2.5M": 224330,
-            "untracked": 1087604,
-            "25M-50M": 95793,
-            "25K-100K": 153405,
-            "2.5M-5M": 88820,
-            "1-25K": 22440,
-            "500K-1M": 163281
-          },
-          "splitDestinationSlots": 67
+          "splitDestinationSlots": 180
         },
         "25K-100K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 0,
-          "moved": 448044,
-          "splitWallets": 57,
-          "splitEvents": 11,
-          "splitTel": 144159,
+          "moved": 876757,
+          "splitWallets": 79,
+          "splitEvents": 13,
+          "splitTel": 344008,
           "byExchange": {},
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 0,
-            "wallet": 1143598
+            "wallet": 732011
           },
           "byChain": {
             "ethereum": {
@@ -362,42 +156,147 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 0,
-              "moved": 448044,
+              "moved": 876757,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 0,
-                "wallet": 1143598
+                "wallet": 732011
               }
             }
           },
           "inflowsBySourceTier": {
-            "25K-100K": 69317,
-            "500K-1M": 98233,
-            "1M-2.5M": 325135,
-            "5M-10M": 153405,
-            "1-25K": 1005,
-            "25M-50M": 80995,
-            "untracked": 259528,
-            "100K-500K": 134559,
-            "2.5M-5M": 21421
+            "25M-50M": 44935,
+            "1-25K": 2481,
+            "100K-500K": 62390,
+            "untracked": 141744,
+            "2.5M-5M": 440775,
+            "5M-10M": 637,
+            "25K-100K": 10515,
+            "1M-2.5M": 28534
           },
           "movedByDestTier": {
-            "25K-100K": 69317,
-            "untracked": 230186,
-            "1-25K": 45712,
-            "1M-2.5M": 7026,
-            "500K-1M": 95803
+            "1M-2.5M": 94748,
+            "5M-10M": 43237,
+            "untracked": 285531,
+            "500K-1M": 391109,
+            "1-25K": 46813,
+            "25K-100K": 10515,
+            "100K-500K": 4804
           },
-          "splitDestinationSlots": 57
+          "splitDestinationSlots": 79
+        },
+        "1M-2.5M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 5948272,
+          "splitWallets": 396,
+          "splitEvents": 12,
+          "splitTel": 4345337,
+          "byExchange": {},
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 69526,
+            "wallet": 4813705
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 5948272,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 69526,
+                "wallet": 4813705
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "25K-100K": 94748,
+            "untracked": 1670222,
+            "100K-500K": 708405,
+            "500K-1M": 935080,
+            "1M-2.5M": 1091494,
+            "2.5M-5M": 65262,
+            "1-25K": 222336,
+            "5M-10M": 26036,
+            "25M-50M": 122
+          },
+          "movedByDestTier": {
+            "2.5M-5M": 85996,
+            "untracked": 3832458,
+            "1M-2.5M": 1091495,
+            "10M-25M": 66183,
+            "1-25K": 816416,
+            "100K-500K": 27190,
+            "25K-100K": 28534
+          },
+          "splitDestinationSlots": 396
+        },
+        "500K-1M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 2731270,
+          "splitWallets": 123,
+          "splitEvents": 11,
+          "splitTel": 2069711,
+          "byExchange": {},
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 2125314
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 2731270,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 2125314
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "100K-500K": 6333,
+            "25K-100K": 391110,
+            "untracked": 1287729,
+            "1-25K": 2608,
+            "2.5M-5M": 437534
+          },
+          "movedByDestTier": {
+            "50M+": 499647,
+            "1M-2.5M": 935081,
+            "1-25K": 90701,
+            "untracked": 1060746,
+            "100K-500K": 145095
+          },
+          "splitDestinationSlots": 123
         },
         "10M-25M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 0,
-          "moved": 3220581,
+          "moved": 430830,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
@@ -407,7 +306,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 0,
-            "wallet": 53054
+            "wallet": 192761
           },
           "byChain": {
             "ethereum": {
@@ -415,24 +314,23 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 0,
-              "moved": 3220581,
+              "moved": 430830,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 0,
-                "wallet": 53054
+                "wallet": 192761
               }
             }
           },
           "inflowsBySourceTier": {
-            "500K-1M": 38342,
-            "untracked": 14712
+            "1M-2.5M": 66184,
+            "5M-10M": 109538,
+            "untracked": 17039
           },
           "movedByDestTier": {
-            "5M-10M": 185787,
-            "1M-2.5M": 3000000,
-            "untracked": 34794
+            "5M-10M": 430830
           },
           "splitDestinationSlots": 0
         },
@@ -441,17 +339,17 @@
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 0,
-          "moved": 2267358,
-          "splitWallets": 70,
-          "splitEvents": 14,
-          "splitTel": 2244591,
+          "moved": 2091772,
+          "splitWallets": 62,
+          "splitEvents": 12,
+          "splitTel": 811354,
           "byExchange": {},
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 0,
-            "wallet": 2408757
+            "cex": 6500,
+            "wallet": 1694583
           },
           "byChain": {
             "ethereum": {
@@ -459,36 +357,137 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 0,
-              "moved": 2267358,
+              "moved": 2091772,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 0,
-                "wallet": 2408757
+                "cex": 6500,
+                "wallet": 1694583
               }
             }
           },
           "inflowsBySourceTier": {
-            "1M-2.5M": 1450813,
-            "1-25K": 3482,
-            "2.5M-5M": 143433,
-            "100K-500K": 6151,
-            "untracked": 502400,
-            "25M-50M": 302338,
-            "500K-1M": 140
+            "5M-10M": 500953,
+            "2.5M-5M": 401405,
+            "25M-50M": 34507,
+            "untracked": 520326,
+            "1-25K": 12595,
+            "100K-500K": 47708,
+            "1M-2.5M": 27190,
+            "25K-100K": 4804,
+            "500K-1M": 145095
           },
           "movedByDestTier": {
-            "500K-1M": 10678,
-            "1-25K": 58238,
-            "100K-500K": 6151,
-            "2.5M-5M": 354504,
-            "25M-50M": 45708,
-            "1M-2.5M": 1511261,
-            "untracked": 146259,
-            "25K-100K": 134559
+            "25M-50M": 214480,
+            "25K-100K": 62390,
+            "500K-1M": 6333,
+            "1M-2.5M": 708405,
+            "2.5M-5M": 44058,
+            "1-25K": 35059,
+            "100K-500K": 47708,
+            "untracked": 973339
           },
-          "splitDestinationSlots": 70
+          "splitDestinationSlots": 62
+        },
+        "5M-10M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 2720596,
+          "splitWallets": 78,
+          "splitEvents": 4,
+          "splitTel": 2441967,
+          "byExchange": {},
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 145974,
+            "wallet": 2126778
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 2720596,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 145974,
+                "wallet": 2126778
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "1-25K": 25522,
+            "2.5M-5M": 58526,
+            "untracked": 1568663,
+            "25K-100K": 43237,
+            "10M-25M": 430830
+          },
+          "movedByDestTier": {
+            "untracked": 1663428,
+            "100K-500K": 500953,
+            "2.5M-5M": 379847,
+            "25K-100K": 637,
+            "10M-25M": 109538,
+            "1-25K": 40157,
+            "1M-2.5M": 26036
+          },
+          "splitDestinationSlots": 78
+        },
+        "25M-50M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 260152,
+          "splitWallets": 53,
+          "splitEvents": 1,
+          "splitTel": 221963,
+          "byExchange": {},
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1648728,
+            "wallet": 697710
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 260152,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1648728,
+                "wallet": 697710
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "100K-500K": 214480,
+            "1-25K": 3235,
+            "untracked": 440644,
+            "2.5M-5M": 39351
+          },
+          "movedByDestTier": {
+            "25K-100K": 44935,
+            "untracked": 74076,
+            "1-25K": 106513,
+            "100K-500K": 34506,
+            "1M-2.5M": 122
+          },
+          "splitDestinationSlots": 53
         },
         "50M+": {
           "dex": 0,
@@ -505,7 +504,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 0,
-            "wallet": 947352
+            "wallet": 499647
           },
           "byChain": {
             "ethereum": {
@@ -519,12 +518,12 @@
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 0,
-                "wallet": 947352
+                "wallet": 499647
               }
             }
           },
           "inflowsBySourceTier": {
-            "500K-1M": 947352
+            "500K-1M": 499647
           },
           "movedByDestTier": {},
           "splitDestinationSlots": 0
@@ -534,18 +533,18 @@
       "totalDays": 1
     },
     "7": {
-      "from": "2026-11-01",
-      "to": "2026-11-07",
+      "from": "2026-11-02",
+      "to": "2026-11-08",
       "tiers": {
         "1M-2.5M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 778643,
-          "moved": 94882164,
-          "splitWallets": 2815,
-          "splitEvents": 128,
-          "splitTel": 78192914,
+          "moved": 98741325,
+          "splitWallets": 3006,
+          "splitEvents": 126,
+          "splitTel": 80484464,
           "byExchange": {
             "Binance": 277372,
             "Bybit": 114937,
@@ -555,8 +554,8 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 6304417,
-            "wallet": 93783356
+            "cex": 6373943,
+            "wallet": 96008288
           },
           "byChain": {
             "ethereum": {
@@ -564,246 +563,60 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 778643,
-              "moved": 94882164,
+              "moved": 98741325,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 6304417,
-                "wallet": 93783356
+                "cex": 6373943,
+                "wallet": 96008288
               }
             }
           },
           "inflowsBySourceTier": {
-            "10M-25M": 4329971,
-            "25K-100K": 1379823,
-            "2.5M-5M": 1312098,
-            "1M-2.5M": 21677296,
-            "1-25K": 6779111,
-            "untracked": 45873843,
-            "500K-1M": 7153668,
-            "25M-50M": 118214,
-            "5M-10M": 1095846,
-            "100K-500K": 1763486,
+            "1-25K": 6918646,
+            "25M-50M": 111633,
+            "2.5M-5M": 1254714,
+            "untracked": 45310995,
+            "1M-2.5M": 22738381,
+            "25K-100K": 1463530,
+            "500K-1M": 8005847,
+            "10M-25M": 4310769,
+            "5M-10M": 1121882,
+            "100K-500K": 2471891,
             "50M+": 2300000
           },
           "movedByDestTier": {
-            "1-25K": 3728944,
-            "25K-100K": 4454847,
-            "10M-25M": 962572,
-            "1M-2.5M": 21677297,
-            "2.5M-5M": 1118124,
-            "untracked": 38278836,
-            "50M+": 11574969,
-            "100K-500K": 3348515,
+            "50M+": 11273312,
+            "100K-500K": 3375685,
             "25M-50M": 2722686,
             "5M-10M": 1445513,
+            "1M-2.5M": 22738383,
+            "1-25K": 4261276,
+            "10M-25M": 1028060,
+            "25K-100K": 4419135,
+            "2.5M-5M": 990752,
+            "untracked": 40916662,
             "500K-1M": 5569861
           },
-          "splitDestinationSlots": 2815
-        },
-        "1-25K": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 120431,
-          "moved": 28806334,
-          "splitWallets": 1245,
-          "splitEvents": 314,
-          "splitTel": 5100231,
-          "byExchange": {
-            "Coinbase Prime": 13051,
-            "Gate.io": 107380
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 109156,
-            "wallet": 28854249
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 120431,
-              "moved": 28806334,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 109156,
-                "wallet": 28854249
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "1M-2.5M": 3728945,
-            "10M-25M": 819600,
-            "500K-1M": 937359,
-            "5M-10M": 1151358,
-            "100K-500K": 920689,
-            "2.5M-5M": 8102221,
-            "1-25K": 4391011,
-            "untracked": 6410000,
-            "25M-50M": 733060,
-            "25K-100K": 1660006
-          },
-          "movedByDestTier": {
-            "10M-25M": 5113864,
-            "1M-2.5M": 6779110,
-            "1-25K": 4391011,
-            "2.5M-5M": 1900792,
-            "untracked": 6214222,
-            "25K-100K": 658340,
-            "100K-500K": 3208700,
-            "5M-10M": 101711,
-            "500K-1M": 396186,
-            "25M-50M": 42398
-          },
-          "splitDestinationSlots": 1245
-        },
-        "2.5M-5M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 268412,
-          "moved": 61374837,
-          "splitWallets": 1293,
-          "splitEvents": 39,
-          "splitTel": 55315513,
-          "byExchange": {
-            "Bybit": 53654,
-            "OKX": 214758
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 367362,
-            "wallet": 54042840
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 268412,
-              "moved": 61374837,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 367362,
-                "wallet": 54042840
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "untracked": 29303418,
-            "1-25K": 1900794,
-            "1M-2.5M": 1118123,
-            "5M-10M": 5142230,
-            "100K-500K": 8650170,
-            "25K-100K": 2659631,
-            "2.5M-5M": 4190294,
-            "500K-1M": 348748,
-            "25M-50M": 209442,
-            "10M-25M": 519990
-          },
-          "movedByDestTier": {
-            "1M-2.5M": 1312097,
-            "1-25K": 8102222,
-            "100K-500K": 9223329,
-            "untracked": 19521356,
-            "10M-25M": 4087201,
-            "25K-100K": 391476,
-            "2.5M-5M": 4190294,
-            "5M-10M": 677179,
-            "50M+": 12949519,
-            "500K-1M": 844172,
-            "25M-50M": 75992
-          },
-          "splitDestinationSlots": 1293
-        },
-        "100K-500K": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 76410,
-          "moved": 21763887,
-          "splitWallets": 721,
-          "splitEvents": 133,
-          "splitTel": 15612271,
-          "byExchange": {
-            "Bybit": 76410
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 0,
-            "wallet": 26938963
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 76410,
-              "moved": 21763887,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 0,
-                "wallet": 26938963
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "2.5M-5M": 9223329,
-            "100K-500K": 1357414,
-            "untracked": 4831773,
-            "500K-1M": 1552127,
-            "5M-10M": 1001599,
-            "1M-2.5M": 3348515,
-            "25M-50M": 1998576,
-            "1-25K": 3208700,
-            "10M-25M": 129660,
-            "25K-100K": 287270
-          },
-          "movedByDestTier": {
-            "1-25K": 920690,
-            "100K-500K": 1357414,
-            "untracked": 6490288,
-            "5M-10M": 1249403,
-            "500K-1M": 740567,
-            "2.5M-5M": 8650170,
-            "25K-100K": 223957,
-            "10M-25M": 258922,
-            "1M-2.5M": 1763485,
-            "25M-50M": 108991
-          },
-          "splitDestinationSlots": 721
+          "splitDestinationSlots": 3006
         },
         "25K-100K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 0,
-          "moved": 12651581,
-          "splitWallets": 516,
-          "splitEvents": 98,
-          "splitTel": 8556760,
+          "moved": 13313761,
+          "splitWallets": 536,
+          "splitEvents": 101,
+          "splitTel": 8771211,
           "byExchange": {},
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 478,
-            "wallet": 13607895
+            "cex": 0,
+            "wallet": 13797471
           },
           "byChain": {
             "ethereum": {
@@ -811,169 +624,50 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 0,
-              "moved": 12651581,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 478,
-                "wallet": 13607895
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "1M-2.5M": 4454846,
-            "500K-1M": 454553,
-            "untracked": 5120641,
-            "2.5M-5M": 391475,
-            "1-25K": 658339,
-            "5M-10M": 448480,
-            "10M-25M": 308312,
-            "25M-50M": 355588,
-            "100K-500K": 223957,
-            "25K-100K": 1191704
-          },
-          "movedByDestTier": {
-            "1M-2.5M": 1379824,
-            "untracked": 3778680,
-            "1-25K": 1660005,
-            "500K-1M": 1028010,
-            "2.5M-5M": 2659631,
-            "25K-100K": 1191703,
-            "100K-500K": 287270,
-            "10M-25M": 594120,
-            "5M-10M": 72338
-          },
-          "splitDestinationSlots": 516
-        },
-        "500K-1M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 121996,
-          "moved": 27481582,
-          "splitWallets": 468,
-          "splitEvents": 58,
-          "splitTel": 21359402,
-          "byExchange": {
-            "Binance": 121996
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 0,
-            "wallet": 24187371
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 121996,
-              "moved": 27481582,
+              "moved": 13313761,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 0,
-                "wallet": 24187371
+                "wallet": 13797471
               }
             }
           },
           "inflowsBySourceTier": {
-            "100K-500K": 740568,
-            "untracked": 9318634,
-            "10M-25M": 1834896,
-            "25K-100K": 1028010,
-            "5M-10M": 538279,
-            "1-25K": 396187,
-            "1M-2.5M": 5569861,
-            "500K-1M": 1216764,
-            "2.5M-5M": 844172,
-            "50M+": 2700000
+            "10M-25M": 282963,
+            "100K-500K": 286347,
+            "2.5M-5M": 815476,
+            "500K-1M": 434678,
+            "5M-10M": 423092,
+            "25M-50M": 400450,
+            "1-25K": 623904,
+            "25K-100K": 1202219,
+            "1M-2.5M": 4419134,
+            "untracked": 4909208
           },
           "movedByDestTier": {
-            "1-25K": 937359,
-            "25K-100K": 454553,
-            "untracked": 9900159,
-            "1M-2.5M": 7153668,
-            "100K-500K": 1552127,
-            "5M-10M": 133441,
-            "2.5M-5M": 348747,
-            "50M+": 4812704,
-            "500K-1M": 1216765,
-            "25M-50M": 933717,
-            "10M-25M": 38342
+            "untracked": 3915040,
+            "500K-1M": 1419119,
+            "2.5M-5M": 2659631,
+            "1M-2.5M": 1463531,
+            "25K-100K": 1202218,
+            "100K-500K": 292074,
+            "1-25K": 1652453,
+            "10M-25M": 594120,
+            "5M-10M": 115575
           },
-          "splitDestinationSlots": 468
-        },
-        "25M-50M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 1249717,
-          "moved": 5725633,
-          "splitWallets": 468,
-          "splitEvents": 9,
-          "splitTel": 5223044,
-          "byExchange": {
-            "Kraken": 1249717
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 2567491,
-            "wallet": 8582823
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 1249717,
-              "moved": 5725633,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 2567491,
-                "wallet": 8582823
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "untracked": 4083779,
-            "10M-25M": 463960,
-            "1M-2.5M": 2722686,
-            "5M-10M": 151300,
-            "1-25K": 42398,
-            "500K-1M": 933717,
-            "2.5M-5M": 75992,
-            "100K-500K": 108991
-          },
-          "movedByDestTier": {
-            "1-25K": 733059,
-            "25K-100K": 355588,
-            "untracked": 2088942,
-            "1M-2.5M": 118214,
-            "10M-25M": 173600,
-            "100K-500K": 1998576,
-            "2.5M-5M": 209442,
-            "5M-10M": 48212
-          },
-          "splitDestinationSlots": 468
+          "splitDestinationSlots": 536
         },
         "5M-10M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 2977586,
-          "moved": 33769365,
-          "splitWallets": 382,
-          "splitEvents": 32,
-          "splitTel": 25306658,
+          "moved": 34518988,
+          "splitWallets": 401,
+          "splitEvents": 31,
+          "splitTel": 25777652,
           "byExchange": {
             "Bybit": 102315,
             "OKX": 2740812,
@@ -983,8 +677,8 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 11396733,
-            "wallet": 26099590
+            "cex": 11542707,
+            "wallet": 26828321
           },
           "byChain": {
             "ethereum": {
@@ -992,52 +686,300 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 2977586,
-              "moved": 33769365,
+              "moved": 34518988,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 11396733,
-                "wallet": 26099590
+                "cex": 11542707,
+                "wallet": 26828321
               }
             }
           },
           "inflowsBySourceTier": {
-            "10M-25M": 2982320,
-            "untracked": 16078542,
-            "100K-500K": 1249403,
-            "5M-10M": 2616276,
-            "500K-1M": 133441,
+            "untracked": 17097640,
+            "500K-1M": 72669,
             "1M-2.5M": 1445513,
-            "1-25K": 101711,
-            "2.5M-5M": 677179,
+            "100K-500K": 1196669,
+            "5M-10M": 2162271,
+            "10M-25M": 3132179,
+            "1-25K": 127233,
+            "2.5M-5M": 735705,
             "25M-50M": 48212,
-            "25K-100K": 72337,
+            "25K-100K": 115574,
             "50M+": 694656
           },
           "movedByDestTier": {
-            "1-25K": 1151357,
-            "2.5M-5M": 5142231,
-            "5M-10M": 2616274,
-            "untracked": 18410527,
-            "25K-100K": 448480,
-            "100K-500K": 1001600,
-            "10M-25M": 3213471,
+            "2.5M-5M": 5382282,
+            "untracked": 18875127,
+            "1-25K": 1053989,
+            "10M-25M": 3323009,
+            "25K-100K": 423092,
             "500K-1M": 538279,
+            "5M-10M": 2162269,
             "25M-50M": 151300,
-            "1M-2.5M": 1095846
+            "100K-500K": 1487759,
+            "1M-2.5M": 1121882
           },
-          "splitDestinationSlots": 382
+          "splitDestinationSlots": 401
+        },
+        "1-25K": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 202952,
+          "moved": 29160973,
+          "splitWallets": 1283,
+          "splitEvents": 332,
+          "splitTel": 5302617,
+          "byExchange": {
+            "Coinbase Prime": 13051,
+            "Gate.io": 189901
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 90933,
+            "wallet": 29228736
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 202952,
+              "moved": 29160973,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 90933,
+                "wallet": 29228736
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "500K-1M": 1018067,
+            "5M-10M": 1053990,
+            "100K-500K": 876579,
+            "25M-50M": 760763,
+            "untracked": 6355715,
+            "1M-2.5M": 4261277,
+            "25K-100K": 1652454,
+            "2.5M-5M": 8082334,
+            "10M-25M": 711845,
+            "1-25K": 4455712
+          },
+          "movedByDestTier": {
+            "1M-2.5M": 6918645,
+            "2.5M-5M": 1699620,
+            "100K-500K": 3221295,
+            "25K-100K": 623905,
+            "5M-10M": 127233,
+            "500K-1M": 398794,
+            "untracked": 6615002,
+            "1-25K": 4455712,
+            "10M-25M": 5055134,
+            "25M-50M": 45633
+          },
+          "splitDestinationSlots": 1283
+        },
+        "2.5M-5M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 483219,
+          "moved": 62388192,
+          "splitWallets": 1493,
+          "splitEvents": 40,
+          "splitTel": 55088082,
+          "byExchange": {
+            "Bybit": 53654,
+            "OKX": 429565
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1011589,
+            "wallet": 55147971
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 483219,
+              "moved": 62388192,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1011589,
+                "wallet": 55147971
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "5M-10M": 5382282,
+            "1-25K": 1699620,
+            "25K-100K": 2659631,
+            "untracked": 29321046,
+            "2.5M-5M": 5456202,
+            "500K-1M": 348748,
+            "100K-500K": 8560258,
+            "1M-2.5M": 990752,
+            "25M-50M": 209442,
+            "10M-25M": 519990
+          },
+          "movedByDestTier": {
+            "25K-100K": 815477,
+            "1M-2.5M": 1254713,
+            "10M-25M": 4027817,
+            "2.5M-5M": 5456202,
+            "1-25K": 8082335,
+            "100K-500K": 9336319,
+            "5M-10M": 735705,
+            "untracked": 18333056,
+            "50M+": 12949519,
+            "500K-1M": 1281706,
+            "25M-50M": 115343
+          },
+          "splitDestinationSlots": 1493
+        },
+        "100K-500K": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 76410,
+          "moved": 22336094,
+          "splitWallets": 693,
+          "splitEvents": 129,
+          "splitTel": 15220209,
+          "byExchange": {
+            "Bybit": 76410
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 6500,
+            "wallet": 28010331
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 76410,
+              "moved": 22336094,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 6500,
+                "wallet": 28010331
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "1M-2.5M": 3375685,
+            "25M-50M": 2033083,
+            "1-25K": 3221295,
+            "10M-25M": 129660,
+            "25K-100K": 292074,
+            "500K-1M": 1547859,
+            "100K-500K": 1283337,
+            "5M-10M": 1487758,
+            "2.5M-5M": 9336319,
+            "untracked": 5303261
+          },
+          "movedByDestTier": {
+            "500K-1M": 599798,
+            "1-25K": 876579,
+            "25K-100K": 286347,
+            "5M-10M": 1196669,
+            "100K-500K": 1283337,
+            "2.5M-5M": 8560258,
+            "untracked": 6478823,
+            "10M-25M": 258922,
+            "1M-2.5M": 2471890,
+            "25M-50M": 323471
+          },
+          "splitDestinationSlots": 693
+        },
+        "500K-1M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 121996,
+          "moved": 29228596,
+          "splitWallets": 568,
+          "splitEvents": 62,
+          "splitTel": 22595975,
+          "byExchange": {
+            "Binance": 121996
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 25864421
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 121996,
+              "moved": 29228596,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 25864421
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "100K-500K": 599798,
+            "25K-100K": 1419120,
+            "5M-10M": 538279,
+            "1-25K": 398795,
+            "untracked": 10601683,
+            "1M-2.5M": 5569861,
+            "500K-1M": 1216764,
+            "2.5M-5M": 1281706,
+            "50M+": 2700000,
+            "10M-25M": 1538415
+          },
+          "movedByDestTier": {
+            "1-25K": 1018067,
+            "5M-10M": 72669,
+            "25K-100K": 434678,
+            "untracked": 10299553,
+            "100K-500K": 1547859,
+            "2.5M-5M": 348747,
+            "50M+": 5312351,
+            "1M-2.5M": 8005848,
+            "500K-1M": 1216765,
+            "25M-50M": 933717,
+            "10M-25M": 38342
+          },
+          "splitDestinationSlots": 568
         },
         "10M-25M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 15000000,
-          "moved": 25364803,
-          "splitWallets": 380,
-          "splitEvents": 11,
-          "splitTel": 17751609,
+          "moved": 23278265,
+          "splitWallets": 319,
+          "splitEvents": 10,
+          "splitTel": 15515212,
           "byExchange": {
             "Bybit": 15000000
           },
@@ -1046,7 +988,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 400544,
-            "wallet": 25527880
+            "wallet": 23135632
           },
           "byChain": {
             "ethereum": {
@@ -1054,39 +996,96 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 15000000,
-              "moved": 25364803,
+              "moved": 23278265,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 400544,
-                "wallet": 25527880
+                "wallet": 23135632
               }
             }
           },
           "inflowsBySourceTier": {
-            "1M-2.5M": 962571,
-            "1-25K": 5113864,
-            "untracked": 11085790,
-            "2.5M-5M": 4087199,
             "25M-50M": 173600,
-            "5M-10M": 3213471,
+            "untracked": 8636629,
+            "5M-10M": 3323009,
+            "2.5M-5M": 4027815,
+            "1M-2.5M": 1028060,
+            "1-25K": 5055134,
             "25K-100K": 594120,
             "100K-500K": 258923,
             "500K-1M": 38342
           },
           "movedByDestTier": {
-            "1M-2.5M": 4329970,
-            "1-25K": 819600,
-            "5M-10M": 2982321,
-            "untracked": 13976096,
-            "25K-100K": 308311,
-            "500K-1M": 1834896,
             "25M-50M": 463960,
+            "25K-100K": 282962,
+            "5M-10M": 3132180,
             "100K-500K": 129659,
-            "2.5M-5M": 519990
+            "1-25K": 711845,
+            "untracked": 12188486,
+            "2.5M-5M": 519990,
+            "1M-2.5M": 4310768,
+            "500K-1M": 1538415
           },
-          "splitDestinationSlots": 380
+          "splitDestinationSlots": 319
+        },
+        "25M-50M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 1249717,
+          "moved": 5656582,
+          "splitWallets": 463,
+          "splitEvents": 9,
+          "splitTel": 5122507,
+          "byExchange": {
+            "Kraken": 1249717
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 4216219,
+            "wallet": 8967881
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 1249717,
+              "moved": 5656582,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 4216219,
+                "wallet": 8967881
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "10M-25M": 463960,
+            "1M-2.5M": 2722686,
+            "untracked": 4211771,
+            "5M-10M": 151300,
+            "1-25K": 45633,
+            "500K-1M": 933717,
+            "2.5M-5M": 115343,
+            "100K-500K": 323471
+          },
+          "movedByDestTier": {
+            "10M-25M": 173600,
+            "1M-2.5M": 111633,
+            "100K-500K": 2033082,
+            "1-25K": 760761,
+            "25K-100K": 400450,
+            "2.5M-5M": 209442,
+            "untracked": 1919402,
+            "5M-10M": 48212
+          },
+          "splitDestinationSlots": 463
         },
         "50M+": {
           "dex": 0,
@@ -1103,7 +1102,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 0,
-            "wallet": 29337191
+            "wallet": 29535181
           },
           "byChain": {
             "ethereum": {
@@ -1117,13 +1116,13 @@
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 0,
-                "wallet": 29337191
+                "wallet": 29535181
               }
             }
           },
           "inflowsBySourceTier": {
-            "1M-2.5M": 11574969,
-            "500K-1M": 4812703,
+            "1M-2.5M": 11273312,
+            "500K-1M": 5312350,
             "2.5M-5M": 12949519
           },
           "movedByDestTier": {
@@ -1138,146 +1137,147 @@
       "totalDays": 7
     },
     "30": {
-      "from": "2026-10-09",
-      "to": "2026-11-07",
+      "from": "2026-10-10",
+      "to": "2026-11-08",
       "tiers": {
-        "25M-50M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 19639974,
-          "moved": 36412657,
-          "splitWallets": 1924,
-          "splitEvents": 34,
-          "splitTel": 32482866,
-          "byExchange": {
-            "Kraken": 7704115,
-            "Gate.io": 11935859
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 11255374,
-            "wallet": 47973235
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 19639974,
-              "moved": 36412657,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 11255374,
-                "wallet": 47973235
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "1M-2.5M": 2862835,
-            "untracked": 37141810,
-            "1-25K": 722259,
-            "2.5M-5M": 4083289,
-            "25M-50M": 46739,
-            "25K-100K": 245476,
-            "10M-25M": 1576790,
-            "5M-10M": 249998,
-            "500K-1M": 935048,
-            "100K-500K": 108991
-          },
-          "movedByDestTier": {
-            "5M-10M": 820334,
-            "2.5M-5M": 347805,
-            "1-25K": 2322657,
-            "500K-1M": 6192656,
-            "1M-2.5M": 3228235,
-            "untracked": 17007210,
-            "100K-500K": 3910491,
-            "25K-100K": 1402473,
-            "10M-25M": 1134057,
-            "25M-50M": 46739
-          },
-          "splitDestinationSlots": 1924
-        },
         "1-25K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 5870705,
-          "moved": 139786066,
-          "splitWallets": 6696,
-          "splitEvents": 1313,
-          "splitTel": 66309147,
+          "cex": 5944781,
+          "moved": 137077769,
+          "splitWallets": 6532,
+          "splitEvents": 1312,
+          "splitTel": 64029409,
           "byExchange": {
-            "Coinbase Prime": 47456,
-            "Gate.io": 108864,
+            "Coinbase Prime": 39011,
+            "Gate.io": 191385,
             "Binance": 5714385
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 656266,
-            "wallet": 149502110
+            "cex": 654297,
+            "wallet": 147740174
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 5870705,
-              "moved": 139786066,
+              "cex": 5944781,
+              "moved": 137077769,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 656266,
-                "wallet": 149502110
+                "cex": 654297,
+                "wallet": 147740174
               }
             }
           },
           "inflowsBySourceTier": {
-            "1M-2.5M": 11923860,
-            "2.5M-5M": 32024456,
-            "25M-50M": 2322658,
-            "100K-500K": 3252330,
-            "untracked": 67990784,
-            "1-25K": 16748941,
-            "10M-25M": 6363344,
-            "25K-100K": 4107464,
-            "500K-1M": 1589425,
-            "5M-10M": 3178848
+            "500K-1M": 1643054,
+            "5M-10M": 3126008,
+            "25K-100K": 4046229,
+            "10M-25M": 6288364,
+            "1-25K": 16563072,
+            "untracked": 66159528,
+            "25M-50M": 2347773,
+            "1M-2.5M": 12435268,
+            "2.5M-5M": 31943468,
+            "100K-500K": 3187410
           },
           "movedByDestTier": {
-            "10M-25M": 22584959,
-            "untracked": 49212205,
-            "100K-500K": 6346551,
-            "25K-100K": 6654221,
-            "25M-50M": 722260,
-            "1-25K": 16748942,
-            "500K-1M": 1441167,
-            "2.5M-5M": 9698313,
-            "1M-2.5M": 23742143,
-            "5M-10M": 2617985,
+            "25K-100K": 6319233,
+            "untracked": 48091221,
+            "1-25K": 16563073,
+            "25M-50M": 724121,
+            "10M-25M": 21892183,
+            "2.5M-5M": 9580995,
+            "100K-500K": 6215056,
+            "1M-2.5M": 23645375,
+            "500K-1M": 1385685,
+            "5M-10M": 2643507,
             "50M+": 17320
           },
-          "splitDestinationSlots": 6696
+          "splitDestinationSlots": 6532
+        },
+        "2.5M-5M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 870138,
+          "moved": 283667037,
+          "splitWallets": 6969,
+          "splitEvents": 177,
+          "splitTel": 270177875,
+          "byExchange": {
+            "Bybit": 440573,
+            "OKX": 429565
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1686231,
+            "wallet": 270010787
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 870138,
+              "moved": 283667037,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1686231,
+                "wallet": 270010787
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "10M-25M": 3650455,
+            "1M-2.5M": 15939831,
+            "5M-10M": 26430667,
+            "1-25K": 9580996,
+            "100K-500K": 32887688,
+            "25K-100K": 8306776,
+            "untracked": 164908299,
+            "25M-50M": 338201,
+            "500K-1M": 2078610,
+            "2.5M-5M": 5889264
+          },
+          "movedByDestTier": {
+            "1M-2.5M": 16669775,
+            "100K-500K": 39836361,
+            "untracked": 119184537,
+            "25K-100K": 3013890,
+            "10M-25M": 30198329,
+            "1-25K": 31943468,
+            "25M-50M": 4065349,
+            "5M-10M": 3560080,
+            "500K-1M": 3668292,
+            "2.5M-5M": 5889264,
+            "50M+": 25637692
+          },
+          "splitDestinationSlots": 6969
         },
         "1M-2.5M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 4072627,
-          "moved": 277766194,
-          "splitWallets": 8660,
-          "splitEvents": 439,
-          "splitTel": 236605181,
+          "cex": 3991022,
+          "moved": 275706955,
+          "splitWallets": 8787,
+          "splitEvents": 437,
+          "splitTel": 234349845,
           "byExchange": {
-            "Binance": 2003536,
+            "Binance": 1921931,
             "Bybit": 1682758,
             "OKX": 386333
           },
@@ -1285,64 +1285,125 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7141790,
-            "wallet": 288881970
+            "cex": 7207239,
+            "wallet": 284557763
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 4072627,
-              "moved": 277766194,
+              "cex": 3991022,
+              "moved": 275706955,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7141790,
-                "wallet": 288881970
+                "cex": 7207239,
+                "wallet": 284557763
               }
             }
           },
           "inflowsBySourceTier": {
-            "2.5M-5M": 17723320,
-            "100K-500K": 7588285,
-            "25M-50M": 3228235,
-            "25K-100K": 3284526,
-            "1-25K": 23742142,
-            "untracked": 137762009,
-            "500K-1M": 44645366,
-            "5M-10M": 4141084,
-            "1M-2.5M": 27162522,
-            "10M-25M": 11104481,
+            "25M-50M": 2191577,
+            "100K-500K": 7418384,
+            "untracked": 135694149,
+            "2.5M-5M": 16669778,
+            "1M-2.5M": 27997962,
+            "25K-100K": 2983214,
+            "1-25K": 23645374,
+            "10M-25M": 11058885,
+            "500K-1M": 44325966,
+            "5M-10M": 4072474,
             "50M+": 8500000
           },
           "movedByDestTier": {
-            "2.5M-5M": 16873829,
-            "untracked": 127503998,
-            "1-25K": 11923862,
-            "25M-50M": 2862835,
-            "100K-500K": 5205795,
-            "5M-10M": 4267051,
-            "25K-100K": 10770335,
-            "1M-2.5M": 27162521,
-            "50M+": 54223404,
-            "10M-25M": 5744734,
-            "500K-1M": 11227830
+            "1M-2.5M": 27997962,
+            "2.5M-5M": 15939831,
+            "5M-10M": 4224978,
+            "1-25K": 12435270,
+            "untracked": 127022500,
+            "25K-100K": 9811166,
+            "25M-50M": 2856192,
+            "100K-500K": 5232584,
+            "50M+": 53490352,
+            "500K-1M": 11227830,
+            "10M-25M": 5468290
           },
-          "splitDestinationSlots": 8660
+          "splitDestinationSlots": 8787
+        },
+        "100K-500K": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 904064,
+          "moved": 90324015,
+          "splitWallets": 2830,
+          "splitEvents": 538,
+          "splitTel": 56758207,
+          "byExchange": {
+            "Bybit": 904064
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 308543,
+            "wallet": 98241991
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 904064,
+              "moved": 90324015,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 308543,
+                "wallet": 98241991
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "25M-50M": 3893525,
+            "5M-10M": 6031454,
+            "2.5M-5M": 39836361,
+            "100K-500K": 4070077,
+            "untracked": 26286249,
+            "1-25K": 6215056,
+            "500K-1M": 5078612,
+            "25K-100K": 1234484,
+            "10M-25M": 363590,
+            "1M-2.5M": 5232583
+          },
+          "movedByDestTier": {
+            "1M-2.5M": 7418384,
+            "500K-1M": 4328144,
+            "untracked": 28191312,
+            "100K-500K": 4070082,
+            "2.5M-5M": 32887690,
+            "25K-100K": 1638914,
+            "5M-10M": 5354337,
+            "1-25K": 3187413,
+            "10M-25M": 2924268,
+            "25M-50M": 323471
+          },
+          "splitDestinationSlots": 2830
         },
         "5M-10M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 19165427,
-          "moved": 189161964,
-          "splitWallets": 1766,
-          "splitEvents": 140,
-          "splitTel": 147139055,
+          "cex": 18875874,
+          "moved": 171810929,
+          "splitWallets": 1765,
+          "splitEvents": 139,
+          "splitTel": 131903018,
           "byExchange": {
-            "OKX": 10045884,
+            "OKX": 9756331,
             "Bybit": 634950,
             "Coinbase Prime": 1945233,
             "Bithumb": 6539363
@@ -1351,245 +1412,61 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 16391592,
-            "wallet": 182606791
+            "cex": 16433702,
+            "wallet": 157290538
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 19165427,
-              "moved": 189161964,
+              "cex": 18875874,
+              "moved": 171810929,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 16391592,
-                "wallet": 182606791
+                "cex": 16433702,
+                "wallet": 157290538
               }
             }
           },
           "inflowsBySourceTier": {
-            "25M-50M": 820335,
-            "500K-1M": 1052892,
-            "100K-500K": 5841409,
-            "10M-25M": 23465062,
-            "5M-10M": 31838045,
-            "1M-2.5M": 4267050,
-            "untracked": 104270906,
-            "2.5M-5M": 3501552,
+            "1M-2.5M": 4224977,
+            "25M-50M": 596350,
+            "5M-10M": 28472911,
+            "500K-1M": 1052064,
+            "untracked": 85880764,
+            "100K-500K": 5354337,
+            "10M-25M": 20530758,
+            "2.5M-5M": 3560078,
             "50M+": 4391111,
-            "1-25K": 2617985,
-            "25K-100K": 540444
+            "1-25K": 2643507,
+            "25K-100K": 583681
           },
           "movedByDestTier": {
-            "500K-1M": 3221621,
-            "5M-10M": 31838042,
-            "untracked": 88656099,
-            "100K-500K": 5946889,
-            "10M-25M": 21386990,
-            "2.5M-5M": 26941893,
-            "1M-2.5M": 4141084,
-            "1-25K": 3178847,
-            "25K-100K": 3600501,
+            "10M-25M": 16022763,
+            "untracked": 81378266,
+            "100K-500K": 6031453,
+            "1-25K": 3126007,
+            "2.5M-5M": 26430669,
+            "5M-10M": 28472908,
+            "500K-1M": 3026252,
+            "25K-100K": 3000139,
+            "1M-2.5M": 4072474,
             "25M-50M": 249998
           },
-          "splitDestinationSlots": 1766
-        },
-        "10M-25M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 15000000,
-          "moved": 118232736,
-          "splitWallets": 1592,
-          "splitEvents": 50,
-          "splitTel": 75542018,
-          "byExchange": {
-            "Bybit": 15000000
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 4867064,
-            "wallet": 150700409
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 15000000,
-              "moved": 118232736,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 4867064,
-                "wallet": 150700409
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "1-25K": 22584959,
-            "100K-500K": 2975252,
-            "untracked": 60210857,
-            "2.5M-5M": 31051965,
-            "5M-10M": 21386990,
-            "25K-100K": 5112183,
-            "500K-1M": 499413,
-            "1M-2.5M": 5744733,
-            "25M-50M": 1134057
-          },
-          "movedByDestTier": {
-            "5M-10M": 23465064,
-            "1-25K": 6363341,
-            "untracked": 61631790,
-            "1M-2.5M": 11104476,
-            "2.5M-5M": 3650455,
-            "25K-100K": 760155,
-            "100K-500K": 363587,
-            "25M-50M": 1576790,
-            "500K-1M": 3934016,
-            "50M+": 5383062
-          },
-          "splitDestinationSlots": 1592
-        },
-        "100K-500K": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 904064,
-          "moved": 91975391,
-          "splitWallets": 2889,
-          "splitEvents": 545,
-          "splitTel": 59096491,
-          "byExchange": {
-            "Bybit": 904064
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 302043,
-            "wallet": 100914104
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 904064,
-              "moved": 91975391,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 302043,
-                "wallet": 100914104
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "1-25K": 6346551,
-            "1M-2.5M": 5205794,
-            "untracked": 27747279,
-            "100K-500K": 4213180,
-            "5M-10M": 5946889,
-            "2.5M-5M": 40760634,
-            "25M-50M": 3910489,
-            "25K-100K": 1289111,
-            "500K-1M": 5130587,
-            "10M-25M": 363590
-          },
-          "movedByDestTier": {
-            "2.5M-5M": 33332495,
-            "10M-25M": 2975251,
-            "500K-1M": 4489142,
-            "1-25K": 3252334,
-            "1M-2.5M": 7588285,
-            "5M-10M": 5841409,
-            "untracked": 28502186,
-            "100K-500K": 4213184,
-            "25K-100K": 1672114,
-            "25M-50M": 108991
-          },
-          "splitDestinationSlots": 2889
-        },
-        "2.5M-5M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 655331,
-          "moved": 285463107,
-          "splitWallets": 6870,
-          "splitEvents": 177,
-          "splitTel": 272809972,
-          "byExchange": {
-            "Bybit": 440573,
-            "OKX": 214758
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 1042004,
-            "wallet": 273115514
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 655331,
-              "moved": 285463107,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 1042004,
-                "wallet": 273115514
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "25M-50M": 347805,
-            "1M-2.5M": 16873829,
-            "500K-1M": 2086286,
-            "100K-500K": 33332493,
-            "1-25K": 9698316,
-            "25K-100K": 8991148,
-            "5M-10M": 26941891,
-            "untracked": 166569935,
-            "10M-25M": 3650455,
-            "2.5M-5M": 4623356
-          },
-          "movedByDestTier": {
-            "25K-100K": 2732015,
-            "1-25K": 32024456,
-            "1M-2.5M": 17723317,
-            "10M-25M": 31051965,
-            "100K-500K": 40760634,
-            "untracked": 120094071,
-            "25M-50M": 4083289,
-            "5M-10M": 3501554,
-            "500K-1M": 3230758,
-            "2.5M-5M": 4623356,
-            "50M+": 25637692
-          },
-          "splitDestinationSlots": 6870
+          "splitDestinationSlots": 1765
         },
         "500K-1M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 746970,
-          "moved": 107297298,
-          "splitWallets": 1109,
-          "splitEvents": 201,
-          "splitTel": 89821079,
+          "moved": 106590200,
+          "splitWallets": 1196,
+          "splitEvents": 205,
+          "splitTel": 89540100,
           "byExchange": {
             "Binance": 611850,
             "Bybit": 135121
@@ -1599,7 +1476,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 1319658,
-            "wallet": 109384644
+            "wallet": 108557572
           },
           "byChain": {
             "ethereum": {
@@ -1607,60 +1484,60 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 746970,
-              "moved": 107297298,
+              "moved": 106590200,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 1319658,
-                "wallet": 109384644
+                "wallet": 108557572
               }
             }
           },
           "inflowsBySourceTier": {
-            "100K-500K": 4489143,
-            "5M-10M": 3221618,
-            "25M-50M": 6192658,
-            "untracked": 29452162,
-            "1-25K": 1441171,
-            "500K-1M": 1722918,
-            "25K-100K": 3272370,
+            "25M-50M": 4676001,
+            "100K-500K": 4328145,
+            "untracked": 29872878,
+            "5M-10M": 3026249,
             "50M+": 41200000,
+            "25K-100K": 3656015,
+            "1-25K": 1385689,
             "1M-2.5M": 11227830,
+            "500K-1M": 1582457,
             "10M-25M": 3934016,
-            "2.5M-5M": 3230758
+            "2.5M-5M": 3668292
           },
           "movedByDestTier": {
-            "5M-10M": 1052894,
-            "untracked": 38765867,
-            "2.5M-5M": 2086286,
-            "500K-1M": 1722920,
-            "1M-2.5M": 44645368,
-            "25K-100K": 876034,
-            "1-25K": 1589422,
-            "10M-25M": 499413,
-            "100K-500K": 5130588,
-            "50M+": 9993458,
+            "1-25K": 1643051,
+            "5M-10M": 1052066,
+            "untracked": 38265407,
+            "100K-500K": 5078613,
+            "1M-2.5M": 44325969,
+            "25K-100K": 867881,
+            "50M+": 10493105,
+            "500K-1M": 1582458,
+            "2.5M-5M": 2078610,
+            "10M-25M": 267992,
             "25M-50M": 935048
           },
-          "splitDestinationSlots": 1109
+          "splitDestinationSlots": 1196
         },
         "25K-100K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 0,
-          "moved": 43304366,
-          "splitWallets": 2019,
-          "splitEvents": 409,
-          "splitTel": 34418990,
+          "moved": 41783502,
+          "splitWallets": 2018,
+          "splitEvents": 405,
+          "splitTel": 32950075,
           "byExchange": {},
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 338692,
-            "wallet": 52940322
+            "wallet": 49862315
           },
           "byChain": {
             "ethereum": {
@@ -1668,41 +1545,163 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 0,
-              "moved": 43304366,
+              "moved": 41783502,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 338692,
-                "wallet": 52940322
+                "wallet": 49862315
               }
             }
           },
           "inflowsBySourceTier": {
-            "2.5M-5M": 2732014,
-            "1-25K": 6654221,
-            "500K-1M": 876034,
-            "25K-100K": 2635820,
-            "1M-2.5M": 10770337,
-            "100K-500K": 1672115,
-            "5M-10M": 3600503,
-            "untracked": 21836647,
-            "25M-50M": 1402473,
-            "10M-25M": 760158
+            "25M-50M": 1330174,
+            "1-25K": 6319233,
+            "10M-25M": 760158,
+            "25K-100K": 2497305,
+            "100K-500K": 1638915,
+            "2.5M-5M": 3013889,
+            "1M-2.5M": 9811168,
+            "untracked": 20623452,
+            "5M-10M": 3000141,
+            "500K-1M": 867880
           },
           "movedByDestTier": {
-            "1M-2.5M": 3284528,
-            "2.5M-5M": 8991150,
-            "500K-1M": 3272370,
-            "1-25K": 4107462,
-            "25K-100K": 2635820,
-            "10M-25M": 5112184,
-            "untracked": 13825820,
-            "100K-500K": 1289111,
+            "1-25K": 4046227,
+            "25K-100K": 2497305,
+            "1M-2.5M": 2983216,
+            "2.5M-5M": 8306777,
+            "untracked": 13123236,
+            "100K-500K": 1234484,
+            "500K-1M": 3656014,
+            "10M-25M": 5107085,
             "25M-50M": 245477,
-            "5M-10M": 540444
+            "5M-10M": 583681
           },
-          "splitDestinationSlots": 2019
+          "splitDestinationSlots": 2018
+        },
+        "25M-50M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 19639974,
+          "moved": 31068921,
+          "splitWallets": 1881,
+          "splitEvents": 34,
+          "splitTel": 27867426,
+          "byExchange": {
+            "Kraken": 7704115,
+            "Gate.io": 11935859
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 12806800,
+            "wallet": 43025988
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 19639974,
+              "moved": 31068921,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 12806800,
+                "wallet": 43025988
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "1-25K": 724121,
+            "untracked": 32002804,
+            "1M-2.5M": 2856192,
+            "2.5M-5M": 4065349,
+            "25M-50M": 46739,
+            "25K-100K": 245476,
+            "10M-25M": 1576790,
+            "5M-10M": 249998,
+            "500K-1M": 935048,
+            "100K-500K": 323471
+          },
+          "movedByDestTier": {
+            "1M-2.5M": 2191577,
+            "500K-1M": 4675999,
+            "25K-100K": 1330174,
+            "100K-500K": 3893526,
+            "5M-10M": 596349,
+            "1-25K": 2347771,
+            "untracked": 15229542,
+            "25M-50M": 46739,
+            "2.5M-5M": 338201,
+            "10M-25M": 419043
+          },
+          "splitDestinationSlots": 1881
+        },
+        "10M-25M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 15000000,
+          "moved": 113581249,
+          "splitWallets": 1545,
+          "splitEvents": 49,
+          "splitTel": 74128786,
+          "byExchange": {
+            "Bybit": 15000000
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 4867064,
+            "wallet": 135962136
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 15000000,
+              "moved": 113581249,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 4867064,
+                "wallet": 135962136
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "5M-10M": 16022763,
+            "untracked": 53662183,
+            "1-25K": 21892183,
+            "2.5M-5M": 30198329,
+            "100K-500K": 2924269,
+            "25K-100K": 5107084,
+            "1M-2.5M": 5468290,
+            "500K-1M": 267992,
+            "25M-50M": 419043
+          },
+          "movedByDestTier": {
+            "2.5M-5M": 3650455,
+            "1-25K": 6288361,
+            "25K-100K": 760155,
+            "untracked": 60035183,
+            "5M-10M": 20530760,
+            "1M-2.5M": 11058880,
+            "100K-500K": 363587,
+            "25M-50M": 1576790,
+            "500K-1M": 3934016,
+            "50M+": 5383062
+          },
+          "splitDestinationSlots": 1545
         },
         "50M+": {
           "dex": 0,
@@ -1719,7 +1718,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 0,
-            "wallet": 95281895
+            "wallet": 95048490
           },
           "byChain": {
             "ethereum": {
@@ -1733,13 +1732,13 @@
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 0,
-                "wallet": 95281895
+                "wallet": 95048490
               }
             }
           },
           "inflowsBySourceTier": {
-            "1M-2.5M": 54223404,
-            "500K-1M": 9993458,
+            "1M-2.5M": 53490352,
+            "500K-1M": 10493105,
             "untracked": 26958,
             "1-25K": 17321,
             "10M-25M": 5383062,
@@ -1757,84 +1756,211 @@
       "totalDays": 30
     },
     "90": {
-      "from": "2026-08-10",
-      "to": "2026-11-07",
+      "from": "2026-08-11",
+      "to": "2026-11-08",
       "tiers": {
-        "2.5M-5M": {
+        "100K-500K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6140591,
-          "moved": 1205399832,
-          "splitWallets": 18875,
-          "splitEvents": 494,
-          "splitTel": 1158707209,
+          "cex": 1745826,
+          "moved": 445176948,
+          "splitWallets": 9407,
+          "splitEvents": 1609,
+          "splitTel": 229383727,
           "byExchange": {
-            "Bitpanda": 4999806,
-            "Bithumb": 485454,
-            "Bybit": 440573,
-            "OKX": 214758
+            "Bitpanda": 379597,
+            "Bybit": 1366229
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 5506628,
-            "wallet": 1237070619
+            "cex": 1678976,
+            "wallet": 447745824
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6140591,
-              "moved": 1205399832,
+              "cex": 1745826,
+              "moved": 445176948,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 5506628,
-                "wallet": 1237070619
+                "cex": 1678976,
+                "wallet": 447745824
               }
             }
           },
           "inflowsBySourceTier": {
-            "1M-2.5M": 36513274,
-            "5M-10M": 102664864,
-            "2.5M-5M": 11326989,
-            "25K-100K": 36187830,
-            "1-25K": 23410109,
-            "100K-500K": 171141415,
-            "500K-1M": 18641880,
-            "untracked": 766833965,
-            "25M-50M": 2923480,
+            "5M-10M": 38235360,
+            "untracked": 107896014,
+            "100K-500K": 38058985,
+            "25M-50M": 9604988,
+            "1-25K": 30301308,
+            "500K-1M": 16526904,
+            "25K-100K": 4729337,
+            "2.5M-5M": 174182419,
+            "10M-25M": 1664296,
+            "1M-2.5M": 26546213
+          },
+          "movedByDestTier": {
+            "2.5M-5M": 171098501,
+            "5M-10M": 29059048,
+            "25K-100K": 6348683,
+            "100K-500K": 38058992,
+            "500K-1M": 21685289,
+            "1-25K": 23488446,
+            "1M-2.5M": 26322767,
+            "untracked": 119478219,
+            "10M-25M": 9239124,
+            "25M-50M": 397879
+          },
+          "splitDestinationSlots": 9407
+        },
+        "2.5M-5M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 6355398,
+          "moved": 1195657466,
+          "splitWallets": 19105,
+          "splitEvents": 495,
+          "splitTel": 1147690680,
+          "byExchange": {
+            "Bitpanda": 4999806,
+            "Bithumb": 485454,
+            "Bybit": 440573,
+            "OKX": 429565
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 6150855,
+            "wallet": 1224569717
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 6355398,
+              "moved": 1195657466,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 6150855,
+                "wallet": 1224569717
+              }
+            }
+          },
+          "inflowsBySourceTier": {
             "10M-25M": 12104260,
+            "100K-500K": 171098493,
+            "25K-100K": 35940969,
+            "untracked": 754220296,
+            "5M-10M": 102890320,
+            "2.5M-5M": 12444186,
+            "1M-2.5M": 36525876,
+            "1-25K": 23254404,
+            "500K-1M": 18226509,
+            "25M-50M": 2541851,
             "50M+": 55322553
           },
           "movedByDestTier": {
-            "1M-2.5M": 42386496,
-            "2.5M-5M": 11326988,
-            "100K-500K": 173916231,
-            "untracked": 467184173,
-            "10M-25M": 74360204,
-            "1-25K": 228631567,
-            "25K-100K": 15304963,
-            "25M-50M": 12491952,
-            "5M-10M": 78487435,
-            "500K-1M": 16810036,
+            "25K-100K": 15711887,
+            "1M-2.5M": 42123705,
+            "untracked": 459687015,
+            "2.5M-5M": 12444185,
+            "100K-500K": 174182415,
+            "10M-25M": 74027575,
+            "1-25K": 224656063,
+            "25M-50M": 12531303,
+            "5M-10M": 78545961,
+            "500K-1M": 17247570,
             "50M+": 84499787
           },
-          "splitDestinationSlots": 18875
+          "splitDestinationSlots": 19105
+        },
+        "1-25K": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 6131979,
+          "moved": 692459804,
+          "splitWallets": 23665,
+          "splitEvents": 3876,
+          "splitTel": 309699981,
+          "byExchange": {
+            "Gate.io": 202249,
+            "Coinbase Prime": 215345,
+            "Binance": 5714385
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 4346387,
+            "wallet": 725476500
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 6131979,
+              "moved": 692459804,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 4346387,
+                "wallet": 725476500
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "1M-2.5M": 24360342,
+            "5M-10M": 21025311,
+            "10M-25M": 44568585,
+            "1-25K": 49617409,
+            "25M-50M": 10094307,
+            "500K-1M": 5927368,
+            "100K-500K": 23488441,
+            "untracked": 298654687,
+            "2.5M-5M": 224656061,
+            "25K-100K": 22179144,
+            "50M+": 904845
+          },
+          "movedByDestTier": {
+            "untracked": 268044437,
+            "25K-100K": 27709420,
+            "100K-500K": 30301310,
+            "5M-10M": 30861373,
+            "10M-25M": 220781688,
+            "500K-1M": 6535177,
+            "2.5M-5M": 23254403,
+            "1-25K": 49617412,
+            "1M-2.5M": 33469763,
+            "25M-50M": 1847457,
+            "50M+": 37364
+          },
+          "splitDestinationSlots": 23665
         },
         "1M-2.5M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 9230452,
-          "moved": 870016325,
-          "splitWallets": 21260,
-          "splitEvents": 1227,
-          "splitTel": 773367918,
+          "moved": 872998186,
+          "splitWallets": 21525,
+          "splitEvents": 1226,
+          "splitTel": 774934515,
           "byExchange": {
             "Bybit": 5190705,
             "Binance": 3653412,
@@ -1844,8 +1970,8 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7591698,
-            "wallet": 904451627
+            "cex": 7661224,
+            "wallet": 905403037
           },
           "byChain": {
             "ethereum": {
@@ -1853,361 +1979,118 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 9230452,
-              "moved": 870016325,
+              "moved": 872998186,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7591698,
-                "wallet": 904451627
+                "cex": 7661224,
+                "wallet": 905403037
               }
             }
           },
           "inflowsBySourceTier": {
-            "10M-25M": 39536215,
-            "2.5M-5M": 42386498,
-            "1M-2.5M": 52321548,
-            "25M-50M": 15192954,
-            "untracked": 462192362,
-            "1-25K": 33259784,
-            "500K-1M": 164369333,
-            "25K-100K": 8056742,
-            "100K-500K": 25614360,
-            "5M-10M": 7321831,
+            "2.5M-5M": 42123707,
+            "10M-25M": 39529235,
+            "25K-100K": 8148990,
+            "untracked": 462244253,
+            "1M-2.5M": 53352476,
+            "25M-50M": 15164556,
+            "1-25K": 33469761,
+            "100K-500K": 26322765,
+            "5M-10M": 7347867,
+            "500K-1M": 163499427,
             "50M+": 54200000
           },
           "movedByDestTier": {
-            "5M-10M": 7894854,
-            "2.5M-5M": 36513275,
-            "1-25K": 23618943,
-            "1M-2.5M": 52321552,
-            "100K-500K": 26519025,
-            "untracked": 409632782,
-            "50M+": 250946224,
-            "25K-100K": 19275067,
+            "50M+": 250749496,
+            "1-25K": 24360344,
+            "2.5M-5M": 36525877,
+            "25K-100K": 19299851,
+            "1M-2.5M": 53352481,
+            "untracked": 411095639,
+            "5M-10M": 7707503,
             "25M-50M": 7764535,
-            "10M-25M": 17578085,
+            "100K-500K": 26546209,
+            "10M-25M": 17644268,
             "500K-1M": 17951983
           },
-          "splitDestinationSlots": 21260
+          "splitDestinationSlots": 21525
         },
-        "1-25K": {
+        "5M-10M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6049458,
-          "moved": 701516415,
-          "splitWallets": 23612,
-          "splitEvents": 3847,
-          "splitTel": 314136047,
+          "cex": 74539816,
+          "moved": 709670213,
+          "splitWallets": 5599,
+          "splitEvents": 425,
+          "splitTel": 566601383,
           "byExchange": {
-            "Gate.io": 119728,
-            "Coinbase Prime": 215345,
-            "Binance": 5714385
+            "OKX": 45060044,
+            "Bybit": 2619683,
+            "Bithumb": 24235982,
+            "Coinbase Prime": 2624111
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 4347638,
-            "wallet": 735860034
+            "cex": 53111558,
+            "wallet": 757156186
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6049458,
-              "moved": 701516415,
+              "cex": 74539816,
+              "moved": 709670213,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 4347638,
-                "wallet": 735860034
+                "cex": 53111558,
+                "wallet": 757156186
               }
             }
           },
           "inflowsBySourceTier": {
-            "25K-100K": 22311633,
-            "1M-2.5M": 23618941,
-            "25M-50M": 10100935,
-            "100K-500K": 25980059,
-            "500K-1M": 5853760,
-            "5M-10M": 20987571,
-            "2.5M-5M": 228631565,
-            "1-25K": 50174591,
-            "untracked": 302529393,
-            "10M-25M": 44766741,
-            "50M+": 904845
+            "25M-50M": 2840472,
+            "100K-500K": 29059047,
+            "untracked": 386294161,
+            "1-25K": 30861375,
+            "25K-100K": 3661321,
+            "5M-10M": 123163314,
+            "2.5M-5M": 78545957,
+            "1M-2.5M": 7707500,
+            "10M-25M": 69302747,
+            "500K-1M": 5230704,
+            "50M+": 20489588
           },
           "movedByDestTier": {
-            "100K-500K": 30374058,
-            "untracked": 271863097,
-            "10M-25M": 224965462,
-            "25K-100K": 27849577,
-            "1-25K": 50174594,
-            "25M-50M": 1844281,
-            "5M-10M": 31120092,
-            "2.5M-5M": 23410107,
-            "500K-1M": 6617997,
-            "1M-2.5M": 33259786,
-            "50M+": 37364
+            "500K-1M": 12863988,
+            "100K-500K": 38235363,
+            "1-25K": 21025311,
+            "2.5M-5M": 102890324,
+            "10M-25M": 76248004,
+            "untracked": 310151720,
+            "5M-10M": 123163313,
+            "1M-2.5M": 7347868,
+            "25M-50M": 1512731,
+            "25K-100K": 16231591
           },
-          "splitDestinationSlots": 23612
-        },
-        "25M-50M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 42856251,
-          "moved": 246492602,
-          "splitWallets": 5735,
-          "splitEvents": 95,
-          "splitTel": 227538473,
-          "byExchange": {
-            "Kraken": 24416333,
-            "Gate.io": 18439918
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 30616485,
-            "wallet": 287090641
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 42856251,
-              "moved": 246492602,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 30616485,
-                "wallet": 287090641
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "untracked": 246348821,
-            "1-25K": 1844281,
-            "2.5M-5M": 12491951,
-            "10M-25M": 13506866,
-            "1M-2.5M": 7764535,
-            "100K-500K": 183399,
-            "5M-10M": 1512730,
-            "25K-100K": 2354858,
-            "25M-50M": 148152,
-            "500K-1M": 935048
-          },
-          "movedByDestTier": {
-            "untracked": 126104642,
-            "1-25K": 10100936,
-            "1M-2.5M": 15192956,
-            "25K-100K": 4496667,
-            "5M-10M": 2992093,
-            "2.5M-5M": 2923479,
-            "100K-500K": 9570484,
-            "500K-1M": 66011961,
-            "10M-25M": 8951231,
-            "25M-50M": 148153
-          },
-          "splitDestinationSlots": 5735
-        },
-        "10M-25M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 55000000,
-          "moved": 553445650,
-          "splitWallets": 5102,
-          "splitEvents": 143,
-          "splitTel": 372005273,
-          "byExchange": {
-            "Bybit": 55000000
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 12502726,
-            "wallet": 627947891
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 55000000,
-              "moved": 553445650,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 12502726,
-                "wallet": 627947891
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "5M-10M": 76573268,
-            "25K-100K": 5222582,
-            "1-25K": 224965467,
-            "untracked": 209919543,
-            "2.5M-5M": 74360206,
-            "100K-500K": 9239123,
-            "1M-2.5M": 17578083,
-            "500K-1M": 1138388,
-            "25M-50M": 8951231
-          },
-          "movedByDestTier": {
-            "1M-2.5M": 39536207,
-            "untracked": 330805182,
-            "5M-10M": 69358541,
-            "1-25K": 44766734,
-            "25K-100K": 1716818,
-            "500K-1M": 16895510,
-            "2.5M-5M": 12104261,
-            "25M-50M": 13506866,
-            "100K-500K": 1664292,
-            "50M+": 23091239
-          },
-          "splitDestinationSlots": 5102
-        },
-        "100K-500K": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 1745826,
-          "moved": 446639327,
-          "splitWallets": 9396,
-          "splitEvents": 1611,
-          "splitTel": 229415883,
-          "byExchange": {
-            "Bitpanda": 379597,
-            "Bybit": 1366229
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 1672476,
-            "wallet": 446842904
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 1745826,
-              "moved": 446639327,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 1672476,
-                "wallet": 446842904
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "100K-500K": 38096592,
-            "500K-1M": 16550105,
-            "1-25K": 30374056,
-            "1M-2.5M": 26519029,
-            "2.5M-5M": 173916235,
-            "25K-100K": 4746928,
-            "untracked": 107598572,
-            "5M-10M": 37806610,
-            "25M-50M": 9570481,
-            "10M-25M": 1664296
-          },
-          "movedByDestTier": {
-            "100K-500K": 38096599,
-            "untracked": 119017912,
-            "1-25K": 25980065,
-            "5M-10M": 29191963,
-            "500K-1M": 21842187,
-            "2.5M-5M": 171141423,
-            "25K-100K": 6332293,
-            "1M-2.5M": 25614362,
-            "10M-25M": 9239124,
-            "25M-50M": 183399
-          },
-          "splitDestinationSlots": 9396
-        },
-        "25K-100K": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 0,
-          "moved": 181023701,
-          "splitWallets": 6009,
-          "splitEvents": 1152,
-          "splitTel": 141801722,
-          "byExchange": {},
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 655983,
-            "wallet": 201960702
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 0,
-              "moved": 181023701,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 655983,
-                "wallet": 201960702
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "25K-100K": 19073994,
-            "5M-10M": 16250858,
-            "1-25K": 27849576,
-            "untracked": 90091750,
-            "25M-50M": 4496669,
-            "2.5M-5M": 15304956,
-            "10M-25M": 1716822,
-            "100K-500K": 6332293,
-            "1M-2.5M": 19275071,
-            "500K-1M": 1568713
-          },
-          "movedByDestTier": {
-            "25K-100K": 19073993,
-            "1-25K": 22311632,
-            "10M-25M": 5222582,
-            "untracked": 69488812,
-            "100K-500K": 4746923,
-            "2.5M-5M": 36187830,
-            "1M-2.5M": 8056742,
-            "5M-10M": 3618085,
-            "500K-1M": 9962243,
-            "25M-50M": 2354859
-          },
-          "splitDestinationSlots": 6009
+          "splitDestinationSlots": 5599
         },
         "500K-1M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 2016042,
-          "moved": 484932106,
-          "splitWallets": 3020,
-          "splitEvents": 579,
-          "splitTel": 424416631,
+          "moved": 483397396,
+          "splitWallets": 3117,
+          "splitEvents": 585,
+          "splitTel": 422417634,
           "byExchange": {
             "Bybit": 943976,
             "Binance": 1072067
@@ -2217,7 +2100,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 1785650,
-            "wallet": 480077643
+            "wallet": 478470547
           },
           "byChain": {
             "ethereum": {
@@ -2225,115 +2108,231 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 2016042,
-              "moved": 484932106,
+              "moved": 483397396,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 1785650,
-                "wallet": 480077643
+                "wallet": 478470547
               }
             }
           },
           "inflowsBySourceTier": {
-            "100K-500K": 21842189,
-            "1-25K": 6618002,
-            "untracked": 126523771,
-            "50M+": 180800000,
-            "10M-25M": 16895510,
-            "5M-10M": 13077345,
+            "5M-10M": 12863985,
+            "untracked": 127125462,
+            "100K-500K": 21685290,
+            "1-25K": 6535182,
+            "10M-25M": 16411158,
             "500K-1M": 3584603,
-            "2.5M-5M": 16810036,
+            "2.5M-5M": 17247570,
+            "50M+": 178700000,
             "25M-50M": 66011961,
-            "25K-100K": 9962242,
+            "25K-100K": 10353352,
             "1M-2.5M": 17951984
           },
           "movedByDestTier": {
-            "untracked": 200697839,
-            "100K-500K": 16550104,
-            "50M+": 66360896,
-            "1-25K": 5853761,
-            "2.5M-5M": 18641879,
-            "5M-10M": 5231537,
-            "1M-2.5M": 164369334,
+            "untracked": 200263937,
             "25K-100K": 1568714,
+            "2.5M-5M": 18226508,
+            "100K-500K": 16526903,
+            "1-25K": 5927370,
+            "1M-2.5M": 163499429,
             "500K-1M": 3584606,
+            "5M-10M": 5230707,
+            "50M+": 66495786,
             "10M-25M": 1138388,
             "25M-50M": 935048
           },
-          "splitDestinationSlots": 3020
+          "splitDestinationSlots": 3117
         },
-        "5M-10M": {
+        "25K-100K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 74655577,
-          "moved": 709389195,
-          "splitWallets": 5567,
-          "splitEvents": 426,
-          "splitTel": 566568994,
-          "byExchange": {
-            "OKX": 45175805,
-            "Bybit": 2619683,
-            "Bithumb": 24235982,
-            "Coinbase Prime": 2624111
-          },
+          "cex": 0,
+          "moved": 180986857,
+          "splitWallets": 6054,
+          "splitEvents": 1157,
+          "splitTel": 141461637,
+          "byExchange": {},
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 52965584,
-            "wallet": 758940111
+            "cex": 653005,
+            "wallet": 201665313
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 74655577,
-              "moved": 709389195,
+              "cex": 0,
+              "moved": 180986857,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 52965584,
-                "wallet": 758940111
+                "cex": 653005,
+                "wallet": 201665313
               }
             }
           },
           "inflowsBySourceTier": {
-            "1M-2.5M": 7894851,
-            "5M-10M": 123627217,
-            "100K-500K": 29191962,
-            "untracked": 386928723,
-            "1-25K": 31120094,
-            "25M-50M": 2992092,
-            "10M-25M": 69358535,
-            "500K-1M": 5231534,
-            "25K-100K": 3618084,
-            "2.5M-5M": 78487431,
-            "50M+": 20489588
+            "2.5M-5M": 15711880,
+            "1-25K": 27709419,
+            "100K-500K": 6348683,
+            "untracked": 89705773,
+            "25K-100K": 18972502,
+            "500K-1M": 1568713,
+            "1M-2.5M": 19299855,
+            "10M-25M": 1688605,
+            "25M-50M": 4428293,
+            "5M-10M": 16231590
           },
           "movedByDestTier": {
-            "2.5M-5M": 102664868,
-            "5M-10M": 123627216,
-            "10M-25M": 76573265,
-            "25K-100K": 16250859,
-            "1-25K": 20987571,
-            "untracked": 309566892,
-            "100K-500K": 37806613,
-            "500K-1M": 13077348,
-            "1M-2.5M": 7321832,
-            "25M-50M": 1512731
+            "2.5M-5M": 35940969,
+            "10M-25M": 5222357,
+            "untracked": 69424032,
+            "1M-2.5M": 8148990,
+            "25K-100K": 18972501,
+            "5M-10M": 3661322,
+            "100K-500K": 4729332,
+            "1-25K": 22179143,
+            "500K-1M": 10353352,
+            "25M-50M": 2354859
           },
-          "splitDestinationSlots": 5567
+          "splitDestinationSlots": 6054
+        },
+        "10M-25M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 55000000,
+          "moved": 551159051,
+          "splitWallets": 5055,
+          "splitEvents": 142,
+          "splitTel": 369774771,
+          "byExchange": {
+            "Bybit": 55000000
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 12502726,
+            "wallet": 622741570
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 55000000,
+              "moved": 551159051,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 12502726,
+                "wallet": 622741570
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "25K-100K": 5222357,
+            "5M-10M": 76248007,
+            "1-25K": 220781693,
+            "2.5M-5M": 74027577,
+            "untracked": 209488927,
+            "100K-500K": 9239123,
+            "1M-2.5M": 17644267,
+            "500K-1M": 1138388,
+            "25M-50M": 8951231
+          },
+          "movedByDestTier": {
+            "2.5M-5M": 12104261,
+            "untracked": 329292076,
+            "1M-2.5M": 39529227,
+            "1-25K": 44568578,
+            "25K-100K": 1688601,
+            "5M-10M": 69302753,
+            "25M-50M": 13506866,
+            "100K-500K": 1664292,
+            "500K-1M": 16411158,
+            "50M+": 23091239
+          },
+          "splitDestinationSlots": 5055
+        },
+        "25M-50M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 42300398,
+          "moved": 245403352,
+          "splitWallets": 5741,
+          "splitEvents": 95,
+          "splitTel": 226427493,
+          "byExchange": {
+            "Kraken": 23860480,
+            "Gate.io": 18439918
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 32265213,
+            "wallet": 287606625
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 42300398,
+              "moved": 245403352,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 32265213,
+                "wallet": 287606625
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "untracked": 246607798,
+            "1-25K": 1847457,
+            "2.5M-5M": 12531302,
+            "10M-25M": 13506866,
+            "1M-2.5M": 7764535,
+            "100K-500K": 397879,
+            "5M-10M": 1512730,
+            "25K-100K": 2354858,
+            "25M-50M": 148152,
+            "500K-1M": 935048
+          },
+          "movedByDestTier": {
+            "5M-10M": 2840473,
+            "untracked": 125617539,
+            "100K-500K": 9604990,
+            "1-25K": 10094307,
+            "1M-2.5M": 15164557,
+            "25K-100K": 4428291,
+            "2.5M-5M": 2541850,
+            "500K-1M": 66011961,
+            "10M-25M": 8951231,
+            "25M-50M": 148153
+          },
+          "splitDestinationSlots": 5741
         },
         "50M+": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 0,
-          "moved": 311716984,
+          "moved": 309616984,
           "splitWallets": 4,
           "splitEvents": 2,
           "splitTel": 49200000,
@@ -2343,7 +2342,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 0,
-            "wallet": 425996796
+            "wallet": 425934958
           },
           "byChain": {
             "ethereum": {
@@ -2351,27 +2350,27 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 0,
-              "moved": 311716984,
+              "moved": 309616984,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 0,
-                "wallet": 425996796
+                "wallet": 425934958
               }
             }
           },
           "inflowsBySourceTier": {
-            "500K-1M": 66360896,
-            "1M-2.5M": 250946230,
+            "1M-2.5M": 250749502,
             "untracked": 1061279,
+            "500K-1M": 66495786,
             "2.5M-5M": 84499787,
             "1-25K": 37365,
             "10M-25M": 23091239
           },
           "movedByDestTier": {
-            "500K-1M": 180800000,
             "1M-2.5M": 54200000,
+            "500K-1M": 178700000,
             "1-25K": 904844,
             "2.5M-5M": 55322553,
             "5M-10M": 20489587
@@ -2383,20 +2382,151 @@
       "totalDays": 90
     },
     "365": {
-      "from": "2025-11-08",
-      "to": "2026-11-07",
+      "from": "2025-11-09",
+      "to": "2026-11-08",
       "tiers": {
+        "2.5M-5M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 15912841,
+          "moved": 4067948772,
+          "splitWallets": 66069,
+          "splitEvents": 1755,
+          "splitTel": 3927746361,
+          "byExchange": {
+            "Bitpanda": 13616231,
+            "Bithumb": 1426472,
+            "Bybit": 440573,
+            "OKX": 429565
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 15628680,
+            "wallet": 4132237740
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 15912841,
+              "moved": 4067948772,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 15628680,
+                "wallet": 4132237740
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "1M-2.5M": 188593904,
+            "1-25K": 52414066,
+            "25K-100K": 56240740,
+            "100K-500K": 359427723,
+            "10M-25M": 20449007,
+            "untracked": 2743554566,
+            "5M-10M": 531352114,
+            "500K-1M": 77548766,
+            "25M-50M": 9372184,
+            "2.5M-5M": 37962098,
+            "50M+": 55322572
+          },
+          "movedByDestTier": {
+            "25K-100K": 31749786,
+            "untracked": 1839679845,
+            "1M-2.5M": 241330181,
+            "1-25K": 310622638,
+            "100K-500K": 297539229,
+            "5M-10M": 499376740,
+            "10M-25M": 131474634,
+            "500K-1M": 75601271,
+            "25M-50M": 39677587,
+            "2.5M-5M": 37962094,
+            "50M+": 562934767
+          },
+          "splitDestinationSlots": 66069
+        },
+        "5M-10M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 202666742,
+          "moved": 2220445304,
+          "splitWallets": 19712,
+          "splitEvents": 1595,
+          "splitTel": 1483419721,
+          "byExchange": {
+            "OKX": 135900182,
+            "Bithumb": 58976982,
+            "Bybit": 5165472,
+            "Coinbase Prime": 2624111
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 413557001,
+            "wallet": 2098128403
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 202666742,
+              "moved": 2220445304,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 413557001,
+                "wallet": 2098128403
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "10M-25M": 289060958,
+            "untracked": 731638162,
+            "25M-50M": 12455098,
+            "100K-500K": 64803927,
+            "1-25K": 145467864,
+            "5M-10M": 312661462,
+            "2.5M-5M": 499376739,
+            "1M-2.5M": 9995310,
+            "500K-1M": 7552739,
+            "25K-100K": 4626556,
+            "50M+": 20489588
+          },
+          "movedByDestTier": {
+            "untracked": 787977894,
+            "1-25K": 134970909,
+            "100K-500K": 98355767,
+            "10M-25M": 288514489,
+            "5M-10M": 312661461,
+            "2.5M-5M": 531352125,
+            "25K-100K": 22337784,
+            "1M-2.5M": 12846456,
+            "25M-50M": 4470281,
+            "500K-1M": 26958138
+          },
+          "splitDestinationSlots": 19712
+        },
         "1-25K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 9168643,
-          "moved": 2330303177,
-          "splitWallets": 81384,
-          "splitEvents": 10475,
-          "splitTel": 1391661336,
+          "cex": 9251164,
+          "moved": 2330004428,
+          "splitWallets": 81405,
+          "splitEvents": 10507,
+          "splitTel": 1391412282,
           "byExchange": {
-            "Gate.io": 160919,
+            "Gate.io": 243440,
             "Binance": 8187730,
             "Bybit": 604649,
             "Coinbase Prime": 215345
@@ -2405,179 +2535,124 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 11485873,
-            "wallet": 2446077656
+            "cex": 11483195,
+            "wallet": 2446610621
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 9168643,
-              "moved": 2330303177,
+              "cex": 9251164,
+              "moved": 2330004428,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 11485873,
-                "wallet": 2446077656
+                "cex": 11483195,
+                "wallet": 2446610621
               }
             }
           },
           "inflowsBySourceTier": {
-            "25M-50M": 30887941,
-            "1-25K": 141985057,
-            "100K-500K": 80377693,
-            "500K-1M": 11304727,
-            "2.5M-5M": 310578365,
-            "1M-2.5M": 64127101,
-            "10M-25M": 126269233,
-            "untracked": 1406066736,
-            "25K-100K": 53509540,
-            "5M-10M": 134930763,
-            "50M+": 86040500
+            "25K-100K": 53538363,
+            "10M-25M": 126266280,
+            "100K-500K": 80319990,
+            "untracked": 1405624174,
+            "1M-2.5M": 64860434,
+            "5M-10M": 134970906,
+            "1-25K": 142003289,
+            "2.5M-5M": 310622638,
+            "25M-50M": 30969746,
+            "50M+": 86040500,
+            "500K-1M": 11394301
           },
           "movedByDestTier": {
-            "25K-100K": 71501698,
-            "1M-2.5M": 78298380,
-            "25M-50M": 12318082,
-            "5M-10M": 145446653,
-            "2.5M-5M": 52489547,
-            "1-25K": 141985058,
-            "10M-25M": 403901244,
-            "untracked": 1187310199,
-            "500K-1M": 44646648,
-            "100K-500K": 95973182,
+            "500K-1M": 44648846,
+            "25M-50M": 12260765,
+            "25K-100K": 71496482,
+            "2.5M-5M": 52414059,
+            "1M-2.5M": 78475227,
+            "5M-10M": 145467870,
+            "1-25K": 142003291,
+            "untracked": 1187170368,
+            "100K-500K": 95985777,
+            "10M-25M": 403649257,
             "50M+": 96432486
           },
-          "splitDestinationSlots": 81384
+          "splitDestinationSlots": 81405
         },
-        "50M+": {
+        "100K-500K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 0,
-          "moved": 704052692,
-          "splitWallets": 6,
-          "splitEvents": 3,
-          "splitTel": 49200030,
-          "byExchange": {},
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 0,
-            "wallet": 1517820770
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 0,
-              "moved": 704052692,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 0,
-                "wallet": 1517820770
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "untracked": 82161880,
-            "1-25K": 96432486,
-            "1M-2.5M": 598640802,
-            "2.5M-5M": 562934765,
-            "500K-1M": 154559598,
-            "10M-25M": 23091239
-          },
-          "movedByDestTier": {
-            "untracked": 6750011,
-            "1-25K": 86040501,
-            "500K-1M": 457540021,
-            "1M-2.5M": 77910000,
-            "2.5M-5M": 55322572,
-            "5M-10M": 20489587
-          },
-          "splitDestinationSlots": 6
-        },
-        "2.5M-5M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 15698034,
-          "moved": 4064282276,
-          "splitWallets": 65854,
-          "splitEvents": 1752,
-          "splitTel": 3925295716,
+          "cex": 8940909,
+          "moved": 1223869328,
+          "splitWallets": 30273,
+          "splitEvents": 5308,
+          "splitTel": 793663695,
           "byExchange": {
-            "Bitpanda": 13616231,
-            "Bithumb": 1426472,
-            "Bybit": 440573,
-            "OKX": 214758
+            "Bitpanda": 7518020,
+            "Bybit": 1422889
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 15010639,
-            "wallet": 4130218161
+            "cex": 4359660,
+            "wallet": 1294519644
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 15698034,
-              "moved": 4064282276,
+              "cex": 8940909,
+              "moved": 1223869328,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 15010639,
-                "wallet": 4130218161
+                "cex": 4359660,
+                "wallet": 1294519644
               }
             }
           },
           "inflowsBySourceTier": {
-            "5M-10M": 531053170,
-            "1-25K": 52489555,
-            "untracked": 2742964730,
-            "100K-500K": 359431464,
-            "1M-2.5M": 188649237,
-            "10M-25M": 20449553,
-            "25K-100K": 56240740,
-            "500K-1M": 77548766,
-            "25M-50M": 9372184,
-            "2.5M-5M": 36696190,
-            "50M+": 55322572
+            "100K-500K": 147814793,
+            "1M-2.5M": 74578129,
+            "5M-10M": 98355766,
+            "10M-25M": 20949043,
+            "500K-1M": 34192573,
+            "untracked": 478207064,
+            "1-25K": 95985773,
+            "2.5M-5M": 297539243,
+            "25K-100K": 12534337,
+            "25M-50M": 34362923
           },
           "movedByDestTier": {
-            "1-25K": 310578366,
-            "1M-2.5M": 241463519,
-            "25K-100K": 31346586,
-            "25M-50M": 39708608,
-            "untracked": 1838412902,
-            "100K-500K": 297184211,
-            "5M-10M": 499318760,
-            "10M-25M": 131474634,
-            "500K-1M": 75163737,
-            "2.5M-5M": 36696186,
-            "50M+": 562934767
+            "100K-500K": 147814797,
+            "500K-1M": 76213726,
+            "1-25K": 80319994,
+            "untracked": 353425480,
+            "1M-2.5M": 91638244,
+            "2.5M-5M": 359427732,
+            "5M-10M": 64803934,
+            "10M-25M": 34125514,
+            "25K-100K": 15603497,
+            "25M-50M": 496410
           },
-          "splitDestinationSlots": 65854
+          "splitDestinationSlots": 30273
         },
         "1M-2.5M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 11486829,
-          "moved": 2416357264,
-          "splitWallets": 57400,
-          "splitEvents": 4079,
-          "splitTel": 2170273412,
+          "moved": 2421209601,
+          "splitWallets": 57703,
+          "splitEvents": 4085,
+          "splitTel": 2174085411,
           "byExchange": {
             "Bybit": 7447082,
             "Binance": 3653412,
@@ -2587,8 +2662,8 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 15397788,
-            "wallet": 2493039952
+            "cex": 15467314,
+            "wallet": 2497404892
           },
           "byChain": {
             "ethereum": {
@@ -2596,115 +2671,53 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 11486829,
-              "moved": 2416357264,
+              "moved": 2421209601,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 15397788,
-                "wallet": 2493039952
+                "cex": 15467314,
+                "wallet": 2497404892
               }
             }
           },
           "inflowsBySourceTier": {
-            "untracked": 1283009117,
-            "1-25K": 78298376,
-            "2.5M-5M": 241463517,
-            "100K-500K": 90940151,
-            "1M-2.5M": 109605812,
-            "25K-100K": 19996102,
+            "1M-2.5M": 110629272,
+            "25K-100K": 20090850,
+            "100K-500K": 91638239,
+            "2.5M-5M": 241330179,
+            "1-25K": 78475223,
+            "untracked": 1284553014,
             "10M-25M": 110210213,
-            "5M-10M": 12820418,
-            "25M-50M": 24669160,
-            "500K-1M": 444117086,
+            "5M-10M": 12846454,
+            "25M-50M": 24669282,
+            "500K-1M": 445052166,
             "50M+": 77910000
           },
           "movedByDestTier": {
-            "untracked": 1245637123,
-            "1-25K": 64127094,
-            "1M-2.5M": 109605814,
-            "2.5M-5M": 188649233,
-            "100K-500K": 75110934,
-            "25K-100K": 43529337,
+            "2.5M-5M": 188593900,
+            "100K-500K": 74578124,
+            "1M-2.5M": 110629275,
+            "25K-100K": 43557871,
+            "1-25K": 64860426,
+            "untracked": 1249226093,
             "500K-1M": 36505570,
             "5M-10M": 9995314,
             "50M+": 598640798,
             "25M-50M": 20324077,
-            "10M-25M": 24231970
+            "10M-25M": 24298153
           },
-          "splitDestinationSlots": 57400
-        },
-        "10M-25M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 55000000,
-          "moved": 1742522103,
-          "splitWallets": 19374,
-          "splitEvents": 475,
-          "splitTel": 1111447674,
-          "byExchange": {
-            "Bybit": 55000000
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 44505672,
-            "wallet": 1895838553
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 55000000,
-              "moved": 1742522103,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 44505672,
-                "wallet": 1895838553
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "1-25K": 403901257,
-            "untracked": 985767434,
-            "10M-25M": 1206192,
-            "5M-10M": 288404962,
-            "100K-500K": 34125512,
-            "2.5M-5M": 131474636,
-            "500K-1M": 6542892,
-            "25K-100K": 5283280,
-            "25M-50M": 14900421,
-            "1M-2.5M": 24231967
-          },
-          "movedByDestTier": {
-            "untracked": 1028215922,
-            "5M-10M": 289385703,
-            "1-25K": 126269224,
-            "10M-25M": 1206188,
-            "2.5M-5M": 20449550,
-            "100K-500K": 20949043,
-            "1M-2.5M": 110210196,
-            "25K-100K": 4673680,
-            "25M-50M": 59347318,
-            "500K-1M": 58724040,
-            "50M+": 23091239
-          },
-          "splitDestinationSlots": 19374
+          "splitDestinationSlots": 57703
         },
         "25M-50M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 153291092,
-          "moved": 477061380,
-          "splitWallets": 18613,
+          "moved": 477047077,
+          "splitWallets": 18624,
           "splitEvents": 386,
-          "splitTel": 415336686,
+          "splitTel": 415284194,
           "byExchange": {
             "Kraken": 83482984,
             "Gate.io": 69808109
@@ -2713,8 +2726,8 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 90393993,
-            "wallet": 827657524
+            "cex": 92042721,
+            "wallet": 828065597
           },
           "byChain": {
             "ethereum": {
@@ -2722,123 +2735,120 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 153291092,
-              "moved": 477061380,
+              "moved": 477047077,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 90393993,
-                "wallet": 827657524
+                "cex": 92042721,
+                "wallet": 828065597
               }
             }
           },
           "inflowsBySourceTier": {
-            "untracked": 670698225,
-            "1-25K": 12318092,
-            "2.5M-5M": 39708607,
+            "1-25K": 12260775,
+            "untracked": 670980156,
             "25K-100K": 14563093,
+            "2.5M-5M": 39677586,
             "500K-1M": 4002195,
             "5M-10M": 4470279,
             "25M-50M": 1943709,
             "10M-25M": 59347318,
             "1M-2.5M": 20324076,
-            "100K-500K": 281930
+            "100K-500K": 496410
           },
           "movedByDestTier": {
-            "untracked": 254315418,
-            "1-25K": 30887946,
-            "25K-100K": 12643664,
             "5M-10M": 12455097,
-            "100K-500K": 34328417,
+            "25K-100K": 12682291,
+            "untracked": 254146056,
+            "1-25K": 30969750,
+            "100K-500K": 34362923,
             "2.5M-5M": 9372188,
-            "1M-2.5M": 24669158,
+            "1M-2.5M": 24669280,
             "25M-50M": 1943708,
             "500K-1M": 81545364,
             "10M-25M": 14900420
           },
-          "splitDestinationSlots": 18613
+          "splitDestinationSlots": 18624
         },
-        "5M-10M": {
+        "10M-25M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 202870454,
-          "moved": 2219391729,
-          "splitWallets": 19666,
-          "splitEvents": 1596,
-          "splitTel": 1482481690,
+          "cex": 55000000,
+          "moved": 1742040247,
+          "splitWallets": 19345,
+          "splitEvents": 474,
+          "splitTel": 1111312129,
           "byExchange": {
-            "OKX": 136103894,
-            "Bithumb": 58976982,
-            "Bybit": 5165472,
-            "Coinbase Prime": 2624111
+            "Bybit": 55000000
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 413411027,
-            "wallet": 2097557366
+            "cex": 44505672,
+            "wallet": 1894007567
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 202870454,
-              "moved": 2219391729,
+              "cex": 55000000,
+              "moved": 1742040247,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 413411027,
-                "wallet": 2097557366
+                "cex": 44505672,
+                "wallet": 1894007567
               }
             }
           },
           "inflowsBySourceTier": {
-            "untracked": 730164929,
-            "1-25K": 145446647,
-            "10M-25M": 289385696,
-            "100K-500K": 64862432,
-            "2.5M-5M": 499318759,
-            "5M-10M": 313302849,
-            "25M-50M": 12455098,
-            "1M-2.5M": 9995310,
-            "500K-1M": 7552739,
-            "25K-100K": 4583319,
-            "50M+": 20489588
+            "untracked": 984033741,
+            "5M-10M": 288514500,
+            "10M-25M": 1185165,
+            "1-25K": 403649269,
+            "100K-500K": 34125512,
+            "2.5M-5M": 131474636,
+            "500K-1M": 6542892,
+            "25K-100K": 5283280,
+            "25M-50M": 14900421,
+            "1M-2.5M": 24298151
           },
           "movedByDestTier": {
-            "2.5M-5M": 531053181,
-            "untracked": 787045079,
-            "25K-100K": 22348692,
-            "100K-500K": 98057373,
-            "5M-10M": 313302848,
-            "1-25K": 134930766,
-            "10M-25M": 288404951,
-            "1M-2.5M": 12820420,
-            "25M-50M": 4470281,
-            "500K-1M": 26958138
+            "5M-10M": 289060965,
+            "untracked": 1028083330,
+            "1-25K": 126266271,
+            "2.5M-5M": 20449004,
+            "100K-500K": 20949043,
+            "10M-25M": 1185161,
+            "1M-2.5M": 110210196,
+            "25K-100K": 4673680,
+            "25M-50M": 59347318,
+            "500K-1M": 58724040,
+            "50M+": 23091239
           },
-          "splitDestinationSlots": 19666
+          "splitDestinationSlots": 19345
         },
         "25K-100K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 0,
-          "moved": 391676302,
-          "splitWallets": 15919,
-          "splitEvents": 3233,
-          "splitTel": 297820678,
+          "moved": 392439463,
+          "splitWallets": 15961,
+          "splitEvents": 3240,
+          "splitTel": 298056674,
           "byExchange": {},
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 1191226,
-            "wallet": 454126979
+            "cex": 1190353,
+            "wallet": 454507916
           },
           "byChain": {
             "ethereum": {
@@ -2846,113 +2856,51 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 0,
-              "moved": 391676302,
+              "moved": 392439463,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 1191226,
-                "wallet": 454126979
+                "cex": 1190353,
+                "wallet": 454507916
               }
             }
           },
           "inflowsBySourceTier": {
-            "1-25K": 71501697,
-            "5M-10M": 22348692,
-            "untracked": 220255755,
-            "2.5M-5M": 31346569,
-            "25M-50M": 12643663,
-            "100K-500K": 15546075,
-            "1M-2.5M": 43529344,
+            "1-25K": 71496481,
+            "1M-2.5M": 43557878,
+            "25M-50M": 12682290,
+            "2.5M-5M": 31749769,
+            "untracked": 220114515,
+            "100K-500K": 15603500,
             "10M-25M": 4673683,
-            "25K-100K": 28950508,
+            "5M-10M": 22337784,
+            "25K-100K": 28961023,
             "500K-1M": 3330993
           },
           "movedByDestTier": {
-            "untracked": 165004512,
-            "1-25K": 53509539,
-            "1M-2.5M": 19996103,
+            "1-25K": 53538362,
+            "1M-2.5M": 20090851,
             "2.5M-5M": 56240742,
             "25M-50M": 14563094,
-            "100K-500K": 12529530,
-            "25K-100K": 28950511,
+            "untracked": 165194437,
+            "100K-500K": 12534334,
+            "25K-100K": 28961026,
             "10M-25M": 5283277,
-            "5M-10M": 4583322,
-            "500K-1M": 31015672
+            "5M-10M": 4626559,
+            "500K-1M": 31406781
           },
-          "splitDestinationSlots": 15919
-        },
-        "100K-500K": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 8940909,
-          "moved": 1222738147,
-          "splitWallets": 30277,
-          "splitEvents": 5308,
-          "splitTel": 793484599,
-          "byExchange": {
-            "Bitpanda": 7518020,
-            "Bybit": 1422889
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 4353160,
-            "wallet": 1293846689
-          },
-          "byChain": {
-            "ethereum": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 8940909,
-              "moved": 1222738147,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 4353160,
-                "wallet": 1293846689
-              }
-            }
-          },
-          "inflowsBySourceTier": {
-            "untracked": 477874630,
-            "5M-10M": 98057373,
-            "500K-1M": 34050455,
-            "100K-500K": 147788897,
-            "2.5M-5M": 297184225,
-            "1M-2.5M": 75110939,
-            "10M-25M": 20949043,
-            "1-25K": 95973178,
-            "25K-100K": 12529533,
-            "25M-50M": 34328416
-          },
-          "movedByDestTier": {
-            "1-25K": 80377698,
-            "untracked": 353176571,
-            "100K-500K": 147788901,
-            "1M-2.5M": 90940156,
-            "2.5M-5M": 359431473,
-            "25K-100K": 15546072,
-            "5M-10M": 64862439,
-            "500K-1M": 76207393,
-            "10M-25M": 34125514,
-            "25M-50M": 281930
-          },
-          "splitDestinationSlots": 30277
+          "splitDestinationSlots": 15961
         },
         "500K-1M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 3204292,
-          "moved": 1293964976,
-          "splitWallets": 8024,
-          "splitEvents": 1609,
-          "splitTel": 1139724438,
+          "moved": 1296682992,
+          "splitWallets": 8144,
+          "splitEvents": 1619,
+          "splitTel": 1141784988,
           "byExchange": {
             "Bybit": 2132226,
             "Binance": 1072067
@@ -2962,7 +2910,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 7259534,
-            "wallet": 1323348222
+            "wallet": 1325468382
           },
           "byChain": {
             "ethereum": {
@@ -2970,43 +2918,94 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 3204292,
-              "moved": 1293964976,
+              "moved": 1296682992,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 7259534,
-                "wallet": 1323348222
+                "wallet": 1325468382
               }
             }
           },
           "inflowsBySourceTier": {
-            "untracked": 430179185,
-            "1-25K": 44646654,
-            "100K-500K": 76207389,
-            "2.5M-5M": 75163740,
+            "1-25K": 44648852,
+            "100K-500K": 76213722,
+            "2.5M-5M": 75601274,
             "1M-2.5M": 36505566,
+            "untracked": 431462170,
             "500K-1M": 4862458,
             "5M-10M": 26958134,
             "50M+": 457540021,
             "25M-50M": 81545364,
             "10M-25M": 58724040,
-            "25K-100K": 31015671
+            "25K-100K": 31406781
           },
           "movedByDestTier": {
-            "1-25K": 11304728,
-            "untracked": 546093059,
-            "100K-500K": 34050455,
+            "untracked": 547144656,
+            "100K-500K": 34192573,
+            "1-25K": 11394301,
             "2.5M-5M": 77548765,
             "500K-1M": 4862461,
             "25M-50M": 4002195,
-            "1M-2.5M": 444117087,
+            "1M-2.5M": 445052168,
             "25K-100K": 3330996,
             "10M-25M": 6542892,
             "5M-10M": 7552739,
-            "50M+": 154559599
+            "50M+": 155059246
           },
-          "splitDestinationSlots": 8024
+          "splitDestinationSlots": 8144
+        },
+        "50M+": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 0,
+          "moved": 702952692,
+          "splitWallets": 6,
+          "splitEvents": 3,
+          "splitTel": 49200030,
+          "byExchange": {},
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 0,
+            "wallet": 1518307701
+          },
+          "byChain": {
+            "ethereum": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 0,
+              "moved": 702952692,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 0,
+                "wallet": 1518307701
+              }
+            }
+          },
+          "inflowsBySourceTier": {
+            "untracked": 82149164,
+            "1-25K": 96432486,
+            "1M-2.5M": 598640802,
+            "2.5M-5M": 562934765,
+            "500K-1M": 155059245,
+            "10M-25M": 23091239
+          },
+          "movedByDestTier": {
+            "1-25K": 86040501,
+            "untracked": 5650011,
+            "500K-1M": 457540021,
+            "1M-2.5M": 77910000,
+            "2.5M-5M": 55322572,
+            "5M-10M": 20489587
+          },
+          "splitDestinationSlots": 6
         }
       },
       "attributedDays": 365,
@@ -3014,87 +3013,87 @@
     },
     "ytd": {
       "from": "2026-01-01",
-      "to": "2026-11-07",
+      "to": "2026-11-08",
       "tiers": {
         "2.5M-5M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 14682985,
-          "moved": 3398987558,
-          "splitWallets": 56784,
-          "splitEvents": 1507,
-          "splitTel": 3267478364,
+          "cex": 14897792,
+          "moved": 3403716720,
+          "splitWallets": 57161,
+          "splitEvents": 1513,
+          "splitTel": 3270921701,
           "byExchange": {
             "Bitpanda": 12798747,
             "Bithumb": 1228907,
             "Bybit": 440573,
-            "OKX": 214758
+            "OKX": 429565
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 9665518,
-            "wallet": 3430838318
+            "cex": 10309745,
+            "wallet": 3433850153
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 14682985,
-              "moved": 3398987558,
+              "cex": 14897792,
+              "moved": 3403716720,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 9665518,
-                "wallet": 3430838318
+                "cex": 10309745,
+                "wallet": 3433850153
               }
             }
           },
           "inflowsBySourceTier": {
             "25K-100K": 54270100,
-            "5M-10M": 519484520,
-            "untracked": 2155295242,
-            "1-25K": 45626631,
+            "5M-10M": 519864367,
+            "untracked": 2156505082,
+            "1-25K": 45652817,
             "10M-25M": 19525285,
-            "100K-500K": 304970123,
-            "1M-2.5M": 161729961,
+            "100K-500K": 305014181,
+            "1M-2.5M": 161815957,
             "500K-1M": 75484052,
-            "2.5M-5M": 32215943,
+            "2.5M-5M": 33481851,
             "25M-50M": 6913889,
             "50M+": 55322572
           },
           "movedByDestTier": {
-            "1-25K": 297477784,
-            "5M-10M": 481540271,
-            "25K-100K": 29413874,
-            "1M-2.5M": 211347052,
-            "untracked": 1640202246,
-            "100K-500K": 286915953,
+            "1-25K": 297591417,
+            "5M-10M": 481598797,
+            "25K-100K": 29854649,
+            "1M-2.5M": 211412314,
+            "untracked": 1642109014,
+            "100K-500K": 287317358,
             "10M-25M": 131164724,
-            "2.5M-5M": 32215942,
-            "500K-1M": 72286046,
-            "25M-50M": 36852431,
+            "2.5M-5M": 33481850,
+            "500K-1M": 72723580,
+            "25M-50M": 36891782,
             "50M+": 179571235
           },
-          "splitDestinationSlots": 56784
+          "splitDestinationSlots": 57161
         },
         "1-25K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 9155738,
-          "moved": 2124850488,
-          "splitWallets": 72174,
-          "splitEvents": 9367,
-          "splitTel": 1247310787,
+          "cex": 9238259,
+          "moved": 2125851030,
+          "splitWallets": 72354,
+          "splitEvents": 9421,
+          "splitTel": 1247731993,
           "byExchange": {
             "Binance": 8187730,
             "Bybit": 604649,
-            "Gate.io": 148014,
+            "Gate.io": 230535,
             "Coinbase Prime": 215345
           },
           "inflows": {
@@ -3102,61 +3101,61 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 10620394,
-            "wallet": 2229161894
+            "wallet": 2230836563
           },
           "byChain": {
             "ethereum": {
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 9155738,
-              "moved": 2124850488,
+              "cex": 9238259,
+              "moved": 2125851030,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 10620394,
-                "wallet": 2229161894
+                "wallet": 2230836563
               }
             }
           },
           "inflowsBySourceTier": {
-            "2.5M-5M": 297477782,
-            "100K-500K": 75843266,
-            "1-25K": 129661595,
-            "25K-100K": 51473162,
-            "1M-2.5M": 59970805,
-            "5M-10M": 130702044,
-            "untracked": 1240765067,
-            "25M-50M": 29589273,
+            "2.5M-5M": 297591415,
+            "100K-500K": 75878326,
+            "1-25K": 129845878,
+            "25K-100K": 51519975,
+            "1M-2.5M": 60787221,
+            "5M-10M": 130742201,
+            "untracked": 1241006159,
+            "25M-50M": 29695787,
             "10M-25M": 122297671,
-            "500K-1M": 10816626,
+            "500K-1M": 10907327,
             "50M+": 80564603
           },
           "movedByDestTier": {
             "10M-25M": 392768267,
-            "25K-100K": 68444491,
-            "1-25K": 129661595,
-            "untracked": 1047089337,
-            "1M-2.5M": 72141165,
-            "5M-10M": 135695429,
-            "100K-500K": 91481959,
-            "2.5M-5M": 45626621,
-            "25M-50M": 9029138,
-            "500K-1M": 42595621,
+            "25K-100K": 68446972,
+            "1-25K": 129845878,
+            "untracked": 1047610632,
+            "1M-2.5M": 72363501,
+            "5M-10M": 135720951,
+            "100K-500K": 91494554,
+            "2.5M-5M": 45652808,
+            "25M-50M": 9032373,
+            "500K-1M": 42598229,
             "50M+": 90316865
           },
-          "splitDestinationSlots": 72174
+          "splitDestinationSlots": 72354
         },
         "1M-2.5M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 11486829,
-          "moved": 2320980067,
-          "splitWallets": 52774,
-          "splitEvents": 3649,
-          "splitTel": 2085832086,
+          "moved": 2326928339,
+          "splitWallets": 53170,
+          "splitEvents": 3661,
+          "splitTel": 2090177423,
           "byExchange": {
             "Bybit": 7447082,
             "Binance": 3653412,
@@ -3166,8 +3165,8 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 13381567,
-            "wallet": 2391518995
+            "cex": 13451093,
+            "wallet": 2396332700
           },
           "byChain": {
             "ethereum": {
@@ -3175,43 +3174,43 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 11486829,
-              "moved": 2320980067,
+              "moved": 2326928339,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 13381567,
-                "wallet": 2391518995
+                "cex": 13451093,
+                "wallet": 2396332700
               }
             }
           },
           "inflowsBySourceTier": {
-            "1-25K": 72141161,
-            "2.5M-5M": 211347052,
-            "untracked": 1245467486,
+            "1-25K": 72363497,
+            "2.5M-5M": 211412314,
+            "untracked": 1247137708,
             "10M-25M": 100561349,
-            "500K-1M": 433798585,
-            "25K-100K": 18965905,
-            "100K-500K": 88209611,
-            "1M-2.5M": 108201313,
-            "25M-50M": 24011116,
-            "5M-10M": 12305417,
+            "500K-1M": 434733665,
+            "25K-100K": 19060653,
+            "100K-500K": 88918016,
+            "1M-2.5M": 109292807,
+            "25M-50M": 24011238,
+            "5M-10M": 12331453,
             "50M+": 76510000
           },
           "movedByDestTier": {
-            "1-25K": 59970800,
-            "25K-100K": 42779919,
+            "1-25K": 60787216,
+            "25K-100K": 42808453,
             "50M+": 590932761,
-            "untracked": 1197578846,
-            "2.5M-5M": 161729959,
+            "untracked": 1201411304,
+            "2.5M-5M": 161815955,
             "25M-50M": 19629192,
-            "1M-2.5M": 108201314,
+            "1M-2.5M": 109292809,
             "500K-1M": 35534180,
-            "100K-500K": 70415812,
-            "10M-25M": 24231970,
+            "100K-500K": 70443002,
+            "10M-25M": 24298153,
             "5M-10M": 9975314
           },
-          "splitDestinationSlots": 52774
+          "splitDestinationSlots": 53170
         },
         "50M+": {
           "dex": 0,
@@ -3228,7 +3227,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 0,
-            "wallet": 1102498583
+            "wallet": 1102998230
           },
           "byChain": {
             "ethereum": {
@@ -3242,13 +3241,13 @@
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 0,
-                "wallet": 1102498583
+                "wallet": 1102998230
               }
             }
           },
           "inflowsBySourceTier": {
             "1M-2.5M": 590932765,
-            "500K-1M": 151794373,
+            "500K-1M": 152294020,
             "1-25K": 90316865,
             "2.5M-5M": 179571233,
             "untracked": 66792108,
@@ -3269,17 +3268,17 @@
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 0,
-          "moved": 377193192,
-          "splitWallets": 14227,
-          "splitEvents": 2875,
-          "splitTel": 287947363,
+          "moved": 378069949,
+          "splitWallets": 14306,
+          "splitEvents": 2888,
+          "splitTel": 288291371,
           "byExchange": {},
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 1079304,
-            "wallet": 424886872
+            "wallet": 425618883
           },
           "byChain": {
             "ethereum": {
@@ -3287,51 +3286,51 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 0,
-              "moved": 377193192,
+              "moved": 378069949,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 1079304,
-                "wallet": 424886872
+                "wallet": 425618883
               }
             }
           },
           "inflowsBySourceTier": {
-            "1-25K": 68444491,
-            "2.5M-5M": 29413860,
-            "1M-2.5M": 42779931,
-            "25M-50M": 12131212,
-            "untracked": 200064354,
-            "5M-10M": 21938175,
-            "100K-500K": 14395370,
+            "1-25K": 68446972,
+            "2.5M-5M": 29854635,
+            "1M-2.5M": 42808465,
+            "25M-50M": 12176147,
+            "untracked": 200206098,
+            "5M-10M": 21938812,
+            "100K-500K": 14457760,
             "10M-25M": 3987113,
-            "25K-100K": 28475712,
+            "25K-100K": 28486227,
             "500K-1M": 3256654
           },
           "movedByDestTier": {
             "2.5M-5M": 54270100,
-            "1-25K": 51473161,
-            "untracked": 156726719,
-            "100K-500K": 12000485,
-            "1M-2.5M": 18965906,
-            "25K-100K": 28475716,
+            "1-25K": 51519974,
+            "untracked": 157012250,
+            "100K-500K": 12005289,
+            "1M-2.5M": 19060654,
+            "25K-100K": 28486231,
             "10M-25M": 5283012,
-            "5M-10M": 4581727,
-            "500K-1M": 31015672,
+            "5M-10M": 4624964,
+            "500K-1M": 31406781,
             "25M-50M": 14400694
           },
-          "splitDestinationSlots": 14227
+          "splitDestinationSlots": 14306
         },
         "5M-10M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 199732481,
-          "moved": 2152118475,
-          "splitWallets": 17578,
-          "splitEvents": 1380,
-          "splitTel": 1433135339,
+          "moved": 2154839071,
+          "splitWallets": 17656,
+          "splitEvents": 1384,
+          "splitTel": 1435577306,
           "byExchange": {
             "OKX": 134506921,
             "Bithumb": 57435982,
@@ -3342,8 +3341,8 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 388819186,
-            "wallet": 2034436030
+            "cex": 388965160,
+            "wallet": 2036562808
           },
           "byChain": {
             "ethereum": {
@@ -3351,52 +3350,52 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 199732481,
-              "moved": 2152118475,
+              "moved": 2154839071,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 388819186,
-                "wallet": 2034436030
+                "cex": 388965160,
+                "wallet": 2036562808
               }
             }
           },
           "inflowsBySourceTier": {
-            "2.5M-5M": 481540268,
-            "10M-25M": 284026724,
-            "1-25K": 135695421,
-            "untracked": 711544913,
+            "2.5M-5M": 481598794,
+            "10M-25M": 284457554,
+            "1-25K": 135720943,
+            "untracked": 713113576,
             "5M-10M": 304684842,
             "100K-500K": 62118683,
             "25M-50M": 12226794,
             "500K-1M": 7551763,
-            "25K-100K": 4581724,
+            "25K-100K": 4624961,
             "1M-2.5M": 9975310,
             "50M+": 20489588
           },
           "movedByDestTier": {
-            "10M-25M": 284257535,
-            "2.5M-5M": 519484530,
-            "1-25K": 130702044,
-            "untracked": 753511213,
+            "10M-25M": 284367073,
+            "2.5M-5M": 519864377,
+            "1-25K": 130742201,
+            "untracked": 755174641,
             "5M-10M": 304684841,
-            "100K-500K": 94069718,
+            "100K-500K": 94570671,
             "500K-1M": 26957659,
-            "25K-100K": 21938176,
+            "25K-100K": 21938813,
             "25M-50M": 4207340,
-            "1M-2.5M": 12305419
+            "1M-2.5M": 12331455
           },
-          "splitDestinationSlots": 17578
+          "splitDestinationSlots": 17656
         },
         "25M-50M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 142581256,
-          "moved": 444985844,
-          "splitWallets": 16541,
-          "splitEvents": 326,
-          "splitTel": 386548169,
+          "moved": 445245996,
+          "splitWallets": 16594,
+          "splitEvents": 327,
+          "splitTel": 386770132,
           "byExchange": {
             "Gate.io": 61502397,
             "Kraken": 81078861
@@ -3405,8 +3404,8 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 84947572,
-            "wallet": 805345939
+            "cex": 86596300,
+            "wallet": 806043649
           },
           "byChain": {
             "ethereum": {
@@ -3414,51 +3413,51 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 142581256,
-              "moved": 444985844,
+              "moved": 445245996,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 84947572,
-                "wallet": 805345939
+                "cex": 86596300,
+                "wallet": 806043649
               }
             }
           },
           "inflowsBySourceTier": {
-            "untracked": 656929867,
-            "1-25K": 9029141,
+            "untracked": 657370511,
+            "1-25K": 9032376,
             "1M-2.5M": 19629192,
             "5M-10M": 4207338,
             "10M-25M": 59093562,
             "500K-1M": 3802001,
-            "100K-500K": 281864,
-            "2.5M-5M": 36852430,
+            "100K-500K": 496344,
+            "2.5M-5M": 36891781,
             "25M-50M": 1119851,
             "25K-100K": 14400693
           },
           "movedByDestTier": {
-            "25K-100K": 12131210,
-            "1-25K": 29589278,
-            "untracked": 232803747,
-            "100K-500K": 30852133,
+            "25K-100K": 12176145,
+            "1-25K": 29695791,
+            "untracked": 232877823,
+            "100K-500K": 30886639,
             "5M-10M": 12226794,
-            "1M-2.5M": 24011113,
+            "1M-2.5M": 24011235,
             "500K-1M": 80437407,
             "10M-25M": 14900420,
             "2.5M-5M": 6913893,
             "25M-50M": 1119849
           },
-          "splitDestinationSlots": 16541
+          "splitDestinationSlots": 16594
         },
         "100K-500K": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 8940909,
-          "moved": 1121065701,
-          "splitWallets": 26597,
-          "splitEvents": 4669,
-          "splitTel": 742785688,
+          "moved": 1123157473,
+          "splitWallets": 26659,
+          "splitEvents": 4681,
+          "splitTel": 743597042,
           "byExchange": {
             "Bitpanda": 7518020,
             "Bybit": 1422889
@@ -3467,8 +3466,8 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 4247570,
-            "wallet": 1181356917
+            "cex": 4254070,
+            "wallet": 1183051500
           },
           "byChain": {
             "ethereum": {
@@ -3476,48 +3475,48 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 8940909,
-              "moved": 1121065701,
+              "moved": 1123157473,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 4247570,
-                "wallet": 1181356917
+                "cex": 4254070,
+                "wallet": 1183051500
               }
             }
           },
           "inflowsBySourceTier": {
-            "1-25K": 91481956,
-            "100K-500K": 138982477,
-            "untracked": 403303612,
-            "2.5M-5M": 286915965,
-            "5M-10M": 94069716,
-            "25K-100K": 12000489,
-            "25M-50M": 30852131,
-            "500K-1M": 32618758,
+            "1-25K": 91494551,
+            "100K-500K": 139030185,
+            "untracked": 403823938,
+            "2.5M-5M": 287317370,
+            "5M-10M": 94570669,
+            "25K-100K": 12005293,
+            "25M-50M": 30886638,
+            "500K-1M": 32763853,
             "10M-25M": 20715996,
-            "1M-2.5M": 70415817
+            "1M-2.5M": 70443007
           },
           "movedByDestTier": {
-            "500K-1M": 75584204,
-            "1-25K": 75843270,
-            "untracked": 326999905,
-            "100K-500K": 138982483,
-            "2.5M-5M": 304970135,
+            "500K-1M": 75590537,
+            "1-25K": 75878329,
+            "untracked": 327973244,
+            "100K-500K": 139030191,
+            "2.5M-5M": 305014193,
             "5M-10M": 62118689,
             "10M-25M": 33680170,
-            "25K-100K": 14395366,
-            "1M-2.5M": 88209615,
-            "25M-50M": 281864
+            "25K-100K": 14457756,
+            "1M-2.5M": 88918020,
+            "25M-50M": 496344
           },
-          "splitDestinationSlots": 26597
+          "splitDestinationSlots": 26659
         },
         "10M-25M": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 55000000,
-          "moved": 1672816763,
+          "moved": 1673247593,
           "splitWallets": 16611,
           "splitEvents": 420,
           "splitTel": 1060990610,
@@ -3529,7 +3528,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 44505672,
-            "wallet": 1829189657
+            "wallet": 1829382418
           },
           "byChain": {
             "ethereum": {
@@ -3537,30 +3536,30 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 55000000,
-              "moved": 1672816763,
+              "moved": 1673247593,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 44505672,
-                "wallet": 1829189657
+                "wallet": 1829382418
               }
             }
           },
           "inflowsBySourceTier": {
-            "5M-10M": 284257545,
+            "5M-10M": 284367083,
             "1-25K": 392768280,
             "10M-25M": 691040,
-            "untracked": 935923946,
+            "untracked": 935940985,
             "2.5M-5M": 131164729,
             "100K-500K": 33680168,
             "25K-100K": 5283015,
             "500K-1M": 6288546,
             "25M-50M": 14900421,
-            "1M-2.5M": 24231967
+            "1M-2.5M": 24298151
           },
           "movedByDestTier": {
-            "5M-10M": 284026730,
+            "5M-10M": 284457560,
             "untracked": 980102771,
             "1M-2.5M": 100561331,
             "10M-25M": 691037,
@@ -3579,10 +3578,10 @@
           "dexSwap": 0,
           "dexLp": 0,
           "cex": 3204292,
-          "moved": 1264731711,
-          "splitWallets": 7761,
-          "splitEvents": 1524,
-          "splitTel": 1119867915,
+          "moved": 1267462981,
+          "splitWallets": 7884,
+          "splitEvents": 1535,
+          "splitTel": 1121937626,
           "byExchange": {
             "Bybit": 2132226,
             "Binance": 1072067
@@ -3592,7 +3591,7 @@
             "dexSwap": 0,
             "dexLp": 0,
             "cex": 7188138,
-            "wallet": 1289826262
+            "wallet": 1291951576
           },
           "byChain": {
             "ethereum": {
@@ -3600,47 +3599,47 @@
               "dexSwap": 0,
               "dexLp": 0,
               "cex": 3204292,
-              "moved": 1264731711,
+              "moved": 1267462981,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
                 "cex": 7188138,
-                "wallet": 1289826262
+                "wallet": 1291951576
               }
             }
           },
           "inflowsBySourceTier": {
-            "100K-500K": 75584202,
-            "untracked": 415143007,
+            "100K-500K": 75590535,
+            "untracked": 416430736,
             "5M-10M": 26957655,
             "50M+": 447090021,
-            "1-25K": 42595626,
+            "1-25K": 42598234,
             "10M-25M": 58724040,
-            "2.5M-5M": 72286047,
+            "2.5M-5M": 72723581,
             "1M-2.5M": 35534175,
             "500K-1M": 4458411,
             "25M-50M": 80437407,
-            "25K-100K": 31015671
+            "25K-100K": 31406781
           },
           "movedByDestTier": {
-            "untracked": 534861937,
-            "1M-2.5M": 433798587,
+            "untracked": 535922683,
+            "1M-2.5M": 434733668,
             "2.5M-5M": 75484051,
-            "100K-500K": 32618760,
-            "1-25K": 10816623,
-            "50M+": 151794373,
+            "100K-500K": 32763855,
+            "1-25K": 10907324,
+            "50M+": 152294020,
             "25K-100K": 3256657,
             "25M-50M": 3802000,
             "5M-10M": 7551763,
             "500K-1M": 4458414,
             "10M-25M": 6288546
           },
-          "splitDestinationSlots": 7761
+          "splitDestinationSlots": 7884
         }
       },
-      "attributedDays": 311,
-      "totalDays": 311
+      "attributedDays": 312,
+      "totalDays": 312
     }
   }
 }
