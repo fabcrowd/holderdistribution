@@ -13,6 +13,7 @@ import { attributeSolanaStakingBalances } from "./lib/solanaStaking.js";
 import { ensureWindowCache, readCommittedJson, replayChainRawBalances, resolveAnchorDate, usesV3Scan } from "./lib/holdersAsOfReplay.js";
 import { computeSupplyTotals, computeBridgeNettedSupply, selectSupplyMethod } from "./lib/supply.js";
 import { loadChainAdapter, resolveChainVm } from "./lib/chainAdapters.js";
+import { assertChainVm } from "./lib/chainVms.js";
 import { resolveChainTokens, combineChainBalances, v3StateToCheckpoint, legacyCheckpointUsable } from "./lib/telTokens.js";
 import { scanV3Chain } from "./lib/v3Scan.js";
 import { loadCexAddressSet, loadDexAddressSet, normalizeAddress as normalizeNonRetailAddress } from "./lib/nonRetailSet.js";
@@ -693,8 +694,8 @@ async function main() {
   const chainKeys = Object.keys(chainConfig);
   // Adapter dispatch (Approach A): chains[].vm, default "evm". The Solana module
   // is imported lazily, so an all-EVM project (TEL) never loads it.
-  const vmOf = (chainKey) => resolveChainVm({ key: chainKey, ...chainConfig[chainKey] });
-  const solanaKeys = chainKeys.filter((k) => vmOf(k) === "solana");
+  const vmOf = (chainKey) => assertChainVm(resolveChainVm({ key: chainKey, ...chainConfig[chainKey] }));
+  const nonEvmKeys = chainKeys.filter((k) => vmOf(k) !== "evm");
   // Solana token-account -> owner maps, to classify contracts{} entries that
   // list a token account rather than its owner.
   const tokenAccountOwnersByChain = {};
@@ -717,10 +718,10 @@ async function main() {
   // Published `asOf` stamp (lib/asOf.js); set by whichever branch below runs.
   let asOf = null;
 
-  if (ARG_AS_OF && solanaKeys.length > 0) {
+  if (ARG_AS_OF && nonEvmKeys.length > 0) {
     throw new Error(
-      `--as-of is not supported for Solana chains (${solanaKeys.join(", ")}): history backfill is EVM-only. ` +
-        `Solana history starts at the first live snapshot.`
+      `--as-of is not supported for non-EVM chains (${nonEvmKeys.map((k) => `${k}: ${vmOf(k)}`).join(", ")}): history backfill is EVM-only. ` +
+        `Non-EVM history starts at the first live snapshot.`
     );
   }
 
@@ -826,15 +827,17 @@ async function main() {
     const chainSettled = await Promise.allSettled(
       Object.keys(chainConfig)
         .map(async (chainKey) => {
-          if (vmOf(chainKey) === "solana") {
+          const vm = vmOf(chainKey);
+          if (vm !== "evm") {
             // Full snapshot each run (no log replay), same return shape as the
             // EVM scan: balances, tokenTotals, checkpointData.
-            const adapter = await loadChainAdapter("solana");
+            const adapter = await loadChainAdapter(vm);
+            if (typeof adapter.scanChain !== "function") throw new Error(`${chainKey} (${vm}): adapter has no scanChain`);
             try {
               const result = await adapter.scanChain({ key: chainKey, ...chainConfig[chainKey] });
               return { ...result, chainKey };
             } catch (error) {
-              throw new Error(`${chainKey} (solana): ${error.message}`);
+              throw new Error(`${chainKey} (${vm}): ${error.message}`);
             }
           }
           const chainCheckpoint = checkpoint?.chains?.[chainKey] ?? null;

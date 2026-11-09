@@ -9,26 +9,24 @@
  *   scanHolders(chain, token, opts)    -> { holders: [{ address, balance, raw }], ... }
  *   explorerUrl(chain, kind, id)       -> kind "token" | "address" | "tx"
  *   normalizeAddress(chain, address)   -> canonical address or null
+ *   isAddress(chain, address)          -> true for a valid address of this vm
+ *   clock(chain)                       -> { firstAtOrAfter(targetTs, getTime, low, high) }, the vm's
+ *                                         block/slot search used for day cutoffs
  *
- * The EVM adapter is in-process and cheap. The Solana adapter lives under
- * scripts/lib/solana/ and is only ever imported through loadChainAdapter("solana"),
- * which callers reach only when a project actually lists a Solana chain.
- * Nothing here imports it statically, so an EVM-only project (TEL) never
- * loads a byte of Solana code.
+ * The EVM adapter is in-process and cheap. The Solana and Hedera adapters live under
+ * scripts/lib/solana/ and scripts/lib/hedera/ and are only ever imported through loadChainAdapter,
+ * which callers reach only when a project actually lists such a chain.
+ * Nothing here imports them statically, so an EVM-only project (TEL) never
+ * loads a byte of Solana or Hedera code.
  */
-import { normalizeAddressForVm } from "./address.js";
+import { isAddressForVm, normalizeAddressForVm } from "./address.js";
+import { assertChainVm, CHAIN_VMS, resolveChainVm } from "./chainVms.js";
+import { findFirstBlockAtOrAfter } from "./dayBlocks.js";
 import { getUsableRpcUrls } from "./rpc.js";
 
-export const CHAIN_VMS = Object.freeze(["evm", "solana"]);
+export { CHAIN_VMS, resolveChainVm };
 export const BRIDGE_MODES = Object.freeze(["native", "lock-mint", "burn-mint"]);
 export const SOLANA_CLUSTERS = Object.freeze(["mainnet-beta"]);
-
-/** The vm of one chains[] entry: explicit `vm`, else "solana" for key "solana", else "evm". */
-export function resolveChainVm(chain) {
-  if (chain?.vm) return chain.vm;
-  if (chain?.key === "solana") return "solana";
-  return "evm";
-}
 
 /** The bridge mode of one chains[] entry (default "native"). */
 export const resolveChainBridge = (chain) => chain?.bridge ?? "native";
@@ -67,6 +65,8 @@ const evmAdapter = {
     return getUsableRpcUrls(chain.key);
   },
   normalizeAddress: (_chain, address) => normalizeAddressForVm("evm", address),
+  isAddress: (_chain, address) => isAddressForVm("evm", address),
+  clock: () => ({ firstAtOrAfter: findFirstBlockAtOrAfter }),
   explorerUrl: chainExplorerUrl,
   // EVM holder scans stay in pull-holders-rpc.js (Transfer-log replay with
   // checkpoints, v3 netting and staking attribution). They are unchanged by
@@ -85,8 +85,8 @@ const loaded = new Set();
 export const loadedAdapterVms = () => [...loaded];
 
 /**
- * The adapter for a vm. The Solana module is imported lazily, here only, so
- * it is never loaded for a project without a Solana chain.
+ * The adapter for a vm. The Solana and Hedera modules are imported lazily, here only, so
+ * they are never loaded for a project without such a chain.
  */
 export async function loadChainAdapter(vm) {
   if (vm === "evm") {
@@ -98,7 +98,13 @@ export async function loadChainAdapter(vm) {
     loaded.add("solana");
     return mod.solanaAdapter;
   }
-  throw new Error(`unknown chain vm ${JSON.stringify(vm)} (supported: ${CHAIN_VMS.join(", ")})`);
+  if (vm === "hedera") {
+    const mod = await import("./hedera/adapter.js");
+    loaded.add("hedera");
+    return mod.hederaAdapter;
+  }
+  assertChainVm(vm);
+  throw new Error(`chain vm ${JSON.stringify(vm)} has no adapter loader`);
 }
 
 /** Adapter for a chains[] entry. */

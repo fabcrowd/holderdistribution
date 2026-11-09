@@ -27,6 +27,7 @@ import { fileURLToPath } from "node:url";
 import { loadEnv } from "./loadEnv.js";
 import { getAllRpcUrls, getPublicFallbackUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { resolveJobEnv } from "./lib/rpcMetrics.js";
+import { assertChainVm } from "./lib/chainVms.js";
 import { projectChainsAllVms, selectPipelineProject } from "./lib/projects.js";
 import {
   buildLedgerIndex,
@@ -125,7 +126,7 @@ export async function main(argv = process.argv.slice(2), { root = process.cwd(),
       coverage[chain] = { status: `chain ${chain} is not in the project's chain map` };
       continue;
     }
-    const vm = chainCfg.vm ?? "evm";
+    const vm = assertChainVm(chainCfg.vm ?? "evm");
     const stables = cfg.stablecoins?.[chain] ?? [];
     const wallets = walletsForChain(cfg, chain, vm);
     const botAddrs = cfg.botCluster?.chain === chain ? cfg.botCluster.addresses : [];

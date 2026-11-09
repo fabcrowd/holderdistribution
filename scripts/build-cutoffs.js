@@ -13,17 +13,18 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import {
-  datesFromTo, ensureCutoffs, findFirstBlockAtOrAfter, findFirstSlotAtOrAfter, solanaBlockTimeOrNull, solanaSearchLow, utcDate,
+  datesFromTo, ensureCutoffs, solanaBlockTimeOrNull, solanaSearchLow, utcDate,
 } from "./lib/dayBlocks.js";
+import { loadChainAdapter } from "./lib/chainAdapters.js";
 
 /**
  * chains: [{ key, vm, head, low?, getTime(blockOrSlot) }]. Returns the full cutoff map.
  */
 export async function buildCutoffs(project, { from, to, chains, root, io }) {
-  const resolvers = Object.fromEntries(chains.map((c) => {
-    const first = c.vm === "solana" ? findFirstSlotAtOrAfter : findFirstBlockAtOrAfter;
+  const resolvers = Object.fromEntries(await Promise.all(chains.map(async (c) => {
+    const first = (await loadChainAdapter(c.vm ?? "evm")).clock(c).firstAtOrAfter;
     return [c.key, (target) => first(target, c.getTime, c.low ?? 0, c.head)];
-  }));
+  })));
   return ensureCutoffs(project, datesFromTo(from, to), { resolvers, root, io });
 }
 

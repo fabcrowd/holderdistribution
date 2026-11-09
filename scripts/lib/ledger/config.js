@@ -7,6 +7,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { assertChainVm } from "../chainVms.js";
 import { loadProjectClassification, projectRoleAddresses, SLUG_RE } from "../projects.js";
 
 export const LEDGER_WINDOWS = ["24h", "72h", "30d", "90d"];
@@ -19,6 +20,10 @@ const TX_TYPES_FILE = "config/ledger-tx-types.json";
 
 export const isEvmAddress = (a) => EVM_RE.test(String(a ?? ""));
 export const isSolanaAddress = (a) => SOL_RE.test(String(a ?? "")) && !String(a).startsWith("0x");
+/** Developer-wallet address test per vm (ledger wallets carry no vm of their own). */
+const WALLET_ADDRESS_TESTS = { evm: isEvmAddress, solana: isSolanaAddress };
+/** The vm a developer-wallet address belongs to, or null when it matches none. */
+export const walletAddressVm = (a) => Object.keys(WALLET_ADDRESS_TESTS).find((vm) => WALLET_ADDRESS_TESTS[vm](a)) ?? null;
 /** Canonical form: EVM lowercased, base58 untouched. */
 export const addr = (a) => {
   const s = String(a ?? "").trim();
@@ -56,7 +61,7 @@ export function validateLedgerConfig(cfg, { projectSlug } = {}) {
   if (!Array.isArray(cfg.developerWallets)) errors.push("developerWallets must be an array");
   const seen = new Set();
   for (const w of cfg.developerWallets ?? []) {
-    if (!isEvmAddress(w?.address) && !isSolanaAddress(w?.address)) errors.push(`developer wallet has a bad address: ${w?.address}`);
+    if (!walletAddressVm(w?.address)) errors.push(`developer wallet has a bad address: ${w?.address}`);
     if (!w?.label) errors.push(`developer wallet ${w?.address} needs a label`);
     const a = addr(w?.address);
     if (seen.has(a)) errors.push(`duplicate developer wallet ${a}`);
@@ -153,8 +158,10 @@ export function buildLedgerIndex(cfg, { project = null, root = process.cwd() } =
 
 /** Which developer wallets to scan on `chain` (empty `chains` = every chain of the right VM). */
 export function walletsForChain(cfg, chain, vm) {
+  const isVmAddress = WALLET_ADDRESS_TESTS[assertChainVm(vm)];
+  if (!isVmAddress) throw new Error(`developer-wallet ledgers are not supported for vm ${JSON.stringify(vm)} yet`);
   return (cfg.developerWallets ?? []).filter((w) => {
-    const ok = vm === "solana" ? isSolanaAddress(w.address) : isEvmAddress(w.address);
+    const ok = isVmAddress(w.address);
     if (!ok) return false;
     return !Array.isArray(w.chains) || w.chains.length === 0 || w.chains.includes(chain);
   });
