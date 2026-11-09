@@ -23,6 +23,9 @@
  * (default 4). Progress is saved after every chunk of transactions.
  * RPC: chain "solana" reads SOLANA_RPC_0..9; this scan tries keyed endpoints
  * first and the public one last (it makes thousands of calls).
+ * Backup: SOLANA_FLOW_RPC_0..1 (Alchemy, .env.enc) are tried only after those endpoints failed
+ * for a call, within the monthly cap in config/budgets.json (lib/solana/flowBackup.js). Unset =
+ * no backup. Used by this script only; every other Solana path still refuses Alchemy.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -69,6 +72,8 @@ const concurrency = Number(process.env.SOLANA_FLOW_CONCURRENCY) || 4;
 
 const { configureSolanaChain, getUsableSolanaRpcUrls, keyedFirst, solanaCallWithFailover } = await import("./lib/solana/rpc.js");
 const { scanVenueFlows } = await import("./lib/solana/flowScan.js");
+const { createFlowBackupCall, flowBackupMonthlyCap } = await import("./lib/solana/flowBackup.js");
+const { processSolanaBackupCu } = await import("./lib/rpcMetrics.js");
 const { applyFlowEventsOnce, emptyFlowStore } = await import("./lib/solana/flowFeeds.js");
 const { ensureSolanaCutoffs } = await import("./lib/dayBlocks.js");
 
@@ -89,6 +94,9 @@ const persist = async () => {
   await writeJsonAtomic(STORE_PATH, store);
   await writeJsonAtomic(CHECKPOINT_PATH, checkpoint);
 };
+
+const backupCall = createFlowBackupCall();
+if (backupCall) console.log(`  Alchemy backup for flow scans enabled (cap ${flowBackupMonthlyCap().toLocaleString("en-US")} CU/month; used only after Helius/public fail)`);
 
 const checkpoint = (await readOptionalJson(CHECKPOINT_PATH)) ?? { chains: {} };
 checkpoint.chains ??= {};
@@ -145,10 +153,11 @@ for (const c of chains) {
     }
   }
   const res = await scanVenueFlows({
-    call, mint: c.mint, ...venues, state: checkpoint.chains[c.key], sinceSec, maxTx, concurrency, deadlineMs, onProgress: save,
+    call, mint: c.mint, ...venues, state: checkpoint.chains[c.key], sinceSec, maxTx, concurrency, deadlineMs, onProgress: save, backupCall,
   });
   await save({ newEvents: [], accounts: res.accounts, remaining: res.remaining, missing: res.missing, unavailable: res.unavailable });
   console.log(`  ${c.key}: ${res.processed} tx processed, ${res.events.length} events, ${res.remaining} signatures left, ${res.missing} unavailable${res.timedOut ? " (stopped at the time budget; resumes next run)" : ""}`);
+  if (backupCall) console.log(`  ${c.key}: Alchemy backup used ${processSolanaBackupCu().toLocaleString("en-US")} CU so far this run`);
 }
 
 await persist();

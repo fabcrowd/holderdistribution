@@ -70,7 +70,7 @@ data/                              pipeline caches and checkpoints (not served);
 **Data pipeline (`scripts/`)**
 ```
 scripts/*.js, scripts/*.ts         CLI entry points (holders, history, exchange flows, CEX wallets, Solana, staking)
-scripts/lib/                       shared logic with sibling *.test.js; lib/solana/ = Solana adapter and flows
+scripts/lib/                       shared logic with sibling *.test.js; lib/solana/ = Solana adapter, flows, Alchemy flow backup
 scripts/lib/chainAdapters.js, chainVms.js   chain-VM dispatch; lib/hedera/ = Hedera adapter (built, no project registered yet)
 scripts/validate-outputs.js        feed gates: npm run check:feeds, npm run pipeline:health
 scripts/check-go-live.js           go-live gate (lib/goLive.js): no skips, placeholders fail; --alignment strict for new tokens
@@ -216,6 +216,7 @@ that already cost a run or a PR.
   through `live-data.mjs` without a deploy.
 
 ## Recent work
+- **2026-11-08: Solana flow scans can fall back to Alchemy.** Helius stays first. `scripts/lib/solana/flowBackup.js` retries a failed `getTransaction` on Alchemy (`SOLANA_FLOW_RPC_0/1` in `.env.enc`), and asks it once more before a transaction would be given up. No other Solana path can reach Alchemy. Capped at 10M CU a month (`config/budgets.json`, `monthly.solanaBackupAlchemyCu`), because the 30M CU pool is shared; backup CU can't trip EVM or staking job budgets. No feed path changed.
 - **2026-11-08: chain dispatch goes through one adapter, Hedera adapter added, not registered (#175).** Hardcoded evm-or-solana branches now route through `scripts/lib/chainAdapters.js`, and an unknown chain type fails loudly instead of being treated as EVM or Solana. `scripts/lib/hedera/` reads the public Hedera mirror node with a single pinned snapshot and a confirmed end to every range. No project uses it yet, so TEL, ONDO and ZBCN are unchanged.
 - **2026-11-08: added `COINSTATS_API_KEY` to `.env.enc` (#174).** Encrypted alongside the other keys for read-only onboarding discovery (chain cross-check, top-holder evidence). No script or workflow uses it yet; no feed changed.
 - **2026-11-08: removed unreferenced code (#173).** Deleted the unreferenced components `DataFreshness`, `HeadlineBody` and `ui/hover-card` (and their entry in `projectCopyCoverage.test.ts`), the finished TEL one-off `scripts/backfill-cumulative-holders-gap.js`, and the two stale audit result files `audit/audit-results.json` and `audit/local-audit-results.json`. No feed, workflow or data path changed.

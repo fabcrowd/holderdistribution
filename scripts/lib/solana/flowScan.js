@@ -142,10 +142,26 @@ export async function listSignatures(call, account, { until = null, sinceSec = 0
 /**
  * A null result is often a transient RPC miss rather than a pruned tx, so it
  * gets one fresh request before the caller treats it as unavailable.
+ *
+ * Alchemy backup (`backupCall`, getTransaction only):
+ *  - `call` THREW (every existing endpoint failed or stayed throttled): the backup may only
+ *    supply a real transaction. A backup null, error or cap rethrows the original error, so
+ *    the chunk aborts, the cursor stays and no NULL_TX attempt is charged.
+ *  - `call` returned null twice: scanVenueFlows asks the backup once, only on the run that would
+ *    otherwise record the transaction unavailable and only when it is not behind a held slot
+ *    (that result would be discarded). A hit is kept; a null, error or cap leaves it null, i.e.
+ *    the existing give-up behaviour.
  */
-async function fetchTransactionOnce(call, signature) {
-  const first = await getTransactionAnyVersion(call, signature);
-  return first ?? getTransactionAnyVersion(call, signature);
+async function fetchTransactionOnce(call, signature, { backupCall = null, onBackupHit = null } = {}) {
+  try {
+    const first = await getTransactionAnyVersion(call, signature);
+    return first ?? (await getTransactionAnyVersion(call, signature));
+  } catch (err) {
+    const rescued = backupCall ? await getTransactionAnyVersion(backupCall, signature).catch(() => null) : null;
+    if (!rescued) throw err;
+    onBackupHit?.(err);
+    return rescued;
+  }
 }
 
 export async function mapLimit(items, limit, fn) {
@@ -173,13 +189,21 @@ export async function mapLimit(items, limit, fn) {
  * @param {{accounts?: Record<string, {owner: string, until: string|null}>}} p.state previous chain checkpoint
  * @param {number} p.sinceSec UTC seconds floor (first real snapshot day)
  * @param {number} p.maxTx transactions fetched this run
+ * @param {((method: string, params: any[]) => Promise<any>) | null} [p.backupCall] Alchemy backup for getTransaction only (flowBackup.js)
  * @param {Array<{signature: string, slot: number, blockTime: number}>} [p.state.unavailable] carried from the checkpoint
  * @returns {Promise<{ events: Array<object>, accounts: object, remaining: number, missing: number, processed: number, unavailable: Array<object>, timedOut: boolean }>}
  */
 export async function scanVenueFlows({
   call, mint, cexWallets, dexOwners, stakingAddresses, state, sinceSec, maxTx, concurrency = 4,
-  chunkSize = DEFAULT_CHUNK, deadlineMs = Infinity, onProgress = null, logger = console,
+  chunkSize = DEFAULT_CHUNK, deadlineMs = Infinity, onProgress = null, logger = console, backupCall = null,
 }) {
+  // backupCall is the explicit opt-in to the Alchemy flow backup (flowBackup.js); null = today's behaviour.
+  let announced = false;
+  const onBackupHit = (err) => {
+    if (announced) return;
+    announced = true;
+    logger.warn?.(`  getTransaction: existing endpoints failed (${String(err?.message ?? err).slice(0, 80)}); served by the Alchemy backup (later hits not logged)`);
+  };
   const roles = {
     cex: new Map(cexWallets.map((w) => [w.address, w.exchange])),
     dex: new Set(dexOwners),
@@ -219,6 +243,8 @@ export async function scanVenueFlows({
 
   // A missing `attempts` (older checkpoints) means 0.
   const attemptsOf = (s) => unavailable.find((u) => u.signature === s.signature)?.attempts ?? 0;
+  // The run that gives a null up for good (no more cursor holds).
+  const isFinalAttempt = (s) => attemptsOf(s) + 1 >= NULL_TX_RETRY_RUNS;
   const recordUnavailable = (s, attempts) => {
     const entry = { signature: s.signature, slot: s.slot, blockTime: s.blockTime, attempts };
     unavailable = [...unavailable.filter((u) => u.signature !== s.signature), entry].slice(-UNAVAILABLE_CAP);
@@ -252,13 +278,20 @@ export async function scanVenueFlows({
     }
     const end = wholeSlotEnd(start + Math.max(1, chunkSize), limit);
     const chunk = ordered.slice(start, end);
-    const txs = await mapLimit(chunk, concurrency, (s) => fetchTransactionOnce(call, s.signature));
+    const txs = await mapLimit(chunk, concurrency, (s) => fetchTransactionOnce(call, s.signature, { backupCall, onBackupHit }));
     const fresh = [];
     // A null that still has retry runs left stops the scan at its slot, so the
     // cursor stays below it and the next run fetches it first. Its slot-mates
     // are left for that run too (a slot is never split).
-    const heldIdx = chunk.findIndex((s, i) => !txs[i] && attemptsOf(s) + 1 < NULL_TX_RETRY_RUNS);
+    const heldIdx = chunk.findIndex((s, i) => !txs[i] && !isFinalAttempt(s));
     const stopAt = heldIdx < 0 ? chunk.length : chunk.findIndex((c) => c.slot === chunk[heldIdx].slot);
+    // Last chance for a null about to be given up: one backup lookup, never behind a hold.
+    if (backupCall) {
+      const giveUps = chunk.map((s, i) => i).filter((i) => i < stopAt && !txs[i] && isFinalAttempt(chunk[i]));
+      await mapLimit(giveUps, concurrency, async (i) => {
+        txs[i] = await getTransactionAnyVersion(backupCall, chunk[i].signature).catch(() => null);
+      });
+    }
     chunk.slice(0, stopAt).forEach((s, i) => {
       done.add(s.signature);
       const tx = txs[i];
