@@ -3,7 +3,7 @@
  "slug": "tel",
  "name": "Telcoin",
  "ticker": "TEL",
- "generated": "2026-11-09T17:43:03.000Z",
+ "generated": "2026-11-10T15:42:51.000Z",
  "windows": [
   "24h",
   "72h",
@@ -119,63 +119,38 @@
   "ethereum": {
    "status": "ok",
    "provider": "public-rpc",
-   "fromBlock": 26370738,
-   "head": 26378902,
+   "fromBlock": 26378903,
+   "head": 26385480,
    "wallets": 12,
    "transfers": 0,
    "botTransfers": 0,
    "receipts": 0,
-   "headTime": "2026-11-09T17:43:03.000Z"
+   "headTime": "2026-11-10T15:42:51.000Z"
   },
   "polygon": {
    "status": "ok",
    "provider": "public-rpc",
-   "fromBlock": 96961647,
-   "head": 97027154,
+   "fromBlock": 97027155,
+   "head": 97079947,
    "wallets": 20,
-   "transfers": 48,
-   "botTransfers": 449,
-   "receipts": 1,
-   "headTime": "2026-11-09T17:43:03.000Z"
+   "transfers": 0,
+   "botTransfers": 0,
+   "receipts": 0,
+   "headTime": "2026-11-10T15:42:51.000Z"
   },
   "base": {
    "status": "ok",
    "provider": "public-rpc",
-   "fromBlock": 54788642,
-   "head": 55279881,
+   "fromBlock": 55279882,
+   "head": 55675300,
    "wallets": 5,
    "transfers": 0,
    "botTransfers": 0,
    "receipts": 0,
-   "headTime": "2026-11-09T17:43:03.000Z"
+   "headTime": "2026-11-10T15:42:51.000Z"
   }
  },
- "crossCheck": [
-  {
-   "chain": "polygon",
-   "status": "checked",
-   "fromBlock": 96961647,
-   "toBlock": 97027154,
-   "rows": [
-    {
-     "address": "0x17fcc1f337fd68ff831017684798d08cbd424143",
-     "alchemy": 0,
-     "etherscan": 0
-    },
-    {
-     "address": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-     "alchemy": 23,
-     "etherscan": 23
-    },
-    {
-     "address": "0x11cb903d2f797d4410fd5e65ba9aa641a0741fc3",
-     "alchemy": 0,
-     "etherscan": 0
-    }
-   ],
-   "mismatches": 0
-  }
- ],
+ "crossCheck": null,
  "botCluster": {
   "label": "Polygon 10-wallet ParaSwap sell bot (cluster)",
   "chain": "polygon",
@@ -220,14 +195,14 @@
   ],
   "windows": {
    "24h": {
-    "sold": 25681754,
-    "sales": 382,
-    "devShare": 8872517
+    "sold": 0,
+    "sales": 0,
+    "devShare": 0
    },
    "72h": {
-    "sold": 94910418,
-    "sales": 1378,
-    "devShare": 32789596
+    "sold": 63843050,
+    "sales": 918,
+    "devShare": 22056460
    },
    "30d": {
     "sold": 899630048,
@@ -235,9 +210,9 @@
     "devShare": 310803671
    },
    "90d": {
-    "sold": 2340819283,
-    "sales": 25118,
-    "devShare": 808704898
+    "sold": 2323772847,
+    "sales": 24772,
+    "devShare": 802815705
    }
   },
   "recentSales": [
@@ -895,18 +870,18 @@
  },
  "byWindow": {
   "24h": {
-   "from": "2026-11-08T17:43:03.000Z",
-   "to": "2026-11-09T17:43:03.000Z",
+   "from": "2026-11-09T15:42:51.000Z",
+   "to": "2026-11-10T15:42:51.000Z",
    "devSold": {
-    "dex": 4055555,
+    "dex": 0,
     "cex": 0,
-    "botDevShare": 8872517,
-    "total": 12928073
+    "botDevShare": 0,
+    "total": 0
    },
-   "sellCount": 12,
-   "botSaleCount": 382,
-   "botSold": 25681754,
-   "sellDays": 2,
+   "sellCount": 0,
+   "botSaleCount": 0,
+   "botSold": 0,
+   "sellDays": 0,
    "internal": {
     "count": 0,
     "amount": 0
@@ -915,69 +890,37 @@
    "payments": {
     "stableOut": 0,
     "stableOutCount": 0,
-    "stableIn": 6149,
-    "stableInCount": 12,
+    "stableIn": 0,
+    "stableInCount": 0,
     "bySymbol": {},
     "topStableRecipients": [],
-    "topTokenDestinations": [
-     {
-      "address": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-      "label": "CoW Protocol settlement",
-      "asset": "token",
-      "symbol": "TEL (legacy)",
-      "type": "dex_sell",
-      "count": 11,
-      "amount": 3055555,
-      "lastHash": "0x6b24745da9e8657646f5b967f3bf6212b8f76bf591e6ff1ed11365ec6c8bcb60",
-      "lastTime": 1794173692
-     },
-     {
-      "address": "0x73dae2fdf839af5f6bc62890f65a4357937ccf04",
-      "label": "DEX (swap in receipt)",
-      "asset": "token",
-      "symbol": "TEL (legacy)",
-      "type": "dex_sell",
-      "count": 1,
-      "amount": 1000000,
-      "lastHash": "0x6136e2274f7c35efb5ebf1d62bd55d9481326362b37d14a64ac510e4c39ad086",
-      "lastTime": 1794184711
-     }
-    ]
+    "topTokenDestinations": []
    },
-   "byType": {
-    "dex_sell": {
-     "count": 12,
-     "amount": 4055555
-    },
-    "stable_in": {
-     "count": 12,
-     "amount": 6149
-    }
-   }
+   "byType": {}
   },
   "72h": {
-   "from": "2026-11-06T17:43:03.000Z",
-   "to": "2026-11-09T17:43:03.000Z",
+   "from": "2026-11-07T15:42:51.000Z",
+   "to": "2026-11-10T15:42:51.000Z",
    "devSold": {
-    "dex": 30637010,
+    "dex": 25611110,
     "cex": 0,
-    "botDevShare": 32789596,
-    "total": 63426606
+    "botDevShare": 22056460,
+    "total": 47667570
    },
-   "sellCount": 132,
-   "botSaleCount": 1378,
-   "botSold": 94910418,
-   "sellDays": 4,
+   "sellCount": 87,
+   "botSaleCount": 918,
+   "botSold": 63843050,
+   "sellDays": 3,
    "internal": {
-    "count": 1,
-    "amount": 100000000
+    "count": 0,
+    "amount": 0
    },
    "received": 0,
    "payments": {
     "stableOut": 3247,
     "stableOutCount": 1,
-    "stableIn": 48505,
-    "stableInCount": 132,
+    "stableIn": 40169,
+    "stableInCount": 87,
     "bySymbol": {
      "USDC": 3247
     },
@@ -1001,8 +944,8 @@
       "asset": "token",
       "symbol": "TEL (legacy)",
       "type": "dex_sell",
-      "count": 129,
-      "amount": 27637010,
+      "count": 85,
+      "amount": 23611110,
       "lastHash": "0x6b24745da9e8657646f5b967f3bf6212b8f76bf591e6ff1ed11365ec6c8bcb60",
       "lastTime": 1794173692
      },
@@ -1016,42 +959,27 @@
       "amount": 2000000,
       "lastHash": "0x6136e2274f7c35efb5ebf1d62bd55d9481326362b37d14a64ac510e4c39ad086",
       "lastTime": 1794184711
-     },
-     {
-      "address": "0x111116058b9828cdcdd810c502b925c14f34ca11",
-      "label": "DEX (swap in receipt)",
-      "asset": "token",
-      "symbol": "TEL (legacy)",
-      "type": "dex_sell",
-      "count": 1,
-      "amount": 1000000,
-      "lastHash": "0x6bbdbbdf358ccd8d5be77d454ce2f2c5f8b81631df59f2e63fe0fae69ecb1316",
-      "lastTime": 1794006144
      }
     ]
    },
    "byType": {
     "dex_sell": {
-     "count": 132,
-     "amount": 30637010
+     "count": 87,
+     "amount": 25611110
     },
     "stable_in": {
-     "count": 132,
-     "amount": 48505
+     "count": 87,
+     "amount": 40169
     },
     "stable_out": {
      "count": 1,
      "amount": 3247
-    },
-    "internal_shuffle": {
-     "count": 1,
-     "amount": 100000000
     }
    }
   },
   "30d": {
-   "from": "2026-10-10T17:43:03.000Z",
-   "to": "2026-11-09T17:43:03.000Z",
+   "from": "2026-10-11T15:42:51.000Z",
+   "to": "2026-11-10T15:42:51.000Z",
    "devSold": {
     "dex": 87160095,
     "cex": 0,
@@ -1304,18 +1232,18 @@
    }
   },
   "90d": {
-   "from": "2026-08-11T17:43:03.000Z",
-   "to": "2026-11-09T17:43:03.000Z",
+   "from": "2026-08-12T15:42:51.000Z",
+   "to": "2026-11-10T15:42:51.000Z",
    "devSold": {
-    "dex": 259809972,
+    "dex": 243547689,
     "cex": 1255701308,
-    "botDevShare": 808704898,
-    "total": 2324216178
+    "botDevShare": 802815705,
+    "total": 2302064703
    },
-   "sellCount": 540,
-   "botSaleCount": 25118,
-   "botSold": 2340819283,
-   "sellDays": 70,
+   "sellCount": 529,
+   "botSaleCount": 24772,
+   "botSold": 2323772847,
+   "sellDays": 69,
    "internal": {
     "count": 24,
     "amount": 1941415476
@@ -1324,8 +1252,8 @@
    "payments": {
     "stableOut": 433937,
     "stableOutCount": 26,
-    "stableIn": 434790,
-    "stableInCount": 585,
+    "stableIn": 409375,
+    "stableInCount": 574,
     "bySymbol": {
      "USDC": 433107,
      "USDT": 831
@@ -1471,8 +1399,8 @@
       "asset": "token",
       "symbol": "TEL (legacy)",
       "type": "dex_sell",
-      "count": 528,
-      "amount": 256512812,
+      "count": 517,
+      "amount": 240250529,
       "lastHash": "0x6b24745da9e8657646f5b967f3bf6212b8f76bf591e6ff1ed11365ec6c8bcb60",
       "lastTime": 1794173692
      },
@@ -1557,12 +1485,12 @@
    },
    "byType": {
     "dex_sell": {
-     "count": 533,
-     "amount": 259809972
+     "count": 522,
+     "amount": 243547689
     },
     "stable_in": {
-     "count": 585,
-     "amount": 434790
+     "count": 574,
+     "amount": 409375
     },
     "stable_out": {
      "count": 26,
@@ -1601,18 +1529,14 @@
  },
  "headlines": {
   "24h": [
-   "Developer wallets sold 12.9M TEL in the last 24h: 4.1M on DEXs, 8.9M via the bot cluster (developer-funded 35% of its 25.7M sold).",
-   "Selling happened on 2 of 1 day (12 direct sale/deposit transactions, 382 bot sales).",
-   "They received $6.1k in stablecoins (12 transfers).",
-   "Largest TEL destination: CoW Protocol settlement (3.1M TEL, 11 transfers)."
+   "No developer selling found in the last 24h."
   ],
   "72h": [
-   "Developer wallets sold 63.4M TEL in the last 72h: 30.6M on DEXs, 32.8M via the bot cluster (developer-funded 35% of its 94.9M sold).",
-   "Selling happened on 4 of 3 days (132 direct sale/deposit transactions, 1378 bot sales).",
+   "Developer wallets sold 47.7M TEL in the last 72h: 25.6M on DEXs, 22.1M via the bot cluster (developer-funded 35% of its 63.8M sold).",
+   "Selling happened on 3 of 3 days (87 direct sale/deposit transactions, 918 bot sales).",
    "They paid out $3.2k in stablecoins (1 payment); the largest recipient was 0xc72178d412256a6dc5f04d749859b4cd95076d61 ($3.2k).",
-   "They received $48.5k in stablecoins (132 transfers).",
-   "Largest TEL destination: CoW Protocol settlement (27.6M TEL, 129 transfers).",
-   "1 internal shuffle between developer wallets (100.0M TEL) are noted but not counted as selling."
+   "They received $40.2k in stablecoins (87 transfers).",
+   "Largest TEL destination: CoW Protocol settlement (23.6M TEL, 85 transfers)."
   ],
   "30d": [
    "Developer wallets sold 398.0M TEL in the last 30d: 87.2M on DEXs, 310.8M via the bot cluster (developer-funded 35% of its 899.6M sold).",
@@ -1623,10 +1547,10 @@
    "9 internal shuffles between developer wallets (995.2M TEL) are noted but not counted as selling."
   ],
   "90d": [
-   "Developer wallets sold 2.32B TEL in the last 90d: 259.8M on DEXs, 1.26B sent to exchanges, 808.7M via the bot cluster (developer-funded 35% of its 2.34B sold).",
-   "Selling happened on 70 of 90 days (540 direct sale/deposit transactions, 25118 bot sales).",
+   "Developer wallets sold 2.30B TEL in the last 90d: 243.5M on DEXs, 1.26B sent to exchanges, 802.8M via the bot cluster (developer-funded 35% of its 2.32B sold).",
+   "Selling happened on 69 of 90 days (529 direct sale/deposit transactions, 24772 bot sales).",
    "They paid out $433.9k in stablecoins (26 payments); the largest recipient was 0x10f7835f827d6cf035115e10c50a853d7fb2d2ec ($333.1k).",
-   "They received $434.8k in stablecoins (585 transfers).",
+   "They received $409.4k in stablecoins (574 transfers).",
    "Largest TEL destination: KuCoin (via relay) (1.06B TEL, 5 transfers).",
    "24 internal shuffles between developer wallets (1.94B TEL) are noted but not counted as selling."
   ]
@@ -1680,16 +1604,16 @@
    "confidence": "medium",
    "windows": {
     "24h": {
-     "sold": 3055555,
+     "sold": 0,
      "stableOut": 0,
      "internal": 0,
-     "txs": 22
+     "txs": 0
     },
     "72h": {
-     "sold": 27637010,
+     "sold": 23611110,
      "stableOut": 0,
      "internal": 0,
-     "txs": 258
+     "txs": 170
     },
     "30d": {
      "sold": 80451511,
@@ -1698,10 +1622,10 @@
      "txs": 530
     },
     "90d": {
-     "sold": 237722948,
+     "sold": 221460665,
      "stableOut": 100,
      "internal": 11,
-     "txs": 1056
+     "txs": 1034
     }
    },
    "lastActivity": "2026-11-08T21:34:52.000Z"
@@ -1830,16 +1754,16 @@
    "confidence": "confirmed",
    "windows": {
     "24h": {
-     "sold": 1000000,
+     "sold": 0,
      "stableOut": 0,
      "internal": 0,
-     "txs": 2
+     "txs": 0
     },
     "72h": {
-     "sold": 3000000,
+     "sold": 2000000,
      "stableOut": 3247,
      "internal": 0,
-     "txs": 7
+     "txs": 5
     },
     "30d": {
      "sold": 3000000,
@@ -2137,8 +2061,8 @@
     "72h": {
      "sold": 0,
      "stableOut": 0,
-     "internal": 1,
-     "txs": 1
+     "internal": 0,
+     "txs": 0
     },
     "30d": {
      "sold": 0,
@@ -2607,25 +2531,6 @@
   }
  ],
  "daily": [
-  {
-   "date": "2026-08-12",
-   "devSold": 20356696,
-   "botSold": 10567622,
-   "botDevShare": 3650896,
-   "dexSell": 16705800,
-   "cexDeposit": 0,
-   "internal": 0,
-   "botFunding": 0,
-   "bridge": 0,
-   "custody": 0,
-   "staking": 0,
-   "burn": 0,
-   "transferOut": 0,
-   "receive": 0,
-   "stableIn": 26268,
-   "stableOut": 23782,
-   "stableInternal": 23782
-  },
   {
    "date": "2026-08-13",
    "devSold": 44085132,
@@ -4316,6 +4221,25 @@
    "stableIn": 1476,
    "stableOut": 0,
    "stableInternal": 0
+  },
+  {
+   "date": "2026-11-10",
+   "devSold": 0,
+   "botSold": 0,
+   "botDevShare": 0,
+   "dexSell": 0,
+   "cexDeposit": 0,
+   "internal": 0,
+   "botFunding": 0,
+   "bridge": 0,
+   "custody": 0,
+   "staking": 0,
+   "burn": 0,
+   "transferOut": 0,
+   "receive": 0,
+   "stableIn": 0,
+   "stableOut": 0,
+   "stableInternal": 0
   }
  ],
  "patterns": [
@@ -4323,19 +4247,19 @@
    "kind": "fixed_size",
    "wallet": "bot-cluster",
    "walletLabel": "Bot cluster",
-   "count": 25118,
-   "typicalAmount": 90350,
+   "count": 24772,
+   "typicalAmount": 91785,
    "range": [
-    41517,
-    161253
+    41606,
+    161713
    ],
-   "description": "The bot cluster made 25118 sales, 80% of them between 41.5k and 161.3k TEL: the narrow, repeated size of an automated seller.",
+   "description": "The bot cluster made 24772 sales, 80% of them between 41.6k and 161.7k TEL: the narrow, repeated size of an automated seller.",
    "sampleHashes": [
-    "0x6ca288b04072df052ed21638686fd845d5bbdfaadffa613b482e2da3dfe85033",
-    "0xbea92c9a85fd38b58776bdcc1419c3714e4087f06b3494d1fc2617491b697763",
-    "0x660e1bfa8afe82a0e06196c43f5bb6acaa028303c8f50124b10a0f885fe26795",
-    "0x7e9989bcef1fa6aba420b4e16ab770a809ef22fa818b57f379156bf77515cecd",
-    "0xa16af6b1749fb3d7e9b0d120fe1cc4b1b95d40af23bd0be439d295194b74b2c9"
+    "0xf16c274b79003c66ceca03d0621c70179a6592686705ed2dcccf694ef4653456",
+    "0x2b9843a31438137348b81b647c6a8ecaae5fad309cf2b616d61fb42c0cf5bf33",
+    "0x848fe4a5a163272cfa331f181fb0a1e23050af6246be6b391018390f34e5e276",
+    "0xf2025f8c62713f72187c9574667e2c19fbe0b9607600c8ff0af7aa6d7ed5c587",
+    "0xa3121e6b03619f98098553072ef85e1e36fef7c6cc6e4674e3590d46225f3867"
    ]
   },
   {
@@ -4385,11 +4309,11 @@
    "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
    "counterpartyLabel": "CoW Protocol settlement",
    "type": "dex_sell",
-   "count": 31,
+   "count": 20,
    "typicalAmount": 1603112,
-   "total": 48324527,
+   "total": 32062244,
    "intervalDays": 0.01,
-   "description": "Recipient Safe (CoW seller) sent about 1.6M TEL to CoW Protocol settlement 31 times, roughly every day.",
+   "description": "Recipient Safe (CoW seller) sent about 1.6M TEL to CoW Protocol settlement 20 times, roughly every day.",
    "sampleHashes": [
     "0xc56696ec8e6574950ca12d3fd2058f0e27a14f2a3f651fa78067c2793bf9886c",
     "0xfa93274636faab0e90853912bbb4c6e59156d5375e41a6a131d3cb0e0b84aed8",
@@ -29950,446 +29874,6 @@
    "headline": false,
    "uniqueId": "0x6efd456475f901212b4b921dafeb1bfe5522991f158a7036c35d43c73fbf4876:log:197",
    "blockNumber": 91911670
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x384b1013445a20003b26171d1d08c40d3774d3f5671bd332e98e80f49a681da0",
-   "time": 1786548577,
-   "date": "2026-08-12",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0x384b1013445a20003b26171d1d08c40d3774d3f5671bd332e98e80f49a681da0:log:341",
-   "blockNumber": 91895700
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x384b1013445a20003b26171d1d08c40d3774d3f5671bd332e98e80f49a681da0",
-   "time": 1786548577,
-   "date": "2026-08-12",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2306.27099,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0x384b1013445a20003b26171d1d08c40d3774d3f5671bd332e98e80f49a681da0:log:386",
-   "blockNumber": 91895700
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xb4eec8ee3bb5db56c39a95bc728e0df12572712e3e338232dcf4de1b37031fd3",
-   "time": 1786541016,
-   "date": "2026-08-12",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0xb4eec8ee3bb5db56c39a95bc728e0df12572712e3e338232dcf4de1b37031fd3:log:377",
-   "blockNumber": 91890659
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xb4eec8ee3bb5db56c39a95bc728e0df12572712e3e338232dcf4de1b37031fd3",
-   "time": 1786541016,
-   "date": "2026-08-12",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2349.398454,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0xb4eec8ee3bb5db56c39a95bc728e0df12572712e3e338232dcf4de1b37031fd3:log:424",
-   "blockNumber": 91890659
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x5146ec501d8bbe6f6f4b6b08248616f2ecf14895bdfabe5de71765a76535722a",
-   "time": 1786533621,
-   "date": "2026-08-12",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0x5146ec501d8bbe6f6f4b6b08248616f2ecf14895bdfabe5de71765a76535722a:log:854",
-   "blockNumber": 91885729
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x5146ec501d8bbe6f6f4b6b08248616f2ecf14895bdfabe5de71765a76535722a",
-   "time": 1786533621,
-   "date": "2026-08-12",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2322.49106,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0x5146ec501d8bbe6f6f4b6b08248616f2ecf14895bdfabe5de71765a76535722a:log:894",
-   "blockNumber": 91885729
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x6b016f9e15d8af005f92cbdbf6f66b4207809c3e88c75628abc071129dc57e2c",
-   "time": 1786526031,
-   "date": "2026-08-12",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0x6b016f9e15d8af005f92cbdbf6f66b4207809c3e88c75628abc071129dc57e2c:log:378",
-   "blockNumber": 91880669
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x6b016f9e15d8af005f92cbdbf6f66b4207809c3e88c75628abc071129dc57e2c",
-   "time": 1786526031,
-   "date": "2026-08-12",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2323.360195,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0x6b016f9e15d8af005f92cbdbf6f66b4207809c3e88c75628abc071129dc57e2c:log:428",
-   "blockNumber": 91880669
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xbb96bd7974895136e5ad57ae8f11e4f50c0122bafe1de2cdd258641ddec35e31",
-   "time": 1786518337,
-   "date": "2026-08-12",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0xbb96bd7974895136e5ad57ae8f11e4f50c0122bafe1de2cdd258641ddec35e31:log:875",
-   "blockNumber": 91875540
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xbb96bd7974895136e5ad57ae8f11e4f50c0122bafe1de2cdd258641ddec35e31",
-   "time": 1786518337,
-   "date": "2026-08-12",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2316.216233,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0xbb96bd7974895136e5ad57ae8f11e4f50c0122bafe1de2cdd258641ddec35e31:log:917",
-   "blockNumber": 91875540
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xe7e17fc115b0719d66d0ff626761a1f8f65783e5d3eb2e354391b0f105282f72",
-   "time": 1786510776,
-   "date": "2026-08-12",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0xe7e17fc115b0719d66d0ff626761a1f8f65783e5d3eb2e354391b0f105282f72:log:366",
-   "blockNumber": 91870499
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xe7e17fc115b0719d66d0ff626761a1f8f65783e5d3eb2e354391b0f105282f72",
-   "time": 1786510776,
-   "date": "2026-08-12",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2331.036851,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0xe7e17fc115b0719d66d0ff626761a1f8f65783e5d3eb2e354391b0f105282f72:log:510",
-   "blockNumber": 91870499
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x0a800dfa90932ce71d53c600e08101557c8f360bfee592b48f47d68138553a23",
-   "time": 1786503217,
-   "date": "2026-08-12",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0x0a800dfa90932ce71d53c600e08101557c8f360bfee592b48f47d68138553a23:log:1014",
-   "blockNumber": 91865460
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x0a800dfa90932ce71d53c600e08101557c8f360bfee592b48f47d68138553a23",
-   "time": 1786503217,
-   "date": "2026-08-12",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2345.940567,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0x0a800dfa90932ce71d53c600e08101557c8f360bfee592b48f47d68138553a23:log:1079",
-   "blockNumber": 91865460
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x76a94d5d21649643ca031ead607ad5aa7951d4f4fe042a2270556131c938c84c",
-   "time": 1786495674,
-   "date": "2026-08-12",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0x76a94d5d21649643ca031ead607ad5aa7951d4f4fe042a2270556131c938c84c:log:732",
-   "blockNumber": 91860431
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x76a94d5d21649643ca031ead607ad5aa7951d4f4fe042a2270556131c938c84c",
-   "time": 1786495674,
-   "date": "2026-08-12",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2338.233743,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0x76a94d5d21649643ca031ead607ad5aa7951d4f4fe042a2270556131c938c84c:log:792",
-   "blockNumber": 91860431
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xd64f59ff2cb190501bfefcf4e9ec46b2681a631d6e09c7a39d2bed02de0d6a73",
-   "time": 1786488093,
-   "date": "2026-08-11",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0xd64f59ff2cb190501bfefcf4e9ec46b2681a631d6e09c7a39d2bed02de0d6a73:log:387",
-   "blockNumber": 91855377
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xd64f59ff2cb190501bfefcf4e9ec46b2681a631d6e09c7a39d2bed02de0d6a73",
-   "time": 1786488093,
-   "date": "2026-08-11",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2286.736411,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0xd64f59ff2cb190501bfefcf4e9ec46b2681a631d6e09c7a39d2bed02de0d6a73:log:448",
-   "blockNumber": 91855377
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xaf72982cdb5494c098b66679c6b25aaf88e9199aa4f2d781bcf70b451548d317",
-   "time": 1786481544,
-   "date": "2026-08-11",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0xaf72982cdb5494c098b66679c6b25aaf88e9199aa4f2d781bcf70b451548d317:log:200",
-   "blockNumber": 91851011
-  },
-  {
-   "chain": "polygon",
-   "hash": "0xaf72982cdb5494c098b66679c6b25aaf88e9199aa4f2d781bcf70b451548d317",
-   "time": 1786481544,
-   "date": "2026-08-11",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2250.661819,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0xaf72982cdb5494c098b66679c6b25aaf88e9199aa4f2d781bcf70b451548d317:log:244",
-   "blockNumber": 91851011
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x39d6a1387e3f11633a8b7fadad827a6b475b4db2d482a62f3b4daf5a53a2af37",
-   "time": 1786478107,
-   "date": "2026-08-11",
-   "type": "dex_sell",
-   "direction": "out",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "token",
-   "symbol": "TEL (legacy)",
-   "amount": 1478389.34,
-   "reason": "Recipient is DEX venue \"CoW Protocol settlement\" (DEX list / ledger venues.dex).",
-   "internal": false,
-   "headline": true,
-   "uniqueId": "0x39d6a1387e3f11633a8b7fadad827a6b475b4db2d482a62f3b4daf5a53a2af37:log:114",
-   "blockNumber": 91848720
-  },
-  {
-   "chain": "polygon",
-   "hash": "0x39d6a1387e3f11633a8b7fadad827a6b475b4db2d482a62f3b4daf5a53a2af37",
-   "time": 1786478107,
-   "date": "2026-08-11",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "0xe71e5bb31d76be3a4a840e1781a4b49645079105",
-   "walletLabel": "Recipient Safe (CoW seller)",
-   "counterparty": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
-   "counterpartyLabel": "CoW Protocol settlement",
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 2244.689463,
-   "reason": "USDC arrived at Recipient Safe (CoW seller) from CoW Protocol settlement.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "0x39d6a1387e3f11633a8b7fadad827a6b475b4db2d482a62f3b4daf5a53a2af37:log:167",
-   "blockNumber": 91848720
   }
  ],
  "eventsTruncated": false
