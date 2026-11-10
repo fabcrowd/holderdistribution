@@ -34,6 +34,12 @@ export const resolveChainBridge = (chain) => chain?.bridge ?? "native";
 /** True when the project config lists at least one chain with this vm. */
 export const projectHasVm = (config, vm) => (config?.chains ?? []).some((c) => resolveChainVm(c) === vm);
 
+const HASHSCAN_TEMPLATES = Object.freeze({
+  token: "https://hashscan.io/mainnet/token/{address}",
+  address: "https://hashscan.io/mainnet/account/{address}",
+  tx: "https://hashscan.io/mainnet/transaction/{tx}",
+});
+
 /** Default explorer URL templates per vm. EVM reproduces today's `/token/` and `/address/` links. */
 export function defaultExplorerTemplates(chain) {
   const vm = resolveChainVm(chain);
@@ -41,6 +47,7 @@ export function defaultExplorerTemplates(chain) {
     const root = (chain?.explorer ?? "https://solscan.io").replace(/\/+$/, "");
     return { token: `${root}/token/{address}`, address: `${root}/account/{address}`, tx: `${root}/tx/{tx}` };
   }
+  if (vm === "hedera") return { ...HASHSCAN_TEMPLATES };
   const root = (chain?.explorer ?? "").replace(/\/+$/, "");
   if (!root) return {};
   return { token: `${root}/token/{address}`, address: `${root}/address/{address}`, tx: `${root}/tx/{tx}` };

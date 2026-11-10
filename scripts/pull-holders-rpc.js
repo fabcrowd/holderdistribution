@@ -674,6 +674,59 @@ async function planLivePins(chainConfig, chainKeys, vmOf, checkpoint, settledDat
   });
 }
 
+/**
+ * Resume wiring for an adapter that can resume (`resumeProblem`): a saved scan state in the work dir is
+ * reused only when the adapter accepts it (Hedera: same floor and range width; a pinned snapshot has no age limit),
+ * otherwise the scan starts fresh. Progress is written at most every PARTIAL_CHECKPOINT_SECS, and once more if the
+ * scan throws, so a failed page keeps the pages already accepted. The file is removed when the chain's scan lands
+ * in the real checkpoint. Adapters without `resumeProblem` always scan fresh.
+ */
+async function vmScanResume(adapter, chain) {
+  if (typeof adapter.resumeProblem !== "function") return { resume: null, onProgress: undefined, flush: async () => {}, drain: async () => {} };
+  const partialPath = projectWork(project)(partialName(chain.key));
+  const saved = await readPartial(partialPath);
+  let resume = null;
+  if (saved) {
+    const problem = adapter.resumeProblem(chain, saved);
+    if (problem) {
+      console.warn(`${chain.key}: ignoring saved scan state (${problem}); starting a fresh scan.`);
+      await removePartial(partialPath);
+    } else {
+      resume = saved;
+      const open = Object.keys(saved.open ?? {}).length;
+      console.log(`Resuming ${chain.key} scan at snapshot ${saved.timestamp} (${Object.keys(saved.ranges).length} ranges done, ${open} in progress).`);
+    }
+  }
+  let lastWriteAt = 0;
+  let latest = null;
+  let pending = Promise.resolve();
+  const persist = (state) => {
+    const snap = JSON.parse(JSON.stringify(state));
+    pending = pending
+      .then(() => writePartial(partialPath, snap))
+      .catch((e) => console.error(`  ${chain.key}: could not save scan state: ${e.message}`));
+  };
+  const onProgress = (state) => {
+    latest = state;
+    if (PARTIAL_CHECKPOINT_SECS <= 0 || Date.now() - lastWriteAt < PARTIAL_CHECKPOINT_SECS * 1000) return;
+    lastWriteAt = Date.now();
+    persist(state);
+  };
+  const flush = () => {
+    if (!latest) return pending;
+    lastWriteAt = Date.now();
+    persist(latest);
+    return pending;
+  };
+  // After a successful scan: stop saving and let in-flight writes land, so the partial file removed once the
+  // checkpoint is written cannot be recreated (a leftover state would be resumed as an old snapshot).
+  const drain = () => {
+    lastWriteAt = Number.POSITIVE_INFINITY;
+    return pending;
+  };
+  return { resume, onProgress, flush, drain };
+}
+
 async function main() {
   const [chainConfig, exclusions, fundingWallets, checkpoint] = await Promise.all([
     loadChainConfig(),
@@ -834,8 +887,16 @@ async function main() {
             const adapter = await loadChainAdapter(vm);
             if (typeof adapter.scanChain !== "function") throw new Error(`${chainKey} (${vm}): adapter has no scanChain`);
             try {
-              const result = await adapter.scanChain({ key: chainKey, ...chainConfig[chainKey] });
-              return { ...result, chainKey };
+              const chain = { key: chainKey, ...chainConfig[chainKey] };
+              const { resume, onProgress, flush, drain } = await vmScanResume(adapter, chain);
+              try {
+                const result = await adapter.scanChain(chain, { resume, onProgress });
+                await drain();
+                return { ...result, chainKey };
+              } catch (error) {
+                await flush?.();
+                throw error;
+              }
             } catch (error) {
               throw new Error(`${chainKey} (${vm}): ${error.message}`);
             }

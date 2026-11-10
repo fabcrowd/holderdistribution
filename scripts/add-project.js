@@ -92,6 +92,10 @@ export function chainEntry(spec, i) {
   if (!key || !address || decimals === undefined) throw new Error(`--chain ${spec}: use <key>:<token address>:<decimals>[:chainId[:deployBlock]]`);
   const d = Number(decimals);
   if (!Number.isInteger(d) || d < 0 || d > 18) throw new Error(`--chain ${spec}: decimals must be 0-18`);
+  if (key === "hedera") {
+    if (address !== "native") throw new Error(`--chain ${spec}: hedera is the native coin; use hedera:native:<decimals>`);
+    return { key: "hedera", name: "Hedera", vm: "hedera", bridge: "native", ...(i === 0 ? { origin: true } : {}), asset: { kind: "native", decimals: d }, contracts: {} };
+  }
   if (key === "solana") {
     if (!isSolanaAddress(address)) throw new Error(`--chain ${spec}: not a base58 mint`);
     return {

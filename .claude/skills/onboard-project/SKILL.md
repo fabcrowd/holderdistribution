@@ -26,7 +26,7 @@ Reference: `docs/MULTI-TOKEN.md` ("Adding the next project"), `docs/FORENSICS.md
 ## Step 1 - Pre-flight (no questions)
 **Do:** `git status` (say what is already modified), confirm `npm ci` is done and env decrypt works (names only). Infer the VM: `0x` + 40 hex = EVM; base58 of 32-44 chars = Solana mint; anything else = unsupported VM, stop.
 **Pass:** clean or understood tree, VM known.
-**Stop if:** unsupported VM.
+**Stop if:** unsupported VM. HBAR (`0.0.N`, chain spec `hedera:native:8`) validates and scaffolds, but it isn't onboardable yet: its supply file, cutoffs, history, CEX list and staking aren't built. Stop there too.
 
 ## Step 2 - Discovery (read-only; keep results in the scratchpad)
 **Do:**
@@ -52,7 +52,7 @@ Use AskUserQuestion. Recommended default first, marked "(Recommended)". Skip any
 | 5 | `supply.target` | verified total supply |
 | 6 | Treasury/team/escrow/reward-vault wallets and categories | those found in Step 2.5 (reward vaults go in Team) |
 | 7 | Staking contracts and kind (`stakeChanged`, `zebecStakeV1`, other = new adapter) | what discovery found; none if none |
-| 8 | Holder tiers | scaled from supply, see Step 5 |
+| 8 | Holder tiers | derived from this token's own first snapshot (Step 6.2); never TEL's or another project's |
 | 9 | Developer wallets for the ledger | the Team wallets from Q6 |
 | 10 | Cost gate: expected nightly CU/credits vs remaining budget | stop and ask if it would breach |
 
@@ -70,7 +70,7 @@ Then: cache the CoinGecko image to `public/tokens/<slug>.<ext>` (read `image.lar
 
 ## Step 5 - Config that the scaffold does not decide
 **Do, in `config/projects/<slug>.json`:**
-1. **Holder tiers (mandatory).** A project with no `holders` block inherits TEL's tiers (sized for 100B). ONDO (10B) put 99.8% of its wallets in one tier that way. Add a `holders` block with `distributionTiers` = TEL's tiers (`config/holder-tiers.default.json`) scaled by `supply.target / 100B`, rounded to clean numbers, plus `megaHolderThreshold` at about 20% of supply and a `$comment` that explains the sizing. After the first snapshot, check that no single tier holds more than about 90% of wallets.
+1. **Holder tiers (mandatory, set in Step 6.2).** Every project's tiers come from its own wallets. Never copy TEL's or another project's tiers, and never scale them by supply: ONDO got TEL's tiers that way, first as is (99.8% of wallets in one tier), then divided by 10. A project with no `holders` block falls back to TEL's values (`config/holder-tiers.default.json`), so the first snapshot runs on them, but they must be replaced before any history is built. Set `megaHolderThreshold` from this project's own top wallets (ZBCN: 25B, above its 20.55B top wallet), not from another project's ratio.
 2. **RPC.** `chains[].rpc.envPrefix` is the prefix BEFORE `_RPC_<n>` (Solana = `"SOLANA"`, never `"SOLANA_RPC"`; the loader rejects a prefix ending in `_RPC`). Solana needs a keyed pool (`SOLANA_RPC_0`, `SOLANA_RPC_1`) because public RPC refuses `getProgramAccounts`; ask the owner for keys only if the env vars are missing.
 3. **Classification:** the scaffolded `exclusions.json` must label every ledger `developerWallets` entry of class `association` (category `treasury`, `evidenceTier: "owner-supplied"`, a note citing the owner decision; Treasury and Team are one bucket); an unlabelled one counts as retail and `associationWalletsLabelled.test.js` fails. Treasury/team/vault addresses from Q6, DEX contracts (`role: "dex"` or `classification.dexContracts`; list every pool the team trades on before any wallet-flow run).
 4. **Forensics:** set `gated.forensics: true` and `gated.walletFlows { coingeckoId, chains }`.
@@ -82,7 +82,8 @@ Each command below is a workflow dispatch with `-f project=<slug>` (`gh workflow
 
 1. **CEX wallets.** `node scripts/sync-cex-wallets-dune.js --project <slug> --source spellbook` (free). EVM adds net-new addresses when `classification.cexWallets` exists; Solana writes review candidates only. Review the candidates; never auto-promote. CEX wallets are required before go-live. The scheduled Dune step runs with `--skip-if-no-query`, so a project with no `pipeline.duneCexQueryId` skips cleanly; leave it unset until the owner supplies the project's own query, and never reuse TEL's 3761086 (a test fails on it).
 2. **Snapshot.** `refresh-holders.yml` (or `node scripts/pull-holders-rpc.js --project <slug>`). On Solana check the pool log line `RPC pool <chain>: N/M usable; K ..._RPC_n set, J distinct` shows K and J above 0.
-   **Pass:** `public/data/<slug>/holders.json` exists; supply gap within `SNAPSHOT_SUPPLY_TOLERANCE` (1%); no vault/treasury address in retail; no tier above about 90% of wallets.
+   Then derive the tiers from this snapshot: `node scripts/derive-holder-tiers.js --project <slug>`. Paste the printed `distributionTiers` and `balanceRanges` into the `holders` block with a `$comment` naming the snapshot date they came from, and run the snapshot again so every feed uses them. The script exits non-zero if one tier would hold more than 90% of wallets.
+   **Pass:** `public/data/<slug>/holders.json` exists; supply gap within `SNAPSHOT_SUPPLY_TOLERANCE` (1%); no vault/treasury address in retail; the `holders` block holds the derived tiers before Step 6.3.
 3. **History.** EVM: `rebuild-holders-history.yml` (`start` = first date wanted; one chain at a time if it will not finish in 6h; roughly 20 minutes per chain-year for a busy token). Solana: `rebuild-holders-history-solana.yml`. Any new workflow you add that writes `main` joins concurrency group `holders-refresh` (Step 6.11). The rebuild must use the same holder definition as the snapshot (`dropRoundedDust: true` is already passed; confirm decimals, because at 18 decimals dust admits phantom holders).
    **Pass:** `check-feed-consistency` shows no holder-count WARN at the first snapshot row.
 4. **Exchange flows.** `scan-exchange-flows.yml`. If it stops at `max_blocks_per_run`, dispatch again until the feed's last row is within 3 days of today (the `stale-tail` gate in `pipeline-health.js` enforces this). Solana: a transaction the RPC returns as null holds the cursor for `NULL_TX_RETRY_RUNS` (3) runs, then goes to `unavailable[]` with its `attempts`; `check-go-live` fails the project while any entry has `attempts` below 3 ("held, retrying"), so run again rather than skipping it. `scan-solana-flows.js` runs oldest-first at `SOLANA_FLOW_MAX_TX` (15,000) per run and needs several runs; tell the owner the expected runs and Helius credits (about 1 credit per transaction).
@@ -136,7 +137,7 @@ One message: what is automatic, what is manual, assumptions made, estimated vs a
 Then update, in the same change: `README.md` (project list, layout map, "Recent work" with PR numbers), `docs/MULTI-TOKEN.md` if a step or command changed, `tasks/lessons.md` for any mistake caught, and this file. Offer the commit only after the owner approves. Deploys are manual from the Netlify dashboard; config changes reach the browser only at the next deploy, data reaches it through `live-data.mjs`.
 
 ## Known traps (each one cost a session)
-- Default tiers on a non-100B token (ONDO): see Step 5.1.
+- Tiers taken from TEL, as is or scaled by supply (ONDO): see Steps 5.1 and 6.2.
 - Replay vs snapshot holder definition (18-decimal dust, -2.7% step): Step 6.3.
 - Nightly `fill-history-gaps` replays a missed day from the project's own newest committed checkpoint (`pull-holders-rpc.js --as-of`; fixed in #151, it used to anchor on TEL's 2026-08-21 and failed for ONDO). Never put a fixed date, block or address default in a shared script: derive it per project. After onboarding, confirm one nightly's "Fill holders-history gaps" step is green for the new project.
 - Never label a snapshot row with the run time. Row D means end of D: the state at `cutoff[D+1] - 1`.

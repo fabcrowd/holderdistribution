@@ -97,7 +97,7 @@ describe("hedera scanChain", () => {
     for (const id of CONTRACTS) expect(b.has(`0.0.${id}`)).toBe(false);
     const expected = pop.accounts.filter((a) => a.balance >= HBAR && !CONTRACTS.includes(a.num));
     expect(b.size).toBe(expected.length);
-    expect(scan.tokenTotals.legacy).toBe(50_000_000_000);
+    expect(scan.tokenTotals.legacy).toBe(Number(pop.accounts.reduce((sum, a) => sum + a.balance, 0n) / HBAR));
     expect(scan.checkpointData).toMatchObject({ vm: "hedera", holders: b.size, floorTinybar: "100000000", snapshotTimestamp: TS });
     expect(scan.checkpointData.contractsExcluded).toBe(4); // 10, 11, 200 and 454 are contracts holding >= 1 HBAR; 460 is not in the snapshot
     expect(scan.tokenAccountOwners).toBeInstanceOf(Map);
@@ -111,7 +111,7 @@ describe("hedera scanChain", () => {
     expect(scan.balances.get("0.0.5")).toBeCloseTo(3_200_000_000.00000001, 6);
   });
 
-  it("pages with limit=100, the floor filter, ordered by account id", async () => {
+  it("pages with limit=100, no server-side floor filter, ordered by account id", async () => {
     const mock = createMockMirror(population());
     await hederaAdapter.scanChain(chain, opts(mock));
     const calls = mock.balanceCalls().slice(2).filter((c) => c.params.get("limit") !== "1");
@@ -119,15 +119,36 @@ describe("hedera scanChain", () => {
     for (const c of calls) {
       expect(c.params.get("limit")).toBe("100");
       expect(c.params.get("order")).toBe("asc");
-      expect(c.params.get("account.balance")).toBe(`gte:${HEDERA_HOLDER_FLOOR_TINYBAR}`);
+      expect(c.params.get("account.balance")).toBeNull(); // filtered server-side it can return a stale balance
     }
+  });
+
+  it("retains only rows at or above the floor, as [id, tinybar text], but totals every balance", async () => {
+    const accounts = [acct(1, 0, [{ token_id: "0.0.9", balance: 5 }]), acct(2, 3, [{ token_id: "0.0.9", balance: 5 }]), { num: 3, balance: HBAR - 1n }, acct(4, 7)];
+    const states = [];
+    const scan = await hederaAdapter.scanChain(chain, opts(createMockMirror({ accounts, contracts: [] }), { onProgress: (s) => states.push(structuredClone(s)) }));
+    expect(Object.values(states.at(-1).ranges).flat()).toEqual([[2, "300000000"], [4, "700000000"]]);
+    expect(scan.checkpointData.snapshotRawTotal).toBe(String(10n * HBAR + HBAR - 1n));
+    expect(scan.checkpointData.nonzeroAccounts).toBe(3);
+  });
+
+  it("rejects a snapshot whose balances do not add up to total supply", async () => {
+    const mock = createMockMirror({ ...population(), totalSupply: "5000000000000000000" });
+    await expect(hederaAdapter.scanChain(chain, opts(mock))).rejects.toThrow(/sum to .* total supply is 5000000000000000000/);
+  });
+
+  it("records released supply read at the held snapshot", async () => {
+    const mock = createMockMirror(population());
+    const scan = await hederaAdapter.scanChain(chain, opts(mock));
+    const supplyCall = mock.calls.find((c) => c.path === "/network/supply" && c.params.get("timestamp"));
+    expect(supplyCall.params.get("timestamp")).toBe(scan.checkpointData.snapshotTimestamp);
+    expect(scan.checkpointData.releasedAtSnapshotRaw).toBe("4432714701836802108");
   });
 
   it("honours a configured floor", async () => {
     const mock = createMockMirror({ accounts: [acct(1, 1), acct(2, 10), acct(3, 100)], contracts: [] });
     const scan = await hederaAdapter.scanChain({ ...chain, holderFloorTinybar: "1000000000" }, opts(mock));
     expect([...scan.balances.keys()]).toEqual(["0.0.2", "0.0.3"]);
-    expect(mock.balanceCalls().filter((c) => c.params.get("account.balance")).at(-1).params.get("account.balance")).toBe("gte:1000000000");
   });
 
   it("ends cleanly when the last full page is followed by an empty page", async () => {
@@ -140,13 +161,13 @@ describe("hedera scanChain", () => {
   it("holds one explicit timestamp across every page", async () => {
     const mock = createMockMirror(population());
     const scan = await hederaAdapter.scanChain(chain, opts(mock));
-    const stamped = mock.balanceCalls().slice(2).map((c) => c.params.get("timestamp"));
+    const stamped = mock.balanceCalls().slice(3).map((c) => c.params.get("timestamp"));
     expect(new Set(stamped)).toEqual(new Set([TS]));
     expect(scan.checkpointData.snapshotTimestamp).toBe(TS);
   });
 
   it("throws when the snapshot moves between pages", async () => {
-    const mock = createMockMirror({ ...population(), snapshotTimestamp: (i) => (i < 4 ? TS : "1794165941.000000001") });
+    const mock = createMockMirror({ ...population(), snapshotTimestamp: (i) => (i < 14 ? TS : "1794165941.000000001") });
     await expect(hederaAdapter.scanChain(chain, opts(mock))).rejects.toThrow(/snapshot/i);
   });
 
@@ -170,17 +191,56 @@ describe("hedera scanChain", () => {
     await expect(hederaAdapter.scanChain(chain, opts(mock, { maxAttempts: 2 }))).rejects.toThrow(/500/);
   });
 
+  it("resumes a range from the last full page after a later page fails", async () => {
+    const wide = { ...chain, rangeWidth: 1000 };
+    const failAt200 = (path, query) => (path === "/balances" && /(?:gt:|gt%3A)0\.0\.200/.test(query) ? 500 : null);
+    const states = [];
+    const first = createMockMirror({ ...population(), fail: failAt200 });
+    await expect(hederaAdapter.scanChain(wide, opts(first, { maxAttempts: 2, onProgress: (s) => states.push(structuredClone(s)) }))).rejects.toThrow(/500/);
+    const saved = states.at(-1);
+    expect(saved.open[0].previous).toBe(200);
+    expect(saved.ranges).toEqual({});
+    const before = JSON.parse(JSON.stringify(saved));
+    const full = await hederaAdapter.scanChain(wide, opts(createMockMirror(population())));
+    const second = createMockMirror(population());
+    const resumed = await hederaAdapter.scanChain(wide, opts(second, { resume: saved }));
+    expect([...resumed.balances]).toEqual([...full.balances]);
+    expect(saved).toEqual(before);
+    const cursors = second
+      .balanceCalls()
+      .map((c) => c.params.getAll("account.id").find((v) => v.startsWith("gt:") || v.startsWith("gte:")))
+      .filter(Boolean);
+    expect(cursors.some((v) => v === "gte:0.0.0" || v === "gt:0.0.100")).toBe(false);
+    expect(cursors[0]).toBe("gt:0.0.200");
+  });
+
+  it("drops rows pushed after the last saved page when the end-of-range probe fails", async () => {
+    const wide = { ...chain, rangeWidth: 1000 };
+    const failProbe = (path, query) => (path === "/balances" && query.includes("limit=1&") && /gt(?::|%3A)0\.0\.454/.test(query) ? 500 : null);
+    let live = null;
+    const first = createMockMirror({ ...population(), fail: failProbe });
+    await expect(hederaAdapter.scanChain(wide, opts(first, { maxAttempts: 2, onProgress: (s) => (live = s) }))).rejects.toThrow(/500/);
+    expect(live.open[0].rows.length).toBeGreaterThan(live.open[0].count);
+    const saved = JSON.parse(JSON.stringify(live));
+    const full = await hederaAdapter.scanChain(wide, opts(createMockMirror(population())));
+    const resumed = await hederaAdapter.scanChain(wide, opts(createMockMirror(population()), { resume: saved }));
+    expect([...resumed.balances]).toEqual([...full.balances]);
+    expect(resumed.checkpointData.snapshotRawTotal).toBe(full.checkpointData.snapshotRawTotal);
+    expect(resumed.checkpointData.nonzeroAccounts).toBe(full.checkpointData.nonzeroAccounts);
+  });
+
   it("resumes from a checkpoint without refetching finished ranges", async () => {
     const full = await hederaAdapter.scanChain(chain, opts(createMockMirror(population())));
     const states = [];
     const first = createMockMirror(population());
     await hederaAdapter.scanChain(chain, opts(first, { onProgress: (s) => states.push(structuredClone(s)) }));
-    const partial = JSON.parse(JSON.stringify(states[1]));
+    const source = states.find((s) => Object.keys(s.ranges).length > 0);
+    const partial = JSON.parse(JSON.stringify(source));
     expect(Object.keys(partial.ranges).length).toBeGreaterThan(0);
     const second = createMockMirror(population());
     const resumed = await hederaAdapter.scanChain(chain, opts(second, { resume: partial }));
     expect([...resumed.balances]).toEqual([...full.balances]);
-    expect(partial).toEqual(JSON.parse(JSON.stringify(states[1]))); // the caller's checkpoint is not mutated
+    expect(partial).toEqual(JSON.parse(JSON.stringify(source))); // the caller's checkpoint is not mutated
     expect(second.balanceCalls().length).toBeLessThan(first.balanceCalls().length);
     expect(second.balanceCalls().every((c) => !c.params.get("timestamp") || c.params.get("timestamp") === partial.timestamp)).toBe(true);
   });
@@ -189,37 +249,48 @@ describe("hedera scanChain", () => {
     const states = [];
     await hederaAdapter.scanChain(chain, opts(createMockMirror(population()), { onProgress: (s) => states.push(structuredClone(s)) }));
     const run = (c, resume) => hederaAdapter.scanChain(c, opts(createMockMirror(population()), { resume }));
-    await expect(run({ ...chain, holderFloorTinybar: "200000000" }, states[1])).rejects.toThrow(/floor/);
-    await expect(run({ ...chain, rangeWidth: 50 }, states[1])).rejects.toThrow(/range width/);
+    const saved = states.find((s) => Object.keys(s.ranges).length > 0);
+    await expect(run({ ...chain, holderFloorTinybar: "200000000" }, saved)).rejects.toThrow(/floor/);
+    await expect(run({ ...chain, rangeWidth: 50 }, saved)).rejects.toThrow(/range width/);
   });
 
-  it("rejects a checkpoint whose snapshot is older than the age limit", async () => {
+  it("resumes a pinned snapshot days later, because the stamp is one moment", async () => {
     const states = [];
-    await hederaAdapter.scanChain(chain, opts(createMockMirror(population()), { onProgress: (s) => states.push(structuredClone(s)) }));
+    const full = await hederaAdapter.scanChain(chain, opts(createMockMirror(population()), { onProgress: (s) => states.push(structuredClone(s)) }));
+    const saved = states.find((s) => Object.keys(s.ranges).length > 0);
     const snapMs = Number(TS) * 1000;
-    const fresh = opts(createMockMirror(population()), { resume: states[1], nowMs: () => snapMs + 5 * 3_600_000 });
-    await expect(hederaAdapter.scanChain(chain, fresh)).resolves.toBeDefined();
-    const stale = opts(createMockMirror(population()), { resume: states[1], nowMs: () => snapMs + 7 * 3_600_000 });
-    await expect(hederaAdapter.scanChain(chain, stale)).rejects.toThrow(/old/);
+    const later = opts(createMockMirror(population()), { resume: saved, nowMs: () => snapMs + 48 * 3_600_000 });
+    const resumed = await hederaAdapter.scanChain(chain, later);
+    expect(resumed.checkpointData.snapshotTimestamp).toBe(saved.timestamp);
+    expect([...resumed.balances]).toEqual([...full.balances]);
   });
 
   it("rejects a malformed, wrongly-versioned or non-numeric-age checkpoint", async () => {
     const states = [];
     await hederaAdapter.scanChain(chain, opts(createMockMirror(population()), { onProgress: (s) => states.push(structuredClone(s)) }));
-    const good = states[1];
+    const good = states.find((s) => Object.keys(s.ranges).length > 0);
     const run = (resume) => hederaAdapter.scanChain(chain, opts(createMockMirror(population()), { resume }));
-    await expect(run({ ...good, version: 2 })).rejects.toThrow(/version/);
+    const cursor = { op: "gt", from: 50, previous: 50, count: 0, rows: [], allRaw: "0", nonzero: 0 };
+    await expect(run({ ...good, version: 1 })).rejects.toThrow(/version/);
     await expect(run({ ...good, ranges: undefined })).rejects.toThrow(/malformed/);
+    await expect(run({ ...good, totals: {} })).rejects.toThrow(/malformed/);
     await expect(run({ ...good, maxId: 1.5 })).rejects.toThrow(/malformed/);
     await expect(run({ ...good, timestamp: 12 })).rejects.toThrow(/malformed/);
     await expect(run({ ...good, timestamp: "soon" })).rejects.toThrow(/not a number/);
+    await expect(run({ ...good, open: [] })).rejects.toThrow(/malformed/);
+    await expect(run({ ...good, open: { 0: { ...cursor, op: "lt" } } })).rejects.toThrow(/malformed/);
+    await expect(run({ ...good, open: { 0: { ...cursor, count: 1 } } })).rejects.toThrow(/malformed/);
+    await expect(run({ ...good, open: { 0: { ...cursor, allRaw: "-1" } } })).rejects.toThrow(/malformed/);
+    await expect(run({ ...good, open: { 0: cursor }, ranges: { ...good.ranges, 0: [] }, totals: { ...good.totals, 0: { allRaw: "0", nonzero: 0 } } })).rejects.toThrow(/malformed/);
   });
 
   it("reports a finished range to onProgress only after storing it", async () => {
     const states = [];
     await hederaAdapter.scanChain(chain, opts(createMockMirror(population()), { onProgress: (s) => states.push(structuredClone(s)) }));
-    expect(Object.keys(states[0].ranges)).toHaveLength(1);
-    const [rows] = Object.values(states[0].ranges);
+    const done = states.find((s) => Object.keys(s.ranges).length > 0);
+    expect(Object.keys(done.ranges)).toHaveLength(1);
+    expect(done.open[Object.keys(done.ranges)[0]]).toBeUndefined();
+    const [rows] = Object.values(done.ranges);
     expect(Array.isArray(rows)).toBe(true);
   });
 
@@ -239,6 +310,105 @@ describe("hedera scanChain", () => {
   });
 });
 
+describe("hedera resumeProblem", () => {
+  const saved = (extra = {}) => ({ version: 2, timestamp: "1794165040.107980111", maxId: 10, floor: "100000000", width: 100, ranges: {}, totals: {}, open: {}, ...extra });
+  const at = (s) => ({ nowMs: () => Number(s) * 1000 });
+  it("is null for a fitting, fresh checkpoint and names the problem otherwise", () => {
+    expect(hederaAdapter.resumeProblem(chain, saved(), at(1794165040 + 3600))).toBeNull();
+    expect(hederaAdapter.resumeProblem(chain, saved({ floor: "5" }), at(1794165040))).toMatch(/floor/);
+    expect(hederaAdapter.resumeProblem(chain, saved(), at(1794165040 + 48 * 3600))).toBeNull();
+  });
+});
+
+describe("hedera clusters: one held snapshot and the cluster that answered it", () => {
+  const HEAD = "1794165294.000000001";
+  // Two independent clusters write snapshots on their own 15-minute grids; the stamp only exists on one.
+  const gridA = Array.from({ length: 6 }, (_, i) => `${1794165040 - (5 - i) * 900}.107980111`);
+  const gridB = Array.from({ length: 6 }, (_, i) => `${1794164950 - (5 - i) * 900}.500000001`);
+  const twoClusters = (extra = {}) => createMockMirror({ ...population(), clusters: { a: gridA, b: gridB }, headTimestamp: HEAD, ...extra });
+  const baseline = async () => (await hederaAdapter.scanChain(chain, opts(twoClusters()))).balances;
+
+  it("asks for the head once and holds the stamp and cluster that answered", async () => {
+    const mock = twoClusters();
+    const scan = await hederaAdapter.scanChain(chain, opts(mock));
+    expect(scan.checkpointData.snapshotTimestamp).toBe(gridA.at(-1));
+    expect(scan.checkpointData.snapshotClusterId).toBe("a");
+    const pinned = mock.balanceCalls().filter((c) => c.params.get("timestamp"));
+    expect(pinned.length).toBeGreaterThan(5);
+    expect(new Set(pinned.map((c) => c.params.get("timestamp")).slice(1))).toEqual(new Set([gridA.at(-1)]));
+    expect(mock.balanceCalls().some((c) => c.params.get("account.balance"))).toBe(false); // the floor is applied here, not by the server
+  });
+
+  it("completes with one snapshot when routing flips to the other cluster mid-range", async () => {
+    const want = await baseline();
+    const mock = twoClusters({ route: (i) => (i >= 12 && i % 3 === 0 ? "b" : "a") });
+    const scan = await hederaAdapter.scanChain(chain, opts(mock));
+    expect(scan.checkpointData.snapshotTimestamp).toBe(gridA.at(-1));
+    expect(scan.checkpointData.snapshotMismatchRetries).toBeGreaterThan(0);
+    expect([...scan.balances]).toEqual([...want]);
+  });
+
+  it("rejects when the other cluster keeps answering past the wait budget, and never accepts its pages", async () => {
+    const sleeps = [];
+    const mock = twoClusters({ route: (i) => (i >= 12 ? "b" : "a") });
+    await expect(hederaAdapter.scanChain(chain, opts(mock, { snapshotWaitMs: 60_000, sleep: async (ms) => void sleeps.push(ms) }))).rejects.toThrow(/snapshot moved|cluster/);
+    expect(sleeps.reduce((a, b) => a + b, 0)).toBeGreaterThanOrEqual(60_000);
+    expect(Math.max(...sleeps)).toBeLessThanOrEqual(30_000);
+  });
+
+  it("retries an empty page from the wrong cluster instead of taking it as the end of a range", async () => {
+    const want = await baseline();
+    // cluster c holds no snapshot at or before the stamp, so everything it answers is an empty page with timestamp null
+    const mock = createMockMirror({ ...population(), clusters: { a: gridA, c: [] }, headTimestamp: HEAD, route: (i) => (i >= 8 && i % 4 === 1 ? "c" : "a") });
+    const scan = await hederaAdapter.scanChain(chain, opts(mock));
+    expect(scan.checkpointData.snapshotMismatchRetries).toBeGreaterThan(0);
+    expect([...scan.balances]).toEqual([...want]);
+  });
+
+  it("retries a 404 on a pinned request, logs the cluster that sent it, and still completes", async () => {
+    const want = await baseline();
+    const mock = twoClusters({ route: (i) => (i >= 10 && i % 5 === 0 ? "b" : "a"), notFound: (p, q, i, cluster) => cluster === "b" && p === "/balances" });
+    const scan = await hederaAdapter.scanChain(chain, opts(mock));
+    expect(scan.checkpointData.snapshotWaitByCluster.b.retries).toBeGreaterThan(0);
+    expect(scan.checkpointData.snapshotWaitByCluster.b.waitedMs).toBeGreaterThan(0);
+    expect([...scan.balances]).toEqual([...want]);
+  });
+
+  it("a 404 that outlasts the wait budget rejects", async () => {
+    const mock = twoClusters({ route: (i) => (i >= 10 ? "b" : "a"), notFound: (p, q, i, cluster) => cluster === "b" && p === "/balances" });
+    await expect(hederaAdapter.scanChain(chain, opts(mock, { snapshotWaitMs: 60_000, sleep: async () => {} }))).rejects.toThrow(/404 from cluster b/);
+  });
+
+  it("any other 4xx stays fatal", async () => {
+    const mock = twoClusters({ fail: (p, q, i) => (i === 12 ? 403 : null) });
+    await expect(hederaAdapter.scanChain(chain, opts(mock))).rejects.toThrow(/403/);
+  });
+
+  it("never takes an empty page from a response with no cluster id as a range end", async () => {
+    const want = await baseline();
+    const mock = createMockMirror({ ...population(), clusters: { a: gridA, unknown: gridA }, headTimestamp: HEAD, route: (i) => (i >= 8 && i % 4 === 1 ? "unknown" : "a") });
+    const scan = await hederaAdapter.scanChain(chain, opts(mock));
+    expect(scan.checkpointData.snapshotWaitByCluster.unknown.retries).toBeGreaterThan(0);
+    expect([...scan.balances]).toEqual([...want]);
+  });
+
+  it("an empty page from the held cluster is still a real empty range", async () => {
+    const accounts = [acct(1, 3), acct(2, 3), acct(950, 3)];
+    const scan = await hederaAdapter.scanChain(chain, opts(createMockMirror({ accounts, contracts: [], clusters: { a: gridA }, headTimestamp: HEAD })));
+    expect(scan.balances.size).toBe(3);
+  });
+
+  it("learns the cluster of a resumed scan from the first response answering its stamp", async () => {
+    const mock = twoClusters({ route: (i) => (i < 2 ? "b" : "a") });
+    const first = await hederaAdapter.scanChain(chain, opts(twoClusters(), { onProgress: () => {} }));
+    let state = null;
+    await hederaAdapter.scanChain(chain, opts(twoClusters(), { onProgress: (s) => (state ??= s) }));
+    const resumed = await hederaAdapter.scanChain(chain, opts(mock, { resume: state, nowMs: () => Number(state.timestamp.split(".")[0]) * 1000 + 1000 }));
+    expect(resumed.checkpointData.snapshotClusterId).toBe("a");
+    expect([...resumed.balances]).toEqual([...first.balances]);
+  });
+});
+
 describe("hedera range completeness", () => {
   const w = { ...chain, rangeWidth: 100 };
   const base = () => {
@@ -252,7 +422,7 @@ describe("hedera range completeness", () => {
     const mock = createMockMirror(base());
     const scan = await hederaAdapter.scanChain(w, opts(mock));
     expect(scan.balances.size).toBe(101);
-    const probes = mock.balanceCalls().filter((c) => c.params.get("limit") === "1" && c.params.get("timestamp") === TS && c.params.get("account.balance"));
+    const probes = mock.balanceCalls().filter((c) => c.params.get("limit") === "1" && c.params.get("timestamp") === TS && c.params.getAll("account.id").length === 2);
     expect(probes.length).toBe(4); // one confirming probe per range
     expect(probes.every((c) => c.params.get("account.id") !== null)).toBe(true);
   });
@@ -305,8 +475,9 @@ describe("hedera range completeness", () => {
     rejectsLone((p, q) => (isPage(p, q, 300) ? { ...emptyBody, timestamp: "1794160000.000000001" } : undefined), /snapshot moved/));
   it("an empty page with no timestamp key rejects", () =>
     rejectsLone((p, q) => (isPage(p, q, 300) ? { balances: [], links: { next: null } } : undefined), /snapshot moved/));
-  it("a probe carrying a moved non-null timestamp rejects", () =>
-    rejectsLone((p, q) => (isProbe(p, q) ? { ...emptyBody, timestamp: "1794160000.000000001" } : undefined), /snapshot moved/));
+  it("a probe carrying a moved non-null timestamp rejects", () => {
+    return rejectsLone((p, q) => (isProbe(p, q) ? { ...emptyBody, timestamp: "1794160000.000000001" } : undefined), /snapshot moved/);
+  });
   it("rejects when the snapshot timestamp serves empty pages for a populated range (no snapshot behind it)", () =>
     rejectsLone((p, q) => (p === "/balances" && q.get("timestamp") && q.get("order") !== "desc" ? emptyBody : undefined), /lists no accounts/));
   it("checks the snapshot exists once per scan, with no id filter", async () => {

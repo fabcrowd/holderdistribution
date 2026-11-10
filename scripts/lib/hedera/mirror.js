@@ -17,7 +17,7 @@ const RETRYABLE = (status) => status === 429 || status >= 500;
  * exceed 2^53 (the 50B HBAR supply is 5e18), so a plain parse would round them.
  */
 export function parseExactJson(text) {
-  return JSON.parse(text.replace(/"(balance|total_supply|released_supply)"\s*:\s*(-?\d+)/g, '"$1":"$2"'));
+  return JSON.parse(text.replace(/"(balance|total_supply|released_supply|amount)"\s*:\s*(-?\d+)/g, '"$1":"$2"'));
 }
 
 /** Rejects when `promise` has not settled within `ms`. */
@@ -55,7 +55,7 @@ export function createMirrorClient({
     if (start > t) await sleep(start - t);
   }
 
-  async function attemptOnce(url) {
+  async function attemptOnce(url, passStatus) {
     let res;
     try {
       res = await within(Promise.resolve(fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs) })), timeoutMs, "request");
@@ -64,25 +64,32 @@ export function createMirrorClient({
     }
     if (!res.ok) {
       const error = `HTTP ${res.status}`;
+      if (passStatus.includes(res.status)) return { body: null, status: res.status, clusterId: res.headers?.get?.("x-cluster-id") ?? null };
       if (!RETRYABLE(res.status)) throw new Error(`mirror GET ${url}: ${error}`);
       const retryAfterMs = res.status === 429 ? parseRetryAfter(res.headers?.get?.("retry-after"), now()) : null;
       return { retry: true, error, retryAfterMs, throttled: res.status === 429 };
     }
     try {
-      return { body: parseExactJson(await within(Promise.resolve(res.text()), timeoutMs, "body read")) };
+      const body = parseExactJson(await within(Promise.resolve(res.text()), timeoutMs, "body read"));
+      return { body, clusterId: res.headers?.get?.("x-cluster-id") ?? null };
     } catch (e) {
       return { retry: true, error: `unreadable body: ${e?.message ?? e}` };
     }
   }
 
-  /** GET `pathAndQuery` (starting with "/") and return the parsed body. Retries, then throws; never partial. */
-  async function getJson(pathAndQuery) {
+  /**
+   * GET `pathAndQuery` (starting with "/") and return { body, clusterId }. Retries, then throws; never partial.
+   * mainnet-public load-balances independent mirror clusters that write snapshots on their own grids;
+   * `x-cluster-id` says which one answered (null when the header is absent). A status in `passStatus` is returned
+   * as { body: null, status, clusterId } instead of throwing; every other non-retryable status still throws.
+   */
+  async function getPage(pathAndQuery, { passStatus = [] } = {}) {
     const url = `${root}${pathAndQuery}`;
     let last = "";
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       await acquire();
-      const r = await attemptOnce(url);
-      if (!r.retry) return r.body;
+      const r = await attemptOnce(url, passStatus);
+      if (!r.retry) return { body: r.body, clusterId: r.clusterId, ...(r.status ? { status: r.status } : {}) };
       last = r.error;
       if (attempt < maxAttempts - 1) {
         const wait = backoffMs(attempt, { retryAfterMs: r.retryAfterMs ?? null, random });
@@ -94,5 +101,8 @@ export function createMirrorClient({
     throw new Error(`mirror GET ${url} failed after ${maxAttempts} attempts: ${last}`);
   }
 
-  return { baseUrl: root, getJson };
+  /** Body only, for endpoints where the answering cluster does not matter. */
+  const getJson = async (pathAndQuery) => (await getPage(pathAndQuery)).body;
+
+  return { baseUrl: root, getJson, getPage };
 }

@@ -16,7 +16,7 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { resolveProject, defaultProjectSlug } from "./lib/projects.js";
-import { chainExplorerUrl } from "./lib/chainAdapters.js";
+import { chainExplorerUrl, loadChainAdapter } from "./lib/chainAdapters.js";
 import { buildInventory, inventoryRelPath, validateInventory } from "./lib/chainInventory.js";
 
 const arg = (argv, k) => {
@@ -32,6 +32,16 @@ async function publicSupplies(project) {
   for (const c of project.config.chains ?? []) {
     const vm = c.vm ?? "evm";
     out[c.key] = {};
+    if (c.asset?.kind === "native") {
+      // Native coin: the adapter reads its supply from the vm's own API (Hedera: mirror /network/supply).
+      try {
+        const adapter = await loadChainAdapter(vm);
+        out[c.key].native = (await adapter.tokenMeta(c, null)).supply;
+      } catch {
+        /* supply stays null: the inventory records no measured total */
+      }
+      continue;
+    }
     for (const t of configChainTokens(c)) {
       const urls = vm === "solana" ? solanaPublicUrls(c.key) : getPublicFallbackUrls(c.key);
       for (const u of urls) {
