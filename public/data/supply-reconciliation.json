@@ -1,32 +1,32 @@
 {
   "totalSupply": 100000000000,
   "derivedOriginTotal": 100000000000,
-  "bridgeLocked": 40228822849.89,
-  "mirrored": 40228091448.9,
+  "bridgeLocked": 40228755461.82,
+  "mirrored": 40228024060.83,
   "mirrorResidual": -731400.9899978638,
-  "residual": 731401.0039672852,
+  "residual": 731401.0044250488,
   "residualParts": {
     "bridgeInFlight": 731400.9899978638,
     "originDrift": 0,
     "upgradeUnbacked": 0
   },
   "upgrade": {
-    "retiredLegacy": 24838082491.27,
+    "retiredLegacy": 24968794597.78,
     "retiredLegacyByChain": {
-      "ethereum": 4674298145.89,
-      "polygon": 20026671309,
-      "base": 137113036.38
+      "ethereum": 4730616644.89,
+      "polygon": 20074437643.29,
+      "base": 163740309.6
     },
-    "v3Supply": 24838082491.27,
+    "v3Supply": 24968794597.78,
     "v3SupplyByChain": {
-      "ethereum": 4207634991.541065,
-      "polygon": 20441927310.035446,
-      "base": 188520189.69349
+      "ethereum": 4270709711.382391,
+      "polygon": 20476131335.946224,
+      "base": 221953550.451385
     },
     "legacySupplyByChain": {
       "ethereum": 100000000000,
-      "polygon": 39361004034.98,
-      "base": 867087413.92
+      "polygon": 39360471949.35,
+      "base": 867552111.48
     },
     "strandedInUpgrade": 224744.38,
     "strandedInUpgradeByChain": {
@@ -37,21 +37,21 @@
   },
   "categories": {
     "escrow": 8084466545.38,
-    "cex": 21821750916.010002,
-    "retail": 66639876048.26476,
+    "cex": 21854569907.190006,
+    "retail": 66625776275.75544,
     "treasury": 834411062.67,
-    "holdings": 1297141406.233168,
+    "holdings": 1280107143.2520473,
     "whale-unattributed": 247160998.63809398,
-    "dex": 587306742.28,
+    "dex": 587868612.87,
     "council": 461703574.28000003,
     "dormant-whale": 12021453.74,
     "staking": 11102883.600000001,
-    "staking-contract": 2251837.389999509,
     "excluded-unlabelled": 66371.59,
-    "burn": 8758.92
+    "burn": 8770.03,
+    "staking-contract": 4999.999999403954
   },
-  "counted": 99999268598.99603,
-  "circulating": 93703152962.04604,
+  "counted": 99999268598.99557,
+  "circulating": 93703152962.04558,
   "circulatingExclusions": {
     "total": 5000001000,
     "items": [
@@ -74,7 +74,7 @@
       "address": "0x40ec5b33f54e0e8a33a975908c5ba1c14e5bbbdf",
       "category": "bridge-lock",
       "name": "Polygon ERC20 Bridge (RootChain predicate)",
-      "balance": 39361307047.6,
+      "balance": 39360774961.97,
       "counted": false
     },
     {
@@ -104,7 +104,7 @@
       "address": "0xd2dd7b597fd2435b6db61ddf48544fd931e6869f",
       "category": "cex",
       "name": null,
-      "balance": 1369106741.91,
+      "balance": 1399218763.16,
       "counted": true
     },
     {
@@ -167,7 +167,7 @@
       "address": "0x7dafba1d69f6c01ae7567ffd7b046ca03b706f83",
       "category": "cex",
       "name": null,
-      "balance": 1107716254.16,
+      "balance": 1117393769.76,
       "counted": true
     },
     {
@@ -188,7 +188,7 @@
       "address": "0x3154cf16ccdb4c6d922629664174b904d80f2c35",
       "category": "bridge-lock",
       "name": "Base L1 Standard Bridge",
-      "balance": 867288523.8,
+      "balance": 867753221.36,
       "counted": false
     },
     {
@@ -209,7 +209,7 @@
       "address": "0x6522b7f9d481eceb96557f44753a4b893f837e90",
       "category": "cex",
       "name": "Bybit cold",
-      "balance": 817938085.24,
+      "balance": 820410301.75,
       "counted": true
     },
     {
@@ -230,21 +230,14 @@
       "address": "0x6cc8dcbca746a6e4fdefb98e1d0df903b107fd21",
       "category": "cex",
       "name": "Bitrue",
-      "balance": 695293265.67,
+      "balance": 695826169.06,
       "counted": true
     },
     {
       "address": "0x377b8ce04761754e8ac153b47805a9cf6b190873",
       "category": "cex",
       "name": "Upbit",
-      "balance": 674738875.83,
-      "counted": true
-    },
-    {
-      "address": "0x576b81f0c21edbc920ad63feeeb2b0736b018a58",
-      "category": "cex",
-      "name": "MEXC",
-      "balance": 502928452.37,
+      "balance": 674042675.83,
       "counted": true
     },
     {
@@ -259,6 +252,13 @@
       "category": "cex",
       "name": null,
       "balance": 443621839.72,
+      "counted": true
+    },
+    {
+      "address": "0x576b81f0c21edbc920ad63feeeb2b0736b018a58",
+      "category": "cex",
+      "name": "MEXC",
+      "balance": 411882720.94,
       "counted": true
     },
     {
@@ -321,7 +321,7 @@
       "address": "0xc44784b1ace0830a82ceac529cc98d1b38640413",
       "category": "holdings",
       "name": "Telcoin Holdings controller (Polygon)",
-      "balance": 238727397.24,
+      "balance": 237727397.24,
       "counted": true
     },
     {
@@ -329,6 +329,13 @@
       "category": "holdings",
       "name": "Telcoin Holdings ops Safe (Base)",
       "balance": 199888223.34,
+      "counted": true
+    },
+    {
+      "address": "0x51e3d44172868acc60d68ca99591ce4230bc75e0",
+      "category": "cex",
+      "name": "MEXC",
+      "balance": 168881344.1,
       "counted": true
     },
     {
@@ -346,17 +353,24 @@
       "counted": true
     },
     {
-      "address": "0x9642b23ed1e01df1092b92641051881a322f5d4e",
-      "category": "cex",
-      "name": null,
-      "balance": 158251982.11,
-      "counted": true
-    },
-    {
       "address": "0xba12222222228d8ba445958a75a0704d566bf2c8",
       "category": "dex",
       "name": "Balancer Vault",
-      "balance": 151771369.07999998,
+      "balance": 152014792.82,
+      "counted": true
+    },
+    {
+      "address": "0x9642b23ed1e01df1092b92641051881a322f5d4e",
+      "category": "cex",
+      "name": null,
+      "balance": 150781559.43,
+      "counted": true
+    },
+    {
+      "address": "0x9ac5637d295fea4f51e086c329d791cc157b1c84",
+      "category": "cex",
+      "name": null,
+      "balance": 105974671.33,
       "counted": true
     },
     {
@@ -364,13 +378,6 @@
       "category": "council",
       "name": "Platform Council",
       "balance": 102662861.44,
-      "counted": true
-    },
-    {
-      "address": "0x9ac5637d295fea4f51e086c329d791cc157b1c84",
-      "category": "cex",
-      "name": null,
-      "balance": 102389174.59,
       "counted": true
     },
     {
@@ -385,13 +392,6 @@
       "category": "holdings",
       "name": "Telcoin Holdings cold Safe (Base)",
       "balance": 95874029.66,
-      "counted": true
-    },
-    {
-      "address": "0x51e3d44172868acc60d68ca99591ce4230bc75e0",
-      "category": "cex",
-      "name": "MEXC",
-      "balance": 85965006.73,
       "counted": true
     },
     {
@@ -412,7 +412,7 @@
       "address": "0x58edf78281334335effa23101bbe3371b6a36a51",
       "category": "cex",
       "name": "KuCoin",
-      "balance": 64577268.83,
+      "balance": 67228877.89,
       "counted": true
     },
     {
@@ -440,7 +440,7 @@
       "address": "0xf359492d26764481002ed88bd2acae83ca50b5c9",
       "category": "dex",
       "name": "Uniswap V3 TEL/WETH",
-      "balance": 47503123.07,
+      "balance": 47642891.02,
       "counted": true
     },
     {
@@ -454,7 +454,7 @@
       "address": "0xeed86b90448c371eab47b7f16e294297c27e4f51",
       "category": "cex",
       "name": "CoinSpot 11",
-      "balance": 26610167.48,
+      "balance": 26603723.58,
       "counted": true
     },
     {
@@ -465,17 +465,17 @@
       "counted": true
     },
     {
-      "address": "0x1c727a55ea3c11b0ab7d3a361fe0f3c47ce6de5d",
-      "category": "cex",
-      "name": null,
-      "balance": 24562748.3,
-      "counted": true
-    },
-    {
       "address": "0xa5cabfc725dfa129f618d527e93702d10412f039",
       "category": "dex",
       "name": "QuickSwap TEL/USDC",
-      "balance": 24373141.02,
+      "balance": 24411504.56,
+      "counted": true
+    },
+    {
+      "address": "0x1c727a55ea3c11b0ab7d3a361fe0f3c47ce6de5d",
+      "category": "cex",
+      "name": null,
+      "balance": 24395621.11,
       "counted": true
     },
     {
@@ -489,7 +489,7 @@
       "address": "0xcc282e2004428939ee5149a9e7872f0b4d5d5ec7",
       "category": "cex",
       "name": null,
-      "balance": 14370701.31,
+      "balance": 14754003.77,
       "counted": true
     },
     {
@@ -507,17 +507,10 @@
       "counted": true
     },
     {
-      "address": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 2",
-      "balance": 9073728.405897,
-      "counted": true
-    },
-    {
       "address": "0xfc2fc983a411c4b1e238f7eb949308cf0218c750",
       "category": "dex",
       "name": "Uniswap TEL/WETH LP (Polygon)",
-      "balance": 8400885.14,
+      "balance": 8426827.97,
       "counted": true
     },
     {
@@ -531,21 +524,21 @@
       "address": "0xd91efec7e42f80156d1d9f660a69847188950747",
       "category": "cex",
       "name": null,
-      "balance": 5651375.39,
+      "balance": 5524889.39,
       "counted": true
     },
     {
       "address": "0xe88e24f49338f974b528ace10350ac4576c5c8a1",
       "category": "dex",
       "name": "QuickSwap TEL/QUICK",
-      "balance": 5380398.71,
+      "balance": 5386386.96,
       "counted": true
     },
     {
       "address": "0x4917bc6b8e705ad462ef525937e7eb7c6c87c356",
       "category": "dex",
       "name": "QuickSwap TEL/AAVE",
-      "balance": 4567656.93,
+      "balance": 4663319.97,
       "counted": true
     },
     {
@@ -570,13 +563,6 @@
       "counted": true
     },
     {
-      "address": "0x92e43aec69207755cb1e6a8dc589aae630476330",
-      "category": "staking-contract",
-      "name": "Telcoin Association staking contract (Polygon)",
-      "balance": 2251837.389999509,
-      "counted": true
-    },
-    {
       "address": "0x92e0862c60f98db9c7656212baa4d1173826ad6d",
       "category": "cex",
       "name": null,
@@ -584,59 +570,10 @@
       "counted": true
     },
     {
-      "address": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 3",
-      "balance": 1965183.40409,
-      "counted": true
-    },
-    {
-      "address": "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 8",
-      "balance": 1301553.723018,
-      "counted": true
-    },
-    {
       "address": "0x9b5c71936670e9f1f36e63f03384de7e06e60d2a",
       "category": "dex",
       "name": "QuickSwap TEL/WPOL",
-      "balance": 1295979.54,
-      "counted": true
-    },
-    {
-      "address": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 1",
-      "balance": 1235635.230068,
-      "counted": true
-    },
-    {
-      "address": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 10",
-      "balance": 977796.502452,
-      "counted": true
-    },
-    {
-      "address": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 6",
-      "balance": 781653.70949,
-      "counted": true
-    },
-    {
-      "address": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 4",
-      "balance": 527018.769298,
-      "counted": true
-    },
-    {
-      "address": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
-      "category": "holdings",
-      "name": "Telcoin Holdings sell bot 5",
-      "balance": 401276.121557,
+      "balance": 1308700.78,
       "counted": true
     },
     {
@@ -668,10 +605,24 @@
       "counted": true
     },
     {
+      "address": "0x005c095178c49a2c3b5eede795ff6ae6eac2cb6e",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 10",
+      "balance": 78312.259954,
+      "counted": true
+    },
+    {
       "address": "0x99ef9f86c41d2a5b1c609e910b06c20ca45a984c",
       "category": "council",
       "name": "TAO Distribution Safe",
       "balance": 68547.37,
+      "counted": true
+    },
+    {
+      "address": "0x6e083589b1569f5d96f4a5073423c416844cf1a4",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 8",
+      "balance": 67403.603383,
       "counted": true
     },
     {
@@ -731,10 +682,24 @@
       "counted": true
     },
     {
+      "address": "0x37ac060a943b20615918e45b7739a97e7a1b31db",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 3",
+      "balance": 38503.401693,
+      "counted": true
+    },
+    {
       "address": "0xb5873e333161e5b45adac57379ec2b15d861178d",
       "category": "cex",
       "name": null,
       "balance": 27306,
+      "counted": true
+    },
+    {
+      "address": "0x6712d1c8b1a154189eb1d58ed28957114685f2a4",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 6",
+      "balance": 26058.966415,
       "counted": true
     },
     {
@@ -766,6 +731,13 @@
       "counted": true
     },
     {
+      "address": "0xcdbe20d8cf152b6545617ea7e211a93b3e4b3723",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 1",
+      "balance": 10765.094476,
+      "counted": true
+    },
+    {
       "address": "0x1522900b6dafac587d499a862861c0869be6e428",
       "category": "cex",
       "name": null,
@@ -783,7 +755,7 @@
       "address": "0x000000000000000000000000000000000000dead",
       "category": "burn",
       "name": "Burn address",
-      "balance": 8758.92,
+      "balance": 8770.03,
       "counted": true
     },
     {
@@ -794,10 +766,24 @@
       "counted": true
     },
     {
+      "address": "0xc3f311dcd6732ea8816a4b5214b275863ad57d45",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 2",
+      "balance": 5051.493702,
+      "counted": true
+    },
+    {
       "address": "0x001866ae5b3de6caa5a51543fd9fb64f524f5478",
       "category": "cex",
       "name": "Binance",
       "balance": 5000,
+      "counted": true
+    },
+    {
+      "address": "0x92e43aec69207755cb1e6a8dc589aae630476330",
+      "category": "staking-contract",
+      "name": "Telcoin Association staking contract (Polygon)",
+      "balance": 4999.999999403954,
       "counted": true
     },
     {
@@ -815,6 +801,13 @@
       "counted": true
     },
     {
+      "address": "0x96a991e1f5e4baef0b16bcda4d453991f961cd1a",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 5",
+      "balance": 2203.271696,
+      "counted": true
+    },
+    {
       "address": "0x72e93123e8b5d168246739cdc45360ea11209364",
       "category": "cex",
       "name": null,
@@ -826,6 +819,13 @@
       "category": "cex",
       "name": null,
       "balance": 1531.32,
+      "counted": true
+    },
+    {
+      "address": "0xe66bb781b42857f0c8d81cf89eaad3bec523fdf8",
+      "category": "holdings",
+      "name": "Telcoin Holdings sell bot 4",
+      "balance": 1284.79343,
       "counted": true
     },
     {
