@@ -49,6 +49,9 @@ export const buildReconciliation = (
     origin = null,
     upgrade = null,
     circulatingSubtract = DEFAULT_CIRCULATING_SUBTRACT,
+    // Tokens the scan measured outside every snapshot row (Hedera: unlabelled contracts and
+    // accounts under the holder floor); null when the chain's scan does not report it.
+    unlisted = null,
   } = {},
 ) => {
   const TOTAL_SUPPLY = totalSupply;
@@ -226,6 +229,7 @@ export const buildReconciliation = (
       // Legacy retired into v3 minus v3 supply. Zero before the upgrade; a
       // non-zero value is v3 minted without a matching swap, or bridge in-flight.
       upgradeUnbacked,
+      ...(unlisted != null ? { unlisted } : {}),
     },
     ...(tokens
       ? {

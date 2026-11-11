@@ -75,6 +75,17 @@ export const hederaAdapter = {
     };
   },
 
+  /**
+   * Classification a project on this chain's native coin starts with (onboard.js writes it):
+   * network treasury exclusions, chain contracts{} roles, the treasury categories they fill, and
+   * a job limit that fits one full /balances scan (93 min measured locally) until daily replay replaces it.
+   */
+  async nativeClassification() {
+    const { hederaChainContracts, hederaTreasuryExclusions } = await import("./treasury.js");
+    const { hederaCexWallets } = await import("./cexAccounts.js");
+    return { exclusions: hederaTreasuryExclusions(), contracts: hederaChainContracts(), cexWallets: hederaCexWallets(), treasuryCategories: ["treasury"], workflowTimeoutMinutes: 180 };
+  },
+
   /** Why a saved scan state cannot be resumed for this chain config (other floor or range width), or null when it can. */
   resumeProblem: (chain, resume) =>
     resumeProblem(resume, { floor: floorOf(chain), width: chain?.rangeWidth ?? HEDERA_RANGE_WIDTH }),
@@ -106,15 +117,22 @@ export const hederaAdapter = {
     const contractIds = await scanContractIds(client, { maxId: snapshot.maxId, width });
     const block = await createHederaClock(client).blockAtOrBefore(snapshot.timestamp);
 
+    // A contract with a configured role (WHBAR as dex) stays in the snapshot as a non-retail row, so its HBAR
+    // lands in its supply bucket instead of the supply gap; every other contract is dropped.
+    const roleIds = new Set(Object.values(chain?.contracts ?? {}).map((c) => parseHederaAddress(c?.address)).filter(Boolean));
     const balances = new Map();
     let heldRaw = 0n;
     let contractsExcluded = 0;
+    let roleContractsKept = 0;
     for (const [num, text] of snapshot.rows) {
       const raw = BigInt(text);
       if (raw < floor) continue;
       if (contractIds.has(num)) {
-        contractsExcluded += 1;
-        continue;
+        if (!roleIds.has(`0.0.${num}`)) {
+          contractsExcluded += 1;
+          continue;
+        }
+        roleContractsKept += 1;
       }
       balances.set(`0.0.${num}`, tinybarToHbar(raw));
       heldRaw += raw;
@@ -138,7 +156,10 @@ export const hederaAdapter = {
         snapshotMismatchRetries: snapshot.mismatchRetries,
         snapshotWaitByCluster: snapshot.waitByCluster,
         contractsExcluded,
+        roleContractsKept,
         heldRawTotal: heldRaw.toString(),
+        // HBAR outside every row: unlabelled contracts plus accounts under the holder floor.
+        unlistedRawTotal: (snapshot.allRaw - heldRaw).toString(),
         snapshotRawTotal: snapshot.allRaw.toString(),
         nonzeroAccounts: snapshot.nonzero,
         supplyRaw: meta.supplyRaw.toString(),

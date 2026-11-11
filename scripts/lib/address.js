@@ -81,14 +81,16 @@ export function normalizeAnyAddress(value) {
 }
 
 /**
- * Strict normalizer: a valid EVM address (lowercased) or a valid Solana
- * address (as written); null for anything else.
+ * Strict normalizer: a valid EVM address (lowercased), a valid Solana address
+ * (as written) or a Hedera `0.0.N` id (checksum folded); null for anything else.
+ * A long-zero `0x…` spelling stays an EVM address here: only `0.0.N` forms are Hedera.
  */
 export function normalizeValidAddress(value) {
   if (typeof value !== "string") return null;
   const s = value.trim();
   if (EVM_RE.test(s)) return s.toLowerCase();
   if (isSolanaAddress(s)) return s;
+  if (s.startsWith("0.0.")) return parseHederaAddress(s);
   return null;
 }
 

@@ -37,6 +37,10 @@ describe("address formats", () => {
     expect(normalizeValidAddress(USDC_MINT)).toBe(USDC_MINT);
     expect(normalizeValidAddress(HEX)).toBe(HEX.toLowerCase());
     expect(normalizeValidAddress("not-an-address")).toBe(null);
+    expect(normalizeValidAddress("0.0.800")).toBe("0.0.800");
+    expect(normalizeValidAddress(" 0.0.123-vfmkw ")).toBe("0.0.123");
+    expect(normalizeValidAddress("0.0.123-zzzzz")).toBe(null);
+    expect(normalizeValidAddress("0x000000000000000000000000000000000000007b")).toBe("0x000000000000000000000000000000000000007b");
     expect(normalizeAddressForVm("solana", USDC_MINT)).toBe(USDC_MINT);
     expect(normalizeAddressForVm("evm", HEX)).toBe(HEX.toLowerCase());
   });

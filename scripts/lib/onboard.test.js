@@ -114,6 +114,16 @@ describe("planOnboarding", () => {
     expect(p.notes.join("\n")).toMatch(/no CoinGecko image/);
   });
 
+  it("plans a native coin (HBAR) with no contract, and the scaffold validates", () => {
+    const p = planOnboarding({ address: "native", chain: "hedera", facts: facts({ name: "HBAR", symbol: "HBAR", decimals: 8, totalSupplyRaw: "5000000000000000000", deployBlock: null, deployDate: null }), coingecko: { id: "hedera-hashgraph", name: "Hedera", image: "https://img/hbar.png" }, discovery: { chains: [] } });
+    expect(p).toMatchObject({ slug: "hedera", ticker: "HBAR", vm: "hedera", supplyTarget: 50_000_000_000 });
+    expect(p.argv).toEqual(expect.arrayContaining(["--chain", "hedera:native:8"]));
+    expect(p.inventory.chains).toEqual([expect.objectContaining({ chain: "hedera", status: "configured" })]);
+    const result = scaffold(parseArgv(p.argv), registry);
+    expect(validateScaffold(result).errors).toEqual([]);
+    expect(validateInventory(result.files["config/projects/hedera.json"], p.inventory)).toEqual([]);
+  });
+
   it("owner overrides win", () => {
     const p = plan({ overrides: { slug: "ondo-x", ticker: "ondo", name: "Ondo Finance", historyStart: "2024-01-18" } });
     expect(p).toMatchObject({ slug: "ondo-x", ticker: "ONDO", name: "Ondo Finance", historyStart: "2024-01-18" });

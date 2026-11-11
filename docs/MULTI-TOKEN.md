@@ -795,7 +795,9 @@ shows as "Coming soon" if it is on that list). The flag is removed when go-live 
    `supply.target`, `image`, `staking: []` with the staker feed disabled,
    `treasury.categories` from the supplied wallets, and the `onboarding` flag. Slug defaults to the
    display name (`--slug` overrides). Pass `PUBLIC_RPC_URLS_<CHAIN>=<url>` when the default
-   public nodes are unreachable.
+   public nodes are unreachable. A chain's own coin has no address: `npm run onboard -- --chain hedera`
+   reads HBAR from the mirror node and, with `--write`, applies the adapter's
+   `nativeClassification()` (network treasury exclusions, WHBAR as `dex`, treasury categories, job limit).
 2. **First data to go-live** (after the scaffold, the judgement work below and a README update
    are merged to `main`): `gh workflow run onboard-project.yml -f project=<slug>`.
    `scripts/onboard-run.js` reads the project's files from `origin/main`, runs the first
@@ -806,7 +808,8 @@ shows as "Coming soon" if it is on that list). The flag is removed when go-live 
    until complete, staker balances (StakeChanged-style staking only), wallet flows, ledger,
    the Developer wallets tab (committed), `check-go-live`, then clearing the `onboarding` flag
    (committed). A rerun resumes at the first unfinished step; near the job limit it dispatches
-   its own next round (6 rounds max). Locally, `npm run onboard:run -- --project <slug> --dry-run`
+   its own next round (6 rounds max). A step whose workflow cannot read the project's VM
+   (`STEP_VMS` in `scripts/lib/onboardRun.js`) stops with a reason instead of dispatching. Locally, `npm run onboard:run -- --project <slug> --dry-run`
    prints the checklist and next step; without `--dry-run` it dispatches the same workflows
    but never commits (config edits stop with exit 3 for review).
 

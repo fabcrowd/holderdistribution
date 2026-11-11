@@ -104,6 +104,17 @@ describe("hedera scanChain", () => {
     expect(scan.chainKey).toBe("hedera");
   });
 
+  it("keeps a contract that has a configured role (WHBAR as dex) and reports the HBAR left out", async () => {
+    const pop = population();
+    const withRole = { ...chain, contracts: { whbar: { address: "0.0.200", role: "dex" } } };
+    const scan = await hederaAdapter.scanChain(withRole, opts(createMockMirror(pop)));
+    expect(scan.balances.get("0.0.200")).toBe(205);
+    expect(scan.balances.has("0.0.10")).toBe(false);
+    expect(scan.checkpointData).toMatchObject({ contractsExcluded: 3, roleContractsKept: 1 });
+    const all = pop.accounts.reduce((s, a) => s + a.balance, 0n);
+    expect(BigInt(scan.checkpointData.unlistedRawTotal) + BigInt(scan.checkpointData.heldRawTotal)).toBe(all);
+  });
+
   it("keeps a balance above 2^53 exact in the raw total", async () => {
     const mock = createMockMirror({ accounts: [{ num: 5, balance: 320_000_000_000_000_001n }, acct(6, 2)], contracts: [] });
     const scan = await hederaAdapter.scanChain({ ...chain, rangeWidth: 1000 }, opts(mock));

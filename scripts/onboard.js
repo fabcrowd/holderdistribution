@@ -48,11 +48,33 @@ export function parseArgs(argv) {
     else if (a === "--wallet") out.wallets.push(v());
     else if (a === "--root") out.root = v();
     else if (a === "--report") out.report = v();
+    else if (a === "--coingecko") out.coingecko = v();
     else if (a === "--write") out.write = true;
     else throw new Error(`unknown argument ${a}`);
   }
-  if (!out.address) throw new Error("--address <contract or mint> is required");
+  if (NATIVE_CHAINS[out.chain]) out.address ??= "native";
+  if (!out.address) throw new Error("--address <contract or mint> is required (or --chain hedera for HBAR itself)");
   return out;
+}
+
+/** Chains whose own coin can be onboarded (no contract): adapter vm and default CoinGecko id. */
+const NATIVE_CHAINS = { hedera: { vm: "hedera", coingecko: "hedera-hashgraph" } };
+
+async function nativeFacts(chain) {
+  const { loadChainAdapter } = await import("./lib/chainAdapters.js");
+  const meta = await (await loadChainAdapter(NATIVE_CHAINS[chain].vm)).tokenMeta({ key: chain }, null);
+  return { name: meta.name, symbol: meta.symbol, decimals: meta.decimals, totalSupplyRaw: meta.supplyRaw.toString(), deployBlock: null, deployDate: null };
+}
+
+async function coingeckoCoin(id) {
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`, { headers: { accept: "application/json" } });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return { id: body.id ?? id, name: body.name ?? null, symbol: body.symbol ?? null, image: body.image?.large ?? null, platforms: body.platforms ?? {} };
+  } catch {
+    return null;
+  }
 }
 
 async function evmFacts(chain, address) {
@@ -141,16 +163,18 @@ async function downloadImage(url, file) {
 export async function main(argv = process.argv.slice(2), { logger = console } = {}) {
   const args = parseArgs(argv);
   const root = path.resolve(args.root ?? process.cwd());
-  const vm = inferVm(args.address);
-  if (vm === "hedera") throw new Error("Hedera (0.0.N) validates and scaffolds but is not onboardable yet: its supply file, cutoffs, history, CEX list and staking are not built (tasks/hedera-plan.md)");
-  if (!vm) throw new Error(`unsupported address ${args.address}: expected a 0x EVM contract or a base58 Solana mint`);
+  const native = args.address === "native" ? NATIVE_CHAINS[args.chain] : null;
+  const vm = native ? native.vm : inferVm(args.address);
+  if (!native && vm === "hedera") throw new Error("0.0.N is a Hedera token (HTS) or account: HTS tokens are not supported yet. For HBAR itself use --chain hedera");
+  if (!vm) throw new Error(`unsupported address ${args.address}: expected a 0x EVM contract, a base58 Solana mint, or --chain hedera`);
   const chain = args.chain ?? (vm === "solana" ? "solana" : "ethereum");
   if (vm === "evm" && !CANDIDATE_CHAINS.some((c) => c.key === chain)) throw new Error(`--chain ${chain}: not an EVM chain this repo can scan (${CANDIDATE_CHAINS.map((c) => c.key).join(", ")})`);
 
-  logger.log(`Discovery for ${args.address} on ${chain} (public RPC, keyless CoinGecko)...`);
-  const facts = vm === "solana" ? await solanaFacts(args.address) : await evmFacts(chain, args.address);
-  const coingecko = await coingeckoListing(chain, args.address);
-  const discovery = await discoverChains(chain, args.address, args.ticker ?? facts.symbol ?? coingecko?.symbol ?? "");
+  logger.log(`Discovery for ${native ? `the ${chain} native coin` : args.address} on ${chain} (public node, keyless CoinGecko)...`);
+  const facts = native ? await nativeFacts(chain) : vm === "solana" ? await solanaFacts(args.address) : await evmFacts(chain, args.address);
+  const coingecko = native ? await coingeckoCoin(args.coingecko ?? native.coingecko) : await coingeckoListing(chain, args.address);
+  // A native coin has no contract to look for on other chains.
+  const discovery = native ? { chains: [] } : await discoverChains(chain, args.address, args.ticker ?? facts.symbol ?? coingecko?.symbol ?? "");
   const included = {};
   for (const key of args.include) {
     const row = discovery.chains.find((r) => r.chain === key && (r.status === "candidate" || r.status === "listed-unverified"));
@@ -193,6 +217,27 @@ export async function main(argv = process.argv.slice(2), { logger = console } = 
     cfg.classification = { ...cfg.classification, cexWallets: rel };
     fs.writeFileSync(cfgFile, `${JSON.stringify(cfg, null, 2)}\n`);
     logger.log(`write ${rel} (empty; sync-cex-wallets.yml fills it from Dune's public spellbook list)`);
+  }
+  if (native) {
+    const { loadChainAdapter } = await import("./lib/chainAdapters.js");
+    const cls = await (await loadChainAdapter(native.vm)).nativeClassification?.();
+    if (cls) {
+      logger.log(`${args.write ? "apply" : "would apply"} ${chain} network classification: ${cls.exclusions.addresses.length} treasury accounts, ${cls.cexWallets?.wallets.length ?? 0} CEX accounts, contracts ${Object.entries(cls.contracts).map(([k, c]) => `${k}=${c.address}(${c.role})`).join(", ")}, treasury.categories ${JSON.stringify(cls.treasuryCategories)}, workflowTimeoutMinutes ${cls.workflowTimeoutMinutes}`);
+      if (args.write) {
+        fs.writeFileSync(path.join(root, `config/projects/${plan.slug}/exclusions.json`), `${JSON.stringify(cls.exclusions, null, 2)}\n`);
+        const cfgFile = path.join(root, "config/projects", `${plan.slug}.json`);
+        const cfg = JSON.parse(fs.readFileSync(cfgFile, "utf8"));
+        cfg.chains = cfg.chains.map((c) => (c.key === chain ? { ...c, contracts: { ...c.contracts, ...cls.contracts } } : c));
+        cfg.treasury = { ...cfg.treasury, categories: cls.treasuryCategories };
+        if (cls.cexWallets) {
+          const rel = `config/projects/${plan.slug}/cex-wallets.json`;
+          fs.writeFileSync(path.join(root, rel), `${JSON.stringify(cls.cexWallets, null, 2)}\n`);
+          cfg.classification = { ...cfg.classification, cexWallets: rel };
+        }
+        cfg.pipeline = { ...cfg.pipeline, workflowTimeoutMinutes: cls.workflowTimeoutMinutes };
+        fs.writeFileSync(cfgFile, `${JSON.stringify(cfg, null, 2)}\n`);
+      }
+    }
   }
   if (args.write && plan.image) {
     await downloadImage(plan.image.url, path.join(root, "public", plan.image.path));
