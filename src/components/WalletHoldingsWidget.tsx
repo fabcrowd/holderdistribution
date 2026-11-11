@@ -270,7 +270,10 @@ const renderMetrics = (
       rawValue: result.metrics.totalBalance,
       icon: Database,
       formatter: formatTokenAmount,
-      info: copy.text("holders.retailHeld.info", "{ticker} held in ordinary wallets — everything except exchange custody, treasury and team wallets, escrow, bridges and DEX liquidity.\n\nShown separately from CEX Balance rather than blended into one total, because the two moving in opposite directions is the signal: {ticker} leaving exchanges for self-custody is accumulation, the reverse is supply moving toward the market. A combined figure stays flat through both.\n\nStaked {ticker} is already inside this figure (credited to each staker's wallet), not added on top."),
+      info: copy.text(
+        "holders.retailHeld.info",
+        `{ticker} held in ordinary wallets — everything except exchange custody, treasury and team wallets, escrow, bridges and DEX liquidity.\n\nShown separately from CEX Balance rather than blended into one total, because the two moving in opposite directions is the signal: {ticker} leaving exchanges for self-custody is accumulation, the reverse is supply moving toward the market. A combined figure stays flat through both.${copy.hasStaking ? "\n\nStaked {ticker} is already inside this figure (credited to each staker's wallet), not added on top." : ""}`,
+      ),
       changelogEvents: retailBalanceEvents,
     },
   ];

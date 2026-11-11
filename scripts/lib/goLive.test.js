@@ -6,6 +6,8 @@ import { goLiveProblems, MAX_REPORT_AGE_HOURS, requiredFeedFiles } from "./goLiv
 import { NULL_TX_RETRY_RUNS } from "./solana/flowScan.js";
 import { alignmentProblems } from "../check-go-live.js";
 import { alignmentReport } from "../check-feed-alignment.js";
+import { projectHolderTiers } from "./holderTiers.js";
+import { tierFingerprint } from "./tierFingerprint.js";
 
 const NOW = Date.parse("2026-11-05T12:00:00Z");
 const FRESH = new Date(NOW - 3600_000).toISOString();
@@ -34,8 +36,11 @@ const config = (over = {}) => ({
   gated: { forensics: true },
   capabilities: { projectWallets: true },
   classification: { cexWallets: "config/projects/demo/cex-wallets.json" },
+  holders: { defaultTiers: "fixture keeps the shared default tiers" },
   ...over,
 });
+const FEED_DOC = { generatedAt: FRESH, entries: [{ date: "2026-11-04" }] };
+const tierDoc = (over = {}) => ({ ...FEED_DOC, complete: true, tierFingerprint: tierFingerprint(projectHolderTiers(config()).distributionTiers), ...over });
 const check = (over, opts = {}) => goLiveProblems({ slug: "demo", dataDir: "public/data/demo", config: config(over) }, { root, now: NOW, ...opts });
 
 beforeEach(() => {
@@ -44,7 +49,8 @@ beforeEach(() => {
   write("public/tokens/demo.png", "x");
   write("config/projects/demo/cex-wallets.json", { wallets: [] });
   write("config/projects/demo/ledger.json", { developerWallets: [{ address: WALLET }] });
-  for (const f of FEEDS) write(`public/data/demo/${f}`, {});
+  for (const f of [...FEEDS, "funding-wallets.json"]) write(`public/data/demo/${f}`, FEED_DOC);
+  write("public/data/demo/tier-outflows.json", tierDoc());
   write("data/demo/forensics/wallet-flows.registry.json", { knownWallets: [{ address: WALLET }] });
   write("data/demo/forensics/wallet-flows.json", { generated: FRESH });
   write("data/demo/ledger/ledger.json", { generated: FRESH });
@@ -74,6 +80,33 @@ describe("goLiveProblems", () => {
     const out = check().join("\n");
     expect(out).toMatch(/holders-lite\.json/);
     expect(out).toMatch(/tier-outflows\.json/);
+  });
+
+  it("fails when the project has neither its own tiers nor a recorded decision to keep the default", () => {
+    expect(check({ holders: {} }).join("\n")).toMatch(/holders\.distributionTiers is not set.*derive-holder-tiers\.js --project demo/);
+    const own = projectHolderTiers(config()).distributionTiers;
+    write("public/data/demo/tier-outflows.json", tierDoc({ tierFingerprint: tierFingerprint(own) }));
+    expect(check({ holders: { distributionTiers: own } })).toEqual([]);
+  });
+
+  it("fails a feed pipeline-health calls unhealthy: stale file or stale newest row", () => {
+    write("public/data/demo/holders-lite.json", { generatedAt: STALE });
+    write("public/data/demo/exchange-flow-history.json", { generatedAt: FRESH, entries: [{ date: "2026-10-01" }] });
+    const out = check({}, { section: "feeds" }).join("\n");
+    expect(out).toMatch(/holders-lite\.json is stale/);
+    expect(out).toMatch(/exchange-flow-history\.json is stale-tail \(newest row \d+d old\)/);
+  });
+
+  it("reports a missing required feed once, not again as unhealthy", () => {
+    fs.rmSync(path.join(root, "public/data/demo/holders-lite.json"));
+    expect(check({}, { section: "feeds" }).filter((p) => p.includes("holders-lite.json"))).toHaveLength(1);
+  });
+
+  it("fails tier outflows that have not caught up or were built on other tiers", () => {
+    write("public/data/demo/tier-outflows.json", tierDoc({ complete: false }));
+    expect(check({}, { section: "feeds" }).join("\n")).toMatch(/tier-outflows\.json is not complete/);
+    write("public/data/demo/tier-outflows.json", tierDoc({ tierFingerprint: "0000000000000000" }));
+    expect(check({}, { section: "feeds" }).join("\n")).toMatch(/built on other tiers/);
   });
 
   it("fails on a stale or missing wallet-flows report", () => {

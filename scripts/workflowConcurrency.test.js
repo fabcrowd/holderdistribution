@@ -20,6 +20,8 @@ const SHARED_GROUP = "holders-refresh";
 const ALLOWLIST = {
   "strip-dead-rpc-key.yml":
     "one-shot manual dispatch that edits only .env.enc",
+  "onboard-project.yml":
+    "dispatches and waits on holders-refresh workflows, so joining that group would deadlock; it pushes only config edits through push-main.sh's rebase-retry",
   "detect-cex-candidates.yml":
     "weekly cron (Sunday 02:00 UTC); behind a long run it would be replaced as pending by the 06:00 refresh and dropped for a week",
 };

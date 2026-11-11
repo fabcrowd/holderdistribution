@@ -98,6 +98,13 @@ describe("methodology", () => {
     expect(methodologyFor(abc, "staking").links[0].label).toBe("ABC staking");
   });
 
+  it("mentions staked balances in the supply breakdown only for a project with staking", () => {
+    expect(methodologyFor(abc, "supplyBreakdown").how).toContain("Staked balances stay inside Retail.");
+    const none = methodologyFor({ ...abc, staking: [] }, "supplyBreakdown").how;
+    expect(none).not.toMatch(/staked|\{stakedInRetail\}/i);
+    expect(none).toContain("sub-category breakdown. Each bucket");
+  });
+
   it("has a generic entry for every section", () => {
     expect(Object.keys(GENERIC_METHODOLOGY).sort()).toEqual([...METHODOLOGY_KEYS].sort());
   });

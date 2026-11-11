@@ -7,6 +7,8 @@ description: Runbook for an LLM to onboard a new token (EVM, Solana, or mixed) i
 
 Input: a contract address or mint. Output: a live `/<slug>` page whose `node scripts/check-go-live.js --project <slug>` passes, with data gates green and a visual check done.
 
+Two commands do the mechanical work: `npm run onboard -- --address <addr> --write` (Step 4) and `gh workflow run onboard-project.yml -f project=<slug>` (Step 6). Your job is the judgement between them (Steps 2.4-2.6, 3, 5) and the checks after (7-10).
+
 How to run this: execute the steps in order. Every step has **Do**, **Pass** and **Stop if**. Do not skip a Pass check, do not move on until it holds, and do not ask the owner anything that discovery can answer. Ask only in Step 3, once, with a recommended default on every question.
 
 Reference: `docs/MULTI-TOKEN.md` ("Adding the next project"), `docs/FORENSICS.md`, `docs/LEDGER.md`, `scripts/add-project.js` (header lists every flag).
@@ -29,6 +31,7 @@ Reference: `docs/MULTI-TOKEN.md` ("Adding the next project"), `docs/FORENSICS.md
 **Stop if:** unsupported VM. HBAR (`0.0.N`, chain spec `hedera:native:8`) validates and scaffolds, but it isn't onboardable yet: its supply file, cutoffs, history, CEX list and staking aren't built. Stop there too.
 
 ## Step 2 - Discovery (read-only; keep results in the scratchpad)
+Items 1-3 are automated: `npm run onboard -- --address <addr> --report <scratch>/discovery.json` (a dry run) prints and saves them. Verify its numbers against the explorer; do items 4-7 by hand.
 **Do:**
 1. On-chain facts: decimals, symbol, name, total supply. Solana: `node scripts/solana-smoke.js --mint <mint>`. EVM: `eth_call` `symbol()`, `decimals()`, `totalSupply()`.
 2. Other chains and bridged copies: `node scripts/detect-token-chains.js --address <addr> --chain <origin> --ticker <T> --coingecko`. Write the result as `chains-inventory.json` (schema in `scripts/lib/chainInventory.js`): every deployed chain is `configured`; every other chain listed is `excluded` or `not-found` with a reason.
@@ -56,17 +59,16 @@ Use AskUserQuestion. Recommended default first, marked "(Recommended)". Skip any
 | 9 | Developer wallets for the ledger | the Team wallets from Q6 |
 | 10 | Cost gate: expected nightly CU/credits vs remaining budget | stop and ask if it would breach |
 
-## Step 4 - Scaffold
+## Step 4 - Scaffold (one command)
 **Do:**
 ```
-node scripts/add-project.js --slug <slug> --name "<Name>" --ticker <T> \
-  --chain <chain>:<address>:<decimals>[:chainId[:deployBlock]] [--chain ...] \
-  [--wallet <address>:<label>[:treasury|holdings|association]] ... \
-  --inventory chains-inventory.json --coingecko <id> [--stable <chain>:<addr>:<SYM>:<dec>]
+npm run onboard -- --address <addr> [--chain <origin>] [--include <chain>]... \
+  [--slug <slug>] [--name "<Name>"] [--ticker <T>] [--history-start YYYY-MM-DD] \
+  [--wallet <address>:<label>[:treasury|holdings|association]]...            # dry run: read it
+npm run onboard -- <same flags> --write                                     # writes the files
 ```
-Run with `--dry-run` first and read the output. It writes the registry entry (never `default: true`), `config/projects/<slug>.json`, `config/projects/<slug>/ledger.json`, an empty `config/projects/<slug>/exclusions.json` (declared as `classification.exclusions`), the empty wallet registry and the validated inventory.
-Then: cache the CoinGecko image to `public/tokens/<slug>.<ext>` (read `image.large`, drop the `?` query, keep the format) and set `"image"` in the config. Add `copy` overrides only where the generic wording is wrong for this token.
-**Pass:** the script's own validation passes; `config/projects/<slug>.json` has every chain, `supply.target`, `staking[]` (possibly empty) and `classification.*`.
+It does Step 2.1-2.3 itself (on-chain decimals/symbol/name/supply, EVM deploy block and date, CoinGecko id/name/image, chain discovery), builds and validates the inventory (other chains `excluded` with a reason unless `--include`d), then runs `scripts/add-project.js` with every flag. `--write` writes the registry entry (with `onboarding: true`, never `default: true`), `config/projects/<slug>.json` (`supply.target`, `image`, `staking: []` with the staker feed disabled, `treasury.categories` from `--wallet`, `pipeline.historyStart`), the ledger, exclusions, wallet registry, inventory, the token image under `public/tokens/`, and for EVM an empty `cex-wallets.json` the spellbook sync fills. If public nodes fail (SSL or 429), pass `PUBLIC_RPC_URLS_<CHAIN>=<url>`. Add `copy` overrides only where the generic wording is wrong for this token.
+**Pass:** the script's own validation passes; `config/projects/<slug>.json` has every chain, `supply.target`, `staking[]` (possibly empty) and `classification.*`. If discovery found staking (Step 2.4), add the `staking[]` entry and remove the `funding-wallets.json` disable now.
 
 ## Step 5 - Config that the scaffold does not decide
 **Do, in `config/projects/<slug>.json`:**
@@ -77,8 +79,9 @@ Then: cache the CoinGecko image to `public/tokens/<slug>.<ext>` (read `image.lar
 5. **Lock the owner's answers in a test:** `scripts/lib/<slug>Config.test.js`, modeled on `registryTiers.test.js` and `zebecNetworkConfig.test.js` (supply target, exclusions, vault classification, tier sanity). Assert config values only, never live feed numbers.
 **Pass:** `npx vitest run scripts/lib` and `npm run typecheck` pass.
 
-## Step 6 - First data, in this order
-Each command below is a workflow dispatch with `-f project=<slug>` (`gh workflow run <file>.yml -f project=<slug>`), or the script with `--project <slug>` for a local run when an RPC key is available. Wait for each to finish and read its log before the next.
+## Step 6 - First data, in this order (one dispatch)
+**Do:** once the Step 4-5 files and the README update are merged to `main` (owner approval), run `gh workflow run onboard-project.yml -f project=<slug>`. It runs every sub-step below in order through `scripts/onboard-run.js`, waits for each, commits the derived tiers, the Developer wallets tab and (after go-live passes) the removal of `onboarding: true`, and resumes on a rerun. `npm run onboard:run -- --project <slug> --dry-run` prints the checklist and the next step at any time. It stops (exit 2) with a printed reason on a decision only a person can make: a Solana project without a reviewed CEX list, derived tiers with one tier above 90%, a step still unfinished after 6 runs, or go-live problems. Fix that, then dispatch again.
+The sub-steps below are what it runs, and the manual fallback when one stops. Each is a workflow dispatch with `-f project=<slug>` (`gh workflow run <file>.yml -f project=<slug>`), or the script with `--project <slug>` for a local run when an RPC key is available. Wait for each to finish and read its log before the next.
 
 1. **CEX wallets.** `node scripts/sync-cex-wallets-dune.js --project <slug> --source spellbook` (free). EVM adds net-new addresses when `classification.cexWallets` exists; Solana writes review candidates only. Review the candidates; never auto-promote. CEX wallets are required before go-live. The scheduled Dune step runs with `--skip-if-no-query`, so a project with no `pipeline.duneCexQueryId` skips cleanly; leave it unset until the owner supplies the project's own query, and never reuse TEL's 3761086 (a test fails on it).
 2. **Snapshot.** `refresh-holders.yml` (or `node scripts/pull-holders-rpc.js --project <slug>`). On Solana check the pool log line `RPC pool <chain>: N/M usable; K ..._RPC_n set, J distinct` shows K and J above 0.

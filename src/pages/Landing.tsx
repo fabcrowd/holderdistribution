@@ -9,7 +9,8 @@ import { fetchHolderHistoryPayload } from "@/hooks/useHoldersHistoryData";
 import { fetchClassificationChangelog } from "@/hooks/useClassificationChangelog";
 import { TREND_DAYS, afterBreakNote, cardConcentration, cardTrendState } from "@/lib/cardTrend";
 import { getSeriesBreaks } from "@/lib/seriesBreaks";
-import { PROJECTS, getProject } from "@/lib/projects";
+import { LISTED_PROJECTS, getProject } from "@/lib/projects";
+import { comingSoonTokens } from "@/lib/comingSoon";
 import { cardStats } from "@/lib/landingStats";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/seo";
 
@@ -28,13 +29,7 @@ const HERO_POINTS = [
   },
 ] as const;
 
-/** Tokens announced but not mapped yet; shown as placeholders after the live cards. */
-const COMING_SOON = [
-  { name: "Cronos", ticker: "CRO", image: "/tokens/cro.png" },
-  { name: "Ondo", ticker: "ONDO", image: "/tokens/ondo.png" },
-  { name: "Monad", ticker: "MON", image: "/tokens/mon.png" },
-  { name: "Plasma", ticker: "XPL", image: "/tokens/xpl.png" },
-] as const;
+const COMING_SOON = comingSoonTokens(LISTED_PROJECTS);
 
 /**
  * Home: pick a token, then open its terminal. One card per mapped project; the
@@ -49,7 +44,7 @@ const Landing = () => {
   usePageMeta({ title: SITE_TITLE, description: SITE_DESCRIPTION, canonicalPath: "/" });
 
   const queries = useQueries({
-    queries: PROJECTS.map((p) => ({
+    queries: LISTED_PROJECTS.map((p) => ({
       queryKey: ["holder-lite", p.slug],
       queryFn: () => fetchHolderLiteSnapshot(p.slug),
       staleTime: 5 * 60 * 1000,
@@ -58,7 +53,7 @@ const Landing = () => {
   });
 
   const histories = useQueries({
-    queries: PROJECTS.map((p) => ({
+    queries: LISTED_PROJECTS.map((p) => ({
       queryKey: ["holders-history", p.slug],
       queryFn: () => fetchHolderHistoryPayload(p.slug),
       staleTime: 5 * 60 * 1000,
@@ -67,7 +62,7 @@ const Landing = () => {
   });
 
   const changelogs = useQueries({
-    queries: PROJECTS.map((p) => ({
+    queries: LISTED_PROJECTS.map((p) => ({
       queryKey: ["classification-changelog", p.slug],
       queryFn: () => fetchClassificationChangelog(p.slug),
       staleTime: 5 * 60 * 1000,
@@ -109,7 +104,7 @@ const Landing = () => {
           <h2 id="tokens-title" className="scroll-mt-20 text-xl font-bold tracking-tight text-foreground">Tokens</h2>
           <p className="mt-1 text-sm text-muted-foreground">Pick a token to open its terminal.</p>
         <ul className="mt-6 grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Tokens">
-          {PROJECTS.map((p, i) => {
+          {LISTED_PROJECTS.map((p, i) => {
             const q = queries[i];
             const project = getProject(p.slug);
             const stats = q.isPending ? null : cardStats(q.isError ? null : q.data);

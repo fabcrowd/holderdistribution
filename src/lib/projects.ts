@@ -15,6 +15,8 @@ export type ProjectEntry = {
   name: string;
   ticker: string;
   default?: boolean;
+  /** Still onboarding: the pipeline runs it and /<slug> renders, but the landing page and sitemap omit it until it goes live. */
+  onboarding?: boolean;
 };
 
 export type ProjectChain = {
@@ -141,6 +143,9 @@ const CONFIGS: Record<string, ProjectConfig> = Object.fromEntries(
 export const PROJECTS: readonly ProjectEntry[] = (registry.projects as ProjectEntry[]).filter(
   (p) => SLUG_RE.test(p.slug) && CONFIGS[p.slug],
 );
+
+/** Projects shown on the landing page: every registered project except those still onboarding. */
+export const LISTED_PROJECTS: readonly ProjectEntry[] = PROJECTS.filter((p) => p.onboarding !== true);
 
 const registryDefaultSlug = (PROJECTS.find((p) => p.default) ?? PROJECTS[0])?.slug;
 if (!registryDefaultSlug) throw new Error("config/projects.json lists no usable project, so there is no default project");

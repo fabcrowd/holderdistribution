@@ -8,10 +8,11 @@
  * Facts only one project has (named custodians, a token upgrade) come from
  * that project's `copy.glossary` overrides in config/projects/<slug>.json.
  * The "legacy-v3" term is only listed for projects with more than one token
- * generation.
+ * generation, and "staked" only for projects with a staking mechanism.
  */
 import { DEFAULT_PROJECT_SLUG, getProject, type ProjectConfig } from "@/lib/projects";
 import { copyContext, fillCopy, hasTokenGenerations } from "@/lib/projectCopy";
+import { hasNoStaking } from "@/lib/stakingNote";
 
 export type GlossaryTerm = { id: string; term: string; definition: string };
 
@@ -89,7 +90,8 @@ export const buildGlossary = (project: ProjectConfig): GlossaryTerm[] => {
   const ctx = copyContext(project);
   const overrides = project.copy?.glossary ?? {};
   const multiGen = hasTokenGenerations(project);
-  return GLOSSARY_TEMPLATES.filter((t) => t.id !== "legacy-v3" || multiGen).map((t) => {
+  const noStaking = hasNoStaking(project);
+  return GLOSSARY_TEMPLATES.filter((t) => (t.id !== "legacy-v3" || multiGen) && (t.id !== "staked" || !noStaking)).map((t) => {
     const o = overrides[t.id];
     return {
       id: t.id,

@@ -11,6 +11,7 @@ import {
   type ProjectEntities,
 } from "@/lib/projectCopy";
 import { holderTiersFor, type HolderTiers } from "@/lib/holderTiers";
+import { hasNoStaking } from "@/lib/stakingNote";
 
 export type UseProjectCopy = CopyContext & {
   /** Fill a copy template ({ticker}, {name}, {chains}, {supply}) for the active project. */
@@ -23,6 +24,8 @@ export type UseProjectCopy = CopyContext & {
   entities: ProjectEntities;
   /** Holder-tier settings (balance ranges, distribution tiers, thresholds) — src/lib/holderTiers.ts. */
   tiers: HolderTiers;
+  /** False for a token whose config lists no staking mechanism: copy must not mention staked balances. */
+  hasStaking: boolean;
 };
 
 /** Build the copy helpers for one project (also used outside React, e.g. tests). */
@@ -36,6 +39,7 @@ export const projectCopyFor = (slug: string): UseProjectCopy => {
     hasText: (id: string) => hasCopyText(project, id),
     entities: projectEntities(project),
     tiers: holderTiersFor(project),
+    hasStaking: !hasNoStaking(project),
   };
 };
 

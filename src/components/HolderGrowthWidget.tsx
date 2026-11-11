@@ -20,6 +20,7 @@ import { useHolderHistoricalDelta } from "@/hooks/useHolderHistoricalDelta";
 import { useHolderLiteSnapshot, type DisplaySelection } from "@/hooks/useHolderSnapshot";
 import { chartLagsPage } from "@/lib/chartFreshness";
 import { useProject } from "@/hooks/useProject";
+import { hasNoStaking } from "@/lib/stakingNote";
 import { chainViewLabel } from "@/lib/chainViews";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import "@/lib/rechartsMotion";
@@ -347,9 +348,11 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   const GROWTH_PANELS = [
     { id: "wallets", label: "Wallets" },
     { id: "balance", label: "Balance" },
-    { id: "staked", label: "Staked" },
+    ...(hasNoStaking(project) ? [] : [{ id: "staked", label: "Staked" }]),
   ];
-  const [growthPanel, setGrowthPanel] = useState("wallets");
+  const [selectedGrowthPanel, setGrowthPanel] = useState("wallets");
+  // A panel the open project lacks (Staked after switching to a token without staking) falls back to Wallets.
+  const growthPanel = GROWTH_PANELS.some((p) => p.id === selectedGrowthPanel) ? selectedGrowthPanel : "wallets";
 
   const [balanceMode, setBalanceMode] = useState<BalanceMode>("balance");
   // Balance mode only. Retail (~67.7B) beside DEX (~0.94B) is a 70x spread that

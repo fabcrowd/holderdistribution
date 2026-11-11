@@ -151,7 +151,8 @@ The daily refresh is registry-driven: a `plan` job runs
 project (`max-parallel: 1`, `fail-fast: false`, `timeout-minutes` from
 `pipeline.workflowTimeoutMinutes` in the project file, default 60). To add a
 token: register it in `config/projects.json`, add `config/projects/<slug>.json`
-(optionally `pipeline.workflowTimeoutMinutes`), and nothing else. Stage
+(optionally `pipeline.workflowTimeoutMinutes`), and nothing else; `npm run onboard`
+writes both (see "Adding the next project"). Stage
 differences come from that config (`workflowPlan` in `scripts/workflow-paths.js`):
 the verify list, the `[skip netlify]` tag (only the registry default publishes),
 and whether the EVM gap fill runs (any EVM chain); the staker and Solana
@@ -770,9 +771,49 @@ its config, so onboarding a token needs no code change:
 ## Adding the next project
 
 A project goes live only when `node scripts/check-go-live.js --project <slug>` passes. It has no
-skip flags: missing feeds, placeholder feeds, a missing or stale wallet-flows report, a missing or
-stale ledger, and ledger wallets absent from the forensics registry all fail. Keep the project out
-of `config/projects.json` on the deployed site until it passes.
+skip flags: missing feeds, placeholder feeds, a feed `pipeline-health` calls unhealthy (stale file
+or stale newest row), tier outflows that are incomplete or built on other tiers, a project with no
+tiers of its own (`holders.distributionTiers`, or an owner decision recorded as
+`holders.defaultTiers`), a missing or stale wallet-flows report, a missing or stale ledger, and
+ledger wallets absent from the forensics registry all fail.
+
+The scaffold registers the project with `"onboarding": true` in `config/projects.json`: the
+pipeline runs it and `/<slug>` renders, but the landing page and sitemap leave it out (the token
+shows as "Coming soon" if it is on that list). The flag is removed when go-live passes.
+
+### The two commands
+
+1. **Discovery and scaffold** (local, read-only network, 0 Alchemy CU):
+   `npm run onboard -- --address <0x… or mint> [--chain <origin>] [--include <chain>]...`
+   reads decimals, symbol, name and total supply on-chain, finds the EVM deploy block by
+   binary search on `eth_getCode` (null on a non-archive node) and its date (`pipeline.historyStart`),
+   takes the CoinGecko id, name and image, and runs chain discovery. Copies on other chains are
+   recorded as `excluded` with a reason unless `--include` names them (bridge type then defaults
+   to `lock-mint`; confirm it). It then runs `add-project.js` with every flag filled: a dry run
+   by default; `--write` writes the files, the token image and (EVM) an empty
+   `config/projects/<slug>/cex-wallets.json` for the spellbook sync to fill. The scaffold sets
+   `supply.target`, `image`, `staking: []` with the staker feed disabled,
+   `treasury.categories` from the supplied wallets, and the `onboarding` flag. Slug defaults to the
+   display name (`--slug` overrides). Pass `PUBLIC_RPC_URLS_<CHAIN>=<url>` when the default
+   public nodes are unreachable.
+2. **First data to go-live** (after the scaffold, the judgement work below and a README update
+   are merged to `main`): `gh workflow run onboard-project.yml -f project=<slug>`.
+   `scripts/onboard-run.js` reads the project's files from `origin/main`, runs the first
+   unfinished step, waits for it, and repeats: CEX sync (EVM; a Solana project is blocked
+   until a reviewed list exists), snapshot, tiers derived from that snapshot (committed),
+   a refresh on those tiers, history rebuild per chain from `pipeline.historyStart`, exchange
+   flows until the newest row is at most 3 days old, treasury/CEX history (EVM), tier outflows
+   until complete, staker balances (StakeChanged-style staking only), wallet flows, ledger,
+   the Developer wallets tab (committed), `check-go-live`, then clearing the `onboarding` flag
+   (committed). A rerun resumes at the first unfinished step; near the job limit it dispatches
+   its own next round (6 rounds max). Locally, `npm run onboard:run -- --project <slug> --dry-run`
+   prints the checklist and next step; without `--dry-run` it dispatches the same workflows
+   but never commits (config edits stop with exit 3 for review).
+
+What neither command decides, and the onboard-project skill does: staking (`staking[]` and its
+kind), treasury/team/foundation wallets and their categories, tracing the top holders after the
+first snapshot, DEX pools, and a Solana CEX list. The ordered manual steps below stay as the
+reference for what each command does and for fixing a step that stops.
 
 ### Step 1 (required first): chain & contract discovery → `chains-inventory.json`
 

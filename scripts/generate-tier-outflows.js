@@ -134,6 +134,12 @@ const KEEP_DAYS = MAX_WINDOW_DAYS + 6; // prune older day buckets
 // scanChain below) while manual runs looked fine. `||` treats "" as falsy too,
 // so it now falls back correctly regardless of trigger type.
 const MAX_BLOCKS_PER_RUN = Number(process.env.MAX_BLOCKS_PER_RUN) || 3_000_000;
+// Wall-clock budget for the whole scan (all chains). A step killed by its
+// timeout saved nothing, so a tier reset never converged in the nightly; once
+// this passes, the scan stops at the last finished batch and the run writes
+// the store and checkpoint, and the next run resumes there. Unset = no limit.
+const MAX_SCAN_MS = Number(process.env.TIER_OUTFLOWS_MAX_MS) || Infinity;
+const SCAN_STARTED_MS = Date.now();
 
 // Token addresses come from the project's chain map (TEL: config/chains.json)
 // — see the note in scan-exchange-flows.js. Base was hardcoded to NFTEarthOFT, not TEL.
@@ -332,6 +338,10 @@ const scanChain = async (chainKey, ctx, checkpoint, dayBuckets) => {
   let aborted = false;
 
   for (let i = 0; i < chunks.length && !aborted; i += conc) {
+    if (Date.now() - SCAN_STARTED_MS > MAX_SCAN_MS) {
+      console.log(`  ${chainKey}: time budget TIER_OUTFLOWS_MAX_MS (${MAX_SCAN_MS} ms) reached; stopping at ${lastGood}, the next run resumes there.`);
+      break;
+    }
     const batch = chunks.slice(i, i + conc);
     const results = await Promise.allSettled(
       batch.map(([s, e], j) =>

@@ -28,6 +28,31 @@ describe("add-project", () => {
     expect(r.files["config/projects/foo/ledger.json"].developerWallets[0]).toMatchObject({ label: "Treasury", chains: ["ethereum"] });
   });
 
+  it("scaffolds the first-run config every refresh needs, and stays off the site while onboarding", () => {
+    const r = scaffold(args({ supplyTarget: 10_000_000_000, image: "/tokens/foo.png", historyStart: "2024-01-18" }), registry);
+    const cfg = r.files["config/projects/foo.json"];
+    expect(cfg.supply.target).toBe(10_000_000_000);
+    expect(cfg.image).toBe("/tokens/foo.png");
+    expect(cfg.pipeline.historyStart).toBe("2024-01-18");
+    expect(cfg.staking).toEqual([]);
+    expect(cfg.health.feeds["funding-wallets.json"].disabled).toBe(true);
+    expect(cfg.treasury.categories).toEqual([]);
+    expect(r.files["config/projects.json"].projects.at(-1)).toMatchObject({ slug: "foo", onboarding: true });
+    expect(r.files["config/projects.json"].projects[0].onboarding).toBeUndefined();
+  });
+
+  it("lists only the treasury categories a supplied wallet fills", () => {
+    const w = (cls) => `0x${"cd".repeat(20)}:W:${cls}`;
+    expect(scaffold(args({ wallets: [w("association")] }), registry).files["config/projects/foo.json"].treasury.categories).toEqual(["treasury"]);
+    expect(scaffold(args({ wallets: [w("holdings")] }), registry).files["config/projects/foo.json"].treasury.categories).toEqual(["holdings"]);
+  });
+
+  it("refuses a bad supply target, image path or history start", () => {
+    expect(() => scaffold(args({ supplyTarget: 0 }), registry)).toThrow(/supply-target/);
+    expect(() => scaffold(args({ image: "https://x/y.png" }), registry)).toThrow(/--image/);
+    expect(() => scaffold(args({ historyStart: "18/01/2024" }), registry)).toThrow(/history-start/);
+  });
+
   it("supports Solana", () => {
     expect(chainEntry("solana:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:6", 0)).toMatchObject({ vm: "solana", origin: true, rpc: { envPrefix: "SOLANA" } });
   });

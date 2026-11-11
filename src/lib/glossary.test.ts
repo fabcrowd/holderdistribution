@@ -82,6 +82,7 @@ const fakeProject: ProjectConfig = {
     { key: "ethereum", name: "Ethereum", chainId: 1, explorer: "https://etherscan.io", tokens: [{ generation: "v1", address: "0x0", decimals: 18 }] },
     { key: "arbitrum", name: "Arbitrum", chainId: 42161, explorer: "https://arbiscan.io", tokens: [{ generation: "v1", address: "0x0", decimals: 18 }] },
   ],
+  staking: [{ chain: "ethereum", name: "Abacus staking", address: "0x1", kind: "stakeChanged" }],
 };
 
 describe("glossary", () => {
@@ -108,6 +109,11 @@ describe("glossary", () => {
     expect(glossaryTerm("staked", g)?.term).toBe("Staked ABC");
     expect(glossaryTerm("snapshot", g)?.definition).toContain("every ABC balance on Ethereum and Arbitrum");
     expect(glossaryTerm("retail", g)?.definition).toContain("Abacus treasury");
+  });
+  it("lists the staked term only for projects with a staking mechanism", () => {
+    const g = buildGlossary({ ...fakeProject, staking: [] });
+    expect(glossaryTerm("staked", g)).toBeUndefined();
+    expect(g.map((t) => t.term).join("\n")).not.toMatch(/staked/i);
   });
   it("lists the token-generation term only for multi-generation projects", () => {
     expect(glossaryTerm("legacy-v3", buildGlossary(fakeProject))).toBeUndefined();

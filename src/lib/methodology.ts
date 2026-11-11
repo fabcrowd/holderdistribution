@@ -93,7 +93,7 @@ export const GENERIC_METHODOLOGY: Record<MethodologyKey, GenericMethodology> = {
     links: ["tokens"],
   },
   supplyBreakdown: {
-    how: "Total supply is {supply}. We split it into one fixed set — Retail, DEX, CEX, Developer holdings, Other, and Supply gap — and hide any bucket that is empty, so the pieces add to the total. Developer holdings is everything held by the project creators and not in public hands (treasury, team, reward vaults, escrow and similar); hover or tap it for the sub-category breakdown. Staked balances stay inside Retail. Each bucket is built from on-chain balances of labelled addresses; click a bucket for address-level drill-down.",
+    how: "Total supply is {supply}. We split it into one fixed set — Retail, DEX, CEX, Developer holdings, Other, and Supply gap — and hide any bucket that is empty, so the pieces add to the total. Developer holdings is everything held by the project creators and not in public hands (treasury, team, reward vaults, escrow and similar); hover or tap it for the sub-category breakdown. {stakedInRetail}Each bucket is built from on-chain balances of labelled addresses; click a bucket for address-level drill-down.",
     verify: "Base layer: the chart and bucket list. Click a bucket for its address list and explorer links.",
     links: ["tokens", "staking"],
   },
@@ -144,8 +144,11 @@ export const methodologyFor = (p: MethodologyProject, key: MethodologyKey): Meth
   const ctx = copyContext(p);
   const generic = GENERIC_METHODOLOGY[key];
   const override = p.copy?.methodology?.[key];
+  const stakedInRetail = (p.staking ?? []).length > 0 ? "Staked balances stay inside Retail. " : "";
   const fillMethod = (s: string) =>
-    fillCopy(s, ctx).split("{circulatingSubtract}").join(resolveCirculatingSubtract(p.supply).join(" + "));
+    fillCopy(s, ctx)
+      .split("{circulatingSubtract}").join(resolveCirculatingSubtract(p.supply).join(" + "))
+      .split("{stakedInRetail}").join(stakedInRetail);
   const links = override?.links
     ? override.links.map((l) => ({ label: fillCopy(l.label, ctx), href: resolveHref(p, l.href) }))
     : generic.links.flatMap((set) => (set === "tokens" ? projectTokenLinks(p) : projectStakingLinks(p)));
