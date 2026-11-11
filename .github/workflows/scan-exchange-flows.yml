@@ -75,7 +75,8 @@ jobs:
         run: |
           git config user.email "action@github.com"
           git config user.name "github-actions[bot]"
-          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json)
+          # date-blocks.json: the scan resolves and saves any day cutoff it lacks; left unstaged it breaks the rebase.
+          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/date-blocks.json)
           git add $FILES
           # git diff misses new untracked files — check the staged index instead.
           if git diff --cached --quiet -- $FILES; then
@@ -90,9 +91,7 @@ jobs:
             # everything committed since, so this data goes live within 24h.
             # See CLAUDE.md -> "Netlify note".
             git commit -m "Update exchange-flow scan (resumable backfill) [skip netlify]"
-            git fetch origin ${GITHUB_REF_NAME}
-            git rebase origin/${GITHUB_REF_NAME}
-            git push origin HEAD:${GITHUB_REF_NAME}
+            bash scripts/push-main.sh
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
