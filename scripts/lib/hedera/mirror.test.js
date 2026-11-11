@@ -24,6 +24,8 @@ describe("hedera mirror client", () => {
     expect(parsed.balance).toBe("21706344069277118");
     expect(BigInt(parsed.total_supply)).toBe(5_000_000_000_000_000_000n);
     expect(parsed.x).toBe(12);
+    const transfer = parseExactJson('{"transfers":[{"account":"0.0.2","amount":-5000000000000000001}]}');
+    expect(transfer.transfers[0].amount).toBe("-5000000000000000001");
   });
 
   it("spaces request starts by the rate limit", async () => {

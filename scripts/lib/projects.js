@@ -16,8 +16,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { configureProjectRpc } from "./rpc.js";
 import { isEvmAddress, isSolanaAddress } from "./address.js";
-import { canonicalAddressForVm } from "./address.js";
-import { assertChainVm } from "./chainVms.js";
+import { canonicalAddressForVm, isAddressForVm } from "./address.js";
+import { assertChainVm, VM_CHAIN_FIELDS, vmUsesNativeAsset } from "./chainVms.js";
 import { BRIDGE_MODES, CHAIN_VMS, SOLANA_CLUSTERS, defaultExplorerTemplates, resolveChainBridge, resolveChainVm } from "./chainAdapters.js";
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
@@ -130,6 +130,18 @@ export const ROLE_SUPPLY_CATEGORIES = Object.freeze({
 });
 const TEMPLATE_KINDS = ["token", "address", "tx"];
 
+/** Native-coin chain (vm hedera): `asset` replaces tokens[]; the vm's own fields are checked here. */
+function validateNativeAssetChain(c, where, errors) {
+  if (!vmUsesNativeAsset(resolveChainVm(c))) return;
+  if (c.asset?.kind !== "native") errors.push(`${where}: a hedera chain needs asset: { kind: "native", decimals } (the native coin has no token address)`);
+  else if (!(Number.isInteger(c.asset.decimals) && c.asset.decimals >= 0 && c.asset.decimals <= 18)) errors.push(`${where}: asset.decimals must be an integer 0-18`);
+  if (Array.isArray(c.tokens) && c.tokens.length > 0) errors.push(`${where}: a native-asset chain takes no tokens[]`);
+  for (const f of EVM_ONLY_CHAIN_FIELDS) if (c[f] !== undefined) errors.push(`${where}: ${f} is EVM-only; remove it from a hedera chain`);
+  if (c.mirrorUrl !== undefined && !(typeof c.mirrorUrl === "string" && /^https:\/\/\S+$/.test(c.mirrorUrl))) errors.push(`${where}: mirrorUrl must be an https URL`);
+  if (c.rangeWidth !== undefined && !(Number.isInteger(c.rangeWidth) && c.rangeWidth > 0)) errors.push(`${where}: rangeWidth must be a positive integer`);
+  if (c.holderFloorTinybar !== undefined && !/^[1-9]\d*$/.test(String(c.holderFloorTinybar))) errors.push(`${where}: holderFloorTinybar must be a positive whole number of tinybars`);
+}
+
 /**
  * Validates a project config's chain fields. Returns `{ errors, warnings }`;
  * resolveProject() throws on errors (before any network call) and the
@@ -181,9 +193,15 @@ export function validateProjectConfig(config) {
       for (const [name, v] of Object.entries(c.contracts ?? {})) {
         if (!isSolanaAddress(v?.address)) errors.push(`${where}: contracts.${name} is not a base58 Solana address`);
       }
+    } else if (vm === "hedera") {
+      validateNativeAssetChain(c, where, errors);
     } else if (c.vm !== undefined || c.cluster !== undefined) {
       if (c.cluster !== undefined) errors.push(`${where}: cluster is Solana-only`);
       for (const t of tokens) if (t?.program !== undefined) errors.push(`${where}: token program is Solana-only`);
+    }
+    if (vm !== "hedera") {
+      for (const [owner, fields] of Object.entries(VM_CHAIN_FIELDS)) for (const f of fields) if (c[f] !== undefined) errors.push(`${where}: ${f} belongs to vm ${owner} only`);
+      if (c.asset !== undefined) errors.push(`${where}: asset (native coin) is only for vm ${Object.keys(VM_CHAIN_FIELDS).join(" | ")}; use tokens[]`);
     }
     if (vm === "evm" && (c.vm !== undefined || c.bridge !== undefined)) {
       // Only chains that opt into the new fields get address checks here, so
@@ -191,6 +209,7 @@ export function validateProjectConfig(config) {
       for (const t of tokens) if (!isEvmAddress(t?.address)) errors.push(`${where}: token ${JSON.stringify(t?.address)} is not a 0x address`);
     }
     for (const [name, v] of Object.entries(c.contracts ?? {})) {
+      if (vm === "hedera" && !isAddressForVm("hedera", v?.address)) errors.push(`${where}: contracts.${name} is not a Hedera 0.0.N address`);
       if (v?.role !== undefined && typeof v.role !== "string") errors.push(`${where}: contracts.${name}.role must be a string`);
     }
   }
@@ -390,8 +409,13 @@ const lc = (v) => (typeof v === "string" ? v.trim().toLowerCase() : v);
 export function deriveChainsFromProject(config) {
   const out = {};
   for (const c of config?.chains ?? []) {
-    if (assertChainVm(resolveChainVm(c)) === "solana") {
+    const chainVm = assertChainVm(resolveChainVm(c));
+    if (chainVm === "solana") {
       out[c.key] = deriveSolanaChain(config, c);
+      continue;
+    }
+    if (vmUsesNativeAsset(chainVm)) {
+      out[c.key] = deriveNativeAssetChain(c, chainVm);
       continue;
     }
     const tokens = c.tokens ?? [];
@@ -431,6 +455,27 @@ export function deriveChainsFromProject(config) {
     };
   }
   return out;
+}
+
+/** Chain-map entry for a native-coin chain: no token address; the vm's own fields are passed through. */
+function deriveNativeAssetChain(c, vm) {
+  if (c.asset?.kind !== "native") throw new Error(`chain ${c.key}: vm ${vm} needs asset: { kind: "native", decimals }`);
+  const templates = { ...defaultExplorerTemplates({ ...c, vm }), ...(c.explorerTemplates ?? {}) };
+  const contracts = {};
+  for (const [name, v] of Object.entries(c.contracts ?? {})) contracts[name] = { address: canonicalAddressForVm(vm, v.address), ...(v.role ? { role: v.role } : {}) };
+  return {
+    key: c.key,
+    name: c.name,
+    vm,
+    ...(c.origin ? { origin: true } : {}),
+    ...(c.bridge ? { bridge: c.bridge } : {}),
+    asset: { kind: "native", decimals: c.asset.decimals },
+    decimals: c.asset.decimals,
+    ...Object.fromEntries((VM_CHAIN_FIELDS[vm] ?? []).filter((f) => c[f] !== undefined).map((f) => [f, c[f]])),
+    explorerTemplates: templates,
+    tokens: {},
+    contracts,
+  };
 }
 
 /**

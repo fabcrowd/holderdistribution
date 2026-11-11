@@ -13,7 +13,7 @@ import { chainExplorerUrl } from "../chainAdapters.js";
 import { parseHederaAddress } from "./address.js";
 import { createHederaClock } from "./clock.js";
 import { createMirrorClient, HEDERA_MAINNET_MIRROR } from "./mirror.js";
-import { HEDERA_RANGE_WIDTH, scanBalanceSnapshot, scanContractIds } from "./scan.js";
+import { HEDERA_RANGE_WIDTH, resumeProblem, scanBalanceSnapshot, scanContractIds } from "./scan.js";
 
 export const HEDERA_DECIMALS = 8;
 const TINYBAR_PER_HBAR = 100_000_000n;
@@ -75,6 +75,10 @@ export const hederaAdapter = {
     };
   },
 
+  /** Why a saved scan state cannot be resumed for this chain config (other floor or range width), or null when it can. */
+  resumeProblem: (chain, resume) =>
+    resumeProblem(resume, { floor: floorOf(chain), width: chain?.rangeWidth ?? HEDERA_RANGE_WIDTH }),
+
   async scanHolders(chain, _token, opts = {}) {
     const scan = await this.scanChain(chain, opts);
     return { holders: [...scan.balances].map(([address, balance]) => ({ address, balance })), meta: scan.meta, scan };
@@ -91,7 +95,14 @@ export const hederaAdapter = {
     const floor = floorOf(chain);
     const width = chain?.rangeWidth ?? HEDERA_RANGE_WIDTH;
     const meta = await this.tokenMeta(chain, null, { client });
-    const snapshot = await scanBalanceSnapshot(client, { floor, width, resume, onProgress, ...(opts.nowMs ? { nowMs: opts.nowMs } : {}) });
+    const snapshot = await scanBalanceSnapshot(client, { floor, width, resume, onProgress, ...(opts.nowMs ? { nowMs: opts.nowMs } : {}), ...(opts.sleep ? { sleep: opts.sleep } : {}), ...(opts.random ? { random: opts.random } : {}), ...(opts.snapshotWaitMs !== undefined ? { snapshotWaitMs: opts.snapshotWaitMs } : {}) });
+    // HBAR is never burned, so every balance at one snapshot, contracts and dust included, adds up to total supply.
+    // A shortfall means a range lost rows; refusing it keeps a short count out of the feeds.
+    const supplyAt = await client.getJson(`/network/supply?timestamp=${snapshot.timestamp}`);
+    const supplyAtRaw = BigInt(supplyAt.total_supply);
+    if (snapshot.allRaw !== supplyAtRaw) {
+      throw new Error(`hedera snapshot ${snapshot.timestamp}: balances sum to ${snapshot.allRaw} tinybar, total supply is ${supplyAtRaw}`);
+    }
     const contractIds = await scanContractIds(client, { maxId: snapshot.maxId, width });
     const block = await createHederaClock(client).blockAtOrBefore(snapshot.timestamp);
 
@@ -123,10 +134,16 @@ export const hederaAdapter = {
         floorTinybar: floor.toString(),
         decimals: HEDERA_DECIMALS,
         holders: balances.size,
+        snapshotClusterId: snapshot.clusterId,
+        snapshotMismatchRetries: snapshot.mismatchRetries,
+        snapshotWaitByCluster: snapshot.waitByCluster,
         contractsExcluded,
         heldRawTotal: heldRaw.toString(),
+        snapshotRawTotal: snapshot.allRaw.toString(),
+        nonzeroAccounts: snapshot.nonzero,
         supplyRaw: meta.supplyRaw.toString(),
-        // Data is as of snapshotAt; scannedAt is when this run finished reading it (resumes older than the age limit are refused).
+        releasedAtSnapshotRaw: String(supplyAt.released_supply),
+        // snapshotAt is the pinned mirror stamp. scannedAt is when this run finished reading it.
         snapshotAt: new Date(Number(snapshot.timestamp.split(".")[0]) * 1000).toISOString(),
         scannedAt: now().toISOString(),
       },

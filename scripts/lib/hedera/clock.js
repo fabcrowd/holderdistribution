@@ -41,10 +41,36 @@ export function createHederaClock(client) {
     const high = hi ?? (await latest()).number;
     return firstBlockAtOrAfter(targetSeconds, getTime, lo, high);
   }
-  /** Highest block whose timestamp is at or before `stamp` (a mirror "seconds.nanos" string). */
+  /**
+   * Block numbers are only a clock if they are consecutive and time-ordered; the binary search assumes it.
+   * Checks the answer's neighbours: n-1 must exist and be earlier, n+1 (absent at the head) must be later.
+   */
+  async function assertDenseAround(b) {
+    const fail = (why) => new Error(`hedera blocks are not dense around block ${b.number}: ${why}`);
+    if (b.number > 0) {
+      let before;
+      try {
+        before = await timeOf(b.number - 1);
+      } catch (e) {
+        throw fail(`block ${b.number - 1} is unreadable (${e.message})`);
+      }
+      if (!(before < b.timestamp)) throw fail(`block ${b.number - 1} is not earlier (${before} >= ${b.timestamp})`);
+    }
+    let after = null;
+    try {
+      after = await timeOf(b.number + 1);
+    } catch (e) {
+      if (!/HTTP 404/.test(e.message)) throw e;
+    }
+    if (after !== null && !(after > b.timestamp)) throw fail(`block ${b.number + 1} is not later (${after} <= ${b.timestamp})`);
+  }
+  /** Highest block whose timestamp is at or before `stamp` (a mirror "seconds.nanos" string), after the density check. */
   async function blockAtOrBefore(stamp) {
     const { blocks } = await client.getJson(`/blocks?limit=1&order=desc&timestamp=lte:${stamp}`);
-    return blocks?.length ? block(blocks[0]) : null;
+    if (!blocks?.length) return null;
+    const found = block(blocks[0]);
+    await assertDenseAround(found);
+    return found;
   }
   return { latest, timeOf, firstAtOrAfter, blockAtOrBefore };
 }

@@ -7,6 +7,10 @@
  * JSON integers that exceed 2^53.
  */
 const idNum = (id) => Number(String(id).split(".")[2]);
+const nanosOf = (stamp) => {
+  const [s, f = ""] = String(stamp).replace(/^lte:/, "").split(".");
+  return BigInt(s) * 1_000_000_000n + BigInt(f.padEnd(9, "0").slice(0, 9));
+};
 
 function applyFilters(values, num, params, name) {
   let ok = true;
@@ -27,36 +31,47 @@ export function createMockMirror({
   contracts = [], // numeric ids
   snapshotTimestamp = "1794165040.107980111",
   headTimestamp = "1794165294.000000001", // /balances without a timestamp reports "now", not a snapshot
-  totalSupply = "5000000000000000000",
+  totalSupply = null, // default: the sum of every balance, as on mainnet where no HBAR is burned
   releasedSupply = "4432714701836802108",
   blockCount = 1000,
   blockTime = (n) => 1_568_332_800 + n * 2,
+  clusters = null, // { <id>: [sorted "seconds.nanos" stamps] }; each cluster answers a pinned timestamp with its latest stamp at or before it
+  route = () => null, // (callIndex) => cluster id that answers this call (default: the first cluster)
   tamper = null, // (path, params, body) => body | undefined; edits a parsed /balances or /contracts response
+  notFound = () => false, // (path, query, callIndex, cluster) => true answers HTTP 404 (a cluster that lacks the pinned stamp)
   fail = () => null, // (path, query, callIndex) => status code | "network" | null
 } = {}) {
   const sorted = [...accounts].sort((a, b) => a.num - b.num);
+  const supplyText = totalSupply ?? String(sorted.reduce((sum, a) => sum + a.balance, 0n));
   const calls = [];
   const snapTs = () => (typeof snapshotTimestamp === "function" ? snapshotTimestamp(calls.length) : snapshotTimestamp);
-  const respond = (status, body) => ({
+  const respond = (status, body, clusterId = null) => ({
     ok: status >= 200 && status < 300,
     status,
-    headers: { get: () => null },
+    headers: { get: (name) => (String(name).toLowerCase() === "x-cluster-id" ? clusterId : null) },
     text: async () => (typeof body === "string" ? body : JSON.stringify(body)),
   });
 
-  function balances(params) {
+  function stampFor(requested, cluster) {
+    if (!clusters) return snapTs();
+    const at = nanosOf(requested);
+    return [...(clusters[cluster] ?? [])].reverse().find((t) => nanosOf(t) <= at) ?? null;
+  }
+
+  function balances(params, cluster) {
     const limit = Math.min(Number(params.get("limit") ?? 25), 100);
     const floor = params.get("account.balance") ? BigInt(params.get("account.balance").split(":")[1]) : null;
     const order = params.get("order") ?? "asc";
     let rows = sorted.filter((a) => applyFilters(null, a.num, params, "account.id"));
     if (floor !== null) rows = rows.filter((a) => a.balance >= floor);
     if (order === "desc") rows = [...rows].reverse();
-    const page = rows.slice(0, limit);
+    const stampOfRequest = params.get("timestamp") ? stampFor(params.get("timestamp"), cluster) : null;
+    const page = clusters && params.get("timestamp") && stampOfRequest === null ? [] : rows.slice(0, limit);
     const text = page
       .map((a) => `{"account":"0.0.${a.num}","balance":${a.balance},"tokens":${JSON.stringify(a.tokens ?? [])}}`)
       .join(",");
     const next = page.length === limit ? `"/api/v1/balances?next"` : "null";
-    const stamp = page.length === 0 ? null : params.get("timestamp") ? snapTs() : headTimestamp; // real mirror: null on an empty page
+    const stamp = page.length === 0 ? null : params.get("timestamp") ? stampOfRequest : headTimestamp; // real mirror: null on an empty page
     return `{"timestamp":${stamp === null ? "null" : `"${stamp}"`},"balances":[${text}],"links":{"next":${next}}}`;
   }
 
@@ -74,17 +89,20 @@ export function createMockMirror({
     const path = u.pathname.replace(/^\/api\/v1/, "");
     const query = u.search;
     const index = calls.length;
-    calls.push({ path, query, params: u.searchParams });
+    const cluster = clusters ? (route(index) ?? Object.keys(clusters)[0]) : null;
+    calls.push({ path, query, params: u.searchParams, cluster });
     const injected = fail(path, query, index);
     if (injected === "network") throw new TypeError("fetch failed");
     if (injected) return respond(injected, `{"_status":{"messages":[{"message":"injected ${injected}"}]}}`);
+    if (notFound(path, query, index, cluster)) return respond(404, { _status: { messages: [{ message: "Not found" }] } }, cluster ?? "mock");
     if (path === "/balances" || path === "/contracts") {
-      const raw = path === "/balances" ? balances(u.searchParams) : contractList(u.searchParams);
+      const raw = path === "/balances" ? balances(u.searchParams, cluster) : contractList(u.searchParams);
       const edited = tamper ? tamper(path, u.searchParams, JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw))) : undefined;
-      return respond(200, edited === undefined ? raw : JSON.stringify(edited));
+      return respond(200, edited === undefined ? raw : JSON.stringify(edited), cluster === "unknown" ? null : (cluster ?? "mock")); // cluster "unknown" sends no x-cluster-id
     }
     if (path === "/network/supply") {
-      return respond(200, `{"released_supply":${releasedSupply},"timestamp":"${snapTs()}","total_supply":${totalSupply}}`);
+      const at = u.searchParams.get("timestamp");
+      return respond(200, `{"released_supply":${releasedSupply},"timestamp":"${at ?? snapTs()}","total_supply":${supplyText}}`);
     }
     if (path === "/blocks") {
       const params = u.searchParams;

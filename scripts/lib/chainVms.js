@@ -22,3 +22,10 @@ export function resolveChainVm(chain) {
 /** vms whose live reads can be pinned to a day-boundary block; the rest read "live" (unsettled). */
 const BLOCK_PINNED_VMS = new Set(["evm"]);
 export const vmPinsToBlock = (vm) => BLOCK_PINNED_VMS.has(assertChainVm(vm));
+
+/** vms whose chains[] entry declares `asset: { kind: "native", decimals }` instead of `tokens[]`. */
+const NATIVE_ASSET_VMS = new Set(["hedera"]);
+export const vmUsesNativeAsset = (vm) => NATIVE_ASSET_VMS.has(assertChainVm(vm));
+
+/** Chain-entry fields only one vm understands; a derived chain copies them through, any other vm rejects them. */
+export const VM_CHAIN_FIELDS = Object.freeze({ hedera: Object.freeze(["mirrorUrl", "rangeWidth", "holderFloorTinybar"]) });

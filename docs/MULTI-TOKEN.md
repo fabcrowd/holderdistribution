@@ -281,6 +281,14 @@ config's `holders` block. Any field you leave out falls back to
 `config/holder-tiers.default.json` (the TEL values). `tel.json` carries an
 explicit copy, and `scripts/lib/holderTiers.test.js` pins it to the old literals.
 
+Every other project derives its own `distributionTiers` and `balanceRanges`
+from its own first snapshot with `node scripts/derive-holder-tiers.js --project
+<slug>` (or `--balances <file.tsv>` for a scratch run). Tiers are never copied
+from TEL or another project, and never scaled by supply. Distribution edges sit
+at fixed holder ranks from the top (0.01% of wallets down to 60%), rounded down
+to 1 / 2.5 / 5 x 10^k. Wallet Holdings ranges are evenly spaced powers of ten.
+The fallback to TEL's values is only for the first snapshot run.
+
 ```json
 "holders": {
   "retailThreshold": 1000,

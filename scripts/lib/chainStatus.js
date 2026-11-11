@@ -19,8 +19,9 @@ export function buildChainStatus(checkpoint, chainKeys) {
     // Solana: lastBlock is the snapshot SLOT; scannedAt lets the UI mark the
     // chain stale when this run kept a previous (failed-chain) entry. EVM
     // entries keep exactly { lastBlock }.
-    chains[key] = entry?.vm === "solana"
-      ? { lastBlock, vm: "solana", ...(entry.scannedAt ? { scannedAt: entry.scannedAt } : {}) }
+    // Hedera: lastBlock is the block at the held snapshot; scannedAt is when this run read it.
+    chains[key] = entry?.vm === "solana" || entry?.vm === "hedera"
+      ? { lastBlock, vm: entry.vm, ...(entry.scannedAt ? { scannedAt: entry.scannedAt } : {}) }
       : { lastBlock };
   }
   return { generatedAt: checkpoint?.generatedAt ?? null, chains };

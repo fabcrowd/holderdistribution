@@ -21,6 +21,7 @@ const norm = (vm, a) => (vm === "solana" ? String(a ?? "") : String(a ?? "").toL
 
 /** Token addresses a config chain declares (array or legacy/v3 object or tokenAddress). */
 export function configChainTokens(chain) {
+  if (chain?.asset?.kind === "native") return [{ address: "native", decimals: chain.asset.decimals }];
   const t = chain?.tokens;
   const list = Array.isArray(t) ? t : t && typeof t === "object" ? Object.entries(t).map(([generation, v]) => ({ generation, ...v })) : [];
   if (!list.length && chain?.tokenAddress) list.push({ address: chain.tokenAddress, decimals: chain.decimals });
@@ -74,7 +75,7 @@ export function buildInventory({ project, discovery = null, supplies = {}, coing
         decimals: t.decimals ?? null,
         generation: t.generation ?? null,
         tokenStatus: t.status ?? null,
-        explorer: explorerUrl(c, t.address),
+        explorer: c.asset?.kind === "native" ? null : explorerUrl(c, t.address),
         totalSupply: supplies?.[c.key]?.[t.address] ?? null,
       })),
       source: `config/projects/${project.slug}.json chains[]` + (supplies?.[c.key] ? "; totalSupply via public RPC" : ""),
