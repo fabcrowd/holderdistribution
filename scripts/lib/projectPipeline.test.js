@@ -198,6 +198,7 @@ describe("reconcile-supply per project", () => {
       exclusions: path.join(repo, "config/exclusions.json"),
       cexWallets: path.join(repo, "config/cex-wallets.json"),
       output: path.join(repo, "public/data/supply-reconciliation.json"),
+      checkpoint: path.join(repo, "public/data/holders-checkpoint.json"),
     });
     expect(reconcileOptions(tel)).toEqual({
       totalSupply: TEL_TOTAL_SUPPLY,
@@ -238,6 +239,7 @@ describe("reconcile-supply per project", () => {
       exclusions: path.join(tmp, "config/projects/demo/exclusions.json"),
       cexWallets: null,
       output: path.join(tmp, "public/data/demo/supply-reconciliation.json"),
+      checkpoint: path.join(tmp, "public/data/demo/holders-checkpoint.json"),
     });
     expect(reconcileOptions(demo)).toEqual({
       totalSupply: 1_000_000,

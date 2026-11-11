@@ -15,6 +15,22 @@ export const FLOW_TAIL_DAYS = 3;
 /** Runs of one step per orchestrator invocation before it stops and reports (scans that resume need several). */
 export const MAX_RUNS_PER_STEP = 6;
 
+/**
+ * Chain VMs each data workflow can read today. A step for a project on any other
+ * VM stops with a reason instead of dispatching a workflow that cannot read it.
+ */
+export const STEP_VMS = Object.freeze({
+  "cex-wallets": ["evm"],
+  history: ["evm", "solana"],
+  "exchange-flows": ["evm", "solana"],
+  "treasury-cex-history": ["evm"],
+  "tier-outflows": ["evm", "solana"],
+  "wallet-flows": ["evm", "solana"],
+  ledger: ["evm", "solana"],
+});
+const unsupported = (id, vms) => vms.filter((vm) => !(STEP_VMS[id] ?? []).includes(vm));
+const notBuilt = (id, vms) => `${id} is not built for vm ${unsupported(id, vms).join(", ")} yet (tasks/hedera-plan.md lists the remaining slices)`;
+
 const vmOf = (config) => [...new Set((config.chains ?? []).map((c) => c.vm ?? (c.key === "solana" ? "solana" : "evm")))];
 const dayBefore = (today) => new Date(Date.parse(`${today}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
 
@@ -47,7 +63,7 @@ export function onboardingSteps({ slug, config, readJson, today, goLive = null, 
     why: cexCount > 0 ? `${cexCount} CEX wallets listed` : "no CEX wallets listed yet (the first snapshot would count exchange balances as retail)",
     ...(isEvm && cexRel
       ? { action: { workflow: "sync-cex-wallets.yml", inputs: { project: slug } } }
-      : { blocked: `add a reviewed classification.cexWallets list for ${slug} (Solana spellbook writes candidates only: data/${slug}/cex-dune-candidates.json)` }),
+      : { blocked: `add a reviewed classification.cexWallets list for ${slug}: no verified public source syncs CEX wallets for ${vms.filter((v) => v !== "evm").join(", ")} (for Solana, review data/${slug}/cex-dune-candidates.json)` }),
   });
 
   const snapshot = data("tel-holders.json");
@@ -175,6 +191,11 @@ export function onboardingSteps({ slug, config, readJson, today, goLive = null, 
       why: onboardingFlag ? "registry entry still marked onboarding" : "listed (shows after the next manual Netlify deploy)",
       action: { edit: "clear-onboarding-flag" },
     });
+  }
+  for (const s of steps) {
+    if (s.id === "cex-wallets" || s.done || !STEP_VMS[s.id] || unsupported(s.id, vms).length === 0) continue;
+    delete s.action;
+    s.blocked = notBuilt(s.id, vms);
   }
   return steps;
 }

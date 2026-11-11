@@ -70,8 +70,24 @@ export const reconcilePaths = (project, root = process.cwd()) => {
     exclusions: projectClassificationPath(project, "exclusions", root),
     cexWallets: projectClassificationPath(project, "cexWallets", root),
     output: data("supply-reconciliation.json"),
+    checkpoint: data("holders-checkpoint.json"),
   };
 };
+
+/**
+ * Tokens a chain scan measured outside every snapshot row (`unlistedRawTotal`, written by the
+ * Hedera adapter), summed across chains in whole tokens; null when no chain reports it, so the
+ * reconciliation of every other project is unchanged.
+ */
+export function unlistedFromCheckpoint(checkpoint) {
+  const chains = Object.values(checkpoint?.chains ?? {}).filter((c) => c?.unlistedRawTotal != null && Number.isInteger(c?.decimals));
+  if (chains.length === 0) return null;
+  return chains.reduce((sum, c) => {
+    const raw = BigInt(c.unlistedRawTotal);
+    const unit = 10n ** BigInt(c.decimals);
+    return sum + Number(raw / unit) + Number(raw % unit) / Number(unit);
+  }, 0);
+}
 
 export const reconcileOptions = (project) => {
   const supply = project.config?.supply;
@@ -140,7 +156,7 @@ const main = async (project) => {
     snapshot,
     projectExclusions(project, exclusions, snapshot),
     cexWallets,
-    { ...reconcileOptions(project), coingeckoCirculating },
+    { ...reconcileOptions(project), coingeckoCirculating, unlisted: unlistedFromCheckpoint(await readJson(paths.checkpoint, null)) },
   );
   const cgCirculating = r.coingeckoCirculating;
   const { circulatingSubtract } = reconcileOptions(project);
@@ -167,6 +183,7 @@ const main = async (project) => {
   console.log(`  residualParts.bridgeInFlight     ${fmt(r.residualParts.bridgeInFlight).padStart(16)}`);
   console.log(`  residualParts.originDrift        ${fmt(r.residualParts.originDrift).padStart(16)}`);
   console.log(`  residualParts.upgradeUnbacked    ${fmt(r.residualParts.upgradeUnbacked ?? 0).padStart(16)}`);
+  if (r.residualParts.unlisted != null) console.log(`  residualParts.unlisted           ${fmt(r.residualParts.unlisted).padStart(16)}`);
   if (r.upgrade) {
     console.log();
     console.log("TEL v3 upgrade (legacy 2-decimal TEL -> v3 18-decimal TEL, 1:1):");

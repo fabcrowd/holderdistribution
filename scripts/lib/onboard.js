@@ -100,20 +100,25 @@ export function planOnboarding({ address, chain, facts, coingecko = null, discov
   if (!slug || !SLUG_RE.test(slug)) throw new Error(`no usable slug from "${coingecko?.id ?? name}"; pass --slug`);
 
   const isSolana = chain === "solana";
-  const origin = { key: chain, address: isSolana ? address : address.toLowerCase(), decimals: facts.decimals };
+  const isNative = address === "native";
+  const origin = { key: chain, address: isSolana || isNative ? address : address.toLowerCase(), decimals: facts.decimals };
   const chainSpecs = [
-    isSolana
-      ? `solana:${origin.address}:${origin.decimals}`
-      : `${chain}:${origin.address}:${origin.decimals}${facts.deployBlock != null ? `:${CANDIDATE_CHAINS.find((c) => c.key === chain)?.chainId ?? ""}:${facts.deployBlock}` : ""}`,
+    isNative
+      ? `${chain}:native:${origin.decimals}`
+      : isSolana
+        ? `solana:${origin.address}:${origin.decimals}`
+        : `${chain}:${origin.address}:${origin.decimals}${facts.deployBlock != null ? `:${CANDIDATE_CHAINS.find((c) => c.key === chain)?.chainId ?? ""}:${facts.deployBlock}` : ""}`,
   ];
   for (const [key, t] of Object.entries(included)) {
     chainSpecs.push(key === "solana" ? `solana:${t.address}:${t.decimals}` : `${key}:${t.address.toLowerCase()}:${t.decimals}`);
     notes.push(`${key}: configured as bridge "lock-mint" by default; confirm the bridge type in config/projects/${slug}.json`);
   }
-  if (!isSolana && facts.deployBlock == null) notes.push(`${chain}: deploy block unknown (public node refused historical state); the first holders scan starts from block 0 and will be slow; set chains[0].fromBlock by hand if known`);
+  if (!isSolana && !isNative && facts.deployBlock == null) notes.push(`${chain}: deploy block unknown (public node refused historical state); the first holders scan starts from block 0 and will be slow; set chains[0].fromBlock by hand if known`);
 
   const configChains = [
-    { key: chain, ...(isSolana ? { vm: "solana" } : {}), origin: true, tokens: [{ address: origin.address, decimals: origin.decimals, status: "canonical" }] },
+    isNative
+      ? { key: chain, vm: chain, origin: true, asset: { kind: "native", decimals: origin.decimals } }
+      : { key: chain, ...(isSolana ? { vm: "solana" } : {}), origin: true, tokens: [{ address: origin.address, decimals: origin.decimals, status: "canonical" }] },
     ...Object.entries(included).map(([key, t]) => ({ key, ...(key === "solana" ? { vm: "solana" } : {}), tokens: [{ address: t.address, decimals: t.decimals, status: "canonical" }] })),
   ];
   const supplyTarget = wholeTokens(facts.totalSupplyRaw, facts.decimals);
@@ -138,7 +143,7 @@ export function planOnboarding({ address, chain, facts, coingecko = null, discov
   }
 
   const historyStart = overrides.historyStart ?? facts.deployDate ?? null;
-  if (!historyStart && !isSolana) notes.push("history start unknown: pass --history-start, or rebuild-holders-history.yml uses its own default");
+  if (!historyStart && !isSolana && !isNative) notes.push("history start unknown: pass --history-start, or rebuild-holders-history.yml uses its own default");
   const image = coingecko?.image ? { url: coingecko.image, path: `/tokens/${slug}.${imageExt(coingecko.image)}` } : null;
   if (!image) notes.push(`no CoinGecko image: add public/tokens/${slug}.<ext> and "image" by hand (check-go-live requires it)`);
 
@@ -151,5 +156,5 @@ export function planOnboarding({ address, chain, facts, coingecko = null, discov
     ...(historyStart ? ["--history-start", historyStart] : []),
     ...(overrides.wallets ?? []).flatMap((w) => ["--wallet", w]),
   ];
-  return { slug, name, ticker, vm: isSolana ? "solana" : "evm", supplyTarget, historyStart, image, inventory, argv, notes };
+  return { slug, name, ticker, vm: isNative ? chain : isSolana ? "solana" : "evm", supplyTarget, historyStart, image, inventory, argv, notes };
 }

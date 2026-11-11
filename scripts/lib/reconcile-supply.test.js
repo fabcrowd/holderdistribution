@@ -390,3 +390,21 @@ describe("mergeRoleExclusions (contracts{} roles + token-account owners)", () =>
     expect(projectExclusions(tel, ex, {})).toBe(ex);
   });
 });
+
+describe("unlisted supply (chains whose scan measures what it leaves out)", () => {
+  it("sums unlistedRawTotal across chains in whole tokens, exactly above 2^53 raw", async () => {
+    const { unlistedFromCheckpoint } = await import("../reconcile-supply.js");
+    expect(unlistedFromCheckpoint({ chains: { hedera: { decimals: 8, unlistedRawTotal: "41441796989516760" } } })).toBeCloseTo(414_417_969.8951676, 6);
+    expect(unlistedFromCheckpoint({ chains: { ethereum: { lastBlock: 1 } } })).toBeNull();
+    expect(unlistedFromCheckpoint(null)).toBeNull();
+  });
+
+  it("reports it as a residual part only when given, leaving every other project's output unchanged", () => {
+    const snapshot = { wallets: [{ address: "0x1", total_telcoin_balance: 90, ethereum_balance: 90 }], chainOrder: ["ethereum"] };
+    const base = buildReconciliation(snapshot, { addresses: [], labels: {} }, { wallets: [] }, { totalSupply: 100 });
+    expect(base.residualParts).not.toHaveProperty("unlisted");
+    const withUnlisted = buildReconciliation(snapshot, { addresses: [], labels: {} }, { wallets: [] }, { totalSupply: 100, unlisted: 10 });
+    expect(withUnlisted.residualParts.unlisted).toBe(10);
+    expect(withUnlisted.residual).toBe(base.residual);
+  });
+});

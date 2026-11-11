@@ -115,6 +115,22 @@ describe("onboardingSteps", () => {
     expect(steps(baseConfig(), {}).map((s) => s.id)).not.toContain("staker-balances");
   });
 
+  it("never dispatches a workflow that cannot read the project's chain (Hedera)", () => {
+    const config = baseConfig({ chains: [{ key: "hedera", vm: "hedera" }], classification: { cexWallets: "config/projects/foo/cex-wallets.json" }, holders: { defaultTiers: "test" } });
+    const files = complete(baseConfig({ holders: { defaultTiers: "test" } }));
+    delete files["public/data/foo/exchange-flow-history.json"];
+    const s = steps(config, files);
+    const byId = Object.fromEntries(s.map((x) => [x.id, x]));
+    expect(byId["cex-wallets"].done).toBe(true);
+    expect(byId["exchange-flows"]).toMatchObject({ done: false, blocked: expect.stringMatching(/not built for vm hedera/) });
+    expect(byId["exchange-flows"].action).toBeUndefined();
+    for (const x of s.filter((y) => !y.done && y.action?.workflow)) {
+      expect(["snapshot", "snapshot-on-tiers"], `${x.id} dispatches ${x.action.workflow}`).toContain(x.id);
+    }
+    const noList = steps({ ...config, classification: {} }, {});
+    expect(nextStep(noList)).toMatchObject({ id: "cex-wallets", blocked: expect.stringMatching(/no verified public source.*hedera/) });
+  });
+
   it("reads a legacy-root project's feeds from public/data/ and its work files from data/", () => {
     const config = baseConfig({ holders: { defaultTiers: "test" }, data: { legacyRoot: true }, capabilities: { projectWallets: true } });
     const moved = Object.fromEntries(

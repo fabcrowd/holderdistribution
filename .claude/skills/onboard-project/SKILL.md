@@ -28,7 +28,7 @@ Reference: `docs/MULTI-TOKEN.md` ("Adding the next project"), `docs/FORENSICS.md
 ## Step 1 - Pre-flight (no questions)
 **Do:** `git status` (say what is already modified), confirm `npm ci` is done and env decrypt works (names only). Infer the VM: `0x` + 40 hex = EVM; base58 of 32-44 chars = Solana mint; anything else = unsupported VM, stop.
 **Pass:** clean or understood tree, VM known.
-**Stop if:** unsupported VM. HBAR (`0.0.N`, chain spec `hedera:native:8`) validates and scaffolds, but it isn't onboardable yet: its supply file, cutoffs, history, CEX list and staking aren't built. Stop there too.
+**Stop if:** unsupported VM. HBAR itself is `npm run onboard -- --chain hedera` (native coin, no address; it scaffolds the treasury accounts and WHBAR role too). A `0.0.N` address is a Hedera token (HTS) and is not supported. For HBAR, `onboard-project.yml` stops at the CEX list (owner-supplied) and at every step whose workflow cannot read Hedera yet (cutoffs, history, flows, wallet flows, ledger: `tasks/hedera-plan.md` slices 5-8); do not register HBAR on main until those exist.
 
 ## Step 2 - Discovery (read-only; keep results in the scratchpad)
 Items 1-3 are automated: `npm run onboard -- --address <addr> --report <scratch>/discovery.json` (a dry run) prints and saves them. Verify its numbers against the explorer; do items 4-7 by hand.
