@@ -1,4 +1,4 @@
-﻿# Holder Distribution
+# Holder Distribution
 
 On-chain holder analytics for multiple tokens — holder distribution and tiers, supply
 breakdown, exchange flows, staking and historical growth — published at
