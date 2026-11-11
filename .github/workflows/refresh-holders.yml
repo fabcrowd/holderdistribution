@@ -381,6 +381,8 @@ jobs:
         env:
           HD_JOB_ID: tier-outflows   # config/nightly-jobs.json: provider order + Alchemy budget guard
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+          # Stop and save 5 minutes before the step timeout: a reset rescan then advances every night instead of dying unsaved.
+          TIER_OUTFLOWS_MAX_MS: '1200000'
           RPC_PREFER_PUBLIC: '1'
           NODE_OPTIONS: --max-old-space-size=6144
         run: node scripts/generate-tier-outflows.js

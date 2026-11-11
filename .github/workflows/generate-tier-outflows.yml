@@ -66,6 +66,8 @@ jobs:
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
           MAX_BLOCKS_PER_RUN: ${{ github.event.inputs.max_blocks_per_run }}
+          # Stop and save 20 minutes before the 330-minute job timeout, so a long scan always commits its progress.
+          TIER_OUTFLOWS_MAX_MS: '18600000'
           # Larger heap for the one-time full-year rebuild (fan-out tracking
           # holds a per-(day,sender) map for the scanned span).
           NODE_OPTIONS: --max-old-space-size=6144

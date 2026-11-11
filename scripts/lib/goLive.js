@@ -10,6 +10,9 @@ import { projectClassificationPath, projectDataPath, projectWorkPath } from "./p
 import { projectHasVm } from "./chainAdapters.js";
 import { NULL_TX_RETRY_RUNS } from "./solana/flowScan.js";
 import { forensicsRegistryProblems } from "./walletFlowsProject.js";
+import { evaluateProjectHealth, isUnhealthy } from "./feedHealth.js";
+import { projectHolderTiers } from "./holderTiers.js";
+import { tierFingerprint } from "./tierFingerprint.js";
 import { workflowPlan } from "../workflow-paths.js";
 
 /** Reports are nightly: two days means one missed run is tolerated, a second one fails. */
@@ -41,6 +44,11 @@ function configProblems(project, root) {
   if (config.gated?.forensics !== true) problems.push(`${slug}: gated.forensics must be true`);
   if (config.capabilities?.projectWallets !== true) problems.push(`${slug}: capabilities.projectWallets must be true`);
   if (config.pipeline?.feedsPending !== undefined) problems.push(`${slug}: pipeline.feedsPending is not allowed`);
+  // Tiers are join keys sized for one token: every project derives its own (scripts/derive-holder-tiers.js).
+  // Keeping the shared default needs an owner decision recorded as holders.defaultTiers.
+  if (!Array.isArray(config.holders?.distributionTiers) && !String(config.holders?.defaultTiers ?? "").trim()) {
+    problems.push(`${slug}: holders.distributionTiers is not set (derive them with node scripts/derive-holder-tiers.js --project ${slug})`);
+  }
   return problems;
 }
 
@@ -58,6 +66,32 @@ function feedProblems(project, root) {
     if (rule?.placeholder) problems.push(`${project.slug}: feed ${file} is still a placeholder`);
   }
   return problems;
+}
+
+/** A live project's feeds must also be healthy by pipeline-health's own rules (age, stale tail). */
+function healthProblems(project, root, now, alreadyMissing) {
+  return evaluateProjectHealth(project, { root, now })
+    .results.filter((r) => isUnhealthy(r) && !(r.status === "missing" && alreadyMissing.has(r.file)))
+    .map((r) => `${project.slug}: feed ${r.file} is ${r.status}${r.tailAgeDays != null ? ` (newest row ${r.tailAgeDays}d old)` : ""}`);
+}
+
+/** Tier outflows must have caught up, on the project's current tiers. */
+function tierOutflowsProblems(project, root) {
+  const doc = readJson(projectDataPath(project, "tier-outflows.json", root));
+  if (!doc) return [];
+  const problems = [];
+  if (doc.complete !== true) problems.push(`${project.slug}: tier-outflows.json is not complete (dispatch generate-tier-outflows.yml until it is)`);
+  const want = tierFingerprint(projectHolderTiers(project).distributionTiers);
+  if (doc.tierFingerprint && doc.tierFingerprint !== want) {
+    problems.push(`${project.slug}: tier-outflows.json was built on other tiers (fingerprint ${doc.tierFingerprint}, config ${want})`);
+  }
+  return problems;
+}
+
+function allFeedProblems(project, root, now) {
+  const problems = feedProblems(project, root);
+  const missing = new Set(requiredFeedFiles(project, root).filter((file) => !fs.existsSync(projectDataPath(project, file, root))));
+  return [...problems, ...healthProblems(project, root, now, missing), ...tierOutflowsProblems(project, root), ...heldCursorProblems(project, root)];
 }
 
 function reportProblems(name, doc, slug, now) {
@@ -118,7 +152,7 @@ export function goLiveProblems(project, { root = process.cwd(), now = Date.now()
   if (section && !GO_LIVE_SECTIONS.includes(section)) throw new Error(`unknown section ${section} (use ${GO_LIVE_SECTIONS.join(", ")})`);
   const checks = {
     config: () => configProblems(project, root),
-    feeds: () => [...feedProblems(project, root), ...heldCursorProblems(project, root)],
+    feeds: () => allFeedProblems(project, root, now),
     "wallet-flows": () => walletFlowProblems(project, root, now),
     ledger: () => ledgerProblems(project, root, now),
   };

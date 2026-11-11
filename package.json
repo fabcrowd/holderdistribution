@@ -20,6 +20,8 @@
     "pipeline:health": "node scripts/pipeline-health.js --all",
     "audit:deploys": "node scripts/audit-deploy-triggers.js --strict",
     "init:forensics": "node scripts/init-forensics-registry.js",
+    "onboard": "node scripts/onboard.js",
+    "onboard:run": "node scripts/onboard-run.js",
     "receipt": "node scripts/change-receipt.js"
   },
   "dependencies": {

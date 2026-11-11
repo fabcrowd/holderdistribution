@@ -225,7 +225,8 @@
   ],
   "holders": {
     "$comment": "Per-project mega cut: the top wallet 5rhms6jZ… holds ~20.55B (> TEL's 20B default), so 25B keeps it in totalBalance. Other tier fields fall back to config/holder-tiers.default.json.",
-    "megaHolderThreshold": 25000000000
+    "megaHolderThreshold": 25000000000,
+    "defaultTiers": "Owner decision 2026-11-09: ZBCN keeps the shared default distribution tiers (config/holder-tiers.default.json, sized for a 100B supply; ZBCN's supply target is 100B)."
   },
   "treasury": {
     "$comment": "append-treasury-history reads only these supply-reconciliation categories. Kept treasury-only: the holdings (team) bucket is just the 9Sq2 ops hot wallet, and reconcile-supply omits a category whose balance is 0, which would make append-treasury-history abort the daily refresh (completeness guard) if 9Sq2 is ever emptied.",

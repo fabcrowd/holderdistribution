@@ -7,6 +7,11 @@
  *     [--wallet <address>:<label>[:treasury|holdings|association]] ... \
  *     --inventory chains-inventory.json \
  *     [--coingecko foo-network] [--stable ethereum:0xUSDC:USDC:6] [--dry-run] [--force] [--root <dir>]
+ *     [--supply-target <whole tokens>] [--image /tokens/<slug>.<ext>] [--history-start YYYY-MM-DD]
+ *
+ * scripts/onboard.js runs discovery and then this scaffold with every flag filled.
+ * The registry entry is written with `onboarding: true` (pipeline runs it, the site
+ * does not list it); scripts/onboard-run.js removes the flag once check-go-live passes.
  *
  * --inventory is required (onboarding step 1, chain & contract discovery; see
  * scripts/lib/chainInventory.js): every --chain must be in it as "configured",
@@ -74,6 +79,9 @@ export function parseArgs(argv) {
     else if (a === "--name") out.name = v();
     else if (a === "--ticker") out.ticker = v();
     else if (a === "--coingecko") out.coingecko = v();
+    else if (a === "--supply-target") out.supplyTarget = Number(v());
+    else if (a === "--image") out.image = v();
+    else if (a === "--history-start") out.historyStart = v();
     else if (a === "--chain") out.chains.push(v());
     else if (a === "--wallet") out.wallets.push(v());
     else if (a === "--stable") out.stables.push(v());
@@ -156,6 +164,15 @@ export function scaffold(args, registry) {
   if (registry.projects.some((p) => p.slug === slug) && !args.force) throw new Error(`${slug} is already in config/projects.json (use --force to rewrite its files)`);
   const chains = args.chains.map(chainEntry);
   const wallets = args.wallets.map((w) => walletEntry(w, chains));
+  if (args.supplyTarget !== undefined && !(Number.isFinite(args.supplyTarget) && args.supplyTarget > 0)) throw new Error("--supply-target must be a positive number of whole tokens");
+  if (args.image !== undefined && !/^\/tokens\/[a-z0-9-]+\.(png|jpg|jpeg|svg|webp)$/.test(args.image)) throw new Error("--image must be /tokens/<slug>.<png|jpg|jpeg|svg|webp>");
+  if (args.historyStart !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(args.historyStart)) throw new Error("--history-start must be YYYY-MM-DD");
+  // append-treasury-history aborts on a listed category whose balance is 0, so list only
+  // the buckets a supplied wallet fills (treasury and association share one bucket).
+  const categories = [
+    ...(wallets.some((w) => w.entityClass !== "holdings") ? ["treasury"] : []),
+    ...(wallets.some((w) => w.entityClass === "holdings") ? ["holdings"] : []),
+  ];
 
   const project = {
     $comment: `Scaffolded by scripts/add-project.js on ${new Date().toISOString().slice(0, 10)}. Verify every address before publishing; see docs/MULTI-TOKEN.md "Adding the next project".`,
@@ -163,9 +180,19 @@ export function scaffold(args, registry) {
     name: args.name,
     ticker: args.ticker.toUpperCase(),
     description: "",
+    ...(args.image ? { image: args.image } : {}),
     data: { legacyRoot: false, dir: `public/data/${slug}` },
-    supply: { generationsSumOneToOne: false, ...(args.coingecko ? { coingeckoId: args.coingecko } : {}) },
+    supply: {
+      ...(args.supplyTarget ? { target: args.supplyTarget } : {}),
+      generationsSumOneToOne: false,
+      ...(args.coingecko ? { coingeckoId: args.coingecko } : {}),
+    },
     chains,
+    // No staking until discovery finds a mechanism (a staking[] entry then re-enables the staker feed).
+    staking: [],
+    treasury: { categories },
+    health: { feeds: { "funding-wallets.json": { disabled: true } } },
+    ...(args.historyStart ? { pipeline: { historyStart: args.historyStart } } : {}),
     gated: { forensics: true, walletFlows: { ...(args.coingecko ? { coingeckoId: args.coingecko } : {}), chains: chains.map((c) => c.key) } },
     // Off until the first ledger report is committed: a live project never shows an empty tab.
     capabilities: { projectWallets: false },
@@ -216,7 +243,8 @@ export function scaffold(args, registry) {
   };
   const nextRegistry = {
     ...registry,
-    projects: [...registry.projects.filter((p) => p.slug !== slug), { slug, name: args.name, ticker: project.ticker }],
+    // Off the landing page and sitemap until scripts/onboard-run.js sees check-go-live pass.
+    projects: [...registry.projects.filter((p) => p.slug !== slug), { slug, name: args.name, ticker: project.ticker, onboarding: true }],
   };
   return {
     slug,
@@ -280,8 +308,9 @@ export function main(argv = process.argv.slice(2), { logger = console } = {}) {
       logger.warn(`warning: nightly plan unavailable (${err.message})`);
     }
   }
+  const hasImage = Boolean(result.files[`config/projects/${result.slug}.json`].image);
   logger.log(`\n${result.slug} scaffolded and valid. Next, by hand:
-  1. Verify every address; add the token image (public/tokens/${result.slug}.<ext>) and "image" in config/projects/${result.slug}.json.
+  1. Verify every address${hasImage ? "" : `; add the token image (public/tokens/${result.slug}.<ext>) and "image" in config/projects/${result.slug}.json`}.
   2. Add classification.cexWallets / dexContracts files (or contracts with role "dex"/"staking").
   3. Add developer wallets (--wallet, or edit config/projects/${result.slug}/ledger.json) and a botCluster if one is known.
   4. Nightly parity: every "n/a" job above needs the missing capability or a
