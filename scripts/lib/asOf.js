@@ -18,7 +18,7 @@
  *
  * Pure; nothing here reads files or talks to a node.
  */
-import { vmPinsToBlock } from "./chainVms.js";
+import { vmPinsToBlock, vmScansForwardFromCheckpoint } from "./chainVms.js";
 import { midnightSeconds, nextDate } from "./dayBlocks.js";
 
 const DAY_MS = 86_400_000;
@@ -77,7 +77,7 @@ export function planPins({ chains, settledDate, cutoffMap }) {
     }
     const block = settledBlockFor(cutoffMap, key, settledDate);
     if (block == null) unpinned.push(key);
-    else if (Number.isInteger(checkpointBlock) && checkpointBlock > block) ahead.push(key);
+    else if (vmScansForwardFromCheckpoint(vm) && Number.isInteger(checkpointBlock) && checkpointBlock > block) ahead.push(key);
     else pins[key] = block;
   }
   return { pins, live, unpinned, ahead };

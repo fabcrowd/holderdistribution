@@ -72,5 +72,11 @@ export function createHederaClock(client) {
     await assertDenseAround(found);
     return found;
   }
-  return { latest, timeOf, firstAtOrAfter, blockAtOrBefore };
+  /** Block n's exact consensus range as mirror "seconds.nanos" strings: { number, from, to }. */
+  async function rangeOf(n) {
+    const b = await client.getJson(`/blocks/${n}`);
+    if (!b?.timestamp?.from || !b?.timestamp?.to) throw new Error(`hedera /blocks/${n} has no timestamp range`);
+    return { number: b.number, from: String(b.timestamp.from), to: String(b.timestamp.to) };
+  }
+  return { latest, timeOf, firstAtOrAfter, blockAtOrBefore, rangeOf };
 }

@@ -246,6 +246,8 @@ export async function scanBalanceSnapshot(
     sleep = sleepReal,
     random = Math.random,
     snapshotWaitMs = HEDERA_SNAPSHOT_WAIT_MS,
+    // A mirror "seconds.nanos" stamp: pin the newest snapshot at or before it instead of the newest one.
+    atOrBefore = null,
   },
 ) {
   const floorText = String(floor);
@@ -274,9 +276,9 @@ export async function scanBalanceSnapshot(
     // With no timestamp the mirror reports "now", which is not a snapshot. Asking at that time resolves to a
     // real snapshot on the cluster that answers; its stamp and cluster are held, and asking for the stamp by
     // name must answer with itself.
-    const live = (await pageOf(client, "/balances?limit=1&order=desc")).body;
-    if (!live.timestamp) throw new Error("hedera /balances returned no timestamp");
-    const resolved = await pageOf(client, `/balances?limit=1&order=desc&timestamp=${live.timestamp}`);
+    const target = atOrBefore ? `lte:${atOrBefore}` : (await pageOf(client, "/balances?limit=1&order=desc")).body.timestamp;
+    if (!target) throw new Error("hedera /balances returned no timestamp");
+    const resolved = await pageOf(client, `/balances?limit=1&order=desc&timestamp=${target}`);
     if (!resolved.body.balances?.length || !resolved.body.timestamp) throw new Error("hedera /balances returned no snapshot");
     held = { stamp: resolved.body.timestamp, cluster: resolved.clusterId };
     const head = await requireSnapshot(client, held, retry, "&order=desc");
@@ -345,6 +347,19 @@ export async function scanBalanceSnapshot(
     waitByCluster: retry.stats.byCluster,
     clusterId: held.cluster,
   };
+}
+
+/**
+ * One account's tinybar balance in the held snapshot `stamp` (as a BigInt; 0 when the snapshot has no row for it).
+ * Answers from another cluster's grid are retried, like every pinned page.
+ */
+export async function balanceAtSnapshot(client, { id, stamp, cluster, sleep = sleepReal, random = Math.random, nowMs = Date.now, snapshotWaitMs = HEDERA_SNAPSHOT_WAIT_MS }) {
+  const held = { stamp, cluster };
+  const retry = { sleep, random, now: nowMs, waitMs: snapshotWaitMs, stats: { mismatchRetries: 0, byCluster: {} } };
+  const { rows } = await holdingSnapshot(retry, async () =>
+    pageRows(await pinnedPageOf(client, `/balances?account.id=${id}&timestamp=${stamp}`), { rowsKey: "balances", held, label: `hedera /balances ${id}` }),
+  );
+  return BigInt(rows[0]?.balance ?? 0);
 }
 
 /** Ids of every contract up to `maxId`. The mirror's balance rows do not say account vs contract; this list does. */

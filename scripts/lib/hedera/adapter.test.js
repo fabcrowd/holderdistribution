@@ -104,6 +104,41 @@ describe("hedera scanChain", () => {
     expect(scan.chainKey).toBe("hedera");
   });
 
+  it("settles to the end of pinBlock: replays only transactions after the snapshot through the block's end", async () => {
+    // Snapshot TS = 1794165040.107980111; block 100 spans 1794165200 .. 1794165202 (blockTime below).
+    const accounts = [acct(1, 100), acct(2, 50), { num: 3, balance: HBAR / 2n }, acct(98, 10)];
+    const tx = (ts, legs, result = "SUCCESS") => ({ consensus_timestamp: ts, result, transfers: legs.map(([a, v]) => ({ account: `0.0.${a}`, amount: String(BigInt(v) * HBAR / 100n) })) });
+    const transactions = [
+      tx("1794165000.000000001", [[1, -1000], [2, 1000]]), // before the snapshot: already in it, never applied
+      tx("1794165100.000000001", [[1, -2000], [2, 1990], [98, 10]]), // 0.0.1 -> 0.0.2, fee to 0.0.98
+      tx("1794165150.000000001", [[2, -75], [3, 75]]), // dust 0.0.3 (0.5 HBAR) crosses the floor to 1.25
+      tx("1794165160.000000001", [[1, -5], [98, 5]], "INVALID_SIGNATURE"), // failed: its fee is still charged
+      tx("1794165170.000000001", [[1, -300], [500, 300]]), // creates 0.0.500, absent from the snapshot
+      tx("1794165201.500000000", [[2, -100], [1, 100]]), // inside block 100: applied
+      tx("1794165300.000000001", [[1, -9000], [2, 9000]]), // after the block: not applied
+    ];
+    const mock = createMockMirror({ accounts, contracts: [], transactions, blockCount: 1000, blockTime: (n) => 1794165000 + n * 2 });
+    const scan = await hederaAdapter.scanChain(chain, opts(mock, { pinBlock: 100 }));
+    const b = scan.balances;
+    expect(b.get("0.0.1")).toBe(100 - 20 - 0.05 - 3 + 1);
+    expect(b.get("0.0.2")).toBe(50 + 19.9 - 0.75 - 1);
+    expect(b.get("0.0.3")).toBe(1.25);
+    expect(b.get("0.0.500")).toBe(3);
+    expect(b.get("0.0.98")).toBe(10 + 0.1 + 0.05);
+    expect(scan.checkpointData).toMatchObject({ lastBlock: 100, settledBlock: 100, settledThrough: "1794165202.000000000", settleTransactions: 5, settleFailedTransactions: 1, settleLookups: 2 });
+    expect(BigInt(scan.checkpointData.unlistedRawTotal) + BigInt(scan.checkpointData.heldRawTotal)).toBe(accounts.reduce((s, a) => s + a.balance, 0n));
+  });
+
+  it("drops a saved scan state that is later than the pinned block instead of replaying backwards", async () => {
+    const accounts = [acct(1, 100)];
+    const mock = createMockMirror({ accounts, contracts: [], blockCount: 1000, blockTime: (n) => 1794165000 + n * 2 });
+    const warn = [];
+    const resume = { version: 2, timestamp: "1794169999.000000000", maxId: 1, floor: String(HEDERA_HOLDER_FLOOR_TINYBAR), width: 100, ranges: {}, totals: {}, open: {} };
+    const scan = await hederaAdapter.scanChain(chain, opts(mock, { pinBlock: 100, resume, logger: { log() {}, warn: (m) => warn.push(m) } }));
+    expect(warn.join("\n")).toMatch(/after block 100/);
+    expect(scan.checkpointData.snapshotTimestamp).toBe(TS);
+  });
+
   it("keeps a contract that has a configured role (WHBAR as dex) and reports the HBAR left out", async () => {
     const pop = population();
     const withRole = { ...chain, contracts: { whbar: { address: "0.0.200", role: "dex" } } };

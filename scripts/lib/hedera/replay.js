@@ -5,11 +5,15 @@
  * catch-up is this function over that day's transactions, not another full
  * /balances scan. The caller passes transactions in consensus order.
  *
- * `transfers` is the complete HBAR movement of a successful transaction, fees
- * included. The mirror also lists staking rewards in `staking_reward_transfers`;
- * those legs are already inside `transfers`, so they are checked and not applied
- * again. A reward leg that is absent from `transfers` rejects the transaction
- * rather than guessing.
+ * `transfers` is the complete HBAR movement of a transaction, fees included,
+ * whatever its result: a failed transaction still charges its fee, and the
+ * mirror lists only those fee legs for it (measured 2026-11-11: WRONG_NONCE and
+ * INVALID_SIGNATURE rows carry a payer leg and a fee leg summing to 0), so every
+ * transaction is applied. Staking rewards are already inside `transfers`, netted into the
+ * rewarded account's single leg with 0.0.800 debited, so `staking_reward_transfers` is
+ * never applied. It is informational and not used as a check: on mainnet it can differ
+ * from the 0.0.800 debit by a tinybar (1794439266.363124104: reward 16111538460, debit
+ * 16111538459) while `transfers` balances. `transfers` is what moves balances.
  */
 const ID_RE = /^0\.0\.[1-9]\d{0,15}$/;
 
@@ -30,16 +34,9 @@ export function applyHbarTransfers(balances, transactions) {
   for (const tx of transactions) {
     const when = tx?.consensus_timestamp ?? "(no timestamp)";
     if (!tx || !Array.isArray(tx.transfers)) throw new Error(`transaction ${when} has no transfers array`);
-    if (tx.result !== "SUCCESS") continue;
     const legs = tx.transfers.map((leg) => legAmount(leg, `transaction ${when}`));
     const sum = legs.reduce((total, leg) => total + leg.amount, 0n);
     if (sum !== 0n) throw new Error(`transfers of ${when} sum to ${sum}, not 0`);
-    for (const reward of tx.staking_reward_transfers ?? []) {
-      const leg = legAmount(reward, `staking reward in ${when}`);
-      if (!legs.some((item) => item.account === leg.account && item.amount === leg.amount)) {
-        throw new Error(`staking reward for ${leg.account} in ${when} is not in transfers`);
-      }
-    }
     for (const leg of legs) next.set(leg.account, (next.get(leg.account) ?? 0n) + leg.amount);
   }
   return next;

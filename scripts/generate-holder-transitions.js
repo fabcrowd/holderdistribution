@@ -87,7 +87,7 @@ const main = async () => {
   if (snapDates.length === 0) {
     console.warn("No snapshots in git history yet (first run); writing an empty transitions feed.");
     await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
-    await fs.writeFile(OUT_PATH, `${JSON.stringify(emptyTransitions(), null, 2)}\n`, "utf8");
+    await fs.writeFile(OUT_PATH, `${JSON.stringify(emptyTransitions(new Date(), inheritAsOf(await readOptionalJson(TEL_HOLDERS_PATH))), null, 2)}\n`, "utf8");
     return;
   }
 
