@@ -1,9 +1,11 @@
 {
   "schemaVersion": 1,
   "project": "ondo",
-  "generatedAt": "2026-11-11T13:58:44.619Z",
-  "healthy": true,
-  "problems": [],
+  "generatedAt": "2026-11-12T15:05:31.513Z",
+  "healthy": false,
+  "problems": [
+    "wallet-flows: stale"
+  ],
   "jobs": [
     {
       "id": "holders",
@@ -23,33 +25,33 @@
           "path": "public/data/ondo/holders-summary.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-11T13:58:23.253Z",
+          "generatedAt": "2026-11-12T15:04:59.401Z",
           "status": "fresh"
         },
         {
           "path": "public/data/ondo/holders-history.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-11T13:58:27.764Z",
+          "generatedAt": "2026-11-12T15:05:05.754Z",
           "status": "fresh"
         },
         {
           "path": "public/data/ondo/supply-reconciliation.json",
           "maxAgeHours": 30,
-          "ageHours": 11.4,
-          "generatedAt": "2026-11-11T02:33:10.000Z",
+          "ageHours": 0,
+          "generatedAt": "2026-11-12T15:05:19.000Z",
           "status": "fresh"
         },
         {
           "path": "public/data/ondo/cex-wallets.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-11T13:58:24.805Z",
+          "generatedAt": "2026-11-12T15:05:01.272Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -71,12 +73,12 @@
           "path": "public/data/ondo/exchange-flow-history.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-11T13:58:43.125Z",
+          "generatedAt": "2026-11-12T15:05:28.378Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -98,12 +100,12 @@
           "path": "public/data/ondo/tier-outflows.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-11T13:58:43.848Z",
+          "generatedAt": "2026-11-12T15:05:30.318Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -164,7 +166,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -181,18 +183,18 @@
       "alchemyOnly": false,
       "alchemyCuBudget": 0,
       "budgetMode": "enforce",
-      "health": "ok",
+      "health": "stale",
       "outputs": [
         {
           "path": "data/ondo/forensics/wallet-flows.json",
           "maxAgeHours": 30,
-          "ageHours": 17.1,
+          "ageHours": 42.2,
           "generatedAt": "2026-11-10T20:54:32.516Z",
-          "status": "fresh"
+          "status": "stale"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -214,13 +216,13 @@
         {
           "path": "data/ondo/ledger/ledger.json",
           "maxAgeHours": 30,
-          "ageHours": 22,
-          "generatedAt": "2026-11-10T15:58:35.000Z",
+          "ageHours": 23.3,
+          "generatedAt": "2026-11-11T15:45:38.000Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -238,7 +240,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -256,7 +258,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     }
