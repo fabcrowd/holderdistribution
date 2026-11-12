@@ -62,6 +62,14 @@ describe("planPins / finalizeAsOf", () => {
     expect(aheadAction({ ahead, settledDate: "2026-11-05", history: { entries: [{ date: "2026-11-05", asOf: { settled: false } }] } })).toBe("unpin");
     expect(hasSettledRow(null, "2026-11-05")).toBe(false);
   });
+  it("pins Hedera even when its checkpoint is past the settled block (it reads a snapshot at any past time)", () => {
+    const plan = planPins({
+      settledDate: "2026-11-05",
+      cutoffMap: { hedera: { "2026-11-06": 102_000_000 } },
+      chains: [{ key: "hedera", vm: "hedera", checkpointBlock: 102_050_000 }],
+    });
+    expect(plan).toMatchObject({ pins: { hedera: 101_999_999 }, ahead: [], live: [], unpinned: [] });
+  });
   it("a legacy unstamped row is not settled; only a row marked settled:true counts", () => {
     expect(hasSettledRow({ entries: [{ date: "2026-11-05", combined: { holderCount: 5 } }] }, "2026-11-05")).toBe(false);
     expect(hasSettledRow({ entries: [{ date: "2026-11-05", settled: true }] }, "2026-11-05")).toBe(true);

@@ -4,7 +4,8 @@
  *
  * Backfills the shared day-cutoff map (date-blocks.json "cutoffs",
  * scripts/lib/dayBlocks.js) for every chain of a project: EVM chains by block
- * timestamp, Solana chains (chains[].vm "solana") by produced-slot block time.
+ * timestamp, Solana chains (chains[].vm "solana") by produced-slot block time,
+ * Hedera chains by mirror block number.
  * Dates already in the map are never re-searched. Defaults: --from 14 days
  * before today, --to today (cutoff[today] is the settled end of yesterday).
  * Example: node scripts/build-cutoffs.js --project tel --from 2026-08-29
@@ -50,6 +51,11 @@ async function main() {
     const head = Number(BigInt(await rpcCall(urls[0], "eth_blockNumber", [])));
     const getTime = async (b) => parseInt((await rpcCall(urls[0], "eth_getBlockByNumber", [`0x${b.toString(16)}`, false])).timestamp, 16);
     chains.push({ key, vm: "evm", head, low: Number(cfg.fromBlock) || 0, getTime });
+  }
+  // Hedera: the mirror's consecutive block numbers, through the adapter's own clock (no key needed).
+  for (const [key, cfg] of Object.entries(projectChains(project, process.cwd(), { vms: ["hedera"] }))) {
+    const clock = (await loadChainAdapter("hedera")).clock({ key, ...cfg });
+    chains.push({ key, vm: "hedera", head: (await clock.latest()).number, low: 0, getTime: clock.timeOf });
   }
   const sol = solanaFlowChains(project.config);
   if (sol.length) {

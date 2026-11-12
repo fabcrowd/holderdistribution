@@ -14,6 +14,16 @@ import { parseHederaAddress } from "./address.js";
 import { createHederaClock } from "./clock.js";
 import { createMirrorClient, HEDERA_MAINNET_MIRROR } from "./mirror.js";
 import { HEDERA_RANGE_WIDTH, resumeProblem, scanBalanceSnapshot, scanContractIds } from "./scan.js";
+import { settleRows } from "./settle.js";
+
+/** True when mirror stamp `a` is later than `b` ("seconds.nanos" strings). */
+const stampAfter = (a, b) => {
+  const n = (s) => {
+    const [sec, frac = ""] = String(s).split(".");
+    return BigInt(sec) * 1_000_000_000n + BigInt(frac.padEnd(9, "0").slice(0, 9));
+  };
+  return n(a) > n(b);
+};
 
 export const HEDERA_DECIMALS = 8;
 const TINYBAR_PER_HBAR = 100_000_000n;
@@ -101,12 +111,21 @@ export const hederaAdapter = {
    * opts: { logger, resume, onProgress, now (Date factory), client | fetch/sleep/nowMs/maxAttempts/... }.
    */
   async scanChain(chain, opts = {}) {
-    const { logger = console, resume = null, onProgress = null, now = () => new Date() } = opts;
+    const { logger = console, onProgress = null, now = () => new Date(), pinBlock = null } = opts;
+    let { resume = null } = opts;
     const client = clientFor(chain, opts);
     const floor = floorOf(chain);
     const width = chain?.rangeWidth ?? HEDERA_RANGE_WIDTH;
     const meta = await this.tokenMeta(chain, null, { client });
-    const snapshot = await scanBalanceSnapshot(client, { floor, width, resume, onProgress, ...(opts.nowMs ? { nowMs: opts.nowMs } : {}), ...(opts.sleep ? { sleep: opts.sleep } : {}), ...(opts.random ? { random: opts.random } : {}), ...(opts.snapshotWaitMs !== undefined ? { snapshotWaitMs: opts.snapshotWaitMs } : {}) });
+    const waitOpts = { ...(opts.nowMs ? { nowMs: opts.nowMs } : {}), ...(opts.sleep ? { sleep: opts.sleep } : {}), ...(opts.random ? { random: opts.random } : {}), ...(opts.snapshotWaitMs !== undefined ? { snapshotWaitMs: opts.snapshotWaitMs } : {}) };
+    // pinBlock (the settled day's cutoff - 1): read the state at the end of that block. The baseline is the newest
+    // snapshot at or before the block's last consensus time; settleRows replays the transactions after it.
+    const settle = pinBlock != null ? await createHederaClock(client).rangeOf(pinBlock) : null;
+    if (settle && resume && stampAfter(resume.timestamp, settle.to)) {
+      logger.warn?.(`  ${chain.key}: saved scan state at ${resume.timestamp} is after block ${pinBlock} (ends ${settle.to}); starting a fresh scan.`);
+      resume = null;
+    }
+    const snapshot = await scanBalanceSnapshot(client, { floor, width, resume, onProgress, atOrBefore: settle?.to ?? null, ...waitOpts });
     // HBAR is never burned, so every balance at one snapshot, contracts and dust included, adds up to total supply.
     // A shortfall means a range lost rows; refusing it keeps a short count out of the feeds.
     const supplyAt = await client.getJson(`/network/supply?timestamp=${snapshot.timestamp}`);
@@ -114,8 +133,19 @@ export const hederaAdapter = {
     if (snapshot.allRaw !== supplyAtRaw) {
       throw new Error(`hedera snapshot ${snapshot.timestamp}: balances sum to ${snapshot.allRaw} tinybar, total supply is ${supplyAtRaw}`);
     }
-    const contractIds = await scanContractIds(client, { maxId: snapshot.maxId, width });
-    const block = await createHederaClock(client).blockAtOrBefore(snapshot.timestamp);
+    const settled = settle
+      ? await settleRows(client, { rows: snapshot.rows, stamp: snapshot.timestamp, cluster: snapshot.clusterId, through: settle.to, floor, ...waitOpts })
+      : null;
+    const rowsAtEnd = settled ? settled.rows : snapshot.rows;
+    // A contract created inside the settle window has an id above the snapshot's highest.
+    const contractIds = await scanContractIds(client, { maxId: Math.max(snapshot.maxId, settled?.maxTouched ?? 0), width });
+    const block = settle ? { number: settle.number } : await createHederaClock(client).blockAtOrBefore(snapshot.timestamp);
+    if (settled) {
+      logger.log?.(
+        `  ${chain.key}: settled snapshot ${snapshot.timestamp} to the end of block ${settle.number} (${settle.to}): ` +
+          `${settled.transactions} transactions (${settled.failedTransactions} failed, fees applied), ${settled.touched} accounts, ${settled.lookups} single-account reads`,
+      );
+    }
 
     // A contract with a configured role (WHBAR as dex) stays in the snapshot as a non-retail row, so its HBAR
     // lands in its supply bucket instead of the supply gap; every other contract is dropped.
@@ -124,7 +154,7 @@ export const hederaAdapter = {
     let heldRaw = 0n;
     let contractsExcluded = 0;
     let roleContractsKept = 0;
-    for (const [num, text] of snapshot.rows) {
+    for (const [num, text] of rowsAtEnd) {
       const raw = BigInt(text);
       if (raw < floor) continue;
       if (contractIds.has(num)) {
@@ -149,6 +179,9 @@ export const hederaAdapter = {
         vm: "hedera",
         ...(block ? { lastBlock: block.number } : {}),
         snapshotTimestamp: snapshot.timestamp,
+        ...(settled
+          ? { settledThrough: settle.to, settledBlock: settle.number, settleTransactions: settled.transactions, settleFailedTransactions: settled.failedTransactions, settleLookups: settled.lookups }
+          : {}),
         floorTinybar: floor.toString(),
         decimals: HEDERA_DECIMALS,
         holders: balances.size,
@@ -164,8 +197,9 @@ export const hederaAdapter = {
         nonzeroAccounts: snapshot.nonzero,
         supplyRaw: meta.supplyRaw.toString(),
         releasedAtSnapshotRaw: String(supplyAt.released_supply),
-        // snapshotAt is the pinned mirror stamp. scannedAt is when this run finished reading it.
-        snapshotAt: new Date(Number(snapshot.timestamp.split(".")[0]) * 1000).toISOString(),
+        // snapshotAt is the moment the balances describe: the settled block's end, else the pinned mirror stamp.
+        // scannedAt is when this run finished reading it.
+        snapshotAt: new Date(Number((settle?.to ?? snapshot.timestamp).split(".")[0]) * 1000).toISOString(),
         scannedAt: now().toISOString(),
       },
       tokenAccountOwners: new Map(),

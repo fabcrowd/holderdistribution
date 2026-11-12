@@ -13,7 +13,7 @@ import { attributeSolanaStakingBalances } from "./lib/solanaStaking.js";
 import { ensureWindowCache, readCommittedJson, replayChainRawBalances, resolveAnchorDate, usesV3Scan } from "./lib/holdersAsOfReplay.js";
 import { computeSupplyTotals, computeBridgeNettedSupply, selectSupplyMethod } from "./lib/supply.js";
 import { loadChainAdapter, resolveChainVm } from "./lib/chainAdapters.js";
-import { assertChainVm } from "./lib/chainVms.js";
+import { assertChainVm, vmPinsToBlock } from "./lib/chainVms.js";
 import { resolveChainTokens, combineChainBalances, v3StateToCheckpoint, legacyCheckpointUsable } from "./lib/telTokens.js";
 import { scanV3Chain } from "./lib/v3Scan.js";
 import { loadCexAddressSet, loadDexAddressSet, normalizeAddress as normalizeNonRetailAddress } from "./lib/nonRetailSet.js";
@@ -666,6 +666,18 @@ async function planLivePins(chainConfig, chainKeys, vmOf, checkpoint, settledDat
       }
     };
   }
+  // Other pinnable vms (Hedera) resolve the cutoff with their adapter's own block clock.
+  for (const chainKey of chainKeys.filter((k) => vmOf(k) !== "evm" && vmPinsToBlock(vmOf(k)))) {
+    resolvers[chainKey] = async (targetSeconds) => {
+      try {
+        const clock = (await loadChainAdapter(vmOf(chainKey))).clock({ key: chainKey, ...chainConfig[chainKey] });
+        return await clock.firstAtOrAfter(targetSeconds);
+      } catch (error) {
+        console.warn(`${chainKey}: could not resolve the ${nextDate(settledDate)} cutoff: ${error.message}`);
+        return null;
+      }
+    };
+  }
   const cutoffMap = await ensureCutoffs(project, [nextDate(settledDate)], { resolvers });
   return planPins({
     settledDate,
@@ -890,7 +902,7 @@ async function main() {
               const chain = { key: chainKey, ...chainConfig[chainKey] };
               const { resume, onProgress, flush, drain } = await vmScanResume(adapter, chain);
               try {
-                const result = await adapter.scanChain(chain, { resume, onProgress });
+                const result = await adapter.scanChain(chain, { resume, onProgress, pinBlock: plan.pins[chainKey] ?? null });
                 await drain();
                 return { ...result, chainKey };
               } catch (error) {

@@ -19,9 +19,19 @@ export function resolveChainVm(chain) {
   return "evm";
 }
 
-/** vms whose live reads can be pinned to a day-boundary block; the rest read "live" (unsettled). */
-const BLOCK_PINNED_VMS = new Set(["evm"]);
+/**
+ * vms whose reads can be pinned to a day-boundary block; the rest read "live" (unsettled).
+ * Hedera: a mirror snapshot at or before the block's end, settled forward by replay (lib/hedera/settle.js).
+ */
+const BLOCK_PINNED_VMS = new Set(["evm", "hedera"]);
 export const vmPinsToBlock = (vm) => BLOCK_PINNED_VMS.has(assertChainVm(vm));
+
+/**
+ * vms whose scan runs forward from the checkpoint's block, so a checkpoint already past the settled block
+ * cannot be read at it. Hedera reads a whole snapshot at any past time, so its checkpoint never blocks a pin.
+ */
+const FORWARD_SCAN_VMS = new Set(["evm"]);
+export const vmScansForwardFromCheckpoint = (vm) => FORWARD_SCAN_VMS.has(assertChainVm(vm));
 
 /** vms whose chains[] entry declares `asset: { kind: "native", decimals }` instead of `tokens[]`. */
 const NATIVE_ASSET_VMS = new Set(["hedera"]);

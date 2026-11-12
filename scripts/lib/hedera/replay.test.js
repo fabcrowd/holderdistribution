@@ -60,23 +60,49 @@ describe("applyHbarTransfers", () => {
     expect(next.get("0.0.800")).toBe(995n);
   });
 
-  it("rejects a staking reward that is not already a transfer leg", () => {
-    const tx = {
-      result: "SUCCESS",
-      consensus_timestamp: "1794165043.000000000",
-      transfers: [
-        { account: "0.0.2", amount: "-1" },
-        { account: "0.0.98", amount: "1" },
-      ],
-      staking_reward_transfers: [{ account: "0.0.5", amount: "5" }],
-    };
-    expect(() => applyHbarTransfers(new Map(), [tx])).toThrow(/staking reward/);
+  it("accepts the live shape: a reward netted with the fee into one leg, funded by 0.0.800", () => {
+    // Mainnet 1794439241.190204231 (ConsensusSubmitMessage): reward 673,737,900 minus fee 257,573 in one leg.
+    const next = applyHbarTransfers(new Map([["0.0.10441852", 0n], ["0.0.800", 1_000_000_000n]]), [
+      {
+        result: "SUCCESS",
+        consensus_timestamp: "1794439241.190204231",
+        transfers: [
+          { account: "0.0.800", amount: -673737900 },
+          { account: "0.0.802", amount: 257573 },
+          { account: "0.0.10441852", amount: 673480327 },
+        ],
+        staking_reward_transfers: [{ account: "0.0.10441852", amount: 673737900 }],
+      },
+    ]);
+    expect(next.get("0.0.10441852")).toBe(673_480_327n);
+    expect(next.get("0.0.800")).toBe(1_000_000_000n - 673_737_900n);
   });
 
-  it("skips a failed transaction and rejects a leg that does not balance", () => {
+  it("never applies staking_reward_transfers, which can be a tinybar off the 0.0.800 debit", () => {
+    // Mainnet 1794439266.363124104: reward 16,111,538,460, 0.0.800 debited 16,111,538,459; transfers balance.
+    const next = applyHbarTransfers(new Map([["0.0.2002221", 0n], ["0.0.800", 20_000_000_000n]]), [
+      {
+        result: "SUCCESS",
+        consensus_timestamp: "1794439266.363124104",
+        transfers: [
+          { account: "0.0.800", amount: -16111538459 },
+          { account: "0.0.802", amount: 151513 },
+          { account: "0.0.2002221", amount: 16111386946 },
+        ],
+        staking_reward_transfers: [{ account: "0.0.2002221", amount: 16111538460 }],
+      },
+    ]);
+    expect(next.get("0.0.2002221")).toBe(16_111_386_946n);
+    expect(next.get("0.0.800")).toBe(20_000_000_000n - 16_111_538_459n);
+  });
+
+  it("charges a failed transaction's fee (its only legs), and rejects a leg that does not balance", () => {
     const balances = new Map([["0.0.2", 10n]]);
-    const failed = { result: "INSUFFICIENT_ACCOUNT_BALANCE", consensus_timestamp: "1.0", transfers: [{ account: "0.0.2", amount: "-10" }] };
-    expect(applyHbarTransfers(balances, [failed]).get("0.0.2")).toBe(10n);
+    const failed = { result: "WRONG_NONCE", consensus_timestamp: "1.0", transfers: [{ account: "0.0.2", amount: "-3" }, { account: "0.0.98", amount: "3" }] };
+    const after = applyHbarTransfers(balances, [failed]);
+    expect(after.get("0.0.2")).toBe(7n);
+    expect(after.get("0.0.98")).toBe(3n);
+    expect(applyHbarTransfers(balances, [{ result: "INSUFFICIENT_TOKEN_BALANCE", consensus_timestamp: "1.5", transfers: [] }]).get("0.0.2")).toBe(10n);
     const broken = { result: "SUCCESS", consensus_timestamp: "2.0", transfers: [{ account: "0.0.2", amount: "-10" }] };
     expect(() => applyHbarTransfers(balances, [broken])).toThrow(/sum to -10/);
   });

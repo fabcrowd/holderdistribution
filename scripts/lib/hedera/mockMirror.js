@@ -15,9 +15,10 @@ const nanosOf = (stamp) => {
 function applyFilters(values, num, params, name) {
   let ok = true;
   for (const raw of params.getAll(name)) {
-    const [op, v] = raw.split(":");
+    const [op, v] = raw.includes(":") ? raw.split(":") : ["eq", raw];
     const n = idNum(v);
-    if (op === "gt") ok &&= num > n;
+    if (op === "eq") ok &&= num === n;
+    else if (op === "gt") ok &&= num > n;
     else if (op === "gte") ok &&= num >= n;
     else if (op === "lt") ok &&= num < n;
     else if (op === "lte") ok &&= num <= n;
@@ -40,6 +41,7 @@ export function createMockMirror({
   tamper = null, // (path, params, body) => body | undefined; edits a parsed /balances or /contracts response
   notFound = () => false, // (path, query, callIndex, cluster) => true answers HTTP 404 (a cluster that lacks the pinned stamp)
   fail = () => null, // (path, query, callIndex) => status code | "network" | null
+  transactions = [], // { consensus_timestamp, result, transfers: [{ account, amount }] } after the snapshot, any order
 } = {}) {
   const sorted = [...accounts].sort((a, b) => a.num - b.num);
   const supplyText = totalSupply ?? String(sorted.reduce((sum, a) => sum + a.balance, 0n));
@@ -82,6 +84,24 @@ export function createMockMirror({
     return { contracts: page, links: { next: page.length === limit ? "/api/v1/contracts?next" : null } };
   }
 
+  const txSorted = [...transactions].sort((a, b) => (nanosOf(a.consensus_timestamp) < nanosOf(b.consensus_timestamp) ? -1 : 1));
+  function transactionList(params) {
+    const limit = Math.min(Number(params.get("limit") ?? 25), 100);
+    let rows = txSorted;
+    for (const raw of params.getAll("timestamp")) {
+      const [op, v] = raw.split(":");
+      const t = nanosOf(v);
+      rows = rows.filter((tx) => {
+        const x = nanosOf(tx.consensus_timestamp);
+        return op === "gt" ? x > t : op === "gte" ? x >= t : op === "lt" ? x < t : op === "lte" ? x <= t : x === t;
+      });
+    }
+    const page = rows.slice(0, limit);
+    const upper = params.getAll("timestamp").find((r) => r.startsWith("lte:") || r.startsWith("lt:"));
+    const next = page.length === limit ? `/api/v1/transactions?timestamp=gt:${page.at(-1).consensus_timestamp}${upper ? `&timestamp=${upper}` : ""}&order=asc&limit=${limit}` : null;
+    return { transactions: page, links: { next } };
+  }
+
   const block = (n) => ({ number: n, timestamp: { from: blockTime(n).toFixed(9), to: blockTime(n + 1).toFixed(9) } });
 
   async function fetch(url) {
@@ -100,6 +120,7 @@ export function createMockMirror({
       const edited = tamper ? tamper(path, u.searchParams, JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw))) : undefined;
       return respond(200, edited === undefined ? raw : JSON.stringify(edited), cluster === "unknown" ? null : (cluster ?? "mock")); // cluster "unknown" sends no x-cluster-id
     }
+    if (path === "/transactions") return respond(200, transactionList(u.searchParams), cluster ?? "mock");
     if (path === "/network/supply") {
       const at = u.searchParams.get("timestamp");
       return respond(200, `{"released_supply":${releasedSupply},"timestamp":"${at ?? snapTs()}","total_supply":${supplyText}}`);
