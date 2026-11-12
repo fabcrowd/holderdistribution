@@ -1,9 +1,11 @@
 {
   "schemaVersion": 1,
   "project": "zebec-network",
-  "generatedAt": "2026-11-11T13:57:34.070Z",
-  "healthy": true,
-  "problems": [],
+  "generatedAt": "2026-11-12T15:03:37.229Z",
+  "healthy": false,
+  "problems": [
+    "wallet-flows: stale"
+  ],
   "jobs": [
     {
       "id": "holders",
@@ -22,34 +24,34 @@
         {
           "path": "public/data/zebec-network/holders-summary.json",
           "maxAgeHours": 30,
-          "ageHours": 0.2,
-          "generatedAt": "2026-11-11T13:45:11.400Z",
+          "ageHours": 0.3,
+          "generatedAt": "2026-11-12T14:47:39.933Z",
           "status": "fresh"
         },
         {
           "path": "public/data/zebec-network/holders-history.json",
           "maxAgeHours": 30,
-          "ageHours": 0.2,
-          "generatedAt": "2026-11-11T13:45:25.179Z",
+          "ageHours": 0.3,
+          "generatedAt": "2026-11-12T14:47:54.939Z",
           "status": "fresh"
         },
         {
           "path": "public/data/zebec-network/supply-reconciliation.json",
           "maxAgeHours": 30,
-          "ageHours": 0.2,
-          "generatedAt": "2026-11-11T13:45:40.000Z",
+          "ageHours": 0.3,
+          "generatedAt": "2026-11-12T14:48:09.000Z",
           "status": "fresh"
         },
         {
           "path": "public/data/zebec-network/cex-wallets.json",
           "maxAgeHours": 30,
-          "ageHours": 0.2,
-          "generatedAt": "2026-11-11T13:45:12.965Z",
+          "ageHours": 0.3,
+          "generatedAt": "2026-11-12T14:47:41.605Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -71,12 +73,12 @@
           "path": "public/data/zebec-network/exchange-flow-history.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-11T13:57:27.057Z",
+          "generatedAt": "2026-11-12T15:03:30.118Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -98,12 +100,12 @@
           "path": "public/data/zebec-network/tier-outflows.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-11T13:57:33.413Z",
+          "generatedAt": "2026-11-12T15:03:36.483Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -122,7 +124,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -157,13 +159,13 @@
         {
           "path": "public/data/zebec-network/solana-staking.json",
           "maxAgeHours": 30,
-          "ageHours": 0.2,
-          "generatedAt": "2026-11-11T13:45:06.895Z",
+          "ageHours": 0.3,
+          "generatedAt": "2026-11-12T14:47:35.053Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -192,18 +194,18 @@
       "alchemyOnly": false,
       "alchemyCuBudget": 0,
       "budgetMode": "enforce",
-      "health": "ok",
+      "health": "stale",
       "outputs": [
         {
           "path": "data/zebec-network/forensics/wallet-flows.json",
           "maxAgeHours": 30,
-          "ageHours": 17.1,
+          "ageHours": 42.2,
           "generatedAt": "2026-11-10T20:51:14.892Z",
-          "status": "fresh"
+          "status": "stale"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -225,13 +227,13 @@
         {
           "path": "data/zebec-network/ledger/ledger.json",
           "maxAgeHours": 30,
-          "ageHours": 22,
-          "generatedAt": "2026-11-10T15:55:56.000Z",
+          "ageHours": 23.3,
+          "generatedAt": "2026-11-11T15:44:20.000Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     },
@@ -264,7 +266,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-11",
+        "day": "2026-11-12",
         "cu": 0
       }
     }
