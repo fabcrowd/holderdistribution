@@ -1,22 +1,22 @@
 {
  "version": 1,
- "generated": "2026-11-12T21:51:07.457Z",
+ "generated": "2026-11-13T21:21:07.792Z",
  "generator": "scripts/generate-wallet-flows.js",
  "project": "ondo",
- "priceUsd": 0.354723,
+ "priceUsd": 0.340633,
  "priceSource": "CoinGecko simple/price (ondo-finance)",
  "chains": [
   "ethereum"
  ],
  "windows": {
   "ethereum": {
-   "head": 26401657,
-   "headTime": "2026-11-12T21:48:59.000Z",
+   "head": 26408687,
+   "headTime": "2026-11-13T21:18:59.000Z",
    "startBlocks": {
-    "24h": 26394479,
-    "72h": 26380130,
-    "30d": 26186365,
-    "90d": 25756069
+    "24h": 26401509,
+    "72h": 26387156,
+    "30d": 26193385,
+    "90d": 25763088
    }
   }
  },
@@ -35,7 +35,7 @@
     "label": "Telcoin-linked: TEL Treasury",
     "group": "telcoin",
     "tel": 5179207574,
-    "share": 0.5179207574162528
+    "share": 0.5179207574162531
    },
    {
     "key": "association",
@@ -49,7 +49,7 @@
     "label": "Telcoin-linked: Telcoin Holdings (company)",
     "group": "telcoin",
     "tel": 324719710,
-    "share": 0.03247197096556834
+    "share": 0.032471970965568364
    },
    {
     "key": "escrow",
@@ -69,8 +69,8 @@
     "key": "cex",
     "label": "Centralised exchanges (incl. deposit relays)",
     "group": "market",
-    "tel": 784100933,
-    "share": 0.07841009332330888
+    "tel": 784745106,
+    "share": 0.07847451056708063
    },
    {
     "key": "dex",
@@ -97,8 +97,8 @@
     "key": "retail",
     "label": "Retail & unlabelled holders",
     "group": "retail",
-    "tel": 3711971783,
-    "share": 0.3711971782948699
+    "tel": 3711327611,
+    "share": 0.3711327610510979
    }
   ],
   "movedFromRetail": [],
@@ -141,7 +141,7 @@
    "balanceDetail": {
     "ethereum_legacy": 5179207574
    },
-   "balanceUsd": 1837184048,
+   "balanceUsd": 1764209014,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -174,7 +174,7 @@
    "balanceDetail": {
     "ethereum_legacy": 100182196
    },
-   "balanceUsd": 35536929,
+   "balanceUsd": 34125362,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -204,7 +204,7 @@
    "balanceDetail": {
     "ethereum_legacy": 95738091
    },
-   "balanceUsd": 33960503,
+   "balanceUsd": 32611553,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -234,7 +234,7 @@
    "balanceDetail": {
     "ethereum_legacy": 48443680
    },
-   "balanceUsd": 17184087,
+   "balanceUsd": 16501516,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -264,7 +264,7 @@
    "balanceDetail": {
     "ethereum_legacy": 44109630
    },
-   "balanceUsd": 15646700,
+   "balanceUsd": 15025196,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -295,7 +295,7 @@
    "balanceDetail": {
     "ethereum_legacy": 36007902
    },
-   "balanceUsd": 12772831,
+   "balanceUsd": 12265480,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -328,7 +328,7 @@
    "balanceDetail": {
     "ethereum_legacy": 238210
    },
-   "balanceUsd": 84499,
+   "balanceUsd": 81142,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -539,5 +539,51 @@
    "90d": 0
   }
  },
- "largeSellers": []
+ "largeSellers": [
+  {
+   "rank": 1,
+   "entity": "Unlabelled wallet",
+   "addresses": [
+    "0xffef03574ece382d1456e9030645c048a219d72c"
+   ],
+   "chains": [
+    "ethereum"
+   ],
+   "destination": "Coinbase Prime",
+   "tel": 10188401,
+   "netTel": 10188401,
+   "usd": 3470506,
+   "sampleTx": "https://etherscan.io/tx/0x7fb31bd500205051bba3b34968c7a0921d4d34fb6b23b7bf748761f7a9b7e80b"
+  },
+  {
+   "rank": 2,
+   "entity": "Unlabelled wallet",
+   "addresses": [
+    "0xe57e42ee9265d0387a29e8d80c1fc59e401be175"
+   ],
+   "chains": [
+    "ethereum"
+   ],
+   "destination": "Bithumb",
+   "tel": 9076959,
+   "netTel": 9076959,
+   "usd": 3091912,
+   "sampleTx": "https://etherscan.io/tx/0x26baba003bc44cf369e3a1a065eb4f77f1cd5b0a2067e95c9e0a6ffd5fe76c6f"
+  },
+  {
+   "rank": 3,
+   "entity": "Unlabelled wallet",
+   "addresses": [
+    "0x6ca447e10025b0c1998ad854241cfec920f45c2a"
+   ],
+   "chains": [
+    "ethereum"
+   ],
+   "destination": "Coinbase Prime",
+   "tel": 7672473,
+   "netTel": 7672473,
+   "usd": 2613498,
+   "sampleTx": "https://etherscan.io/tx/0xed5eb169686d61129e327c84b9b0b9b1aaba1a988f7f6d1312791c7a7161cfe0"
+  }
+ ]
 }
