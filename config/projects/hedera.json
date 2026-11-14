@@ -22,7 +22,107 @@
     }
   },
   "holders": {
-    "megaHolderThreshold": 10000000000
+    "megaHolderThreshold": 10000000000,
+    "$comment": "Derived by the onboarding runner (scripts/onboard-run.js) from hedera's own snapshot of 2026-11-14 (681597 retail holders; non-retail and mega wallets excluded). distributionTiers labels are JOIN KEYS into holder-transitions.json / tier-outflows.json / holders-history.json: changing them needs the history replay and downstream regeneration (README).",
+    "distributionTiers": [
+      {
+        "label": "100M+",
+        "min": 100000000,
+        "max": null
+      },
+      {
+        "label": "10M-100M",
+        "min": 10000000,
+        "max": 100000000
+      },
+      {
+        "label": "1M-10M",
+        "min": 1000000,
+        "max": 10000000
+      },
+      {
+        "label": "500K-1M",
+        "min": 500000,
+        "max": 1000000
+      },
+      {
+        "label": "100K-500K",
+        "min": 100000,
+        "max": 500000
+      },
+      {
+        "label": "50K-100K",
+        "min": 50000,
+        "max": 100000
+      },
+      {
+        "label": "10K-50K",
+        "min": 10000,
+        "max": 50000
+      },
+      {
+        "label": "1K-10K",
+        "min": 1000,
+        "max": 10000
+      },
+      {
+        "label": "5-1K",
+        "min": 5,
+        "max": 1000
+      },
+      {
+        "label": "1-5",
+        "min": 1,
+        "max": 5
+      }
+    ],
+    "balanceRanges": [
+      {
+        "label": "1–10",
+        "min": 1,
+        "max": 10
+      },
+      {
+        "label": "10–100",
+        "min": 10,
+        "max": 100
+      },
+      {
+        "label": "100–1K",
+        "min": 100,
+        "max": 1000
+      },
+      {
+        "label": "1K–10K",
+        "min": 1000,
+        "max": 10000
+      },
+      {
+        "label": "10K–100K",
+        "min": 10000,
+        "max": 100000
+      },
+      {
+        "label": "100K–1M",
+        "min": 100000,
+        "max": 1000000
+      },
+      {
+        "label": "1M+",
+        "min": 1000000,
+        "max": null
+      }
+    ],
+    "retailThreshold": 5,
+    "concentrationBuckets": [
+      10,
+      25,
+      50,
+      100,
+      250,
+      500,
+      1000
+    ]
   },
   "chains": [
     {
