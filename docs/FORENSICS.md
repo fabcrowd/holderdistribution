@@ -134,7 +134,7 @@ node scripts/generate-wallet-flows-solana.js --project <slug>                   
 
 ### Hedera (HBAR)
 
-HBAR is not registered; this path is built and tested locally and has not run on GitHub.
+HBAR is registered as onboarding (2026-11-13); this path is built and tested locally and has not run on GitHub.
 
 ```bash
 node scripts/init-forensics-registry.js --project <slug>      # registry from the project's treasury accounts

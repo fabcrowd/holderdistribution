@@ -1095,8 +1095,8 @@ nothing else.
 
 ## Hedera native coin (`chains[].vm: "hedera"`)
 
-HBAR is not registered in `config/projects.json`. Its onboarding path is built and tested locally;
-nothing is proven on GitHub. All data comes from the public mirror node (no key, no Alchemy).
+HBAR is registered in `config/projects.json` as onboarding (2026-11-13). Its onboarding path is built and tested locally;
+nothing is proven on GitHub until `onboard-project.yml` has run for it. All data comes from the public mirror node (no key, no Alchemy).
 
 - **Config shape:** the chain carries `asset: { kind: "native", decimals }` instead of `tokens[]`.
   Supply (50B) and decimals come from the mirror's `/network/supply`. A holder is an account with
