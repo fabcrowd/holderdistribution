@@ -39,6 +39,7 @@ the public Supabase anon key baked in as a default. See [`.env.example`](.env.ex
 | `npm run preview` | Serve `dist/` locally (port 4173) |
 | `npm run check:feeds` / `pipeline:health` | Validate / report on the data feeds |
 | `npm run check:go-live` | Fail unless every project is complete: config, feeds, wallet flows, ledger |
+| `npm run onboard:check -- --project <slug> [--skip-tests]` | Local onboarding gates in one go: vitest, typecheck, lint, feed consistency, pipeline health, strict go-live; logs in `tasks/` |
 
 ## Layout
 
@@ -52,9 +53,16 @@ src/components/                    widgets; terminal/ (tabs + panels), tierflow/
                                    chart/, routing/, ui/ (shadcn primitives); *.test.tsx sit beside each file
 src/hooks/                         TanStack Query hooks, one per feed, keyed by project slug
 src/lib/                           pure helpers: projects.ts (registry reader; LISTED_PROJECTS skips onboarding ones),
-                                   comingSoon.ts, chainViews, chart*, supply*, staking*
+                                   comingSoon.ts, chainViews, chart*, supply*, staking*, explorerLinks.ts (per-chain
+                                   links incl. Hedera), format.ts (the one compact number formatter: T, B, M, K, sub-1),
+                                   cexComparison.ts (cex-flows `comparison` reader), venueFlows.ts (venue-scanned flow copy)
+src/components/terminal/NetworkStakeTile.tsx   staked-HBAR tile (network-wide, informational)
+src/components/TokenSwitcher.tsx, src/lib/tokenSwitch.ts   token switcher in the header (Ctrl/Cmd+K; keeps the open view)
 src/integrations/supabase/         auth client (public anon key default)
-src/data/forensicsWriteups.ts      forensics copy; src/test/ site-config test
+src/data/forensicsWriteups.ts      forensics copy
+src/test/                          site-config test; projectShapes.render.test.tsx + shapeFixtures.ts (render-shape
+                                   tests: every section for the registered projects and synthetic tiny, huge,
+                                   hedera and solana-staking shapes)
 src/index.css, tailwind.config.ts  design tokens (Holder Distribution palette)
 public/tokens/                     token images (per-token marks)
 ```
@@ -72,12 +80,24 @@ data/                              pipeline caches and checkpoints (not served);
 ```
 scripts/*.js, scripts/*.ts         CLI entry points (holders, history, exchange flows, CEX wallets, Solana, staking)
 scripts/lib/                       shared logic with sibling *.test.js; lib/solana/ = Solana adapter, flows, Alchemy flow backup
-scripts/lib/chainAdapters.js, chainVms.js   chain-VM dispatch; lib/hedera/ = Hedera adapter, resumable snapshot scan, transfer replay (no project registered yet)
+scripts/lib/chainAdapters.js, chainVms.js   chain-VM dispatch; lib/hedera/ = Hedera adapter, resumable snapshot scan, transfer replay,
+                                   exchange flows (flow*.js), wallet flows and ledger source (walletFlow*.js, ledgerSource.js),
+                                   network stake (HBAR is not registered; its onboarding path is built and tested locally)
+scripts/scan-hedera-flows.js, generate-wallet-flows-hedera.js   Hedera exchange/tier flows and gated wallet-flows report
+scripts/lib/cexFlows.js            cex-flows one-day comparison rule (previous-snapshot rotation, `comparison` block)
+scripts/lib/walletFlowsHash.js     EVM wallet-flows scan hash (sender set, tokens, logic only; legacy-hash adoption)
 scripts/validate-outputs.js        feed gates: npm run check:feeds, npm run pipeline:health
 scripts/check-go-live.js           go-live gate (lib/goLive.js): no skips, placeholders, unhealthy feeds, incomplete tier outflows
                                    and borrowed tiers fail; --alignment strict for new tokens
-scripts/onboard.js                 npm run onboard: discovery from an address or mint, then add-project.js (lib/onboard.js)
+scripts/onboard.js                 npm run onboard: discovery from an address or mint, answers template, then add-project.js (lib/onboard.js)
+scripts/lib/onboardAnswers.js      the onboarding answers schema, validation messages and class -> config mapping;
+config/onboarding.answers.example.json   a complete example answers file (fictional addresses)
 scripts/onboard-run.js             first-data driver behind onboard-project.yml: runs each step until go-live (lib/onboardRun.js)
+scripts/onboard-check.js           npm run onboard:check: the local gates in one command (lib/onboardCheck.js)
+scripts/lib/projectSizing.js       supply-scaled thresholds (wallet-flow seller/swap, CEX candidates, consistency tolerance)
+scripts/lib/networkStake.js        `networkStake` block of holders-lite.json (informational; Hedera adapter port `stakingInfo`)
+scripts/lib/registrySizing.test.js   every registered project: mega threshold within supply, tiers and sizing consistent
+scripts/lib/feedCoverage.test.js     every feed the browser fetches is served by live-data.mjs and required by go-live
 scripts/dump-wallet-transfers.js   read-only multi-project wallet transfer dump (CSV to stdout)
 scripts/derive-holder-tiers.js     a project's own holder tiers from its own snapshot (lib/deriveHolderTiers.js); prints, never writes
 scripts/lib/dayBlocks.js, asOf.js  shared day-cutoff blocks and feed asOf convention
@@ -123,20 +143,27 @@ columns are different: they compare the current snapshot with the period baselin
 a reclassification that makes the comparison unreliable). Charts support wheel/pinch zoom,
 drag to pan, keyboard arrows (Shift+arrows pan, +/− zoom, 0 or Esc reset) and a data-table view.
 
-Mapping a new token is config-only and takes two commands.
-`npm run onboard -- --address <0x… or mint> --write` reads the token on-chain and from CoinGecko
-and writes the registry entry and `config/projects/<slug>.json`. After the judgement work
-(staking, team wallets, DEX pools; see the onboard-project skill) is reviewed and merged,
-`gh workflow run onboard-project.yml -f project=<slug>` runs every first-data step in order
-until `check-go-live` passes. The registry entry carries `"onboarding": true` until then: the
-nightly runs it and `/<slug>` renders, but the landing page and sitemap leave it out, so a
-partially wired project never shows on the site.
+Mapping a new token is config-only and driven by one answers file. The runbook is the
+onboard-project skill (`.claude/skills/onboard-project/SKILL.md`).
+1. `npm run onboard -- --address <0x… or mint>`: discovery on-chain and from CoinGecko, writes an
+   answers template to `tasks/onboard-<slug>.answers.json`.
+2. Fill it (staking, wallets and classes, DEX pools, CEX list, history start; every decision needs
+   evidence). `config/onboarding.answers.example.json` is a complete example.
+3. `npm run onboard -- --address <addr> --answers <file> --write` expands it into every config file.
+   Review and merge (with the README update).
+4. `gh workflow run onboard-project.yml -f project=<slug>` runs every first-data step until
+   `check-go-live` passes; each stop prints a `Fix:` block, fix it and dispatch again.
+5. `npm run onboard:check -- --project <slug>` runs the local gates; then a visual check.
+
+The registry entry carries `"onboarding": true` until go-live passes: the nightly runs it and
+`/<slug>` renders, but the landing page and sitemap leave it out.
 See [docs/MULTI-TOKEN.md](docs/MULTI-TOKEN.md) for the layout, the pipeline `--project <slug>`
-flag, Solana support and the onboarding checklist.
+flag, Solana support and the manual reference.
 
 Wallet-flow history is 90 days, filled by the first run. The EVM seller scan can read from SQD Portal (`generate-wallet-flows.js --source portal`,
 opt-in, EVM only, completeness-gated, no Alchemy CU). See "Backfill via SQD Portal" in
-[docs/FORENSICS.md](docs/FORENSICS.md) and step 9 of the onboarding checklist.
+[docs/FORENSICS.md](docs/FORENSICS.md) and the wallet-flow history item in the manual reference of
+[docs/MULTI-TOKEN.md](docs/MULTI-TOKEN.md).
 
 ## Design notes and pitfalls
 
@@ -151,7 +178,27 @@ that already cost a run or a PR.
 - List only categories that cannot reach 0: `reconcile-supply` omits a category whose balance is 0 and
   `append-treasury-history` then aborts the whole daily refresh. That is why ONDO and ZBCN list `treasury` only.
 - `council` is a naming tag on some TEL wallets (Compliance Council, TELx Council). It carries no logic
-  and is not a bucket other tokens need. Do not build behaviour on it.
+  and is not a bucket other tokens need. Do not build behaviour on it. The association flow panel is shown
+  only when the project sets `gated.associationFlows: true` (TEL does); never infer it from a `council` category.
+
+**Sizing and groupings**
+- Sizing is derived per project from its own supply and first snapshot, never copied. Tiers, balance ranges,
+  `retailThreshold` and `concentrationBuckets` come from the first snapshot's retail wallets
+  (`scripts/lib/deriveHolderTiers.js`, run by the onboarding runner). The scaffold writes
+  `megaHolderThreshold` = supply.target / 5 (plus a `retailThreshold` at half of it when that is not above the shared
+  default of 1,000). The runner then sets it to `max(supply.target / 5, 1.2 x the largest wallet acknowledged as
+  retail, rounded up to 1 / 2.5 / 5 x 10^k, capped at supply.target)`, never lowers it, and a later raise changes
+  only that field. Do not set it by hand: the next runner step would overwrite it.
+- Token-unit thresholds scale with supply (`scripts/lib/projectSizing.js`): wallet-flows seller floor
+  supply/20,000, swap-candidate floor supply/100,000, CEX-candidate floor supply/1,000,000, feed-consistency
+  tolerance `max(supply/1e11, 1)` tokens. A 100B supply gives TEL's old constants.
+- ONDO pins the old shared values in its `sizing` block. These thresholds are part of the wallet-flows state
+  hash, so scaling them would force a full 90-day rescan for any project whose supply is not 100B. Removing
+  the pin is an owner decision.
+- Treasury chart series come from the feed (the categories present), not from a fixed TEL list.
+- Team and holdings wallets are non-circulating on every token except TEL (owner, 2026-11-12). TEL alone keeps
+  Telcoin Holdings as circulating. The onboarding answers classes `treasury`, `association`, `team` and
+  `holdings` are subtracted from circulating; `escrow` and `reward-vault` are not.
 
 **Discovery decides staking, per token**
 - Staking differs by project: none (ONDO), a `StakeChanged` contract (TEL), a receipt module, or a different contract
@@ -187,7 +234,7 @@ that already cost a run or a PR.
 - A workflow can only be dispatched by a name that exists on the default branch. Config a data run needs
   must be on `main` first, or the run executes against the old config and fails. The nightly is
   `refresh-holders.yml` (renamed from `refresh-tel-holders.yml`; old runs are filed under the old name).
-- The holders job has a per-project limit (`pipeline.workflowTimeoutMinutes`, 60 for ONDO) and a first scan from a
+- The holders job has a per-project limit (`pipeline.workflowTimeoutMinutes`, 60 for ONDO; the first holders-scan step cap is `pipeline.holdersScanTimeoutMinutes`, default 20) and a first scan from a
   deploy block is long. A scan that times out or dies saves `holders-partial-<chain>.json` to the Actions cache
   (`always()`), and the next dispatch resumes from it. Stage 2 (exchange flows, tier outflows, gap fill) shares
   that job's time, so a job can finish the holders feed and still hit the limit in stage 2. The tier scan stops
@@ -219,6 +266,16 @@ that already cost a run or a PR.
   but not the ledger, or a ledger wallet is not in the registry.
 - Do not regenerate the registry with `init-forensics-registry.js --force`: it overwrites hand-curated entries
   (association wallets, `botCluster`, `watchedSellers`, `extraCex`, `extraDex`). Append the missing rows instead.
+- The EVM wallet-flows scan hash covers only the sender set, the token fingerprint and the logic version
+  (`scripts/lib/walletFlowsHash.js`); labels, CEX/DEX lists and reconciliation categories are applied when the report is built,
+  so a list change never costs a rescan. State is saved per segment and at `WALLET_FLOWS_MAX_MS`. A run that stops at the budget
+  commits its state, writes no report, flags itself "partial" and fails once the published report is older than the go-live limit
+  (`MAX_REPORT_AGE_HOURS`). After a merge that changes the logic, dispatch `refresh-wallet-flows.yml` for tel (again if partial).
+- Hedera wallet flows (`scripts/generate-wallet-flows-hedera.js`) end in one of three states: complete (report, exit 0), budget
+  (`HEDERA_WALLET_FLOWS_MAX_MS`: state saved, no report, `partial=true`, exit 0) or error (last consistent state saved, exit 1,
+  `partial=true`). There is no soft exit 0. Senders are the project's treasury accounts; the network accounts 0.0.98, 0.0.800,
+  0.0.801 and 0.0.54 are listed as not traced. Raw events are labelled with the current venue lists at report time. Onward hops
+  from unlabelled recipients are not traced.
 
 **Feeds and health**
 - `health.feeds.<file>.placeholder: true` means "intentional stub, never alarms as stale". Remove it as soon as the
@@ -226,10 +283,21 @@ that already cost a run or a PR.
 - Solana tier outflows are venue-anchored by design (`scripts/lib/solana/flowFeeds.js`): CEX deposits and withdrawals
   and DEX swaps are measured; wallet-to-wallet moves and counterparty-tier attribution are not. `attributedDays` is 0
   for ZBCN and `sourceTierSince` is `null`. That is expected and the UI shows its coverage caveat. It is not a bug.
+- `cex-flows.json` is a one-day comparison only when both snapshots are comparable and exactly one day apart
+  (`scripts/lib/cexFlows.js`); otherwise it carries `comparison.available: false` with a reason and the UI shows no
+  change figure. `check-feed-consistency` step 8b fails on missing or mis-ordered stamps and only warns when the net
+  differs from `exchange-flow-history.json` (each skip prints its reason). holders-lite ignores a previous snapshot that
+  is not exactly one day older (`dailyPreviousSnapshot`).
+- Hedera exchange flows (`scripts/scan-hedera-flows.js`) read the mirror node per exchange account and follow `links.next`,
+  including empty continuation pages. The stored scan is stamped with a hash of the (account, exchange) set and the classifier
+  version; a different set rebuilds from the floor. Tier flows keep an `unattributed` bucket, so tiers plus `unattributed`
+  equal the exchange totals. History is forward-only (owner decision).
 - Config changes reach the browser at the next manual Netlify deploy (the config is bundled). Data reaches it
   through `live-data.mjs` without a deploy.
 
 ## Recent work
+- **2026-11-13: nightly ready for a long scan, `unknown` holder label, resumed scans bound to their snapshot, token-page redesign (#PRNUM).** (1) Holders step limits come from config: `pipeline.holdersScanTimeoutMinutes` (default 20) plus a 35-minute retry, emitted only for the holders job by `scripts/workflow-paths.js matrix <sel> --job holders`. The longest scan runs last. A project whose config fails the limit check is left out, listed by `workflow-paths.js skipped`, and the `skipped-projects` job in `refresh-holders.yml` turns the run red while the other projects still refresh. Hedera asks for a 120-minute scan step in a 270-minute job. (2) A finished Hedera scan is kept and reused when a rerun resolves the same snapshot stamp. An in-progress one resumes only if it is at most 30 minutes older than the snapshot a fresh run would use (6 hours when the run has no pin); otherwise it is rescanned (`resumeStaleReason` in `scripts/lib/hedera/scan.js`). (3) EVM: a partial checkpoint that scanned past the run's pin block is discarded (`partialResumeDecision` in `scripts/lib/partialCheckpoint.js`). Before, it was resumed and balances from after the cutoff were published as the settled day. (4) `largeHolders` accepts `unknown`: traced, identity not established, counts as a holder like `retail`. Two HBAR accounts are recorded that way (`scripts/lib/hedera/nativeDecisions.js`). (5) `cex-flows.json` gains `overall.byChain`; the amount check treats a chain where exchange wallets hold nothing in both snapshots as covered, so TEL (no exchanges on Base) is compared once a nightly rewrites the feed. (6) UI: token switcher in the header (`TokenSwitcher.tsx`, Ctrl/Cmd+K), KPI strip, bottom tab bar on phones, sentence-case labels, Archivo / Inter / IBM Plex Mono. Not yet proven on GitHub: the config-driven step limits, the `skipped-projects` job, and scan reuse against the live mirror. HBAR is still not registered.
+- **2026-11-12/13: one answers file, one dispatch, one check; sizing derived per project; UI without TEL shapes; wallet-flows and cex-flows convergence; Hedera flows, forensics and ledger built (local, not committed; PR number pending).** Items 1-2 are the onboarding path (A), 3-4 sizing and go-live rules (B), 6 the circulating rule (C), 5 the UI (D), 7 EVM wallet-flows (E), 8 cex-flows (F), 9 Hedera (G). (1) `npm run onboard -- --address <addr>` now writes an answers template (`tasks/onboard-<slug>.answers.json`); the owner's judgement (staking, wallets with a class, DEX pools, CEX list, history start, large-holder decisions) lives only in that file (`scripts/lib/onboardAnswers.js`, example `config/onboarding.answers.example.json`). `--answers <file> --write` validates it and expands it into the registry entry, project config, ledger, exclusions, CEX file, wallet registry and `config/projects/<slug>/onboarding.answers.json`; a rerun merges idempotently through `fromAnswers` markers, no `--force`. `--write` without answers is refused. Staking has a third decision, `unresolved` (a mechanism exists but its address is not verified): it validates, but `--write` refuses it with a message telling the owner to supply the address or a source, so the site never says "no staking" for a token that has it. `none` now means the docs and explorer were searched and no staking, locking or vote-escrow mechanism exists. (2) Runner (`scripts/onboard-run.js`, `scripts/lib/onboardRun.js`): answers check, a CEX candidate review for Solana projects (after the first snapshot it lists every Dune-spellbook-labelled exchange wallet that holds the token, and blocks until each is under `cex.wallets` or the new `cex.rejected`; `none-known` is done only when the list is empty or fully rejected), large-holder review (every unlabelled wallet above 1% of supply needs a decision), full sizing derived from the project's first snapshot (tiers, ranges, mega and retail thresholds, concentration buckets), strict alignment before the token is listed, history mode must be decided, every stop prints a self-contained `Fix:` block, and the `main` snapshot extracts with tar from a relative path (GNU tar on Windows read `C:` as a host). `npm run onboard:run -- --project <slug> --dry-run --local` evaluates the same plan on the working tree instead of `origin/main` (valid only with `--dry-run`). `npm run onboard:check -- --project <slug>` runs vitest, typecheck, lint, feed consistency, pipeline health and strict go-live with one PASS/FAIL table. (3) Token-unit thresholds scale with supply (`scripts/lib/projectSizing.js`: wallet-flows seller and swap floors, CEX-candidate floor, consistency tolerance with a 1-token floor); ONDO is pinned to the old values in `sizing` so its wallet-flows state hash is unchanged, pending an owner decision. (4) `check-go-live` also fails an empty CEX list, an unresolved DEX pool, answers wallets not excluded as non-retail, a mega threshold outside the supply, own tiers without explicit mega and retail thresholds, and one tier over 90% of wallets; new tests `registrySizing` and `feedCoverage` cover every registered project. (5) UI: chain-neutral supply reconciliation, explorer links per chain including Hedera, treasury chart series built from the feed, Top-N sizes from config, staking labels and deploy date from the feed, tier-flow layout for 2-14 tiers, one compact formatter (`src/lib/format.ts`) with T and sub-1 values, and the association flow panel behind `gated.associationFlows`. (6) Owner rule 2026-11-12: team and holdings wallets are non-circulating on every token except TEL, so ZBCN and ONDO circulating figures change at their next refresh and the next manual deploy (both configs and their `supply-reconciliation.json` were regenerated locally; Treasury and Team stay two rows on the Supply tab). (7) EVM wallet-flows converge (`scripts/lib/walletFlowsHash.js`): the scan hash covers only the sender set, the token fingerprint and the logic version (a stored state under the old hash is adopted when its inputs are unchanged), state is saved per segment and at `WALLET_FLOWS_MAX_MS`, a partial run commits state, writes no report, flags itself and fails when the published report is older than the go-live limit, and swap checks that gave up are retried from leftover budget. After the merge, dispatch `refresh-wallet-flows.yml` for tel (again if it ends partial). (8) cex-flows (`scripts/lib/cexFlows.js`) compares only two comparable snapshots exactly one day apart and carries a `comparison` block (`available`, `reason`, both stamps); `pull-holders-rpc.js` rotates the previous snapshot only under the same rule; `check-feed-consistency` step 8b fails on bad stamps and warns on an amount mismatch against `exchange-flow-history.json`; holders-lite ignores a previous snapshot that is not one day older; the exchange balance change shows no previous value when there is no valid one-day comparison. (9) Hedera (HBAR) is not registered; its onboarding path is built and tested locally and nothing is proven on GitHub. Built: exchange flows and tier outflows by venue from the mirror node (`scripts/scan-hedera-flows.js`, `scripts/lib/hedera/flow*.js`; paging follows `links.next`; account-set hash forces a rebuild; `unattributed` tier bucket), forensics registry, gated wallet flows (`scripts/generate-wallet-flows-hedera.js`; senders are the project's treasury accounts as streams of contiguous ids; 0.0.98, 0.0.800, 0.0.801 and 0.0.54 listed as not traced; explicit partial and error exit states), a ledger branch (`scripts/lib/hedera/ledgerSource.js`), a staked-HBAR tile fed by the `networkStake` block of holders-lite.json (informational, never subtracted), and nightly job entries in `config/nightly-jobs.json`. The runner's `STEP_VMS` now lists hedera for exchange-flows, tier-outflows, wallet-flows and ledger; history stays EVM and Solana only (HBAR history is forward-only by owner decision), and cex-wallets and treasury-cex-history stay EVM only. Not built: DEX/WHBAR look-through, onward-hop tracing, swap decoding, history before the first snapshot. **Unproven until it runs on GitHub:** `onboard-project.yml` end to end with a real token; the `refresh-wallet-flows.yml` partial and commit path and TEL's rescan; the first nightly with the cex-flows `comparison` block; every Hedera workflow step from a runner IP. Also unproven: EVM discovery over real RPC, and a browser check of the UI changes.
 - **2026-11-11: HBAR slice 5: settled end-of-day snapshots (#182).** Hedera is now block-pinned like EVM. A run reads the newest mirror snapshot at or before the end of the settled day's last block and replays the transactions after it to that block (`scripts/lib/hedera/settle.js`). Measured on mainnet: over one 902-second snapshot interval (8,416 transactions), all 169 touched accounts matched the next snapshot to the tinybar. `replay.js` now applies a failed transaction's fee legs and no longer cross-checks `staking_reward_transfers`, which can be a tinybar off. Hedera cutoffs resolve with the adapter's block clock in `pull-holders-rpc.js` and `build-cutoffs.js`. `planPins` applies the "checkpoint past the settled block" rule only to forward-scanning VMs (EVM). A day ends at the last block before cutoff[D+1], as for EVM; that block can run a few milliseconds past 00:00 UTC. A settled mainnet run in a scratch worktree (block 102188882, 2,901 transactions replayed) stamped every HBAR feed settled for 2026-11-10, and `check-feed-alignment` reports ALIGNED. A first run's empty holder-transitions feed now carries the snapshot's `asOf`, so a new project's feeds align on day one. HBAR is still not registered.
 - **2026-11-11: HBAR through the one-shot path, slice 4: treasury, WHBAR and a supply breakdown that sums to 50B (#180).** `npm run onboard -- --chain hedera` onboards a chain's native coin (no contract): supply and decimals from the mirror node, CoinGecko by coin id. With `--write` it also applies `nativeClassification()` from the Hedera adapter: 551 network treasury accounts (`scripts/lib/hedera/treasury.js`), WHBAR as `dex`, `treasury.categories`, a 180-minute job limit. `scanChain` keeps role-tagged contracts and records the HBAR it leaves out (`unlistedRawTotal`), which reconcile-supply reports as `residualParts.unlisted`. Fixed: `normalizeValidAddress` rejected `0.0.N`, so exclusion, CEX and DEX loaders dropped every Hedera address. The onboarding orchestrator now stops, with a reason, before any workflow that cannot read the project's VM. On the real pipeline in a scratch worktree: retail 43.57B + treasury 5.80B + DEX 0.22B + unlisted 0.41B = 50B exactly. CEX list (owner decisions 2026-11-11): Bybit's proof-of-reserves account plus the HashPack wallet-support list as a lower-confidence tier and 0.0.652978 as Binance, 24 accounts seeded by `scripts/lib/hedera/cexAccounts.js` (research: `docs/hedera-cex-candidates.md`). HBAR is not registered; it still needs cutoffs, history replay, flows, staking, forensics and ledger (`tasks/hedera-plan.md` slices 5-8).
 - **2026-11-11: standalone flow scans commit the day cutoffs they create (#181).** A manual `generate-tier-outflows.yml` run for TEL (43021162173) scanned and then failed to push: the scan saved a new day cutoff to `date-blocks.json`, the commit step staged only its own feeds, and `git rebase` stopped on the unstaged file. `generate-tier-outflows.yml` and `scan-exchange-flows.yml` now stage `date-blocks.json` and push through `scripts/push-main.sh`, like the nightly. `scripts/cutoffCommits.test.js` fails any committing job that runs a cutoff-writing script without staging that file.

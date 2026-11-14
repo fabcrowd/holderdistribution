@@ -93,6 +93,17 @@ node scripts/generate-wallet-flows.js --dry-run --skip-sellers       # quick che
   receipts and follows one hop through deposit addresses. Expect small differences.
 - **Non-fatal.** On any error it leaves the previous file untouched and exits 0
   (`--strict` exits 1).
+- **Convergence (EVM).** The stored scan state is stamped with a hash of the sender set, the
+  token fingerprint and the logic version only (`scripts/lib/walletFlowsHash.js`). Labels, the
+  CEX and DEX lists, reconciliation categories and registry notes are applied when the report is
+  built, so changing them costs no rescan. A state stored under the old hash is adopted when its
+  inputs are unchanged. Progress is saved per segment and at `WALLET_FLOWS_MAX_MS` (the workflow
+  sets 40 minutes). A run that stops at the budget commits its state, writes no report, prints a
+  "partial" warning and step summary, and fails when the published report is already older than
+  the go-live limit (`MAX_REPORT_AGE_HOURS` in `scripts/lib/goLive.js`); a first scan with no
+  report yet stays green. Swap checks that gave up are retried from the leftover receipt budget.
+  After a merge that changes the logic, dispatch `refresh-wallet-flows.yml` for tel (again if it
+  ends partial).
 - Edit labels, sources, confidence, the bot cluster and watched sellers in
   `data/forensics/wallet-flows.registry.json`, not in the generated report.
 - **Schedule:** `.github/workflows/refresh-wallet-flows.yml` runs **daily** (13:41 UTC) and on
@@ -120,6 +131,41 @@ node scripts/generate-wallet-flows-solana.js --project <slug>                   
 - **Sales tracing (Solana):** when a registry wallet sends the token to a DEX, the scan reads every token balance change of the same transaction (no program parsing) and records the sale: what came back (USDC/USDT, or SOL from native lamports plus wSOL), then follows the proceeds' token account for onward sends. Outflows to unlabelled wallets are also followed one more hop (`WALLET_FLOWS_TRACE_DEPTH`, default 1, max 2). Two optional report sections hold the result and are hidden in the panel when empty: `salesJournal` (last 50 sales, ZBCN sold, proceeds, effective price, onward status) and `unlabelledTrace` (top 25 unlabelled destinations with where the funds went next). Stablecoins count 1 USD; SOL is valued at report time with the CoinGecko `solana` price (`valuedAtReportTime`); other mints stay unpriced. Native SOL proceeds are not followed onward (shown as "Not tracked"). A destination with more than 100 new signatures is marked "busy" (probably an exchange or a program): label it in the registry or CEX list instead of tracing it.
 - **Sales tracing caps:** `WALLET_FLOWS_FOLLOW_MAX_CALLS` (300 calls per run, counted exactly), `WALLET_FLOWS_FOLLOW_MAX_TASKS` (40), `WALLET_FLOWS_FOLLOW_MAX_TX` (30 per task), `WALLET_FLOWS_SALE_DEPTH` (2), `WALLET_FLOWS_TRACE_MIN_TOKENS` (100,000 tokens), `WALLET_FLOWS_FOLLOW_MAX_MS` (10 min, separate from the scan budget). State lives in `wallet-flows-state.json` (`sales`, `follow.tasks`, `follow.hops`; additive, older state files load as they are). Heuristic caveats: aggregator and multi-hop routes can credit a different owner than the wallet, and unrelated tokens received in the same transaction count as proceeds.
 - **Workflow:** `refresh-wallet-flows.yml` runs the Solana generator after the EVM one. The daily schedule runs every project in `config/projects.json`, and a missing or stale report turns that project's job red.
+
+### Hedera (HBAR)
+
+HBAR is not registered; this path is built and tested locally and has not run on GitHub.
+
+```bash
+node scripts/init-forensics-registry.js --project <slug>      # registry from the project's treasury accounts
+node scripts/generate-wallet-flows-hedera.js --project <slug> [--as-of YYYY-MM-DD]
+```
+
+- **Traced:** every HBAR transfer sent in the last 90 days by the project-controlled treasury
+  accounts of its `exclusions.json` (547 for HBAR as scaffolded). The mirror node lists a
+  contiguous run of account ids as one stream, so idle accounts cost no requests. A record
+  touching several senders is read once, by the stream holding the lowest id. Fees, staking
+  rewards and failed transactions are not outflows. The window ends at the settled consensus end
+  of the target day, the same boundary as the holders snapshot.
+- **Not traced:** the network accounts 0.0.98 (fees), 0.0.800 and 0.0.801 (staking and node rewards)
+  because protocol payments touch most of the ledger, and 0.0.54, a network administration account
+  holding about 100 HBAR whose file-update records (estimated 5.6 million in 90 days, no HBAR
+  movement) would need about 56,000 mirror pages. They stay treasury for supply, are listed under
+  the registry's `notTraced`, and are named in the report notes. Treating 0.0.54 this way is
+  pending owner review. A transfer to one of these accounts counts as internal.
+- **Labels:** raw events (sender, recipient, tinybar, consensus stamp) are stored and labelled
+  when the report is built, in this order: CEX list, DEX list (WHBAR counts as DEX, with no
+  look-through to its holders), staking, internal (another treasury account), unlabelled. The
+  five kinds sum to the total outflow. The stored scan depends on the sender set only, so a
+  list change never rescans.
+- **Not done:** onward tracing of unlabelled recipients (the report says so), swap decoding, a bot cluster.
+- **Exit states.** Exactly one of: complete (report written, exit 0); budget
+  (`HEDERA_WALLET_FLOWS_MAX_MS`, workflow sets 40 minutes: cursors saved, no report, exit 0,
+  `partial=true`); error (a stream still failing after retries, an out-of-order row, a failed
+  validation: last consistent state saved, previous report kept, exit 1, `partial=true`). There is
+  no soft exit 0. `refresh-wallet-flows.yml` commits a partial state and applies the same
+  stale-report rule as EVM.
+- **Amounts:** sums stay BigInt tinybar until one exact decimal conversion.
 
 ## Backfill via SQD Portal
 
