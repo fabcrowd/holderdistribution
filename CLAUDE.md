@@ -4,6 +4,8 @@
 
 Never create a branch, commit or push unless the owner explicitly says so. Edit locally, show the diff, stop. Approval of a plan, a placement or "do it" is not approval to commit.
 
+**Exception, onboarding (owner, 2026-11-14):** when the owner names a coin to onboard, that request approves the scaffold PR, its merge, the workflow dispatches and the fix PRs the runner asks for (`.claude/skills/onboard-project/SKILL.md`). Anything outside the onboarding still needs a separate go-ahead.
+
 **README rule (owner, standing):** every PR that is pushed must update `README.md` in the same PR: the project list, the layout map, and "Recent work" with the merged PR numbers and what changed. A PR without that update is not ready to push.
 
 ---

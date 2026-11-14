@@ -1,23 +1,47 @@
 ---
 name: onboard-project
-description: Runbook to onboard a new token (EVM, Solana) into Holder Distribution from its contract address or mint. One answers file holds all judgement; one scaffold command, one workflow dispatch and one local check do the rest. Use when the owner gives a contract address or mint and wants it on the site.
+description: Runbook to onboard a new token (EVM, Solana, HBAR) into Holder Distribution from a name, ticker, contract address or mint. One answers file holds all judgement; one scaffold command, one PR, one workflow dispatch and one local check do the rest. Use when the owner names a coin (name, ticker, address or mint) and wants it on the site.
 ---
 
 # Onboard a token
 
-Input: a contract address or mint. Output: a `/<slug>` page where `npm run onboard:check -- --project <slug>` passes, plus a real visual check.
+Input: a name, ticker, contract address or mint. Output: a `/<slug>` page where `npm run onboard:check -- --project <slug>` passes, plus a real visual check.
+
+## Start to finish (what the owner expects)
+Owner, 2026-11-14: "the next time we onboard, it's a one shot where I just tell you the name or ticker and you know how to do it all." So: no questions about how; this file is the how, and naming the coin is the go-ahead for its PR, merge and dispatches (see "Rules that hold in every step"). Stop only for the one owner-question pass (if something is truly unsettled), staking `"unresolved"`, and anything outside the onboarding.
+
+Order of work, with the commands that are not in the steps below:
+1. **Resolve** the name or ticker to an address (Step 0).
+2. **Preflight.** `git status` clean, on `main`, `git pull --ff-only`. `gh run list --limit 10`: nothing may be running or queued in the `holders-refresh` group (holders, ledger, watchdog, wallet flows, CEX sync all share it; GitHub keeps one running and ONE pending run per group, and a third arrival cancels the pending one). Check the clock: the nightly slot is 01:07 UTC and GitHub creates it hours late (it has landed 05:00 to 10:00 UTC). An onboarding run holds that group for its whole length, so start it only when it will finish before then, or after the nightly has landed. HBAR's two full balance scans take about 67 to 93 minutes each (measured locally).
+3. **Steps 1 to 3** (discovery, answers, scaffold). Research goes to Sonnet helpers; every address is verified character by character.
+4. **Local gates:** `npx vitest run`, `npm run typecheck`, `npm run lint`, `npm run check:feeds`. `check:feeds` must pass for every existing token and fail ONLY for the new slug with `ENOENT` on its feeds (it has none yet). Any other failure is real. If `src/lib/projects.test.ts` fails with a stale project list, see Known traps.
+5. **PR.** Branch `feat/onboard-<slug>` from `main`. Update `README.md` in the same commit (project list, layout map, first bullet under "Recent work" with the PR number; the next number is the highest issue/PR number plus one: `gh api "repos/fabcrowd/holderdistribution/issues?state=all&per_page=1&sort=created&direction=desc" --jq '.[0].number'`; check it after `gh pr create`). Commit identity through env vars on the command (`GIT_AUTHOR_NAME=fabcrowd GIT_AUTHOR_EMAIL="226306925+fabcrowd@users.noreply.github.com"` and the same two `GIT_COMMITTER_*`), never `git config`, no Claude trailer, no Claude line in the PR body. The PR body says that `verify` is expected red at `npm run check:feeds`.
+6. **Merge.** Wait for checks. `verify` is red; confirm with `gh run view <id> --log-failed` that the only failing step is `npm run check:feeds` and the only `FAIL` lines are the new slug's missing feeds (ONDO #130 and HBAR #184 merged this way). Then `gh pr merge <n> --squash --delete-branch`. If `main` moved (data commits land all day), merge `main` into the branch; a `README.md` conflict under "Recent work" is resolved by keeping both bullets, newest first.
+7. **Step 4** (dispatch with `--ref main`) and watch it. Each stop prints `Fix:`; each fix is its own small PR through 4 to 6 above, then dispatch again.
+8. **Step 5** (gates, visual check, verifier, report). Confirm `npm run check:feeds` is green on `main` again. Tell the owner the Netlify deploy is theirs: config and UI reach the browser only then.
+9. **Write it down:** this file (anything that was different from what it says), `README.md`, `.claude/HANDOFF.md`, `tasks/lessons.md`.
+
+Do not dispatch `refresh-holders.yml` by hand for a token whose nightly has already run that day: on 2026-11-14 a second run on the same day published `cex-flows.json` with no comparison (it has no previous snapshot). Check `gh run list --workflow refresh-holders.yml` first.
+
+## Step 0. From a name or ticker
+1. Search CoinGecko: `https://api.coingecko.com/api/v3/search?query=<name or ticker>`. Take the coin whose name or symbol matches exactly; if several match, the one with the best `market_cap_rank`. Say which you picked and why. Ask the owner only if two different coins are equally plausible.
+2. Read `https://api.coingecko.com/api/v3/coins/<id>?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`. `platforms` lists the contract address or mint per chain. Cross-check the address on the project's own site or docs before using it; an address from one source is not verified.
+3. Pick the origin chain: the chain the token was first issued on (the project's docs say so; a bridged copy is a mirror). That address goes to Step 1. The other chains' addresses are `include` candidates (Step 2).
+4. What can be onboarded: an EVM token (chains in `config/chains.json`), a Solana SPL or Token-2022 mint, and HBAR (`npm run onboard -- --chain hedera`, see "Hedera"). What cannot, yet: any other native coin (BTC, ETH, SOL itself), a Hedera token (`0.0.N`), a token on a VM with no adapter. Say so in one line and stop; building a new adapter is a separate job the owner decides.
+5. Already in `config/projects.json`? Then it is a rerun: go to Step 4.
 
 ## The flow
 1. `npm run onboard -- --address <addr>` runs discovery and writes an answers template to `tasks/onboard-<slug>.answers.json`. It writes nothing tracked.
 2. Fill the answers file (every `FILL_ME`). Check it with `npm run onboard -- --address <addr> --answers <file>` (dry run, prints the validation errors).
-3. `npm run onboard -- --address <addr> --answers <file> --write`. Show the diff. The owner merges the PR (README updated in it).
+3. `npm run onboard -- --address <addr> --answers <file> --write`. Open the PR (README updated in it) and merge it once the checks are as expected.
 4. `gh workflow run onboard-project.yml -f project=<slug>`. After every stop, fix it and dispatch again; it resumes where it stopped.
 5. `npm run onboard:check -- --project <slug>`, then the visual check, then the report.
 
 The answers file is the ONLY place judgement goes. Never hand-edit `config/projects/<slug>.json`, the ledger, exclusions, CEX list or wallet registry for anything the answers file covers: edit the answers, re-run step 3 (it merges, no `--force`). Every stop prints a `Fix:` block. Follow it literally. Example of a complete file: `config/onboarding.answers.example.json` (fictional addresses).
 
 ## Rules that hold in every step
-- No branch, commit or push unless the owner says so. Edit locally, show the diff, stop. When told to commit: author and committer `fabcrowd` + the GitHub noreply email through env vars, no Claude trailer, one PR that also updates `README.md` (project list, layout map, "Recent work").
+- When the owner names a coin to onboard, that request approves the scaffold PR, its merge, the workflow dispatches and the fix PRs the runner asks for. Anything outside the onboarding still needs a separate go-ahead.
+- Every commit: author and committer `fabcrowd` + the GitHub noreply email through env vars, no Claude trailer, one PR that also updates `README.md` (project list, layout map, "Recent work").
 - Only verified addresses. Never guess a wallet, label or confidence. Every decision gets evidence (a URL or one sentence).
 - Never use `--force` (needs `ONBOARD_FORCE=<slug>`; it rewrites every scaffold file).
 - Never print RPC URLs, keys or secrets. Name env vars only.
@@ -33,7 +57,7 @@ The answers file is the ONLY place judgement goes. Never hand-edit `config/proje
 **Stop if:** decimals or supply cannot be read. If public nodes fail (SSL or 429), set `PUBLIC_RPC_URLS_<CHAIN>=<url>` and rerun. Copies on other chains are listed in `$includeCandidates`.
 
 ## Owner questions (one pass, before Step 2)
-One AskUserQuestion call, max 4 questions, recommended default first, only for what discovery could not settle: slug, name or ticker if ambiguous; which chains go in `include`; every `low` confidence row (see wallets below). Everything else is an assumption in the report. Ask once, before `--write`. If nobody can answer, leave `low` rows out of the answers file and list them in your final report. Any that hold more than 1% of supply come back through the `large-holders` step.
+If nothing is unsettled, ask nothing. Otherwise one AskUserQuestion call, max 4 questions, recommended default first, only for what discovery could not settle: slug, name or ticker if ambiguous; which chains go in `include`; every `low` confidence row (see wallets below). Everything else is an assumption in the report. Ask once, before `--write`. If nobody can answer, leave `low` rows out of the answers file and list them in your final report. Any that hold more than 1% of supply come back through the `large-holders` step.
 
 ## Step 2. Fill the answers file
 Work through the sections below. Delete the `FILL_ME` example row in `wallets`. Fields starting with `$` are ignored. Evidence means a URL or a sentence naming what you searched.
@@ -90,7 +114,7 @@ Wallets already labelled non-retail never reach the review.
 **Pass:** no validation error; `git status` shows the new files. The scaffold prints the next steps: run `npx vitest run scripts/lib` and `npm run typecheck`, show the diff, the owner merges one PR that updates `README.md`, then `gh workflow run onboard-project.yml -f project=<slug>`, then `npm run onboard:check -- --project <slug>`. It also prints what is still manual: verify every address, add the token image if discovery found none, an optional `botCluster` in `config/projects/<slug>/ledger.json`, and a `nightly.waivers.<jobId>` reason or the missing capability for any nightly job it lists as "n/a". The runner does everything else (Developer wallets tab, go-live, clearing `onboarding`).
 Re-applying a changed answers file prints `reclassified <addr>: <old> -> <new>`, `removed <file>: <addr>` and `WARNING kept hand-written <file>: <addr>`. A hand-written row is never overwritten: fix the answers or the hand-written row.
 **Stop if:** validation lists errors (each names the field and allowed values). Fix the answers, rerun.
-Then show the diff and stop for the owner to merge.
+Then go on to the local gates, PR and merge ("Start to finish", 4 to 6).
 
 ## Step 4. Dispatch
 **Do:** `gh workflow run onboard-project.yml -f project=<slug>`. Watch with `gh run list --workflow onboard-project.yml --limit 3`. `npm run onboard:run -- --project <slug> --dry-run` prints the checklist and next step from `origin/main` (uncommitted local config is invisible to it). Add `--local` (dry run only) to evaluate the same plan on the working tree instead: `npm run onboard:run -- --project <slug> --dry-run --local`. `npm run onboard:check` runs the gates on local state.
@@ -123,7 +147,7 @@ Every stop ends with `Fix:`. Do what it says, merge to `main`, dispatch again.
 ## Hedera (HBAR, the native coin)
 HBAR is registered as onboarding (2026-11-13). Its path is built and tested locally; nothing is proven on GitHub until `onboard-project.yml` has run for it. It has no contract, so it has no answers file and no owner question pass.
 1. `npm run onboard -- --chain hedera` (dry run), then the same with `--write`. `0.0.N` addresses are Hedera tokens and are refused. The scaffold reads supply and decimals from the mirror node and writes the registry entry (`onboarding: true`), the project config, ledger config, exclusions (network treasury accounts, 0.0.98, 0.0.800, 0.0.801), WHBAR as role `dex`, the CEX list (24 seeded accounts, `scripts/lib/hedera/cexAccounts.js`; research in `docs/hedera-cex-candidates.md`), the forensics registry, `treasury.categories ["treasury"]`, a 180-minute job limit and the image. Owner decisions (`historyStart` forward-only, `largeHolders` rows) live in `scripts/lib/hedera/nativeDecisions.js`, not in the config.
-2. Show the diff; the owner merges; `gh workflow run onboard-project.yml -f project=<slug>`.
+2. PR and merge ("Start to finish", 4 to 6); `gh workflow run onboard-project.yml --ref main -f project=<slug>`.
 3. Runner steps that apply: snapshot, large-holders, tiers and sizing, mega-threshold, snapshot on those tiers, exchange flows, tier outflows, wallet flows, ledger, Developer wallets tab, strict alignment, go-live, list-on-site. They do not apply: CEX sync (list comes from the scaffold), CEX candidate review (Solana only), history and treasury/CEX history (forward-only), staker balances.
 4. A `large-holders` stop for HBAR says to add a row to `HEDERA_LARGE_HOLDERS` in `scripts/lib/hedera/nativeDecisions.js` (a code edit, then merge).
 
@@ -151,6 +175,12 @@ Spawn the `verifier` agent with the 5a and 5b results; it is read-only. Fix what
 - `breaksSeries` daggers every Distribution Change cell: never use it to explain a bug.
 - A helper-run rebuild crossing UTC midnight writes a row that disagrees with the snapshot: regenerate through the workflow.
 - CI after data commits on `main`: `gh pr update-branch <n>`; a plain rerun reuses the old merge commit.
+- `verify` is red on `main` from the scaffold merge until the token's first feeds are committed (`check:feeds` finds no feeds for it). Expected; it must turn green after the onboarding run.
+- A stale project list in local tests after adding a token (`projects.test.ts` fails, CI passes): vitest's on-disk module cache skips only files containing the exact text `import.meta.glob(`. Never write `import.meta.glob<T>(`; a test rejects it under `src/`.
+- Two holders runs for one token on one day: the second has no previous snapshot (`<x>-holders-previous.json` is a same-run scratch file), so before the same-day gate it published `cex-flows.json` with `comparison.available: false` and `check:feeds` still passed. GitHub's scheduled run can arrive hours after a manual one. Check `gh run list --workflow refresh-holders.yml` before any manual dispatch.
+- A "labelled wallet absent from today's snapshot" failure in "Append today's treasury balances" is not proof of a drain: check which previous snapshot the guard read (2026-11-14: a stale tracked `public/data/tel-holders-previous.json` on a second same-day run). Do not add the address to `treasury.allowVanished` without an on-chain check.
+- An onboarding run in flight uses the `onboardRun.js` it started with. Do not merge a change to `refresh-holders.yml` inputs or to the runner while one is running.
+- The auto-mode classifier can refuse a `gh workflow run`. Do not work around it: tell the owner and give them the command.
 - A helper's finding is a claim: reproduce it in code or browser before acting.
 - Tests that copy numbers from a feed go red within hours: assert shape.
 - Not built yet: one address-array scan per chain across EVM projects, EVM sales tracing, a Solana CEX detector, a per-project budget block, a mixed EVM+Solana forensics merge (both generators write one report path), and for Hedera: DEX/WHBAR look-through, swap decoding, onward-hop tracing of unlabelled recipients, history before the first snapshot, tracing of 0.0.54 and the protocol accounts.
