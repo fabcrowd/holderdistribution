@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { TokenIdentity } from "@/components/TokenIdentity";
+import { TokenSwitcher } from "@/components/TokenSwitcher";
 import { useProject } from "@/hooks/useProject";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { AnswerCards } from "./AnswerCards";
@@ -49,14 +49,14 @@ type Props = {
 };
 
 /**
- * Desktop (>=1280px) shell: one 64px title bar carrying the brand (site mark +
+ * Desktop (>=1280px) shell: one 56px title bar carrying the brand (site mark +
  * "Holder Distribution" h1, plus a stale pill only when the refresh is behind),
- * the view switch, and every control, with the open token's mark beside the
- * chain and timeframe pickers; then three answer cards (holders, held, on
- * exchanges); then the view.
+ * the token switcher, the view switch, and every control, with the chain and
+ * timeframe pickers; then the answer strip (holders, held, on exchanges); then
+ * the view.
  * Holders dashboard and Distribution scroll this region so charts can be
  * taller than the fold. Supply and Explore still fill the viewport and
- * scroll inside their panels. A 24px status line stays pinned, with the
+ * scroll inside their panels. A 28px status line stays pinned, with the
  * shared legal disclaimer directly under it.
  */
 export const TerminalDashboard = ({
@@ -104,16 +104,16 @@ export const TerminalDashboard = ({
           Skip to main content
         </a>
         <header
-          className={`relative flex h-16 shrink-0 items-center gap-3 ${intro ? "ha-fade-in" : ""} border-b border-border bg-card px-3 shadow-[0_1px_0_0_hsl(var(--border))] 2xl:gap-5 2xl:px-4`}
+          className={`relative flex h-14 shrink-0 items-center gap-3 ${intro ? "ha-fade-in" : ""} border-b border-border bg-card px-3 shadow-[0_1px_0_0_hsl(var(--border))] 2xl:gap-5 2xl:px-4`}
           data-testid="terminal-header"
         >
           {/* Brand accent: a 2px primary rule across the top of the bar so the
               header reads as the portal's title bar, not another panel. */}
           <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary via-primary/70 to-[hsl(var(--ha-accent))]" />
           <div className="flex shrink-0 items-center gap-2">
-            <h1 className="whitespace-nowrap text-[clamp(1.2rem,1.6vw,1.8rem)] font-extrabold tracking-tight text-foreground">
+            <h1 className="ha-display whitespace-nowrap text-lg text-foreground">
               <Link to="/" aria-label="Holder Distribution home" className="flex items-center gap-3 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                <img src={logoIcon} alt="" width={64} height={64} className="h-[clamp(2.5rem,3.5vw,3.5rem)] w-[clamp(2.5rem,3.5vw,3.5rem)]" />
+                <img src={logoIcon} alt="" width={32} height={32} className="h-8 w-8" />
                 Holder Distribution
               </Link>
             </h1>
@@ -127,17 +127,19 @@ export const TerminalDashboard = ({
                 title="The daily refresh is behind."
                 className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-px text-xs font-semibold leading-none ${
                   fresh.status === "stale"
-                    ? "border-red-500/50 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300"
-                    : "border-amber-500/50 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                    ? "border-negative/50 bg-negative-tint text-negative"
+                    : "border-warning/50 bg-warning-tint text-warning"
                 }`}
               >
                 <Clock className="h-2.5 w-2.5" aria-hidden="true" />
                 {fresh.status === "stale" ? "Stale" : "Delayed"}
               </span>
             )}
+            <span aria-hidden="true" className="select-none text-xl font-light text-border-strong">/</span>
+            <TokenSwitcher />
           </div>
 
-          <nav aria-label="Views" className="flex shrink-0 items-center rounded-md border border-border bg-muted/50 p-0.5">
+          <nav aria-label="Views" className="flex shrink-0 items-center gap-0.5 rounded-md bg-surface-sunken p-0.5 ring-1 ring-inset ring-border">
             {VIEWS.map((v) => {
               const active = v.id === view;
               return (
@@ -149,11 +151,11 @@ export const TerminalDashboard = ({
                     e.preventDefault();
                     onViewChange(v.id);
                   }}
-                  className={`inline-flex h-9 items-center gap-1.5 rounded px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    active ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  className={`inline-flex h-8 items-center gap-1.5 rounded px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    active ? "bg-card font-semibold text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <v.icon className="hidden h-3.5 w-3.5 2xl:block" aria-hidden="true" />
+                  <v.icon className={`h-3.5 w-3.5 ${active ? "text-primary" : ""}`} aria-hidden="true" />
                   {v.label}
                 </a>
               );
@@ -161,7 +163,6 @@ export const TerminalDashboard = ({
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            <TokenIdentity iconOnly className="mr-1" />
             <label className="sr-only" htmlFor="terminal-chain">
               Chain
             </label>
@@ -169,7 +170,7 @@ export const TerminalDashboard = ({
               id="terminal-chain"
               value={selectedView}
               onChange={(e) => onSelectedViewChange(e.target.value as DisplaySelection)}
-              className="h-9 rounded-full border border-border bg-card px-3 text-[13px] font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-9 rounded-md border border-border bg-card px-2.5 text-[13px] font-medium text-foreground hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {CHAINS.map((c) => (
                 <option key={c.key} value={c.key}>
@@ -220,7 +221,7 @@ export const TerminalDashboard = ({
         </header>
 
         {!explore && !mainScrolls && (
-          <div data-testid="terminal-headline" className="shrink-0 border-b border-border bg-background px-3 py-3">
+          <div data-testid="terminal-headline" className="shrink-0 border-b border-border bg-background px-3 py-2.5">
             <AnswerCards tiles={tiles} selectedView={selectedView} isError={isError} />
           </div>
         )}
@@ -231,7 +232,7 @@ export const TerminalDashboard = ({
           className={`relative min-h-0 flex-1 p-3 focus:outline-none ${mainScrolls ? "overflow-y-auto" : "overflow-hidden"}`}
         >
           {!explore && mainScrolls && (
-            <div data-testid="terminal-headline" className="-mx-3 -mt-3 mb-3 border-b border-border bg-background px-3 py-3">
+            <div data-testid="terminal-headline" className="-mx-3 -mt-3 mb-3 border-b border-border bg-background px-3 py-2.5">
               <AnswerCards tiles={tiles} selectedView={selectedView} isError={isError} />
             </div>
           )}
@@ -241,7 +242,7 @@ export const TerminalDashboard = ({
         </main>
 
         <footer className="shrink-0 border-t border-border bg-card text-xs text-muted-foreground">
-          <div className="flex h-6 items-center gap-3 px-3">
+          <div className="flex h-7 items-center gap-3 px-3">
             {fresh.status === "unknown" && isError ? (
               <span role="alert" className="inline-flex items-center gap-2 font-semibold text-destructive">
                 Couldn&apos;t load the holder snapshot.

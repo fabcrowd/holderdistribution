@@ -134,7 +134,7 @@ const Metric = ({
   hint?: string;
 }) => (
   <div className="rounded-lg border border-border/50 bg-background/60 px-3 py-2">
-    <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+    <p className="flex items-center gap-1 text-xs text-muted-foreground">
       {label}
       {hint ? <InfoTooltip text={hint} /> : null}
     </p>
@@ -152,7 +152,7 @@ const DetailBlock = ({
   children: ReactNode;
 }) => (
   <Collapsible defaultOpen={defaultOpen} className="rounded-lg border border-border/40">
-    <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-foreground hover:bg-muted/40">
+    <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-muted/40">
       {title}
       <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
     </CollapsibleTrigger>
@@ -229,7 +229,7 @@ export const BurnForecastView = ({
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-border/50 bg-background/60 px-3 py-3">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">Operating runway</p>
+        <p className="text-xs text-muted-foreground">Operating runway</p>
         <p className="mt-0.5 text-2xl font-semibold tabular-nums text-foreground">
           {formatRunway(forecast)}
         </p>
@@ -294,7 +294,7 @@ export const BurnForecastView = ({
 
       <article className="space-y-2 rounded-lg border border-border/40 px-3 py-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+          <h4 className="text-xs font-semibold text-foreground">
             Cash remaining
           </h4>
           <div className="flex flex-wrap gap-3">
@@ -355,7 +355,7 @@ export const BurnForecastView = ({
       <div className="grid gap-3 lg:grid-cols-2">
         <article className="space-y-2 rounded-lg border border-border/40 px-3 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+            <h4 className="text-xs font-semibold text-foreground">
               Monthly spend
             </h4>
             <ChartLegend items={SPEND_LEGEND} hidden={spendToggle.hidden} onToggle={spendToggle.toggle} />
@@ -412,7 +412,7 @@ export const BurnForecastView = ({
 
         <article className="space-y-2 rounded-lg border border-border/40 px-3 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+            <h4 className="text-xs font-semibold text-foreground">
               Last three months
             </h4>
             <ChartLegend items={ACTUALS_LEGEND} hidden={actualsToggle.hidden} onToggle={actualsToggle.toggle} />
@@ -444,7 +444,7 @@ export const BurnForecastView = ({
 
       <div className="grid gap-3 lg:grid-cols-2">
         <article className="space-y-2 rounded-lg border border-border/40 px-3 py-2.5">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+          <h4 className="text-xs font-semibold text-foreground">
             Opening cash walk
           </h4>
           <ChartContainer config={bridgeConfig} className={`${CHART_HEIGHT_CLASS.compact} w-full aspect-auto`}>
@@ -472,7 +472,7 @@ export const BurnForecastView = ({
         </article>
 
         <article className="space-y-2 rounded-lg border border-border/40 px-3 py-2.5">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+          <h4 className="text-xs font-semibold text-foreground">
             Bills due now
           </h4>
           {mixTotal > 0 ? (

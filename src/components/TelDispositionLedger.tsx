@@ -9,6 +9,7 @@ import { BurnForecastView } from "@/components/BurnForecastView";
 import { DispositionPnlView } from "@/components/DispositionPnlView";
 import { SubPanelTabs } from "@/components/SubPanelTabs";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { COMPACT_LEDGER, formatCompact } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { TabsContent } from "@/components/ui/tabs";
 import {
@@ -148,12 +149,7 @@ const useTelDispositionLedger = (password: string | null, unlocked: boolean, slu
     retry: false,
   });
 
-const formatCompactAmount = (value: number) => {
-  if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
-  if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-  return new Intl.NumberFormat().format(Math.round(value));
-};
+const formatCompactAmount = (value: number) => formatCompact(value, COMPACT_LEDGER);
 
 const formatUsd = (value: number) =>
   new Intl.NumberFormat(undefined, {
@@ -323,7 +319,7 @@ const MetricTile = ({
   hint?: string;
 }) => (
   <div className="rounded-lg border border-border/50 bg-background/60 px-3 py-2">
-    <p className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+    <p className="flex items-center gap-1 text-xs text-muted-foreground">
       {label}
       {hint ? <InfoTooltip text={hint} /> : null}
     </p>
@@ -333,7 +329,7 @@ const MetricTile = ({
 
 const WhereStablecoinWentBuckets = ({ buckets }: { buckets: WhereStablecoinWentBucket[] }) => (
   <article className="space-y-2">
-    <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">Where stablecoin went</h4>
+    <h4 className="text-xs font-semibold text-foreground">Where stablecoin went</h4>
     <p className="text-xs text-muted-foreground">
       USDC and USDT received from TEL sales in this period — whether it stayed in the selling wallet or was
       paid out. Expand a line for payees, transaction count, and dollar totals.
@@ -408,7 +404,7 @@ const WhereStablecoinWentBuckets = ({ buckets }: { buckets: WhereStablecoinWentB
 
 const WhereTelWentBuckets = ({ buckets }: { buckets: WhereTelWentBucket[] }) => (
   <article className="space-y-2">
-    <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">Where TEL went</h4>
+    <h4 className="text-xs font-semibold text-foreground">Where TEL went</h4>
     <p className="text-xs text-muted-foreground">
       All TEL that left Association wallets in this period — sold for stablecoin or transferred.
       Expand a line for destinations, transaction count, and totals.
@@ -482,7 +478,7 @@ const ChainRail = ({
   data: TelDispositionLedgerReport["polygon"];
 }) => (
   <article className="space-y-2 rounded-lg border border-border/40 bg-background/40 p-3">
-    <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">{title}</h4>
+    <h4 className="text-xs font-semibold text-foreground">{title}</h4>
     <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
       <div className="flex justify-between gap-2">
         <dt className="text-muted-foreground">Stablecoin received</dt>
@@ -726,7 +722,7 @@ export const TelDispositionLedger = () => {
 
           <article className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+              <h4 className="text-xs font-semibold text-foreground">
                 Sales journal ({filteredSells.length})
               </h4>
               <select

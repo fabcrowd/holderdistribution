@@ -41,11 +41,22 @@ export const subtractTerms = (subtract: readonly string[], association: string):
 /**
  * One-sentence definition shown beside the Circulating figure, generated from
  * the same list reconcile-supply subtracts so the copy cannot drift.
+ * `projectCategories` is the project's own declared developer-holdings category
+ * keys; the "(committed escrow)" note applies only when it declares `escrow`.
+ * `balances` is the feed's category totals; when given, only subtract terms
+ * with a balance above 0 are named (same rule circulatingFormula applies).
  */
-export const circulatingDefinition = (subtract: readonly string[], association: string): string => {
-  const terms = subtractTerms(subtract, association);
+export const circulatingDefinition = (
+  subtract: readonly string[],
+  association: string,
+  projectCategories: readonly string[] = [],
+  balances?: Record<string, number> | null,
+): string => {
+  const held = balances ? subtract.filter((k) => (balances[k] ?? 0) > 0) : subtract;
+  const terms = subtractTerms(held, association);
   const base = terms.length
     ? `Circulating = counted supply − ${terms.join(" − ")}`
     : "Circulating = counted supply";
-  return `${base}, less any wallet-level non-circulating override (committed escrow).`;
+  const escrowNote = projectCategories.includes("escrow") ? " (committed escrow)" : "";
+  return `${base}, less any wallet-level non-circulating override${escrowNote}.`;
 };

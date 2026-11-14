@@ -1,3 +1,5 @@
+export const SITEMAP_BASE_URL = "https://holderdistribution.com";
+
 /** Sitemap for holderdistribution.com: the landing page plus one /<slug> per mapped token. */
 export function buildSitemap({ baseUrl, slugs, today }) {
   const base = baseUrl.replace(/\/+$/, "");

@@ -3,7 +3,13 @@ import type { LegendItem } from "@/components/chart/ChartLegend";
 import { useMemo, useState, Fragment, type ReactNode } from "react";
 import { useProjectCopy, type UseProjectCopy } from "@/hooks/useProjectCopy";
 import { useProject } from "@/hooks/useProject";
-import type { TierRange } from "@/lib/holderTiers";
+import { bucketFloor, type HolderTiers, type TierRange } from "@/lib/holderTiers";
+import { chainExplorerLink, chainForAddress } from "@/lib/explorerLinks";
+import type { ProjectChain } from "@/lib/projects";
+
+/** The project's smallest bucket floor as text ("1" for TEL), for the dust-exclusion notes. */
+const dustFloorText = (tiers: HolderTiers): string =>
+  new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(bucketFloor(tiers));
 import {
   Card,
   CardContent,
@@ -16,8 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SubPanelTabs } from "@/components/SubPanelTabs";
 import { HOLDER_EXPLORE_PANELS } from "@/lib/terminalCopy";
-import { formatSourceLabel, formatCompact } from "@/lib/format";
-import { v3StakingGapEvents } from "@/lib/staking";
+import { COMPACT_TOKEN_AMOUNT, formatSourceLabel, formatCompact } from "@/lib/format";
+import { networkStakeOf, v3StakingGapEvents } from "@/lib/staking";
 import { barSizing, computeYAxisFromRows } from "@/lib/chartAxes";
 import { TabsContent } from "@/components/ui/tabs";
 import {
@@ -60,6 +66,7 @@ import { feedAsOf, type FeedAsOf } from "@/hooks/useFeedAsOf";
 import { useHolderGrowth } from "@/hooks/useHolderGrowth";
 import { RANGE_OPTIONS } from "@/lib/timeRange";
 import { pickBaseline, baselineLabel } from "@/lib/baseline";
+import { cexFlowsFallbackUsable } from "@/lib/cexComparison";
 import { type ClassificationEvent, useClassificationChangelog } from "@/hooks/useClassificationChangelog";
 import { pickWindowBaseline, settledEndMs, walletSetChangesFor } from "@/lib/settledEnd";
 import type { ClassificationChangelog } from "@/lib/classificationChangelog";
@@ -100,14 +107,7 @@ type DisplayResult = {
   uniqueWallets: number | null;
 };
 
-const formatTokenAmount = (value: number) => {
-  const absolute = Math.abs(value);
-  if (absolute >= 1e12) return `${(value / 1e12).toFixed(2)}T`;
-  if (absolute >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (absolute >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
-  if (absolute >= 1e3) return `${(value / 1e3).toFixed(2)}K`;
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
-};
+const formatTokenAmount = (value: number) => formatCompact(value, COMPACT_TOKEN_AMOUNT);
 
 const formatInteger = (value: number) => new Intl.NumberFormat().format(value);
 
@@ -221,6 +221,7 @@ const renderMetrics = (
   cexEvents?: ClassificationEvent[],
   retailBalanceEvents?: ClassificationEvent[],
   holderAthNote?: string | null,
+  rangeDays: number = 1,
 ) => {
   const previousHolderCount = historicalPrevious
     ? historicalPrevious.holderCount
@@ -299,7 +300,9 @@ const renderMetrics = (
     const currentBalance = cex.overall.currentBalance ?? 0;
     const previousBalance = cexPreviousOverride !== undefined
       ? cexPreviousOverride
-      : (cex.overall.previousBalance ?? null);
+      : cexFlowsFallbackUsable(cex.comparison, rangeDays)
+        ? (cex.overall.previousBalance ?? null)
+        : null;
     items.push({
       label: "CEX Balance",
       value: formatTokenAmount(currentBalance),
@@ -331,7 +334,7 @@ const renderMetrics = (
           >
             <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-primary mb-2 sm:mb-3" />
             <div className="flex items-center gap-1.5 mb-3">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{item.label}</div>
+              <div className="text-xs text-muted-foreground font-semibold">{item.label}</div>
               {item.info && <InfoTooltip text={item.info} />}
             </div>
             {/* stack value + delta on narrow tiles so the chip can't clip the number */}
@@ -362,6 +365,14 @@ const renderMetrics = (
     </div>
   );
 };
+
+/** Configured Top-N buckets the feed has data for and that are smaller than the holder count. */
+export const shownConcentrationBuckets = (
+  buckets: readonly number[],
+  top: Record<string, number>,
+  holderCount: number | null | undefined,
+): number[] =>
+  buckets.filter((n) => String(n) in top && !(typeof holderCount === "number" && holderCount > 0 && n >= holderCount));
 
 const renderConcentration = (
   copy: UseProjectCopy,
@@ -395,20 +406,12 @@ const renderConcentration = (
       ? (historicalTop?.[String(n)] ?? 0)
       : (result.concentration.previousTop?.[String(n)] ?? 0);
 
-  const items = [
-    { label: "Top 10", value: currentTop(10), previousValue: hasPrevious ? previousTop(10) : null },
-    { label: "Top 25", value: currentTop(25), previousValue: hasPrevious ? previousTop(25) : null },
-    { label: "Top 50", value: currentTop(50), previousValue: hasPrevious ? previousTop(50) : null },
-    { label: "Top 100", value: currentTop(100), previousValue: hasPrevious ? previousTop(100) : null },
-  ];
-
-  const extendedItems = [
-    { label: "Top 250", value: currentTop(250), previousValue: hasPrevious ? previousTop(250) : null },
-    { label: "Top 500", value: currentTop(500), previousValue: hasPrevious ? previousTop(500) : null },
-    { label: "Top 1000", value: currentTop(1000), previousValue: hasPrevious ? previousTop(1000) : null },
-  ];
-
-  const allConcentrationItems = [...items, ...extendedItems];
+  // Buckets come from the project's config, kept only when the feed has data
+  // for them and they are smaller than the holder count (a Top-N covering
+  // every holder says nothing).
+  const holderCount = result.metrics.holderCount;
+  const allConcentrationItems = shownConcentrationBuckets(copy.tiers.concentrationBuckets, result.concentration.top, holderCount)
+    .map((n) => ({ label: `Top ${n}`, value: currentTop(n), previousValue: hasPrevious ? previousTop(n) : null }));
   const concentrationChartData = allConcentrationItems.map((item) => ({
     label: item.label,
     value: item.value,
@@ -455,14 +458,14 @@ const renderConcentration = (
         </div>
       )}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        {[...items, ...extendedItems].map((item) => {
+        {allConcentrationItems.map((item) => {
           const pct = supply > 0 ? (item.value / supply) * 100 : 0;
           const previousPct = previousSupply > 0 && item.previousValue !== null && item.previousValue !== undefined
             ? (item.previousValue / previousSupply) * 100
             : null;
           return (
             <div key={item.label} className={`premium-surface-card p-4 sm:p-6 flex flex-col items-center justify-center text-center ${TILE_HOVER}`}>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3">{item.label}</div>
+              <div className="text-xs text-muted-foreground font-semibold mb-3">{item.label}</div>
               <div className="flex items-center gap-2 mb-2 flex-wrap justify-center">
                 <div className="text-xl sm:text-3xl font-bold text-primary">{formatTokenAmount(item.value)}</div>
                 {/* The TEL amount held — real gain/loss, colored red/green */}
@@ -490,7 +493,7 @@ const renderConcentration = (
       </div>
       {concentrationChartData.some((d) => d.percent > 0) && (
         <div className="premium-surface-card p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 text-center">Top holders share of retail (% by tier)</p>
+          <p className="text-xs text-muted-foreground font-semibold mb-3 text-center">Top holders share of retail (% by tier)</p>
           <ChartContainer config={concentrationChartConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full`}>
             <BarChart data={concentrationChartData} margin={{ top: 12, right: 12, bottom: 24, left: 12 }} barCategoryGap={concentrationSizing.barCategoryGap}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
@@ -627,26 +630,16 @@ const fitLogNormalCurve = (buckets: { count: number }[], logMidpoints: number[])
   return raw.map((v) => Math.round((v / rawSum) * total * 1.05));
 };
 
-// Approximate log-midpoint for each of TEL's range labels (kept verbatim so
-// TEL's curve is unchanged). Other projects' `holders.balanceRanges` get the
-// geometric midpoint of [min, max) (open top bucket: min·√10) — logMidFor.
-const BUCKET_LOG_MIDS: Record<string, number> = {
-  "1–100": Math.log(10),
-  "100–1K": Math.log(316),
-  "1K–10K": Math.log(3162),
-  "10K–100K": Math.log(31623),
-  "100K–1M": Math.log(316228),
-  "1M–10M": Math.log(3162278),
-  "10M+": Math.log(31622776),
-};
-
-const logMidFor = (label: string, ranges: readonly TierRange[]): number => {
-  if (label in BUCKET_LOG_MIDS) return BUCKET_LOG_MIDS[label]!;
+// Log-midpoint of a range: the geometric midpoint of [min, max) rounded to a
+// whole token (open top bucket: min·10), computed from the range itself, never
+// from its label. For TEL's ranges this equals the log of the old hand-typed
+// midpoints (10, 316, 3162, 31623, 316228, 3162278, 31622776) to within 3e-8.
+export const logMidFor = (label: string, ranges: readonly TierRange[]): number => {
   const r = ranges.find((x) => x.label === label);
   if (!r) return 0;
   const lo = Math.max(r.min, 1);
   const hi = Number.isFinite(r.max) ? r.max : lo * 10;
-  return (Math.log(lo) + Math.log(hi)) / 2;
+  return Math.log(Math.round(Math.sqrt(lo * hi)));
 };
 
 // Display-only override, currently a no-op: BALANCE_RANGES' bottom bucket
@@ -722,7 +715,7 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
           {items.map((item) => (
             <div key={item.label} className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-lg:last:odd:col-span-2 ${TILE_HOVER}`}>
               <div className="flex items-center justify-center gap-1 mb-2">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{item.label}</div>
+                <div className="text-xs text-muted-foreground font-semibold">{item.label}</div>
                 {item.info && <InfoTooltip text={item.info} />}
               </div>
               <div className="text-xl font-semibold text-primary">{item.value}</div>
@@ -734,7 +727,7 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
         {/* Option B: Percentile ruler */}
         {percentiles.length > 0 && (
           <div className="premium-surface-card p-4 space-y-2">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-4 text-center">Percentile ruler — where holders rank by balance</p>
+            <p className="text-xs text-muted-foreground font-semibold mb-4 text-center">Percentile ruler — where holders rank by balance</p>
             {percentiles.map((p) => {
               const logVal = Math.log10(Math.max(1, p.value));
               const widthPct = Math.min(100, Math.round((logVal / logMax) * 100));
@@ -776,10 +769,10 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
         {/* Option A: Bar + log-normal curve overlay */}
         {chartData.some((d) => d.count > 0) && (
           <div className="premium-surface-card p-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1 text-center">Balance distribution — holder count by range</p>
+            <p className="text-xs text-muted-foreground font-semibold mb-1 text-center">Balance distribution — holder count by range</p>
             <p data-panel-desc className="text-xs text-muted-foreground mb-3 text-center">
               Balance buckets are log-spaced; the count axis is linear. The curve is a log-normal fit.
-              Buckets exclude sub-1-{copy.ticker} dust wallets, so bars sum to slightly fewer holders than the tiles above.
+              Buckets exclude sub-{dustFloorText(copy.tiers)}-{copy.ticker} dust wallets, so bars sum to slightly fewer holders than the tiles above.
             </p>
             <ToggleableSeries items={FIT_LEGEND} className="mb-2 justify-center">
               {(isVisible) => {
@@ -891,7 +884,7 @@ const renderStakingInsights = (
         <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
           {items.map((item) => (
             <div key={item.label} className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-lg:last:odd:col-span-2 ${TILE_HOVER}`}>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">{item.label}</div>
+              <div className="text-xs text-muted-foreground font-semibold mb-2">{item.label}</div>
               <div className="text-xl font-semibold text-primary">{item.value}</div>
               {"sub" in item && item.sub && <div className="mt-1 text-xs tabular-nums text-muted-foreground lg:basis-full">{item.sub}</div>}
             </div>
@@ -900,8 +893,8 @@ const renderStakingInsights = (
         <StakingSupplyTie />
         {chartData.some((d) => d.count > 0) && (
           <div className="premium-surface-card p-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1 text-center">Staked balance distribution (staker count by range)</p>
-            <p className="text-xs text-muted-foreground mb-3 text-center">Buckets exclude sub-1-{copy.ticker} dust amounts, so bars sum to slightly fewer stakers than the tiles above.</p>
+            <p className="text-xs text-muted-foreground font-semibold mb-1 text-center">Staked balance distribution (staker count by range)</p>
+            <p className="text-xs text-muted-foreground mb-3 text-center">Buckets exclude sub-{dustFloorText(copy.tiers)}-{copy.ticker} dust amounts, so bars sum to slightly fewer stakers than the tiles above.</p>
             <ChartContainer config={stakingInsightsChartConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full`}>
               <BarChart
                 data={chartData}
@@ -956,15 +949,15 @@ const renderOverlap = (stats: HolderLiteSnapshot["overlap"] | null, ctl: RangeCt
       <CardContent className="space-y-4 pt-5">
         <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3">
           <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Unique Wallets</div>
+            <div className="text-xs text-muted-foreground font-semibold mb-2">Unique Wallets</div>
             <div className="text-xl font-semibold text-primary">{formatInteger(stats.uniqueCount)}</div>
           </div>
           <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Multi-chain Wallets</div>
+            <div className="text-xs text-muted-foreground font-semibold mb-2">Multi-chain Wallets</div>
             <div className="text-xl font-semibold text-primary">{formatInteger(stats.multiChainCount)}</div>
           </div>
           <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Multi-chain Share</div>
+            <div className="text-xs text-muted-foreground font-semibold mb-2">Multi-chain Share</div>
             <div className="text-xl font-semibold text-primary">{formatPercentage(stats.multiChainShare * 100, 2)}</div>
           </div>
         </div>
@@ -980,7 +973,11 @@ const renderOverlap = (stats: HolderLiteSnapshot["overlap"] | null, ctl: RangeCt
   );
 };
 
-const ETHERSCAN_ADDRESS = "https://etherscan.io/address/";
+/** Explorer page of a CEX wallet on the project's own chain (EVM, Solana or Hedera); undefined when the project has no chains. */
+const cexWalletHref = (chains: readonly ProjectChain[], address: string): string | undefined => {
+  const chain = chainForAddress(chains, address);
+  return chain ? chainExplorerLink(chain, "address", address) : undefined;
+};
 
 const renderCexFlows = (
   copy: UseProjectCopy,
@@ -993,6 +990,7 @@ const renderCexFlows = (
   cexHistory?: CexHistoryEntry[],
   changelog?: ClassificationChangelog | null,
   cexAsOf?: FeedAsOf | null,
+  chains: readonly ProjectChain[] = [],
 ) => {
   if (selection !== "combined" || !cex?.overall) return null;
 
@@ -1015,12 +1013,17 @@ const renderCexFlows = (
   const rangeLatest = windowPick?.end ?? null;
 
   const rangeLabel = RANGE_OPTIONS.find((o) => o.days === rangeDays)?.label ?? `${rangeDays}D`;
-  const exchangeNet = (name: string, fallback: number) =>
-    rangeStart && rangeLatest ? (rangeLatest.exchanges[name] ?? 0) - (rangeStart.exchanges[name] ?? 0) : fallback;
+  const exchangeNet = (name: string, fallback: number): number | null => {
+    if (rangeStart && rangeLatest) return (rangeLatest.exchanges[name] ?? 0) - (rangeStart.exchanges[name] ?? 0);
+    return cexFlowsFallbackUsable(cex.comparison, rangeDays) ? fallback : null;
+  };
   const walletSetEvents = (name: string) =>
     windowPick ? walletSetChangesFor(changelog, name, windowPick.startTs, windowPick.endTs) : [];
   const overallRange = (() => {
     if (!rangeStart || !rangeLatest) {
+      if (!cexFlowsFallbackUsable(cex.comparison, rangeDays)) {
+        return { previousBalance: null, inflow: null, outflow: null, net: null };
+      }
       return { previousBalance: overall.previousBalance, inflow: overall.inflow, outflow: overall.outflow, net: overall.net };
     }
     const latest = rangeLatest;
@@ -1071,7 +1074,7 @@ const renderCexFlows = (
       <CardContent className="space-y-4 pt-5">
         <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3">
           <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">Exchange Wallets</div>
+            <div className="text-xs text-muted-foreground font-semibold mb-2">Exchange Wallets</div>
             <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
               <div className="text-2xl font-semibold text-primary">{formatInteger(overall.walletCountWithBalance)}</div>
               {/* only show the chip when it actually changed — a "0" is noise here */}
@@ -1089,7 +1092,7 @@ const renderCexFlows = (
           </div>
           <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
             <div className="flex items-center justify-center gap-1.5 mb-2">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">CEX Balance</div>
+              <div className="text-xs text-muted-foreground font-semibold">CEX Balance</div>
               <InfoTooltip text={copy.text("cex.balance.info", "{ticker} held in known exchange wallets. Additional balances may exist in untagged wallets, so treat this as a floor, not a total.")} />
             </div>
             <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
@@ -1107,11 +1110,20 @@ const renderCexFlows = (
           </div>
           <div className={`premium-surface-card p-3 sm:p-5 text-center min-w-0 lg:flex-wrap max-sm:last:odd:col-span-2 ${TILE_HOVER}`}>
             <div className="flex items-center justify-center gap-1.5 mb-2">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Balance Change ({rangeLabel})</div>
+              <div className="text-xs text-muted-foreground font-semibold">Balance Change ({rangeLabel})</div>
               <InfoTooltip text={copy.t("How much the tracked exchange balances moved over this window — a change in STOCK, not measured flow.\n\nIt also shifts when an exchange reshuffles {ticker} between tagged and untagged wallets, so it won't exactly equal deposits minus withdrawals.\n\nFor measured FLOW — actual deposits and withdrawals counted from on-chain Transfer logs — see Exchange Netflow below.")} />
             </div>
-            <div className="text-2xl font-semibold text-primary">{formatSignedTokenAmount(overallRange.net)}</div>
-            <div className="text-xs text-muted-foreground">Exchanges up {formatTokenAmount(overallRange.inflow)} • down {formatTokenAmount(overallRange.outflow)}{windowPick?.approximate ? " (nearest snapshot)" : ""}</div>
+            {overallRange.net == null || overallRange.inflow == null || overallRange.outflow == null ? (
+              <>
+                <div className="text-2xl font-semibold text-muted-foreground">—</div>
+                <div className="text-xs text-muted-foreground">Not available for this range</div>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-semibold text-primary">{formatSignedTokenAmount(overallRange.net)}</div>
+                <div className="text-xs text-muted-foreground">Exchanges up {formatTokenAmount(overallRange.inflow)} • down {formatTokenAmount(overallRange.outflow)}{windowPick?.approximate ? " (nearest snapshot)" : ""}</div>
+              </>
+            )}
           </div>
         </div>
 
@@ -1194,10 +1206,10 @@ const renderCexFlows = (
                           return (
                             <TableCell
                               className={`px-1 sm:px-4 py-2 max-sm:text-xs text-right text-sm font-medium tabular-nums whitespace-nowrap ${
-                                net > 0 ? "text-negative" : net < 0 ? "text-positive" : "text-muted-foreground"
+                                net != null && net > 0 ? "text-negative" : net != null && net < 0 ? "text-positive" : "text-muted-foreground"
                               }`}
                             >
-                              {formatSignedTokenAmount(net)}
+                              {net == null ? "—" : formatSignedTokenAmount(net)}
                             </TableCell>
                           );
                         })()}
@@ -1221,7 +1233,7 @@ const renderCexFlows = (
                                     <TableRow key={w.address} className="border-0 hover:bg-muted/20">
                                       <TableCell className="px-2 py-1.5 text-sm">
                                         <a
-                                          href={`${ETHERSCAN_ADDRESS}${w.address}`}
+                                          href={cexWalletHref(chains, w.address)}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="text-primary hover:underline font-mono"
@@ -1539,6 +1551,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
                   events.cex,
                   events.retailBalance,
                   holderAthNote,
+                  rangeDays,
                 )}
               </TabsContent>
 
@@ -1561,7 +1574,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
 
               <TabsContent value="staking" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>
                 {hasNoStaking(project) ? (
-                  <StakingNoneCard />
+                  <StakingNoneCard networkStake={networkStakeOf(snapshot)} />
                 ) : (
                   renderStakingInsights(copy, display.stakingStats, display.stakingDistribution, rangeCtl)
                 )}
@@ -1596,7 +1609,7 @@ const WalletHoldingsWidget = ({ selectedView, onViewChange, rangeDays, onRangeDa
               </TabsContent>
 
               <TabsContent value="exchanges" className={`${compactHeader ? "mt-2 space-y-3" : "mt-4 space-y-6"} focus-visible:outline-none`}>
-                {renderCexFlows(copy, snapshot.cex, selectedView, expandedCexExchange, (name) => setExpandedCexExchange((prev) => (prev === name ? null : name)), rangeDays, onRangeDaysChange, cexHistory, changelog, cexAsOf)}
+                {renderCexFlows(copy, snapshot.cex, selectedView, expandedCexExchange, (name) => setExpandedCexExchange((prev) => (prev === name ? null : name)), rangeDays, onRangeDaysChange, cexHistory, changelog, cexAsOf, project.chains)}
                 {selectedView === "combined" && <ExchangeNetDiff rangeDays={rangeDays} />}
                 <CexHistoryTiles rangeDays={rangeDays} />
               </TabsContent>

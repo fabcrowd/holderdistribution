@@ -7,6 +7,7 @@ import type {
 } from "@/lib/holderInsights";
 import type { WalletVelocity } from "@/lib/holderVelocity";
 import { dataUrl } from "@/lib/dataUrl";
+import type { CexFlowComparison } from "@/lib/cexComparison";
 import { useProject } from "@/hooks/useProject";
 
 import type { ChainView } from "@/lib/chainViews";
@@ -53,6 +54,8 @@ export type CexFlowSnapshot = {
   listUpdatedAt?: string | null;
   listQueryId?: string | null;
   overall?: CexFlowTotals | null;
+  /** Absent in older feeds; see src/lib/cexComparison.ts. */
+  comparison?: CexFlowComparison | null;
   exchanges?: CexExchangeTotals[];
 };
 

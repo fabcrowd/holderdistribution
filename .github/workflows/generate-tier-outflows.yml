@@ -62,6 +62,11 @@ jobs:
         # public/data/<slug> + data/<slug> for any other project.
         run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
 
+      - name: Scan Hedera flows
+        # A Hedera project's tier flows are built from this scan's day store (mirror node, no key).
+        if: ${{ env.HD_HEDERA_FLOWS == 'true' }}
+        run: node scripts/scan-hedera-flows.js
+
       - name: Generate tier outflows
         env:
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
@@ -79,7 +84,7 @@ jobs:
           git config user.email "action@github.com"
           git config user.name "github-actions[bot]"
           # date-blocks.json: the scan resolves and saves any day cutoff it lacks; left unstaged it breaks the rebase.
-          FILES=$(node scripts/workflow-paths.js files public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json public/data/date-blocks.json)
+          FILES=$(node scripts/workflow-paths.js files public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json public/data/exchange-flow-checkpoint.json data/hedera-flow-days.json public/data/date-blocks.json)
           git add $FILES
           # git diff misses new untracked files — check the staged index instead.
           if git diff --cached --quiet -- $FILES; then

@@ -47,9 +47,9 @@ describe("circulating subtract (config-driven)", () => {
     expect(() => resolveCirculatingSubtract({ circulating: { subtract: "treasury" } })).toThrow();
     expect(subtractedTotal({ treasury: 3, council: 4 }, ["treasury"])).toBe(3);
   });
-  it("keeps today's definitions for TEL and ZBCN", () => {
+  it("keeps TEL's definition and applies the 2026-11-12 team/holdings rule to ZBCN", () => {
     expect(reconcileOptions({ slug: "tel", config: tel }).circulatingSubtract).toEqual(["treasury", "council"]);
-    expect(reconcileOptions({ slug: "zebec-network", config: zbcn }).circulatingSubtract).toEqual(["treasury"]);
+    expect(reconcileOptions({ slug: "zebec-network", config: zbcn }).circulatingSubtract).toEqual(["treasury", "holdings", "team"]);
   });
   it("UI and script defaults/resolution stay in parity", () => {
     expect(ui.DEFAULT_CIRCULATING_SUBTRACT).toEqual(DEFAULT_CIRCULATING_SUBTRACT);

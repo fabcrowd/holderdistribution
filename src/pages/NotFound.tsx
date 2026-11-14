@@ -28,7 +28,7 @@ const NotFound = () => {
     <Navigation />
     <main id="main-content" className="flex flex-1 items-center justify-center px-4 py-12" data-testid="not-found">
       <div className="max-w-md text-center">
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-primary">404</p>
+        <p className="text-sm font-semibold text-primary">404</p>
         <h1 className="mt-2 text-2xl font-bold text-foreground">Page not found</h1>
         <p className="mt-3 text-balance text-muted-foreground">There&apos;s nothing at this address. Pick a token on the home page.</p>
         <Link

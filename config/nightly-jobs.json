@@ -111,6 +111,24 @@
       "budgetMode": "enforce"
     },
     {
+      "id": "hedera-flows",
+      "dataset": "exchange-flows",
+      "workflow": "refresh-holders.yml",
+      "scripts": [
+        "scan-hedera-flows.js"
+      ],
+      "requires": [
+        "hedera"
+      ],
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuPerNight": 0,
+      "outputs": [],
+      "budgetMode": "enforce"
+    },
+    {
       "id": "staker-balances",
       "dataset": "staking",
       "workflow": "refresh-holders.yml",
@@ -183,7 +201,8 @@
       "workflow": "refresh-wallet-flows.yml",
       "scripts": [
         "generate-wallet-flows.js",
-        "generate-wallet-flows-solana.js"
+        "generate-wallet-flows-solana.js",
+        "generate-wallet-flows-hedera.js"
       ],
       "requires": [
         "forensicsRegistry"

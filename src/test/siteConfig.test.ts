@@ -60,10 +60,14 @@ describe("branding & SEO", () => {
     expect(read("public/sitemap.xml")).toContain("<loc>https://holderdistribution.com/</loc>");
   });
 
-  it("sitemap lists every mapped token route", () => {
+  it("sitemap lists every listed token route and leaves out a project still onboarding", () => {
     const sitemap = read("public/sitemap.xml");
     const registry = JSON.parse(read("config/projects.json"));
-    for (const p of registry.projects) expect(sitemap).toContain(`<loc>https://holderdistribution.com/${p.slug}</loc>`);
+    for (const p of registry.projects) {
+      const loc = `<loc>https://holderdistribution.com/${p.slug}</loc>`;
+      if (p.onboarding === true) expect(sitemap).not.toContain(loc);
+      else expect(sitemap).toContain(loc);
+    }
   });
 });
 

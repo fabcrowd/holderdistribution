@@ -7,7 +7,7 @@ import { parse } from "yaml";
 const WORKFLOWS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".github", "workflows");
 
 // Scripts that resolve a missing day cutoff and save it to date-blocks.json (scripts/lib/dayBlocks.js).
-const CUTOFF_WRITERS = /\b(pull-holders-rpc|scan-exchange-flows|generate-tier-outflows|fill-history-gaps|append-exchange-flows-from-cache|build-cutoffs)\.js\b/;
+const CUTOFF_WRITERS = /\b(pull-holders-rpc|scan-exchange-flows|scan-hedera-flows|generate-tier-outflows|fill-history-gaps|append-exchange-flows-from-cache|build-cutoffs)\.js\b/;
 
 // A job that runs one of them and commits must stage date-blocks.json: the file is left
 // modified otherwise, and the commit step's rebase stops on the unstaged change

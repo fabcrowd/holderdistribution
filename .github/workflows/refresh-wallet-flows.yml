@@ -17,6 +17,10 @@ name: Refresh gated wallet-flows report (optional)
 #
 # A project with a Solana chain also runs generate-wallet-flows-solana.js in this job
 # (Helius credits, capped per run, a few minutes); it has no schedule of its own.
+# A project with a Hedera chain runs generate-wallet-flows-hedera.js (public mirror node, no key). It stops itself
+# at HEDERA_WALLET_FLOWS_MAX_MS, saves its cursors, writes NO report from partial data and sets outputs.partial.
+# Any error (stream failure, invariant violation) exits 1 with the last consistent state saved and outputs.partial=true,
+# so the state is committed as "partial" and the stale-report rule below applies; there is no soft exit 0.
 
 on:
   schedule:
@@ -67,7 +71,9 @@ jobs:
       HD_PROJECT: ${{ matrix.slug }}
       HD_JOB_ID: wallet-flows
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    # Worst case: setup 3 + EVM scan budget 40 + receipt/seller/balance tail 10 + Solana (mixed projects only,
+    # <= 30) + Hedera (budget 40 + report tail 5; a Hedera-only project has no EVM or Solana step to add) + commit 2. The EVM scan stops itself at WALLET_FLOWS_MAX_MS and saves its progress.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -79,19 +85,39 @@ jobs:
         run: |
           node scripts/workflow-paths.js >> "$GITHUB_ENV"
           echo "HD_METRICS_FILE=$RUNNER_TEMP/rpc-metrics.ndjson" >> "$GITHUB_ENV"
+      # A full 90-day rescan (state reset) can need several runs on public RPCs. At the budget the generator
+      # saves its per-chain cursors, writes NO report from partial data, marks the run "partial, will continue"
+      # in the step summary and sets outputs.partial; the next run resumes. The step itself is capped well
+      # above the budget so a stuck call still ends before the job timeout.
       - name: Generate report (keeps previous file on failure)
+        id: evm
+        timeout-minutes: 55
         env:
           RPC_PREFER_PUBLIC: '1'
+          WALLET_FLOWS_MAX_MS: '2400000'
         run: node scripts/generate-wallet-flows.js
       - name: Generate Solana report (keeps previous file on failure)
         env:
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
         run: node scripts/generate-wallet-flows-solana.js
+      - name: Generate Hedera report (keeps previous file on failure)
+        id: hedera
+        # A Hedera project's flows come from the public mirror node (no key). The step budget stays under the step timeout.
+        if: ${{ env.HD_HEDERA_FLOWS == 'true' }}
+        timeout-minutes: 55
+        env:
+          HEDERA_WALLET_FLOWS_MAX_MS: '2400000'
+        run: node scripts/generate-wallet-flows-hedera.js
       - name: Record RPC usage
         continue-on-error: true
         run: node scripts/summarize-run-metrics.js
       - name: Commit if changed
+        # Also after a killed EVM step: the per-segment state it already saved is what the next run resumes from.
+        # A step that hits timeout-minutes is reported as failure or cancelled depending on the runner: accept both.
+        if: ${{ success() || steps.evm.outcome == 'failure' || steps.evm.outcome == 'cancelled' || steps.hedera.outcome == 'failure' || steps.hedera.outcome == 'cancelled' }}
+        env:
+          PARTIAL: ${{ steps.evm.outputs.partial == 'true' || steps.hedera.outputs.partial == 'true' || steps.hedera.outcome == 'failure' || steps.hedera.outcome == 'cancelled' }}
         run: |
           git config user.email "action@github.com"
           git config user.name "github-actions[bot]"
@@ -105,13 +131,46 @@ jobs:
           # EVM scan state (cursor + 90-day outflows per chain), written by generate-wallet-flows.js.
           EVM_STATE="$HD_WORK_DIR/forensics/wallet-flows-evm-state.json"
           if [ -f "$EVM_STATE" ]; then FILES="$FILES $EVM_STATE"; fi
+          # Hedera scan state (per-stream cursors + 90-day raw sender events), written by generate-wallet-flows-hedera.js.
+          HEDERA_STATE="$HD_WORK_DIR/forensics/wallet-flows-hedera-state.json"
+          if [ -f "$HEDERA_STATE" ]; then FILES="$FILES $HEDERA_STATE"; fi
           if [ -f "$HD_WORK_DIR/rpc-usage.json" ]; then FILES="$FILES $HD_WORK_DIR/rpc-usage.json"; fi
           git add $FILES
           if git diff --cached --quiet; then echo "No change"; exit 0; fi
-          git commit -m "Refresh gated wallet-flows report [skip netlify]"
+          # A partial run changes only the scan state (EVM or Hedera); committing it is what lets the next run resume.
+          if [ "$PARTIAL" = "true" ]; then MSG="Advance wallet-flows scan state (partial) [skip netlify]"; else MSG="Refresh gated wallet-flows report [skip netlify]"; fi
+          git commit -m "$MSG"
           git checkout -- .
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
+      # A partial run exits 0 with the state committed, so it needs its own staleness signal: it always
+      # warns, and fails the job once the published report is older than go-live's limit (re-dispatch
+      # continues the scan). A project with no report yet (first scan) stays green with the warning.
+      - name: Flag partial run
+        if: ${{ !cancelled() && (steps.evm.outputs.partial == 'true' || steps.hedera.outputs.partial == 'true' || steps.hedera.outcome == 'failure' || steps.hedera.outcome == 'cancelled') }}
+        run: |
+          echo "::warning title=wallet-flows partial::$HD_PROJECT_SLUG scan is still catching up; the report was not rebuilt this run."
+          echo "### wallet-flows ($HD_PROJECT_SLUG): partial run" >> "$GITHUB_STEP_SUMMARY"
+          echo "The scan is still catching up and the report was not rebuilt. Scan state is committed; re-dispatch this workflow to continue." >> "$GITHUB_STEP_SUMMARY"
+          node --input-type=module <<'EOF'
+          import fs from "node:fs";
+          import { MAX_REPORT_AGE_HOURS } from "./scripts/lib/goLive.js";
+          const MS_PER_HOUR = 3_600_000;
+          const file = `${process.env.HD_WORK_DIR}/forensics/wallet-flows.json`;
+          if (!fs.existsSync(file)) {
+            console.log("No published report yet: first scan, staying green.");
+            process.exit(0);
+          }
+          const ageHours = (Date.now() - Date.parse(JSON.parse(fs.readFileSync(file, "utf8")).generated)) / MS_PER_HOUR;
+          if (ageHours <= MAX_REPORT_AGE_HOURS) {
+            console.log(`Published report is ${Math.round(ageHours)}h old (limit ${MAX_REPORT_AGE_HOURS}h).`);
+            process.exit(0);
+          }
+          const age = Number.isFinite(ageHours) ? `${Math.round(ageHours)}h old` : "of unknown age";
+          console.log(`::error title=wallet-flows stale::${process.env.HD_PROJECT_SLUG} report is ${age} (limit ${MAX_REPORT_AGE_HOURS}h) and the scan is still partial: re-dispatch this workflow.`);
+          process.exit(1);
+          EOF
       - name: Verify report
+        if: steps.evm.outputs.partial != 'true' && steps.hedera.outputs.partial != 'true'
         run: node scripts/check-go-live.js --project "$HD_PROJECT_SLUG" --section wallet-flows

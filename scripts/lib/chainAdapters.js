@@ -12,6 +12,10 @@
  *   isAddress(chain, address)          -> true for a valid address of this vm
  *   clock(chain)                       -> { firstAtOrAfter(targetTs, getTime, low, high) }, the vm's
  *                                         block/slot search used for day cutoffs
+ *   stakingInfo(chain, opts)           -> OPTIONAL. Network-level staking figure for a native coin:
+ *                                         { available: true, stakedTotal, stakingPeriod: { start, end }, ... } or
+ *                                         { available: false, reason }. Never throws. evm and solana have none
+ *                                         (undefined); use stakingInfoFor() to call it.
  *
  * The EVM adapter is in-process and cheap. The Solana and Hedera adapters live under
  * scripts/lib/solana/ and scripts/lib/hedera/ and are only ever imported through loadChainAdapter,
@@ -116,3 +120,29 @@ export async function loadChainAdapter(vm) {
 
 /** Adapter for a chains[] entry. */
 export const adapterForChain = (chain) => loadChainAdapter(resolveChainVm(chain));
+
+/**
+ * The owner decisions a native coin keeps in its adapter instead of an answers file (answers-file shape:
+ * historyStart, largeHolders), or null when the project has no such chain. Only a vm that is neither evm
+ * nor solana is asked, so those projects never load an adapter module here.
+ */
+export async function nativeDecisionsFor(config) {
+  for (const chain of config?.chains ?? []) {
+    const vm = resolveChainVm(chain);
+    if (vm === "evm" || vm === "solana") continue;
+    const adapter = await loadChainAdapter(vm);
+    if (typeof adapter.nativeDecisions === "function") return adapter.nativeDecisions();
+  }
+  return null;
+}
+
+/**
+ * The chain's network staking figure through the optional `stakingInfo` port, or undefined when its vm
+ * has none. evm and solana return before any adapter module loads, so a project on them is untouched.
+ */
+export async function stakingInfoFor(chain, opts = {}) {
+  const vm = resolveChainVm(chain);
+  if (vm === "evm" || vm === "solana") return undefined;
+  const adapter = await loadChainAdapter(vm);
+  return typeof adapter.stakingInfo === "function" ? adapter.stakingInfo(chain, opts) : undefined;
+}

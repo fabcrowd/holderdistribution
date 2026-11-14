@@ -64,7 +64,8 @@ describe("missing feeds", () => {
     expect(netSlotText("tel", f, { hasTransitions: true, hasOutflows: false })).toEqual({ text: "—", tone: "neutral" });
   });
   it("a value that rounds to zero is a neutral 0", () => {
-    expect(netDisplay(0.3, fmtTel)).toEqual({ text: "0", tone: "neutral" });
+    expect(netDisplay(0.3, fmtInt)).toEqual({ text: "0", tone: "neutral" });
+    expect(netDisplay(0.3, fmtTel)).toEqual({ text: "+0.3", tone: "positive" });
     expect(netDisplay(-0, fmtInt)).toEqual({ text: "0", tone: "neutral" });
   });
 });

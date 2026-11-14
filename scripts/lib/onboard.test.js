@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { findDeployBlock, imageExt, inferVm, planOnboarding, slugify, wholeTokens } from "./onboard.js";
+import { chainFromProbe, findDeployBlock, imageExt, inferVm, planOnboarding, probeEvmChain, slugify, wholeTokens } from "./onboard.js";
 import { validateInventory } from "./chainInventory.js";
 import { scaffold, validateScaffold } from "../add-project.js";
+import { main as onboardMain, parseArgs as parseOnboardArgs } from "../onboard.js";
 
 const TOKEN = "0xFAbA6f8e4a5E8Ab82F62fe7C39859FA577269BE3";
 const facts = (over = {}) => ({ name: "Ondo", symbol: "ONDO", decimals: 18, totalSupplyRaw: (10n ** 28n).toString(), deployBlock: 16_000_000, deployDate: "2022-11-20", ...over });
@@ -132,5 +133,82 @@ describe("planOnboarding", () => {
   it("stops when decimals or supply cannot be verified on-chain", () => {
     expect(() => plan({ facts: facts({ decimals: null }) })).toThrow(/decimals/);
     expect(() => plan({ facts: facts({ totalSupplyRaw: null }) })).toThrow(/total supply/);
+  });
+});
+
+describe("planOnboarding history and Solana program", () => {
+  const mint = "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU";
+  const solFacts = (over = {}) => facts({ symbol: "ZBCN", decimals: 6, totalSupplyRaw: "100000000000000000", deployBlock: null, deployDate: null, ...over });
+  const solPlan = (over = {}, overrides = {}) => planOnboarding({ address: mint, chain: "solana", facts: solFacts(over), coingecko: { id: "zebec-network", name: "Zebec Network" }, discovery: { chains: [{ chain: "solana", status: "configured" }] }, overrides });
+
+  it("an explicit null historyStart means forward-only: no deploy-date fallback and no --history-start", () => {
+    const p = planOnboarding({ address: TOKEN, chain: "ethereum", facts: facts(), coingecko: { id: "ondo-finance", name: "Ondo" }, discovery, overrides: { historyStart: null } });
+    expect(p.historyStart).toBeNull();
+    expect(p.argv).not.toContain("--history-start");
+    expect(p.notes.join("\n")).not.toMatch(/history start unknown/);
+  });
+
+  it("passes the mint's own token program (Token-2022) to the scaffold and validates", () => {
+    const p = solPlan({ program: "token-2022" });
+    expect(p.argv).toEqual(expect.arrayContaining(["--chain", `solana:${mint}:6:token-2022`]));
+    const result = scaffold(parseArgv(p.argv), registry);
+    expect(result.files[`config/projects/${p.slug}.json`].chains[0].tokens[0].program).toBe("token-2022");
+    expect(validateScaffold(result).errors).toEqual([]);
+    expect(solPlan({ program: "spl-token" }).argv).toEqual(expect.arrayContaining(["--chain", `solana:${mint}:6`]));
+  });
+});
+
+describe("EVM chain probe", () => {
+  it("checks chains sequentially and reports what has code", async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const hasCode = async (chain) => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((r) => setTimeout(r, 1));
+      inFlight--;
+      if (chain === "bsc") throw new Error("HTTP 429");
+      return chain === "base";
+    };
+    const probe = await probeEvmChain({ chains: ["ethereum", "base", "bsc"], hasCode });
+    expect(maxInFlight).toBe(1);
+    expect(probe).toEqual({ found: ["base"], failed: [{ chain: "bsc", message: "HTTP 429" }] });
+    expect(chainFromProbe(probe, "0xabc")).toBe("base");
+  });
+
+  it("asks for --chain when several chains have code, and hints at the RPC override when none could be checked", () => {
+    expect(chainFromProbe({ found: ["ethereum", "base"], failed: [] }, "0xabc").message).toMatch(/exists at 0xabc on ethereum, base: pass --chain .* --include/);
+    const failed = chainFromProbe({ found: [], failed: [{ chain: "ethereum", message: "HTTP 403" }] }, "0xabc");
+    expect(failed.message).toMatch(/PUBLIC_RPC_URLS_ETHEREUM=<rpc url>/);
+    expect(chainFromProbe({ found: [], failed: [] }, "0xabc").message).toMatch(/no contract at 0xabc on any scanned EVM chain/);
+  });
+});
+
+describe("--write without --answers is only possible for the Hedera native coin", () => {
+  const quiet = { log() {}, warn() {} };
+  const evm = "0x" + "ab".repeat(20);
+  const solana = "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU";
+  const refusal = /--write needs the owner's answers file/;
+
+  it("refuses every non-Hedera flag combination before any network call or write", async () => {
+    const attempts = [
+      ["--address", evm, "--write"],
+      ["--address", evm, "--chain", "ethereum", "--write"],
+      ["--address", solana, "--write"],
+      ["--address", solana, "--chain", "solana", "--write"],
+      ["--address", "native", "--chain", "ethereum", "--write"],
+      ["--address", "native", "--chain", "solana", "--write"],
+      ["--address", "native", "--write"],
+      ["--address", "native", "--chain", "constructor", "--write"],
+      ["--address", "native", "--chain", "__proto__", "--write"],
+      ["--address", "0.0.1456985", "--write"],
+    ];
+    for (const argv of attempts) await expect(onboardMain(argv, { logger: quiet }), argv.join(" ")).rejects.toThrow(refusal);
+  });
+
+  it("recognises hedera only as an own key of the native-chain table", () => {
+    expect(parseOnboardArgs(["--chain", "hedera", "--write"])).toMatchObject({ address: "native", chain: "hedera", write: true });
+    expect(parseOnboardArgs(["--chain", "constructor", "--address", "0xabc"]).address).toBe("0xabc");
+    expect(() => parseOnboardArgs(["--chain", "constructor"])).toThrow(/--address/);
   });
 });

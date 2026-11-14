@@ -4,18 +4,13 @@ import { useExchangeFlow } from "@/hooks/useExchangeFlow";
 import { useTierOutflows, outflowsKeyFor } from "@/hooks/useTierOutflows";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { ytdDays } from "@/lib/timeRange";
+import { COMPACT_FLOW_ROW, formatCompact } from "@/lib/format";
 
 type DexSwapsProps = {
   rangeDays: number;
 };
 
-const formatCompactAmount = (value: number) => {
-  const a = Math.abs(value);
-  if (a >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (a >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-  if (a >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
-  return `${Math.round(value)}`;
-};
+const formatCompactAmount = (value: number) => formatCompact(value, COMPACT_FLOW_ROW);
 
 /**
  * On-chain DEX buy/sell + LP activity + a plain-language explainer of how to
@@ -65,22 +60,22 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
       {view?.hasDex && (
         <div className="space-y-3">
           <div className="flex items-center gap-1.5">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">DEX Swaps</div>
+            <div className="text-xs text-muted-foreground font-semibold">DEX Swaps</div>
             <MethodologyInfo section="dexSwaps" />
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="premium-surface-card p-4 text-center">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Sold on DEX</div>
+              <div className="text-xs text-muted-foreground font-semibold mb-1">Sold on DEX</div>
               <div className="text-xl font-bold text-foreground">{formatCompactAmount(view.dexSold)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">swapped for another coin</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Bought on DEX</div>
+              <div className="text-xs text-muted-foreground font-semibold mb-1">Bought on DEX</div>
               <div className="text-xl font-bold text-foreground">{formatCompactAmount(view.dexBought)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">swapped in from another coin</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Net DEX</div>
+              <div className="text-xs text-muted-foreground font-semibold mb-1">Net DEX</div>
               <div className={`text-xl font-bold ${view.dexNet >= 0 ? "text-positive" : "text-negative"}`}>
                 {view.dexNet >= 0 ? "+" : "−"}{formatCompactAmount(Math.abs(view.dexNet))} {ticker}
               </div>
@@ -94,20 +89,20 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
 
       {lpView && (
         <div className="space-y-3">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">LP Activity</div>
+          <div className="text-xs text-muted-foreground font-semibold">LP Activity</div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="premium-surface-card p-4 text-center">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Added to LP</div>
+              <div className="text-xs text-muted-foreground font-semibold mb-1">Added to LP</div>
               <div className="text-xl font-bold text-foreground">{formatCompactAmount(lpView.added)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">deposited into pools</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Unstaked from LP</div>
+              <div className="text-xs text-muted-foreground font-semibold mb-1">Unstaked from LP</div>
               <div className="text-xl font-bold text-foreground">{formatCompactAmount(lpView.removed)} {ticker}</div>
               <div className="text-xs text-muted-foreground mt-0.5">withdrawn back to wallets</div>
             </div>
             <div className="premium-surface-card p-4 text-center">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Net LP</div>
+              <div className="text-xs text-muted-foreground font-semibold mb-1">Net LP</div>
               <div className="text-xl font-bold text-foreground">
                 {lpView.net >= 0 ? "+" : "−"}{formatCompactAmount(Math.abs(lpView.net))} {ticker}
               </div>
@@ -121,7 +116,7 @@ export const DexSwaps = ({ rangeDays }: DexSwapsProps) => {
 
       {/* Plain-language explainer: how to read where outgoing TEL went. */}
       <div className="rounded-2xl border border-border/50 bg-muted/20 p-5">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 text-center">
+        <div className="text-xs text-muted-foreground font-semibold mb-3 text-center">
           Reading the outflows — a wallet&apos;s balance can fall four ways
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">

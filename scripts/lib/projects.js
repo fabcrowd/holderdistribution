@@ -17,6 +17,7 @@ import path from "node:path";
 import { configureProjectRpc } from "./rpc.js";
 import { isEvmAddress, isSolanaAddress } from "./address.js";
 import { canonicalAddressForVm, isAddressForVm } from "./address.js";
+import { SIZING_KEYS } from "./projectSizing.js";
 import { assertChainVm, VM_CHAIN_FIELDS, vmUsesNativeAsset } from "./chainVms.js";
 import { BRIDGE_MODES, CHAIN_VMS, SOLANA_CLUSTERS, defaultExplorerTemplates, resolveChainBridge, resolveChainVm } from "./chainAdapters.js";
 
@@ -234,6 +235,16 @@ export function validateProjectConfig(config) {
   }
   if (config?.supply?.generationsSumOneToOne && chains.some((c) => c?.bridge !== undefined)) {
     warnings.push("supply.generationsSumOneToOne is set: chains[].bridge is ignored (the TEL-style supply path is used).");
+  }
+  // sizing.<name>: per-project override of a supply-scaled threshold (scripts/lib/projectSizing.js).
+  if (config?.sizing !== undefined) {
+    if (!config.sizing || typeof config.sizing !== "object" || Array.isArray(config.sizing)) errors.push("sizing: must be an object");
+    else {
+      for (const [key, value] of Object.entries(config.sizing)) {
+        if (!SIZING_KEYS.includes(key)) errors.push(`sizing.${key}: not a known threshold (${SIZING_KEYS.join(", ")})`);
+        else if (!(typeof value === "number" && Number.isFinite(value) && value > 0)) errors.push(`sizing.${key}: must be a finite number > 0`);
+      }
+    }
   }
   // nightly.waivers.<jobId>: a non-empty reason (scripts/lib/nightlyPlan.js).
   for (const [id, w] of Object.entries(config?.nightly?.waivers ?? {})) {

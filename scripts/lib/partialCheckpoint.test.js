@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
-  buildChunks, streamChunks, serializePartial, writePartial, readPartial, partialUsable, partialRaw,
+  buildChunks, streamChunks, serializePartial, writePartial, readPartial, partialUsable, partialAheadOfPin, partialResumeDecision, removePartial, partialRaw,
 } from "./partialCheckpoint.js";
 
 // Deterministic fake chain: a few transfers per block between 6 addresses, mints from 0x0.
@@ -87,5 +87,76 @@ describe("partial checkpoint resume equivalence", () => {
     expect(partialUsable(p, { ...base, genesisBlock: 11 })).toBe(false);
     expect(partialUsable(p, { ...base, token: "0xdef" })).toBe(false);
     expect(partialUsable(p, { ...base, chainKey: "base" })).toBe(false);
+  });
+
+  it("flags a partial that is ahead of the run's pin block", () => {
+    const p = serializePartial({ chainKey: "ethereum", token: "0xabc", genesisBlock: 10, baseLastBlock: null, lastBlock: 50, raw: new Map() });
+    expect(partialAheadOfPin(p, 49)).toBe(true);
+    expect(partialAheadOfPin(p, 50)).toBe(false);
+    expect(partialAheadOfPin(p, 51)).toBe(false);
+    expect(partialAheadOfPin(p, null)).toBe(false);
+    expect(partialAheadOfPin(p, undefined)).toBe(false);
+    expect(partialAheadOfPin(null, 49)).toBe(false);
+    expect(partialAheadOfPin({ lastBlock: "x" }, 49)).toBe(false);
+  });
+});
+
+describe("partialResumeDecision", () => {
+  const base = { chainKey: "ethereum", token: "0xAbC", genesisBlock: 10, baseLastBlock: null };
+  const mk = (over = {}) => serializePartial({ ...base, lastBlock: 50, raw: new Map(), ...over });
+  const RESUME = { resume: true, discard: null };
+  const NONE = { resume: false, discard: null };
+  const DIFF = { resume: false, discard: "different-base" };
+  const AHEAD = { resume: false, discard: "ahead-of-pin" };
+
+  it("no partial (also the --as-of null partial) does nothing", () => {
+    expect(partialResumeDecision(null, base)).toEqual(NONE);
+    expect(partialResumeDecision(null, { ...base, pinBlock: 5 })).toEqual(NONE);
+    expect(partialResumeDecision(undefined, base)).toEqual(NONE);
+  });
+
+  it("discards a partial built on a different base, whatever the pin", () => {
+    const p = mk();
+    expect(partialResumeDecision(p, { ...base, chainKey: "base" })).toEqual(DIFF);
+    expect(partialResumeDecision(p, { ...base, token: "0xdef" })).toEqual(DIFF);
+    expect(partialResumeDecision(p, { ...base, genesisBlock: 11 })).toEqual(DIFF);
+    expect(partialResumeDecision(p, { ...base, baseLastBlock: 40 })).toEqual(DIFF);
+    expect(partialResumeDecision(p, { ...base, baseLastBlock: 40, pinBlock: 5 })).toEqual(DIFF);
+    expect(partialResumeDecision({ ...p, kind: "other" }, base)).toEqual(DIFF);
+  });
+
+  it("matches the token case-insensitively", () => {
+    expect(partialResumeDecision(mk(), { ...base, token: "0xABC" })).toEqual(RESUME);
+  });
+
+  it("discards a partial ahead of the pin; resumes at or behind it", () => {
+    const p = mk();
+    expect(partialResumeDecision(p, { ...base, pinBlock: 49 })).toEqual(AHEAD);
+    expect(partialResumeDecision(p, { ...base, pinBlock: 50 })).toEqual(RESUME);
+    expect(partialResumeDecision(p, { ...base, pinBlock: 51 })).toEqual(RESUME);
+  });
+
+  it("an unpinned run (null or undefined pin) resumes as before", () => {
+    expect(partialResumeDecision(mk(), { ...base, pinBlock: null })).toEqual(RESUME);
+    expect(partialResumeDecision(mk(), { ...base, pinBlock: undefined })).toEqual(RESUME);
+    expect(partialResumeDecision(mk(), base)).toEqual(RESUME);
+  });
+
+  it("applying the decision: an ahead-of-pin partial file is removed, a resumable one stays", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "partial-"));
+    const ahead = path.join(dir, "holders-partial-ahead.json");
+    const ok = path.join(dir, "holders-partial-ok.json");
+    await writePartial(ahead, mk());
+    await writePartial(ok, mk());
+    const apply = async (file, pinBlock) => {
+      const d = partialResumeDecision(await readPartial(file), { ...base, pinBlock });
+      if (d.discard) await removePartial(file);
+      return d;
+    };
+    expect(await apply(ahead, 49)).toEqual(AHEAD);
+    expect(await apply(ok, 50)).toEqual(RESUME);
+    await expect(fs.access(ahead)).rejects.toThrow();
+    await expect(fs.access(ok)).resolves.toBeUndefined();
+    await fs.rm(dir, { recursive: true, force: true });
   });
 });

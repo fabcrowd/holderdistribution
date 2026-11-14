@@ -3,7 +3,7 @@
  * config/projects/<slug>/ledger.json (docs/LEDGER.md).
  *
  * Pure apart from the file reads, so tests can feed a config object directly.
- * EVM addresses are lowercased; Solana (base58) addresses are kept as written.
+ * EVM addresses are lowercased; Solana (base58) and Hedera (0.0.N) addresses are kept as written.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -15,16 +15,18 @@ export const LEDGER_WINDOW_SECONDS = { "24h": 86400, "72h": 3 * 86400, "30d": 30
 export const ZERO_EVM = "0x0000000000000000000000000000000000000000";
 
 const EVM_RE = /^0x[0-9a-fA-F]{40}$/;
+const HEDERA_RE = /^0\.0\.[1-9]\d{0,15}$/;
 const SOL_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const TX_TYPES_FILE = "config/ledger-tx-types.json";
 
 export const isEvmAddress = (a) => EVM_RE.test(String(a ?? ""));
 export const isSolanaAddress = (a) => SOL_RE.test(String(a ?? "")) && !String(a).startsWith("0x");
+export const isHederaAddress = (a) => HEDERA_RE.test(String(a ?? ""));
 /** Developer-wallet address test per vm (ledger wallets carry no vm of their own). */
-const WALLET_ADDRESS_TESTS = { evm: isEvmAddress, solana: isSolanaAddress };
+const WALLET_ADDRESS_TESTS = { evm: isEvmAddress, solana: isSolanaAddress, hedera: isHederaAddress };
 /** The vm a developer-wallet address belongs to, or null when it matches none. */
 export const walletAddressVm = (a) => Object.keys(WALLET_ADDRESS_TESTS).find((vm) => WALLET_ADDRESS_TESTS[vm](a)) ?? null;
-/** Canonical form: EVM lowercased, base58 untouched. */
+/** Canonical form: EVM lowercased, base58 and Hedera ids untouched. */
 export const addr = (a) => {
   const s = String(a ?? "").trim();
   return isEvmAddress(s) ? s.toLowerCase() : s;

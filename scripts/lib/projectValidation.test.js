@@ -41,6 +41,14 @@ describe("validateProjectConfig", () => {
     }
   });
 
+  it("accepts a sizing block and rejects unknown or non-positive thresholds", () => {
+    expect(validateProjectConfig({ ...MIXED, sizing: { minSellerTokens: 5e6, cexCandidateMinBalance: 1e5 } }).errors).toEqual([]);
+    const errors = validateProjectConfig({ ...MIXED, sizing: { minSellerTokens: 0, bogus: 1 } }).errors.join("\n");
+    expect(errors).toMatch(/sizing\.minSellerTokens: must be a finite number > 0/);
+    expect(errors).toMatch(/sizing\.bogus: not a known threshold/);
+    expect(validateProjectConfig({ ...MIXED, sizing: [] }).errors.join("\n")).toMatch(/sizing: must be an object/);
+  });
+
   it("accepts a mixed EVM + Solana project", () => {
     expect(validateProjectConfig(MIXED)).toEqual({ errors: [], warnings: [] });
   });

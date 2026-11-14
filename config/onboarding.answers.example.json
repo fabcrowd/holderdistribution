@@ -1,0 +1,88 @@
+{
+  "$readme": "A complete, valid onboarding-answers/1 example with FICTIONAL addresses. Copy it to tasks/onboard-<slug>.answers.json (or generate a template with `npm run onboard -- --address <token>`), replace every value with what you verified, and run `npm run onboard -- --address <token> --answers <file> --write`. Fields starting with $ are ignored. Every decision needs evidence: a URL or one sentence.",
+  "version": "onboarding-answers/1",
+  "address": "0x00000000000000000000000000000000000f00d1",
+  "chain": "ethereum",
+  "slug": "example-token",
+  "name": "Example Token",
+  "ticker": "EXMP",
+  "include": [],
+  "historyStart": "2023-04-12",
+  "staking": {
+    "$decisions": "\"contracts\" = you found the mechanism and verified its address (list it). \"none\" = you searched the project docs and the explorer and NO staking, locking or vote-escrow mechanism exists. \"unresolved\" = a mechanism exists but you cannot verify its address: stop; --write refuses it until the owner supplies the address or a source.",
+    "decision": "contracts",
+    "evidence": "https://docs.example.org/staking lists the staking contract; it holds 210M EXMP on the explorer's holder list",
+    "contracts": [
+      {
+        "chain": "ethereum",
+        "address": "0x00000000000000000000000000000000000057a1",
+        "kind": "stakeChanged",
+        "label": "Example staking proxy",
+        "deployBlock": 17050000
+      }
+    ]
+  },
+  "wallets": [
+    {
+      "chain": "ethereum",
+      "address": "0x000000000000000000000000000000000000ca5e",
+      "label": "Example Foundation treasury multisig",
+      "class": "treasury",
+      "source": "https://blog.example.org/wallet-disclosure",
+      "confidence": "high"
+    },
+    {
+      "chain": "ethereum",
+      "address": "0x000000000000000000000000000000000007ea11",
+      "label": "Example team vesting wallet",
+      "class": "team",
+      "source": "https://etherscan.io/address/0x000000000000000000000000000000000007ea11 (funded only by the treasury multisig)",
+      "confidence": "medium"
+    },
+    {
+      "chain": "ethereum",
+      "address": "0x0000000000000000000000000000000000a550c1",
+      "label": "Example Labs company wallet",
+      "class": "association",
+      "source": "https://blog.example.org/wallet-disclosure",
+      "confidence": "high"
+    },
+    {
+      "chain": "ethereum",
+      "address": "0x00000000000000000000000000000000000e5c70",
+      "label": "Example reward vault",
+      "class": "reward-vault",
+      "source": "https://docs.example.org/staking#rewards",
+      "confidence": "medium"
+    }
+  ],
+  "dex": {
+    "decision": "pools",
+    "evidence": "https://dexscreener.com/ethereum/0x00000000000000000000000000000000000f00d1 lists one pool",
+    "pools": [
+      {
+        "chain": "ethereum",
+        "address": "0x0000000000000000000000000000000000009001",
+        "label": "Uniswap v3 EXMP/WETH",
+        "source": "https://dexscreener.com/ethereum/0x0000000000000000000000000000000000009001"
+      }
+    ]
+  },
+  "cex": {
+    "decision": "spellbook",
+    "evidence": "EVM-only token: the Dune spellbook sync (sync-cex-wallets.yml) fills the exchange list nightly",
+    "wallets": [],
+    "$rejected": "Non-EVM only: wallets the runner listed after the first snapshot as labelled exchange wallets that hold the token, which you checked and refused. Each row: {\"chain\", \"address\", \"note\"}.",
+    "rejected": []
+  },
+  "$largeHolders": "One row per wallet above 1% of supply. \"labelled\" = the wallet is already classified (exchange, treasury, team, staking, pool) in the lists above or in config. \"retail\" = you traced it and it is an ordinary large holder. \"unknown\" = you traced it and could not establish who it is, and found no exchange, treasury or team evidence. Never guess a label: use \"unknown\". \"retail\" and \"unknown\" both count as holders and raise megaHolderThreshold when the wallet is above it.",
+  "largeHolders": [
+    {
+      "chain": "ethereum",
+      "address": "0x000000000000000000000000000000000000ca5e",
+      "decision": "labelled",
+      "note": "Largest holder is the treasury multisig listed in wallets"
+    }
+  ],
+  "copy": { "description": "Example Token governance token (ERC-20 on Ethereum)." }
+}

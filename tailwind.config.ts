@@ -17,8 +17,14 @@ export default {
       fontFamily: {
         sans: ['"Inter"', "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
         mono: ['"IBM Plex Mono"', "ui-monospace", '"SF Mono"', "monospace"],
+        display: ['"Archivo"', '"Inter"', "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
+        surface: {
+          raised: "hsl(var(--surface-raised))",
+          sunken: "hsl(var(--surface-sunken))",
+        },
+        "border-strong": "hsl(var(--border-strong))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -94,6 +100,7 @@ export default {
       boxShadow: {
         sm: "0 1px 2px rgba(14,20,20,0.06)",
         md: "0 4px 16px rgba(14,20,20,0.10)",
+        pop: "0 2px 6px hsl(var(--shadow-color) / 0.18), 0 12px 32px -10px hsl(var(--shadow-color) / 0.35)",
       },
       keyframes: {
         "accordion-down": {

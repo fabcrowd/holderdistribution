@@ -33,6 +33,9 @@ import process from "node:process";
 import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
 import { holderDayChanges, placeholderLag, resolveConsistencyOptions, resolveFeedHealth, runForEachProject, seriesBreakDates } from "./lib/feedHealth.js";
 import { forensicsRegistryProblems } from "./lib/walletFlowsProject.js";
+import { projectSizing } from "./lib/projectSizing.js";
+import { checkCexFlowsWindow } from "./lib/feedAlignment.js";
+import { resolveChainVm, vmUsesNativeAsset } from "./lib/chainVms.js";
 
 // `--all`: once per registered project; fail if any project fails.
 if (process.argv.includes("--all")) {
@@ -57,8 +60,8 @@ const CHANGELOG_REL = CHANGELOG_PATH ? path.relative(ROOT, CHANGELOG_PATH).split
 const TREASURY_CATEGORIES = project.config?.treasury?.categories ?? ["treasury", "council", "holdings", "escrow"];
 const strict = process.argv.includes("--strict");
 
-/** Absolute TEL tolerance. Feeds round differently at the sub-TEL level. */
-const TOLERANCE = 1;
+/** Absolute token tolerance, sized from the project's supply. Feeds round differently at the sub-token level. */
+const TOLERANCE = projectSizing(project.config).consistencyToleranceTokens;
 const STALE_DAYS = 3;
 
 const failures = [];
@@ -268,6 +271,21 @@ const main = async () => {
         `health.consistency.knownHolderChangeDates in config/projects/${project.slug}.json`,
     );
   }
+
+  // --- 8b. cex-flows must say which two snapshots it compares (one settled day
+  // apart): a failure, it checks only what our own writer stamps. Its net versus
+  // the transaction-level exchange flows for that day is a WARNING only (list
+  // changes, chains the history does not scan, rebasing tokens): see feedAlignment.js.
+  const cexFlows = await read("cex-flows.json", { optional: true });
+  const cexAmountRule = checkCexFlowsWindow(cexFlows, await read("exchange-flow-history.json", { optional: true }), {
+    // history rounds in and out to whole tokens, so their net is within 2 representable units
+    tolerance: TOLERANCE * 2,
+    nativeAsset: (project.config?.chains ?? []).some((c) => vmUsesNativeAsset(resolveChainVm(c))),
+    walletSetChangeDates: (cfgLog.events ?? []).filter((e) => (e.affects?.metrics ?? []).includes("cexBalance")).map((e) => e.date),
+  });
+  failures.push(...cexAmountRule.problems);
+  warnings.push(...cexAmountRule.warnings);
+  checks.push(...cexAmountRule.checks);
 
   // --- 9. Placeholder feeds (intentional stubs) must be rewritten with the
   // snapshot, not left over from an earlier run.

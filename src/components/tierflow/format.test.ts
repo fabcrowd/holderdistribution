@@ -38,6 +38,8 @@ describe("signed", () => {
     expect(signed(0, fmtInt)).toBe("0");
     expect(signed(-0, fmtInt)).toBe("0");
     expect(signed(0.2, fmtInt)).toBe("0");
-    expect(signed(-0.4, fmtTel)).toBe("0");
+    expect(signed(-0.4, fmtInt)).toBe("0");
+    // fmtTel now keeps significant digits below 1 (fractional-balance tokens) instead of rounding to "0".
+    expect(signed(-0.4, fmtTel)).toBe("−0.4");
   });
 });

@@ -12,6 +12,7 @@ Palette follows the Holder Distribution brand (design-system/BRAND.md, tokens.cs
 - accent  #8A6D1D  gold — premium/featured moments only
 - positive #177F55 / negative #C33D41 — real holder inflow / outflow only
 - warning #9C6500  caution (distinct from accent)
+- type: Archivo (display), Inter (text), IBM Plex Mono (chain-native values)
 */
 
 @layer base {
@@ -24,6 +25,11 @@ Palette follows the Holder Distribution brand (design-system/BRAND.md, tokens.cs
     --gradient-end: 180 22% 93%;
     --card: 0 0% 100%;
     --card-foreground: 180 18% 7%;
+
+    --surface-raised: 0 0% 100%;
+    --surface-sunken: 180 20% 93%;
+    --border-strong: 180 12% 74%;
+    --shadow-color: 180 30% 12%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 180 18% 7%;
@@ -120,6 +126,11 @@ Palette follows the Holder Distribution brand (design-system/BRAND.md, tokens.cs
     --card: 190 18% 9%;
     --card-foreground: 180 14% 92%;
 
+    --surface-raised: 190 16% 12%;
+    --surface-sunken: 190 24% 4.5%;
+    --border-strong: 190 10% 28%;
+    --shadow-color: 0 0% 0%;
+
     --popover: 190 18% 10%;
     --popover-foreground: 180 14% 92%;
 
@@ -132,8 +143,8 @@ Palette follows the Holder Distribution brand (design-system/BRAND.md, tokens.cs
     --muted: 190 14% 14%;
     --muted-foreground: 185 8% 66%;
     --supply-dex: 152 60% 42%;
-    --supply-cex: 32 90% 50%;
-    --supply-developer: 250 70% 68%;
+    --supply-cex: 38 82% 56%;
+    --supply-developer: 252 62% 70%;
     --supply-gap: 0 0% 55%;
 
     --accent: 190 14% 16%;
@@ -175,12 +186,6 @@ Palette follows the Holder Distribution brand (design-system/BRAND.md, tokens.cs
   body {
     @apply text-foreground;
     background-color: hsl(var(--background));
-    background-image:
-      radial-gradient(ellipse at 8% 0%, hsl(var(--primary) / 0.10) 0%, transparent 48%),
-      radial-gradient(ellipse at 92% 8%, hsl(var(--brand-bright) / 0.12) 0%, transparent 46%),
-      linear-gradient(145deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
-    background-repeat: no-repeat;
-    background-attachment: fixed;
     min-height: 100vh;
     min-height: 100svh;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -199,9 +204,58 @@ Palette follows the Holder Distribution brand (design-system/BRAND.md, tokens.cs
   * {
     -webkit-tap-highlight-color: transparent;
   }
+
+  h1, h2, h3 { text-wrap: balance; }
+  ::selection { background: hsl(var(--primary) / 0.25); }
+  * { scrollbar-width: thin; scrollbar-color: hsl(var(--border-strong)) transparent; }
+  :focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
 }
 
 @layer utilities {
+  /* Display face: Archivo, slightly wide, tight tracking. Headlines and the wordmark only. */
+  .ha-display {
+    font-family: "Archivo", "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-stretch: 112%;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  /* Chain-native values: mono, tabular. */
+  .ha-num {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  /* Small mono lead-in above a headline. Sentence case, never uppercase. */
+  .ha-eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: hsl(var(--primary));
+  }
+  /* Hairline grid texture that fades out; atmosphere for hero bands. */
+  .ha-grid-bg {
+    position: relative;
+    isolation: isolate;
+  }
+  .ha-grid-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.07) 1px, transparent 1px);
+    background-size: 48px 48px;
+    -webkit-mask-image: radial-gradient(ellipse 85% 90% at 75% 0%, #000 15%, transparent 72%);
+    mask-image: radial-gradient(ellipse 85% 90% at 75% 0%, #000 15%, transparent 72%);
+  }
+  /* Bottom safe area for fixed mobile bars. */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   .premium-surface-card {
     border: 1px solid hsl(var(--border));
     border-radius: 1.25rem;
@@ -551,9 +605,6 @@ Palette follows the Holder Distribution brand (design-system/BRAND.md, tokens.cs
 
   /* Dark surfaces: the light theme's decorative gradients are hard-coded
      near-white HSL values, so each gets a token-based dark equivalent. */
-  .dark body {
-    background-image: linear-gradient(160deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
-  }
   .dark .premium-surface-card,
   .dark .premium-stat-card,
   .dark .premium-section-card {

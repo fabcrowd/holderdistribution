@@ -1,5 +1,6 @@
 import { useProject } from "@/hooks/useProject";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
+import { bucketFloor, holderTiersFor } from "@/lib/holderTiers";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useChartIntro, useIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
@@ -86,6 +87,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
   const { t } = useProjectCopy();
   const { tiers: tierOrder } = useTierGeometry();
   const tk = project.ticker;
+  const dustFloor = new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(bucketFloor(holderTiersFor(project)));
   const { data: historicalDelta } = useHolderHistoricalDelta({ view: selectedView, days: rangeDays, enabled: rangeDays >= 1 });
   const intro = useIntro();
   const chartIntro = useChartIntro();
@@ -256,7 +258,7 @@ export const DistributionTerminal = ({ snapshot, snapshotError, selectedView, ra
         title="Tier flows"
         info={`${t(TIER_FLOWS_EXPLAINER)}
 
-Select a tier here or in the Tiers table to see where its wallets and ${tk} came from and went to over the period. Retail only; sub-1-${tk} dust wallets are counted in the lowest tier.`}
+Select a tier here or in the Tiers table to see where its wallets and ${tk} came from and went to over the period. Retail only; sub-${dustFloor}-${tk} dust wallets are counted in the lowest tier.`}
         stat={
           flowsReady && flowFields.length > 0 && (
             <span className="text-xs text-muted-foreground">{rangeLabel}</span>

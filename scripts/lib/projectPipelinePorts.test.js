@@ -272,7 +272,7 @@ describe("workflow commit paths (scripts/workflow-paths.js)", () => {
     expect(mapWorkflowFiles(tel, TEL_FILES, repo)).toEqual(TEL_FILES);
     expect(workflowPaths(tel, repo)).toEqual({
       HD_PROJECT_SLUG: "tel", HD_LEGACY_ROOT: "true", HD_DATA_DIR: "public/data", HD_WORK_DIR: "data",
-      HD_CEX_CONFIG: "config/cex-wallets.json", HD_SOLANA_FLOWS: "false",
+      HD_CEX_CONFIG: "config/cex-wallets.json", HD_SOLANA_FLOWS: "false", HD_HEDERA_FLOWS: "false",
     });
   });
 

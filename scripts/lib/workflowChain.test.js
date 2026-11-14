@@ -116,6 +116,35 @@ describe("data pipeline workflow chain", () => {
       expect(doc.jobs.plan["timeout-minutes"]).toBeGreaterThan(0);
     });
 
+    it("a separate skipped-projects job turns skipped projects red without gating refresh", () => {
+      const skipped = doc.jobs["skipped-projects"];
+      expect(skipped, "skipped-projects job missing").toBeTruthy();
+      expect(skipped.needs).toBe("plan");
+      expect(skipped.if).toContain("needs.plan.outputs.skipped");
+      expect(doc.jobs.plan.outputs.skipped).toContain("steps.matrix.outputs.skipped");
+      expect(skipped.if).toContain("!= '[]'");
+      const planRun = doc.jobs.plan.steps.find((s) => s.id === "matrix").run;
+      expect(planRun).toMatch(/skipped=.*\$GITHUB_OUTPUT/);
+      expect(planRun).toMatch(/matrix=.*\$GITHUB_OUTPUT/);
+      expect(planRun).not.toMatch(/echo\s+"(matrix|skipped)=\$\(/);
+      expect(planRun).toMatch(/workflow-paths\.js skipped .*--job holders/);
+      expect(planRun).toMatch(/workflow-paths\.js matrix .*--job holders/);
+      const run = skipped.steps.map((x) => x.run ?? "").join("\n");
+      expect(run).toContain("::error");
+      expect(run).toMatch(/exit 1/);
+      // refresh must not wait for it, and nothing else may depend on it.
+      expect([doc.jobs.refresh.needs].flat()).not.toContain("skipped-projects");
+      for (const [id, j] of Object.entries(doc.jobs)) expect([j.needs ?? []].flat(), id).not.toContain("skipped-projects");
+    });
+
+    it("both holders scan steps take their timeout from the matrix (no literal number)", () => {
+      const steps = doc.jobs.refresh.steps;
+      const first = steps.find((s) => s.id === "holders_public");
+      const retry = steps.find((s) => (s.if ?? "").includes("steps.holders_public.outcome"));
+      expect(first["timeout-minutes"]).toBe("${{ matrix.holdersTimeout }}");
+      expect(retry["timeout-minutes"]).toBe("${{ matrix.holdersRetryTimeout }}");
+    });
+
     it("keeps the dispatch project input (default all), the shared concurrency group, and no slug checks", () => {
       expect(triggers(doc).workflow_dispatch.inputs.project.default).toBe("all");
       expect(doc.concurrency).toEqual({ group: "holders-refresh", "cancel-in-progress": false });

@@ -1,3 +1,5 @@
+import { COMPACT_TIERFLOW, formatCompact } from "@/lib/format";
+
 /** Signed figure. A value that rounds to zero at display precision is a plain neutral "0", never "+0". */
 export const signed = (v: number, f: (n: number) => string) => {
   const body = f(Math.abs(v));
@@ -7,15 +9,8 @@ export const signed = (v: number, f: (n: number) => string) => {
 
 const UNKNOWN = "—";
 
-export const fmtTel = (v: number) => {
-  if (!Number.isFinite(v)) return UNKNOWN;
-  const a = Math.abs(v);
-  // Compare the rounded value so 999,500 reads 1.0M rather than 1000K.
-  if (a >= 1e9 || Number((a / 1e6).toFixed(1)) >= 1000) return `${(v / 1e9).toFixed(2)}B`;
-  if (a >= 1e6 || Math.round(a / 1e3) >= 1000) return `${(v / 1e6).toFixed(1)}M`;
-  if (a >= 1e3) return `${(v / 1e3).toFixed(0)}K`;
-  return `${Math.round(v)}`;
-};
+// promoteRounded: compare the rounded value so 999,500 reads 1.0M rather than 1000K.
+export const fmtTel = (v: number) => formatCompact(v, { ...COMPACT_TIERFLOW, nonFinite: UNKNOWN });
 
 export const fmtInt = (v: number) => (Number.isFinite(v) ? new Intl.NumberFormat().format(Math.round(v)) : UNKNOWN);
 

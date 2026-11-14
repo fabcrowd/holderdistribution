@@ -53,7 +53,7 @@ Capabilities come from config and from files on disk, never from the slug (`proj
 
 | Capability | Present when |
 |---|---|
-| `evm` / `solana` | `chains[]` has that VM |
+| `evm` / `solana` / `hedera` | `chains[]` has that VM |
 | `stakeChanged` | a staking contract of kind `stakeChanged` (TEL staker balances) |
 | `zebecStakeV1` | a Zebec stake program (Solana staking) |
 | `forensicsRegistry` | `<workDir>/forensics/wallet-flows.registry.json` exists |
@@ -69,6 +69,7 @@ Capabilities come from config and from files on disk, never from the slug (`proj
 | exchange-flows | – | public, helius, alchemy | 2000 | warn | run | run | run |
 | tier-outflows | – | public, helius, alchemy | 2000 | warn | run | run | run |
 | solana-flows | solana | helius, public | 0 | enforce | n/a | run | n/a |
+| hedera-flows | hedera | public | 0 | enforce | n/a | n/a | n/a |
 | staker-balances | stakeChanged | public, alchemy | 1000 | enforce | run | n/a | waived |
 | solana-staking | zebecStakeV1 | helius, public | 0 | enforce | n/a | run | n/a |
 | history-gaps | evm | alchemy only | 5000 | warn | run | waived | run |
@@ -76,6 +77,8 @@ Capabilities come from config and from files on disk, never from the slug (`proj
 | ledger | ledgerConfig | public, etherscan, helius, alchemy | 0 | enforce | run | run | run |
 | cex-candidates | evm (weekly) | public | 0 | enforce | run | waived | run |
 | cex-sync | – (semimonthly) | public, helius | 0 | enforce | run | run | run |
+
+`hedera-flows` runs `scan-hedera-flows.js` inside `refresh-holders.yml` (budget `HEDERA_FLOW_MAX_MS`, 40 minutes, under the 45-minute step timeout) and shares the `exchange-flows` dataset with `scan-exchange-flows.js`. No registered project has a Hedera chain, so it is `n/a` for all three. A Hedera project would also run `wallet-flows` (`generate-wallet-flows-hedera.js` is in that job's script list) and `ledger` (the Hedera branch of `build-ledger.js`); it has no EVM chain, so the guard hard-blocks Alchemy as it does for ZBCN.
 
 For ZBCN (Solana only) every row that lists `alchemy` is rewritten to drop it, and the guard hard-blocks Alchemy (budget 0, enforce). `history-gaps` is `alchemyOnly`, so with no EVM chain it does not run; the waiver records why.
 
@@ -295,7 +298,7 @@ Limits live in `config/public-rpc-limits.json`, keyed by **host** (never by proj
 - *Wallet-flows*: these are windowed per-wallet scans, re-run in full each night.
 - *Ledger*: it already keeps a per-chain cursor (`ledger-checkpoint.json`) and a chain that fails keeps its previous cursor.
 - *Solana holders*: these are a token-account snapshot, not a block-range scan, so there is nothing to resume.
-`refresh-holders.yml` gives each project `pipeline.workflowTimeoutMinutes` (ONDO: 60). Main has no partial holders checkpoint for ONDO (`public/data/ondo/` is absent, and there is no committed `holders-checkpoint.json` for it). The first holders scan is a full history, not an incremental catch-up, and is likely to hit the job timeout before it can write a checkpoint the next night can resume from.
+`refresh-holders.yml` gives each project `pipeline.workflowTimeoutMinutes` (ONDO: 60) and a first holders-scan step cap `pipeline.holdersScanTimeoutMinutes` (default 20, retry step 35, must fit in the job timeout). Main has no partial holders checkpoint for ONDO (`public/data/ondo/` is absent, and there is no committed `holders-checkpoint.json` for it). The first holders scan is a full history, not an incremental catch-up, and is likely to hit the job timeout before it can write a checkpoint the next night can resume from.
 
 Solana calls go through `rpc.js` `rpcCall` (`scripts/lib/solana/rpc.js`), so the public `api.mainnet-beta.solana.com` endpoint gets the same host limiter (3.5 rps, 4 concurrent, as published). Solana never uses Alchemy.
 

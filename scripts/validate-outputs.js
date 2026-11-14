@@ -31,6 +31,15 @@ const required = [
   { file: "holders-lite.json", keys: ["generatedAt", "source", "views", "chainOrder"] },
 ];
 
+/** Why a holders-lite `networkStake` block is unusable, or null. Absent is fine; present must be real data or say it is unavailable. */
+const networkStakeProblem = (n) => {
+  if (n?.available === false) return typeof n.reason === "string" && n.reason ? null : "is unavailable but gives no reason";
+  if (n?.available !== true) return "has no boolean `available`";
+  if (!(Number.isFinite(n.stakedTotal) && n.stakedTotal > 0)) return "is available without a positive stakedTotal";
+  const { start, end } = n.stakingPeriod ?? {};
+  return Number.isFinite(Date.parse(start)) && Number.isFinite(Date.parse(end)) ? null : "is available without a staking period";
+};
+
 let failed = 0;
 for (const { file, keys } of required) {
   const p = path.join(DATA_DIR, file);
@@ -38,7 +47,11 @@ for (const { file, keys } of required) {
     const raw = await fs.readFile(p, "utf8");
     const data = JSON.parse(raw);
     const missing = keys.filter((k) => !(k in data));
-    if (missing.length) {
+    const stakeProblem = file === "holders-lite.json" && "networkStake" in data ? networkStakeProblem(data.networkStake) : null;
+    if (stakeProblem) {
+      console.error(`FAIL ${file}: networkStake ${stakeProblem}`);
+      failed++;
+    } else if (missing.length) {
       console.error(`FAIL ${file}: missing keys: ${missing.join(", ")}`);
       failed++;
     } else {

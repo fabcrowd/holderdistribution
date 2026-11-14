@@ -15,7 +15,9 @@ name: Refresh holders snapshots
 #     (HD_COMMIT_TAG: only the registry default project publishes, the rest add
 #     [skip netlify]) come from the same place.
 # `fail-fast: false`: one project's failure never blocks the others. Each
-# project's job has its own timeout (config pipeline.workflowTimeoutMinutes).
+# project's job has its own timeout (config pipeline.workflowTimeoutMinutes) and
+# its own holders-scan step cap (config pipeline.holdersScanTimeoutMinutes,
+# default 20); the plan job orders long scans last.
 #
 # Why one workflow, not one per project: every per-project workflow shared the
 # `holders-refresh` concurrency group, and GitHub keeps only ONE pending run
@@ -61,6 +63,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      skipped: ${{ steps.matrix.outputs.skipped }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -73,17 +76,45 @@ jobs:
       - name: List projects from config/projects.json
         id: matrix
         # Scheduled runs have no inputs -> every registered project. A broken
-        # project config is skipped with a warning (never blocks the others);
-        # a slug named on dispatch that is broken fails here.
+        # project config is left out of the matrix (never blocks the others) and
+        # listed in the `skipped` output, which turns the run red below;
+        # a slug named on dispatch that is broken fails here. If node itself fails
+        # the step fails with a named error (never a green step with empty output).
         env:
           SELECTION: ${{ inputs.project }}
-        run: echo "matrix=$(node scripts/workflow-paths.js matrix "$SELECTION" --job holders)" >> "$GITHUB_OUTPUT"
+        run: |
+          fail() { echo "::error title=Refresh plan failed::$1"; exit 1; }
+          SKIPPED=$(node scripts/workflow-paths.js skipped "$SELECTION" --job holders) || fail "could not list the projects; the reason is in this step's log"
+          echo "skipped=$SKIPPED" >> "$GITHUB_OUTPUT"
+          MATRIX=$(node scripts/workflow-paths.js matrix "$SELECTION" --job holders) || {
+            echo "$SKIPPED" | jq -r '.[] | "::error title=Project skipped::\(.slug): \(.error | gsub("[\r\n]+"; " "))"'
+            fail "no project can run; the reason is in this step's log"
+          }
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  skipped-projects:
+    # Makes a project left out of the matrix loud: the run goes red and names the
+    # config key to fix. Nothing depends on this job and `refresh` does not wait
+    # for it, so the other projects still refresh.
+    needs: plan
+    if: ${{ needs.plan.outputs.skipped != '[]' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Fail on projects skipped from the matrix
+        env:
+          SKIPPED: ${{ needs.plan.outputs.skipped }}
+        run: |
+          echo "$SKIPPED" | jq -r '.[] | "::error title=Project skipped::\(.slug) was left out of this refresh: \(.error | gsub("[\r\n]+"; " "))"'
+          exit 1
 
   refresh:
     name: Refresh ${{ matrix.slug }}
     needs: plan
     runs-on: ubuntu-24.04
-    # Per-project cap (config pipeline.workflowTimeoutMinutes, default 60).
+    # Per-project cap (config pipeline.workflowTimeoutMinutes, default 60; the
+    # holders scan steps below take matrix.holdersTimeout / holdersRetryTimeout,
+    # from pipeline.holdersScanTimeoutMinutes, and must fit inside it).
     # Was unbounded (GitHub's 360-minute default). On a private repo every minute
     # is billed against the 2,000 included/month, and failing runs here burned
     # ~50 min each on a throttled fallback path (2026-10-03..13, ~600 min).
@@ -186,6 +217,11 @@ jobs:
         # cache, not in git: the file is only needed by the next run, it can be MBs
         # (full raw balance map), committing it would put scratch next to feeds and
         # churn main, and a failed holders step never reaches the commit steps.
+        # A VM whose adapter sets keepsFinishedScan (today Hedera) also restores its
+        # finished scan here, so a same-day re-run of the same settled snapshot pages
+        # nothing; a later snapshot discards it and scans afresh. An in-progress
+        # Hedera state resumes only while it is close to the snapshot a fresh run would
+        # use (the same night); an older one is rescanned.
         # Same steps for every project (paths come from workflow-paths.js).
         uses: actions/cache/restore@v4
         with:
@@ -201,7 +237,7 @@ jobs:
         # resumes from its checkpoint, so a failed attempt loses nothing.
         id: holders_public
         continue-on-error: true
-        timeout-minutes: 20
+        timeout-minutes: ${{ matrix.holdersTimeout }}   # config pipeline.holdersScanTimeoutMinutes, default 20
         env:
           HD_JOB_ID: holders   # config/nightly-jobs.json: provider order + Alchemy budget guard
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
@@ -210,9 +246,12 @@ jobs:
           RPC_PREFER_PUBLIC: '1'
         run: node scripts/pull-holders-rpc.js
 
-      - name: Refresh holders snapshot (retry on keys)
+      - name: Refresh holders snapshot (retry on keys, or resume from the checkpoint)
+        # Runs for every project when the first attempt failed. On keys where the
+        # project has them; for a public-only source it is a same-run resume from
+        # the partial checkpoint the first step left.
         if: ${{ steps.holders_public.outcome == 'failure' }}
-        timeout-minutes: 35
+        timeout-minutes: ${{ matrix.holdersRetryTimeout }}
         env:
           HD_JOB_ID: holders   # config/nightly-jobs.json: provider order + Alchemy budget guard
           RPC_PREFER_PUBLIC: '0'   # the public attempt just failed
@@ -223,9 +262,11 @@ jobs:
 
       - name: Save partial holders checkpoint
         # always(): the point is to keep progress from a failed or timed-out scan.
-        # A finished scan deletes its partial, so nothing is saved then and the
-        # next restore finds only older keys whose files a finished scan rejects
-        # (partialUsable checks token, start block and base checkpoint).
+        # EVM/Solana: a finished scan removes its partial, so nothing is saved then
+        # (older keys hold files that partialUsable rejects). A keepsFinishedScan VM
+        # (Hedera) keeps its finished state, so this step also runs after success:
+        # ~25 MB per run under a new key; GitHub evicts cache entries unused for
+        # 7 days, so it stays far under the 10 GB limit.
         if: ${{ always() && hashFiles(format('{0}/holders-partial-*.json', env.HD_WORK_DIR)) != '' }}
         uses: actions/cache/save@v4
         with:
@@ -364,6 +405,20 @@ jobs:
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
         run: node scripts/scan-solana-flows.js
 
+      - name: Scan Hedera flows
+        # Writes the per-day store (data/<slug>/hedera-flow-days.json) and the chain checkpoint that
+        # scan-exchange-flows.js and generate-tier-outflows.js publish from, so it must run first. Gated on the
+        # registry (the project declares a Hedera chain), not on a slug. The public mirror node needs no key.
+        # Settled to the same consensus end as the holders snapshot above. Non-fatal: it resumes from its
+        # checkpoint tomorrow, and the feeds stamp no day until it has caught up.
+        if: ${{ env.HD_HEDERA_FLOWS == 'true' }}
+        id: hedera
+        continue-on-error: true
+        timeout-minutes: 45
+        env:
+          HD_JOB_ID: hedera-flows   # config/nightly-jobs.json
+        run: node scripts/scan-hedera-flows.js
+
       - name: Scan exchange flows
         id: flows
         continue-on-error: true
@@ -426,7 +481,7 @@ jobs:
 
       - name: Commit downstream feeds
         run: |
-          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json data/solana-flow-days.json public/data/holders-history.json data/holders-asof-blocks.json public/data/date-blocks.json data/rpc-usage.json public/data/pipeline-status.json)
+          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json data/solana-flow-days.json data/hedera-flow-days.json public/data/holders-history.json data/holders-asof-blocks.json public/data/date-blocks.json data/rpc-usage.json public/data/pipeline-status.json)
           for f in $FILES; do [ -e "$f" ] && git add "$f"; done
           if git diff --cached --quiet; then
             echo "No downstream changes to commit"
@@ -435,7 +490,7 @@ jobs:
             git checkout -- .
             bash scripts/push-main.sh
           fi
-          echo "solana=${{ steps.solana.outcome }} flows=${{ steps.flows.outcome }} tiers=${{ steps.tiers.outcome }} gaps=${{ steps.gaps.outcome }}"
+          echo "solana=${{ steps.solana.outcome }} hedera=${{ steps.hedera.outcome }} flows=${{ steps.flows.outcome }} tiers=${{ steps.tiers.outcome }} gaps=${{ steps.gaps.outcome }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -452,6 +507,7 @@ jobs:
           OUTCOME_STAKERS: ${{ steps.stakers.outcome }}
           OUTCOME_SOLANA_STAKING: ${{ steps.solana_staking.outcome }}
           OUTCOME_SOLANA: ${{ steps.solana.outcome }}
+          OUTCOME_HEDERA: ${{ steps.hedera.outcome }}
           OUTCOME_FLOWS: ${{ steps.flows.outcome }}
           OUTCOME_TIERS: ${{ steps.tiers.outcome }}
           OUTCOME_GAPS: ${{ steps.gaps.outcome }}
@@ -471,6 +527,7 @@ jobs:
           stakers|OUTCOME_STAKERS|Staker balances refresh (staking attribution is stale)
           solana_staking|OUTCOME_SOLANA_STAKING|Solana staking positions pull
           solana|OUTCOME_SOLANA|Solana flow scan (exchange and tier flows for Solana projects are stale)
+          hedera|OUTCOME_HEDERA|Hedera flow scan (exchange and tier flows for Hedera projects are stale)
           flows|OUTCOME_FLOWS|Exchange flows scan
           tiers|OUTCOME_TIERS|Tier outflows generation
           gaps|OUTCOME_GAPS|Holders-history gap fill

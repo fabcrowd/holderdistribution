@@ -63,6 +63,18 @@ export const hederaAdapter = {
 
   clock: (chain, opts = {}) => createHederaClock(clientFor(chain, opts)),
 
+  /** The rate-limited mirror client the other methods use (one limiter per client: share it across a run). */
+  mirrorClient: (chain, opts = {}) => clientFor(chain, opts),
+
+  /** Exchange-flow scan, classification and config helpers (lib/hedera/flows.js), loaded on demand. */
+  flows: () => import("./flows.js"),
+
+  /** Wallet-flow scan, registry and ledger helpers for the project-controlled treasury accounts (lib/hedera/walletFlows.js), loaded on demand. */
+  walletFlows: () => import("./walletFlows.js"),
+
+  /** Network-wide staked HBAR (informational), lib/hedera/networkStake.js, loaded on demand. Never throws. */
+  stakingInfo: async (chain, opts = {}) => (await import("./networkStake.js")).fetchNetworkStake(chain, opts),
+
   explorerUrl(chain, kind, id) {
     const key = kind === "tx" ? id : (parseHederaAddress(id) ?? id);
     return chainExplorerUrl({ ...chain, vm: "hedera", explorerTemplates: { ...HASHSCAN, ...chain?.explorerTemplates } }, kind, key);
@@ -88,17 +100,39 @@ export const hederaAdapter = {
   /**
    * Classification a project on this chain's native coin starts with (onboard.js writes it):
    * network treasury exclusions, chain contracts{} roles, the treasury categories they fill, and
-   * a job limit that fits one full /balances scan (93 min measured locally) until daily replay replaces it.
+   * job limits that fit one full /balances scan until daily replay replaces it. Two measurements: 93 min
+   * locally, 67 min in the newer end-to-end run; the step cap takes the slower one plus headroom.
    */
   async nativeClassification() {
     const { hederaChainContracts, hederaTreasuryExclusions } = await import("./treasury.js");
     const { hederaCexWallets } = await import("./cexAccounts.js");
-    return { exclusions: hederaTreasuryExclusions(), contracts: hederaChainContracts(), cexWallets: hederaCexWallets(), treasuryCategories: ["treasury"], workflowTimeoutMinutes: 180 };
+    const { HEDERA_CIRCULATING_SUBTRACT, hederaNightlyWaivers } = await import("./nativeDecisions.js");
+    return {
+      exclusions: hederaTreasuryExclusions(),
+      contracts: hederaChainContracts(),
+      cexWallets: hederaCexWallets(),
+      treasuryCategories: ["treasury"],
+      circulatingSubtract: [...HEDERA_CIRCULATING_SUBTRACT],
+      nightlyWaivers: hederaNightlyWaivers(),
+      // Job budget (refresh-holders.yml, minutes): setup ~3 + holders scan 120 + retry 35 + generators ~10 +
+      // Hedera flows 45 + exchange flows 25 + tier outflows 25 = 263, under 270 (GitHub's job limit is 360).
+      // The sum assumes the staker-balance step (20 min cap) and the Solana staking step (10 min cap) exit at once for Hedera, and that the Solana flows and EVM gap-fill steps are skipped; steps without a cap (CEX wallet sync, history, reconcile, commits) are not in the sum.
+      workflowTimeoutMinutes: 270,
+      holdersScanTimeoutMinutes: 120, // scan measured 67 min (end to end) and 93 min (local): one step must finish it
+    };
+  },
+
+  /** The owner decisions the onboarding runner reads for this coin (history mode, acknowledged large holders), in the answers-file shape. */
+  async nativeDecisions() {
+    return (await import("./nativeDecisions.js")).hederaNativeDecisions();
   },
 
   /** Why a saved scan state cannot be resumed for this chain config (other floor or range width), or null when it can. */
   resumeProblem: (chain, resume) =>
     resumeProblem(resume, { floor: floorOf(chain), width: chain?.rangeWidth ?? HEDERA_RANGE_WIDTH }),
+
+  /** Opt-in: a finished scan state may stay on disk after the checkpoint is saved; scanChain serves it only for the same resolved stamp. */
+  keepsFinishedScan: true,
 
   async scanHolders(chain, _token, opts = {}) {
     const scan = await this.scanChain(chain, opts);
@@ -125,10 +159,22 @@ export const hederaAdapter = {
       logger.warn?.(`  ${chain.key}: saved scan state at ${resume.timestamp} is after block ${pinBlock} (ends ${settle.to}); starting a fresh scan.`);
       resume = null;
     }
-    const snapshot = await scanBalanceSnapshot(client, { floor, width, resume, onProgress, atOrBefore: settle?.to ?? null, ...waitOpts });
+    // scanBalanceSnapshot drops an in-progress state that is too far from the snapshot a fresh run would use, and says so
+    // through onResumeDropped before it starts paging.
+    const onResumeDropped = (reason, { savedStamp }) => logger.warn?.(`  ${chain.key}: saved in-progress scan state at ${savedStamp} is ${reason}; starting a fresh scan.`);
+    const scan = (from) => scanBalanceSnapshot(client, { floor, width, resume: from, onProgress, onResumeDropped, atOrBefore: settle?.to ?? null, ...waitOpts });
+    let snapshot = await scan(resume);
+    if (snapshot.finishedState === "reused") logger.log?.(`  ${chain.key}: reusing the finished scan of snapshot ${snapshot.timestamp} (no balance paging).`);
+    else if (snapshot.finishedState === "discarded") logger.log?.(`  ${chain.key}: the saved finished scan is for another snapshot than ${snapshot.timestamp}; scanned afresh.`);
     // HBAR is never burned, so every balance at one snapshot, contracts and dust included, adds up to total supply.
     // A shortfall means a range lost rows; refusing it keeps a short count out of the feeds.
-    const supplyAt = await client.getJson(`/network/supply?timestamp=${snapshot.timestamp}`);
+    let supplyAt = await client.getJson(`/network/supply?timestamp=${snapshot.timestamp}`);
+    if (snapshot.finishedState === "reused" && snapshot.allRaw !== BigInt(supplyAt.total_supply)) {
+      // A saved finished state that fails the check is not trusted again: scan the same stamp afresh.
+      logger.warn?.(`  ${chain.key}: the reused scan of ${snapshot.timestamp} does not add up to total supply; scanning afresh.`);
+      snapshot = await scan(null);
+      supplyAt = await client.getJson(`/network/supply?timestamp=${snapshot.timestamp}`);
+    }
     const supplyAtRaw = BigInt(supplyAt.total_supply);
     if (snapshot.allRaw !== supplyAtRaw) {
       throw new Error(`hedera snapshot ${snapshot.timestamp}: balances sum to ${snapshot.allRaw} tinybar, total supply is ${supplyAtRaw}`);

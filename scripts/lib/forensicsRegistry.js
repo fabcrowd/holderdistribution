@@ -51,8 +51,12 @@ function contractLookup(config) {
  * Known-wallet rows for the forensics registry, one per non-retail address
  * (treasury + holdings roles), de-duplicated by exact address string (first wins).
  * Pure: no I/O.
+ *
+ * `extraWallets` are ready registry rows a vm supplies from outside config contracts{} (Hedera: the treasury
+ * accounts of the exclusions file); `notTraced` lists treasury accounts that are deliberately not traced, with
+ * the reason. Both are appended as given.
  */
-export function deriveRegistry(config, { chainKey } = {}) {
+export function deriveRegistry(config, { chainKey, extraWallets = [], notTraced = [] } = {}) {
   const contractsByChain = contractLookup(config);
   const roleAddresses = projectRoleAddresses(config, { roles: REGISTRY_ROLES });
   const seen = new Set();
@@ -68,10 +72,17 @@ export function deriveRegistry(config, { chainKey } = {}) {
     }
   }
 
+  for (const w of extraWallets) {
+    if (seen.has(w.address)) continue;
+    seen.add(w.address);
+    knownWallets.push(w);
+  }
+
   return {
     version: 1,
     description: REGISTRY_DESCRIPTION,
     knownWallets,
+    ...(notTraced.length > 0 ? { notTraced } : {}),
     botCluster: null,
     watchedSellers: [],
     extraCex: [],

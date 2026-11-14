@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Users } from "lucide-react";
@@ -48,13 +49,43 @@ describe("AnswerCards all-time-high note", () => {
   });
 });
 
+const domOf = (html: string): HTMLElement => {
+  const host = document.createElement("div");
+  host.innerHTML = html;
+  return host;
+};
+
+describe("AnswerCards cell structure", () => {
+  it("gives each answer cell exactly a dt, a value dd and a sub dd, in that order", () => {
+    const host = domOf(renderToStaticMarkup(<AnswerCards tiles={ALL} selectedView="combined" isError={false} />));
+    const cells = Array.from(host.querySelectorAll<HTMLElement>('[data-testid^="answer-"]:not([data-testid="answer-cards"])'));
+    expect(cells).toHaveLength(3);
+    for (const cell of cells) {
+      expect(Array.from(cell.children).map((c) => c.tagName)).toEqual(["DT", "DD", "DD"]);
+      expect(cell.children[1].getAttribute("data-role")).toBe("value");
+      expect(cell.children[2].getAttribute("data-role")).toBe("sub");
+    }
+  });
+  it("keeps the sub line and its ATH note inside the sub dd, after the value", () => {
+    const host = domOf(
+      renderToStaticMarkup(
+        <AnswerCards tiles={[tile("holders", { ath: true, athNote: "Based on 5 days" }), tile("retailHeld"), tile("cex")]} selectedView="combined" isError={false} />,
+      ),
+    );
+    const sub = host.querySelector<HTMLElement>('[data-testid="answer-holders"] > dd[data-role="sub"]');
+    expect(sub?.textContent).toContain("Sub holders");
+    expect(sub?.innerHTML).toContain("All-time high: Based on 5 days");
+    expect(sub?.className).toContain("text-ha-accent");
+  });
+});
+
 describe("AnswerCards", () => {
   it("renders exactly three cards using the tokens, with the label, value and sub line", () => {
     const html = renderToStaticMarkup(<AnswerCards tiles={ALL} selectedView="combined" isError={false} />);
     expect(html.match(/data-testid="answer-(holders|retailHeld|staked|cex)"/g)).toHaveLength(3);
     expect(html).toContain(">V-holders<");
     expect(html).toContain("Sub cex");
-    expect(html).toContain("text-brand");
+    expect(html).toContain("text-foreground");
     expect(html).not.toContain("V-staked");
     expect(html).not.toContain("answer-staked");
   });

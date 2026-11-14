@@ -29,7 +29,26 @@ import {
   type WalletFlowsSale,
   type WalletFlowsTraceDestination,
 } from "@/lib/walletFlowsTypes";
-import { explorerTemplates, resolveChainVm } from "@/lib/explorerLinks";
+import { chainExplorerLink, chainForAddress, resolveChainVm, type ExplorerChain } from "@/lib/explorerLinks";
+import { COMPACT_WALLET_FLOWS, formatCompact } from "@/lib/format";
+
+/**
+ * Address page for a row's chain. Non-EVM chains (Solana, Hedera) build their own
+ * link from the chain's templates; EVM keeps the configured-root / built-in
+ * fallback of addressExplorerUrl.
+ */
+export const walletAddressHref = (
+  chains: readonly (ExplorerChain & { origin?: boolean })[],
+  chainKey: string,
+  address: string,
+  evmExplorers: Record<string, string>,
+): string => {
+  // A row's own chain wins; an unknown key only borrows a chain by address shape for non-0x ids.
+  const chain = chains.some((c) => c.key === chainKey) || !address.trim().startsWith("0x") ? chainForAddress(chains, address, chainKey) : undefined;
+  return chain && resolveChainVm(chain) !== "evm"
+    ? chainExplorerLink(chain, "address", address)
+    : addressExplorerUrl(chainKey, address, evmExplorers);
+};
 
 /**
  * Gated "Wallet flows" view: supply by entity class, project-linked wallets and
@@ -41,13 +60,7 @@ import { explorerTemplates, resolveChainVm } from "@/lib/explorerLinks";
  * gets an empty state. Copy is templated ({ticker}/{name}); TEL's exact wording
  * comes out of the same templates or its config overrides.
  */
-const formatTel = (value: number) => {
-  const abs = Math.abs(value);
-  if (abs >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (abs >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-  if (abs >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-  return new Intl.NumberFormat().format(Math.round(value));
-};
+const formatTel = (value: number) => formatCompact(value, COMPACT_WALLET_FLOWS);
 
 const formatUsd = (value: number) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
@@ -79,18 +92,19 @@ const VerdictBadge = ({ verdict }: { verdict: string }) => (
 const AddressLinks = ({ address, chains }: { address: string; chains: string[] }) => {
   const { project } = useProject();
   const explorers = useMemo(
-    // EVM: explorer root; Solana: the address template (Solscan /account/{address}).
+    // EVM explorer roots; other vms are linked through walletAddressHref.
     () =>
       Object.fromEntries(
-        (project.chains ?? []).map((c) => [c.key, resolveChainVm(c) === "solana" ? explorerTemplates(c).address : c.explorer ?? ""]),
+        (project.chains ?? []).filter((c) => resolveChainVm(c) === "evm").map((c) => [c.key, c.explorer ?? ""]),
       ),
     [project],
   );
+  const hrefFor = (chainKey: string) => walletAddressHref(project.chains ?? [], chainKey, address, explorers);
   const list = chains.length > 0 ? chains : [project.chains?.[0]?.key ?? ""];
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       <a
-        href={addressExplorerUrl(list[0], address, explorers)}
+        href={hrefFor(list[0])}
         target="_blank"
         rel="noopener noreferrer"
         className="font-mono text-xs text-primary hover:underline"
@@ -102,7 +116,7 @@ const AddressLinks = ({ address, chains }: { address: string; chains: string[] }
       {list.filter(Boolean).map((c) => (
         <a
           key={c}
-          href={addressExplorerUrl(c, address, explorers)}
+          href={hrefFor(c)}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded border border-border/60 px-1.5 py-0.5 text-xs font-semibold uppercase text-muted-foreground hover:border-primary/50 hover:text-foreground"
@@ -687,7 +701,7 @@ const Summary = ({ report }: { report: WalletFlowsReport }) => {
     <dl className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:gap-3">
       {FLOW_WINDOWS.map((w) => (
         <div key={w} className="rounded-xl border border-border/50 bg-card p-3 sm:p-4">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last {w}</dt>
+          <dt className="text-xs font-semibold text-muted-foreground">Last {w}</dt>
           <dd className="mt-1">
             <span className="text-2xl font-extrabold tracking-tight tabular-nums text-foreground">
               {formatTel(report.telcoinTotals[w]?.total ?? 0)}
@@ -707,7 +721,7 @@ const Summary = ({ report }: { report: WalletFlowsReport }) => {
 
 /** What the locked panel promises. Ids are copy.text keys (TEL overrides the supply line). */
 const LOCKED_CONTENTS: ReadonlyArray<readonly [string, string]> = [
-  ["walletFlows.locked.supply", "Supply split by entity: {name} treasury, team and foundation wallets, escrow, exchanges, DEX pools and retail"],
+  ["walletFlows.locked.supply", "Supply split by entity: {name} treasury, team and foundation wallets, exchanges, DEX pools and retail"],
   ["walletFlows.locked.wallets", "Every {name}-linked wallet with address, balance and {ticker} sent to exchanges or DEXs over 72h, 30d and 90d"],
   ["walletFlows.locked.sellers", "Recent large sellers and how the wallets behind them were funded"],
 ];

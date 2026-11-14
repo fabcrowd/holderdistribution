@@ -149,7 +149,9 @@ The daily refresh is registry-driven: a `plan` job runs
 `node scripts/workflow-paths.js matrix`, which lists every project in
 `config/projects.json` (default first), and the `refresh` job runs once per
 project (`max-parallel: 1`, `fail-fast: false`, `timeout-minutes` from
-`pipeline.workflowTimeoutMinutes` in the project file, default 60). To add a
+`pipeline.workflowTimeoutMinutes` in the project file, default 60; the first holders-scan step takes
+`pipeline.holdersScanTimeoutMinutes`, default 20, the retry step a fixed 35, and the two must fit inside the job
+timeout; projects with a longer scan run after the others). To add a
 token: register it in `config/projects.json`, add `config/projects/<slug>.json`
 (optionally `pipeline.workflowTimeoutMinutes`), and nothing else; `npm run onboard`
 writes both (see "Adding the next project"). Stage
@@ -213,7 +215,7 @@ Optional per-project pipeline keys: `chains[].origin`, `chains[].fromBlock`,
 `treasury.labelEras` (`[{before, categories:{address: oldCategory}}]`: backfill-treasury-cex-history replays rows dated before `before` with the older labels),
 `treasury.anchorAdjustments` (`[{date, category, add, address, note}]`: in-memory corrections to real rows known to omit a wallet, applied when the backfill anchors on or validates against that row),
 `supply.coingeckoId` (CoinGecko coin id whose circulating supply reconcile-supply fetches; unset hides the comparison),
-`supply.circulating.subtract` (reconciliation category keys held out of the reconciled circulating figure; default `["treasury","council"]`; TEL `["treasury","council"]`, ZBCN `["treasury"]`. Per-label `nonCirculatingOverride` is applied on top. The Supply view's Circulating formula and tooltip are generated from this list; categories not listed, e.g. TEL Holdings or ZBCN Uphold CEX wallets, stay circulating. Not to be confused with the bridge-netting `nonCirculating` below).
+`supply.circulating.subtract` (reconciliation category keys held out of the reconciled circulating figure; default `["treasury","council"]`; TEL `["treasury","council"]`, ZBCN and ONDO `["treasury","holdings","team"]` (team and holdings are subtracted on every token except TEL, owner 2026-11-12; escrow and reward vaults are not). Per-label `nonCirculatingOverride` is applied on top. The Supply view's Circulating formula and tooltip are generated from this list; categories not listed, e.g. TEL Holdings or ZBCN Uphold CEX wallets, stay circulating. Not to be confused with the bridge-netting `nonCirculating` below).
 
 ### Ported scripts vs the guard
 
@@ -282,13 +284,30 @@ config's `holders` block. Any field you leave out falls back to
 `config/holder-tiers.default.json` (the TEL values). `tel.json` carries an
 explicit copy, and `scripts/lib/holderTiers.test.js` pins it to the old literals.
 
-Every other project derives its own `distributionTiers` and `balanceRanges`
-from its own first snapshot with `node scripts/derive-holder-tiers.js --project
-<slug>` (or `--balances <file.tsv>` for a scratch run). Tiers are never copied
-from TEL or another project, and never scaled by supply. Distribution edges sit
-at fixed holder ranks from the top (0.01% of wallets down to 60%), rounded down
-to 1 / 2.5 / 5 x 10^k. Wallet Holdings ranges are evenly spaced powers of ten.
-The fallback to TEL's values is only for the first snapshot run.
+Every other project derives its own sizing from its own first snapshot, retail
+wallets only: `distributionTiers`, `balanceRanges`, `retailThreshold` (lower bound of the
+second-lowest tier) and `concentrationBuckets`. `megaHolderThreshold` starts at supply.target / 5
+in the scaffold (with a `retailThreshold` at half of it when that is not above the shared default
+of 1,000, so a tiny supply stays valid). The runner then sets it to `max(supply.target / 5, 1.2 x the
+largest wallet acknowledged as retail, rounded up to 1 / 2.5 / 5 x 10^k, capped at supply.target)`,
+never lowers it, and a later raise changes only that field. Do not set it by hand: the next runner
+step overwrites it. The onboarding runner does this and commits the `holders` block;
+`node scripts/derive-holder-tiers.js --project <slug>` (or `--balances <file.tsv>` for a
+scratch run) prints the same values. Tiers are never copied from TEL or another project,
+and never scaled by supply. Distribution edges sit at fixed holder ranks from the top
+(0.01% of wallets down to 60%), rounded down to 1 / 2.5 / 5 x 10^k. Wallet Holdings ranges
+are evenly spaced powers of ten. The fallback to TEL's values is only for the first
+snapshot run. `check-go-live` fails a project with its own tiers but no explicit
+`megaHolderThreshold` or `retailThreshold`, a `retailThreshold` not below the top tier's min,
+and a distribution where one tier holds over 90% of wallets.
+
+Pipeline thresholds in tokens scale with supply too (`scripts/lib/projectSizing.js`): wallet-flows
+seller floor `supply.target / 20,000`, swap-candidate floor `/ 100,000`, CEX-candidate floor
+`/ 1,000,000`, and the feed-consistency tolerance `max(supply.target / 1e11, 1)` tokens (the
+floor matches whole-token feed rounding). A 100B supply gives TEL's old constants. A `sizing`
+block in the project config overrides any of `minSellerTokens`, `minSwapCandidateTokens`,
+`cexCandidateMinBalance`, `consistencyToleranceTokens`; ONDO pins the old shared values
+so its wallet-flows state is not rescanned (the thresholds are part of the state hash).
 
 ```json
 "holders": {
@@ -494,8 +513,9 @@ lists a Solana chain. An EVM-only project like TEL never loads it
 
 Solana staking is built for one program kind, `zebecStakeV1` (see
 [zebec-network](#zebec-network-solana)). Not built (deferred): other Solana
-staking programs, wallet-to-wallet (non-venue) flows, forensics, history back-fill before
-the first snapshot, historical `--as-of` snapshots, and other non-EVM chains.
+staking programs, wallet-to-wallet (non-venue) flows, history back-fill before
+the first snapshot, historical `--as-of` snapshots, and non-EVM chains other than Hedera (see
+"Hedera native coin" below).
 
 ## zebec-network (Solana)
 
@@ -639,8 +659,12 @@ inherits TEL's). It must label every ledger `developerWallets` entry of class
 citing the owner decision), otherwise those wallets count as retail.
 `associationWalletsLabelled.test.js` fails for any registry project that has
 an unlabelled association wallet; the only exemption is an entry (with a dated reason) in its
-`PENDING_OWNER_DECISION` list. Treasury and Team/developer-controlled are one
-bucket (owner decision 2026-11-07).
+`PENDING_OWNER_DECISION` list. Treasury and Team/developer-controlled are the
+same thing for classification (owner decision 2026-11-07): a project-controlled
+wallet goes in one of them, never retail. The Supply view shows them as two rows
+("Treasury & association wallets", "Team & holdings wallets"). Treasury is
+subtracted from circulating on every token; team and holdings are subtracted on
+every token except TEL (owner decision 2026-11-12).
 
 **TEL is untouched.** It keeps `supply.generationsSumOneToOne` and the
 generations path (`computeSupplyTotals`, method `tel-generations`), and its
@@ -775,48 +799,74 @@ skip flags: missing feeds, placeholder feeds, a feed `pipeline-health` calls unh
 or stale newest row), tier outflows that are incomplete or built on other tiers, a project with no
 tiers of its own (`holders.distributionTiers`, or an owner decision recorded as
 `holders.defaultTiers`), a missing or stale wallet-flows report, a missing or stale ledger, and
-ledger wallets absent from the forensics registry all fail.
+ledger wallets absent from the forensics registry all fail. It also fails an empty CEX list (unless the
+answers record `cex` `none-known` with evidence), no resolved DEX pool for a project with an answers file or
+`onboarding: true` (unless `dex` `none` with evidence), an answers wallet that is not excluded as non-retail,
+`megaHolderThreshold` outside `(0, supply.target]`, and one distribution tier holding over 90% of wallets.
 
 The scaffold registers the project with `"onboarding": true` in `config/projects.json`: the
 pipeline runs it and `/<slug>` renders, but the landing page and sitemap leave it out (the token
 shows as "Coming soon" if it is on that list). The flag is removed when go-live passes.
 
-### The two commands
+### The runbook: one answers file, one dispatch, one check
 
-1. **Discovery and scaffold** (local, read-only network, 0 Alchemy CU):
-   `npm run onboard -- --address <0x… or mint> [--chain <origin>] [--include <chain>]...`
-   reads decimals, symbol, name and total supply on-chain, finds the EVM deploy block by
-   binary search on `eth_getCode` (null on a non-archive node) and its date (`pipeline.historyStart`),
-   takes the CoinGecko id, name and image, and runs chain discovery. Copies on other chains are
-   recorded as `excluded` with a reason unless `--include` names them (bridge type then defaults
-   to `lock-mint`; confirm it). It then runs `add-project.js` with every flag filled: a dry run
-   by default; `--write` writes the files, the token image and (EVM) an empty
-   `config/projects/<slug>/cex-wallets.json` for the spellbook sync to fill. The scaffold sets
-   `supply.target`, `image`, `staking: []` with the staker feed disabled,
-   `treasury.categories` from the supplied wallets, and the `onboarding` flag. Slug defaults to the
-   display name (`--slug` overrides). Pass `PUBLIC_RPC_URLS_<CHAIN>=<url>` when the default
-   public nodes are unreachable. A chain's own coin has no address: `npm run onboard -- --chain hedera`
-   reads HBAR from the mirror node and, with `--write`, applies the adapter's
-   `nativeClassification()` (network treasury exclusions, WHBAR as `dex`, treasury categories, job limit).
-2. **First data to go-live** (after the scaffold, the judgement work below and a README update
-   are merged to `main`): `gh workflow run onboard-project.yml -f project=<slug>`.
-   `scripts/onboard-run.js` reads the project's files from `origin/main`, runs the first
-   unfinished step, waits for it, and repeats: CEX sync (EVM; a Solana project is blocked
-   until a reviewed list exists), snapshot, tiers derived from that snapshot (committed),
-   a refresh on those tiers, history rebuild per chain from `pipeline.historyStart`, exchange
-   flows until the newest row is at most 3 days old, treasury/CEX history (EVM), tier outflows
-   until complete, staker balances (StakeChanged-style staking only), wallet flows, ledger,
-   the Developer wallets tab (committed), `check-go-live`, then clearing the `onboarding` flag
-   (committed). A rerun resumes at the first unfinished step; near the job limit it dispatches
-   its own next round (6 rounds max). A step whose workflow cannot read the project's VM
-   (`STEP_VMS` in `scripts/lib/onboardRun.js`) stops with a reason instead of dispatching. Locally, `npm run onboard:run -- --project <slug> --dry-run`
-   prints the checklist and next step; without `--dry-run` it dispatches the same workflows
-   but never commits (config edits stop with exit 3 for review).
+The step-by-step runbook is the onboard-project skill (`.claude/skills/onboard-project/SKILL.md`).
+This section is the summary and the reference for what each command does.
 
-What neither command decides, and the onboard-project skill does: staking (`staking[]` and its
-kind), treasury/team/foundation wallets and their categories, tracing the top holders after the
-first snapshot, DEX pools, and a Solana CEX list. The ordered manual steps below stay as the
-reference for what each command does and for fixing a step that stops.
+1. **Discovery and answers template** (local, read-only network, 0 Alchemy CU):
+   `npm run onboard -- --address <0x… or mint> [--chain <origin>]` reads decimals, symbol, name
+   and total supply on-chain, finds the EVM deploy block by binary search on `eth_getCode`
+   (null on a non-archive node) and its date, takes the CoinGecko id, name and image, and runs
+   chain discovery. It writes a pre-filled answers template to `tasks/onboard-<slug>.answers.json`
+   (or `--answers-out`) and nothing tracked. Pass `PUBLIC_RPC_URLS_<CHAIN>=<url>` when the
+   default public nodes are unreachable.
+2. **Answers file** (`onboarding-answers/1`, schema and validation in `scripts/lib/onboardAnswers.js`,
+   complete example `config/onboarding.answers.example.json`): the only place judgement goes.
+   It holds the token address and chain, `include` chains, `historyStart` (a date or
+   `"forward-only"`), staking contracts, `none` (docs and explorer searched, no mechanism) or
+   `unresolved` (a mechanism exists but its address is unverified: it validates, `--write` refuses
+   it until the owner supplies the address or a source), wallets with a class (`treasury`, `association`,
+   `team`, `holdings`, `escrow`, `reward-vault`), DEX pools or `none`, the CEX list (`spellbook`,
+   `list`, `none-known`, plus optional `rejected` rows `{chain, address, note}`) and the large-holder
+   decisions. Every decision needs evidence.
+3. **Scaffold:** `npm run onboard -- --address <addr> --answers <file> --write` validates the answers and
+   expands them in one pass into the registry entry (`onboarding: true`), `config/projects/<slug>.json`,
+   ledger, exclusions, CEX file, wallet registry, chains inventory and the token image. It keeps the
+   record at `config/projects/<slug>/onboarding.answers.json`. Entries it writes carry
+   `fromAnswers`; rerunning for an existing slug replaces exactly those and never touches hand-written
+   entries, so a change of mind is an answers edit plus a rerun (`--force` is not used). `--write`
+   without `--answers` is refused, except for a chain's own coin: `npm run onboard -- --chain hedera`
+   applies the adapter's `nativeClassification()` (network treasury exclusions, WHBAR as `dex`,
+   treasury categories, job limit).
+4. **First data to go-live** (after the scaffold and a README update are merged to `main`):
+   `gh workflow run onboard-project.yml -f project=<slug>`. `scripts/onboard-run.js` reads the
+   project's files from `origin/main`, runs the first unfinished step, waits, and repeats: answers
+   check, CEX list (EVM sync; non-EVM needs a first list or `none-known`), snapshot, CEX candidate
+   review (Solana: the Dune spellbook list of labelled exchange wallets, intersected with the
+   snapshot's holders, fetched by the runner itself with no key; every candidate must be under
+   `cex.wallets` or `cex.rejected`, so `none-known` is done only for an empty or fully rejected
+   list; the same list is written by `node scripts/sync-cex-wallets-dune.js --project <slug>
+   --source spellbook --candidates`; the spellbook has no Hedera list, so Hedera keeps its
+   adapter-seeded list), large-holder review (every
+   unlabelled wallet above 1% of supply needs a `largeHolders` row), tiers and full sizing derived
+   from the project's own snapshot (committed), a refresh on those tiers, history (or forward-only),
+   exchange flows, treasury/CEX history (EVM), tier outflows, staker balances (`stakeChanged` only),
+   wallet flows, ledger, the Developer wallets tab (committed), strict alignment, `check-go-live`,
+   then clearing the `onboarding` flag (committed). A rerun resumes at the first unfinished step; near
+   the job limit it dispatches its own next round (6 rounds max). Every stop prints a `Fix:` block
+   with exact commands. A step whose workflow cannot read the project's VM (`STEP_VMS` in
+   `scripts/lib/onboardRun.js`) stops with a reason. The review, history-mode and alignment gates
+   apply only to a project with `onboarding: true` or an answers file. Locally,
+   `npm run onboard:run -- --project <slug> --dry-run` prints the checklist and next step from
+   `origin/main` (uncommitted local config is invisible to it; add `--local` to evaluate the working tree instead); without `--dry-run` it dispatches
+   the same workflows but never commits (config edits stop with exit 3 for review).
+5. **Local gates:** `npm run onboard:check -- --project <slug> [--skip-tests]` runs vitest, typecheck,
+   lint, `check-feed-consistency --all --strict`, `pipeline-health` and
+   `check-go-live --alignment strict` one after another, logs to `tasks/onboard-check-<slug>-<gate>.log`,
+   prints PASS/FAIL per gate.
+
+Sizing is derived per project, never copied: see "Holder tiers and thresholds (`holders`)". The sections
+below are the manual reference for fixing a step that stops.
 
 ### Step 1 (required first): chain & contract discovery → `chains-inventory.json`
 
@@ -848,47 +898,22 @@ registered project, so CI fails when a chain is added to `chains[]` without one.
 Add a chain to the project later by adding it to `chains[]` *and* flipping its
 inventory row to `configured` (which also needs seeding and, for a new VM, a nightly plan check).
 
-Then:
+What the scaffold already does (so none of it is manual): registry entry, project config with
+`supply.target`, `image` (cached under `public/tokens/`, never fetched by the browser), `staking`,
+`treasury.categories`, `gated.forensics` and `gated.walletFlows`, Solana `rpc.envPrefix: "SOLANA"`
+(the loader rejects a prefix ending in `_RPC`), exclusions labels for `association` wallets, ledger,
+wallet registry and CEX file. The `holders` block is filled by the runner from the first snapshot
+(Solana needs the keyed `SOLANA_RPC_0` and `SOLANA_RPC_1` pool for the holder scan). Only
+`copy` overrides, a `botCluster` in the ledger and `docs/<slug>-wallet-candidates.md` traces for
+large holders are written by hand. After `--write` the scaffold prints the real next steps and what is
+still manual. Run `npm run typecheck && npx vitest run`, and build only with
+`npx vite build --outDir <scratch>` and `VITE_LIVE_DATA=off` (`npm run build` rewrites `public/sitemap.xml`).
+Tracing a large holder means recording its first funding tx, whether it came from the deployer, a
+multisig, a tagged dev wallet or a CEX, its outflow destinations, contract vs EOA and public labels;
+the outcome is a `largeHolders` row in the answers file.
 
-1. Add `{ "slug": "<slug>", "name": "...", "ticker": "..." }` to `config/projects.json`.
-   Slugs are lowercase `[a-z0-9-]`.
-2. Add `config/projects/<slug>.json` using `tel.json` as the template. Use only
-   verified addresses, never guessed ones. Run
-   `node scripts/detect-token-chains.js --address 0x… --chain <origin> --ticker <T> --coingecko`
-   first so `chains[]` includes every chain the token is on (see "Chain
-   discovery"). Each extra chain gets a picker view automatically.
-   **Always trace unknown large holders before finalizing tags.** For every
-   top non-CEX holder that is not already labelled, record on-chain: the
-   first token funding tx (hash), whether it came from the deployer, a
-   developer/foundation multisig, another tagged dev wallet or a CEX, its
-   outflow destinations, contract vs EOA, and public labels (Etherscan /
-   Blockscout / Arkham). Tag it when the trace ties it to developer funds
-   (cite the funding tx as `source`); otherwise list it with its trace in
-   `docs/<slug>-wallet-candidates.md`. Never leave a large holder untagged
-   without a recorded trace.
-   For each extra chain, confirm `bridge` (`native` / `lock-mint` / `burn-mint`)
-   from the project's bridge docs and mark the `origin`. Add a Solana chain
-   only if the token is actually deployed there (see "Solana chains").
-3. Cache the token's CoinGecko coin image (build time only, never fetched by
-   the browser): read `image.large` from
-   `https://api.coingecko.com/api/v3/coins/<coingecko-id>`, download it without
-   its `?…` query to `public/tokens/<slug>.<png|jpg>` in its original format,
-   and set `"image": "/tokens/<slug>.<ext>"` in `config/projects/<slug>.json`.
-   CSP `img-src` stays `'self'`. Then run `npx tsx scripts/generate-sitemap.ts`
-   so the sitemap lists `/<slug>`.
-4. Put the browser feeds in `public/data/<slug>/` (same file names as TEL, see
-   `BROWSER_DATA_FILES` in `scripts/lib/browserDataFiles.js`). Ported pipeline
-   scripts write there when run with `--project <slug>`. Give the config
-   `supply.target`, `staking[].kind` / `deployBlock` and its own
-   `classification.*` files.
-5. Nothing to do for `netlify/functions/live-data.mjs`: it reads the slugs from `config/projects.json` (only a `legacyRoot` project needs `"legacyRoot": true` on its registry entry).
-   A test fails if it is missing.
-6. Add a `holders` block unless supply is about 100B (TEL's tiers are sized for it), and
-   `chains[].rpc` for chains other than ethereum, polygon and base (Solana:
-   `SOLANA_RPC_0..9` if public RPC refuses the holder scan).
-7. Optional: add `copy` overrides for wording the generic templates get wrong.
-8. Run `npm run typecheck && npx vitest run`, then `npx vite build --outDir <scratch>` with
-   `VITE_LIVE_DATA=off` (`npm run build` rewrites `public/sitemap.xml`).
+Manual reference for the data steps (the runner does these; read them to fix a stop):
+
 9. Wallet-flow history: the required depth is **90 days**, on every chain. There is no separate
    backfill step: the first run fills it. EVM scans the 24h, 72h, 30d and 90d windows in one run.
    Solana looks back 90 days at 2,500 transactions a run and resumes from `wallet-flows-state.json`,
@@ -944,11 +969,11 @@ Then:
     `LIVE_DATA_GITHUB_TOKEN` in Netlify.
 13. Confirm every flow: exchange and tier feeds have real data and no `placeholder` in `health.feeds`, the
     wallet-flows report covers 90 days, and each developer wallet's movements match a spot check on the explorer.
-14. Align day cutoffs: `node scripts/build-cutoffs.js --project <slug> --from <first holders date>`, run the
-    settled nightly (or `fill-history-gaps`), then `npm run check:alignment -- --project <slug> --strict` must
-    pass. See "Settled days and `asOf`" and the onboard-project skill Step 6.10.
-15. Run `node scripts/check-go-live.js --project <slug> --alignment strict`. It must pass before the owner
-    deploys (the default `--alignment warn` only reports alignment, so registered projects keep the nightly green).
+14. Align day cutoffs: the runner's `alignment` step needs `npm run check:alignment -- --project <slug> --strict`
+    to pass; if it stays stuck, `node scripts/build-cutoffs.js --project <slug> --from <first holders date>`,
+    commit `date-blocks.json`, rerun. See "Settled days and `asOf`".
+15. `npm run onboard:check -- --project <slug>` (includes `check-go-live --alignment strict`) must pass before
+    the owner deploys (the default `--alignment warn` only reports alignment, so registered projects keep the nightly green).
 
 The landing page and the sitemap pick the new project up automatically.
 
@@ -1067,3 +1092,53 @@ nothing else.
   (and `ENV_PASSPHRASE`), and add `data/solana-flow-days.json` to the
   `workflow-paths.js files` list (the checkpoint is already staged). The public
   RPC rate-limits `getTransaction`; use a keyed endpoint for the first backfill.
+
+## Hedera native coin (`chains[].vm: "hedera"`)
+
+HBAR is not registered in `config/projects.json`. Its onboarding path is built and tested locally;
+nothing is proven on GitHub. All data comes from the public mirror node (no key, no Alchemy).
+
+- **Config shape:** the chain carries `asset: { kind: "native", decimals }` instead of `tokens[]`.
+  Supply (50B) and decimals come from the mirror's `/network/supply`. A holder is an account with
+  at least 1 HBAR; contracts are excluded (owner decision 2026-11-08).
+- **Scaffold, no answers file:** `npm run onboard -- --chain hedera` (dry run) and `--write`.
+  `0.0.N` addresses are Hedera tokens (HTS) and are refused; only the coin itself is supported.
+  The owner's judgement lives in the chain adapter (`scripts/lib/hedera/`), not in an answers file.
+  `--write` creates the registry entry (`onboarding: true`), the project config, the ledger config,
+  `exclusions.json` (the network treasury accounts: unreleased ranges, 0.0.98, 0.0.800, 0.0.801),
+  WHBAR 0.0.1456985 as role `dex`, `cex-wallets.json` (24 accounts, `scripts/lib/hedera/cexAccounts.js`),
+  `treasury.categories ["treasury"]`, `pipeline.workflowTimeoutMinutes` 270 and `pipeline.holdersScanTimeoutMinutes` 120, the forensics registry
+  (`init-forensics-registry.js`; an existing registry with wallets is kept) and the token image.
+  `historyStart` and the `largeHolders` decisions are read by the runner from
+  `scripts/lib/hedera/nativeDecisions.js` (history is forward-only by owner decision 2026-11-11).
+  Tiers, ranges and thresholds are derived from HBAR's own snapshot like any other token.
+- **Runner steps by VM (`STEP_VMS` in `scripts/lib/onboardRun.js`):**
+
+  | step | vms it can run for |
+  |---|---|
+  | `cex-wallets` | evm (a project with a non-empty CEX list in config is done whatever its VM; HBAR's comes from the scaffold) |
+  | `history` | evm, solana (`forward-only` counts as done for every VM) |
+  | `exchange-flows`, `tier-outflows`, `wallet-flows`, `ledger` | evm, solana, hedera |
+  | `treasury-cex-history` | evm |
+
+  Steps not in the table (answers, snapshot, large-holders, tiers and sizing, mega-threshold,
+  alignment, go-live, list-on-site) are not restricted by VM. The Solana-only CEX review does not apply.
+- **Exchange flows and tier outflows:** `scripts/scan-hedera-flows.js` reads each CEX account's
+  transactions from the mirror, bucketed by the repo's day cutoffs and settled to the same consensus
+  end as the holders snapshot. Every record is counted once; fees, staking-reward legs and failed
+  transactions are not flows. Paging follows `links.next`, including empty continuation pages. The
+  stored scan carries a hash of the sorted (account id, exchange) set plus the classifier version;
+  a different set rebuilds from the floor. `HEDERA_FLOW_MAX_MS` (default 40 min) stops cleanly and
+  resumes. `scan-exchange-flows.js` and `generate-tier-outflows.js` publish the feeds from that
+  store. Tier outflows keep an `unattributed` bucket (a counterparty with no tier, such as a new
+  account, one under the holder floor or another exchange, and every day before the first snapshot), so tiers
+  plus `unattributed` equal `exchange-flow-history.json`. Flows are venue-anchored like Solana's.
+- **Wallet flows, forensics and ledger:** see "Hedera" in `docs/FORENSICS.md` and `docs/LEDGER.md`.
+- **Staked HBAR:** `generate-holders-lite.js` writes a top-level `networkStake` block (mirror
+  `/network/stake`, with its own staking period; `available: false` and a reason when the mirror is
+  down). The Staking section shows one informational tile. It is never subtracted from holders,
+  retail or circulating (owner decision 2026-11-08).
+- **Nightly:** job `hedera-flows` (requires `hedera`) in `refresh-holders.yml`; `wallet-flows` and
+  `ledger` have Hedera branches (`docs/NIGHTLY-FRAMEWORK.md`).
+- **Not built:** DEX and WHBAR look-through (WHBAR counts as DEX), swap decoding, onward-hop tracing
+  of unlabelled recipients, a bot cluster, and history before the first snapshot.

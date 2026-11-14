@@ -6,7 +6,8 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { projectClassificationPath, projectDataPath, projectWorkPath } from "./projects.js";
+import { loadRegistry, projectClassificationPath, projectDataPath, projectNonRetailPaths, projectRoleAddresses, projectWorkPath } from "./projects.js";
+import { normalizeAddress } from "./nonRetailSet.js";
 import { projectHasVm } from "./chainAdapters.js";
 import { NULL_TX_RETRY_RUNS } from "./solana/flowScan.js";
 import { forensicsRegistryProblems } from "./walletFlowsProject.js";
@@ -49,7 +50,152 @@ function configProblems(project, root) {
   if (!Array.isArray(config.holders?.distributionTiers) && !String(config.holders?.defaultTiers ?? "").trim()) {
     problems.push(`${slug}: holders.distributionTiers is not set (derive them with node scripts/derive-holder-tiers.js --project ${slug})`);
   }
+  return [...problems, ...sizingProblems(project), ...classificationProblems(project, root)];
+}
+
+/** One tier may not hold more than this share of wallets: such tiers cannot show movement between tiers. */
+export const MAX_TIER_WALLET_SHARE = 0.9;
+
+const hasEvidence = (value) => typeof value === "string" && value.trim().length >= 3;
+
+/**
+ * Thresholds every project must size to its own supply. holders.* falls back to the TEL-sized shared default
+ * (config/holder-tiers.default.json), so a project with its own tiers must say its own cut-offs out loud.
+ */
+function sizingProblems(project) {
+  const { config, slug } = project;
+  const target = Number(config.supply?.target);
+  const file = `config/projects/${slug}.json`;
+  let tiers;
+  try {
+    tiers = projectHolderTiers(project);
+  } catch (error) {
+    return [`${slug}: ${error.message} (fix: correct the holders block in ${file})`];
+  }
+  const problems = [];
+  const suggestedMega = target > 0 ? target / 5 : "20% of supply.target";
+  if (target > 0 && !(tiers.megaHolderThreshold > 0 && tiers.megaHolderThreshold <= target)) {
+    problems.push(
+      `${slug}: holders.megaHolderThreshold ${tiers.megaHolderThreshold} must be > 0 and <= supply.target ${target}; ` +
+        `an unlabelled wallet above it is dropped from holderCount and retail (fix: set "megaHolderThreshold": ${suggestedMega} in the holders block of ${file})`,
+    );
+  }
+  const ownTiers = Array.isArray(config.holders?.distributionTiers) && !String(config.holders?.defaultTiers ?? "").trim();
+  if (!ownTiers) return problems;
+  for (const field of ["megaHolderThreshold", "retailThreshold"]) {
+    if (!Number.isFinite(config.holders?.[field])) {
+      problems.push(
+        `${slug}: holders.${field} is not set, so it silently takes the shared default from config/holder-tiers.default.json (TEL-sized); ` +
+          `fix: add "${field}" to the holders block of ${file} (run node scripts/derive-holder-tiers.js --project ${slug} for the suggested value)`,
+      );
+    }
+  }
+  if (Number.isFinite(config.holders?.retailThreshold) && !(tiers.retailThreshold < tiers.distributionTiers[0].min)) {
+    problems.push(
+      `${slug}: holders.retailThreshold ${tiers.retailThreshold} must be below the top tier's min ${tiers.distributionTiers[0].min} ` +
+        `(fix: lower holders.retailThreshold in ${file})`,
+    );
+  }
   return problems;
+}
+
+const answersRel = (slug) => `config/projects/${slug}/onboarding.answers.json`;
+
+/** The onboarding answers file: { doc } (null when absent) or { problem } when it cannot be read. */
+function readAnswers(slug, root) {
+  try {
+    const doc = readJson(path.join(root, answersRel(slug)));
+    return { doc: doc && typeof doc === "object" && !Array.isArray(doc) ? doc : null };
+  } catch (error) {
+    return { problem: `${slug}: ${error.message} (fix: make ${answersRel(slug)} valid JSON)` };
+  }
+}
+
+function readJsonOrNull(file) {
+  return file && fs.existsSync(file) ? readJson(file) : null;
+}
+
+/** EVM hex lowercased, Solana base58 as written: the same normalization the non-retail loaders use. */
+function addressSet(values) {
+  const set = new Set();
+  for (const value of values) {
+    const address = normalizeAddress(value);
+    if (address) set.add(address);
+  }
+  return set;
+}
+
+/** Same files and shapes as loadNonRetailSet (nonRetailSet.js), read synchronously. */
+function classificationSets(project, root) {
+  const paths = projectNonRetailPaths(project, root);
+  const exclusions = readJsonOrNull(paths.exclusionsPath);
+  const cex = addressSet((readJsonOrNull(paths.cexPath)?.wallets ?? []).map((w) => w?.address));
+  const dexDoc = readJsonOrNull(paths.dexPath);
+  const dexFile = addressSet([...(dexDoc?.pools ?? []), ...(dexDoc?.routers ?? [])].map((d) => d?.address));
+  const dexRoles = addressSet(Object.values(projectRoleAddresses(project.config, { roles: ["dex"] })).flat().map((e) => e.address));
+  const nonRetail = addressSet([
+    ...(exclusions?.addresses ?? []),
+    ...Object.values(exclusions?.chains ?? {}).flatMap((chain) => chain?.addresses ?? []),
+    ...(paths.extraAddresses ?? []),
+    ...cex,
+    ...dexFile,
+  ]);
+  return { cex, dex: new Set([...dexFile, ...dexRoles]), nonRetail };
+}
+
+/**
+ * CEX list, DEX pools and the onboarding answers' wallets. The DEX rule applies to a project that has an
+ * answers file or `onboarding: true` in config/projects.json: projects mapped before the answers file existed
+ * have no recorded decision to hold them to.
+ */
+function classificationProblems(project, root) {
+  const { config, slug } = project;
+  const answers = readAnswers(slug, root);
+  if (answers.problem) return [answers.problem];
+  const doc = answers.doc;
+  const sets = classificationSets(project, root);
+  const problems = [];
+  const cexFile = config.classification?.cexWallets ? projectClassificationPath(project, "cexWallets", root) : null;
+  if (cexFile && fs.existsSync(cexFile) && sets.cex.size === 0 && !(doc?.cex?.decision === "none-known" && hasEvidence(doc.cex.evidence))) {
+    problems.push(
+      `${slug}: the CEX wallet list ${path.relative(root, cexFile).split(path.sep).join("/")} has no entries; ` +
+        `fix: add the exchange wallets that hold ${config.ticker ?? slug} (Solscan/Etherscan labels, proof of reserves), ` +
+        `or record "cex": { "decision": "none-known", "evidence": "<where you looked>" } in ${answersRel(slug)}`,
+    );
+  }
+  const registryEntry = loadRegistry(root).find((entry) => entry.slug === slug);
+  const dexApplies = doc !== null || registryEntry?.onboarding === true || config.onboarding === true;
+  if (dexApplies && sets.dex.size === 0 && !(doc?.dex?.decision === "none" && hasEvidence(doc.dex.evidence))) {
+    problems.push(
+      `${slug}: no DEX pool is resolved (no contracts{} entry with role "dex" and no pool in classification.dexContracts); ` +
+        `fix: list every pool from https://dexscreener.com/ as a contracts{} role "dex" entry in config/projects/${slug}.json, ` +
+        `or record "dex": { "decision": "none", "evidence": "<where you looked>" } in ${answersRel(slug)}`,
+    );
+  }
+  for (const wallet of doc?.wallets ?? []) {
+    const address = normalizeAddress(wallet?.address);
+    if (address && sets.nonRetail.has(address)) continue;
+    problems.push(
+      `${slug}: ${answersRel(slug)} lists wallet ${wallet?.address} (${wallet?.label ?? "unlabelled"}) but it is not excluded as non-retail, ` +
+        `so it counts as a retail holder; fix: add it to addresses in config/projects/${slug}/exclusions.json (or re-apply the answers file)`,
+    );
+  }
+  return problems;
+}
+
+/** holders-lite's combined distribution: one tier holding most wallets cannot show movement between tiers. */
+function largestTierProblems(project, root) {
+  const lite = readJson(projectDataPath(project, "holders-lite.json", root));
+  const tiers = (lite?.views?.combined?.distribution ?? []).filter((t) => Number(t?.count) > 0);
+  const total = tiers.reduce((sum, t) => sum + Number(t.count), 0);
+  if (total === 0) return [];
+  const top = tiers.reduce((a, b) => (Number(b.count) > Number(a.count) ? b : a));
+  const share = Number(top.count) / total;
+  if (share <= MAX_TIER_WALLET_SHARE) return [];
+  return [
+    `${project.slug}: distribution tier ${top.label} holds ${(share * 100).toFixed(1)}% of wallets (limit ${MAX_TIER_WALLET_SHARE * 100}%); ` +
+      `fix: node scripts/derive-holder-tiers.js --project ${project.slug}, put the result in holders.distributionTiers of config/projects/${project.slug}.json, then regenerate the feeds`,
+  ];
 }
 
 /** Feed files `project` must publish: the refresh workflow's required files plus the flow feeds. */
@@ -91,7 +237,14 @@ function tierOutflowsProblems(project, root) {
 function allFeedProblems(project, root, now) {
   const problems = feedProblems(project, root);
   const missing = new Set(requiredFeedFiles(project, root).filter((file) => !fs.existsSync(projectDataPath(project, file, root))));
-  return [...problems, ...healthProblems(project, root, now, missing), ...tierOutflowsProblems(project, root), ...heldCursorProblems(project, root)];
+  return [
+    ...problems,
+    ...healthProblems(project, root, now, missing),
+    ...tierOutflowsProblems(project, root),
+    ...heldCursorProblems(project, root),
+    ...hederaFlowProblems(project, root),
+    ...largestTierProblems(project, root),
+  ];
 }
 
 function reportProblems(name, doc, slug, now) {
@@ -116,6 +269,24 @@ function heldCursorProblems(project, root) {
       .filter((tx) => (tx.attempts ?? 0) < NULL_TX_RETRY_RUNS)
       .map((tx) => `${project.slug}: ${chain} flow cursor held, retrying transaction ${tx.signature} (attempt ${tx.attempts ?? 0} of ${NULL_TX_RETRY_RUNS})`),
   );
+}
+
+/**
+ * A Hedera project's flow feeds claim a day only once every exchange account has been scanned to the settled
+ * end (scripts/scan-hedera-flows.js). While any account is behind, or a page failed after retries, the cursor
+ * is held on purpose and the feeds stamp no day, so the project is not live-ready (the Solana held-cursor rule).
+ */
+function hederaFlowProblems(project, root) {
+  if (!projectHasVm(project.config, "hedera")) return [];
+  const chains = readJson(projectDataPath(project, "exchange-flow-checkpoint.json", root))?.chains ?? {};
+  const keys = (project.config.chains ?? []).filter((c) => c.vm === "hedera").map((c) => c.key);
+  return keys.flatMap((key) => {
+    const state = chains[key];
+    if (!state) return [`${project.slug}: ${key} flow scan has not run (no cursors in exchange-flow-checkpoint.json)`];
+    if (state.complete === true) return [];
+    const failed = (state.failed ?? []).map((f) => `${f.account}: ${f.message}`).join("; ");
+    return [`${project.slug}: ${key} flow cursor held, the scan has not reached the settled end${state.throughDate ? ` of ${state.throughDate}` : ""}${failed ? ` (${failed})` : ""}`];
+  });
 }
 
 function walletFlowProblems(project, root, now) {

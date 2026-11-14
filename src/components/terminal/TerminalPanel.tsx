@@ -49,12 +49,12 @@ export const TerminalPanel = ({ title, titleText, info, stat, actions, className
       data-testid={testId}
       className={`relative flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card ${fit || chart ? "" : "min-h-0"} ${className}`}
     >
-      <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border/70 px-3">
-        <h2 id={headingId} className="shrink-0 whitespace-nowrap text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <header className="flex h-10 shrink-0 items-center gap-2 border-b border-border/70 px-3">
+        <h2 id={headingId} className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-foreground">
           {title}
         </h2>
         {info && <InfoTip content={info} label={`About ${titleText ?? (typeof title === "string" ? title : "this panel")}`} className="-m-1" />}
-        {stat && <div className="ml-1 flex min-w-0 items-baseline gap-2 truncate text-lg tabular-nums">{stat}</div>}
+        {stat && <div className="ml-1 flex min-w-0 items-baseline gap-2 truncate ha-num text-base tabular-nums">{stat}</div>}
         {actions && <div className="ml-auto flex shrink-0 items-center gap-1">{actions}</div>}
       </header>
       {/* Table panels scroll internally, so their body takes focus (keyboard

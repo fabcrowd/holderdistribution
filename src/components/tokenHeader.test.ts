@@ -4,19 +4,19 @@ import path from "node:path";
 
 const src = (p: string) => fs.readFileSync(path.resolve(__dirname, p), "utf8");
 
-describe("token header (no switcher)", () => {
-  it("the switcher component is gone", () => {
-    expect(fs.existsSync(path.resolve(__dirname, "TokenSwitcher.tsx"))).toBe(false);
+describe("token header (token switcher)", () => {
+  it("the switcher component exists", () => {
+    expect(fs.existsSync(path.resolve(__dirname, "TokenSwitcher.tsx"))).toBe(true);
   });
-  it("no navigation or terminal file references TokenSwitcher", () => {
+  it("the desktop and the compact header both mount the switcher", () => {
     for (const f of ["Navigation.tsx", "terminal/TerminalDashboard.tsx"]) {
-      expect(src(f), f).not.toContain("TokenSwitcher");
+      expect(src(f), f).toContain("<TokenSwitcher");
     }
   });
   it("the heading is the brand, not the token name", () => {
     expect(src("terminal/TerminalDashboard.tsx")).toMatch(/<h1[\s\S]*?Holder Distribution[\s\S]*?<\/h1>/);
   });
-  it("the open token's mark sits in the controls, icon only", () => {
-    expect(src("terminal/TerminalDashboard.tsx")).toMatch(/<TokenIdentity\s+iconOnly\b/);
+  it("the icon-only token mark is gone from the desktop controls", () => {
+    expect(src("terminal/TerminalDashboard.tsx")).not.toMatch(/<TokenIdentity\b/);
   });
 });

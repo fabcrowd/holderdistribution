@@ -5,7 +5,35 @@ import { TerminalPanel, PanelMessage, PanelError, PanelSkeleton } from "./Termin
 import { useForensicsAccess } from "@/hooks/useForensicsAccess";
 import { useProject } from "@/hooks/useProject";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
-import { supplyTargetLabel } from "@/lib/projects";
+import { supplyTargetLabel, type ProjectConfig } from "@/lib/projects";
+import { joinList, type ProjectEntities } from "@/lib/projectCopy";
+
+/** Categories the treasury-history feed carries when a project does not narrow them (treasury.categories). */
+const DEFAULT_HISTORY_CATEGORIES: readonly string[] = ["treasury", "council", "holdings", "escrow"];
+
+/**
+ * What the History tab's chart covers, phrased from the project's own config
+ * (treasury.categories, else the default four, limited to its developer-holdings
+ * categories) so a token without Safes or escrow does not claim them.
+ * `escrowLabel` lets callers keep each surface's existing capitalisation.
+ */
+export const historyScope = (
+  project: Pick<ProjectConfig, "treasury" | "supply">,
+  entities: Pick<ProjectEntities, "associationShort" | "holdings">,
+  escrowLabel: string,
+): { text: string; hasEscrow: boolean } => {
+  const configured = project.supply?.developerHoldings?.subcategories?.map((s) => s.category);
+  const categories = (project.treasury?.categories ?? DEFAULT_HISTORY_CATEGORIES).filter(
+    (c) => !configured?.length || configured.includes(c),
+  );
+  const has = (c: string) => categories.includes(c);
+  const parts = [
+    has("council") ? `${entities.associationShort} Safes` : has("treasury") ? entities.associationShort : null,
+    has("holdings") ? entities.holdings : null,
+    has("escrow") ? escrowLabel : null,
+  ].filter((p): p is string => p !== null);
+  return { text: joinList(parts) || entities.associationShort, hasEscrow: has("escrow") };
+};
 
 const TABS = [
   { id: "breakdown", label: "Category detail" },
@@ -62,6 +90,7 @@ const ReadySupply = (p: Props) => {
   const { project } = useProject();
   const { entities } = useProjectCopy();
   const { unlocked } = useForensicsAccess();
+  const scope = historyScope(project, entities, "escrow");
   const intro = useIntro();
   // History is always on screen here (its own panel), so a #supply/history
   // deep link simply lands on the default tab beside it.
@@ -160,8 +189,8 @@ const ReadySupply = (p: Props) => {
       </section>
       <TerminalPanel
         className="col-span-8"
-        title="Treasury & escrow history"
-        info={`${entities.associationShort} Safes, ${entities.holdings} and escrow balances over the selected period. Password protected.`}
+        title={scope.hasEscrow ? "Treasury & escrow history" : "Treasury history"}
+        info={`${scope.text} balances over the selected period. Password protected.`}
         testId="panel-treasury-history"
       >
         <div className={unlocked ? "text-sm" : "h-full text-sm"}>{p.history}</div>

@@ -65,6 +65,33 @@ describe("deriveHolderTiers", () => {
     expect(deriveHolderTiers(shuffled)).toEqual(deriveHolderTiers(pop));
   });
 
+  it("sizes the mega-holder threshold at 1/5 of the supply target (TEL 100B -> 20B, ONDO 10B -> 2B)", () => {
+    const pop = population(20_000, 1e8);
+    expect(deriveHolderTiers(pop, { supplyTarget: 100e9 }).megaHolderThreshold).toBe(20e9);
+    expect(deriveHolderTiers(pop, { supplyTarget: 10e9 }).megaHolderThreshold).toBe(2e9);
+    expect(deriveHolderTiers(pop).megaHolderThreshold).toBeNull();
+    expect(() => deriveHolderTiers(pop, { supplyTarget: 0 })).toThrow(/supplyTarget/);
+  });
+
+  it("sets retail to the lower bound of the second-lowest tier and passes registry validation", () => {
+    for (const pop of [population(200_000, 5e9), population(5_000, 1e12, 2), population(100, 50)]) {
+      const { distributionTiers, balanceRanges, retailThreshold, megaHolderThreshold, concentrationBuckets } = deriveHolderTiers(pop, {
+        supplyTarget: 1e12,
+      });
+      expect(retailThreshold).toBe(distributionTiers.at(-2)?.min ?? 1);
+      expect(retailThreshold).toBeGreaterThanOrEqual(1);
+      expect(() => normalizeHolderTiers({ retailThreshold, megaHolderThreshold, concentrationBuckets, distributionTiers, balanceRanges })).not.toThrow();
+    }
+  });
+
+  it("keeps concentration buckets smaller than the holder count, but never empty", () => {
+    const all = loadDefaultHolderTiersRaw().concentrationBuckets;
+    expect(deriveHolderTiers(population(200_000, 5e9)).concentrationBuckets).toEqual(all);
+    const few = deriveHolderTiers(population(60, 1e3)).concentrationBuckets;
+    expect(few).toEqual(all.filter((n) => n < 60));
+    expect(deriveHolderTiers([3, 3, 3]).concentrationBuckets).toEqual([Math.min(...all)]);
+  });
+
   it("handles a project with only a few holders", () => {
     const { distributionTiers } = deriveHolderTiers([3, 3, 3]);
     expect(distributionTiers.at(-1)).toMatchObject({ min: 1 });

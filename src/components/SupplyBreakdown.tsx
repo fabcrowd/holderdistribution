@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { useProject } from "@/hooks/useProject";
+import { COMPACT_LEDGER, formatCompact } from "@/lib/format";
 import { PanelError } from "@/components/terminal/TerminalPanel";
 import { motion } from "framer-motion";
 import { TreasuryHistoryChart } from "@/components/TreasuryHistoryChart";
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SubPanelTabs } from "@/components/SubPanelTabs";
-import { SupplyTerminal } from "@/components/terminal/SupplyTerminal";
+import { SupplyTerminal, historyScope } from "@/components/terminal/SupplyTerminal";
 import { TabsContent } from "@/components/ui/tabs";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { Badge } from "@/components/ui/badge";
@@ -55,11 +56,11 @@ import {
   type DeveloperGroup,
   type DeveloperHoldingsConfig,
 } from "@/lib/supplyBreakdown";
-import { chainExplorerLink, resolveChainVm } from "@/lib/explorerLinks";
+import { chainExplorerLink, chainForAddress } from "@/lib/explorerLinks";
 import { ArrowLeft, ChevronRight, ExternalLink, Lock, PieChart } from "lucide-react";
+import type { ProjectConfig } from "@/lib/projects";
 import { coingeckoComparison } from "@/lib/coingeckoComparison";
 import { reconcileStatus } from "@/lib/supplyGuard";
-import { EXPLORER_BASE } from "@/lib/telContracts";
 import { useChartIntro } from "@/hooks/useMotion";
 import { CHART_DRAW_MS } from "@/lib/motion";
 
@@ -79,12 +80,7 @@ type SupplyBreakdownProps = {
   layout?: "stacked" | "terminal";
 };
 
-const formatCompactAmount = (value: number) => {
-  if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
-  if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-  return new Intl.NumberFormat().format(Math.round(value));
-};
+const formatCompactAmount = (value: number) => formatCompact(value, COMPACT_LEDGER);
 
 const formatFullAmount = (value: number) =>
   new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
@@ -125,26 +121,27 @@ const makeActivePieSector = (ticker: string) => (props: PieSectorDataItem) => {
   );
 };
 
-const explorerUrl = (item: SupplyReconciliationItem): string => {
-  const a = item.address;
-  if (item.category === "staking-contract") {
-    return `${EXPLORER_BASE.polygon}/address/${a}`;
-  }
-  // The address page lists every token the wallet holds, so it shows both the
-  // legacy (2-decimal) and the TEL v3 (18-decimal) balance that make up the
-  // figure on this page — a single token's holder filter would show only half.
-  return `${EXPLORER_BASE.ethereum}/address/${a}`;
+/** Explorer link for a reconciliation item, resolved from the project's own
+ *  chains[]: items carry no chain, so the address shape picks the vm and the
+ *  origin chain (TEL: Ethereum) is the default; a staking contract uses its
+ *  configured chain (TEL: Polygon). The address page lists every token the
+ *  wallet holds, so TEL shows both the legacy (2-decimal) and v3 (18-decimal)
+ *  balance that make up the figure on this page. */
+export const itemExplorerHref = (
+  project: Pick<ProjectConfig, "chains" | "staking">,
+  item: Pick<SupplyReconciliationItem, "address" | "category">,
+): string => {
+  const stakingChain =
+    item.category === "staking-contract"
+      ? project.staking?.find((s) => s.address.toLowerCase() === item.address.toLowerCase())?.chain
+      : undefined;
+  const chain = chainForAddress(project.chains ?? [], item.address, stakingChain);
+  return chain ? chainExplorerLink(chain, "address", item.address) : "#";
 };
 
-/** Explorer link for a reconciliation item. Single-chain Solana projects
- *  (ZBCN) link base58 addresses to their own explorer as-is; everything else
- *  keeps the historical EVM links. */
 const useItemExplorerHref = () => {
   const { project } = useProject();
-  const chains = project.chains ?? [];
-  const solana = chains.length === 1 && resolveChainVm(chains[0]) === "solana";
-  return (item: SupplyReconciliationItem): string =>
-    solana ? chainExplorerLink(chains[0], "address", item.address) : explorerUrl(item);
+  return (item: SupplyReconciliationItem): string => itemExplorerHref(project, item);
 };
 
 /** Selects the drill-down panel content for a bucket key. Shared by the
@@ -198,8 +195,8 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
     holderLite?.views.combined?.stakingStats?.stakedTotal ?? 0,
     formatCompactAmount,
   );
-  // Fallback denominator before reconciliation loads: the project's supply target (TEL: 100B).
-  const supplyTarget = project.supply?.target ?? 100_000_000_000;
+  // Fallback denominator before reconciliation loads: the project's own supply target, else 0 (nothing renders without data).
+  const supplyTarget = project.supply?.target ?? 0;
   const circulatingSubtract = useMemo(() => resolveCirculatingSubtract(project.supply), [project.supply]);
   const pieChartConfig = useMemo(() => supplyPieChartConfig(ticker), [ticker]);
   const activePieSector = useMemo(() => makeActivePieSector(ticker), [ticker]);
@@ -651,7 +648,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                       <span
                         className="text-muted-foreground"
                         data-testid="circulating-formula"
-                        title={text("supply.circulating.definition", circulatingDefinition(circulatingSubtract, entities.association))}
+                        title={text("supply.circulating.definition", circulatingDefinition(circulatingSubtract, entities.association, (project.supply?.developerHoldings?.subcategories ?? []).map((s) => s.category), data?.categories))}
                       >
                         {" "}
                         ({circulatingFormula(
@@ -689,7 +686,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
                   minHeightClass="min-h-[18rem]"
                   compact={layout === "terminal"}
                   primary={layout === "terminal"}
-                  description={`${entities.associationShort} Safes, ${entities.holdings} and Escrow balance history. One password unlocks every protected panel.`}
+                  description={`${historyScope(project, entities, "Escrow").text} balance history. One password unlocks every protected panel.`}
                 >
                   <TreasuryHistoryChart rangeDays={rangeDays} compact={layout === "terminal"} />
                   <AssociationFlowAnalysis />
@@ -768,7 +765,7 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
               <TabsContent value="breakdown" className="mt-4 space-y-5 focus-visible:outline-none">
                 <div>
                   <div className="flex items-baseline justify-between mb-3 gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                    <span className="text-xs text-muted-foreground font-semibold">
                       Total supply
                     </span>
                     <span className="text-sm font-semibold tabular-nums">
@@ -843,25 +840,33 @@ const SupplyBreakdown = ({ rangeDays, panel: panelProp, onPanelChange, layout = 
   );
 };
 
-const ResidualPanel = ({
+export const ResidualPanel = ({
   data,
   bridges,
 }: {
   data: ReturnType<typeof useSupplyReconciliation>["data"];
   bridges: SupplyReconciliationItem[];
 }) => {
-  const { ticker, name, text, hasText } = useProjectCopy();
+  const { ticker, name, text, hasText, chains: chainList } = useProjectCopy();
+  const { project } = useProject();
   const parts = data?.residualParts;
   const residual = data?.residual ?? 0;
   const gap = formatCompactAmount(residual);
-  const total = formatCompactAmount(data?.totalSupply ?? 1e11);
+  const totalAmount = data?.totalSupply ?? project.supply?.target;
+  const total = totalAmount === undefined ? "—" : formatCompactAmount(totalAmount);
   const fill = (s: string) => s.replace(/\{gap\}/g, gap).replace(/\{total\}/g, total);
-  // A project with its own residual body (ZBCN: single-chain, no bridges)
-  // drops the bridge rows unless its data actually has bridge amounts.
   const projectBody = hasText("supply.residual.body");
+  // Bridge wording and rows only when the feed has bridge figures: a
+  // single-chain token (or any project without bridges) sees none of it.
   const hasBridgeLegs =
     (data?.bridgeLocked ?? 0) !== 0 || (data?.mirrored ?? 0) !== 0 || (parts?.bridgeInFlight ?? 0) !== 0 || bridges.length > 0;
-  const showBridgeRows = !projectBody || hasBridgeLegs;
+  const showBridgeRows = hasBridgeLegs;
+  // Bridge legs are named from the project's own chains: locked on the origin, mirrored on the rest.
+  const projectChains = project.chains ?? [];
+  const originChain = projectChains.find((c) => c.origin) ?? projectChains[0];
+  const mirrorNames = projectChains.filter((c) => c !== originChain).map((c) => c.name);
+  const originName = originChain?.name ?? "the origin chain";
+  const mirrorLabel = mirrorNames.length ? mirrorNames.join(" + ") : "other chains";
   const upgrade = data?.upgrade;
   const hasUpgrade =
     !!upgrade && (upgrade.v3Supply !== 0 || upgrade.retiredLegacy !== 0 || upgrade.strandedInUpgrade !== 0);
@@ -873,14 +878,19 @@ const ResidualPanel = ({
       </p>
       {projectBody ? (
         <p className="text-muted-foreground">{fill(text("supply.residual.body", ""))}</p>
-      ) : (
+      ) : hasBridgeLegs ? (
         <p className="text-muted-foreground">
           Deeper look at the ~{gap} gap between wallets we can count and the
           official {total} total. Most of this is {ticker} that is{" "}
           <span className="text-foreground font-medium">
-            locked on Ethereum while it moves to Polygon or Base
+            locked on {originName} while it moves to {mirrorNames.join(" or ") || "other chains"}
           </span>
           — not a mysterious missing wallet.
+        </p>
+      ) : (
+        <p className="text-muted-foreground">
+          Deeper look at the ~{gap} gap between the {total} total supply and the {ticker} balances we can count on{" "}
+          {chainList}. It is supply not assigned to any wallet category above, not a missing wallet.
         </p>
       )}
       <dl className="space-y-1.5 tabular-nums">
@@ -891,11 +901,11 @@ const ResidualPanel = ({
         {showBridgeRows && (
           <>
             <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Locked on Ethereum (bridges)</dt>
+              <dt className="text-muted-foreground">Locked on {originName} (bridges)</dt>
               <dd>{formatFullAmount(data?.bridgeLocked ?? 0)}</dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Already showing on Polygon + Base</dt>
+              <dt className="text-muted-foreground">Already showing on {mirrorLabel}</dt>
               <dd>{formatFullAmount(data?.mirrored ?? 0)}</dd>
             </div>
             <div className="flex justify-between gap-3">
@@ -914,7 +924,9 @@ const ResidualPanel = ({
         {fill(
           text(
             "supply.residual.note",
-            "Still crossing ≈ locked on Ethereum − already showing on Polygon/Base. A tiny scan difference can nudge the final number slightly.",
+            hasBridgeLegs
+              ? `Still crossing ≈ locked on ${originName} − already showing on ${mirrorNames.join("/") || "other chains"}. A tiny scan difference can nudge the final number slightly.`
+              : "A tiny scan difference can nudge the final number slightly.",
           ),
         )}
       </p>
@@ -945,7 +957,7 @@ const ResidualPanel = ({
       {bridges.length > 0 && (
         <div className="border-t border-border/50 pt-2">
           <AddressListPanel
-            title="Locked on Ethereum"
+            title={`Locked on ${originName}`}
             description="Individual bridge-lock addresses making up the total above."
             items={bridges}
             subcategoryFor={() => "Bridge lock"}
@@ -1094,7 +1106,7 @@ const AddressListPanel = ({
                 {startsGroup ? (
                   <div
                     data-testid="supply-developer-group"
-                    className="flex items-baseline justify-between gap-2 px-1 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground first:pt-1"
+                    className="flex items-baseline justify-between gap-2 px-1 pb-1 pt-3 text-xs font-semibold text-muted-foreground first:pt-1"
                   >
                     <span>{subcategoryFor(item)}</span>
                     <span className="tabular-nums">{formatCompactAmount(groupTotal)}</span>

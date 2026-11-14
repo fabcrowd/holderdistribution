@@ -8,7 +8,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import logoIcon from "@/assets/holder-analytics-icon.svg";
-import { TokenIdentity } from "@/components/TokenIdentity";
+import { TokenSwitcher } from "@/components/TokenSwitcher";
 import { slugFromPath } from "@/lib/tokenRoutes";
 import { GlossaryDialog } from "@/components/GlossaryDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -38,18 +38,18 @@ export const Navigation = (_props: NavigationProps = {}) => {
       className="sticky top-0 z-50 w-full backdrop-blur-xl premium-nav"
     >
       <div className="mx-auto px-4 max-w-7xl">
-        <div className="flex h-16 md:h-20 items-center justify-between">
+        <div className="flex h-14 md:h-16 items-center justify-between">
           {/* Brand + (on /<slug> routes) which token is open. On phones the
               title drops out while a token is open, so the token chip fits
               beside the 44px controls. */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <Link to="/" aria-label="Holder Distribution home" className="flex min-h-11 items-center gap-2 group shrink-0">
-              <img src={logoIcon} alt="" width={56} height={56} className="h-[clamp(2.5rem,10vw,3.5rem)] w-[clamp(2.5rem,10vw,3.5rem)] transition-opacity group-hover:opacity-80 dark:brightness-150" />
-              <span className={cn("whitespace-nowrap text-[clamp(1rem,4vw,1.8rem)] font-extrabold tracking-tight text-foreground", onToken ? "hidden sm:inline" : "")}>Holder Distribution</span>
+              <img src={logoIcon} alt="" width={56} height={56} className="h-8 w-8 md:h-9 md:w-9 transition-opacity group-hover:opacity-80 dark:brightness-150" />
+              <span className={cn("ha-display whitespace-nowrap text-lg md:text-xl text-foreground", onToken ? "hidden sm:inline" : "")}>Holder Distribution</span>
             </Link>
             {onToken && (
               <span className="flex min-h-11 min-w-0 items-center border-l border-primary/25 pl-2 md:pl-3">
-                <TokenIdentity className="min-h-11 min-w-0 max-w-[10.5rem] truncate text-sm font-bold text-foreground sm:max-w-none sm:text-base md:text-lg" />
+                <TokenSwitcher />
               </span>
             )}
           </div>
@@ -57,7 +57,7 @@ export const Navigation = (_props: NavigationProps = {}) => {
           {/* Always visible, phone included: the jargon problem is worst for
               exactly the newcomer who has no other way to decode it. */}
           <span className="ml-auto" aria-hidden="true" />
-          <GlossaryDialog />
+          <GlossaryDialog labelClassName="sr-only sm:not-sr-only" className="max-sm:min-w-11 max-sm:justify-center max-sm:px-0" />
           <ThemeToggle className="h-11 w-11" />
 
           {/* Desktop Navigation Links */}

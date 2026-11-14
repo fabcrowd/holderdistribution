@@ -121,7 +121,7 @@ export const TierRail = ({
           </dl>
 
           <div>
-            <h4 className="mb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <h4 className="mb-0.5 text-xs font-semibold text-muted-foreground">
               {metric === "wallets" ? "Wallet moves" : "Flows"}
             </h4>
             <ul>{flowRows.map((r) => <FlowFigure key={r.key} row={r} />)}</ul>
@@ -134,7 +134,7 @@ export const TierRail = ({
 
           {top.length > 0 && (
             <div>
-              <h4 className="mb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Top gross flows</h4>
+              <h4 className="mb-0.5 text-xs font-semibold text-muted-foreground">Top gross flows</h4>
               <ul>
                 {top.map((c) => (
                   <li key={c.key}>
@@ -165,7 +165,7 @@ export const TierRail = ({
           {totalsLine}
           {ranked.length > 0 && (
             <div>
-              <h4 className="mb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <h4 className="mb-0.5 text-xs font-semibold text-muted-foreground">
                 {period ? (
                   <ExplainNumber value="Tiers by net change" explanation={netChangeTip(period[metric], metric, ticker)} ariaLabel="Tiers by net change: what net means" className="inline-flex min-h-6 items-center max-xl:relative max-xl:before:absolute max-xl:before:-inset-x-1 max-xl:before:-inset-y-3 max-xl:before:content-['']" />
                 ) : "Tiers by net change"}

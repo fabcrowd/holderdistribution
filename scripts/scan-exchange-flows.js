@@ -40,6 +40,7 @@ import { markPartialDay } from "./lib/partialDay.js";
 import { readWindow, transferWindowName } from "./lib/transferWindow.js";
 import { getTransferLogsCached, sharedScanEnabled } from "./lib/sharedTransferLogs.js";
 import { cutoffScanWindow, readCutoffMap, asOfFromSolanaScan, asOfFromReached } from "./lib/dayBlocks.js";
+import { loadChainAdapter, projectHasVm } from "./lib/chainAdapters.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: token addresses,
 // decimals and start blocks come from the project's chain map, CEX/DEX lists
@@ -208,11 +209,33 @@ const solanaEntries = async () => {
   return buildExchangeHistory(store, { decimals: Object.fromEntries(chains.map((c) => [c.key, c.decimals])) });
 };
 
+// Hedera-only project (native coin): the day store written by scan-hedera-flows.js, same shape as Solana's.
+// A project that mixes Hedera with EVM chains is refused: its flows could not be published from one scan.
+const hederaKit = async () => {
+  if (!projectHasVm(project.config, "hedera")) return null;
+  if (Object.keys(CHAINS).length > 0) throw new Error(`${project.slug}: EVM and Hedera chains in one project are not supported by the flow feeds`);
+  const kit = await (await loadChainAdapter("hedera")).flows();
+  const chains = kit.hederaFlowChains(project.config);
+  if (chains.length !== 1) throw new Error(`${project.slug}: expected one Hedera chain for the flow feeds, found ${chains.length}`);
+  return { kit, ...chains[0] };
+};
+
+const hederaEntries = async () => {
+  const hedera = await hederaKit();
+  if (!hedera) return null;
+  const { buildExchangeHistory } = await import("./lib/solana/flowFeeds.js");
+  const store = await readOptionalJson(projectWork(project)("hedera-flow-days.json"));
+  return store ? buildExchangeHistory(store, { decimals: { [hedera.key]: hedera.decimals } }) : [];
+};
+
 // Stamp from the blocks the scan actually reached (a MAX_BLOCKS_PER_RUN-capped
 // backlog stamps its last complete day, not yesterday). Solana-only projects
 // stamp from scan-solana-flows' checkpoint (same file): only a complete scan
 // claims a settled day; an incomplete one stamps date null (asOfFromSolanaScan).
+// Hedera-only projects stamp from scan-hedera-flows' checkpoint the same way (hederaFlowAsOf).
 const projectAsOf = async (checkpoint) => {
+  const hedera = await hederaKit();
+  if (hedera) return hedera.kit.hederaFlowAsOf(checkpoint.chains?.[hedera.key], hedera.key, hedera.kit.flowSetHash(hedera.kit.hederaFlowAccounts(project)));
   const all = readCutoffMap(project);
   const reached = Object.fromEntries(Object.keys(CHAINS).map((c) => [c, checkpoint.chains?.[c]?.lastBlock]));
   if (Object.keys(reached).length) return asOfFromReached(all, reached);
@@ -248,7 +271,9 @@ const main = async () => {
   // Since CEX and DEX come from the SAME getLogs pass, the only correct way to
   // add DEX history is a fresh full re-scan (resuming would double-count CEX).
   const SCHEMA_VERSION = 3;
-  if ((history.schema ?? 1) < SCHEMA_VERSION) {
+  // A Hedera project keeps its scan cursors in this same checkpoint file (scan-hedera-flows.js), and its
+  // history is rebuilt from the day store, so a missing history must not wipe them.
+  if ((history.schema ?? 1) < SCHEMA_VERSION && !projectHasVm(project.config, "hedera")) {
     console.log(`History schema ${history.schema ?? 1} < ${SCHEMA_VERSION}: resetting for a clean CEX+DEX backfill.`);
     history = { entries: [] };
     checkpoint = { chains: {} };
@@ -278,7 +303,7 @@ const main = async () => {
 
   // The final row is today's hours so far; flag it so the UI can label it
   // instead of drawing a collapse (see scripts/lib/partialDay.js).
-  const entries = markPartialDay((Object.keys(CHAINS).length === 0 ? await solanaEntries() : null) ?? Array.from(dayBuckets.entries())
+  const entries = markPartialDay((Object.keys(CHAINS).length === 0 ? ((await solanaEntries()) ?? (await hederaEntries())) : null) ?? Array.from(dayBuckets.entries())
     .map(([date, b]) => ({
       date,
       chains: b.chains,

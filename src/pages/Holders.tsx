@@ -312,7 +312,7 @@ const Holders = () => {
         // A landmark so the section tabs + range picker aren't orphaned
         // outside every region (axe "region" on phone/tablet).
         aria-label="Dashboard sections"
-        className="sticky top-16 md:top-20 z-40 w-full backdrop-blur-xl border-b border-border/40 bg-card/90 shadow-[0_1px_2px_hsl(180_18%_7%/0.05)]"
+        className="sticky top-14 md:top-16 z-40 w-full md:backdrop-blur-xl border-b border-border/40 bg-card md:bg-card/90 shadow-[0_1px_2px_hsl(180_18%_7%/0.05)]"
       >
         {/* Scrolls rather than wraps below sm: a wrapped selector bar costs a
             whole second row of chrome (~40px) on the screen that can least
@@ -320,20 +320,21 @@ const Holders = () => {
             grid-cols-2 made, and the reason SubPanelTabs and the balance
             chart's toggle row both use this pattern. */}
         <div className="mx-auto px-4 py-2 sm:py-2.5 max-w-7xl flex items-center justify-between gap-2 overflow-x-auto [-webkit-overflow-scrolling:touch] sm:flex-wrap sm:overflow-visible">
+          <p aria-hidden="true" className="font-display text-base font-bold text-foreground md:hidden">{TABS.find((t) => t.id === activeTab)?.label}</p>
           {/* Each tab keeps the accent its section header already uses, so a
               reader can map "Distribution = violet" before opening anything. */}
           {/* One row, sized to content. A 2-up grid forced every tab to half
               the viewport (192px each), wrapping the bar to two rows and
               pushing the range picker onto a third — ~94px of chrome above the
               data on a phone. Four short labels total ~300px, so they fit. */}
-          <TabsList className="inline-flex w-auto h-auto shrink-0 gap-0.5 sm:gap-1 bg-card/80 border border-border/60 p-1 rounded-full">
+          <TabsList className="max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-50 max-md:grid max-md:h-auto max-md:w-full max-md:grid-cols-3 max-md:gap-0 max-md:rounded-none max-md:border-0 max-md:border-t max-md:border-border max-md:bg-card max-md:p-0 max-md:pb-safe md:inline-flex md:h-auto md:w-auto md:shrink-0 md:gap-1 md:rounded-md md:border md:border-border/60 md:bg-surface-sunken md:p-1">
             {TABS.map((t) => (
               <TabsTrigger
                 key={t.id}
                 value={t.id}
-                className={`min-h-[40px] max-xl:min-h-[44px] gap-1.5 text-xs sm:text-sm font-semibold rounded-full px-3 sm:px-4 py-1.5 whitespace-nowrap text-muted-foreground bg-transparent hover:text-foreground hover:bg-background/60 data-[state=active]:bg-background data-[state=active]:shadow-sm ${t.accent}`}
+                className={`relative gap-1 whitespace-nowrap bg-transparent font-semibold text-muted-foreground hover:text-foreground max-md:min-h-14 max-md:flex-col max-md:rounded-none max-md:px-1 max-md:py-1.5 max-md:text-xs max-md:data-[state=active]:bg-transparent max-md:data-[state=active]:shadow-none max-md:data-[state=active]:after:absolute max-md:data-[state=active]:after:inset-x-6 max-md:data-[state=active]:after:top-0 max-md:data-[state=active]:after:h-0.5 max-md:data-[state=active]:after:rounded-pill max-md:data-[state=active]:after:bg-primary md:min-h-11 md:gap-1.5 md:rounded md:px-4 md:py-1.5 md:text-sm md:hover:bg-background/60 md:data-[state=active]:bg-card md:data-[state=active]:shadow-sm xl:min-h-10 ${t.accent}`}
               >
-                <t.icon aria-hidden="true" className="hidden min-[400px]:block h-4 w-4 shrink-0" />
+                <t.icon aria-hidden="true" className="h-5 w-5 shrink-0 md:h-4 md:w-4" />
                 {t.label}
               </TabsTrigger>
             ))}
@@ -355,7 +356,7 @@ const Holders = () => {
       <main
         id="main-content"
         tabIndex={-1}
-        className="terminal-dense focus:outline-none container mx-auto px-4 py-4 sm:py-8 max-w-7xl min-h-[100svh]"
+        className="terminal-dense focus:outline-none container mx-auto px-4 py-4 sm:py-8 max-w-7xl min-h-[100svh] max-md:pb-24"
       >
         {/* Breadcrumb only — the page title now lives in the sticky selector
             bar above (see the title unit next to the tab pills). */}
@@ -416,7 +417,7 @@ const Holders = () => {
       </main>
       </Tabs>
 
-      <Footer />
+      <div className="max-md:pb-20"><Footer /></div>
     </div>
   );
 };

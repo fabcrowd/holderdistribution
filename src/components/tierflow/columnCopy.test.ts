@@ -13,7 +13,7 @@ describe("periodPhrase", () => {
 });
 
 describe("walletColumns", () => {
-  const cols = walletColumns("from Jan 1 to Oct 30");
+  const cols = walletColumns("from Jan 1 to Oct 30", "TEL");
   it("names the window in the joined and left tips", () => {
     expect(cols.joined.tip).toContain("from Jan 1 to Oct 30");
     expect(cols.left.tip).toContain("from Jan 1 to Oct 30");

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { chainEntry, main, scaffold, validateScaffold } from "./add-project.js";
+import { projectHolderTiers } from "./lib/holderTiers.js";
 
 const quiet = { log() {}, warn() {} };
 const registry = { projects: [{ slug: "tel", name: "Telcoin", ticker: "TEL", default: true, legacyRoot: true }] };
@@ -44,7 +45,28 @@ describe("add-project", () => {
   it("lists only the treasury categories a supplied wallet fills", () => {
     const w = (cls) => `0x${"cd".repeat(20)}:W:${cls}`;
     expect(scaffold(args({ wallets: [w("association")] }), registry).files["config/projects/foo.json"].treasury.categories).toEqual(["treasury"]);
-    expect(scaffold(args({ wallets: [w("holdings")] }), registry).files["config/projects/foo.json"].treasury.categories).toEqual(["holdings"]);
+    // team/holdings buckets can be emptied, which aborts append-treasury-history (ONDO/ZBCN list treasury only): an empty list, never absent
+    expect(scaffold(args({ wallets: [w("holdings")] }), registry).files["config/projects/foo.json"].treasury.categories).toEqual([]);
+  });
+
+  it("writes holders.megaHolderThreshold = supply.target / 5 from the first scaffold, and no tiers (the runner derives them)", () => {
+    const cfg = scaffold(args({ supplyTarget: 10_000_000_000 }), registry).files["config/projects/foo.json"];
+    expect(cfg.holders).toEqual({ megaHolderThreshold: 2_000_000_000 });
+    const tiers = projectHolderTiers({ config: cfg });
+    expect(tiers.megaHolderThreshold).toBe(2_000_000_000);
+    expect(tiers.distributionTiers[0].label).toBe("500M+"); // tiers still the shared default until derived
+    expect(scaffold(args({}), registry).files["config/projects/foo.json"].holders).toBeUndefined();
+  });
+
+  it("keeps the first holders block valid for any positive supply (tiny supplies get a retailThreshold below the mega cut)", () => {
+    for (const supplyTarget of [1_000, 100, 1]) {
+      const cfg = scaffold(args({ supplyTarget }), registry).files["config/projects/foo.json"];
+      expect(cfg.holders.megaHolderThreshold).toBe(supplyTarget / 5);
+      expect(cfg.holders.retailThreshold, `supply ${supplyTarget}`).toBeLessThan(cfg.holders.megaHolderThreshold);
+      expect(() => projectHolderTiers({ config: cfg }), `supply ${supplyTarget}`).not.toThrow();
+    }
+    // above the shared default retailThreshold the block is unchanged: no retailThreshold is written
+    expect(scaffold(args({ supplyTarget: 10_000 }), registry).files["config/projects/foo.json"].holders).toEqual({ megaHolderThreshold: 2_000 });
   });
 
   it("refuses a bad supply target, image path or history start", () => {
@@ -78,6 +100,29 @@ describe("add-project", () => {
     expect(() => main(argv, { logger: quiet })).toThrow(/already/);
     main([...argv, "--dry-run", "--force"], { logger: quiet });
     expect(JSON.parse(fs.readFileSync(path.join(tmp, "config/projects/foo/chains-inventory.json"), "utf8")).chains.map((c) => c.status)).toEqual(["configured", "not-found"]);
+  });
+
+  it("prints effective paths under --root and only the real next steps after --write", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "addproj-out-"));
+    fs.mkdirSync(path.join(tmp, "config"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "config/projects.json"), JSON.stringify(registry));
+    const inv = path.join(tmp, "inv.json");
+    fs.writeFileSync(inv, JSON.stringify({ chains: [{ chain: "polygon", vm: "evm", status: "configured", tokens: [{ address: "0x" + "ab".repeat(20) }], source: "test" }] }));
+    const lines = [];
+    const logger = { log: (m) => lines.push(String(m)), warn() {} };
+    main(["--slug", "foo", "--name", "Foo", "--ticker", "FOO", "--chain", "polygon:0x" + "ab".repeat(20) + ":18", "--supply-target", "1000000", "--root", tmp, "--inventory", inv], { logger });
+    const out = lines.join("\n");
+    expect(out).toContain(`write ${path.join(tmp, "config/projects/foo.json")}`);
+    expect(out).not.toMatch(/write config\/projects/);
+    expect(out).toContain("gh workflow run onboard-project.yml -f project=foo");
+    expect(out).toContain("npm run onboard:check -- --project foo");
+    expect(out).toContain(`git -C ${tmp} diff`);
+    for (const dropped of ["wallet-candidates", "capabilities.projectWallets", "check-go-live"]) expect(out).not.toContain(dropped);
+    expect(out).toMatch(/Still manual/);
+    // a second run in dry-run mode prints the effective path too
+    const dry = [];
+    main(["--slug", "bar", "--name", "Bar", "--ticker", "BAR", "--chain", "polygon:0x" + "ab".repeat(20) + ":18", "--root", tmp, "--inventory", inv, "--dry-run"], { logger: { log: (m) => dry.push(String(m)), warn() {} } });
+    expect(dry.join("\n")).toContain(`would write ${path.join(tmp, "config/projects/bar.json")}`);
   });
 
   it("chain & contract discovery comes first: no inventory, or an inventory that misses a chain, is refused", () => {

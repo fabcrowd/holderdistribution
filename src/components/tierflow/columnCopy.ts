@@ -18,10 +18,13 @@ export const tableDescription = (asOfDate: string | null, period: string): strin
   `${asOfDate ? `Flows as of ${asOfDate}. ` : ""}Net = in minus out ${period}.`;
 
 /** Net is always in minus out over the period, never a snapshot delta. */
-export const netChangeTip = (period: string, metric: "wallets" | "tel" = "wallets", ticker = "TEL"): string =>
-  metric === "wallets" ? `Net = joined - left ${period}.` : `Net = ${ticker} in - ${ticker} out ${period}.`;
+export function netChangeTip(period: string, metric?: "wallets"): string;
+export function netChangeTip(period: string, metric: "wallets" | "tel", ticker: string): string;
+export function netChangeTip(period: string, metric: "wallets" | "tel" = "wallets", ticker = ""): string {
+  return metric === "wallets" ? `Net = joined - left ${period}.` : `Net = ${ticker} in - ${ticker} out ${period}.`;
+}
 
-export const walletColumns = (period: string, ticker = "TEL"): Record<WalletColumnKey, WalletColumn> => ({
+export const walletColumns = (period: string, ticker: string): Record<WalletColumnKey, WalletColumn> => ({
   joined: { key: "joined", label: "Joined", tip: `Wallets that moved into this balance range ${period}.` },
   wallets: { key: "wallets", label: "Wallets", tip: `Wallets holding this much ${ticker} today. The bar inside each tile grows with the number of wallets (log scale).` },
   left: { key: "left", label: "Left", tip: `Wallets that moved out of this balance range ${period}.` },

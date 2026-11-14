@@ -67,6 +67,7 @@ import { readWindow, transferWindowName } from "./lib/transferWindow.js";
 import { getTransferLogsCached, sharedScanEnabled } from "./lib/sharedTransferLogs.js";
 import { cutoffScanWindow, readCutoffMap, flowFeedAsOf, settledEndBlock } from "./lib/dayBlocks.js";
 import { chainCaughtUp } from "./lib/tierOutflowsComplete.js";
+import { loadChainAdapter, projectHasVm } from "./lib/chainAdapters.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk + git history), work dir (day store / checkpoint), chain
@@ -591,6 +592,60 @@ const applySolanaFlows = async (dayBuckets, snapCommits, snapDates) => {
   return chains.every((c) => cp?.chains?.[c.key]?.complete === true);
 };
 
+// Hedera-only projects (native coin): the same venue-anchored buckets from the day store written by
+// scan-hedera-flows.js (data/<slug>/hedera-flow-days.json). A counterparty's tier is its balance bucket in
+// the latest holder snapshot on/before the day, exactly as for Solana; only deposits to and withdrawals from
+// exchange accounts are measured (wallet-to-wallet moves stay 0, sourceTierSince null). Flow whose counterparty
+// has no tier, and days before the first snapshot, are kept in the "unattributed" tier key, so per day the tier
+// volumes plus unattributed equal exchange-flow-history in/out (the UI reads only the configured tier labels). Returns whether
+// every exchange account has reached the settled end, or null when this project has no Hedera chain.
+const hederaFlowKit = async () => {
+  if (!projectHasVm(project.config, "hedera")) return null;
+  if (Object.keys(CHAINS).length > 0) throw new Error(`project ${project.slug}: EVM and Hedera chains in one project are not supported by the flow feeds`);
+  const kit = await (await loadChainAdapter("hedera")).flows();
+  const [first, ...rest] = kit.hederaFlowChains(project.config);
+  if (!first || rest.length > 0) throw new Error(`project ${project.slug}: expected one Hedera chain for the flow feeds`);
+  return { kit, ...first };
+};
+
+const applyHederaFlows = async (hedera, dayBuckets, snapCommits, snapDates) => {
+  if (!hedera) return null;
+  const { key, decimals, kit } = hedera;
+  const store = await readOptionalJson(work("hedera-flow-days.json"));
+  if (!store) return false;
+  const excl = new Set();
+  const addAll = (list) => { for (const a of list ?? []) { const v = (typeof a === "string" ? a : a?.address)?.trim(); if (v) excl.add(v); } };
+  addAll((EXCLUSIONS_PATH ? await readOptionalJson(EXCLUSIONS_PATH) : null)?.addresses);
+  addAll(kit.hederaFlowAccounts(project).map((a) => a.id));
+  addAll((projectRoleAddresses(project.config)[key] ?? []).map((r) => r.address));
+  const cache = new Map();
+  const mapFor = (snapDate) => {
+    if (cache.has(snapDate)) return cache.get(snapDate);
+    const snap = showJson(snapCommits.get(snapDate), SNAP_REL);
+    const tiers = new Map();
+    for (const h of snap.chains?.[key]?.holders ?? []) {
+      const a = (h.address ?? "").trim();
+      const t = a && !excl.has(a) ? tierOf(Number(h.balance ?? 0)) : null;
+      if (t) tiers.set(a, t);
+    }
+    cache.set(snapDate, tiers);
+    return tiers;
+  };
+  const tierAt = (date) => {
+    let best = null;
+    for (const d of snapDates) { if (d <= date) best = d; else break; }
+    return best ? mapFor(best) : new Map();
+  };
+  // The day store is the only source of Hedera day buckets (no EVM chain here), so previously published days
+  // are replaced, never merged: a rebuilt scan must not leave stale days behind.
+  const days = kit.buildHederaTierDays(store, { decimals: { [key]: decimals }, tierAt });
+  dayBuckets.clear();
+  for (const [date, tiers] of days) dayBuckets.set(date, tiers);
+  const cp = await readOptionalJson(data("exchange-flow-checkpoint.json"));
+  console.log(`Hedera flows: ${days.size} tier day(s) from the venue store.`);
+  return kit.hederaFlowAsOf(cp?.chains?.[key], key, kit.flowSetHash(kit.hederaFlowAccounts(project))).settled;
+};
+
 const main = async () => {
   const ex = EXCLUSIONS_PATH ? JSON.parse(await fs.readFile(EXCLUSIONS_PATH, "utf8")) : {};
   const excl = new Set();
@@ -681,6 +736,8 @@ const main = async () => {
     await scanChain(chainKey, ctx, checkpoint, dayBuckets);
   }
   const solanaComplete = await applySolanaFlows(dayBuckets, snapCommits, snapDates);
+  const hedera = await hederaFlowKit();
+  const hederaComplete = await applyHederaFlows(hedera, dayBuckets, snapCommits, snapDates);
 
   // Fold this run's fan-out into split counts: a sender that moved TEL to >=2
   // distinct wallets on a day is one split EVENT for its tier that day.
@@ -871,7 +928,8 @@ const main = async () => {
   // Zero chains is vacuously "every chain caught up", which would mark an
   // unscanned Solana project complete and present unmeasured flows as a
   // finished zero. TEL always has its three chains, so this stays the same.
-  const complete = solanaComplete !== null ? solanaComplete : Object.keys(CHAINS).length > 0 && Object.values(chainComplete).every(Boolean);
+  const venueComplete = solanaComplete !== null ? solanaComplete : hederaComplete;
+  const complete = venueComplete !== null ? venueComplete : Object.keys(CHAINS).length > 0 && Object.values(chainComplete).every(Boolean);
 
   // Stamp the blocks actually reached: a MAX_BLOCKS_PER_RUN-capped backlog
   // stamps its last complete day, not yesterday. Solana-only: stamp from
@@ -880,7 +938,7 @@ const main = async () => {
   const reached = Object.fromEntries(Object.keys(CHAINS).map((c) => [c, checkpoint.chains?.[c]?.lastBlock]));
   const solanaKeys = solanaFlowChains(project.config).map((c) => c.key);
   const scanState = Object.keys(reached).length ? null : (await readOptionalJson(data("exchange-flow-checkpoint.json")))?.chains ?? null;
-  const asOf = flowFeedAsOf(cutoffMap, { reached, scanState, solanaKeys });
+  const asOf = hedera ? hedera.kit.hederaFlowAsOf(scanState?.[hedera.key], hedera.key, hedera.kit.flowSetHash(hedera.kit.hederaFlowAccounts(project))) : flowFeedAsOf(cutoffMap, { reached, scanState, solanaKeys });
 
   await fs.mkdir(path.dirname(DAYS_STORE_PATH), { recursive: true });
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });

@@ -86,3 +86,21 @@ Both VMs produce the same `ledger.json` and `bot-proceeds.json` schema and the s
 - **No mapped cluster:** the report is still complete. It has `status`, `evidence: null`, `chains: []`, an empty `summary` and `detection`.
 - **Detection:** `botDetect.js` lists unlabelled wallets that developer wallets fund repeatedly. These are candidates only and never counted. Confirm one by adding a `botCluster` with its funding split.
 - **Summary bullets:** every figure links to a type+window filter of the transaction list, with an `[n tx]` proof popover. Named entities link to their explorer address, with the chain shown. A claim backed by a single transaction links straight to it (`src/lib/ledgerClaims.ts`).
+
+## Hedera (HBAR)
+
+HBAR is not registered; this branch is built and tested locally and has not run on GitHub.
+`build-ledger.js` reads Hedera chains through `scripts/lib/hedera/ledgerSource.js` and the mirror node
+(provider `hedera-mirror`), with the same `ledger.json` schema and UI.
+
+- **Developer wallets** are the project-controlled treasury accounts of `exclusions.json`, the same sender
+  set as the wallet-flows report (`docs/FORENSICS.md`, "Hedera"). 0.0.98, 0.0.800, 0.0.801 and 0.0.54 are not traced.
+- **Event model:** each HBAR transfer into or out of a developer wallet becomes one ledger row, keyed by
+  `<consensus stamp>:<in|out>:<wallet>:<counterparty>:<tinybar>`. A transfer between two developer wallets
+  is kept once, as the sender's outflow, and classified `internal_shuffle`. A transfer to a CEX-list account
+  is `cex_deposit`. Fees, staking rewards and failed transactions are not rows.
+- **Not modelled:** swap decoding (WHBAR is a DEX venue with no look-through), a bot cluster and USD values on
+  token rows.
+- **Resume:** one cursor per stream of contiguous account ids, stamped with a hash of the sender set and the
+  classifier version (a different set or version rebuilds). `LEDGER_HEDERA_MAX_MS` (default 40 minutes)
+  stops cleanly; coverage then reports a partial chain and the next run resumes. Stored rows merge by `uniqueId`.

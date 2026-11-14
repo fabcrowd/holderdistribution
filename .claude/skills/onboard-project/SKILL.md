@@ -1,159 +1,159 @@
 ---
 name: onboard-project
-description: Runbook for an LLM to onboard a new token (EVM, Solana, or mixed) into Holder Distribution in one pass from its contract address or mint. Ordered steps, each with exact commands, a pass check and a stop condition. Use when the owner gives a contract address/mint and wants it on the site.
+description: Runbook to onboard a new token (EVM, Solana) into Holder Distribution from its contract address or mint. One answers file holds all judgement; one scaffold command, one workflow dispatch and one local check do the rest. Use when the owner gives a contract address or mint and wants it on the site.
 ---
 
-# Onboard a token: one-shot runbook
+# Onboard a token
 
-Input: a contract address or mint. Output: a live `/<slug>` page whose `node scripts/check-go-live.js --project <slug>` passes, with data gates green and a visual check done.
+Input: a contract address or mint. Output: a `/<slug>` page where `npm run onboard:check -- --project <slug>` passes, plus a real visual check.
 
-Two commands do the mechanical work: `npm run onboard -- --address <addr> --write` (Step 4) and `gh workflow run onboard-project.yml -f project=<slug>` (Step 6). Your job is the judgement between them (Steps 2.4-2.6, 3, 5) and the checks after (7-10).
+## The flow
+1. `npm run onboard -- --address <addr>` runs discovery and writes an answers template to `tasks/onboard-<slug>.answers.json`. It writes nothing tracked.
+2. Fill the answers file (every `FILL_ME`). Check it with `npm run onboard -- --address <addr> --answers <file>` (dry run, prints the validation errors).
+3. `npm run onboard -- --address <addr> --answers <file> --write`. Show the diff. The owner merges the PR (README updated in it).
+4. `gh workflow run onboard-project.yml -f project=<slug>`. After every stop, fix it and dispatch again; it resumes where it stopped.
+5. `npm run onboard:check -- --project <slug>`, then the visual check, then the report.
 
-How to run this: execute the steps in order. Every step has **Do**, **Pass** and **Stop if**. Do not skip a Pass check, do not move on until it holds, and do not ask the owner anything that discovery can answer. Ask only in Step 3, once, with a recommended default on every question.
-
-Reference: `docs/MULTI-TOKEN.md` ("Adding the next project"), `docs/FORENSICS.md`, `docs/LEDGER.md`, `scripts/add-project.js` (header lists every flag).
+The answers file is the ONLY place judgement goes. Never hand-edit `config/projects/<slug>.json`, the ledger, exclusions, CEX list or wallet registry for anything the answers file covers: edit the answers, re-run step 3 (it merges, no `--force`). Every stop prints a `Fix:` block. Follow it literally. Example of a complete file: `config/onboarding.answers.example.json` (fictional addresses).
 
 ## Rules that hold in every step
-- Never branch, commit or push unless the owner says so. Edit locally, show the diff, stop. When told to commit: identity `fabcrowd` via env vars on the command, no Claude trailer, one PR, and the PR must update `README.md` ("Recent work" with PR numbers, project list, layout map).
-- Only verified addresses. Never guess a wallet, label or confidence.
-- Branch on `chains[].vm` (`evm` | `solana`), never on a slug. No slug in workflow YAML.
-- No workarounds before live: never use `pipeline.feedsPending`, a `placeholder` flag, a `breaksSeries` event or a skip to hide a data gap. Fix the cause.
+- No branch, commit or push unless the owner says so. Edit locally, show the diff, stop. When told to commit: author and committer `fabcrowd` + the GitHub noreply email through env vars, no Claude trailer, one PR that also updates `README.md` (project list, layout map, "Recent work").
+- Only verified addresses. Never guess a wallet, label or confidence. Every decision gets evidence (a URL or one sentence).
+- Never use `--force` (needs `ONBOARD_FORCE=<slug>`; it rewrites every scaffold file).
 - Never print RPC URLs, keys or secrets. Name env vars only.
-- Do not run `npm run dev` / `npm run build` (they rewrite `public/sitemap.xml`). Use `npx vite --port <n>` and `npx vite build --outDir <scratch>` with `VITE_LIVE_DATA=off`.
-- TEL must stay byte-identical apart from `generatedAt`, and must never import `scripts/lib/solana/*`.
-- Generated files in `public/data/` are never hand-edited. Regenerate by script or workflow.
-- Dispatch a workflow only after its code is on the branch it runs from (a dispatch on `main` runs `main`).
-- Free public RPC first; paid keys allowed for log scans. Check `config/budgets.json` before a big scan.
+- No `npm run dev` or `npm run build` (they rewrite `public/sitemap.xml`). Use `npx vite --port <n>` and `VITE_LIVE_DATA=off npx vite build --outDir <scratch>`.
+- Never hand-edit `public/data/`. Regenerate by script or workflow.
+- No `pipeline.feedsPending`, `placeholder` flag, `breaksSeries` event or skip to hide a gap. Fix the cause.
+- Dispatch only after the code is on `main` (a dispatch runs `main`). TEL stays byte-identical apart from `generatedAt`.
+- Branch on `chains[].vm`, never on a slug.
 
-## Step 1 - Pre-flight (no questions)
-**Do:** `git status` (say what is already modified), confirm `npm ci` is done and env decrypt works (names only). Infer the VM: `0x` + 40 hex = EVM; base58 of 32-44 chars = Solana mint; anything else = unsupported VM, stop.
-**Pass:** clean or understood tree, VM known.
-**Stop if:** unsupported VM. HBAR itself is `npm run onboard -- --chain hedera` (native coin, no address; it scaffolds the treasury accounts and WHBAR role too). A `0.0.N` address is a Hedera token (HTS) and is not supported. For HBAR, `onboard-project.yml` stops at the CEX list (owner-supplied) and at every step whose workflow cannot read Hedera yet (cutoffs, history, flows, wallet flows, ledger: `tasks/hedera-plan.md` slices 5-8); do not register HBAR on main until those exist.
+## Step 1. Discovery (no questions)
+**Do:** `git status` and say what is already modified. Run `npm run onboard -- --address <addr>`. Add `--chain <origin>` if it cannot find the chain. Unsupported address shapes stop with a message (`0.0.N` is a Hedera token, not supported; HBAR itself is `npm run onboard -- --chain hedera`).
+**Pass:** it prints slug, name, ticker, decimals, `supply.target`, deploy block, CoinGecko id, chains, and says `Wrote the answers template`. Decimals and supply are on-chain reads, so they are the project's own facts, but they have one source. Cross-check both against one independent source: Solana Solscan, SolanaFM or explorer.solana.com; EVM the chain's Etherscan-family explorer; CoinGecko for supply. If an explorer blocks fetches, use the next one on the list. If none is reachable, write "decimals/supply unverified (on-chain read only)" in the report and go on; do not stop.
+**Stop if:** decimals or supply cannot be read. If public nodes fail (SSL or 429), set `PUBLIC_RPC_URLS_<CHAIN>=<url>` and rerun. Copies on other chains are listed in `$includeCandidates`.
 
-## Step 2 - Discovery (read-only; keep results in the scratchpad)
-Items 1-3 are automated: `npm run onboard -- --address <addr> --report <scratch>/discovery.json` (a dry run) prints and saves them. Verify its numbers against the explorer; do items 4-7 by hand.
-**Do:**
-1. On-chain facts: decimals, symbol, name, total supply. Solana: `node scripts/solana-smoke.js --mint <mint>`. EVM: `eth_call` `symbol()`, `decimals()`, `totalSupply()`.
-2. Other chains and bridged copies: `node scripts/detect-token-chains.js --address <addr> --chain <origin> --ticker <T> --coingecko`. Write the result as `chains-inventory.json` (schema in `scripts/lib/chainInventory.js`): every deployed chain is `configured`; every other chain listed is `excluded` or `not-found` with a reason.
-3. CoinGecko id and image; legacy/v2 pairs; wrapped or impostor tokens to exclude.
-4. Staking: search the token's docs and explorer for a staking, lock or vesting contract. Discovery decides staking per token. An empty `staking[]` is a valid finding (the UI then shows a "no staking" note).
-5. Treasury, team, foundation, escrow and reward-vault wallets from project docs and explorer labels. Record source and confidence for each.
-6. The top 25 holders by balance. For every wallet above 1% of supply, trace it (labels, funding source, contract vs EOA). Tag it only when the trace supports it; otherwise record the trace in `docs/<slug>-wallet-candidates.md`. Never leave a large holder untagged without a recorded trace.
-7. Volume estimate for the cost gate: one-day `eth_getLogs` count (EVM) or signature rate on venue accounts (Solana).
-**Pass:** a table of every derived value with source and confidence.
-**Stop if:** decimals or supply cannot be verified on-chain.
+## Owner questions (one pass, before Step 2)
+One AskUserQuestion call, max 4 questions, recommended default first, only for what discovery could not settle: slug, name or ticker if ambiguous; which chains go in `include`; every `low` confidence row (see wallets below). Everything else is an assumption in the report. Ask once, before `--write`. If nobody can answer, leave `low` rows out of the answers file and list them in your final report. Any that hold more than 1% of supply come back through the `large-holders` step.
 
-## Step 3 - Owner questions (one pass, 4 questions per call max)
-Use AskUserQuestion. Recommended default first, marked "(Recommended)". Skip anything discovery answered with high confidence and list it as "assumed". Then print one summary of every answer and assumption and continue without asking again.
+## Step 2. Fill the answers file
+Work through the sections below. Delete the `FILL_ME` example row in `wallets`. Fields starting with `$` are ignored. Evidence means a URL or a sentence naming what you searched.
 
-| # | Question | Default |
+**historyStart:** `"YYYY-MM-DD"` or `"forward-only"` (no backfill). EVM: the answers template already holds the deploy date if discovery found one (discovery prints only a deploy block). If the template holds `FILL_ME`, read the contract-creation transaction date on the chain's explorer and write it. Solana and every other non-EVM chain: if the template holds `FILL_ME`, write `"forward-only"`. Use a date on a non-EVM chain only if the owner asks for a backfill. A backfill runs `rebuild-holders-history-solana.yml`: it replays every transaction from the token's first one (the date only trims the published rows), up to 330 minutes per run, resuming over several dispatches, so a busy token needs many runs. A chain deployed after the date cannot have rows that early: use the latest deploy date.
+
+**staking:** open the project docs or app and search for "stake", "staking", "vault", "lockup", "vote-escrow". Then open the token's top holders on the explorer and look for a contract holding a large balance. Three decisions:
+- `"contracts"`: you found the mechanism and verified its address. List each (`kind` `stakeChanged` needs the integer `deployBlock` from the explorer's creation tx; `zebecStakeV1` is Solana only; `custody-only` is a vault with no staker adapter).
+- `"none"`: only after three checks all show no staking: (1) the project's own site and docs, (2) the token's top 20 holders on the explorer (no contract labelled stake, lock, vault, escrow or reward), (3) the token's CoinGecko page. Evidence names all three checks. The site then states the token has no staking, and a nightly waiver quotes your evidence.
+- `"unresolved"`: any check shows staking but you cannot find the contract address. Set it, put what you found in `evidence`, and STOP. `--write` refuses it until the owner gives the address or a source. Ask the owner. Once the owner answers, use `"contracts"` (kind `custody-only` if no adapter exists for that mechanism).
+
+**wallets (at least one is required):** sources in order: the project docs or tokenomics page, a published wallet-disclosure post, the explorer's labelled top holders. A wallet needs `source` and `confidence`:
+- `high`: the project's own site, docs or official post, or a verified explorer label, names the address.
+- `medium`: a third party names it (explorer community tag, analytics site, CoinGecko).
+- `low`: inferred from behavior only (funding pattern, similar name). Ask the owner about every `low` row (see Owner questions).
+Never use an address that was truncated, abbreviated or reconstructed: copy the full address from the source and compare it character by character. A burn or dead address is not a wallet row. Class by name: a wallet called community, ecosystem, foundation or DAO treasury (a project-controlled allocation) is `treasury`; team, contributors or investors vesting is `team`; an operating company's reserve is `holdings`. A contract that the docs or explorer call rewards, emissions or incentives is `reward-vault`; no owner question is needed. Pick one class per address:
+
+| class | meaning | subtracted from circulating | shows on the site |
+|---|---|---|---|
+| `treasury` | project treasury or foundation | yes | Supply: "Treasury & association wallets" |
+| `association` | association or company wallet, also labelled non-retail in exclusions | yes | same slice |
+| `team` | team, vesting, allocation wallets | yes | Supply: "Team & holdings wallets" |
+| `holdings` | other project holdings | yes | same slice |
+| `escrow` | escrow, migration, lock contracts | no | Supply: "Escrow"; forensics registry only (not in the ledger) |
+| `reward-vault` | staking reward vault | no | Supply: "Reward vaults"; ledger group "Reward vault" |
+
+Validation errors: an address in both `wallets` and `cex.wallets` on one chain; a list field given as null or a non-list.
+
+Standing owner rules. A project-controlled wallet is always `treasury`, `association`, `team` or `holdings`, never retail; pick by the name rule above and do not ask the owner which (owner, 2026-11-07). The site shows them as the two rows in the table. Treasury wallets are subtracted from circulating supply on every token; team and holdings wallets on every token except TEL (owner, 2026-11-12); escrow and reward vaults are not subtracted. TEL alone keeps Telcoin Holdings as circulating.
+
+**dex:** open `https://dexscreener.com/<chain>/<token address>` and list the pools; cross-check the CoinGecko markets tab. If DexScreener blocks fetches, use GeckoTerminal (`https://www.geckoterminal.com/<network>/tokens/<token address>`). `decision "pools"` with each pool and its page as `source`; `"none"` only if no pool exists, with evidence of where you looked.
+- EVM: the pool contract address.
+- Solana: the address that appears as the OWNER of the pool's token account in the token's holder list (Solscan: token page, Holders tab, "Owner" column). Not the pool/AMM state address and not the token account itself ("Account" column). Why: the flow scan calls `getTokenAccountsByOwner(<listed address>, {mint})` and matches transfers by token-balance owner (`scripts/lib/solana/flowScan.js`, `flowConfig.js`), so only an owner address finds the pool's flows. A listed token account is also marked non-retail (its owner is resolved from `tokenAccountOwnersByChain`, `roleAccountOwner` in `scripts/lib/projects.js`), but it yields no flows.
+- How many: the top 5 pools by liquidity on the DEX listing, plus any pool address that appears in the token's top 100 holders.
+
+**cex:** EVM-only token: `decision "spellbook"` (the free Dune spellbook sync fills the list). Mixed EVM + Solana token: `"spellbook"` is refused and the `cex-review` step does not run; `"list"` is the only option. Any non-EVM chain, in two passes:
+- First pass (this file): `"list"` with each exchange wallet you can verify (`exchange`, `source`, `confidence`; Solscan or Arkham label, or an exchange proof of reserves). On Solana choose `"none-known"` only when the token's CoinGecko markets list shows no centralized exchange; write what you checked as evidence.
+- Second pass (after the first snapshot): for Solana the runner builds a candidate list itself (the Dune spellbook's labelled exchange wallets that hold the token) and stops at `cex-review` until every candidate is under `cex.wallets` (accepted) or `cex.rejected` (`{chain, address, note}`). `none-known` is done only when that list is empty or fully rejected. Hedera has no spellbook list, so it keeps its adapter-seeded list.
+
+**largeHolders:** may be empty now. The runner stops after the first snapshot only for a wallet above 1% of supply that has no usable `largeHolders` row. For each one, check the explorer label, then the wallet's first inbound transfer of the token:
+- Labelled exchange, contract or project wallet: `"labelled"`, and add it to `cex.wallets` or `wallets` with that class. (A `"labelled"` row is valid only if the wallet is also under wallets, dex.pools, cex.wallets or staking.contracts.)
+- First funded by a wallet already in your answers: same class as that wallet.
+- Otherwise `"retail"`, and the note says what you checked.
+- Traced, but the identity cannot be established and it is not an exchange/treasury/team wallet: `"unknown"`. It counts as a holder exactly like `"retail"` (the runner raises `megaHolderThreshold` the same way); use it when you cannot vouch it is an ordinary holder.
+Wallets already labelled non-retail never reach the review.
+
+**include:** a chain key only for addresses that the project's docs, or the CoinGecko contracts list for the same coin, give for this token (`$includeCandidates`). Otherwise leave it out and say so.
+
+**Disagreeing sources:** if sources disagree on decimals or supply, the on-chain value from discovery wins. Record the disagreement in the evidence text.
+
+## Step 3. Scaffold
+**Do:** `npm run onboard -- --address <addr> --answers <file>` (dry run, must say `Answers are valid`), then the same with `--write`. It writes the registry entry (`onboarding: true`), `config/projects/<slug>.json`, ledger, exclusions, CEX file, wallet registry, chains inventory, `config/projects/<slug>/onboarding.answers.json` (the record the runner reads), and the token image under `public/tokens/`. `--wallet` and `--history-start` cannot be combined with `--answers`.
+`--write` refuses staking `"unresolved"` (see staking above) and stops before writing anything. With `--root <dir>` the printed paths and the "Next" commands carry it.
+**Pass:** no validation error; `git status` shows the new files. The scaffold prints the next steps: run `npx vitest run scripts/lib` and `npm run typecheck`, show the diff, the owner merges one PR that updates `README.md`, then `gh workflow run onboard-project.yml -f project=<slug>`, then `npm run onboard:check -- --project <slug>`. It also prints what is still manual: verify every address, add the token image if discovery found none, an optional `botCluster` in `config/projects/<slug>/ledger.json`, and a `nightly.waivers.<jobId>` reason or the missing capability for any nightly job it lists as "n/a". The runner does everything else (Developer wallets tab, go-live, clearing `onboarding`).
+Re-applying a changed answers file prints `reclassified <addr>: <old> -> <new>`, `removed <file>: <addr>` and `WARNING kept hand-written <file>: <addr>`. A hand-written row is never overwritten: fix the answers or the hand-written row.
+**Stop if:** validation lists errors (each names the field and allowed values). Fix the answers, rerun.
+Then show the diff and stop for the owner to merge.
+
+## Step 4. Dispatch
+**Do:** `gh workflow run onboard-project.yml -f project=<slug>`. Watch with `gh run list --workflow onboard-project.yml --limit 3`. `npm run onboard:run -- --project <slug> --dry-run` prints the checklist and next step from `origin/main` (uncommitted local config is invisible to it). Add `--local` (dry run only) to evaluate the same plan on the working tree instead: `npm run onboard:run -- --project <slug> --dry-run --local`. `npm run onboard:check` runs the gates on local state.
+**Pass:** the run ends with `<slug> is onboarded`. The runner removes `onboarding: true` once `check-go-live` passes.
+
+## What the runner does (in order)
+answers check (schema plus config on main still matches the answers) -> CEX list (EVM: `sync-cex-wallets.yml`) -> snapshot (`refresh-holders.yml`) -> CEX candidate review (Solana only) -> large-holder review -> derive tiers and sizing (committed) -> `mega-threshold` (raises `holders.megaHolderThreshold` above wallets you marked retail; committed) -> snapshot on those tiers -> history (`rebuild-holders-history.yml` per EVM chain, Solana `rebuild-holders-history-solana.yml`; skipped for `forward-only`) -> exchange flows -> treasury/CEX history (EVM) -> tier outflows -> staker balances (runs only if the answers list a `stakeChanged` contract; `zebecStakeV1` and `custody-only` do not trigger it) -> wallet flows -> ledger -> Developer wallets tab (committed) -> strict alignment -> go-live -> `list-on-site` (clears `onboarding`; committed). Each step is read from files on `main`, so a rerun resumes. Exit codes: 0 done, 1 workflow failed, 2 blocked on a person, 3 a config edit awaits review. `refresh-wallet-flows.yml` may end "partial" (the scan is still catching up and no report is written yet). The runner dispatches it again, up to 6 runs per step. A partial run that leaves an existing stale report fails with "re-dispatch this workflow".
+
+## When it stops
+Every stop ends with `Fix:`. Do what it says, merge to `main`, dispatch again.
+
+| Stop | Meaning | Fix it prints (summary) |
 |---|---|---|
-| 1 | Slug (`[a-z0-9-]`), display name, ticker | derived |
-| 2 | Chains and origin chain | only chains verified on-chain |
-| 3 | Bridge type per extra chain (`native` / `lock-mint` / `burn-mint`) | none; if unknown, exclude the chain |
-| 4 | Tokens to exclude | all found impostors/legacy |
-| 5 | `supply.target` | verified total supply |
-| 6 | Treasury/team/escrow/reward-vault wallets and categories | those found in Step 2.5 (reward vaults go in Team) |
-| 7 | Staking contracts and kind (`stakeChanged`, `zebecStakeV1`, other = new adapter) | what discovery found; none if none |
-| 8 | Holder tiers | derived from this token's own first snapshot (Step 6.2); never TEL's or another project's |
-| 9 | Developer wallets for the ledger | the Team wallets from Q6 |
-| 10 | Cost gate: expected nightly CU/credits vs remaining budget | stop and ask if it would breach |
+| `answers` | answers invalid, or main's config no longer matches them | correct the named fields, rerun step 3, merge, dispatch |
+| `cex-wallets` blocked (non-EVM) | no verified source syncs CEX wallets for that VM | set `cex` to `list` (verified wallets) or `none-known` (with evidence), rerun step 3 |
+| `cex-review` (Solana) | labelled exchange wallets hold the token and are in neither `cex.wallets` nor `cex.rejected` | open each link; accepted ones go to `cex.wallets` with `decision "list"`, the rest to `cex.rejected` with a note; rerun step 3. If the list could not be fetched, rerun, or run `node scripts/sync-cex-wallets-dune.js --project <slug> --source spellbook --candidates` locally |
+| `large-holders` | wallets above 1% of supply have no `largeHolders` row | open each explorer link, decide by the `largeHolders` rule in step 2, add a row (`labelled` also needs the wallet under wallets, dex, cex or staking), rerun step 3 |
+| `mega-threshold` | wallets marked retail sit above `holders.megaHolderThreshold` (they would be dropped from counts) | the runner raises the threshold itself (exit 3 without `--commit`: review and merge). It stops only when it cannot raise it; follow the printed `Fix:` |
+| tiers blocked | one derived tier holds over 90% of wallets, or `supply.target` is unset | set `holders` fields in `config/projects/<slug>.json` as printed |
+| `history` blocked | `historyStart` missing or differs from config | set it in the answers, rerun step 3 |
+| `history` or `treasury-cex-history` stuck | a chain deployed after `historyStart` | set a later date or `forward-only` in the answers |
+| `wallet-flows` blocked | forensics registry has no wallets | add a wallet to the answers, rerun step 3 |
+| `alignment` stuck | feeds do not share `asOf` and day cutoffs | `node scripts/build-cutoffs.js --project <slug> --from <first holders date>`, commit `date-blocks.json`, merge, dispatch |
+| `go-live` | `check-go-live` problems | each problem has a `fix:` hint with file and field; a problem without one is a stale report: dispatch the named refresh workflow |
+| workflow failed (exit 1) | a dispatched workflow ended not-success | `gh run view <id> --log-failed`, fix the named file, merge, dispatch |
+| not built for vm | a step has no workflow for that VM (`STEP_VMS` in `scripts/lib/onboardRun.js`; for hedera a dated `historyStart` would need `history` and `treasury-cex-history`, which hedera lacks) | set `historyStart` to `forward-only` (HBAR's recorded decision) |
+| still not done after 6 runs | a scan keeps not finishing | read the printed log commands; fix; dispatch |
+| exit 3 | the runner edited config (tiers, tab) without `--commit` | review, commit, merge, dispatch |
 
-## Step 4 - Scaffold (one command)
-**Do:**
-```
-npm run onboard -- --address <addr> [--chain <origin>] [--include <chain>]... \
-  [--slug <slug>] [--name "<Name>"] [--ticker <T>] [--history-start YYYY-MM-DD] \
-  [--wallet <address>:<label>[:treasury|holdings|association]]...            # dry run: read it
-npm run onboard -- <same flags> --write                                     # writes the files
-```
-It does Step 2.1-2.3 itself (on-chain decimals/symbol/name/supply, EVM deploy block and date, CoinGecko id/name/image, chain discovery), builds and validates the inventory (other chains `excluded` with a reason unless `--include`d), then runs `scripts/add-project.js` with every flag. `--write` writes the registry entry (with `onboarding: true`, never `default: true`), `config/projects/<slug>.json` (`supply.target`, `image`, `staking: []` with the staker feed disabled, `treasury.categories` from `--wallet`, `pipeline.historyStart`), the ledger, exclusions, wallet registry, inventory, the token image under `public/tokens/`, and for EVM an empty `cex-wallets.json` the spellbook sync fills. If public nodes fail (SSL or 429), pass `PUBLIC_RPC_URLS_<CHAIN>=<url>`. Add `copy` overrides only where the generic wording is wrong for this token.
-**Pass:** the script's own validation passes; `config/projects/<slug>.json` has every chain, `supply.target`, `staking[]` (possibly empty) and `classification.*`. If discovery found staking (Step 2.4), add the `staking[]` entry and remove the `funding-wallets.json` disable now.
+## Hedera (HBAR, the native coin)
+HBAR is not registered in the repo. Its path is built and tested locally; nothing is proven on GitHub. It has no contract, so it has no answers file and no owner question pass.
+1. `npm run onboard -- --chain hedera` (dry run), then the same with `--write`. `0.0.N` addresses are Hedera tokens and are refused. The scaffold reads supply and decimals from the mirror node and writes the registry entry (`onboarding: true`), the project config, ledger config, exclusions (network treasury accounts, 0.0.98, 0.0.800, 0.0.801), WHBAR as role `dex`, the CEX list (24 seeded accounts, `scripts/lib/hedera/cexAccounts.js`; research in `docs/hedera-cex-candidates.md`), the forensics registry, `treasury.categories ["treasury"]`, a 180-minute job limit and the image. Owner decisions (`historyStart` forward-only, `largeHolders` rows) live in `scripts/lib/hedera/nativeDecisions.js`, not in the config.
+2. Show the diff; the owner merges; `gh workflow run onboard-project.yml -f project=<slug>`.
+3. Runner steps that apply: snapshot, large-holders, tiers and sizing, mega-threshold, snapshot on those tiers, exchange flows, tier outflows, wallet flows, ledger, Developer wallets tab, strict alignment, go-live, list-on-site. They do not apply: CEX sync (list comes from the scaffold), CEX candidate review (Solana only), history and treasury/CEX history (forward-only), staker balances.
+4. A `large-holders` stop for HBAR says to add a row to `HEDERA_LARGE_HOLDERS` in `scripts/lib/hedera/nativeDecisions.js` (a code edit, then merge).
 
-## Step 5 - Config that the scaffold does not decide
-**Do, in `config/projects/<slug>.json`:**
-1. **Holder tiers (mandatory, set in Step 6.2).** Every project's tiers come from its own wallets. Never copy TEL's or another project's tiers, and never scale them by supply: ONDO got TEL's tiers that way, first as is (99.8% of wallets in one tier), then divided by 10. A project with no `holders` block falls back to TEL's values (`config/holder-tiers.default.json`), so the first snapshot runs on them, but they must be replaced before any history is built. Set `megaHolderThreshold` from this project's own top wallets (ZBCN: 25B, above its 20.55B top wallet), not from another project's ratio.
-2. **RPC.** `chains[].rpc.envPrefix` is the prefix BEFORE `_RPC_<n>` (Solana = `"SOLANA"`, never `"SOLANA_RPC"`; the loader rejects a prefix ending in `_RPC`). Solana needs a keyed pool (`SOLANA_RPC_0`, `SOLANA_RPC_1`) because public RPC refuses `getProgramAccounts`; ask the owner for keys only if the env vars are missing.
-3. **Classification:** the scaffolded `exclusions.json` must label every ledger `developerWallets` entry of class `association` (category `treasury`, `evidenceTier: "owner-supplied"`, a note citing the owner decision; Treasury and Team are one bucket); an unlabelled one counts as retail and `associationWalletsLabelled.test.js` fails. Treasury/team/vault addresses from Q6, DEX contracts (`role: "dex"` or `classification.dexContracts`; list every pool the team trades on before any wallet-flow run).
-4. **Forensics:** set `gated.forensics: true` and `gated.walletFlows { coingeckoId, chains }`.
-5. **Lock the owner's answers in a test:** `scripts/lib/<slug>Config.test.js`, modeled on `registryTiers.test.js` and `zebecNetworkConfig.test.js` (supply target, exclusions, vault classification, tier sanity). Assert config values only, never live feed numbers.
-**Pass:** `npx vitest run scripts/lib` and `npm run typecheck` pass.
+## Sizing is derived, never copied
+Tiers, balance ranges, `retailThreshold` (lower bound of the second-lowest tier) and `concentrationBuckets` come from the token's own first snapshot, retail wallets only (`scripts/lib/deriveHolderTiers.js`, run by the runner; `node scripts/derive-holder-tiers.js --project <slug>` prints them). `megaHolderThreshold`: the scaffold writes supply.target / 5 (and a `retailThreshold` at half of it if that is not above the default 1,000). The runner derives `max(supply.target / 5, 1.2 x the largest wallet acknowledged as retail, rounded up to 1 / 2.5 / 5 x 10^k, capped at supply.target)`, never lowers it, and later raises only that field. Never set it by hand: the next step overwrites it. Answers write `treasury.categories` as `treasury` only, and only when a treasury or association wallet exists (a bucket that can empty aborts the daily treasury history). Wallet-flow seller and swap thresholds and the CEX-candidate floor scale with supply (`scripts/lib/projectSizing.js`; 0.005%, 0.001%, 0.0001% of `supply.target`); a `sizing` block in the config overrides them (ONDO is pinned to the old values). Never copy another project's values. The runner treats `holders.defaultTiers` as already sized, but go-live requires explicit `megaHolderThreshold` and `retailThreshold` for own `distributionTiers`. Go-live also fails when one tier holds over 90% of wallets.
 
-## Step 6 - First data, in this order (one dispatch)
-**Do:** once the Step 4-5 files and the README update are merged to `main` (owner approval), run `gh workflow run onboard-project.yml -f project=<slug>`. It runs every sub-step below in order through `scripts/onboard-run.js`, waits for each, commits the derived tiers, the Developer wallets tab and (after go-live passes) the removal of `onboarding: true`, and resumes on a rerun. `npm run onboard:run -- --project <slug> --dry-run` prints the checklist and the next step at any time. It stops (exit 2) with a printed reason on a decision only a person can make: a Solana project without a reviewed CEX list, derived tiers with one tier above 90%, a step still unfinished after 6 runs, or go-live problems. Fix that, then dispatch again.
-The sub-steps below are what it runs, and the manual fallback when one stops. Each is a workflow dispatch with `-f project=<slug>` (`gh workflow run <file>.yml -f project=<slug>`), or the script with `--project <slug>` for a local run when an RPC key is available. Wait for each to finish and read its log before the next.
+## Step 5. Gates, visual check, report
+### 5a. Gates
+`npm run onboard:check -- --project <slug>` runs, one after another, vitest, typecheck, lint, `check-feed-consistency --all --strict`, `pipeline-health` and `check-go-live --alignment strict`. It prints PASS/FAIL per gate with a log path under `tasks/`. `--skip-tests` drops the first three. All must pass; none may be skipped or allowlisted. After the same failure twice, change approach.
 
-1. **CEX wallets.** `node scripts/sync-cex-wallets-dune.js --project <slug> --source spellbook` (free). EVM adds net-new addresses when `classification.cexWallets` exists; Solana writes review candidates only. Review the candidates; never auto-promote. CEX wallets are required before go-live. The scheduled Dune step runs with `--skip-if-no-query`, so a project with no `pipeline.duneCexQueryId` skips cleanly; leave it unset until the owner supplies the project's own query, and never reuse TEL's 3761086 (a test fails on it).
-2. **Snapshot.** `refresh-holders.yml` (or `node scripts/pull-holders-rpc.js --project <slug>`). On Solana check the pool log line `RPC pool <chain>: N/M usable; K ..._RPC_n set, J distinct` shows K and J above 0.
-   Then derive the tiers from this snapshot: `node scripts/derive-holder-tiers.js --project <slug>`. Paste the printed `distributionTiers` and `balanceRanges` into the `holders` block with a `$comment` naming the snapshot date they came from, and run the snapshot again so every feed uses them. The script exits non-zero if one tier would hold more than 90% of wallets.
-   **Pass:** `public/data/<slug>/holders.json` exists; supply gap within `SNAPSHOT_SUPPLY_TOLERANCE` (1%); no vault/treasury address in retail; the `holders` block holds the derived tiers before Step 6.3.
-3. **History.** EVM: `rebuild-holders-history.yml` (`start` = first date wanted; one chain at a time if it will not finish in 6h; roughly 20 minutes per chain-year for a busy token). Solana: `rebuild-holders-history-solana.yml`. Any new workflow you add that writes `main` joins concurrency group `holders-refresh` (Step 6.11). The rebuild must use the same holder definition as the snapshot (`dropRoundedDust: true` is already passed; confirm decimals, because at 18 decimals dust admits phantom holders).
-   **Pass:** `check-feed-consistency` shows no holder-count WARN at the first snapshot row.
-4. **Exchange flows.** `scan-exchange-flows.yml`. If it stops at `max_blocks_per_run`, dispatch again until the feed's last row is within 3 days of today (the `stale-tail` gate in `pipeline-health.js` enforces this). Solana: a transaction the RPC returns as null holds the cursor for `NULL_TX_RETRY_RUNS` (3) runs, then goes to `unavailable[]` with its `attempts`; `check-go-live` fails the project while any entry has `attempts` below 3 ("held, retrying"), so run again rather than skipping it. `scan-solana-flows.js` runs oldest-first at `SOLANA_FLOW_MAX_TX` (15,000) per run and needs several runs; tell the owner the expected runs and Helius credits (about 1 credit per transaction).
-5. **Treasury / CEX balance history.** `backfill-treasury-cex-history.yml` with `write=false` first (dry run), then `write=true` over the history range. Without it the replayed CEX balance is one constant for every date.
-   **Pass:** the dry run reports no drift above 2% (`allow_drift` stays off).
-6. **Tier outflows and transitions.** `generate-tier-outflows.yml` (repeat until `complete: true` and `latestDate` is yesterday). It resets itself when tiers change. `generate-holder-transitions.js` runs in the nightly; its windows are limited by the git archive depth, so ranges may be shallow at first.
-7. **Staking** (only if Step 2.4 found one): the `staking[]` entry plus `refresh-staker-balances.yml`. Staked is a separate tile, never added to retail, and vault accounts are never retail. If none, confirm the UI shows the no-staking note and omits the Staked tile.
-8. **Forensics.**
-   - Solana: tag treasury/holdings wallets in `chains[].contracts` (`role`, `$comment` with confidence and a Solscan link). List the owner wallet address; if you list a token account, its owner is non-retail automatically (`tokenAccountOwnersByChain`), `node scripts/init-forensics-registry.js --project <slug>`, review labels, `node scripts/generate-wallet-flows-solana.js --project <slug> --dry-run` (check the credit estimate), then without `--dry-run`.
-   - EVM: hand-write `data/<slug>/forensics/wallet-flows.registry.json` from `data/forensics/wallet-flows.registry.json` (`knownWallets` with `entityClass`, `confidence`, `source`, `chains`), then dispatch `refresh-wallet-flows.yml`.
-   - Mixed EVM + Solana: both generators write one report path; flag this to the owner instead of letting the second run overwrite the first.
-   **Pass:** the report covers 90 days on every chain (repeat the dispatch until coverage is not partial) and `validateWalletFlowsReport` passes.
-9. **Developer ledger.** Confirm `developerWallets` in `config/projects/<slug>/ledger.json` (each must be in the forensics registry), dispatch `refresh-ledger.yml`, confirm `data/<slug>/ledger/ledger.json` and `bot-proceeds.json`, then set `capabilities.projectWallets: true`.
-10. **Day cutoffs and asOf alignment** (right after the feeds above first exist). `node scripts/build-cutoffs.js --project <slug> --from <first holders date>` (fills `date-blocks.json` `cutoffs` for every chain), then run the first settled nightly (or `node scripts/fill-history-gaps.js --project <slug>`) so every feed is regenerated and stamped with `asOf`, then `npm run check:alignment -- --project <slug> --strict`.
-    **Pass:** the alignment check prints ALIGNED (every feed stamped, settled end dates equal, live-chain dates within 1 day, blocks equal) and `date-blocks.json` has a `cutoffs` entry for every chain.
-    **Stop if:** a feed stays unstamped or misaligned after a regeneration; fix its writer, never hand-edit the feed.
-11. **Scheduling.** Nothing to edit: `node scripts/workflow-paths.js --project <slug>` and `node scripts/workflow-paths.js matrix all` must list the project. `refresh-holders.yml` loops every registry project. A new workflow that writes `main` must join concurrency group `holders-refresh` (`workflowConcurrency.test.js`). Any new non-fatal stage needs an `id` and an entry in the Stage verdict step (`stageVerdict.test.js` enforces it).
+### 5b. Visual check (mandatory; gates do not catch UI problems)
+Start `npx vite --port <n>`; drive `/<slug>` with headless Playwright (system Chrome via `executablePath`) at 1440x900 and 390x844 (measure `scrollWidth`). Check against the feed files: landing tile, header, chain picker; Supply tiles sum to supply; tier counts, no all-wallets-in-one-tier; holders history range; Exchange Net Flow changes across 1D, 7D, 30D, 90D, YTD; tier flow has no NaN or blank cells; Staked panel or the no-staking note; explorer links (case-exact base58); no "Staked <ticker>" text for a token without staking; gated wallet-flows panel has no empty cards and onward totals never exceed received.
+**Pass:** every number on the page equals the feed value at the displayed precision (rounding only); anything else is a failure to report, not to fix by hand. Include a screenshot path per page and width.
+**Stop if:** you did not render the page. Say so. Never report a visual check you did not do.
 
-## Step 7 - Gates (all must pass)
-```
-npx vitest run
-npm run typecheck
-npm run lint
-node scripts/check-feed-consistency.js --all --strict
-node scripts/pipeline-health.js
-node scripts/check-go-live.js --project <slug> --alignment strict
-```
-`npx vitest run` includes `workflowConcurrency`, `associationWalletsLabelled`, `tokenAccountOwners` and `solanaRoleOwnersParity`; none may be skipped or allowlisted to pass. `check-feed-consistency` check 3 (treasury-history against the pie) skips when the snapshot is unpinned, which is every Solana snapshot, so the stale guard (newest treasury row must be the last settled day) is the only treasury check there: fix the data, never skip it.
-Also: no `placeholder` or `feedsPending` anywhere for the project; TEL feeds unchanged; no hardcoded feed numbers in tests (assert shape and invariants).
-**Stop if:** any gate fails. Fix the cause and re-run the gate. After the same failure twice, change approach instead of patching the symptom.
+### 5c. Sign-off and report
+Spawn the `verifier` agent with the 5a and 5b results; it is read-only. Fix what it proves, rerun 5a. Then one report: what was automatic, what was manual, assumptions, open items, files changed. Update in the same change: `README.md`, `docs/MULTI-TOKEN.md` if a step changed, `tasks/lessons.md` for any mistake caught, this file. Deploys are manual (Netlify dashboard); config reaches the browser at the next deploy, data through `live-data.mjs`.
 
-## Step 8 - Visual check (mandatory; data gates do not catch UI problems)
-**Do:** start `npx vite --port <n>` (dev reads `/data/...` directly). Drive `/<slug>` with headless Playwright using system Chrome via `executablePath`, at 1440x900 and 390x844 (measure `scrollWidth` for phone overflow).
-Check each of these against the feed files:
-- Landing tile, header, chain picker, Supply tiles sum to supply.
-- Distribution: tier counts, Change column, no all-wallets-in-one-tier, no dagger unless a real reclassification.
-- Holders history chart and its date range.
-- Exchange Net Flow on every range (1D, 7D, 30D, 90D, YTD): the number must change with the range, and a stale feed shows "Data through <date>".
-- Tier flow: no "NaN" or blank cells; rows use the project's tier labels.
-- Staked panel or the no-staking note; explorer links (case-exact base58).
-- Glossary and info tips: no "Staked <ticker>" text for a token without staking.
-- Gated wallet-flows panel: no empty cards, addresses truncate, onward totals never exceed received.
-**Pass:** every item matches its feed, with a screenshot path recorded for each page and width.
-**Stop if:** you did not actually render the page. Say so; never report a visual check you did not do.
-
-## Step 9 - Adversarial sign-off
-Spawn the `verifier` agent with the task contract (the Step 7 and 8 passes). It is read-only and reports; do not edit from its output without re-checking. Fix what it proves, re-run Step 7.
-
-## Step 10 - Report and keep the docs current
-One message: what is automatic, what is manual, assumptions made, estimated vs actual cost, open items, files changed.
-Then update, in the same change: `README.md` (project list, layout map, "Recent work" with PR numbers), `docs/MULTI-TOKEN.md` if a step or command changed, `tasks/lessons.md` for any mistake caught, and this file. Offer the commit only after the owner approves. Deploys are manual from the Netlify dashboard; config changes reach the browser only at the next deploy, data reaches it through `live-data.mjs`.
-
-## Known traps (each one cost a session)
-- Tiers taken from TEL, as is or scaled by supply (ONDO): see Steps 5.1 and 6.2.
-- Replay vs snapshot holder definition (18-decimal dust, -2.7% step): Step 6.3.
-- Nightly `fill-history-gaps` replays a missed day from the project's own newest committed checkpoint (`pull-holders-rpc.js --as-of`; fixed in #151, it used to anchor on TEL's 2026-08-21 and failed for ONDO). Never put a fixed date, block or address default in a shared script: derive it per project. After onboarding, confirm one nightly's "Fill holders-history gaps" step is green for the new project.
-- Never label a snapshot row with the run time. Row D means end of D: the state at `cutoff[D+1] - 1`.
-- Solana flow feeds (`exchange-flow-history`, `tier-outflows`) stamp from slot cutoffs (`asOfFromSolanaScan`): a complete scan stamps a settled day; an incomplete scan stamps `date: null, settled: false, incomplete` and claims no day. Solana holder snapshots are live reads and stay `asOf.settled: false` with `live: ["<chain>"]` until slot pinning exists; the alignment check allows those 1 day.
-- A rebuild that produced `T00:00` rows: run `node scripts/relabel-midnight-history.js --project <slug>` (dry run by default, prints what it would change), then add `--apply` to write.
-- A feed's last row used as "now" makes a year-old feed look current: gate on `stale-tail`.
+## Known traps
+- Replay vs snapshot holder definition (18-decimal dust): the rebuild passes `dropRoundedDust`; confirm decimals before a rebuild.
+- Never label a snapshot row with the run time. Row D is the state at the end of D.
+- Solana flow feeds stamp from slot cutoffs: an incomplete scan stamps `date: null, settled: false`. Solana holder snapshots are live reads (`live: ["<chain>"]`); alignment allows 1 day.
+- A rebuild that wrote `T00:00` rows: `node scripts/relabel-midnight-history.js --project <slug>` (dry run), then `--apply`.
+- A feed's last row used as "now" hides a stale feed: gate on `stale-tail`.
 - `breaksSeries` daggers every Distribution Change cell: never use it to explain a bug.
-- `envPrefix` ending in `_RPC` read the wrong env vars and ran public-only: Step 5.2.
-- A helper-run rebuild that crosses UTC midnight writes a row that disagrees with the snapshot: regenerate through the workflow.
+- A helper-run rebuild crossing UTC midnight writes a row that disagrees with the snapshot: regenerate through the workflow.
 - CI after data commits on `main`: `gh pr update-branch <n>`; a plain rerun reuses the old merge commit.
-- A helper's finding is a claim, not a fact: reproduce it in the browser or code before acting.
-- Tests that copy numbers from a nightly feed go red within hours: assert shape.
-- Association wallets without an exclusions label count as retail (ONDO, TEL 0xe71e): Step 5.3. A Solana token-account owner missing from `contracts{}` roles does too: Step 6.8.
-- A null Solana transaction is not a failure to skip: it holds the cursor for 3 runs, then is recorded as unavailable (Step 6.4).
-- A Dune sync with no query id must skip, not fail, and must never borrow TEL's query (Step 6.1).
-- Not built yet: one address-array scan per chain across all EVM projects (needed with 2+ EVM projects), sales tracing on EVM, a Solana CEX detector, a per-project budget block, a mixed EVM+Solana forensics merge.
+- A helper's finding is a claim: reproduce it in code or browser before acting.
+- Tests that copy numbers from a feed go red within hours: assert shape.
+- Not built yet: one address-array scan per chain across EVM projects, EVM sales tracing, a Solana CEX detector, a per-project budget block, a mixed EVM+Solana forensics merge (both generators write one report path), and for Hedera: DEX/WHBAR look-through, swap decoding, onward-hop tracing of unlabelled recipients, history before the first snapshot, tracing of 0.0.54 and the protocol accounts.
+
+## Unproven
+`onboard-project.yml` has never carried a real new token end to end. EVM discovery over real RPC is unit-tested only on this machine (its network blocks most public Ethereum RPC hosts).

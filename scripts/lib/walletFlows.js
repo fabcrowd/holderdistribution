@@ -455,6 +455,13 @@ function validateUnlabelledTrace(trace) {
   return [];
 }
 
+/** Address shape of a report's known wallets per vm kind (evm = lowercase 0x, base58 = Solana, hedera = 0.0.N). */
+const ADDRESS_PATTERNS = {
+  evm: /^0x[0-9a-f]{40}$/,
+  base58: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
+  hedera: /^0\.0\.[1-9]\d{0,15}$/,
+};
+
 /** Minimal schema check used by the generator before overwriting the file, and by tests. */
 export function validateWalletFlowsReport(report, { addressKind = "evm" } = {}) {
   const errors = [];
@@ -464,8 +471,7 @@ export function validateWalletFlowsReport(report, { addressKind = "evm" } = {}) 
   if (!Array.isArray(report.distribution?.classes) || report.distribution.classes.length === 0) errors.push("distribution.classes missing");
   if (!Array.isArray(report.knownWallets) || report.knownWallets.length === 0) errors.push("knownWallets missing");
   if (!Array.isArray(report.largeSellers)) errors.push("largeSellers missing");
-  const addressPattern =
-    addressKind === "base58" ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/ : /^0x[0-9a-f]{40}$/;
+  const addressPattern = ADDRESS_PATTERNS[addressKind] ?? ADDRESS_PATTERNS.evm;
   for (const w of report.knownWallets ?? []) {
     if (!addressPattern.test(w.address ?? "")) errors.push(`bad address ${w.address}`);
   }

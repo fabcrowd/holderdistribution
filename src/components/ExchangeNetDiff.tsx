@@ -43,7 +43,7 @@ export const ExchangeNetDiff = ({ rangeDays }: { rangeDays: number }) => {
 
   return (
     <div className="premium-surface-card p-3 text-sm" data-testid="exchange-net-diff">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">
+      <div className="text-xs text-muted-foreground font-semibold mb-2">
         Balance Δ vs measured netflow · {formatFeedDate(pick.startTs)} – {formatFeedDate(pick.endTs)}
         {pick.approximate ? " (nearest snapshot)" : ""}
       </div>

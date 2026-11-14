@@ -13,16 +13,15 @@ import type { MethodologyLink } from "@/lib/methodology";
 import { useProject } from "@/hooks/useProject";
 import { RETAIL_WALLETS_LABEL, retailWalletsInfo, uniqueWalletCount } from "@/lib/holderCounts";
 import { athHistoryNote, historyDays } from "@/lib/athNote";
+import { COMPACT_TOKEN_AMOUNT, formatCompact } from "@/lib/format";
+
+/** Snapshot-vs-history float noise: a gap of one part per billion of the value (about 1 token at 1B staked). */
+const FLOAT_NOISE_RATIO = 1e-9;
+export const isFloatNoise = (a: number, b: number): boolean =>
+  Math.abs(a - b) <= Math.max(Math.abs(a), Math.abs(b)) * FLOAT_NOISE_RATIO;
 
 const formatInteger = (v: number) => new Intl.NumberFormat().format(v);
-const formatTokenAmount = (v: number) => {
-  const a = Math.abs(v);
-  if (a >= 1e12) return `${(v / 1e12).toFixed(2)}T`;
-  if (a >= 1e9) return `${(v / 1e9).toFixed(2)}B`;
-  if (a >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
-  if (a >= 1e3) return `${(v / 1e3).toFixed(2)}K`;
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(v);
-};
+const formatTokenAmount = (v: number) => formatCompact(v, COMPACT_TOKEN_AMOUNT);
 const pctOfSupply = (v: number, supply: number) => (supply > 0 ? `${((v / supply) * 100).toFixed(2)}% of supply` : "");
 
 export type EcosystemHeadlineTileId = "holders" | "retailHeld" | "staked" | "cex";
@@ -223,7 +222,7 @@ export const useEcosystemHeadlineTiles = (rangeDays: number, chain: HeadlineView
         ath: false, current: projectWide ? null : staked,
         // Sub-1-TEL differences are float noise between the lite snapshot and the
         // history row (same day): show "0" like the Staking panel, not "−0.38".
-        previous: stakedEvents.length || (prevStaked != null && Math.abs(staked - prevStaked) < 1) ? staked : prevStaked, fmt: formatTokenAmount,
+        previous: stakedEvents.length || (prevStaked != null && isFloatNoise(staked, prevStaked)) ? staked : prevStaked, fmt: formatTokenAmount,
         scope: perChain && !projectWide ? "chain" : "all",
         changelogEvents: stakedEvents,
         infoLinks: stakedPanelTip(project).links,

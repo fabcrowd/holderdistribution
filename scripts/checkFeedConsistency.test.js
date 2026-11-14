@@ -85,6 +85,21 @@ describe("check-feed-consistency treasury-history comparison", () => {
     expect(status).toBe(0);
   });
 
+  it("sizes the cross-feed tolerance from the supply target, not a fixed 1 token", () => {
+    const cfgPath = path.join(tmp, "config", "projects", `${SLUG}.json`);
+    const original = fs.readFileSync(cfgPath, "utf8");
+    const withTarget = (target) => fs.writeFileSync(cfgPath, JSON.stringify({ ...JSON.parse(original), supply: { target } }));
+    try {
+      writeFixture({ unpinned: false, councilInTreasury: 35 });
+      withTarget(200); // tolerance floors at 1 token: a 5-token gap is real
+      expect(run().status).toBe(1);
+      withTarget(1e12); // tolerance 10: the same gap is within it
+      expect(run().status).toBe(0);
+    } finally {
+      fs.writeFileSync(cfgPath, original);
+    }
+  });
+
   it("unpinned snapshot whose treasury newest row is 3 days old fails as stale", () => {
     writeFixture({ unpinned: true, councilInTreasury: 30, treasuryDate: "2026-09-29" });
     const { status, out } = run();

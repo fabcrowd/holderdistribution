@@ -9,6 +9,7 @@
  */
 import registry from "../../config/projects.json";
 import { chainExplorerLink, explorerRoot, type ChainVm, type ExplorerTemplates } from "./explorerLinks";
+import { COMPACT_TARGET_LABEL, formatCompact } from "./format";
 
 export type ProjectEntry = {
   slug: string;
@@ -111,7 +112,13 @@ export type ProjectConfig = ProjectEntry & {
   classification?: Record<string, string>;
   /** Feed-health overrides (scripts/lib/feedHealth.js). `placeholder: true` marks an intentionally empty feed. */
   health?: { feeds?: Record<string, { placeholder?: boolean }> };
-  gated?: { forensics?: boolean };
+  gated?: {
+    forensics?: boolean;
+    /** Mount the gated "Stablecoin outflow analysis" panel on the History tab. Explicit opt-in: shown only when true (src/components/AssociationFlowAnalysis.tsx). */
+    associationFlows?: boolean;
+  };
+  /** Pipeline treasury-history categories (append-treasury-history); the History chart orders its lines by developerHoldings, then these. */
+  treasury?: { categories?: string[] };
   /**
    * Project-specific copy. `glossary` overrides the generic template for a
    * term id (src/lib/glossary.ts); strings may use {ticker}/{name}/{chains}/{supply}.
@@ -165,8 +172,7 @@ export const supplyTargetLabel = (p: Pick<ProjectConfig, "supply">): string | nu
   if (p.supply?.targetLabel) return p.supply.targetLabel;
   const t = p.supply?.target;
   if (!t || !Number.isFinite(t)) return null;
-  if (t >= 1e9) return `${+(t / 1e9).toFixed(2)}B`;
-  if (t >= 1e6) return `${+(t / 1e6).toFixed(2)}M`;
+  if (t >= 1e6) return formatCompact(t, COMPACT_TARGET_LABEL);
   return t.toLocaleString("en-US");
 };
 

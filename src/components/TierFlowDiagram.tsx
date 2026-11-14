@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, useEffect, useLayoutEffect, useCallback, type ReactNode } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { useProject } from "@/hooks/useProject";
+import { isVenueScannedFlows } from "@/lib/venueFlows";
 import { PARTIAL_DAY_LABEL } from "@/lib/flowFeeds";
 import { flowEmptyMessage } from "@/lib/flowEmptyState";
 import { AsOfBadge } from "@/components/AsOfBadge";
@@ -928,7 +929,7 @@ export const TierFlowDiagram = ({
         <>
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <div className="flex items-center gap-1.5">
-              <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Retail distribution by tier</h3>
+              <h3 className="text-xs text-muted-foreground font-semibold">Retail distribution by tier</h3>
               {/* A fresh as-of date lives in the tooltip; a stale feed (or an
                   open selection) shows the badge on the second line. */}
               <InfoTooltip
@@ -1168,7 +1169,7 @@ export const TierFlowDiagram = ({
                   ["--tw-ring-color" as string]: s.color,
                 }}
               >
-                <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold truncate">{s.label}</div>
+                <div className="text-xs text-muted-foreground font-semibold truncate">{s.label}</div>
                 <div className="text-sm font-bold tabular-nums" style={{ color: s.color }}>{aggregate > 0 ? fmtTel(aggregate) : "—"}</div>
               </button>
             );
@@ -1200,7 +1201,7 @@ export const TierFlowDiagram = ({
                   ["--tw-ring-color" as string]: s.color,
                 }}
               >
-                <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold truncate">{s.label}</div>
+                <div className="text-xs text-muted-foreground font-semibold truncate">{s.label}</div>
                 <div className="text-sm font-bold tabular-nums" style={{ color: s.color }}>{aggregate > 0 ? fmtTel(aggregate) : "—"}</div>
               </button>
             );
@@ -1629,7 +1630,7 @@ const WalletsPanel = ({ field, period, avail, crossingsWindow = null, expandedFl
           lines only offer to a mouse. */}
       {nets.length > 0 && (
         <div className="pt-1 border-t border-border/40 text-sm">
-          <div className="text-center text-muted-foreground font-semibold uppercase tracking-wide text-xs mb-1">
+          <div className="text-center text-muted-foreground font-semibold text-xs mb-1">
             Net movement by tier
             {windowLabel && (
               <span className="ml-1 font-normal normal-case tracking-normal" data-testid="crossings-window">
@@ -1720,6 +1721,8 @@ const TierAttributionBreakdown = ({
   sourceTierSince: string | null;
 }) => {
   const { ticker } = useProjectCopy();
+  const { project } = useProject();
+  const venueScanned = isVenueScannedFlows(project.chains);
   const renderList = (map: Record<string, number>, total: number) => {
     const entries = Object.entries(map)
       .filter(([, v]) => v !== 0)
@@ -1752,7 +1755,11 @@ const TierAttributionBreakdown = ({
 
   return (
     <div className="opacity-90">
-      {attributedDays === 0 ? (
+      {attributedDays === 0 && venueScanned ? (
+        <span className="opacity-80">
+          {ticker} flows are measured at exchange accounts, so wallet-to-wallet tier attribution is not measured. Every wallet-to-wallet {ticker} amount below reads as untracked.
+        </span>
+      ) : attributedDays === 0 ? (
         <span className="opacity-80">
           No counterparty-tier attribution exists for this window yet — it's a new pipeline feature that accrues going forward, so every wallet-to-wallet {ticker} amount below currently reads as untracked.
         </span>
@@ -1810,7 +1817,7 @@ const TelPanel = ({ field, period, windowLabel, avail, expandedFlow, onToggleFlo
           canvas lines, so this is the keyboard path for that interaction. */}
       {hasAnyFlow && (
         <div className="pt-1 border-t border-border/40 text-sm">
-          <div className="text-center text-muted-foreground font-semibold uppercase tracking-wide text-xs mb-1">
+          <div className="text-center text-muted-foreground font-semibold text-xs mb-1">
             Net flow by source
           </div>
           <ul className="space-y-0.5">

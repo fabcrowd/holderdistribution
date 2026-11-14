@@ -54,7 +54,7 @@ export const StakingAddressList = ({ links }: { links: StakingAddressLink[] }) =
           <div className="overflow-x-auto">
             <table className="w-full text-sm max-sm:block" data-testid="staking-lockup-table">
               <thead className="max-sm:sr-only">
-                <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b border-border/60 text-left text-xs font-semibold text-muted-foreground">
                   <th className="py-1.5 pr-3 font-semibold">Lockup</th>
                   <th className="py-1.5 pr-3 font-semibold">Lockup account</th>
                   <th className="py-1.5 font-semibold">Vault ATA</th>
@@ -66,10 +66,10 @@ export const StakingAddressList = ({ links }: { links: StakingAddressLink[] }) =
                     <th scope="row" className="py-1.5 pr-3 text-left text-sm font-medium text-foreground max-sm:block">
                       {row.name}
                     </th>
-                    <td data-label="Account" className="py-1.5 pr-3 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:uppercase max-sm:before:tracking-wide max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)]">
+                    <td data-label="Account" className="py-1.5 pr-3 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)]">
                       <AccountAddress link={row.lockup} />
                     </td>
-                    <td data-label="Vault ATA" className="py-1.5 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:uppercase max-sm:before:tracking-wide max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)]">{row.vault ? <AccountAddress link={row.vault} /> : "—"}</td>
+                    <td data-label="Vault ATA" className="py-1.5 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)]">{row.vault ? <AccountAddress link={row.vault} /> : "—"}</td>
                   </tr>
                 ))}
               </tbody>

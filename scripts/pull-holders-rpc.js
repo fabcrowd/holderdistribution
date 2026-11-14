@@ -29,7 +29,8 @@ import { writeWindow, transferWindowName, SHARED_WINDOW_MAX_BLOCKS } from "./lib
 import { sharedScanEnabled } from "./lib/sharedTransferLogs.js";
 import { ensureCutoffs, findFirstBlockAtOrAfter, nextDate } from "./lib/dayBlocks.js";
 import { resolveSettledDate, planPins, finalizeAsOf, utcDay, aheadAction } from "./lib/asOf.js";
-import { partialName, serializePartial, writePartial, readPartial, removePartial, partialUsable, partialRaw, buildChunks, streamChunks } from "./lib/partialCheckpoint.js";
+import { canRotatePrevious } from "./lib/cexFlows.js";
+import { partialName, serializePartial, writePartial, readPartial, removePartial, partialResumeDecision, partialRaw, buildChunks, streamChunks, loadResumable, keepsFinishedScan, settlePartial } from "./lib/partialCheckpoint.js";
 
 // Mid-scan checkpoint cadence (seconds); 0 disables. See lib/partialCheckpoint.js.
 const PARTIAL_CHECKPOINT_SECS = Number(process.env.HD_PARTIAL_CHECKPOINT_SECS ?? 300);
@@ -403,9 +404,12 @@ async function fetchChainBalances(chainKey, chainConfig, topic0, checkpoint = nu
   const partialPath = projectWork(project)(partialName(chainKey));
   const partialBase = { chainKey, token: tokenAddress, genesisBlock, baseLastBlock: legacyCheckpoint ? legacyCheckpoint.lastBlock : null };
   const partial = ARG_AS_OF ? null : await readPartial(partialPath);
-  const partialOk = partialUsable(partial, partialBase);
-  if (partial && !partialOk) {
+  const { resume: partialOk, discard: partialDiscard } = partialResumeDecision(partial, { ...partialBase, pinBlock });
+  if (partialDiscard === "different-base") {
     console.warn(`${chainKey}: ignoring partial checkpoint ${partialPath} (built on a different base) — removing it.`);
+    await removePartial(partialPath);
+  } else if (partialDiscard === "ahead-of-pin") {
+    console.warn(`${chainKey}: ignoring partial checkpoint ${partialPath} (lastBlock ${partial.lastBlock} is after the pin block ${pinBlock}) — removing it.`);
     await removePartial(partialPath);
   }
   const fromBlock = partialOk ? partial.lastBlock + 1 : checkpointFromBlock;
@@ -688,26 +692,20 @@ async function planLivePins(chainConfig, chainKeys, vmOf, checkpoint, settledDat
 
 /**
  * Resume wiring for an adapter that can resume (`resumeProblem`): a saved scan state in the work dir is
- * reused only when the adapter accepts it (Hedera: same floor and range width; a pinned snapshot has no age limit),
- * otherwise the scan starts fresh. Progress is written at most every PARTIAL_CHECKPOINT_SECS, and once more if the
+ * reused only when the adapter accepts it (Hedera: same floor and range width), otherwise the scan starts fresh.
+ * The adapter then decides whether the state is still usable for this run and may drop it as stale (Hedera: an
+ * in-progress state much older than the snapshot a fresh run would resolve now). Progress is written at most every PARTIAL_CHECKPOINT_SECS, and once more if the
  * scan throws, so a failed page keeps the pages already accepted. The file is removed when the chain's scan lands
- * in the real checkpoint. Adapters without `resumeProblem` always scan fresh.
+ * in the real checkpoint, unless the adapter opts in with `keepsFinishedScan` (then its finished state stays, and the
+ * adapter serves it only to a run that resolves the same snapshot). Adapters without `resumeProblem` always scan fresh.
  */
 async function vmScanResume(adapter, chain) {
   if (typeof adapter.resumeProblem !== "function") return { resume: null, onProgress: undefined, flush: async () => {}, drain: async () => {} };
   const partialPath = projectWork(project)(partialName(chain.key));
-  const saved = await readPartial(partialPath);
-  let resume = null;
-  if (saved) {
-    const problem = adapter.resumeProblem(chain, saved);
-    if (problem) {
-      console.warn(`${chain.key}: ignoring saved scan state (${problem}); starting a fresh scan.`);
-      await removePartial(partialPath);
-    } else {
-      resume = saved;
-      const open = Object.keys(saved.open ?? {}).length;
-      console.log(`Resuming ${chain.key} scan at snapshot ${saved.timestamp} (${Object.keys(saved.ranges).length} ranges done, ${open} in progress).`);
-    }
+  const resume = await loadResumable(adapter, chain, partialPath);
+  if (resume) {
+    const open = Object.keys(resume.open ?? {}).length;
+    console.log(`Found a saved ${chain.key} scan state at snapshot ${resume.timestamp}; the adapter decides whether it is still usable (${Object.keys(resume.ranges).length} ranges done, ${open} in progress${resume.complete ? ", finished: reused only if it is still the newest snapshot for this run" : ""}).`);
   }
   let lastWriteAt = 0;
   let latest = null;
@@ -732,8 +730,11 @@ async function vmScanResume(adapter, chain) {
   };
   // After a successful scan: stop saving and let in-flight writes land, so the partial file removed once the
   // checkpoint is written cannot be recreated (a leftover state would be resumed as an old snapshot).
+  // An adapter that keeps its finished state gets that state written last (the throttle may have skipped it); writes are
+  // chained, so it lands after every older in-progress write and nothing can overwrite it afterwards.
   const drain = () => {
     lastWriteAt = Number.POSITIVE_INFINITY;
+    if (keepsFinishedScan(adapter) && PARTIAL_CHECKPOINT_SECS > 0 && latest?.complete) persist(latest);
     return pending;
   };
   return { resume, onProgress, flush, drain };
@@ -904,7 +905,7 @@ async function main() {
               try {
                 const result = await adapter.scanChain(chain, { resume, onProgress, pinBlock: plan.pins[chainKey] ?? null });
                 await drain();
-                return { ...result, chainKey };
+                return { ...result, chainKey, adapter };
               } catch (error) {
                 await flush?.();
                 throw error;
@@ -952,7 +953,7 @@ async function main() {
       // A completed chain's progress now lives in the real checkpoint.
       for (const settled of chainSettled) {
         if (settled.status === "fulfilled" && settled.value?.checkpointData) {
-          await removePartial(projectWork(project)(partialName(settled.value.chainKey)));
+          await settlePartial(settled.value.adapter, projectWork(project)(partialName(settled.value.chainKey)));
         }
       }
       console.log(`Saved checkpoint to ${CHECKPOINT_PATH} (${chainSettled.length - failedChains.length}/${chainSettled.length} chains succeeded this run).`);
@@ -1264,9 +1265,14 @@ async function main() {
   await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`, "utf8");
   console.log(`Wrote ${OUTPUT_PATH}`);
 
-  if (priorSnapshot) {
+  // Only a comparable snapshot from an earlier day becomes "previous": a same-day
+  // rerun or an unpinned/unstamped file must not displace the older settled one,
+  // or cex-flows would compare against the wrong day (lib/cexFlows.js).
+  if (priorSnapshot && canRotatePrevious(priorSnapshot.asOf, asOf)) {
     await fs.writeFile(PREVIOUS_SNAPSHOT_PATH, `${JSON.stringify(priorSnapshot, null, 2)}\n`, "utf8");
     console.log(`Archived prior snapshot to ${PREVIOUS_SNAPSHOT_PATH}`);
+  } else if (priorSnapshot) {
+    console.warn(`Prior snapshot (asOf ${priorSnapshot.asOf?.date ?? "none"}) is not a comparable earlier day than ${asOf?.date}; previous snapshot left unchanged.`);
   }
 
   // Count unique stakers for informational logging.
