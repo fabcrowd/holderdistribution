@@ -137,7 +137,9 @@ export type ProjectConfig = ProjectEntry & {
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
-const configModules = import.meta.glob<ProjectConfig>("../../config/projects/*.json", {
+// vitest's on-disk module cache only skips files containing the exact text `import.meta.glob(`.
+// A type argument hides that text, so the cached module kept the old config set after a token was added.
+const configModules: Record<string, ProjectConfig> = import.meta.glob("../../config/projects/*.json", {
   eager: true,
   import: "default",
 });

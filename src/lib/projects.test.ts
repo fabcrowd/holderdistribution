@@ -56,6 +56,21 @@ describe("project registry", () => {
     expect(supplyTargetLabel({ supply: { target: 1_500_000_000 } })).toBe("1.5B");
     expect(supplyTargetLabel({})).toBeNull();
   });
+
+  it("no source file calls import.meta.glob with a type argument (it hides the call from vitest's module cache)", () => {
+    const srcRoot = path.resolve(process.cwd(), "src");
+    const typedGlob = /import\.meta\.glob\s*</;
+    const walk = (dir: string): string[] =>
+      fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) return walk(full);
+        if (!/\.tsx?$/.test(entry.name) || /\.test\.tsx?$/.test(entry.name)) return [];
+        return [full];
+      });
+    const offenders = walk(srcRoot).filter((file) => typedGlob.test(fs.readFileSync(file, "utf8")));
+    const names = offenders.map((file) => path.relative(process.cwd(), file));
+    expect(names, `${names.join(", ")} calls import.meta.glob with a type argument; type the result instead (const x: Record<string, T> = import.meta.glob(...))`).toEqual([]);
+  });
 });
 
 describe("token images", () => {
