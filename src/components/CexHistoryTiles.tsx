@@ -10,16 +10,12 @@ import { useChartZoom } from "@/hooks/useChartZoom";
 import { useCexBalanceHistory } from "@/hooks/useCexBalanceHistory";
 import { buildCexHistoryTiles, MIN_CEX_TILE_BALANCE } from "@/components/buildCexHistoryTiles";
 import { ChangeIndicator } from "@/components/ChangeIndicator";
+import { COMPACT_CEX_TILE, formatCompact } from "@/lib/format";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
 
 export { MIN_CEX_TILE_BALANCE } from "@/components/buildCexHistoryTiles";
 
-const formatCompactAmount = (value: number) => {
-  if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-  if (value >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
-  return `${Math.round(value)}`;
-};
+const formatCompactAmount = (value: number) => formatCompact(value, COMPACT_CEX_TILE);
 
 const tileChartConfig = (ticker: string) => ({
   balance: {
@@ -124,7 +120,7 @@ export const CexHistoryTiles = ({ rangeDays }: CexHistoryTilesProps) => {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+        <div className="text-xs text-muted-foreground font-semibold">
           Exchange Balance History
         </div>
       </div>

@@ -25,11 +25,11 @@ import { chainViewLabel } from "@/lib/chainViews";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import "@/lib/rechartsMotion";
 import { Clock, Database, Layers, Loader2, TrendingDown, TrendingUp } from "lucide-react";
-import { formatRelativeAge, formatShortDate } from "@/lib/format";
+import { COMPACT_AXIS, formatCompact, formatRelativeAge, formatShortDate } from "@/lib/format";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
 import { insertGapBreaks } from "@/lib/seriesGaps";
-import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
+import { stakingDeployDate, stakingSplitText, stakingWording, v3ChannelValue, v3StakingGapEvents, type StakingWording } from "@/lib/staking";
 import { computeSeriesDomain, computeBreakAwareDomain, activeKeys, maskExcludedSegments } from "@/lib/chartDomain";
 import { computeYAxis, computeYAxisFromRows, distinctTickFormatter } from "@/lib/chartAxes";
 import { AxisBaselineNote } from "@/components/chart/AxisBaselineNote";
@@ -77,13 +77,12 @@ type BalanceSeriesKey = keyof typeof balanceChartConfig;
 /** Below this many snapshots the Wallets line is a stub; say so rather than show a near-empty plot. */
 const SPARSE_HISTORY_POINTS = 8;
 
-const stakingChartConfig = {
+const stakingChartConfigFor = (wording: StakingWording) => ({
   stakingTotal: { label: "Total staked", color: "hsl(var(--primary))" },
-  staking: { label: "Legacy contract", color: "hsl(var(--muted-foreground))" },
-  stakingV3: { label: "v3 StakingModule", color: "hsl(var(--ha-accent))" },
-};
-const STAKING_SERIES_KEYS = Object.keys(stakingChartConfig) as Array<keyof typeof stakingChartConfig>;
-const V3_DEPLOY_MS = Date.parse(V3_STAKING_DEPLOY_DATE);
+  staking: { label: wording.legacy, color: "hsl(var(--muted-foreground))" },
+  stakingV3: { label: wording.v3, color: "hsl(var(--ha-accent))" },
+});
+const STAKING_SERIES_KEYS = ["stakingTotal", "staking", "stakingV3"] as const;
 
 /** Dot only where a series has a value with no neighbour (no line drawn). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -104,12 +103,8 @@ const formatInteger = (value: number) => new Intl.NumberFormat().format(value);
 // did before the Change view existed) sends every negative straight to the
 // integer branch and prints "-1,234,567,890 <ticker>".
 // `digits` lets a tight y-axis add precision so neighbouring gridlines stay distinct.
-const compactAmount = (value: number, unit: string, digits = 2) => {
-  const abs = Math.abs(value);
-  if (abs >= 1e9) return `${(value / 1e9).toFixed(digits)}B ${unit}`;
-  if (abs >= 1e6) return `${(value / 1e6).toFixed(digits)}M ${unit}`;
-  return `${new Intl.NumberFormat().format(Math.round(value))} ${unit}`;
-};
+const compactAmount = (value: number, unit: string, digits = 2) =>
+  `${formatCompact(value, { ...COMPACT_AXIS, digits })} ${unit}`;
 
 // Explicit +/- so a rebased delta reads as a direction, not just a quantity.
 const signedAmount = (value: number, unit: string, digits = 2) => {
@@ -126,6 +121,9 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
   const config = { label: chainViewLabel(project, selectedView) };
   const { ticker } = useProjectCopy();
   const chartConfig = useMemo(() => holdersChartConfig(ticker), [ticker]);
+  const stakingChartConfig = useMemo(() => stakingChartConfigFor(stakingWording(project)), [project]);
+  const v3DeployDate = stakingDeployDate(pageSnapshot?.views.combined?.stakingStats?.v3?.deployDate, project);
+  const v3DeployMs = v3DeployDate ? Date.parse(v3DeployDate) : null;
   const formatCompactAmount = (value: number, digits?: number) => compactAmount(value, ticker, digits);
   const formatSignedAmount = (value: number, digits?: number) => signedAmount(value, ticker, digits);
 
@@ -228,7 +226,9 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
         // Number(null) is 0. A program-only row has no legacy figure; turning
         // that into 0 would pin the axis at zero and hide the staked total.
         const staking = num(point.staking);
-        const stakingV3 = timestamp >= V3_DEPLOY_MS ? num(point.stakingV3) : null;
+        // Before the v3 module's deploy it held nothing. Without a deploy date
+        // the channel is not cut off (a program-only token records on it).
+        const stakingV3 = v3ChannelValue(v3DeployMs, timestamp, num(point.stakingV3));
         const stakingTotal = num(point.stakingTotal);
         if (staking == null && stakingV3 == null && stakingTotal == null) return null;
         return { timestamp, staking, stakingV3, stakingTotal };
@@ -237,7 +237,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
         (entry): entry is { timestamp: number; staking: number | null; stakingV3: number | null; stakingTotal: number | null } => !!entry,
       )
       .sort((a, b) => a.timestamp - b.timestamp);
-  }, [data?.stakingSeries]);
+  }, [data?.stakingSeries, v3DeployMs]);
 
   const stakingStats = useMemo(() => {
     const none = { latest: null, change: null, changePct: null, gap: [] as ReturnType<typeof v3StakingGapEvents> };
@@ -251,7 +251,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
     // the Wallets `stats` comment above for why this matters. With v3 in the
     // total, a baseline inside the unmeasured v3 window has no honest delta.
     if (hasV3 && historicalDelta?.referenceDate) {
-      const gap = v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance, undefined, ticker);
+      const gap = v3StakingGapEvents(historicalDelta.referenceDate, historicalDelta.stakingV3Balance, v3DeployDate ?? undefined, ticker);
       if (gap.length) return { ...none, latest, gap };
     }
     const baseline = last.stakingTotal != null
@@ -263,17 +263,17 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
       return { latest, change, changePct, gap: none.gap };
     }
     const first = stakingChartData[0].stakingTotal ?? stakingChartData[0].staking;
-    if (first == null || latest == null) return { ...none, latest, gap: hasV3 ? v3StakingGapEvents(stakingChartData[0].timestamp, null, undefined, ticker) : none.gap };
+    if (first == null || latest == null) return { ...none, latest, gap: hasV3 ? v3StakingGapEvents(stakingChartData[0].timestamp, null, v3DeployDate ?? undefined, ticker) : none.gap };
     const change = latest - first;
     const changePct = first > 0 ? (change / first) * 100 : null;
     return { latest, change, changePct, gap: none.gap };
-  }, [stakingChartData, historicalDelta, ticker]);
+  }, [stakingChartData, historicalDelta, ticker, v3DeployDate]);
 
   const showStakingSplit = stakingChartData.some((p) => (p.staking ?? 0) > 0 && (p.stakingV3 ?? 0) > 0);
-  const showV3Marker = showStakingSplit && stakingChartData[0] != null && stakingChartData[0].timestamp <= V3_DEPLOY_MS && stakingChartData.some((p) => p.stakingV3 != null);
+  const showV3Marker = showStakingSplit && v3DeployMs != null && stakingChartData[0] != null && stakingChartData[0].timestamp <= v3DeployMs && stakingChartData.some((p) => p.stakingV3 != null);
   const stakingMarkers = useMemo(
-    () => (showV3Marker ? groupMarkers([{ t: V3_DEPLOY_MS, text: "v3 migration", tone: "accent" as const }], 0) : []),
-    [showV3Marker],
+    () => (showV3Marker && v3DeployMs != null ? groupMarkers([{ t: v3DeployMs, text: stakingWording(project).marker, tone: "accent" as const }], 0) : []),
+    [showV3Marker, v3DeployMs, project],
   );
   const stakingNotes = useMemo(() => markerNotesByRow(stakingChartData.map((p) => p.timestamp), stakingMarkers), [stakingChartData, stakingMarkers]);
 
@@ -964,7 +964,7 @@ const HolderGrowthWidget = ({ selectedView, rangeDays, onRangeDaysChange }: Hold
                         const last = stakingChartData[stakingChartData.length - 1];
                         return last && showStakingSplit ? (
                           <span className="text-sm tabular-nums" data-testid="staked-split">
-                            Legacy {formatCompactAmount(last.staking ?? 0)} / v3 {formatCompactAmount(last.stakingV3 ?? 0)}
+                            {stakingSplitText(stakingWording(project), formatCompactAmount(last.staking ?? 0), formatCompactAmount(last.stakingV3 ?? 0))}
                           </span>
                         ) : null;
                       })()}

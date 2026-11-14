@@ -1,4 +1,6 @@
 import { useProject } from "@/hooks/useProject";
+import { holderTiersFor } from "@/lib/holderTiers";
+import { shownConcentrationBuckets } from "@/components/WalletHoldingsWidget";
 import { useMemo, useState } from "react";
 import { useIntro } from "@/hooks/useMotion";
 import { useClassificationChangelog, getEventsAffecting } from "@/hooks/useClassificationChangelog";
@@ -23,7 +25,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { heldPanelTip } from "@/lib/heldPanelTip";
 import { StakedPanelTip } from "./StakedPanelTip";
 import { getSeriesBreaks } from "@/lib/seriesBreaks";
-import { V3_STAKING_DEPLOY_DATE, v3StakingGapEvents } from "@/lib/staking";
+import { NETWORK_STAKE_NOTE, networkStakeOf, stakingDeployDate, stakingSplitText, stakingWording, v3ChannelValue, v3StakingGapEvents } from "@/lib/staking";
 
 const int = new Intl.NumberFormat("en-US");
 const pct = (n: number, d = 1) => `${n.toFixed(d)}%`;
@@ -95,6 +97,8 @@ const firstLast = <T,>(rows: T[]) => (rows.length ? { first: rows[0], last: rows
 export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDays, onExplore }: Props) => {
   const { project } = useProject();
   const noStaking = hasNoStaking(project);
+  // A native coin with network-level staking (no staking contract of its own): informational tile, from the feed.
+  const networkStake = noStaking ? networkStakeOf(snapshot) : null;
   const tk = project.ticker;
   const pn = project.name;
   const growth = useHolderGrowth({ view: selectedView, days: rangeDays });
@@ -110,8 +114,9 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   // Legacy 0 / v3 N is the Solana program recorded on the v3 channel. One
   // staked series, not a TEL-style split.
   const splitStaking = (combinedStaking?.legacy?.stakedTotal ?? 0) > 0 && (v3Staking?.stakedTotal ?? 0) > 0;
-  const v3DeployDate = v3Staking?.deployDate ?? V3_STAKING_DEPLOY_DATE;
-  const v3DeployMs = Date.parse(v3DeployDate);
+  const wording = useMemo(() => stakingWording(project), [project]);
+  const v3DeployDate = stakingDeployDate(v3Staking?.deployDate, project);
+  const v3DeployMs = v3DeployDate ? Date.parse(v3DeployDate) : null;
 
   const holders = useMemo(
     () =>
@@ -141,7 +146,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
             staking: p.staking,
             // The v3 series starts at the module's deploy; before it, v3 is 0
             // and the total is just the legacy line.
-            stakingV3: t >= v3DeployMs ? p.stakingV3 : null,
+            stakingV3: v3ChannelValue(v3DeployMs, t, p.stakingV3),
             stakingTotal: p.stakingTotal,
           };
         }),
@@ -152,10 +157,10 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   );
   const stakingMarkers = useMemo<ChartMarker[]>(
     () =>
-      staking.length && v3Staking && staking[0].t <= v3DeployMs
-        ? [{ t: v3DeployMs, label: "v3 migration", description: "The v3 StakingModule went live and stakers began migrating from the legacy contract" }]
+      staking.length && splitStaking && v3DeployMs != null && staking[0].t <= v3DeployMs
+        ? [{ t: v3DeployMs, label: wording.marker, description: wording.markerNote }]
         : [],
-    [staking, v3Staking, v3DeployMs],
+    [staking, splitStaking, v3DeployMs, wording],
   );
   const holderMarkers = useMemo(() => reclassMarkers(changelog, "retail.count", holders[0]?.t), [changelog, holders]);
   // Same † rule as the header KPIs: a reclassification after the period's
@@ -208,9 +213,9 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   // stretch where v3 wasn't recorded (no baseline, so no honest delta).
   const stakedNow = combinedStaking?.stakedTotal ?? s?.last.stakingTotal ?? s?.last.staking ?? null;
   const stakedFirst = s ? (splitStaking ? s.first.stakingTotal : s.first.stakingTotal ?? s.first.staking) : null;
-  const stakedRelabel = s && splitStaking ? v3StakingGapEvents(s.first.t, s.first.stakingTotal == null ? null : 0, v3DeployDate, tk) : [];
+  const stakedRelabel = s && splitStaking ? v3StakingGapEvents(s.first.t, s.first.stakingTotal == null ? null : 0, v3DeployDate ?? undefined, tk) : [];
   const stakingSplit = splitStaking && v3Staking && combinedStaking?.legacy
-    ? `Legacy ${formatCompact(combinedStaking.legacy.stakedTotal)} / v3 ${formatCompact(v3Staking.stakedTotal)}`
+    ? stakingSplitText(wording, formatCompact(combinedStaking.legacy.stakedTotal), formatCompact(v3Staking.stakedTotal))
     : null;
   const loading = growth.isLoading;
   const growthFailed = !!growth.error && !growth.data;
@@ -231,6 +236,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
   const buckets = stats?.distributionBuckets ?? [];
   const top = view?.concentration?.top ?? {};
   const prevTop = view?.concentration?.previousTop ?? {};
+  // Same bucket selection as the Explore panel (config buckets present in the feed and below the holder count).
+  const holderCount = view?.metrics?.holderCount;
   // Unknown stays null: "—" in the table, never a 0% share.
   const retailTotal = stats?.total ?? null;
 
@@ -378,8 +385,9 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
               </tr>
             </thead>
             <tbody>
-              {Object.entries(top)
-                .sort((a, z) => Number(a[0]) - Number(z[0]))
+              {[...shownConcentrationBuckets(holderTiersFor(project).concentrationBuckets, top, holderCount)]
+                .sort((a, z) => a - z)
+                .map((b) => [String(b), top[String(b)]] as const)
                 .map(([n, bal]) => {
                   const share = retailTotal != null && retailTotal > 0 ? (bal / retailTotal) * 100 : null;
                   const prev = prevTop[n];
@@ -416,7 +424,7 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
       <TerminalPanel
         chart="standard"
         title={`Staked ${tk}`}
-        info={noStaking ? stakingNoneText(project) : <StakedPanelTip />}
+        info={noStaking ? (networkStake ? NETWORK_STAKE_NOTE : stakingNoneText(project)) : <StakedPanelTip />}
         stat={
           s &&
           stakedNow != null && (
@@ -433,7 +441,8 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
         actions={noStaking ? undefined : <DetailsButton onClick={() => onExplore("staking")} label="Staking" />}
       >
         {noStaking ? (
-          <StakingNoneNote />
+          // The feed decides between the note and the tile, so wait for it (same states as the Concentration panel).
+          snapshot ? <StakingNoneNote networkStake={networkStake} /> : snapshotError ? <PanelError>Couldn't load the holder snapshot.</PanelError> : <PanelSkeleton />
         ) : !isCombined ? (
           <PanelMessage>Available for all chains combined only.</PanelMessage>
         ) : (
@@ -450,11 +459,11 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                     </span>
                     <span aria-hidden="true" className="inline-flex items-center gap-1">
                       <span className="w-2.5 border-t border-dashed border-muted-foreground" />
-                      Legacy <span className="font-semibold text-foreground">{formatCompact(combinedStaking.legacy.stakedTotal)}</span>
+                      {wording.legacyShort} <span className="font-semibold text-foreground">{formatCompact(combinedStaking.legacy.stakedTotal)}</span>
                     </span>
                     <span aria-hidden="true" className="inline-flex items-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-ha-accent" />
-                      v3 <span className="font-semibold text-foreground">{formatCompact(v3Staking?.stakedTotal ?? 0)}</span>
+                      {wording.v3Short} <span className="font-semibold text-foreground">{formatCompact(v3Staking?.stakedTotal ?? 0)}</span>
                     </span>
                   </p>
                 )}
@@ -463,14 +472,14 @@ export const HoldersTerminal = ({ snapshot, snapshotError, selectedView, rangeDa
                     data={staking}
                     series={[
                       { key: "stakingTotal", label: "Total staked", color: "hsl(var(--primary))", connectNulls: false },
-                      { key: "staking", label: "Legacy contract", color: "hsl(var(--muted-foreground))", dashed: true },
-                      { key: "stakingV3", label: "v3 StakingModule", color: "hsl(var(--ha-accent))", connectNulls: false },
+                      { key: "staking", label: wording.legacy, color: "hsl(var(--muted-foreground))", dashed: true },
+                      { key: "stakingV3", label: wording.v3, color: "hsl(var(--ha-accent))", connectNulls: false },
                     ]}
                     markers={stakingMarkers}
                     breaks={stakingBreaks}
                     format={(n) => `${formatCompact(n)} ${tk}`}
                     tableTitle={`Staked ${tk} by date`}
-                    label={`Staked ${tk} ${stakedNow != null ? formatCompact(stakedNow) : ""} now${stakingSplit ? ` (${stakingSplit})` : ""}. The legacy contract fell as stakers moved to the v3 StakingModule; v3 balances before the latest snapshot weren't recorded.`}
+                    label={`Staked ${tk} ${stakedNow != null ? formatCompact(stakedNow) : ""} now${stakingSplit ? ` (${stakingSplit})` : ""}. The ${wording.legacy.toLowerCase()} fell as stakers moved to the ${wording.v3}; ${wording.v3Short} balances before the latest snapshot weren't recorded.`}
                   />
                 </div>
               </div>

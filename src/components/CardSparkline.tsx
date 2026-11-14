@@ -39,6 +39,7 @@ export const CardSparkline = ({ name, trend, note }: { name: string; trend: Card
   const area = `${line}L${x(last.t).toFixed(1)},${H}L${x(first.t).toFixed(1)},${H}Z`;
   const delta = last.v - first.v;
   const sign = delta > 0 ? "+" : delta < 0 ? "−" : "";
+  const deltaTone = delta > 0 ? "text-positive" : delta < 0 ? "text-negative" : "text-muted-foreground";
   return (
     <div data-testid="card-sparkline" className="flex h-[72px] flex-col justify-between">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={trendLabel(name, trend)} preserveAspectRatio="none" className="h-10 w-full">
@@ -59,7 +60,7 @@ export const CardSparkline = ({ name, trend, note }: { name: string; trend: Card
             : `since ${formatTrendDate(trend.sinceBreak)}`}{" "}
           · retail wallets
         </span>
-        <span className="font-mono tabular-nums">
+        <span className={`ha-num ${deltaTone}`}>
           {sign}
           {formatCount(Math.abs(delta))}
         </span>

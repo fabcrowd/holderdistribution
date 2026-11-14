@@ -35,15 +35,15 @@ export const rankTiersByNet = (fields: readonly RailField[], metric: Metric, ava
 // ---- KPIs ------------------------------------------------------------------
 
 export type Kpi = { key: "wallets" | "tel" | "netWallets" | "netTel"; label: string; text: string; tone: Tone };
-type KpiOptions = { ticker?: string; fmt?: Formatters; avail?: FlowAvailability };
+type KpiOptions = { ticker: string; fmt?: Formatters; avail?: FlowAvailability };
 
 /** Net text for a table/KPI cell: "—" when the feed is missing, "0" for zero, else signed. */
 const netText = (value: number | null, f: (n: number) => string, fmt: Formatters): string =>
   value === null ? netDisplay(null, f).text : value === 0 ? "0" : fmt.signed(value, f);
 
 /** Four KPIs, the active metric's pair first. */
-export const tierKpis = (field: RailField, metric: Metric, opts: KpiOptions = {}): Kpi[] => {
-  const { ticker = "TEL", fmt = DEFAULT_FORMATTERS, avail = ALL_FLOWS_AVAILABLE } = opts;
+export const tierKpis = (field: RailField, metric: Metric, opts: KpiOptions): Kpi[] => {
+  const { ticker, fmt = DEFAULT_FORMATTERS, avail = ALL_FLOWS_AVAILABLE } = opts;
   // A signed number; an exact zero reads "0"; a missing feed reads "—".
   const net = (value: number | null, f: (n: number) => string): { text: string; tone: Tone } => ({
     text: netText(value, f, fmt),

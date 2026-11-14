@@ -4,7 +4,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import "@/lib/rechartsMotion";
 import { barSizing, computeYAxisFromRows, distinctTickFormatter } from "@/lib/chartAxes";
-import { formatCompact } from "@/lib/format";
+import { COMPACT_FLOW_ROW, formatCompact } from "@/lib/format";
 import { CHART_TICK } from "@/lib/terminalLayout";
 import { ZoomFrame } from "@/components/chart/ZoomFrame";
 import { useChartZoom } from "@/hooks/useChartZoom";
@@ -21,13 +21,7 @@ type ExchangeNetflowProps = {
   rangeDays: number;
 };
 
-const formatCompactAmount = (value: number) => {
-  const a = Math.abs(value);
-  if (a >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (a >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-  if (a >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
-  return `${Math.round(value)}`;
-};
+const formatCompactAmount = (value: number) => formatCompact(value, COMPACT_FLOW_ROW);
 
 const NO_ROWS: Array<{ timestamp: number; net: number }> = [];
 
@@ -80,7 +74,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-1.5">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+        <div className="text-xs text-muted-foreground font-semibold">
           Exchange Netflow — measured deposits &amp; withdrawals
         </div>
         <InfoTooltip text={t(INFO_TEMPLATE)} />
@@ -97,15 +91,15 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="premium-surface-card p-4 text-center">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Deposits (in)</div>
+          <div className="text-xs text-muted-foreground font-semibold mb-1">Deposits (in)</div>
           <div className="text-xl font-bold text-foreground">{formatCompactAmount(view.totalIn)} {ticker}</div>
         </div>
         <div className="premium-surface-card p-4 text-center">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Withdrawals (out)</div>
+          <div className="text-xs text-muted-foreground font-semibold mb-1">Withdrawals (out)</div>
           <div className="text-xl font-bold text-foreground">{formatCompactAmount(view.totalOut)} {ticker}</div>
         </div>
         <div className="premium-surface-card p-4 text-center">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">Net</div>
+          <div className="text-xs text-muted-foreground font-semibold mb-1">Net</div>
           <div className="text-xl font-bold text-foreground">
             {view.net >= 0 ? "+" : "−"}{formatCompactAmount(Math.abs(view.net))} {ticker}
           </div>
@@ -115,7 +109,7 @@ export const ExchangeNetflow = ({ rangeDays }: ExchangeNetflowProps) => {
         </div>
       </div>
       <div className="premium-surface-card p-4">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 text-center">
+        <p className="text-xs text-muted-foreground font-semibold mb-3 text-center">
           Daily net flow (▲ toward exchanges · ▼ leaving)
         </p>
         <ZoomFrame zoom={zoom} className="h-[220px] w-full">

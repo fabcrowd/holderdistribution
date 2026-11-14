@@ -1,9 +1,48 @@
 import { describe, expect, it } from "vitest";
 import type { HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
-import { DASH, cardStats } from "./landingStats";
+import { DASH, boardTotals, cardStats, percentWidth } from "./landingStats";
 
 const snap = (holderCount: unknown, totalBalance: unknown, totalSupply: unknown) =>
   ({ totals: { totalSupply }, views: { combined: { metrics: { holderCount, totalBalance } } } }) as unknown as HolderLiteSnapshot;
+
+describe("boardTotals", () => {
+  it("counts tokens, sums retail wallets with the card's count logic, and counts unique chains", () => {
+    expect(
+      boardTotals([snap(102130, 1, 1), snap(4870, 1, 1)], [["ethereum", "base"], ["base", "solana"]]),
+    ).toEqual({ tokens: 2, wallets: "107,000", chains: 3 });
+  });
+  it("falls back to overlap.uniqueCount per token, like cardStats", () => {
+    const withUnique = { overlap: { uniqueCount: 99510 }, views: { combined: { metrics: {} } } } as unknown as HolderLiteSnapshot;
+    expect(boardTotals([withUnique, snap(10, 1, 1)], []).wallets).toBe("99,520");
+  });
+  it("shows a dash for wallets when any snapshot is missing, null or has no count", () => {
+    expect(boardTotals([snap(5, 1, 1), null], []).wallets).toBe(DASH);
+    expect(boardTotals([snap(5, 1, 1), undefined], []).wallets).toBe(DASH);
+    expect(boardTotals([snap(undefined, 1, 1), snap(5, 1, 1)], []).wallets).toBe(DASH);
+  });
+  it("still counts tokens and chains when wallets are unknown", () => {
+    expect(boardTotals([null, null], [["tel"], ["tel", "eth"]])).toEqual({ tokens: 2, wallets: DASH, chains: 2 });
+  });
+  it("is zero for an empty board", () => {
+    expect(boardTotals([], [])).toEqual({ tokens: 0, wallets: "0", chains: 0 });
+  });
+});
+
+describe("percentWidth", () => {
+  it("parses a percent string into a number", () => {
+    expect(percentWidth("66.6%")).toBe(66.6);
+  });
+  it("clamps to 0..100", () => {
+    expect(percentWidth("135%")).toBe(100);
+    expect(percentWidth("-3%")).toBe(0);
+  });
+  it("returns null for dashes, null, undefined and non-numeric text", () => {
+    expect(percentWidth("—")).toBeNull();
+    expect(percentWidth(null)).toBeNull();
+    expect(percentWidth(undefined)).toBeNull();
+    expect(percentWidth("12abc%")).toBeNull();
+  });
+});
 
 describe("cardStats", () => {
   it("formats holder count and retail share of total supply", () => {

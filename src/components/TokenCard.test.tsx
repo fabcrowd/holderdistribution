@@ -31,6 +31,11 @@ describe("TokenCard", () => {
   it("shows a loading placeholder while stats are pending", () => {
     expect(render(null)).toContain('data-loading="true"');
   });
+  it("names the token in an h3 (the page heading 'Tokens' is the h2)", () => {
+    const html = render({ holders: "1", retailShare: "2%" });
+    expect(html).toContain("<h3");
+    expect(html).not.toContain("<h2");
+  });
 });
 
 describe("TokenCard summary", () => {
@@ -53,6 +58,17 @@ describe("TokenCard summary", () => {
     expect(out).toContain(">34.5%<");
     expect(out).toContain('role="img"');
     expect(out).toContain("aria-label=\"A retail wallets,");
+  });
+  it("keeps the full stat labels as screen-reader text and sizes the concentration meters", () => {
+    const out = html({ concentration: { top10: "12.0%", top100: "34.5%" }, trend: null });
+    expect(out).toContain('<span class="sr-only">Retail share of supply</span>');
+    expect(out).toContain('<span class="sr-only">Top 10 holders</span>');
+    expect(out).toContain('<span class="sr-only">Top 100 holders</span>');
+    expect(out).toContain("width:12%");
+    expect(out).toContain("width:34.5%");
+    expect(out).toContain("bg-foreground/60");
+    expect(out).not.toContain("bg-foreground/45");
+    expect(out).not.toContain("uppercase");
   });
   it("shows a same-size placeholder when the trend is missing", () => {
     const out = html({ concentration: { top10: "—", top100: "—" }, trend: null });

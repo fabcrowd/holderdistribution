@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chainExplorerLink, explorerRoot, explorerTemplates, normalizeAddressForChain, resolveChainVm } from "@/lib/explorerLinks";
+import { chainExplorerLink, chainForAddress, explorerRoot, explorerTemplates, normalizeAddressForChain, resolveChainVm } from "@/lib/explorerLinks";
 import { getProject, projectChainMeta, type ProjectChain } from "@/lib/projects";
 import { projectTokenLinks, resolveHref } from "@/lib/methodology";
 import { addressExplorerUrl } from "@/lib/walletFlowsTypes";
@@ -39,6 +39,36 @@ describe("explorer links (vm-aware)", () => {
     );
     expect(chainExplorerLink(eth, "address", "0xAbC")).toBe("https://etherscan.io/address/0xAbC");
     expect(normalizeAddressForChain(eth, "0xAbC")).toBe("0xabc");
+  });
+});
+
+describe("Hedera links", () => {
+  const hedera: ProjectChain = { key: "hedera", name: "Hedera", vm: "hedera", tokens: [] };
+
+  it("resolves the vm and uses HashScan without lowercasing 0.0.N ids", () => {
+    expect(resolveChainVm(hedera)).toBe("hedera");
+    expect(explorerRoot(hedera)).toBe("https://hashscan.io/mainnet");
+    expect(chainExplorerLink(hedera, "address", " 0.0.1234 ", { lowercase: true })).toBe("https://hashscan.io/mainnet/account/0.0.1234");
+    expect(chainExplorerLink(hedera, "token", "0.0.5678")).toBe("https://hashscan.io/mainnet/token/0.0.5678");
+    expect(chainExplorerLink(hedera, "tx", "0.0.1@1700000000.000000001")).toBe(
+      "https://hashscan.io/mainnet/transaction/0.0.1@1700000000.000000001",
+    );
+    expect(normalizeAddressForChain(hedera, "0.0.1234")).toBe("0.0.1234");
+  });
+
+  it("explorerTemplates still override", () => {
+    const c = { ...hedera, explorerTemplates: { address: "https://example.test/a/{address}" } };
+    expect(chainExplorerLink(c, "address", "0.0.9")).toBe("https://example.test/a/0.0.9");
+  });
+
+  it("chainForAddress picks the vm's chain by address shape, preferring origin, and honours a preferred key", () => {
+    const chains = [{ ...eth, origin: true }, solana, hedera];
+    expect(chainForAddress(chains, "0xAbC0000000000000000000000000000000000001")?.key).toBe("ethereum");
+    expect(chainForAddress(chains, OWNER)?.key).toBe("solana");
+    expect(chainForAddress(chains, "0.0.1234")?.key).toBe("hedera");
+    expect(chainForAddress(chains, OWNER, "hedera")?.key).toBe("hedera");
+    expect(chainForAddress([eth], OWNER)?.key).toBe("ethereum");
+    expect(chainForAddress([], OWNER)).toBeUndefined();
   });
 });
 

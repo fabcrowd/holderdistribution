@@ -68,20 +68,20 @@ describe("rankTiersByNet", () => {
 
 describe("tierKpis", () => {
   it("never shows a dagger or dash for net, even without a baseline", () => {
-    const k = tierKpis(field("A", 0, { prevCount: null, prevBal: null, addedCount: 111, removedCount: 119 }), "wallets", { fmt });
+    const k = tierKpis(field("A", 0, { prevCount: null, prevBal: null, addedCount: 111, removedCount: 119 }), "wallets", { ticker: "TEL", fmt });
     expect(k.find((x) => x.key === "netWallets")).toMatchObject({ text: "-8", tone: "negative" });
     expect(k.find((x) => x.key === "netTel")!.text).toBe("0");
   });
   it("20 in, 25 out reads -5; exactly zero reads 0", () => {
-    expect(tierKpis(field("A", 0, { addedCount: 20, removedCount: 25 }), "wallets", { fmt }).find((x) => x.key === "netWallets")!.text).toBe("-5");
-    expect(tierKpis(field("A", 0, { addedCount: 7, removedCount: 7 }), "wallets", { fmt }).find((x) => x.key === "netWallets")).toMatchObject({ text: "0", tone: "neutral" });
+    expect(tierKpis(field("A", 0, { addedCount: 20, removedCount: 25 }), "wallets", { ticker: "TEL", fmt }).find((x) => x.key === "netWallets")!.text).toBe("-5");
+    expect(tierKpis(field("A", 0, { addedCount: 7, removedCount: 7 }), "wallets", { ticker: "TEL", fmt }).find((x) => x.key === "netWallets")).toMatchObject({ text: "0", tone: "neutral" });
   });
   it("signs the net and puts the active metric first", () => {
     const f = field("A", 0, { addedCount: 14, removedCount: 10, cause: cause({ inTotal: 50, total: 80 }) });
-    const w = tierKpis(f, "wallets", { fmt });
+    const w = tierKpis(f, "wallets", { ticker: "TEL", fmt });
     expect(w[0].key).toBe("wallets");
     expect(w.find((x) => x.key === "netWallets")).toMatchObject({ text: "+4", tone: "positive" });
-    const t = tierKpis(f, "tel", { fmt });
+    const t = tierKpis(f, "tel", { ticker: "TEL", fmt });
     expect(t[0].key).toBe("tel");
     expect(t.find((x) => x.key === "netTel")).toMatchObject({ text: "-30T", tone: "negative" });
   });
@@ -92,9 +92,9 @@ describe("missing feeds read as a dash, never 0", () => {
   const noOutflows = { hasTransitions: true, hasOutflows: false };
   const f = field("A", 0, { addedCount: 3, removedCount: 1, cause: cause({ inTotal: 5, total: 2 }) });
   it("tierKpis", () => {
-    expect(tierKpis(f, "wallets", { fmt, avail: noTransitions }).find((x) => x.key === "netWallets")).toMatchObject({ text: "—", tone: "neutral" });
-    expect(tierKpis(f, "wallets", { fmt, avail: noTransitions }).find((x) => x.key === "netTel")!.text).toBe("+3T");
-    expect(tierKpis(f, "tel", { fmt, avail: noOutflows }).find((x) => x.key === "netTel")).toMatchObject({ text: "—", tone: "neutral" });
+    expect(tierKpis(f, "wallets", { ticker: "TEL", fmt, avail: noTransitions }).find((x) => x.key === "netWallets")).toMatchObject({ text: "—", tone: "neutral" });
+    expect(tierKpis(f, "wallets", { ticker: "TEL", fmt, avail: noTransitions }).find((x) => x.key === "netTel")!.text).toBe("+3T");
+    expect(tierKpis(f, "tel", { ticker: "TEL", fmt, avail: noOutflows }).find((x) => x.key === "netTel")).toMatchObject({ text: "—", tone: "neutral" });
   });
   it("rankTiersByNet keeps tier order with null nets", () => {
     const r = rankTiersByNet([field("B", 1), field("A", 0)], "wallets", noTransitions);

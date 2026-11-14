@@ -35,7 +35,7 @@ const TileInfo = ({ text, links }: { text?: string | null; links: MethodologyLin
 
 const DetailTile = ({ tile, selectedView }: { tile: EcosystemHeadlineTile; selectedView: DisplaySelection }) => (
   <div className="flex flex-col gap-1">
-    <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <dt className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
       {tile.label}
       {selectedView !== "combined" && tile.scope === "all" && (
         <span className="rounded-sm bg-muted px-1 normal-case tracking-normal" title="Not split by chain: this figure covers all chains">

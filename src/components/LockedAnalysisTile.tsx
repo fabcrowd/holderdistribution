@@ -2,15 +2,11 @@ import { Link } from "react-router-dom";
 import { ExternalLink, Lock, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
+import { COMPACT_LEDGER, formatCompact } from "@/lib/format";
 import { useWalletAnalysis, type WalletAnalysis } from "@/hooks/useWalletAnalysis";
 
-const formatCompactAmount = (value: number | null | undefined) => {
-  if (value == null || !Number.isFinite(value)) return "—";
-  if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
-  if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-  return new Intl.NumberFormat().format(Math.round(value));
-};
+const formatCompactAmount = (value: number | null | undefined) =>
+  formatCompact(value, { ...COMPACT_LEDGER, nonFinite: "—" });
 
 const shortAddr = (a: string) =>
   a.startsWith("0x") && a.length >= 10 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;

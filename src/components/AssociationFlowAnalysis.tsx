@@ -5,6 +5,7 @@ import { ForensicsUnlockGate, useForensicsUnlock } from "@/components/ForensicsG
 import { useProject } from "@/hooks/useProject";
 import { loadAssociationFlowReport } from "@/lib/loadForensics";
 import { chainExplorerLink, type ExplorerChain } from "@/lib/explorerLinks";
+import type { ProjectConfig } from "@/lib/projects";
 
 /**
  * Password-gated forensic reconciliation of stablecoin outflows linked to the
@@ -74,7 +75,21 @@ const BodyText = ({ body, chains }: { body: string; chains: ExplorerChain[] }) =
   );
 };
 
+/**
+ * The report is hand-authored per project and served by the gate; the UI cannot
+ * see whether one exists before unlock, so the panel is an explicit opt-in:
+ * `gated.associationFlows === true`. A category name (`council`) is only a
+ * naming tag and never switches behaviour on.
+ */
+export const showsAssociationFlows = (project: Pick<ProjectConfig, "gated">): boolean =>
+  project.gated?.associationFlows === true;
+
 export const AssociationFlowAnalysis = () => {
+  const { project } = useProject();
+  return showsAssociationFlows(project) ? <AssociationFlowPanel /> : null;
+};
+
+const AssociationFlowPanel = () => {
   const { password, status, unlock } = useForensicsUnlock();
   const { project, slug } = useProject();
   const { data: report, isLoading } = useFlowReport(password, slug);
@@ -112,7 +127,7 @@ export const AssociationFlowAnalysis = () => {
 
           {report.sections.map((s) => (
             <article key={s.heading} className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+              <h4 className="text-xs font-semibold text-foreground">
                 {s.heading}
               </h4>
               <p className="text-xs leading-relaxed text-muted-foreground">

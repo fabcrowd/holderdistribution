@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useProjectCopy } from "@/hooks/useProjectCopy";
 import { useProject } from "@/hooks/useProject";
 import { chainViewLabel } from "@/lib/chainViews";
+import { COMPACT_TOKEN_AMOUNT, formatCompact } from "@/lib/format";
 import {
   Card,
   CardContent,
@@ -49,14 +50,7 @@ type DistributionAnalysisWidgetProps = {
 };
 
 
-const formatTokenAmount = (value: number) => {
-  const absolute = Math.abs(value);
-  if (absolute >= 1e12) return `${(value / 1e12).toFixed(2)}T`;
-  if (absolute >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (absolute >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
-  if (absolute >= 1e3) return `${(value / 1e3).toFixed(2)}K`;
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
-};
+const formatTokenAmount = (value: number) => formatCompact(value, COMPACT_TOKEN_AMOUNT);
 
 const formatInteger = (value: number) => new Intl.NumberFormat().format(value);
 
@@ -215,7 +209,7 @@ const DistributionAnalysisWidget = ({
               </div>
             ) : (
               <div className="px-4 pt-4 sm:px-6">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3 flex items-center justify-center gap-1.5">
+                <p className="text-xs text-muted-foreground font-semibold mb-3 flex items-center justify-center gap-1.5">
                   % of retail by balance range
                   <InfoTooltip text={scopeNote} label="About this chart" className="max-xl:before:-inset-2.5" />
                 </p>

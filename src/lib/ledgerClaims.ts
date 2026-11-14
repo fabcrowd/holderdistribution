@@ -4,6 +4,7 @@
  * list (type + window), an explorer address for a named entity, or a single
  * explorer tx when one transaction backs the claim. Pure; see ledgerClaims.test.ts.
  */
+import { COMPACT_CLAIM, formatCompact } from "@/lib/format";
 import { eventsInWindow, windowDays, type LedgerEvent, type LedgerReport, type LedgerWindow } from "@/lib/projectWallets";
 
 export type TxFilter = { label: string; types?: string[]; headline?: boolean; counterparty?: string; internal?: boolean };
@@ -18,13 +19,7 @@ export type Claim = { key: string; segs: ClaimSeg[] };
 
 export const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 
-const compact = (n: number) => {
-  const a = Math.abs(n);
-  if (a >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
-  if (a >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
-  if (a >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
-  return `${Math.round(n)}`;
-};
+const compact = (n: number) => formatCompact(n, COMPACT_CLAIM);
 const usd = (n: number) => `$${compact(n).replace(/^(\d+)$/, (m) => Number(m).toLocaleString("en-US"))}`;
 
 export const matchFilter = (e: LedgerEvent, f: TxFilter): boolean =>

@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { COMPACT_LEDGER, formatCompact } from "@/lib/format";
 import {
   explorerAddress,
   explorerChainForCenter,
@@ -29,12 +30,7 @@ import {
   type PnlTx,
 } from "@/lib/dispositionPnl";
 
-const formatCompactAmount = (value: number) => {
-  if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
-  if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
-  if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-  return new Intl.NumberFormat().format(Math.round(value));
-};
+const formatCompactAmount = (value: number) => formatCompact(value, COMPACT_LEDGER);
 
 const formatUsd = (value: number) =>
   new Intl.NumberFormat(undefined, {
@@ -153,7 +149,7 @@ const CostCenterBody = ({ center }: { center: CostCenter }) => {
         <div className="space-y-2">
           {income.length > 0 && (
             <div>
-              <p className="flex items-center gap-1 px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="flex items-center gap-1 px-2 pb-1 text-xs font-semibold text-muted-foreground">
                 Income
                 <InfoTooltip text="USDC or USDT received when this wallet sold TEL. That is income from the sale — not an accrual P&L." />
               </p>
@@ -164,7 +160,7 @@ const CostCenterBody = ({ center }: { center: CostCenter }) => {
           )}
           {movements.length > 0 && (
             <div>
-              <p className="flex items-center gap-1 px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="flex items-center gap-1 px-2 pb-1 text-xs font-semibold text-muted-foreground">
                 Uses of TEL
                 <InfoTooltip text="TEL that left this wallet. Sold for stablecoin is a conversion. Sent to another Association wallet is a transfer between cost centers, not a cost." />
               </p>
@@ -210,7 +206,7 @@ export const DispositionPnlView = ({
   return (
     <div className="space-y-3">
       <div className="rounded-lg border border-border/50 bg-background/60 px-3 py-2.5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="text-xs font-semibold text-muted-foreground">
           P&amp;L by cost center
         </p>
         <p className="mt-1 text-sm font-medium text-foreground">

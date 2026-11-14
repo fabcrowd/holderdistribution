@@ -78,7 +78,7 @@ export const BotClusterSection = ({ report, proceeds, win }: { report: LedgerRep
       <p>{`${Math.round(b.devShare * 1000) / 10}% of its funding came from developer wallets, so that share of its ${fmtTel(b.windows[win]?.sold ?? 0)} ${t} sold in ${win} (${fmtInt(b.windows[win]?.sales ?? 0)} sales) counts as developer selling: ${fmtTel(b.windows[win]?.devShare ?? 0)} ${t}.`}</p>
       {ev && (
         <div data-testid="pw-bot-evidence">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Funding evidence</p>
+          <p className="mb-1 text-xs font-semibold text-muted-foreground">Funding evidence</p>
           <ul className="space-y-1">
             {ev.funding.map((f) => (
               <li key={f.label} className="flex flex-wrap items-center gap-2">
@@ -93,7 +93,7 @@ export const BotClusterSection = ({ report, proceeds, win }: { report: LedgerRep
       )}
       {sum && (
         <div data-testid="pw-bot-proceeds">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proceeds traced ({fmtInt(sum.salesTraced)} sales, {fmtTel(sum.tokenSold)} {t}; developer share {fmtTel(sum.tokenSoldDevShare)})</p>
+          <p className="mb-1 text-xs font-semibold text-muted-foreground">Proceeds traced ({fmtInt(sum.salesTraced)} sales, {fmtTel(sum.tokenSold)} {t}; developer share {fmtTel(sum.tokenSoldDevShare)})</p>
           <ul className="space-y-1">
             {sum.destinations.slice(0, 8).map((d, i) => (
               <li key={i} className="flex flex-wrap items-center gap-2">

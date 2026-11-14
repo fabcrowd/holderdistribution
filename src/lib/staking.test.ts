@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { combinedStaked, historyStakingPoint, v3StakedOn, v3StakingGapEvents } from "./staking";
+import { combinedStaked, historyStakingPoint, networkStakeOf, networkStakeTile, v3StakedOn, v3StakingGapEvents } from "./staking";
 
 describe("staking (legacy + v3)", () => {
   it("v3 is 0 before the deploy, unknown in the gap, measured when recorded", () => {
@@ -43,5 +43,35 @@ describe("staking (legacy + v3)", () => {
     expect(e.date).toBe("2026-09-01");
     expect(e.summary).toMatch(/^The staked total now includes/);
     expect(v3StakingGapEvents("2026-10-02", undefined, undefined, "TEL")[0].summary).toMatch(/^Staked TEL now includes the v3 StakingModule/);
+  });
+});
+
+describe("network stake (informational tile)", () => {
+  const good = { available: true as const, stakedTotal: 13_456_711_853, stakingPeriod: { start: "2026-11-13T00:00:00.000Z", end: "2026-11-14T00:00:00.000Z" } };
+
+  it("is null when the feed carries no block, so no tile", () => {
+    expect(networkStakeOf(undefined)).toBeNull();
+    expect(networkStakeOf({ views: {} })).toBeNull();
+    expect(networkStakeOf({ networkStake: null })).toBeNull();
+  });
+
+  it("passes a usable block through", () => {
+    expect(networkStakeOf({ networkStake: { chainKey: "x", ...good, extra: 1 } })).toEqual(good);
+  });
+
+  it.each([
+    ["says unavailable", { available: false, reason: "mirror down" }, "mirror down"],
+    ["has a zero total", { ...good, stakedTotal: 0 }, "no figure published"],
+    ["has a non-numeric total", { ...good, stakedTotal: "13" }, "no figure published"],
+    ["has no staking period", { available: true, stakedTotal: 5 }, "no figure published"],
+  ])("a block that %s is unavailable, never a number", (_l, block, reason) => {
+    expect(networkStakeOf({ networkStake: block })).toEqual({ available: false, reason });
+  });
+
+  it("derives the amount, share of supply target and the UTC period day", () => {
+    expect(networkStakeTile(good, 50_000_000_000)).toEqual({ kind: "available", amount: 13_456_711_853, shareOfSupply: 13_456_711_853 / 50e9, periodDay: "2026-11-13" });
+    expect(networkStakeTile(good, undefined)).toMatchObject({ kind: "available", shareOfSupply: null });
+    expect(networkStakeTile(good, 0)).toMatchObject({ shareOfSupply: null });
+    expect(networkStakeTile({ available: false, reason: "x" }, 50e9)).toEqual({ kind: "unavailable" });
   });
 });

@@ -61,8 +61,20 @@ export const PITCH = 66; // vertical distance between two tiers' row tops
 // height already reads as visual weight at the bottom edge, so it doesn't
 // need a full top-pad's worth of extra breathing room to feel balanced.
 const BOTTOM_PAD = 16;
-/** Canvas height for `n` tier rows (TEL's 10 -> 682). */
-export const canvasHeight = (n: number): number => TOP_PAD + PITCH * (Math.max(1, n) - 1) + TIER_H + BOTTOM_PAD;
+// Side tiles: 4 sources on the left, 4 sinks on the right (see sideTop below).
+export const SIDE_COUNT = 4;
+export const SIDE_H = 56;
+export const SIDE_PITCH = 68;
+const SIDE_STACK_H = SIDE_H + SIDE_PITCH * (SIDE_COUNT - 1); // 260
+/**
+ * Canvas height for `n` tier rows (TEL's 10 -> 682). Never shorter than the
+ * side-tile stack plus the same pads, so a 2-4 tier project doesn't clip it.
+ */
+export const canvasHeight = (n: number): number =>
+  Math.max(
+    TOP_PAD + PITCH * (Math.max(1, n) - 1) + TIER_H + BOTTOM_PAD,
+    TOP_PAD + SIDE_STACK_H + BOTTOM_PAD,
+  );
 export const CANVAS_H = canvasHeight(TIERS.length); // 682
 
 export const SRC_X = 8;
@@ -110,14 +122,12 @@ export const tierBarFraction = (pct: number): number => {
 
 // --- Side tiles (4 sources on the left, 4 sinks on the right — same y
 // positions on both sides so a "came" and "went" row line up horizontally) ---
-export const SIDE_COUNT = 4;
-export const SIDE_H = 56;
-export const SIDE_PITCH = 68;
 // Centered on the tier stack's vertical span, not pinned to the top —
 // 4 tiles at 68px pitch span 3*68+56 = 260px; center that within CANVAS_H.
 // `canvasH` defaults to TEL's 682; the diagram passes the active project's.
+// Clamped at 0 so a canvas shorter than the stack can't push tiles off-top.
 export const sideTop = (j: number, canvasH: number = CANVAS_H): number =>
-  Math.round((canvasH - (SIDE_H + SIDE_PITCH * (SIDE_COUNT - 1))) / 2) + SIDE_PITCH * j;
+  Math.max(0, Math.round((canvasH - SIDE_STACK_H) / 2)) + SIDE_PITCH * j;
 export const sideCenterY = (j: number, canvasH: number = CANVAS_H): number => sideTop(j, canvasH) + SIDE_H / 2;
 
 // --- Bezier paths ---

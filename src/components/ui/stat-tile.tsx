@@ -70,7 +70,7 @@ export const StatTile = ({ label, value, sub, valueClassName, info, className }:
               className,
             )}
           >
-            <span className="block w-full text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+            <span className="block w-full text-xs font-semibold text-muted-foreground">{label}</span>
             <span className={cn("block w-full whitespace-nowrap text-base font-bold sm:text-2xl", valueClassName)}>{value}</span>
             {sub != null && <span className="block w-full text-xs text-muted-foreground">{sub}</span>}
             <Info aria-hidden="true" className="mt-auto h-3 w-3 text-muted-foreground/70" />
