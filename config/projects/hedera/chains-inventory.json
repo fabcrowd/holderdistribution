@@ -1,0 +1,27 @@
+{
+  "$comment": "Onboarding step 1 (docs/MULTI-TOKEN.md): every chain the token is on, configured or not, with sources. Regenerate with scripts/chain-inventory.js; add/override rows with --extra. Excluded/not-found rows need a reason.",
+  "schemaVersion": 1,
+  "slug": "hedera",
+  "ticker": "HBAR",
+  "generatedAt": "2026-11-14T02:45:19.309Z",
+  "coingecko": "hedera-hashgraph",
+  "chains": [
+    {
+      "chain": "hedera",
+      "vm": "hedera",
+      "status": "configured",
+      "tokens": [
+        {
+          "address": "native",
+          "decimals": 8,
+          "generation": null,
+          "tokenStatus": null,
+          "explorer": null,
+          "totalSupply": 50000000000,
+          "supplyShare": 1
+        }
+      ],
+      "source": "config/projects/hedera.json chains[]; totalSupply via public RPC"
+    }
+  ]
+}
