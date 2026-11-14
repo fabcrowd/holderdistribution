@@ -1,0 +1,87 @@
+{
+  "$comment": "Scaffolded by scripts/add-project.js on 2026-11-14. Verify every address before publishing; see docs/MULTI-TOKEN.md \"Adding the next project\".",
+  "slug": "hedera",
+  "name": "Hedera",
+  "ticker": "HBAR",
+  "description": "",
+  "image": "/tokens/hedera.png",
+  "data": {
+    "legacyRoot": false,
+    "dir": "public/data/hedera"
+  },
+  "supply": {
+    "target": 50000000000,
+    "generationsSumOneToOne": false,
+    "coingeckoId": "hedera-hashgraph",
+    "circulating": {
+      "subtract": [
+        "treasury",
+        "holdings",
+        "team"
+      ]
+    }
+  },
+  "holders": {
+    "megaHolderThreshold": 10000000000
+  },
+  "chains": [
+    {
+      "key": "hedera",
+      "name": "Hedera",
+      "vm": "hedera",
+      "bridge": "native",
+      "origin": true,
+      "asset": {
+        "kind": "native",
+        "decimals": 8
+      },
+      "contracts": {
+        "whbar": {
+          "address": "0.0.1456985",
+          "role": "dex",
+          "$comment": "WHBAR contract (token 0.0.1456986, 8 decimals): its HBAR backs wrapped HBAR in SaucerSwap and other DEX pools. Owner decision 2026-11-08: DEX/wrapped, no look-through to WHBAR holders."
+        }
+      }
+    }
+  ],
+  "staking": [],
+  "treasury": {
+    "categories": [
+      "treasury"
+    ]
+  },
+  "health": {
+    "feeds": {
+      "funding-wallets.json": {
+        "disabled": true
+      }
+    }
+  },
+  "gated": {
+    "forensics": true,
+    "walletFlows": {
+      "coingeckoId": "hedera-hashgraph",
+      "chains": [
+        "hedera"
+      ]
+    }
+  },
+  "capabilities": {
+    "projectWallets": false
+  },
+  "classification": {
+    "exclusions": "config/projects/hedera/exclusions.json",
+    "cexWallets": "config/projects/hedera/cex-wallets.json"
+  },
+  "nightly": {
+    "waivers": {
+      "staker-balances": "HBAR has no staking contract: network staking is protocol-level and shown as an informational tile (mirror /network/stake, owner decision 2026-11-08), never subtracted from holders.",
+      "history-gaps": "fill-history-gaps.js only repairs EVM block-timestamp gaps; HBAR history is forward-only from its first settled snapshot (owner decision 2026-11-11).",
+      "cex-candidates": "detect-cex-candidates.js scans an EVM transfer graph only; HBAR exchange accounts come from proof-of-reserves and reviewed lists (scripts/lib/hedera/cexAccounts.js)."
+    }
+  },
+  "pipeline": {
+    "workflowTimeoutMinutes": 270,
+    "holdersScanTimeoutMinutes": 120
+  }
+}

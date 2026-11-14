@@ -89,7 +89,7 @@ Both VMs produce the same `ledger.json` and `bot-proceeds.json` schema and the s
 
 ## Hedera (HBAR)
 
-HBAR is not registered; this branch is built and tested locally and has not run on GitHub.
+HBAR is registered as onboarding (2026-11-13); this branch is built and tested locally and has not run on GitHub.
 `build-ledger.js` reads Hedera chains through `scripts/lib/hedera/ledgerSource.js` and the mirror node
 (provider `hedera-mirror`), with the same `ledger.json` schema and UI.
 
