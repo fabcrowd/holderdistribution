@@ -1,0 +1,269 @@
+{
+  "schemaVersion": 1,
+  "project": "hedera",
+  "generatedAt": "2026-11-14T20:47:32.209Z",
+  "healthy": false,
+  "problems": [
+    "wallet-flows: missing",
+    "ledger: missing"
+  ],
+  "jobs": [
+    {
+      "id": "holders",
+      "workflow": "refresh-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/hedera/holders-summary.json",
+          "maxAgeHours": 30,
+          "ageHours": 0,
+          "generatedAt": "2026-11-14T20:47:05.971Z",
+          "status": "fresh"
+        },
+        {
+          "path": "public/data/hedera/holders-history.json",
+          "maxAgeHours": 30,
+          "ageHours": 0,
+          "generatedAt": "2026-11-14T20:47:19.364Z",
+          "status": "fresh"
+        },
+        {
+          "path": "public/data/hedera/supply-reconciliation.json",
+          "maxAgeHours": 30,
+          "ageHours": 0,
+          "generatedAt": "2026-11-14T20:47:26.000Z",
+          "status": "fresh"
+        },
+        {
+          "path": "public/data/hedera/cex-wallets.json",
+          "maxAgeHours": 30,
+          "ageHours": 0,
+          "generatedAt": "2026-11-14T20:47:11.696Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-14",
+        "cu": 0
+      }
+    },
+    {
+      "id": "exchange-flows",
+      "workflow": "refresh-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/hedera/exchange-flow-history.json",
+          "maxAgeHours": 30,
+          "ageHours": 0,
+          "generatedAt": "2026-11-14T20:47:30.521Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-14",
+        "cu": 0
+      }
+    },
+    {
+      "id": "tier-outflows",
+      "workflow": "refresh-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [
+        {
+          "path": "public/data/hedera/tier-outflows.json",
+          "maxAgeHours": 30,
+          "ageHours": 0,
+          "generatedAt": "2026-11-14T20:47:30.711Z",
+          "status": "fresh"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-14",
+        "cu": 0
+      }
+    },
+    {
+      "id": "solana-flows",
+      "workflow": "refresh-holders.yml",
+      "status": "n/a",
+      "reason": "lacks solana",
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "n/a",
+      "outputs": []
+    },
+    {
+      "id": "hedera-flows",
+      "workflow": "refresh-holders.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [],
+      "alchemyCuLatest": {
+        "day": "2026-11-14",
+        "cu": 0
+      }
+    },
+    {
+      "id": "staker-balances",
+      "workflow": "refresh-holders.yml",
+      "status": "waived",
+      "reason": "HBAR has no staking contract: network staking is protocol-level and shown as an informational tile (mirror /network/stake, owner decision 2026-11-08), never subtracted from holders.",
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "waived",
+      "outputs": []
+    },
+    {
+      "id": "solana-staking",
+      "workflow": "refresh-holders.yml",
+      "status": "n/a",
+      "reason": "lacks zebecStakeV1",
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "n/a",
+      "outputs": []
+    },
+    {
+      "id": "history-gaps",
+      "workflow": "refresh-holders.yml",
+      "status": "waived",
+      "reason": "fill-history-gaps.js only repairs EVM block-timestamp gaps; HBAR history is forward-only from its first settled snapshot (owner decision 2026-11-11).",
+      "providers": [],
+      "alchemyOnly": true,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "waived",
+      "outputs": []
+    },
+    {
+      "id": "wallet-flows",
+      "workflow": "refresh-wallet-flows.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "coingecko"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "missing",
+      "outputs": [
+        {
+          "path": "data/hedera/forensics/wallet-flows.json",
+          "maxAgeHours": 30,
+          "ageHours": null,
+          "generatedAt": null,
+          "status": "missing"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-14",
+        "cu": 0
+      }
+    },
+    {
+      "id": "ledger",
+      "workflow": "refresh-ledger.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public",
+        "etherscan"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "missing",
+      "outputs": [
+        {
+          "path": "data/hedera/ledger/ledger.json",
+          "maxAgeHours": 30,
+          "ageHours": null,
+          "generatedAt": null,
+          "status": "missing"
+        }
+      ],
+      "alchemyCuLatest": {
+        "day": "2026-11-14",
+        "cu": 0
+      }
+    },
+    {
+      "id": "cex-candidates",
+      "workflow": "detect-cex-candidates.yml",
+      "status": "waived",
+      "reason": "detect-cex-candidates.js scans an EVM transfer graph only; HBAR exchange accounts come from proof-of-reserves and reviewed lists (scripts/lib/hedera/cexAccounts.js).",
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "waived",
+      "outputs": []
+    },
+    {
+      "id": "cex-sync",
+      "workflow": "sync-cex-wallets.yml",
+      "status": "run",
+      "reason": null,
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "ok",
+      "outputs": [],
+      "alchemyCuLatest": {
+        "day": "2026-11-14",
+        "cu": 0
+      }
+    }
+  ]
+}
