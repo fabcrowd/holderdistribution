@@ -35,6 +35,7 @@ import { projectHolderTiers, rangeLabelOf } from "./lib/holderTiers.js";
 import { normalizeAnyAddress } from "./lib/address.js";
 import { emptyTransitions } from "./lib/emptyTransitions.js";
 import { inheritAsOf } from "./lib/asOf.js";
+import { hydrateChainHolders } from "./lib/snapshotFormat.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk and in git history) and its own non-retail lists. Tier
@@ -117,7 +118,7 @@ const main = async () => {
   // transitions matrix despite its combined tier genuinely changing.
   const aggregateBalances = (snap, fund) => {
     const bal = new Map();
-    for (const chain of Object.values(snap.chains ?? {})) {
+    for (const chain of Object.values(hydrateChainHolders(snap).chains ?? {})) {
       for (const h of chain.holders ?? []) {
         const a = normalizeAnyAddress(h.address ?? "");
         if (!a || excl.has(a)) continue;

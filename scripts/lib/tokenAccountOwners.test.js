@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { loadNonRetailSet } from "./nonRetailSet.js";
 import { projectNonRetailPaths, projectRoleAddresses, ROLE_SUPPLY_CATEGORIES } from "./projects.js";
 import { mergeRoleExclusions } from "./reconcileSupply.js";
+import { hydrateChainHolders } from "./snapshotFormat.js";
 
 const VAULT_TOKEN_ACCOUNT = "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
 const VAULT_OWNER = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
@@ -140,7 +141,8 @@ ${r.stderr}` };
     const r = run("resync-chain-holders.js");
     expect(r.out).not.toMatch(/ReferenceError/);
     expect(r.status, r.out).toBe(0);
-    const snap = JSON.parse(fs.readFileSync(path.join(tmp, `public/data/${SLUG}/tel-holders.json`), "utf8"));
+    // A single-chain snapshot is written slim: rebuild holders[] the way every reader does.
+    const snap = hydrateChainHolders(JSON.parse(fs.readFileSync(path.join(tmp, `public/data/${SLUG}/tel-holders.json`), "utf8")));
     expect(snap.chains.solana.holders.map((h) => h.address)).toEqual([ALICE]);
     expect(snap.chains.solana.metrics.retail.totalBalance ?? snap.chains.solana.metrics.totalBalance).toBe(2000);
   });

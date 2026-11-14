@@ -3,6 +3,7 @@ import { reconcileDistributionCounts } from "./holderHistoryReconcile.js";
 import { applyV3Staking, summarizeStaking } from "./v3Staking.js";
 import { normalizeAnyAddress } from "./address.js";
 import { snapshotComparison } from "./cexFlows.js";
+import { hydrateChainHolders } from "./snapshotFormat.js";
 
 // TEL's historical values. They are also config/holder-tiers.default.json and
 // TEL's `holders` block (holderTiers.test.js pins all three together). A run
@@ -364,7 +365,7 @@ export const buildOverlapStats = (chains, chainOrder) => {
 export const buildSnapshotData = (snapshot, fundingWallets, isNonRetailAddress, v3Staking = null) => {
   if (!snapshot) return null;
   const chains = applyV3Staking(
-    applyStaking(buildChainHolders(snapshot, isNonRetailAddress), fundingWallets),
+    applyStaking(buildChainHolders(hydrateChainHolders(snapshot), isNonRetailAddress), fundingWallets),
     v3Staking,
   );
   const chainOrder = snapshot.chainOrder ?? Object.keys(chains);

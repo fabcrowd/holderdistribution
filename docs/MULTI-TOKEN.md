@@ -188,6 +188,8 @@ File names are the same for every project (`tel-holders.json`,
 `mkdir -p` the data dir before writing. TEL's files are **not** moved into
 `public/data/tel/`.
 
+**Snapshot layout and size.** A project with exactly one chain writes `tel-holders.json` (and `tel-holders-previous.json`) slim (`scripts/lib/snapshotFormat.js`): `chains.<chain>.holders` is dropped, the addresses it left out of `wallets[]` are stored as `chains.<chain>.holdersOmitted`, wallets are written one per line and the file carries `layout: "slim-v1"`. Readers call `hydrateChainHolders` to rebuild the list; old-layout files (TEL, git history) still read unchanged. The writer warns from 50 MiB and refuses 95 MiB or more (GitHub rejects files of 100 MiB); `trackedFileSizes.test.js` fails if a tracked data file reaches that size.
+
 ### Address resolution
 
 Ported scripts read every address from the project, never a literal:
