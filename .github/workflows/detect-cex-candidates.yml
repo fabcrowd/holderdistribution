@@ -8,8 +8,8 @@ name: Detect CEX wallet candidates
 # review queue for a human to confirm and promote.
 on:
   schedule:
-    # Weekly, Sunday 02:00 UTC — after the daily holders snapshot so
-    # tel-holders.json is fresh.
+    # Weekly, Sunday 02:00 UTC. Reads the tel-holders.json committed on main
+    # (the latest nightly snapshot); it does not wait for that day's refresh.
     - cron: '0 2 * * 0'
   workflow_dispatch:
     inputs:

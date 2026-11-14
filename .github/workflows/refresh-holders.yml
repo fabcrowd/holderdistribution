@@ -39,7 +39,10 @@ name: Refresh holders snapshots
 # committed copy from GitHub — see docs/DEPLOYMENT.md "Live data".
 on:
   schedule:
-    - cron: '0 6 * * *'
+    # 01:07 UTC, not 06:00: GitHub creates scheduled runs hours late, and the lag
+    # grows through the US day (measured: 00:00 UTC slots created ~04:00-06:00 UTC,
+    # 06:00 UTC slots ~13:00-15:00 UTC). 01:07 lands overnight US Eastern.
+    - cron: '7 1 * * *'
   workflow_dispatch:
     inputs:
       project:

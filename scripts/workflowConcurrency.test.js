@@ -23,7 +23,7 @@ const ALLOWLIST = {
   "onboard-project.yml":
     "dispatches and waits on holders-refresh workflows, so joining that group would deadlock; it pushes only config edits through push-main.sh's rebase-retry",
   "detect-cex-candidates.yml":
-    "weekly cron (Sunday 02:00 UTC); behind a long run it would be replaced as pending by the 06:00 refresh and dropped for a week",
+    "weekly cron (Sunday 02:00 UTC); behind a long run it would be replaced as pending by the nightly refresh and dropped for a week",
 };
 
 const WRITES_MAIN = /push-main\.sh|git(\s+-C\s+\S+)?\s+push/;
