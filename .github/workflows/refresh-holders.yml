@@ -49,6 +49,11 @@ on:
         description: "Project slug from config/projects.json, or 'all' (non-default projects commit public/data/<slug>/** and data/<slug>/**)"
         required: false
         default: 'all'
+      force:
+        description: "Redo the snapshot even if today's is already published. The redo has no previous-day snapshot, so cex-flows loses its day comparison until the next nightly. Use after a same-day config change (tiers, exclusions, CEX list); onboarding passes it."
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -159,7 +164,33 @@ jobs:
           # Every pipeline process appends its RPC call counts here (scripts/lib/rpcMetrics.js).
           echo "HD_METRICS_FILE=$RUNNER_TEMP/rpc-metrics.ndjson" >> "$GITHUB_ENV"
 
+      - name: Already published today?
+        # One snapshot per day. A second run on the same day (GitHub's scheduler is
+        # hours late and manual dispatches happen) has no usable previous snapshot
+        # (<x>-holders-previous.json is a same-run scratch file and a same-day prior
+        # never rotates into it), so redoing the snapshot would publish a cex-flows
+        # comparison of "no-previous-snapshot" over the first run's good one.
+        # When the committed snapshot already carries the stamp this run would
+        # produce, every snapshot step from "Refresh staker balances" through
+        # "Commit snapshot changes" is skipped (gate: env.HD_SNAPSHOT_DONE).
+        # The downstream stages are checkpointed and keep running, so a rerun can
+        # still repair a failed downstream stage. `force` (workflow_dispatch input;
+        # empty on a schedule event, which counts as not forced) redoes the snapshot.
+        env:
+          FORCE: ${{ inputs.force }}
+        run: |
+          fail() { echo "::error title=Snapshot check failed::$1"; exit 1; }
+          ARGS=()
+          if [ "$FORCE" = "true" ]; then ARGS+=(--force); fi
+          OUT=$(node scripts/workflow-paths.js done "$HD_PROJECT_SLUG" "${ARGS[@]}") || fail "could not check the committed snapshot; the reason is in this step's log"
+          echo "$OUT" >> "$GITHUB_ENV"
+          if echo "$OUT" | grep -qx 'HD_SNAPSHOT_DONE=true'; then
+            REASON=$(echo "$OUT" | sed -n 's/^HD_SNAPSHOT_DONE_REASON=//p')
+            echo "::notice title=Snapshot already published::${HD_PROJECT_SLUG}: ${REASON}; snapshot steps skipped, downstream stages still run"
+          fi
+
       - name: Refresh staker balances
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         # NON-FATAL, deliberately. This step is the pipeline's heaviest RPC
         # consumer (a stakedBy() eth_call per candidate address, ~6,700 of
         # them), so it is the first thing to die when the Alchemy account hits
@@ -198,6 +229,7 @@ jobs:
         run: node scripts/pull-staker-balances.js
 
       - name: Pull Solana staking positions
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         # Non-fatal: on failure the lite feed keeps the previous staking file's
         # numbers (or none) and holders still publish. Exits 0 immediately for a
         # project with no zebecStakeV1 staking entry (e.g. TEL).
@@ -214,6 +246,7 @@ jobs:
         run: node scripts/pull-solana-staking.js
 
       - name: Restore partial holders checkpoint
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         # A scan killed mid-way (timeout-minutes, a dead endpoint) leaves
         # $HD_WORK_DIR/holders-partial-<chain>.json (scripts/lib/partialCheckpoint.js);
         # the next run resumes from it instead of from genesis. Kept in the Actions
@@ -233,6 +266,7 @@ jobs:
           restore-keys: holders-partial-${{ matrix.slug }}-
 
       - name: Refresh holders snapshot (public RPC first)
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         # Log scan. The Alchemy free tier caps eth_getLogs at 10 blocks, which
         # made this step ~23 billed minutes a day; the public nodes take wide
         # ranges. Keys are still the fallback inside getUsableRpcUrls, and the
@@ -253,7 +287,7 @@ jobs:
         # Runs for every project when the first attempt failed. On keys where the
         # project has them; for a public-only source it is a same-run resume from
         # the partial checkpoint the first step left.
-        if: ${{ steps.holders_public.outcome == 'failure' }}
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' && steps.holders_public.outcome == 'failure' }}
         timeout-minutes: ${{ matrix.holdersRetryTimeout }}
         env:
           HD_JOB_ID: holders   # config/nightly-jobs.json: provider order + Alchemy budget guard
@@ -270,30 +304,36 @@ jobs:
         # (Hedera) keeps its finished state, so this step also runs after success:
         # ~25 MB per run under a new key; GitHub evicts cache entries unused for
         # 7 days, so it stays far under the 10 GB limit.
-        if: ${{ always() && hashFiles(format('{0}/holders-partial-*.json', env.HD_WORK_DIR)) != '' }}
+        if: ${{ always() && env.HD_SNAPSHOT_DONE != 'true' && hashFiles(format('{0}/holders-partial-*.json', env.HD_WORK_DIR)) != '' }}
         uses: actions/cache/save@v4
         with:
           path: ${{ env.HD_WORK_DIR }}/holders-partial-*.json
           key: holders-partial-${{ matrix.slug }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Refresh CEX wallets and flows
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         env:
           HD_JOB_ID: holders
         run: node scripts/pull-cex-wallets.js
 
       - name: Generate holders lite snapshot
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         run: node scripts/generate-holders-lite.js
 
       - name: Update holders history snapshot
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         run: node scripts/generate-holders-history.js
 
       - name: Generate holder tier transitions
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         run: node scripts/generate-holder-transitions.js
 
       - name: Reconcile supply breakdown
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         run: node scripts/reconcile-supply.js
 
       - name: Append today's treasury balances
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         # Must run AFTER reconcile-supply.js — it reads that script's category
         # totals rather than recomputing them, so there is only one definition
         # of what counts as treasury/council/holdings/escrow. The historical
@@ -302,6 +342,7 @@ jobs:
         run: node scripts/append-treasury-history.js
 
       - name: Sync the served classification changelog
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         # The app fetches public/data/classification-changelog.json, a COPY of
         # the hand-curated config/ file. Editing config/ alone leaves the UI
         # showing no reclassification marker — silently, with no error. Syncing
@@ -309,6 +350,7 @@ jobs:
         run: node scripts/sync-classification-changelog.js
 
       - name: Verify generated files
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         # The list is per project (HD_REQUIRED_FILES, workflowPlan): the shared
         # set, plus funding-wallets.json for a project with a StakeChanged
         # staking contract, plus solana-staking.json for a Solana staking one.
@@ -323,6 +365,7 @@ jobs:
           echo "All required files generated successfully"
 
       - name: Check cross-feed consistency
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         # Shape validation (validate-outputs.js) passes when every file is
         # individually well-formed but they disagree with each other — which is
         # exactly what happened on 2026-08-29, when two feeds reported
@@ -344,6 +387,7 @@ jobs:
 
       - name: Commit snapshot changes
         id: commit
+        if: ${{ env.HD_SNAPSHOT_DONE != 'true' }}
         run: |
           FILES_TO_CHECK=$(node scripts/workflow-paths.js files public/data/funding-wallets.json public/data/tel-holders.json public/data/holders-summary.json public/data/holders-history.json public/data/cex-wallets.json public/data/cex-flows.json public/data/cex-balance-history.json public/data/holders-lite.json public/data/holders-checkpoint.json public/data/chain-status.json public/data/holder-transitions.json public/data/holders-ever-checkpoint.json public/data/supply-reconciliation.json public/data/treasury-history.json public/data/classification-changelog.json public/data/date-blocks.json data/holders-asof-blocks.json)
 

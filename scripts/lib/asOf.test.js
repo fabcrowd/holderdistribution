@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveSettledDate, settledBlockFor, buildAsOf, planPins, finalizeAsOf, shouldEmitRow, inheritAsOf, rowDateOf, aheadAction, hasSettledRow, mergeTopLevelAsOf } from "./asOf.js";
+import { resolveSettledDate, settledBlockFor, buildAsOf, planPins, finalizeAsOf, shouldEmitRow, inheritAsOf, rowDateOf, aheadAction, hasSettledRow, mergeTopLevelAsOf, expectedStamp, snapshotAlreadyPublished } from "./asOf.js";
 
 const cutoffs = { ethereum: { "2026-11-06": 1000, "2026-11-05": 900 }, polygon: { "2026-11-06": 5000 } };
 
@@ -123,5 +123,62 @@ describe("mergeTopLevelAsOf", () => {
     const undated = { date: null, blocks: {}, settled: false };
     expect(mergeTopLevelAsOf(nightly, undated)).toBe(nightly);
     expect(mergeTopLevelAsOf(undated, gapFill)).toBe(gapFill);
+  });
+});
+
+describe("expectedStamp / snapshotAlreadyPublished (same-day rerun gate)", () => {
+  const evm = { chains: [{ key: "ethereum" }, { key: "polygon", vm: "evm" }] };
+  const sol = { chains: [{ key: "solana", vm: "solana" }] };
+  const mixed = { chains: [{ key: "ethereum" }, { key: "solana" }] };
+  const hedera = { chains: [{ key: "hedera", vm: "hedera" }] };
+  const now = new Date("2026-11-14T01:07:00Z");
+  const settledStamp = (date) => ({ date, blocks: { ethereum: 1 }, settled: true });
+  const liveStamp = (date) => ({ date, blocks: { solana: 1 }, settled: false, live: ["solana"] });
+
+  it("EVM and Hedera projects expect the settled previous day", () => {
+    expect(expectedStamp(evm, now)).toEqual({ date: "2026-11-13", settled: true });
+    expect(expectedStamp(hedera, now)).toEqual({ date: "2026-11-13", settled: true });
+  });
+  it("a Solana project, alone or mixed with EVM, expects live with the run day", () => {
+    expect(expectedStamp(sol, now)).toEqual({ date: "2026-11-14", settled: false });
+    expect(expectedStamp(mixed, now)).toEqual({ date: "2026-11-14", settled: false });
+  });
+  it("uses the UTC day at the day edges", () => {
+    expect(expectedStamp(evm, new Date("2026-11-14T00:00:30Z")).date).toBe("2026-11-13");
+    expect(expectedStamp(evm, new Date("2026-11-14T23:59:30Z")).date).toBe("2026-11-13");
+    expect(expectedStamp(sol, new Date("2026-11-14T00:00:30Z")).date).toBe("2026-11-14");
+    expect(expectedStamp(sol, new Date("2026-11-14T23:59:30Z")).date).toBe("2026-11-14");
+  });
+
+  it("first run of the day (committed stamp is the day before) is not published", () => {
+    expect(snapshotAlreadyPublished(settledStamp("2026-11-12"), expectedStamp(evm, now))).toBe(false);
+    expect(snapshotAlreadyPublished(liveStamp("2026-11-13"), expectedStamp(sol, now))).toBe(false);
+  });
+  it("a same-day settled rerun and a same-day live rerun are published", () => {
+    expect(snapshotAlreadyPublished(settledStamp("2026-11-13"), expectedStamp(evm, now))).toBe(true);
+    expect(snapshotAlreadyPublished(liveStamp("2026-11-14"), expectedStamp(sol, now))).toBe(true);
+  });
+  it("a settled committed stamp never satisfies a live expectation, nor the reverse", () => {
+    expect(snapshotAlreadyPublished(settledStamp("2026-11-14"), expectedStamp(sol, now))).toBe(false);
+    expect(snapshotAlreadyPublished(liveStamp("2026-11-13"), expectedStamp(evm, now))).toBe(false);
+  });
+  it("a stamp with unpinned or incomplete entries is not published", () => {
+    expect(snapshotAlreadyPublished({ ...settledStamp("2026-11-13"), unpinned: ["base"] }, expectedStamp(evm, now))).toBe(false);
+    expect(snapshotAlreadyPublished({ ...settledStamp("2026-11-13"), incomplete: ["base"] }, expectedStamp(evm, now))).toBe(false);
+    expect(snapshotAlreadyPublished({ ...liveStamp("2026-11-14"), incomplete: ["solana"] }, expectedStamp(sol, now))).toBe(false);
+  });
+  it("a stamp with a non-empty noBlock list is not a complete publication; an empty one is", () => {
+    const exp = expectedStamp(evm, now);
+    expect(snapshotAlreadyPublished({ ...settledStamp("2026-11-13"), noBlock: ["base"] }, exp)).toBe(false);
+    expect(snapshotAlreadyPublished({ ...settledStamp("2026-11-13"), noBlock: [] }, exp)).toBe(true);
+  });
+  it("a mixed EVM + Solana project expects a live stamp dated the run day", () => {
+    expect(expectedStamp(mixed, new Date("2026-11-14T23:59:30Z"))).toEqual({ date: "2026-11-14", settled: false });
+  });
+  it("missing, null or unstamped asOf is not published", () => {
+    const exp = expectedStamp(evm, now);
+    expect(snapshotAlreadyPublished(undefined, exp)).toBe(false);
+    expect(snapshotAlreadyPublished(null, exp)).toBe(false);
+    expect(snapshotAlreadyPublished({}, exp)).toBe(false);
   });
 });

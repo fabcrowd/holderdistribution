@@ -30,12 +30,17 @@ export const runsPerDay = (cron) => {
   return count(hour, 24) * count(minute, 60);
 };
 
+const SAME_DAY_GATE = "env.HD_SNAPSHOT_DONE != 'true'";
+
 /** True when the commit step is gated by an `if:` — i.e. it does not commit every run. */
 const commitIsConditional = (src) => {
   const idx = src.indexOf("git commit -m");
   if (idx < 0) return false;
   const stepStart = src.lastIndexOf("- name:", idx);
-  return /\n\s+if:\s/.test(src.slice(stepStart, idx));
+  // The same-day gate alone does not count: it only skips a duplicate run on an already-published day.
+  return [...src.slice(stepStart, idx).matchAll(/\n\s+if:\s*(.*)/g)].some(
+    ([, expr]) => expr.trim().replace(/^\$\{\{\s*|\s*\}\}$/g, "").trim() !== SAME_DAY_GATE,
+  );
 };
 
 export const readWorkflows = (dir = WORKFLOW_DIR) =>

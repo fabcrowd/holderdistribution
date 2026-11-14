@@ -42,6 +42,10 @@
  * (`[]` when none), for a workflow job that fails loudly on them. `job <id>` prints HD_JOB_*
  * (provider order, Alchemy CU budget, alchemyOnly) for scripts/lib/rpc.js.
  *
+ * `done [<slug>] [--force]` prints HD_SNAPSHOT_DONE=true|false and HD_SNAPSHOT_DONE_REASON=<one line>:
+ * true when the committed <dataDir>/tel-holders.json already carries the stamp this run would produce
+ * (see lib/asOf.js expectedStamp), so refresh-holders.yml skips the snapshot steps on a same-day rerun.
+ *
  * Run: node scripts/workflow-paths.js [--project <slug>] >> "$GITHUB_ENV"
  *      node scripts/workflow-paths.js [--project <slug>] files <path>...
  */
@@ -61,6 +65,7 @@ import {
   CLASSIFICATION_KINDS,
 } from "./lib/projects.js";
 import { jobEnv, projectRunsJob } from "./lib/nightlyPlan.js";
+import { expectedStamp, snapshotAlreadyPublished } from "./lib/asOf.js";
 
 export function workflowPaths(project, root = process.cwd()) {
   return {
@@ -174,6 +179,26 @@ export function workflowPlan(project, root = process.cwd()) {
 }
 
 /**
+ * Whether `project`'s committed snapshot (<dataDir>/tel-holders.json) already carries the stamp a run
+ * at `now` would produce, so a second run that day skips the snapshot steps (refresh-holders.yml).
+ * Never throws: a missing, corrupt or unstamped snapshot, or `force`, is `done: false` with a reason.
+ */
+export function snapshotDone(project, { force = false, now = new Date(), root = process.cwd() } = {}) {
+  if (force) return { done: false, reason: "forced: redoing the snapshot" };
+  const file = path.resolve(root, project.dataDir, "tel-holders.json");
+  let asOf;
+  try {
+    asOf = JSON.parse(fs.readFileSync(file, "utf8"))?.asOf;
+  } catch (err) {
+    return { done: false, reason: `committed snapshot unreadable (${String(err.message).replace(/\s+/g, " ")})` };
+  }
+  const expected = expectedStamp(project.config, now);
+  const kind = expected.settled ? "settled" : "live";
+  if (snapshotAlreadyPublished(asOf, expected)) return { done: true, reason: `committed snapshot is already ${kind} ${expected.date}` };
+  return { done: false, reason: `committed snapshot asOf ${asOf?.date ?? "none"} is not the expected ${kind} ${expected.date}` };
+}
+
+/**
  * Map TEL-layout repo paths onto `project` (see the header). Returns the list
  * to stage; throws on a path outside public/data/, data/ or a classification file.
  */
@@ -237,6 +262,18 @@ if (isDirectRun) {
     // node scripts/workflow-paths.js job <id> >> "$GITHUB_ENV" -> HD_JOB_* for rpc.js's budget guard.
     try {
       for (const [k, v] of Object.entries(jobEnv(rest[1], process.cwd(), project.slug))) console.log(`${k}=${v}`);
+    } catch (err) {
+      console.error(`[workflow-paths] ${err.message}`);
+      process.exit(2);
+    }
+  } else if (rest[0] === "done") {
+    // node scripts/workflow-paths.js done [<slug>] [--force] >> "$GITHUB_ENV" -> HD_SNAPSHOT_DONE[_REASON]; exit 0 either way.
+    try {
+      const slug = rest.slice(1).find((a) => !a.startsWith("--"));
+      const target = slug ? resolveProject(slug) : project;
+      const { done, reason } = snapshotDone(target, { force: rest.includes("--force") });
+      console.log(`HD_SNAPSHOT_DONE=${done}`);
+      console.log(`HD_SNAPSHOT_DONE_REASON=${reason.replace(/[\r\n]+/g, " ")}`);
     } catch (err) {
       console.error(`[workflow-paths] ${err.message}`);
       process.exit(2);

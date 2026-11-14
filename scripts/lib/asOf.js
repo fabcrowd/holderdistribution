@@ -18,7 +18,7 @@
  *
  * Pure; nothing here reads files or talks to a node.
  */
-import { vmPinsToBlock, vmScansForwardFromCheckpoint } from "./chainVms.js";
+import { resolveChainVm, vmPinsToBlock, vmScansForwardFromCheckpoint } from "./chainVms.js";
 import { midnightSeconds, nextDate } from "./dayBlocks.js";
 
 const DAY_MS = 86_400_000;
@@ -119,6 +119,26 @@ export function finalizeAsOf({ settledDate, runDay, blocks = {}, live = [], unpi
     ...(live.length ? { live: [...live] } : {}),
     ...(unpinned.length ? { unpinned: [...unpinned] } : {}),
   };
+}
+
+/**
+ * The stamp a run at `now` would publish for a project: live (run day, unsettled) when any chain
+ * cannot be pinned to a block (Solana), else the settled previous UTC day. Lets a rerun tell that
+ * its snapshot is already published.
+ */
+export function expectedStamp(projectConfig, now = new Date()) {
+  const live = (projectConfig?.chains ?? []).some((c) => !vmPinsToBlock(resolveChainVm(c)));
+  return live ? { date: utcDay(now), settled: false } : { date: resolveSettledDate({ now }), settled: true };
+}
+
+/**
+ * True when the committed stamp is the one a run would produce (same day, same kind, nothing
+ * unpinned, incomplete or without a block): a second run that day must not redo, and so degrade, the snapshot.
+ */
+export function snapshotAlreadyPublished(asOf, expected) {
+  if (!asOf || asOf.date !== expected?.date) return false;
+  if (asOf.unpinned?.length || asOf.incomplete?.length || asOf.noBlock?.length) return false;
+  return expected.settled ? asOf.settled === true : asOf.live?.length > 0;
 }
 
 /** A daily row from a snapshot stamped with unpinned EVM chains is an intraday read: skip it. */
