@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "project": "ondo",
-  "generatedAt": "2026-11-13T14:26:43.583Z",
+  "generatedAt": "2026-11-14T12:38:48.942Z",
   "healthy": true,
   "problems": [],
   "jobs": [
@@ -23,33 +23,33 @@
           "path": "public/data/ondo/holders-summary.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-13T14:26:10.867Z",
+          "generatedAt": "2026-11-14T12:38:15.786Z",
           "status": "fresh"
         },
         {
           "path": "public/data/ondo/holders-history.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-13T14:26:17.220Z",
+          "generatedAt": "2026-11-14T12:38:22.354Z",
           "status": "fresh"
         },
         {
           "path": "public/data/ondo/supply-reconciliation.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-13T14:26:31.000Z",
+          "generatedAt": "2026-11-14T12:38:36.000Z",
           "status": "fresh"
         },
         {
           "path": "public/data/ondo/cex-wallets.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-13T14:26:12.787Z",
+          "generatedAt": "2026-11-14T12:38:17.690Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-13",
+        "day": "2026-11-14",
         "cu": 0
       }
     },
@@ -71,12 +71,12 @@
           "path": "public/data/ondo/exchange-flow-history.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-13T14:26:40.272Z",
+          "generatedAt": "2026-11-14T12:38:45.706Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-13",
+        "day": "2026-11-14",
         "cu": 0
       }
     },
@@ -98,12 +98,12 @@
           "path": "public/data/ondo/tier-outflows.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-13T14:26:42.379Z",
+          "generatedAt": "2026-11-14T12:38:47.748Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-13",
+        "day": "2026-11-14",
         "cu": 0
       }
     },
@@ -112,6 +112,20 @@
       "workflow": "refresh-holders.yml",
       "status": "n/a",
       "reason": "lacks solana",
+      "providers": [
+        "public"
+      ],
+      "alchemyOnly": false,
+      "alchemyCuBudget": 0,
+      "budgetMode": "enforce",
+      "health": "n/a",
+      "outputs": []
+    },
+    {
+      "id": "hedera-flows",
+      "workflow": "refresh-holders.yml",
+      "status": "n/a",
+      "reason": "lacks hedera",
       "providers": [
         "public"
       ],
@@ -164,7 +178,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-13",
+        "day": "2026-11-14",
         "cu": 0
       }
     },
@@ -186,13 +200,13 @@
         {
           "path": "data/ondo/forensics/wallet-flows.json",
           "maxAgeHours": 30,
-          "ageHours": 16.6,
-          "generatedAt": "2026-11-12T21:51:07.457Z",
+          "ageHours": 15.3,
+          "generatedAt": "2026-11-13T21:21:07.792Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-13",
+        "day": "2026-11-14",
         "cu": 0
       }
     },
@@ -214,13 +228,13 @@
         {
           "path": "data/ondo/ledger/ledger.json",
           "maxAgeHours": 30,
-          "ageHours": 22.1,
-          "generatedAt": "2026-11-12T16:23:21.000Z",
+          "ageHours": 20.8,
+          "generatedAt": "2026-11-13T15:49:39.000Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-13",
+        "day": "2026-11-14",
         "cu": 0
       }
     },
@@ -238,7 +252,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-13",
+        "day": "2026-11-14",
         "cu": 0
       }
     },
@@ -256,7 +270,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-13",
+        "day": "2026-11-14",
         "cu": 0
       }
     }
