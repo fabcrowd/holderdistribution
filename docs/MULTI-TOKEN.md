@@ -529,7 +529,7 @@ The first non-TEL project, mapped 2026-10-25
   Combined and Solana, and the explorer is Solscan. Feeds are in
   `public/data/zebec-network/` and the work dir is `data/zebec-network/`.
 - **Daily refresh:** the `zebec-network` leg of the registry-driven matrix in
-  `.github/workflows/refresh-holders.yml` (06:00 UTC, right after TEL; the
+  `.github/workflows/refresh-holders.yml` (01:07 UTC, right after TEL; the
   separate `refresh-zebec-network.yml` and its 01:30 cron were retired). It
   commits with `[skip netlify]` (only the registry default publishes,
   `deployTriggers.test.js`); the data goes live through the live-data function.

@@ -129,7 +129,7 @@ const Landing = () => {
                 <dt className="text-[13px] text-muted-foreground">Refreshed</dt>
                 <dd className="mt-1 flex items-baseline gap-2">
                   <span className="font-display text-2xl font-bold text-foreground sm:text-[28px]">Daily</span>
-                  <span className="ha-num text-[13px] text-muted-foreground">06:00 UTC</span>
+                  <span className="ha-num text-[13px] text-muted-foreground">overnight ET</span>
                 </dd>
               </div>
             </dl>

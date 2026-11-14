@@ -7,9 +7,9 @@ name: Refresh developer-wallet ledger (gated)
 # Served ONLY by the forensics gate function (keys "project-ledger" / "bot-proceeds"),
 # never from public/data. See docs/LEDGER.md.
 #
-# Runs at 07:30 UTC, after the 06:00 (1am EST) refresh-holders run has normally finished.
-# Own concurrency group (not holders-refresh): GitHub keeps only one PENDING run per
-# group, so sharing it could drop the nightly holders run. Pushes go through
+# Runs at 02:37 UTC, 90 minutes after the 01:07 UTC refresh-holders slot.
+# Shares the holders-refresh group with the holders refresh, so it queues behind a
+# running holders refresh; GitHub keeps only one pending run per group. Pushes go through
 # scripts/push-main.sh, which retries a lost race. Commits carry [skip netlify].
 #
 # Runtime: incremental after the first run (checkpointed per chain), ~3-8 minutes
@@ -24,7 +24,7 @@ name: Refresh developer-wallet ledger (gated)
 
 on:
   schedule:
-    - cron: '30 7 * * *'
+    - cron: '37 2 * * *'
   workflow_dispatch:
     inputs:
       project:

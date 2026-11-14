@@ -61,7 +61,7 @@ Secrets are encrypted via `scripts/encrypt-env.js` / `decrypt-env.js`.
 ## Current goals / active work
 
 - **Multi-token onboarding** — every check and feed is registry-driven (`config/projects.json` + `config/projects/<slug>.json`). No TEL-shaped logic in shared code. New tokens follow `.claude/skills/onboard-project/SKILL.md` and `docs/MULTI-TOKEN.md`.
-- **Prove the 2026-11-07 fixes (#165–#171) on the scheduled 06:00 UTC runs** — `check:feeds` and `check-go-live --all` green, `holders-summary.json` asOf restored, `cex-flows` rebuilt with the KuCoin relays, zebec retail agrees across feeds. Unproven until a scheduled run passes.
+- **Prove the 2026-11-07 fixes (#165–#171) on the scheduled nightly runs (01:07 UTC since 2026-11-14)** — `check:feeds` and `check-go-live --all` green, `holders-summary.json` asOf restored, `cex-flows` rebuilt with the KuCoin relays, zebec retail agrees across feeds. Unproven until a scheduled run passes.
 - **Design system rollout** — tokens are in `tailwind.config.ts` and `design-system/tokens.css`. Components should progressively adopt the semantic tokens (`brand`, `positive`, `negative`, `ha-accent`, etc.) instead of raw Tailwind color classes.
 - **Forensics Gate** — premium content gate in `netlify/functions/forensics-gate.cjs`. Gated via `ForensicsGate.tsx` + `SubscriptionGate.tsx` components.
 
