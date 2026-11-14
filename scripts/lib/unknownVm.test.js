@@ -61,6 +61,8 @@ describe("unknown chain vm fails loudly, never passes as EVM or Solana", () => {
 
   it("add-project --wallet rejects an address that is neither EVM nor Solana", () => {
     expect(() => walletEntry("0.0.1234:Council", [])).toThrow(/bad address/);
+    expect(() => walletEntry("0.0.1234:Council", [{ key: "ethereum", vm: "evm" }])).toThrow(/bad address/);
+    expect(walletEntry("0.0.1234:Council", [{ key: "hedera", vm: "hedera" }])).toMatchObject({ address: "0.0.1234", chains: ["hedera"] });
     expect(walletEntry(`${SOL}:Treasury`, []).address).toBe(SOL);
     expect(walletEntry(`${EVM.toUpperCase().replace("0X", "0x")}:Treasury`, []).address).toBe(EVM);
   });

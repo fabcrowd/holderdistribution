@@ -2,6 +2,7 @@ import { buildChainHolders, buildMetrics, applyStaking } from "./stakingAttribut
 import { reconcileDistributionCounts } from "./holderHistoryReconcile.js";
 import { applyV3Staking, summarizeStaking } from "./v3Staking.js";
 import { normalizeAnyAddress } from "./address.js";
+import { snapshotComparison } from "./cexFlows.js";
 
 // TEL's historical values. They are also config/holder-tiers.default.json and
 // TEL's `holders` block (holderTiers.test.js pins all three together). A run
@@ -265,6 +266,21 @@ const buildHolderKeySet = (chains, selection) => {
     keys.add(normalized);
   }
   return keys;
+};
+
+/**
+ * The previous snapshot a lite view may diff against. The views publish
+ * day-over-day change (new/exited holders, tier and balance deltas, previous
+ * metrics) and only the velocity rates are normalized by elapsed time, so the
+ * previous snapshot must be the comparable one from exactly one day earlier.
+ * Anything else (unstamped, unpinned, a skipped night, a same-day rerun) is
+ * treated as absent, the same first-run shape methodologyChanged already uses.
+ * Returns { previous, reason }: reason is null when previous is kept or absent.
+ */
+export const dailyPreviousSnapshot = (snapshot, previousSnapshot) => {
+  if (!previousSnapshot) return { previous: null, reason: null };
+  const comparison = snapshotComparison(snapshot?.asOf, previousSnapshot.asOf);
+  return comparison.available ? { previous: previousSnapshot, reason: null } : { previous: null, reason: comparison.reason };
 };
 
 export const computeVelocity = (current, previous, selection) => {

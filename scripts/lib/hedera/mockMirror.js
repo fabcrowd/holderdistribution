@@ -88,6 +88,9 @@ export function createMockMirror({
   function transactionList(params) {
     const limit = Math.min(Number(params.get("limit") ?? 25), 100);
     let rows = txSorted;
+    // account.id: the records in whose transfers (HBAR or token) the account appears, like the mirror's list.
+    const account = params.get("account.id");
+    if (account) rows = rows.filter((tx) => [...(tx.transfers ?? []), ...(tx.token_transfers ?? [])].some((leg) => leg.account === account));
     for (const raw of params.getAll("timestamp")) {
       const [op, v] = raw.split(":");
       const t = nanosOf(v);

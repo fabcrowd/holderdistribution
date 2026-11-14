@@ -16,6 +16,7 @@ import process from "node:process";
 import { selectPipelineProject, projectPaths, projectClassificationPath } from "./lib/projects.js";
 import { normalizeValidAddress } from "./lib/address.js";
 import { inheritAsOf, rowDateOf, shouldEmitRow } from "./lib/asOf.js";
+import { buildCexFlowsFromSnapshots, summaryCexTotals } from "./lib/cexFlows.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads the
 // project's own `classification.cexWallets` list and writes its data dir
@@ -48,108 +49,6 @@ const readOptionalJson = async (absolutePath) => {
 
 // EVM hex lowercased (TEL unchanged); Solana base58 kept exactly as written.
 const normalizeAddress = (value) => normalizeValidAddress(value);
-
-const coerceBalance = (value) => {
-  if (value == null) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
-const buildWalletBalanceMap = (wallets) => {
-  const map = new Map();
-  for (const wallet of wallets ?? []) {
-    const address = normalizeAddress(wallet?.address);
-    if (!address) continue;
-    const balance = coerceBalance(wallet?.total_telcoin_balance ?? wallet?.totalBalance) ?? 0;
-    map.set(address, balance);
-  }
-  return map;
-};
-
-const createCexTotals = () => ({
-  walletCount: 0,
-  walletCountWithBalance: 0,
-  previousWalletCountWithBalance: 0,
-  currentBalance: 0,
-  previousBalance: 0,
-  inflow: 0,
-  outflow: 0,
-  net: 0,
-});
-
-const updateCexTotals = (totals, currentBalance, previousBalance) => {
-  totals.walletCount += 1;
-  if (currentBalance > 0) totals.walletCountWithBalance += 1;
-  if (previousBalance > 0) totals.previousWalletCountWithBalance += 1;
-  totals.currentBalance += currentBalance;
-  totals.previousBalance += previousBalance;
-  const delta = currentBalance - previousBalance;
-  if (delta > 0) {
-    totals.inflow += delta;
-  } else if (delta < 0) {
-    totals.outflow += Math.abs(delta);
-  }
-  totals.net += delta;
-};
-
-const buildCexFlows = (cexWallets, currentWallets, previousWallets) => {
-  if (!cexWallets?.wallets?.length) return null;
-
-  const currentMap = buildWalletBalanceMap(currentWallets);
-  let previousMap = buildWalletBalanceMap(previousWallets);
-  // An empty/stale previous snapshot would make every wallet look like a fresh
-  // inflow (previous = 0), producing phantom +N.NB flow indicators. Treat it
-  // as "no change" instead so flows read zero rather than fabricated.
-  if (previousMap.size === 0) previousMap = currentMap;
-
-  const overall = createCexTotals();
-  const exchangeMap = new Map();
-
-  for (const wallet of cexWallets.wallets) {
-    const address = normalizeAddress(wallet?.address);
-    if (!address) continue;
-
-    const exchange = typeof wallet?.label === "string" && wallet.label.trim()
-      ? wallet.label.trim()
-      : "Unknown";
-
-    const currentBalance = currentMap.get(address) ?? 0;
-    const previousBalance = previousMap.get(address) ?? 0;
-    if (currentBalance <= 0 && previousBalance <= 0) continue;
-
-    updateCexTotals(overall, currentBalance, previousBalance);
-
-    if (!exchangeMap.has(exchange)) {
-      exchangeMap.set(exchange, { totals: createCexTotals(), wallets: [] });
-    }
-    const entry = exchangeMap.get(exchange);
-    updateCexTotals(entry.totals, currentBalance, previousBalance);
-    const walletName = typeof wallet?.walletName === "string" && wallet.walletName.trim()
-      ? wallet.walletName.trim()
-      : undefined;
-    entry.wallets.push({
-      address,
-      walletName: walletName || undefined,
-      currentBalance,
-      previousBalance,
-    });
-  }
-
-  const exchanges = Array.from(exchangeMap.entries())
-    .map(([name, { totals, wallets }]) => ({
-      name,
-      ...totals,
-      wallets: wallets.sort((a, b) => b.currentBalance - a.currentBalance),
-    }))
-    .sort((a, b) => b.currentBalance - a.currentBalance);
-
-  return {
-    generatedAt: new Date().toISOString(),
-    listUpdatedAt: cexWallets.generatedAt ?? null,
-    overall,
-    exchanges,
-  };
-};
 
 const main = async () => {
   if (!CONFIG_PATH) {
@@ -195,11 +94,12 @@ const main = async () => {
 
   const previousSnapshot = await readOptionalJson(PREVIOUS_SNAPSHOT_PATH);
 
-  const cexFlows = buildCexFlows(
-    cexWalletsPayload,
-    snapshot.wallets ?? [],
-    previousSnapshot?.wallets ?? [],
-  );
+  // The previous snapshot is only a baseline when both snapshots are comparable and
+  // exactly one day apart (lib/cexFlows.js); otherwise the feed says why it has none.
+  const cexFlows = buildCexFlowsFromSnapshots(cexWalletsPayload, snapshot, previousSnapshot);
+  if (cexFlows && !cexFlows.comparison.available) {
+    console.warn(`CEX flows carry no previous-snapshot comparison (${cexFlows.comparison.reason}); deltas read zero.`);
+  }
 
   if (!cexFlows) {
     console.warn("No CEX flows generated (no matching balances found).");
@@ -241,7 +141,7 @@ const main = async () => {
   const summary = await readOptionalJson(SUMMARY_PATH);
   if (summary) {
     summary.cex = cexFlows?.overall
-      ? { ...cexFlows.overall, listUpdatedAt: cexFlows.listUpdatedAt ?? null }
+      ? { ...summaryCexTotals(cexFlows.overall), listUpdatedAt: cexFlows.listUpdatedAt ?? null }
       : null;
     await fs.writeFile(SUMMARY_PATH, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
     console.log(`Updated CEX summary in ${SUMMARY_PATH}`);

@@ -18,7 +18,8 @@
  * as pull-holders-rpc.js).
  *
  * Optional env:
- *   CEX_CANDIDATE_MIN_BALANCE   floor TEL balance to consider (default 100000)
+ *   CEX_CANDIDATE_MIN_BALANCE   floor balance to consider (default: sizing.cexCandidateMinBalance
+ *                               in the project config, else 1e-6 of supply; TEL 100000)
  *   CEX_CANDIDATE_MAX_SCAN      cap on how many candidates to RPC-scan per run,
  *                               largest balances first (default 300)
  *   CEX_CANDIDATE_LOOKBACK_BLOCKS_ETHEREUM / _POLYGON / _BASE
@@ -33,6 +34,7 @@ import { loadEnv } from "./loadEnv.js";
 import { getUsableRpcUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
 import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
+import { projectSizing } from "./lib/projectSizing.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // snapshot, chain map and non-retail lists; the review queue goes to its work
@@ -49,7 +51,7 @@ const OUTPUT_PATH = projectWork(project)("cex-candidates.json");
 // a value that never changes.
 const TRANSFER_TOPIC0 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
-const MIN_BALANCE = Number(process.env.CEX_CANDIDATE_MIN_BALANCE ?? 100_000);
+const MIN_BALANCE = Number(process.env.CEX_CANDIDATE_MIN_BALANCE ?? projectSizing(project.config).cexCandidateMinBalance);
 const MAX_SCAN = Number(process.env.CEX_CANDIDATE_MAX_SCAN ?? 300);
 const FAN_THRESHOLD = Number(process.env.CEX_CANDIDATE_FAN_THRESHOLD ?? 50);
 

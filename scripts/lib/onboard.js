@@ -63,6 +63,33 @@ export async function findDeployBlock({ latest, hasCode }) {
   return lo;
 }
 
+/**
+ * Which EVM chain holds `address`: checks `chains` ONE AT A TIME (parallel eth_calls to free nodes draw
+ * 429s). `hasCode(chain)` resolves true/false or throws on an RPC failure.
+ * @returns {Promise<{ found: string[], failed: { chain: string, message: string }[] }>}
+ */
+export async function probeEvmChain({ chains, hasCode }) {
+  const found = [];
+  const failed = [];
+  for (const chain of chains) {
+    try {
+      if (await hasCode(chain)) found.push(chain);
+    } catch (error) {
+      failed.push({ chain, message: String(error?.message ?? error) });
+    }
+  }
+  return { found, failed };
+}
+
+/** The `--chain` decision from a probe: a chain key, or an Error whose message says what to do. */
+export function chainFromProbe({ found, failed }, address) {
+  const hint = (rows) => rows.map((f) => `${f.chain}: ${f.message} (set PUBLIC_RPC_URLS_${f.chain.toUpperCase()}=<rpc url> to use another node)`).join("; ");
+  if (found.length === 1) return found[0];
+  if (found.length > 1) return new Error(`code exists at ${address} on ${found.join(", ")}: pass --chain <the origin chain> and add the others with --include`);
+  if (failed.length) return new Error(`no chain confirmed ${address}; RPC failures: ${hint(failed)}. Pass --chain <chain> once the RPC works`);
+  return new Error(`no contract at ${address} on any scanned EVM chain: check the address, or pass --chain <chain> if it is on a chain this repo does not scan`);
+}
+
 /** File extension for a token image URL (CoinGecko serves png/jpg/webp/svg); png if unclear. */
 export function imageExt(url) {
   const m = String(url ?? "").split("?")[0].match(/\.(png|jpe?g|webp|svg)$/i);
@@ -106,7 +133,7 @@ export function planOnboarding({ address, chain, facts, coingecko = null, discov
     isNative
       ? `${chain}:native:${origin.decimals}`
       : isSolana
-        ? `solana:${origin.address}:${origin.decimals}`
+        ? `solana:${origin.address}:${origin.decimals}${facts.program && facts.program !== "spl-token" ? `:${facts.program}` : ""}`
         : `${chain}:${origin.address}:${origin.decimals}${facts.deployBlock != null ? `:${CANDIDATE_CHAINS.find((c) => c.key === chain)?.chainId ?? ""}:${facts.deployBlock}` : ""}`,
   ];
   for (const [key, t] of Object.entries(included)) {
@@ -142,8 +169,9 @@ export function planOnboarding({ address, chain, facts, coingecko = null, discov
     }
   }
 
-  const historyStart = overrides.historyStart ?? facts.deployDate ?? null;
-  if (!historyStart && !isSolana && !isNative) notes.push("history start unknown: pass --history-start, or rebuild-holders-history.yml uses its own default");
+  // overrides.historyStart === null is an explicit "forward-only": do not fall back to the deploy date.
+  const historyStart = overrides.historyStart !== undefined ? overrides.historyStart : (facts.deployDate ?? null);
+  if (!historyStart && overrides.historyStart === undefined && !isSolana && !isNative) notes.push("history start unknown: pass --history-start, or rebuild-holders-history.yml uses its own default");
   const image = coingecko?.image ? { url: coingecko.image, path: `/tokens/${slug}.${imageExt(coingecko.image)}` } : null;
   if (!image) notes.push(`no CoinGecko image: add public/tokens/${slug}.<ext> and "image" by hand (check-go-live requires it)`);
 

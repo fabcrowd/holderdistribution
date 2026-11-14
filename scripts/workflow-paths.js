@@ -11,6 +11,7 @@
  *   HD_WORK_DIR=data                 (others: data/<slug>)
  *   HD_CEX_CONFIG=config/cex-wallets.json   (empty when the project declares none)
  *   HD_SOLANA_FLOWS=false            ("true" when the project declares a Solana chain: gates scan-solana-flows.js)
+ *   HD_HEDERA_FLOWS=false            ("true" when the project declares a Hedera chain: gates scan-hedera-flows.js)
  *
  * The data workflows' commit steps name files as "$HD_DATA_DIR/<file>" and
  * "$HD_WORK_DIR/<file>", so a TEL run commits exactly the paths it always did
@@ -36,7 +37,9 @@
  * then HD_PROJECT, then the registry default (TEL). Exits 2 on an unknown slug.
  *
  * `matrix [<slug>|all] [--job <id>]`: with --job, "all" keeps only the projects
- * config/nightly-jobs.json schedules for that job. `job <id>` prints HD_JOB_*
+ * config/nightly-jobs.json schedules for that job. `skipped [<slug>|all] [--job <id>]`
+ * prints the projects `matrix` left out as a one-line JSON array of {slug, error}
+ * (`[]` when none), for a workflow job that fails loudly on them. `job <id>` prints HD_JOB_*
  * (provider order, Alchemy CU budget, alchemyOnly) for scripts/lib/rpc.js.
  *
  * Run: node scripts/workflow-paths.js [--project <slug>] >> "$GITHUB_ENV"
@@ -67,30 +70,61 @@ export function workflowPaths(project, root = process.cwd()) {
     HD_WORK_DIR: projectWorkDir(project),
     HD_CEX_CONFIG: projectClassificationRelPath(project, "cexWallets", root) ?? "",
     HD_SOLANA_FLOWS: solanaFlowChains(project.config).length > 0 ? "true" : "false",
+    HD_HEDERA_FLOWS: projectChainKeysByVm(project.config, "hedera").length > 0 ? "true" : "false",
   };
 }
 
 export const DEFAULT_TIMEOUT_MINUTES = 60;
+/** Holders scan step caps (refresh-holders.yml): the public-RPC attempt, then the same-run resume from its checkpoint. */
+export const DEFAULT_HOLDERS_SCAN_TIMEOUT_MINUTES = 20;
+export const DEFAULT_HOLDERS_RETRY_TIMEOUT_MINUTES = 35;
 
 /**
  * Projects the daily refresh matrix runs: `selection` is a slug, or empty /
  * "all" for every project in config/projects.json (default project first, then
  * registry order). Per-project job timeout comes from
- * `pipeline.workflowTimeoutMinutes`. Under "all" a project whose config is
- * broken is reported in `skipped` instead of throwing, so a half-onboarded
- * token can never stop the others from refreshing; a named slug throws.
+ * `pipeline.workflowTimeoutMinutes`.
+ *
+ * Only for `job === "holders"` (refresh-holders.yml) the entries also carry
+ * `holdersTimeout` (`pipeline.holdersScanTimeoutMinutes`, positive integer,
+ * default 20) and `holdersRetryTimeout` (fixed 35), the rest are ordered by
+ * `holdersTimeout` ascending (stable: ties keep registry order) so a long scan
+ * runs last and the other tokens publish at their usual time, and a config where
+ * scan + retry exceeds the job timeout is broken. That check is NECESSARY, not
+ * sufficient: it does not prove that every later capped step (flows, tier
+ * outflows) also fits in the job timeout, size `workflowTimeoutMinutes` for the
+ * whole run. Every other job (and no job) gets the original entries and order,
+ * with no holders keys and no holders validation, so a holders-only setting can
+ * never drop a project from the ledger / wallet-flows / CEX workflows.
+ *
+ * Under "all" a project whose config is broken is reported in `skipped` instead
+ * of throwing, so a half-onboarded token can never stop the others from
+ * refreshing (refresh-holders.yml turns `skipped` into a red run via the
+ * `skipped` CLI mode); a named slug throws.
  */
 export function workflowMatrix(selection, root = process.cwd(), { job } = {}) {
   const sel = (selection ?? "").trim();
   const registry = loadRegistry(root);
   const ordered = [...registry].sort((a, b) => Number(b.default === true) - Number(a.default === true));
+  const isHolders = job === "holders";
   const toEntry = (slug) => {
     const project = resolveProject(slug, root);
-    return {
-      slug,
-      ticker: project.config?.ticker ?? slug.toUpperCase(),
-      timeout: Number(project.config?.pipeline?.workflowTimeoutMinutes) || DEFAULT_TIMEOUT_MINUTES,
-    };
+    const timeout = Number(project.config?.pipeline?.workflowTimeoutMinutes) || DEFAULT_TIMEOUT_MINUTES;
+    const entry = { slug, ticker: project.config?.ticker ?? slug.toUpperCase(), timeout };
+    if (!isHolders) return entry;
+    const configured = project.config?.pipeline?.holdersScanTimeoutMinutes;
+    if (configured !== undefined && !(Number.isInteger(configured) && configured > 0)) {
+      throw new Error(`project "${slug}": pipeline.holdersScanTimeoutMinutes must be a positive integer, got ${JSON.stringify(configured)}`);
+    }
+    const holdersTimeout = configured ?? DEFAULT_HOLDERS_SCAN_TIMEOUT_MINUTES;
+    const holdersRetryTimeout = DEFAULT_HOLDERS_RETRY_TIMEOUT_MINUTES;
+    if (holdersTimeout + holdersRetryTimeout > timeout) {
+      throw new Error(
+        `project "${slug}": holders scan steps need ${holdersTimeout} + ${holdersRetryTimeout} = ${holdersTimeout + holdersRetryTimeout} min ` +
+        `but the job timeout is ${timeout} min; raise pipeline.workflowTimeoutMinutes or lower pipeline.holdersScanTimeoutMinutes in config/projects/${slug}.json`,
+      );
+    }
+    return { ...entry, holdersTimeout, holdersRetryTimeout };
   };
   // A named slug always runs (manual dispatch); "all" keeps only the projects
   // config/nightly-jobs.json schedules for `job` (scripts/lib/nightlyPlan.js).
@@ -105,7 +139,10 @@ export function workflowMatrix(selection, root = process.cwd(), { job } = {}) {
       skipped.push({ slug, error: err.message });
     }
   }
-  return { include, skipped };
+  if (!isHolders) return { include, skipped };
+  const defaultSlug = (registry.find((p) => p.default === true) ?? {}).slug;
+  const rest = include.filter((e) => e.slug !== defaultSlug).sort((x, y) => x.holdersTimeout - y.holdersTimeout);
+  return { include: [...include.filter((e) => e.slug === defaultSlug), ...rest], skipped };
 }
 
 /**
@@ -185,6 +222,13 @@ if (isDirectRun) {
       for (const s of skipped) console.error(`::warning::project ${s.slug} skipped: ${s.error}`);
       if (include.length === 0) throw new Error("no runnable projects in config/projects.json");
       console.log(JSON.stringify({ include }));
+    } catch (err) {
+      console.error(`[workflow-paths] ${err.message}`);
+      process.exit(2);
+    }
+  } else if (rest[0] === "skipped") {
+    try {
+      console.log(JSON.stringify(workflowMatrix(rest[1], process.cwd(), { job }).skipped));
     } catch (err) {
       console.error(`[workflow-paths] ${err.message}`);
       process.exit(2);

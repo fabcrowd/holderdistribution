@@ -45,7 +45,8 @@ describe("hedera addresses", () => {
     }
   });
 
-  it("ledger developer wallets give a clear error for hedera, not a TypeError", () => {
-    expect(() => walletsForChain({ developerWallets: [] }, "hedera", "hedera")).toThrow(/not supported for vm "hedera"/);
+  it("ledger developer wallets are supported for hedera (0.0.N ids) and an unknown vm still fails loudly", () => {
+    expect(walletsForChain({ developerWallets: [{ address: "0.0.400", label: "t" }, { address: "0x" + "1".repeat(40), label: "e" }] }, "hedera", "hedera")).toEqual([{ address: "0.0.400", label: "t" }]);
+    expect(() => walletsForChain({ developerWallets: [] }, "hedera", "cosmos")).toThrow(/cosmos/);
   });
 });

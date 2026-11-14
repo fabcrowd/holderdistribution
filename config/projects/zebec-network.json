@@ -16,7 +16,10 @@
     "projectWallets": true
   },
   "supply": {
-    "circulating": { "subtract": ["treasury"] },
+    "circulating": {
+      "$comment": "Owner decision 2026-11-12: team/holdings are subtracted from circulating on every coin but TEL. Reward vaults (staking) and escrow stay counted.",
+      "subtract": ["treasury", "holdings", "team"]
+    },
     "developerHoldings": {
       "subcategories": [
         { "category": "treasury", "label": "Treasury & buyback vaults" },

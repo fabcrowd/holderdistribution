@@ -288,7 +288,13 @@ describe("hedera scanChain", () => {
     expect([...resumed.balances]).toEqual([...full.balances]);
     expect(partial).toEqual(JSON.parse(JSON.stringify(source))); // the caller's checkpoint is not mutated
     expect(second.balanceCalls().length).toBeLessThan(first.balanceCalls().length);
-    expect(second.balanceCalls().every((c) => !c.params.get("timestamp") || c.params.get("timestamp") === partial.timestamp)).toBe(true);
+    // The only request at another stamp is the fresh resolution (the staleness check), asked at the mock's head time; probes, existence checks and pages stay at the saved stamp.
+    const HEAD = "1794165294.000000001";
+    const other = second.balanceCalls().filter((c) => c.params.get("timestamp") && c.params.get("timestamp") !== partial.timestamp);
+    expect(other).toHaveLength(1);
+    expect(other[0].params.get("timestamp")).toBe(HEAD);
+    expect(other[0].params.get("limit")).toBe("1");
+    expect(other[0].params.getAll("account.id")).toHaveLength(0);
   });
 
   it("rejects a checkpoint made with a different floor or range width", async () => {

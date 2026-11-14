@@ -99,6 +99,9 @@ jobs:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           SOLANA_RPC_0: ${{ secrets.SOLANA_RPC_0 }}
           SOLANA_RPC_1: ${{ secrets.SOLANA_RPC_1 }}
+          # A Hedera project reads the public mirror node (no key); its scan stops at this budget, saves its
+          # cursors and reports the chain "partial" in coverage (the job limit is 30 minutes).
+          LEDGER_HEDERA_MAX_MS: '1200000'
         run: node scripts/build-ledger.js --project "$HD_PROJECT_SLUG" ${{ inputs.rebuild == 'true' && '--rebuild' || '' }}
       - name: Trace bot proceeds
         id: trace

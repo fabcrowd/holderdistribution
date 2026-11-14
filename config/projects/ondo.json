@@ -15,8 +15,11 @@
     "generationsSumOneToOne": false,
     "coingeckoId": "ondo-finance",
     "circulating": {
+      "$comment": "Owner decision 2026-11-12: team/holdings are subtracted from circulating on every coin but TEL. ONDO has no separate team category (its team wallets sit in holdings), so \"team\" subtracts nothing today.",
       "subtract": [
-        "treasury"
+        "treasury",
+        "holdings",
+        "team"
       ]
     },
     "developerHoldings": {
@@ -31,7 +34,7 @@
         }
       ]
     },
-    "note": "Circulating holds out Ondo Foundation Group Multisig 2 (disclosed locked ONDO). Distribution Safes funded by Multisig 2 are developer holdings but counted circulating, like TEL holdings."
+    "note": "Circulating holds out Ondo Foundation Group Multisig 2 (disclosed locked ONDO) and the distribution Safes funded by Multisig 2 (team/holdings wallets); owner decision 2026-11-12: team/holdings are subtracted on every token but TEL."
   },
   "chains": [
     {
@@ -111,8 +114,15 @@
   "capabilities": {
     "projectWallets": true
   },
+  "$sizingComment": "sizing below is pinned at the pre-2026-11-12 shared constants so ONDO's wallet-flows state is not rescanned. Removing the block gives supply-scaled thresholds (500K seller, 100K swap, 10K CEX) and one full 90-day rescan. Owner decision pending.",
+  "sizing": {
+    "minSellerTokens": 5000000,
+    "minSwapCandidateTokens": 1000000,
+    "cexCandidateMinBalance": 100000
+  },
   "holders": {
     "$comment": "distributionTiers and balanceRanges are ONDO's own, derived from its 2026-11-07 snapshot (174,016 holders) with `node scripts/derive-holder-tiers.js --project ondo`; never copied or scaled from TEL. The largest tier holds 35.6% of wallets. distributionTiers labels are JOIN KEYS into holder-transitions.json / tier-outflows.json / holders-history.json: changing them needs the history replay and downstream regeneration (README). megaHolderThreshold is 20% of supply. retailThreshold and concentrationBuckets inherit the defaults.",
+    "retailThreshold": 1000,
     "megaHolderThreshold": 2000000000,
     "distributionTiers": [
       { "label": "50M+", "min": 50000000, "max": null },

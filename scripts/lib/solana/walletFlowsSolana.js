@@ -91,12 +91,24 @@ export function pruneEvents(events, nowSec) {
 const sumBigInt = (a, b) => a + b;
 
 /**
+ * A raw integer amount as UI units, converted once: the exact decimal string is parsed, so the result is the double
+ * nearest to the true value (Number(raw) / 10 ** decimals rounds twice and is off for raw above 2 ** 53). Below
+ * 2 ** 53 raw it equals the old division bit for bit.
+ */
+export function rawToUnits(raw, decimals) {
+  const n = BigInt(raw);
+  const abs = n < 0n ? -n : n;
+  const scale = 10n ** BigInt(decimals);
+  const text = decimals > 0 ? `${abs / scale}.${String(abs % scale).padStart(decimals, "0")}` : `${abs}`;
+  return Number(n < 0n ? `-${text}` : text);
+}
+
+/**
  * Per wallet, per window, per kind: outflow in UI units. Sums stay BigInt until
  * the final division so no precision is lost on large raw amounts.
  * @returns {Map<string, Record<string, Record<string, number>>>}
  */
 export function aggregateWalletOutflows(events, nowSec, decimals) {
-  const scale = 10 ** decimals;
   const sums = new Map();
   for (const e of events) {
     const amount = BigInt(e.raw);
@@ -114,7 +126,7 @@ export function aggregateWalletOutflows(events, nowSec, decimals) {
   const result = new Map();
   for (const [wallet, byWindow] of sums) {
     const perWindow = Object.fromEntries(
-      WINDOWS.map((w) => [w, Object.fromEntries([...byWindow[w]].map(([kind, sum]) => [kind, Number(sum) / scale]))]),
+      WINDOWS.map((w) => [w, Object.fromEntries([...byWindow[w]].map(([kind, sum]) => [kind, rawToUnits(sum, decimals)]))]),
     );
     result.set(wallet, perWindow);
   }

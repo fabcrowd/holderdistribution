@@ -58,6 +58,44 @@ export async function removePartial(file) {
   await fs.rm(file, { force: true });
 }
 
+/**
+ * Saved scan state of a resumable (non-EVM) adapter: the file's content when the adapter accepts it, else null.
+ * An unreadable file or one the adapter rejects (other version, floor, width, malformed) is warned about and
+ * removed, so the scan starts fresh; this never throws.
+ */
+export async function loadResumable(adapter, chain, file, log = console) {
+  let saved = null;
+  try {
+    saved = JSON.parse(await fs.readFile(file, "utf8"));
+  } catch (e) {
+    if (e?.code === "ENOENT") return null;
+    log.warn?.(`${chain.key}: ignoring unreadable saved scan state (${e.message}); starting a fresh scan.`);
+    await removePartial(file);
+    return null;
+  }
+  if (saved === null) return null;
+  let problem;
+  try {
+    problem = adapter.resumeProblem(chain, saved);
+  } catch (e) {
+    problem = `unusable (${e.message})`;
+  }
+  if (!problem) return saved;
+  log.warn?.(`${chain.key}: ignoring saved scan state (${problem}); starting a fresh scan.`);
+  await removePartial(file);
+  return null;
+}
+
+/** An adapter opts in to keeping its finished scan state with `keepsFinishedScan: true`; no chain or slug is ever named here. */
+export const keepsFinishedScan = (adapter) => adapter?.keepsFinishedScan === true;
+
+/** After the chain's checkpoint is saved: remove the partial file unless the adapter keeps its finished state. */
+export async function settlePartial(adapter, file) {
+  if (keepsFinishedScan(adapter)) return false;
+  await removePartial(file);
+  return true;
+}
+
 /** A partial is usable only on exactly the base it was built from. */
 export function partialUsable(partial, { chainKey, token, genesisBlock, baseLastBlock }) {
   if (!partial || partial.schemaVersion !== PARTIAL_SCHEMA || partial.kind !== "holders-partial") return false;
@@ -67,6 +105,21 @@ export function partialUsable(partial, { chainKey, token, genesisBlock, baseLast
   if (!Number.isFinite(partial.lastBlock)) return false;
   const start = baseLastBlock == null ? genesisBlock : baseLastBlock + 1;
   return partial.lastBlock >= start - 1;
+}
+
+/** True when a pinned run (pinBlock set) would resume from a partial that already applied logs past the pin. */
+export const partialAheadOfPin = (partial, pinBlock) =>
+  pinBlock != null && Number.isFinite(partial?.lastBlock) && partial.lastBlock > pinBlock;
+
+/**
+ * The whole resume decision, pure (no I/O, no logging). `discard` names why a present partial must be
+ * removed: "different-base" (fails partialUsable) or "ahead-of-pin" (usable base, but past the run's pin).
+ */
+export function partialResumeDecision(partial, { chainKey, token, genesisBlock, baseLastBlock, pinBlock = null }) {
+  if (!partial) return { resume: false, discard: null };
+  if (!partialUsable(partial, { chainKey, token, genesisBlock, baseLastBlock })) return { resume: false, discard: "different-base" };
+  if (partialAheadOfPin(partial, pinBlock)) return { resume: false, discard: "ahead-of-pin" };
+  return { resume: true, discard: null };
 }
 
 export const partialRaw = (partial) => new Map(Object.entries(partial.rawBalances ?? {}).map(([a, v]) => [a, BigInt(v)]));

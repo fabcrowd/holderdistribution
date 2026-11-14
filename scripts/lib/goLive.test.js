@@ -13,6 +13,8 @@ const NOW = Date.parse("2026-11-05T12:00:00Z");
 const FRESH = new Date(NOW - 3600_000).toISOString();
 const STALE = new Date(NOW - (MAX_REPORT_AGE_HOURS + 1) * 3600_000).toISOString();
 const WALLET = "0xabcdef1111111111111111111111111111111111";
+const CEX_WALLET = "0x5555555555555555555555555555555555555555";
+const POOL = "0x6666666666666666666666666666666666666666";
 const FEEDS = [
   "tel-holders.json", "holders-summary.json", "holders-history.json", "holders-lite.json", "holders-checkpoint.json",
   "holder-transitions.json", "holders-ever-checkpoint.json", "supply-reconciliation.json", "treasury-history.json",
@@ -31,7 +33,7 @@ const config = (over = {}) => ({
   ticker: "DEMO",
   image: "/tokens/demo.png",
   data: { legacyRoot: false },
-  supply: { target: 1000 },
+  supply: { target: 100_000_000_000 },
   chains: [{ key: "ethereum", vm: "evm" }],
   gated: { forensics: true },
   capabilities: { projectWallets: true },
@@ -47,7 +49,7 @@ beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "golive-"));
   write("config/projects.json", { projects: [{ slug: "tel", default: true }, { slug: "demo" }] });
   write("public/tokens/demo.png", "x");
-  write("config/projects/demo/cex-wallets.json", { wallets: [] });
+  write("config/projects/demo/cex-wallets.json", { wallets: [{ address: CEX_WALLET, label: "Binance" }] });
   write("config/projects/demo/ledger.json", { developerWallets: [{ address: WALLET }] });
   for (const f of [...FEEDS, "funding-wallets.json"]) write(`public/data/demo/${f}`, FEED_DOC);
   write("public/data/demo/tier-outflows.json", tierDoc());
@@ -86,7 +88,143 @@ describe("goLiveProblems", () => {
     expect(check({ holders: {} }).join("\n")).toMatch(/holders\.distributionTiers is not set.*derive-holder-tiers\.js --project demo/);
     const own = projectHolderTiers(config()).distributionTiers;
     write("public/data/demo/tier-outflows.json", tierDoc({ tierFingerprint: tierFingerprint(own) }));
-    expect(check({ holders: { distributionTiers: own } })).toEqual([]);
+    expect(check({ holders: { distributionTiers: own, retailThreshold: 1000, megaHolderThreshold: 20_000_000_000 } })).toEqual([]);
+  });
+
+  describe("sizing rules", () => {
+    const own = () => projectHolderTiers(config()).distributionTiers;
+    const ownHolders = (extra = {}) => ({ holders: { distributionTiers: own(), retailThreshold: 1000, megaHolderThreshold: 20_000_000_000, ...extra } });
+
+    it("fails a mega-holder threshold above the supply target, naming the field and the fix", () => {
+      const out = check({ supply: { target: 1_000_000 } }).join("\n");
+      expect(out).toMatch(/holders\.megaHolderThreshold 20000000000 must be > 0 and <= supply\.target 1000000/);
+      expect(out).toMatch(/fix: set "megaHolderThreshold": 200000 .*config\/projects\/demo\.json/);
+    });
+
+    it("fails a project with its own tiers that leaves a threshold on the shared default", () => {
+      const out = check({ holders: { distributionTiers: own() } }).join("\n");
+      expect(out).toMatch(/holders\.megaHolderThreshold is not set.*fix: add "megaHolderThreshold".*derive-holder-tiers\.js --project demo/);
+      expect(out).toMatch(/holders\.retailThreshold is not set.*fix: add "retailThreshold"/);
+    });
+
+    it("does not demand explicit thresholds from a project that recorded keeping the default tiers", () => {
+      expect(check()).toEqual([]);
+    });
+
+    it("fails a retail threshold at or above the top tier", () => {
+      const out = check(ownHolders({ retailThreshold: 600_000_000, megaHolderThreshold: 20_000_000_000 })).join("\n");
+      expect(out).toMatch(/holders\.retailThreshold 600000000 must be below the top tier's min.*fix: lower holders\.retailThreshold/);
+    });
+  });
+
+  describe("largest-tier share", () => {
+    const lite = (counts) => ({ ...FEED_DOC, views: { combined: { distribution: counts.map((count, i) => ({ label: `t${i}`, count })) } } });
+
+    it("fails when one tier holds more than 90% of wallets", () => {
+      write("public/data/demo/holders-lite.json", lite([95, 3, 2]));
+      const out = check({}, { section: "feeds" }).join("\n");
+      expect(out).toMatch(/distribution tier t0 holds 95\.0% of wallets \(limit 90%\)/);
+      expect(out).toMatch(/fix: node scripts\/derive-holder-tiers\.js --project demo/);
+    });
+
+    it("passes at exactly 90%, with no distribution and with an empty one", () => {
+      write("public/data/demo/holders-lite.json", lite([90, 10]));
+      expect(check({}, { section: "feeds" })).toEqual([]);
+      write("public/data/demo/holders-lite.json", FEED_DOC);
+      expect(check({}, { section: "feeds" })).toEqual([]);
+      write("public/data/demo/holders-lite.json", lite([0, 0]));
+      expect(check({}, { section: "feeds" })).toEqual([]);
+    });
+  });
+
+  describe("CEX list, DEX pools and onboarding answers", () => {
+    const answers = (over = {}) => ({ version: "onboarding-answers/1", ...over });
+    const writeAnswers = (over) => write("config/projects/demo/onboarding.answers.json", answers(over));
+    const DEX_CONTRACT = { chains: [{ key: "ethereum", vm: "evm", contracts: { pool: { address: POOL, role: "dex" } } }] };
+
+    it("fails an empty CEX list with the file, the two fixes and the answers path", () => {
+      write("config/projects/demo/cex-wallets.json", { wallets: [] });
+      const out = check().join("\n");
+      expect(out).toMatch(/config\/projects\/demo\/cex-wallets\.json has no entries/);
+      expect(out).toMatch(/fix: add the exchange wallets.*"decision": "none-known".*onboarding\.answers\.json/);
+    });
+
+    it("accepts an empty CEX list only with a none-known decision and evidence", () => {
+      write("config/projects/demo/cex-wallets.json", { wallets: [] });
+      writeAnswers({ cex: { decision: "none-known", evidence: "" }, dex: { decision: "none", evidence: "dexscreener: no pools" } });
+      expect(check().join("\n")).toMatch(/has no entries/);
+      writeAnswers({ cex: { decision: "none-known", evidence: "checked Solscan and Arkham, no labelled exchange holds it" }, dex: { decision: "none", evidence: "dexscreener: no pools" } });
+      expect(check()).toEqual([]);
+    });
+
+    it("does not require DEX pools of a project with no answers file and no onboarding flag", () => {
+      expect(check()).toEqual([]);
+    });
+
+    it("requires a DEX pool once an answers file exists, and names the fix", () => {
+      writeAnswers();
+      const out = check().join("\n");
+      expect(out).toMatch(/no DEX pool is resolved/);
+      expect(out).toMatch(/fix: list every pool.*role "dex".*config\/projects\/demo\.json.*"decision": "none"/);
+    });
+
+    it("requires a DEX pool when the registry flags the project as onboarding", () => {
+      write("config/projects.json", { projects: [{ slug: "tel", default: true }, { slug: "demo", onboarding: true }] });
+      expect(check().join("\n")).toMatch(/no DEX pool is resolved/);
+      expect(check(DEX_CONTRACT)).toEqual([]);
+    });
+
+    it("accepts a role dex contract, a dexContracts file pool, or a none decision with evidence", () => {
+      writeAnswers();
+      expect(check(DEX_CONTRACT)).toEqual([]);
+      write("config/projects/demo/dex-contracts.json", { pools: [{ address: POOL }] });
+      expect(check({ classification: { cexWallets: "config/projects/demo/cex-wallets.json", dexContracts: "config/projects/demo/dex-contracts.json" } })).toEqual([]);
+      writeAnswers({ dex: { decision: "none", evidence: "dexscreener.com/ethereum/<token>: no pairs" } });
+      expect(check()).toEqual([]);
+    });
+
+    it("fails an answers wallet that is not excluded as non-retail, and accepts one that is", () => {
+      writeAnswers({ dex: { decision: "none", evidence: "no pools anywhere" }, wallets: [{ chain: "ethereum", address: WALLET.toUpperCase().replace("0X", "0x"), label: "Treasury", class: "treasury" }] });
+      const failing = check().join("\n");
+      expect(failing).toMatch(/lists wallet 0xABCDEF.* \(Treasury\) but it is not excluded as non-retail/);
+      expect(failing).toMatch(/fix: add it to addresses in config\/projects\/demo\/exclusions\.json/);
+      write("config/projects/demo/exclusions.json", { addresses: [WALLET] });
+      expect(check({ classification: { cexWallets: "config/projects/demo/cex-wallets.json", exclusions: "config/projects/demo/exclusions.json" } })).toEqual([]);
+    });
+
+    it("reads every wallet-source shape the async loaders (nonRetailSet.js) accept: per-chain exclusions, contracts roles, CEX file, DEX routers, legacy-root layout, base58 case", async () => {
+      const { loadNonRetailSet, createNonRetailChecker } = await import("./nonRetailSet.js");
+      const { projectNonRetailPaths } = await import("./projects.js");
+      const SOL = "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU";
+      const cexOnly = { cexWallets: "config/projects/demo/cex-wallets.json" };
+      const cases = {
+        "per-chain exclusions": { wallet: WALLET, files: { "config/projects/demo/exclusions.json": { addresses: [], chains: { ethereum: { addresses: [WALLET] } } } }, over: { classification: { ...cexOnly, exclusions: "config/projects/demo/exclusions.json" } } },
+        "contracts role": { wallet: WALLET, over: { chains: [{ key: "ethereum", vm: "evm", contracts: { t: { address: WALLET.toUpperCase().replace("0X", "0x"), role: "treasury" } } }] } },
+        "CEX file": { wallet: CEX_WALLET, over: {} },
+        "DEX routers": { wallet: WALLET, files: { "config/projects/demo/dex-contracts.json": { routers: [{ address: WALLET }] } }, over: { classification: { ...cexOnly, dexContracts: "config/projects/demo/dex-contracts.json" } } },
+        "legacy-root layout": { wallet: WALLET, files: { "config/exclusions.json": { addresses: [WALLET] } }, over: { data: { legacyRoot: true }, classification: cexOnly } },
+        "solana base58 case": { wallet: SOL, files: { "config/projects/demo/exclusions.json": { addresses: [SOL] } }, over: { chains: [{ key: "solana", vm: "solana" }], classification: { ...cexOnly, exclusions: "config/projects/demo/exclusions.json" } } },
+      };
+      for (const [name, c] of Object.entries(cases)) {
+        for (const [rel, doc] of Object.entries(c.files ?? {})) write(rel, doc);
+        writeAnswers({ dex: { decision: "none", evidence: "no pools anywhere" }, wallets: [{ chain: "ethereum", address: c.wallet, label: "W", class: "treasury" }] });
+        const project = { slug: "demo", dataDir: "public/data/demo", config: config(c.over) };
+        const sync = goLiveProblems(project, { root, now: NOW }).filter((p) => /not excluded as non-retail/.test(p));
+        const { set } = await loadNonRetailSet(projectNonRetailPaths(project, root));
+        expect(createNonRetailChecker(set)(c.wallet), `${name}: async loader`).toBe(true);
+        expect(sync, `${name}: sync read`).toEqual([]);
+      }
+      // base58 stays case-sensitive: the lower-cased mint is not the excluded wallet
+      write("config/projects/demo/exclusions.json", { addresses: [SOL] });
+      writeAnswers({ dex: { decision: "none", evidence: "no pools anywhere" }, wallets: [{ chain: "solana", address: SOL.toLowerCase(), label: "W", class: "treasury" }] });
+      const wrongCase = goLiveProblems({ slug: "demo", dataDir: "public/data/demo", config: config({ chains: [{ key: "solana", vm: "solana" }], classification: { ...cexOnly, exclusions: "config/projects/demo/exclusions.json" } }) }, { root, now: NOW });
+      expect(wrongCase.filter((p) => /not excluded as non-retail/.test(p))).toHaveLength(1);
+    });
+
+    it("reads a malformed answers file defensively and says how to fix it", () => {
+      write("config/projects/demo/onboarding.answers.json", "{not json");
+      expect(check().join("\n")).toMatch(/onboarding\.answers\.json.*fix: make .* valid JSON/);
+    });
   });
 
   it("fails a feed pipeline-health calls unhealthy: stale file or stale newest row", () => {

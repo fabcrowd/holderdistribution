@@ -2,9 +2,11 @@ name: Onboard a project (first data to go-live)
 
 # One dispatch takes a project whose scaffold is merged to main (npm run onboard
 # -- --write, reviewed, merged) through every first-data step in order, waiting
-# for each workflow it dispatches: CEX list, snapshot, its own holder tiers,
-# history backfill, exchange flows, treasury/CEX history, tier outflows, staker
-# balances, wallet flows, ledger, then check-go-live. scripts/onboard-run.js
+# for each workflow it dispatches: CEX list, snapshot, large-holder review, its
+# own holder tiers and sizing, history backfill, exchange flows, treasury/CEX
+# history, tier outflows, staker balances, wallet flows, ledger, strict feed
+# alignment (day cutoffs come from those workflows, which commit their own
+# date-blocks.json), then check-go-live. Every stop prints a Fix: block. scripts/onboard-run.js
 # decides each step from the files on main, so a rerun resumes where the last
 # one stopped; near the job limit it dispatches its own next round.
 #

@@ -6,8 +6,9 @@
  * client's rate limiter. A page that still fails after the client's retries
  * rejects the whole scan, so a partial result can never be returned. Finished
  * ranges, and each full page of a range still in progress, are reported through
- * `onProgress`. The next run continues that pinned snapshot at any age: the stamp
- * is one moment, so the wall clock does not make it stale.
+ * `onProgress`. The next run continues that pinned snapshot only while it is still
+ * close to the snapshot a fresh run would use (`resumeStaleReason`): within one
+ * drift limit when pinned, within a few hours when unpinned. Anything older is rescanned.
  *
  * mainnet-public load-balances independent mirror clusters (response header
  * `x-cluster-id`), and each writes snapshots on its own grid: a stamp S exists on
@@ -27,8 +28,13 @@ export const HEDERA_RANGE_WIDTH = 250_000;
 /** How long one request keeps retrying while the load balancer sends it to the wrong cluster. */
 export const HEDERA_SNAPSHOT_WAIT_MS = 20 * 60 * 1000;
 const SNAPSHOT_BACKOFF_CAP_MS = 30_000;
+/** Resolutions tried for a pinned finished state before it counts as a miss (2 requests each); an unpinned run tries once. */
+export const HEDERA_FINISHED_ATTEMPTS = 8;
+/** How long the /contracts pass keeps retrying a 404 before it fails the scan. */
+export const HEDERA_LIST_404_WAIT_MS = 2 * 60 * 1000;
 
 import { backoffMs } from "../rpcLimiter.js";
+import { nanosOf } from "./flowScan.js";
 
 class SnapshotMismatchError extends Error {
   constructor(message, clusterId = null) {
@@ -92,7 +98,7 @@ async function holdingSnapshot(retry, attempt) {
  * unless the held cluster sent it. A non-empty page answering the held stamp refreshes the held cluster.
  */
 function pageRows({ body, clusterId, status }, { rowsKey, held, label }) {
-  if (status === 404) throw new SnapshotMismatchError(`${label}: HTTP 404 from cluster ${clusterId ?? "unknown"} for snapshot ${held?.stamp}`, clusterId);
+  if (status === 404) throw new SnapshotMismatchError(`${label}: HTTP 404 from cluster ${clusterId ?? "unknown"}${held ? ` for snapshot ${held.stamp}` : " (a list query never has no answer: a transient mirror fault)"}`, clusterId);
   if (!body || typeof body !== "object" || !Array.isArray(body[rowsKey])) throw new Error(`${label}: response has no ${rowsKey} array`);
   if (!body.links || typeof body.links !== "object" || !("next" in body.links)) {
     throw new Error(`${label}: response has no links object, so the end of the range cannot be told`);
@@ -129,7 +135,7 @@ async function pageRange(client, { path, rowsKey, idParam, idField, params, lo, 
   const url = (limit, cursorOp, from) =>
     `${path}?${[`limit=${limit}`, "order=asc", ...params, `${idParam}=${cursorOp}:0.0.${from}`, `${idParam}=lt:0.0.${hi}`].join("&")}`;
   const fetchPage = (limit, cursorOp, from) =>
-    holdingSnapshot(retry, async () => pageRows(await (held ? pinnedPageOf : pageOf)(client, url(limit, cursorOp, from)), { rowsKey, held, label }));
+    holdingSnapshot(retry, async () => pageRows(await pinnedPageOf(client, url(limit, cursorOp, from)), { rowsKey, held, label }));
   for (;;) {
     const { rows: page, next } = await fetchPage(HEDERA_PAGE_LIMIT, op, cursor);
     for (const row of page) {
@@ -198,14 +204,15 @@ async function runRanges(ranges, concurrency, worker) {
   if (failure) throw failure;
 }
 
-/** Why a checkpoint cannot be resumed with this floor/width, or null when it can. Age is not a reason: the stamp is pinned. */
+/** Version of the saved scan state; a state of another version is unusable (see `resumeProblem`). */
 export const HEDERA_SCAN_STATE_VERSION = 2;
 const RAW_RE = /^\d+$/;
 const isPlainObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const isTally = (t) => isPlainObject(t) && typeof t.allRaw === "string" && RAW_RE.test(t.allRaw) && Number.isInteger(t.nonzero) && t.nonzero >= 0;
 
-/** Why a checkpoint cannot be resumed with this floor/width, or null when it can. Age is not a reason: the stamp is pinned. */
+/** Why a checkpoint cannot be resumed with this floor/width, or null when it can. Shape and version only; whether an in-progress state is too old is `resumeStaleReason`. */
 export function resumeProblem(resume, { floor, width }) {
+  if (!isPlainObject(resume)) return "checkpoint is malformed";
   if (resume.version !== HEDERA_SCAN_STATE_VERSION) return `unknown checkpoint version ${resume.version}`;
   if (resume.floor !== String(floor)) return `floor ${resume.floor} differs from ${floor}`;
   if (resume.width !== width) return `range width ${resume.width} differs from ${width}`;
@@ -220,7 +227,45 @@ export function resumeProblem(resume, { floor, width }) {
     if (!isPlainObject(cur) || (cur.op !== "gt" && cur.op !== "gte") || !Number.isInteger(cur.from) || !Number.isInteger(cur.previous) || !Array.isArray(cur.rows)) return "checkpoint is malformed";
     if (!Number.isInteger(cur.count) || cur.count < 0 || cur.count > cur.rows.length || !isTally(cur)) return "checkpoint is malformed";
   }
+  // `complete` marks a finished scan; an in-progress state has no such field. A finished state must hold every range and no open one.
+  if (resume.complete !== undefined) {
+    if (resume.complete !== true || Object.keys(resume.open).length > 0) return "checkpoint is malformed";
+    if (idRanges(resume.maxId, width).some((r) => !(r.lo in resume.ranges))) return "checkpoint is malformed";
+  }
   return null;
+}
+
+// Mirror balance snapshots are ~15 min apart (902 s measured, see settle.js) and each cluster resolves "newest at or
+// before the pin end", so two resolutions of the same pin differ by at most one snapshot interval, whichever cluster
+// grid answers. 1800 s is twice that: jitter and one skipped snapshot fit, a previous night's state (~86,400 s older
+// than the snapshot a fresh run resolves) does not. The limit is measured between two snapshot stamps, never against
+// the pin end or the wall clock, so a mirror that lags near midnight cannot make a same-night state stale.
+export const HEDERA_RESUME_PINNED_MAX_DRIFT_SECONDS = 1800;
+// A same-run resume is at most the scan step (120 min) plus the retry step (35 min), the whole job is capped at
+// 270 min and the schedule is daily, so 6 h keeps every same-run resume and excludes any earlier night.
+export const HEDERA_RESUME_UNPINNED_MAX_AGE_SECONDS = 21600;
+const NANOS_PER_SECOND = 1_000_000_000n;
+const STAMP_RE = /^\d+(\.\d+)?$/;
+
+/**
+ * Why an in-progress saved scan state is too old to resume, or null when it may be resumed. Finished states
+ * (`complete: true`), a missing state and a stamp this function cannot read are not its business (null: the age rule
+ * is skipped and the state is handled as it was before this rule existed). `freshStamp` is the snapshot a fresh run resolved just now (a mirror
+ * "seconds.nanos" stamp). Pinned: stale when the state is more than HEDERA_RESUME_PINNED_MAX_DRIFT_SECONDS older
+ * than it (a state later than it, from the other cluster's grid, is fine). Unpinned: stale when more than
+ * HEDERA_RESUME_UNPINNED_MAX_AGE_SECONDS older than the newest snapshot. Limits are inclusive. The text completes
+ * the sentence "saved in-progress scan state at <stamp> is <reason>".
+ */
+export function resumeStaleReason(resume, { freshStamp, pinned }) {
+  if (!resume || resume.complete === true) return null;
+  if (!STAMP_RE.test(String(resume.timestamp)) || !STAMP_RE.test(String(freshStamp))) return null;
+  const older = nanosOf(freshStamp) - nanosOf(resume.timestamp);
+  const limit = pinned ? HEDERA_RESUME_PINNED_MAX_DRIFT_SECONDS : HEDERA_RESUME_UNPINNED_MAX_AGE_SECONDS;
+  if (older <= BigInt(limit) * NANOS_PER_SECOND) return null;
+  const seconds = older / NANOS_PER_SECOND;
+  return pinned
+    ? `${seconds}s older than the snapshot a fresh scan would use, ${freshStamp} (limit ${limit}s)`
+    : `${(Number(seconds) / 3600).toFixed(1)}h older than the newest snapshot ${freshStamp} (limit ${limit / 3600}h), and no pin is available`;
 }
 
 /**
@@ -230,8 +275,14 @@ export function resumeProblem(resume, { floor, width }) {
  * filter is applied before the mirror picks each account's latest row, so it can return a stale balance. Every row,
  * below the floor and contracts included, is added to a per-range total, so the whole snapshot can be checked
  * against total supply without keeping the dust.
- * A `resume` checkpoint that does not fit (other floor/width, malformed) rejects. A pinned stamp is resumed at any
- * age. Its cluster is learned from the first response answering its stamp.
+ * A `resume` checkpoint that does not fit (other floor/width, malformed) rejects. An in-progress state is first
+ * compared with the snapshot a fresh run resolves (one attempt, `atOrBefore` when pinned, else the newest): if it is
+ * more than the limit older (`resumeStaleReason`) it is dropped and the scan starts on the stamp just resolved
+ * (`resumeDropped` holds the reason, `onResumeDropped(reason, { savedStamp, freshStamp })` fires before any paging);
+ * otherwise it is resumed as given and its cluster is learned from the first response answering its stamp.
+ * A finished checkpoint (`complete: true`) is different: the stamp this run resolves (newest at or before `atOrBefore`,
+ * else the newest) must equal its stamp and highest id, and then the rows are served with no paging. Otherwise it is
+ * discarded and a fresh scan runs (`finishedState: "discarded"`); it is never served as an older snapshot.
  * Returns { timestamp, maxId, rows: [[num, tinybarString]], allRaw (BigInt), nonzero, mismatchRetries } in id order.
  */
 export async function scanBalanceSnapshot(
@@ -248,6 +299,8 @@ export async function scanBalanceSnapshot(
     snapshotWaitMs = HEDERA_SNAPSHOT_WAIT_MS,
     // A mirror "seconds.nanos" stamp: pin the newest snapshot at or before it instead of the newest one.
     atOrBefore = null,
+    // Called once, before any paging, when an in-progress state is dropped as stale.
+    onResumeDropped = null,
   },
 ) {
   const floorText = String(floor);
@@ -257,46 +310,72 @@ export async function scanBalanceSnapshot(
   let state;
   let held;
   const progress = () => ({ ...state, ranges: { ...state.ranges }, totals: { ...state.totals }, open: { ...state.open } });
+  // "reused": a finished state served with no paging; "discarded": one that no longer matches the stamp this run resolves.
+  let finishedState = null;
   if (resume) {
     const problem = resumeProblem(resume, { floor, width });
     if (problem) throw new Error(`hedera resume checkpoint unusable: ${problem}`);
-    state = {
-      version: resume.version,
-      timestamp: resume.timestamp,
-      maxId: resume.maxId,
-      floor: resume.floor,
-      width: resume.width,
-      ranges: { ...resume.ranges },
-      totals: { ...resume.totals },
-      open: { ...resume.open },
-    };
-    held = { stamp: state.timestamp, cluster: null };
-    await requireSnapshot(client, held, retry, "&order=desc");
-  } else {
-    // With no timestamp the mirror reports "now", which is not a snapshot. Asking at that time resolves to a
-    // real snapshot on the cluster that answers; its stamp and cluster are held, and asking for the stamp by
-    // name must answer with itself.
+  }
+  // With no timestamp the mirror reports "now", which is not a snapshot. Asking at that time resolves to a
+  // real snapshot on the cluster that answers; its stamp and cluster are held, and asking for the stamp by
+  // name must answer with itself.
+  const resolveHead = async () => {
     const target = atOrBefore ? `lte:${atOrBefore}` : (await pageOf(client, "/balances?limit=1&order=desc")).body.timestamp;
     if (!target) throw new Error("hedera /balances returned no timestamp");
     const resolved = await pageOf(client, `/balances?limit=1&order=desc&timestamp=${target}`);
     if (!resolved.body.balances?.length || !resolved.body.timestamp) throw new Error("hedera /balances returned no snapshot");
     held = { stamp: resolved.body.timestamp, cluster: resolved.clusterId };
-    const head = await requireSnapshot(client, held, retry, "&order=desc");
-    state = {
-      version: HEDERA_SCAN_STATE_VERSION,
-      timestamp: held.stamp,
-      maxId: numOf(head.balances[0].account, "balances"),
-      floor: floorText,
-      width,
-      ranges: {},
-      totals: {},
-      open: {},
-    };
+    const answer = await requireSnapshot(client, held, retry, "&order=desc");
+    return { head: answer, maxId: numOf(answer.balances[0].account, "balances") };
+  };
+  const freshState = (maxId) => ({ version: HEDERA_SCAN_STATE_VERSION, timestamp: held.stamp, maxId, floor: floorText, width, ranges: {}, totals: {}, open: {} });
+  let resumeDropped = null;
+  if (resume && !resume.complete) {
+    // Resolve what a fresh run would use (one attempt) BEFORE adopting the saved stamp: a saved state is only as
+    // good as its distance from that snapshot, not from the pin end or the clock.
+    const inProgressFresh = await resolveHead();
+    resumeDropped = resumeStaleReason(resume, { freshStamp: held.stamp, pinned: Boolean(atOrBefore) });
+    if (resumeDropped) {
+      onResumeDropped?.(resumeDropped, { savedStamp: resume.timestamp, freshStamp: held.stamp });
+      state = freshState(inProgressFresh.maxId);
+    } else {
+      state = {
+        version: resume.version,
+        timestamp: resume.timestamp,
+        maxId: resume.maxId,
+        floor: resume.floor,
+        width: resume.width,
+        ranges: { ...resume.ranges },
+        totals: { ...resume.totals },
+        open: { ...resume.open },
+      };
+      held = { stamp: state.timestamp, cluster: null };
+      await requireSnapshot(client, held, retry, "&order=desc");
+    }
+  } else {
+    const matchesFinished = (maxId) => resume?.complete === true && resume.timestamp === held.stamp && resume.maxId === maxId;
+    // Pinned finished state: the clusters write snapshots on their own grids, so which stamp "newest at or before the pin"
+    // resolves to depends on the cluster that answers. The saved stamp is right if ANY attempt resolves exactly to it
+    // (same stamp and highest id); a bounded number of attempts decides a miss. An unpinned run is newest-wins: one attempt.
+    const attempts = resume?.complete && atOrBefore ? HEDERA_FINISHED_ATTEMPTS : 1;
+    let resolvedHead = await resolveHead();
+    for (let n = 1; n < attempts && !matchesFinished(resolvedHead.maxId); n += 1) {
+      await sleep(backoffMs(n - 1, { baseMs: 500, capMs: 5000, random }));
+      resolvedHead = await resolveHead();
+    }
+    const { head, maxId } = resolvedHead;
+    // A finished scan is served only for the very stamp (and highest id) this run resolved; any other stamp is an old snapshot.
+    const sameSnapshot = matchesFinished(maxId);
+    if (resume?.complete) finishedState = sameSnapshot ? "reused" : "discarded";
+    state = sameSnapshot
+      ? { version: resume.version, timestamp: resume.timestamp, maxId, floor: resume.floor, width: resume.width, ranges: { ...resume.ranges }, totals: { ...resume.totals }, open: {}, complete: true }
+      : freshState(maxId);
   }
   // One check per scan is enough: whether a snapshot exists does not change.
   let existence = null;
   const snapshotExists = () => (existence ??= requireSnapshot(client, held, retry));
-  const todo = idRanges(state.maxId, width).filter((r) => !(r.lo in state.ranges));
+  const allRanges = idRanges(state.maxId, width);
+  const todo = allRanges.filter((r) => !(r.lo in state.ranges));
   await runRanges(todo, concurrency, async ({ lo, hi }) => {
     const start = state.open[lo] ?? null;
     let allRaw = start ? BigInt(start.allRaw) : 0n;
@@ -331,6 +410,8 @@ export async function scanBalanceSnapshot(
     delete state.open[lo];
     state.ranges[lo] = rows;
     state.totals[lo] = { allRaw: String(allRaw), nonzero };
+    // The last range landing marks the state finished; no other lane is paging then, so no later in-progress report can follow.
+    if (allRanges.every((r) => r.lo in state.ranges)) state.complete = true;
     onProgress?.(progress());
   });
   const ranges = idRanges(state.maxId, width);
@@ -346,6 +427,8 @@ export async function scanBalanceSnapshot(
     mismatchRetries: retry.stats.mismatchRetries,
     waitByCluster: retry.stats.byCluster,
     clusterId: held.cluster,
+    finishedState,
+    resumeDropped,
   };
 }
 
@@ -365,7 +448,8 @@ export async function balanceAtSnapshot(client, { id, stamp, cluster, sleep = sl
 /** Ids of every contract up to `maxId`. The mirror's balance rows do not say account vs contract; this list does. */
 export async function scanContractIds(client, { maxId, width = HEDERA_RANGE_WIDTH, concurrency = HEDERA_SCAN_CONCURRENCY }) {
   const byRange = new Map();
-  const retry = { sleep: sleepReal, random: Math.random, now: Date.now, waitMs: 0, stats: { mismatchRetries: 0, byCluster: {} } };
+  // A list endpoint answers 200 with an empty list, never 404; one 404 in a 66-minute run is a transient mirror fault (seen live 2026-11-13), so it is retried briefly.
+  const retry = { sleep: sleepReal, random: Math.random, now: Date.now, waitMs: HEDERA_LIST_404_WAIT_MS, stats: { mismatchRetries: 0, byCluster: {} } };
   await runRanges(idRanges(maxId, width), concurrency, async ({ lo, hi }) => {
     byRange.set(
       lo,

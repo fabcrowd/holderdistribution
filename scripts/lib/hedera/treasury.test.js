@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { HEDERA_UNRELEASED_RANGES, WHBAR_CONTRACT, hederaChainContracts, hederaTreasuryAccounts, hederaTreasuryExclusions } from "./treasury.js";
 import { hederaAdapter } from "./adapter.js";
 import { parseHederaAddress } from "./address.js";
+import { DEFAULT_HOLDERS_RETRY_TIMEOUT_MINUTES } from "../../workflow-paths.js";
 
 describe("hedera network treasury", () => {
   it("lists every id of the corrected unreleased ranges plus 98, 800 and 801, once each", () => {
@@ -30,6 +31,9 @@ describe("hedera network treasury", () => {
     expect(cls.exclusions.addresses).toHaveLength(hederaTreasuryAccounts().length);
     expect(cls.treasuryCategories).toEqual(["treasury"]);
     expect(cls.workflowTimeoutMinutes).toBeGreaterThan(93);
+    expect(cls.workflowTimeoutMinutes).toBe(270);
+    expect(cls.holdersScanTimeoutMinutes).toBe(120);
+    expect(cls.holdersScanTimeoutMinutes + DEFAULT_HOLDERS_RETRY_TIMEOUT_MINUTES).toBeLessThanOrEqual(cls.workflowTimeoutMinutes);
   });
 
   it("seeds a CEX list of valid, unique 0.0.N accounts, each with a source, none also treasury", async () => {

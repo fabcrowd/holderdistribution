@@ -8,7 +8,7 @@
  * non-empty reason. Parity is the default; a gap must be written down.
  *
  * Capabilities:
- *   evm / solana        the project declares a chain on that VM
+ *   evm / solana / hedera  the project declares a chain on that VM
  *   stakeChanged        a StakeChanged staking contract (TEL staker balances)
  *   zebecStakeV1        a Zebec stake program (Solana staking)
  *   forensicsRegistry   <workDir>/forensics/wallet-flows.registry.json exists
@@ -44,6 +44,7 @@ export function projectCapabilities(project, root = process.cwd()) {
   const caps = new Set();
   if (projectChainKeysByVm(project.config, "evm").length) caps.add("evm");
   if (projectChainKeysByVm(project.config, "solana").length) caps.add("solana");
+  if (projectChainKeysByVm(project.config, "hedera").length) caps.add("hedera");
   if (projectStakingContracts(project, { kind: "stakeChanged" }).length) caps.add("stakeChanged");
   if (projectStakingContracts(project, { kind: "zebecStakeV1" }).length) caps.add("zebecStakeV1");
   if (fs.existsSync(path.resolve(root, projectWorkDir(project), "forensics/wallet-flows.registry.json"))) caps.add("forensicsRegistry");

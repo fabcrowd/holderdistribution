@@ -52,8 +52,41 @@ describe("markSwaps retries and drops", () => {
     await markSwaps({ fetchReceipt: fail, transfers: [t], budget: { left: 10 } });
     expect(t).toMatchObject({ swapped: false, swapCheck: "gave-up" });
     const seen = [];
-    await markSwaps({ fetchReceipt: async (tx) => (seen.push(tx), receipt(SWAP)), transfers: [t], budget: { left: 10 } });
+    await markSwaps({ fetchReceipt: async (tx) => (seen.push(tx), receipt(SWAP)), transfers: [t], budget: { left: 0 } });
     expect(seen).toEqual([]);
+    expect(t).toMatchObject({ swapped: false, swapCheck: "gave-up" });
+  });
+
+  it("retries a gave-up event with leftover budget and replaces its verdict when it resolves", async () => {
+    const t = ev(1, "0x1", { swapped: false, swapCheck: "gave-up" });
+    const budget = { left: 5 };
+    await markSwaps({ fetchReceipt: async () => receipt(SWAP), transfers: [t], budget });
+    expect(t.swapped).toBe(true);
+    expect(t.swapCheck).toBeUndefined();
+    expect(budget.left).toBe(4);
+  });
+
+  it("a gave-up retry that fails again stays gave-up without flagging the budget exhausted", async () => {
+    const t = ev(1, "0x1", { swapped: false, swapCheck: "gave-up" });
+    const budget = { left: 5 };
+    await markSwaps({ fetchReceipt: async () => { throw new Error("down"); }, transfers: [t], budget });
+    expect(t).toMatchObject({ swapped: false, swapCheck: "gave-up" });
+    expect(t.swapAttempts).toBeUndefined();
+    expect(budget.exhausted).toBeUndefined();
+  });
+
+  it("never spends budget on gave-up events while new candidates need it", async () => {
+    const seen = [];
+    const old = ev(1, "0xold", { swapped: false, swapCheck: "gave-up" });
+    const fresh = [ev(900, "0xnew1"), ev(901, "0xnew2")];
+    await markSwaps({ fetchReceipt: async (tx) => (seen.push(tx), receipt("0xdead")), transfers: [old, ...fresh], budget: { left: 2 } });
+    expect(seen.sort()).toEqual(["0xnew1", "0xnew2"]);
+    expect(old).toMatchObject({ swapped: false, swapCheck: "gave-up" });
+    // Budget short for the new ones: still nothing for the gave-up event.
+    const seen2 = [];
+    const t2 = [ev(1, "0xg", { swapped: false, swapCheck: "gave-up" }), ev(5, "0xa"), ev(6, "0xb")];
+    await markSwaps({ fetchReceipt: async (tx) => (seen2.push(tx), receipt("0xdead")), transfers: t2, budget: { left: 1 } });
+    expect(seen2).toEqual(["0xb"]);
   });
 
   it("checks newest candidates first when the budget is smaller than the pending set", async () => {

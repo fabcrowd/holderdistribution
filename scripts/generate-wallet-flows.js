@@ -37,6 +37,10 @@
  * (a file other than the live report, never under public/). Balances and USD values are null
  * in that output (see scripts/lib/walletFlowsAsOf.js). docs/FORENSICS.md "Backfill via SQD Portal".
  * Env: RPC_PREFER_PUBLIC=1 recommended; PUBLIC_RPC_URLS_<CHAIN> to override.
+ * WALLET_FLOWS_MAX_MS: wall-clock budget for the outflow scans; at the deadline progress is saved (per
+ * segment and per chain), no report is written and the next run resumes (see walletFlowsState.js).
+ * The deadline is checked between segments only; the post-scan phase (receipt marking, sellers, balances, report)
+ * is bounded by the receipt budget and the step timeout, and a kill there loses only that run's report.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -67,11 +71,12 @@ import {
   telcoinSellTotals,
   validateWalletFlowsReport,
 } from "./lib/walletFlows.js";
-import { MIN_SWAP_CANDIDATE_TEL, markSwaps } from "./lib/walletFlowsSwaps.js";
+import { markSwaps, swapCandidates } from "./lib/walletFlowsSwaps.js";
+import { adoptLegacyState, legacyScanHash, scanHash } from "./lib/walletFlowsHash.js";
+import { projectSizing } from "./lib/projectSizing.js";
 import {
   WALLET_FLOWS_EVM_STATE_FILE,
   buildState,
-  configHash,
   scanChainOutflows,
   stateLogic,
   tokenConfigFingerprint,
@@ -124,7 +129,19 @@ const AS_OF = BACKFILL.asOf;
 /** Initial getLogs span per chain; rpc.getLogs bisects automatically when a node refuses. */
 const SPAN = (chain) => PLAN.logSpan(chain);
 const MAX_RECEIPTS = Number(process.env.WALLET_FLOWS_MAX_RECEIPTS) || 2500;
-const MIN_SELLER_TEL = Number(process.env.WALLET_FLOWS_MIN_SELLER_TEL) || 5e6;
+const SIZING = projectSizing(PROJECT.config);
+const MIN_SELLER_TEL = Number(process.env.WALLET_FLOWS_MIN_SELLER_TEL) || SIZING.minSellerTokens;
+// Part of the state hash (stateLogic below): the same value for a project keeps its incremental state.
+const MIN_SWAP_CANDIDATE_TOKENS = SIZING.minSwapCandidateTokens;
+const RUN_STARTED_MS = Date.now();
+/**
+ * Wall-clock budget for the outflow scans (unset = unlimited). At the deadline the state is saved, NO report is
+ * written from partial data and the run exits 0; the next run resumes from the saved per-chain cursors.
+ * Set it under the workflow's timeout (a killed job saves nothing it has not already saved per segment).
+ */
+const MAX_MS = Number(process.env.WALLET_FLOWS_MAX_MS) || Infinity;
+/** getLogs spans scanned between state saves: a deadline or kill loses at most this many spans of work. */
+const SEGMENT_SPANS = 32;
 
 const readJson = async (p) => JSON.parse(await fs.readFile(p, "utf8"));
 const readJsonOr = async (p, fallback) => {
@@ -259,6 +276,25 @@ async function fetchPrice(previous) {
   return { priceUsd: previous?.priceUsd ?? 0, priceSource: `${previous?.priceSource ?? "unknown"} (carried over)` };
 }
 
+/** Deadline reached: say what is done and what remains, and flag the run as partial for the workflow. */
+async function announcePartial({ done, pending }) {
+  const describe = (p) =>
+    p.notStarted
+      ? `${p.chain} not started`
+      : p.cursor === null
+        ? `${p.chain} no progress`
+        : `${p.chain} at block ${p.cursor} of ${p.head} (${Math.floor((100 * (p.cursor - p.start90)) / Math.max(1, p.head - p.start90))}% of 90d)`;
+  const line = `wallet-flows PARTIAL: time budget WALLET_FLOWS_MAX_MS reached. Done: ${done.join(", ") || "none"}. Remaining: ${pending.map(describe).join("; ")}. State saved; ${path.relative(ROOT, OUT)} left unchanged; the next run resumes from the cursors.`;
+  console.log(line);
+  console.log(`::notice title=wallet-flows partial::${line}`);
+  try {
+    if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `### wallet-flows: partial, will continue\n\n${line}\n`);
+    if (process.env.GITHUB_OUTPUT) await fs.appendFile(process.env.GITHUB_OUTPUT, "partial=true\n");
+  } catch (error) {
+    console.warn(`wallet-flows: could not write the step summary (${error?.message ?? error})`);
+  }
+}
+
 async function main() {
   const chainsCfg = PLAN.chainsCfg;
   const cexCfg = loadProjectClassification(PROJECT, "cexWallets", { wallets: [] }, ROOT);
@@ -290,19 +326,39 @@ async function main() {
 
   // Incremental outflow scan: not for --as-of backfills (their head is historical).
   const stateFile = projectWork(PROJECT, ROOT)(WALLET_FLOWS_EVM_STATE_FILE);
-  const prevState = AS_OF ? null : await readJsonOr(stateFile, null);
-  const stateHash = configHash({
-    logic: stateLogic({ swapTopics: SWAP_TOPICS, minCandidateTel: MIN_SWAP_CANDIDATE_TEL }),
-    registry,
-    cex: (cexCfg.wallets ?? cexCfg).map((w) => [norm(w.address), w.label ?? w.walletName ?? null]),
-    dexAddresses: dexAddresses.map(norm).sort(),
-    upgradeContracts: upgradeContracts.map(norm).sort(),
-    bridgeAddresses: PLAN.bridgeAddresses.map(norm).sort(),
-    recon: (recon.items ?? []).map((i) => [norm(i.address), i.category]).sort(),
-    // Every configured chain, so a `--chains` subset run keeps the other chains' cursors.
-    tokens: tokenConfigFingerprint(chainsCfg),
+  const storedState = AS_OF ? null : await readJsonOr(stateFile, null);
+  const logic = stateLogic({ swapTopics: SWAP_TOPICS, minCandidateTel: MIN_SWAP_CANDIDATE_TOKENS });
+  // Every configured chain, so a `--chains` subset run keeps the other chains' cursors.
+  const tokenFingerprint = tokenConfigFingerprint(chainsCfg);
+  // Only scan-determining inputs are hashed (walletFlowsHash.js); labels are applied at report build.
+  const stateHash = scanHash({ logic, registry, tokens: tokenFingerprint });
+  const { state: prevState, adopted } = adoptLegacyState(storedState, {
+    hash: stateHash,
+    legacyHash: legacyScanHash({
+      logic,
+      registry,
+      cexWallets: cexCfg.wallets ?? cexCfg,
+      dexAddresses,
+      upgradeContracts,
+      bridgeAddresses: PLAN.bridgeAddresses,
+      reconItems: recon.items ?? [],
+      tokens: tokenFingerprint,
+    }),
   });
+  if (adopted) console.log("state hash format migrated: stored inputs unchanged under the old rule, keeping the incremental state");
   const nextStateChains = {};
+  const saveState = async () => {
+    if (AS_OF || DRY) return;
+    await fs.mkdir(path.dirname(stateFile), { recursive: true });
+    // Compact JSON (no indent): the file is committed daily. tmp + rename so a crash keeps the last good state.
+    const next = buildState({ hash: stateHash, chains: nextStateChains, previous: prevState, validChains: Object.keys(chainsCfg) });
+    await fs.writeFile(`${stateFile}.tmp`, JSON.stringify(next) + "\n");
+    await fs.rename(`${stateFile}.tmp`, stateFile);
+  };
+  // A backfill or dry run cannot persist progress, so it never stops early.
+  const deadlineMs = AS_OF || DRY ? Infinity : RUN_STARTED_MS + MAX_MS;
+  const chainRuns = [];
+  const pendingChains = [];
   const startBlocks = {};
   const windows = {};
   const tracked = [];
@@ -316,6 +372,10 @@ async function main() {
   if (AS_OF) console.log(`as-of ${AS_OF.iso}: windows anchored there; balances and USD values will be null`);
 
   for (const chain of CHAINS) {
+    if (Date.now() >= deadlineMs) {
+      pendingChains.push({ chain, cursor: null, notStarted: true });
+      continue;
+    }
     const urls = await getUsableRpcUrls(chain, { logRange: true });
     if (urls.length === 0) throw new Error(`no RPC for ${chain}`);
     const tokens = resolveChainTokens(chainsCfg[chain]);
@@ -339,12 +399,19 @@ async function main() {
     // Always RPC: sender lists are never sent to Portal (decision D2).
     const senders = [...new Set([...knownAddrs, ...botAddrs])].map(pad);
     const start90 = startBlocks[chain]["90d"];
-    const { plan, fresh, events: transfers, entry } = await scanChainOutflows({
+    const { plan, fresh, events: transfers, entry, complete } = await scanChainOutflows({
       state: prevState,
       chain,
       hash: stateHash,
       start90,
       head,
+      segmentBlocks: SPAN(chain) * SEGMENT_SPANS,
+      deadlineMs,
+      // State is saved after every segment and when the chain finishes (tmp + rename).
+      onProgress: async (saved) => {
+        nextStateChains[chain] = saved;
+        await saveState();
+      },
       scan: async (from, to) =>
         toTransfers(
           chain,
@@ -355,9 +422,7 @@ async function main() {
       mark: (events) =>
         markSwaps({
           fetchReceipt: receiptFetcher(urls),
-          transfers: events.filter(
-            (t) => t.tel >= MIN_SWAP_CANDIDATE_TEL && !index.bots.has(t.from) && classifyOutflow(t.from, t.to, index) === "unlabelled",
-          ),
+          transfers: swapCandidates(events, index, MIN_SWAP_CANDIDATE_TOKENS),
           budget,
         }),
     });
@@ -366,10 +431,21 @@ async function main() {
         ? `${chain}: full outflow scan from ${start90}${prevState ? ` (${plan.reason})` : ""}`
         : `${chain}: incremental outflow scan from ${plan.from} (${plan.events.length} stored events)`,
     );
-    nextStateChains[chain] = entry;
+    if (!complete) {
+      pendingChains.push({ chain, cursor: entry?.cursor ?? null, start90, head });
+      continue;
+    }
     allTransfers.push(...transfers);
+    chainRuns.push({ chain, urls, tokenList, slotByToken, scanner, head });
     console.log(`${chain}: ${fresh.length} fetched, ${transfers.length} outflows from tracked wallets in 90d`);
+  }
 
+  if (pendingChains.length > 0) {
+    await announcePartial({ done: chainRuns.map((c) => c.chain), pending: pendingChains });
+    return;
+  }
+
+  for (const { chain, urls, tokenList, slotByToken, scanner, head } of chainRuns) {
     // 4. 72h large-seller discovery (every TEL transfer in the window).
     if (!SKIP_SELLERS) {
       const sellerFilter = { address: tokenList.map((t) => t.address), topics: [TRANSFER] };
@@ -462,13 +538,6 @@ async function main() {
   }
   await fs.mkdir(path.dirname(OUT), { recursive: true });
   await fs.writeFile(OUT, JSON.stringify(report, null, 1) + "\n");
-  if (!AS_OF) {
-    // Cursors advance only after every chain scanned and the report validated; tmp + rename so a crash keeps the old state.
-    await fs.mkdir(path.dirname(stateFile), { recursive: true });
-    // Compact JSON (no indent): the file is committed daily.
-    await fs.writeFile(`${stateFile}.tmp`, JSON.stringify(buildState({ hash: stateHash, chains: nextStateChains, previous: prevState, validChains: Object.keys(chainsCfg) })) + "\n");
-    await fs.rename(`${stateFile}.tmp`, stateFile);
-  }
   console.log(`Wrote ${path.relative(ROOT, OUT)} (${knownWallets.length} wallets, ${largeSellers.length} sellers)`);
 }
 

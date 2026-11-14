@@ -328,6 +328,7 @@
   "gated": {
     "$comment": "Wallet-level forensics stay behind the forensics gate (netlify/functions/forensics-gate.cjs; password today, paywall later). walletFlows feeds scripts/generate-wallet-flows.js: data/forensics/ for TEL (legacyRoot), data/<slug>/forensics/ for other projects. See docs/MULTI-TOKEN.md \"Gated forensics\".",
     "forensics": true,
+    "associationFlows": true,
     "walletFlows": {
       "coingeckoId": "telcoin",
       "chains": [

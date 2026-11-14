@@ -13,6 +13,8 @@
  * source "checkpoint": a scan head, not a day cutoff).
  */
 
+import { isComparableStamp } from "./cexFlows.js";
+
 const day = (iso) => (typeof iso === "string" && iso.length >= 10 ? iso.slice(0, 10) : null);
 const prevDate = (d) => new Date(Date.parse(`${d}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
 
@@ -145,4 +147,113 @@ export function compareFeeds(feeds, { blockTolerance = 0, strict = false, missin
   if (unstamped.length) (strict ? problems : warnings).push(`unstamped (no asOf): ${unstamped.join(", ")}`);
 
   return { ok: problems.length === 0, endDates, blockSpread, problems, warnings, skipped, info };
+}
+
+const CHAIN_COVERAGE_LOOKBACK_DAYS = 30;
+
+const nextDay = (d) => new Date(Date.parse(`${d}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * Gate for cex-flows.json: its recorded comparison must name two ordered,
+ * comparable snapshots exactly one day apart, and (where a transaction-level
+ * exchange-flow-history row exists for the same day) its net must match that row.
+ *
+ * The structural part fails (it only checks what our own writer stamps, and
+ * lib/cexFlows.js uses the same snapshotComparison). The amount part is a WARNING
+ * only: it compares two independently produced feeds and they legitimately
+ * diverge when the exchange wallet list changes (balances jump with no
+ * transfers; no feed carries a reliable list-change stamp: cex-flows
+ * `listUpdatedAt` is the run time, so only changelog dates are passed in), when
+ * the history scans fewer chains than the balances cover, and for rebasing or
+ * fee-on-transfer tokens, whose balances move without matching transfers. This
+ * gate runs before the nightly commit, so a failure would cost the night's data.
+ *
+ * Amount rule: a token's balance moves only through transfers, so the balance
+ * delta of the tracked wallets equals the day's transfer net up to rounding: the
+ * history row rounds `in` and `out` to whole tokens (net error <= 1 token), so the
+ * caller passes `tolerance` = 2 x the representable unit. The rule does not hold,
+ * and is skipped with a reason, when: the asset is native (fees and staking rewards
+ * move balances without transfers), the snapshot is read live (its window is
+ * run-time to run-time, not the history row's calendar day), the history row is
+ * partial or absent, or the wallet list changed that day (`walletSetChangeDates`:
+ * the two feeds may then use different lists).
+ *
+ * Returns { problems, warnings, checks }.
+ */
+export function checkCexFlowsWindow(cex, flowHistory, { tolerance, nativeAsset = false, walletSetChangeDates = [] } = {}) {
+  const out = { problems: [], warnings: [], checks: [] };
+  if (!cex?.overall) return out;
+  const cmp = cex.comparison;
+  if (!cmp) {
+    out.warnings.push("cex-flows has no comparison stamp (written before the previous/current asOf were recorded): window unverified until the next nightly rewrites it");
+  } else {
+    const cur = cmp.current;
+    const prev = cmp.previous;
+    if (cex.asOf?.date && cur?.date !== cex.asOf.date) {
+      out.problems.push(`cex-flows comparison.current.date ${cur?.date ?? "(none)"} != asOf.date ${cex.asOf.date}`);
+    }
+    if (cmp.available === true) {
+      if (!isComparableStamp(cur) || !isComparableStamp(prev)) {
+        out.problems.push(`cex-flows compares snapshots that are not both settled/comparable: previous ${JSON.stringify(prev?.date ?? null)} (unpinned: ${prev?.unpinned?.length ?? 0}), current ${JSON.stringify(cur?.date ?? null)} (unpinned: ${cur?.unpinned?.length ?? 0})`);
+      } else if (!(prev.date < cur.date)) {
+        out.problems.push(`cex-flows previous asOf ${prev.date} is not before current asOf ${cur.date}`);
+      } else if (nextDay(prev.date) !== cur.date) {
+        out.problems.push(`cex-flows claims a one-day flow but compares ${prev.date} -> ${cur.date}`);
+      } else {
+        out.checks.push(`cex-flows compares settled snapshots ${prev.date} -> ${cur.date}`);
+      }
+    } else if (typeof cmp.reason !== "string" || cmp.reason === "") {
+      out.problems.push("cex-flows comparison.available is false with no reason");
+    } else {
+      const o = cex.overall;
+      if (o.net !== 0 || o.inflow !== 0 || o.outflow !== 0 || o.previousBalance !== o.currentBalance) {
+        out.problems.push(`cex-flows has no comparison (${cmp.reason}) but still reports a delta (net ${o.net}, previous ${o.previousBalance}, current ${o.currentBalance})`);
+      } else {
+        out.checks.push(`cex-flows carries no comparison (${cmp.reason}); deltas read zero`);
+      }
+      return out;
+    }
+    if (out.problems.length) return out;
+  }
+
+  // Amount cross-check against the transaction-level feed for the same day.
+  const date = cmp?.current?.date ?? cex.asOf?.date;
+  const skip = (reason) => {
+    out.checks.push(`cex-flows net not compared with exchange-flow-history${date ? `[${date}]` : ""}: ${reason}`);
+    return out;
+  };
+  if (nativeAsset) return skip("native asset (fees and staking rewards move balances without transfers)");
+  if (!date) return skip("cex-flows carries no day");
+  if (cex.asOf?.settled === false) return skip("snapshot read live (its window is not the history row's calendar day)");
+  const row = (flowHistory?.entries ?? []).find((e) => e?.date === date);
+  if (!row) return skip("no exchange-flow-history row for that day");
+  if (row.partial === true) return skip("the history row is partial");
+  if (!Number.isFinite(row.net)) return skip("the history row has no net");
+  if (walletSetChangeDates.some((d) => d === date || d === nextDay(date))) {
+    return skip("the exchange wallet list changed that day");
+  }
+  // A row lists only chains with transfers, so what the history currently scans is
+  // the union over its recent rows; the cex balances sum every chain the holder
+  // snapshot covers. A chain with no transfers for the whole lookback is treated as
+  // not scanned: the check is a warning, so skipping errs on the quiet side.
+  const earliest = new Date(Date.parse(`${date}T00:00:00Z`) - CHAIN_COVERAGE_LOOKBACK_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const dayRows = (flowHistory?.entries ?? []).filter((e) => typeof e?.date === "string" && e.date >= earliest && e.date <= date);
+  const scanned = new Set(dayRows.flatMap((e) => Object.keys(e?.chains ?? {})));
+  const noHistory = Object.keys(cex.asOf?.blocks ?? {}).filter((c) => !scanned.has(c));
+  // The feed itself proves a chain contributes nothing when its exchange balances are
+  // exactly 0 in both snapshots; absent, null or non-finite data proves nothing.
+  const provenZero = (c) => {
+    const b = cex.overall.byChain?.[c];
+    return b?.previousBalance === 0 && b?.currentBalance === 0;
+  };
+  const unscanned = noHistory.filter((c) => !provenZero(c));
+  if (unscanned.length) return skip(`the history has no rows for ${unscanned.join(", ")}, which the exchange balances include`);
+  for (const c of noHistory) out.checks.push(`${c}: exchange wallets hold none in either snapshot, counted as zero`);
+  const diff = Math.abs(cex.overall.net - row.net);
+  if (diff > tolerance) {
+    out.warnings.push(`cex-flows net ${Math.round(cex.overall.net).toLocaleString()} differs from exchange-flow-history[${date}] net ${row.net.toLocaleString()} by ${Math.round(diff).toLocaleString()} (tolerance ${tolerance}): the two feeds are produced independently; check for a wallet-list change, a rebasing or fee-on-transfer token, or a chain the history does not scan`);
+  } else {
+    out.checks.push(`cex-flows net agrees with exchange-flow-history[${date}] (${row.net.toLocaleString()})`);
+  }
+  return out;
 }

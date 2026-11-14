@@ -29,6 +29,8 @@ import { getAllRpcUrls, getPublicFallbackUrls, getLogs, rpcCall } from "./lib/rp
 import { resolveJobEnv } from "./lib/rpcMetrics.js";
 import { assertChainVm } from "./lib/chainVms.js";
 import { projectChainsAllVms, selectPipelineProject } from "./lib/projects.js";
+import { loadChainAdapter } from "./lib/chainAdapters.js";
+import { resolveSettledDate } from "./lib/asOf.js";
 import {
   buildLedgerIndex,
   ledgerOutRelDir,
@@ -50,6 +52,8 @@ const opt = (argv, name) => {
   const i = argv.indexOf(name);
   return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : undefined;
 };
+
+const DEFAULT_HEDERA_LEDGER_MS = 40 * 60 * 1000;
 
 export function emptyCheckpoint(slug) {
   return { version: CHECKPOINT_VERSION, slug, updated: null, chains: {}, events: [], botSales: [] };
@@ -157,6 +161,29 @@ export async function main(argv = process.argv.slice(2), { root = process.cwd(),
         }
         ck.chains[chain] = res.cursor;
         coverage[chain] = { status: res.stats.backlog ? `partial (${res.stats.backlog} signatures left for the next run)` : "ok", provider: "solana-rpc", ...res.stats, headTime: res.cursor.headTime };
+      } else if (vm === "hedera") {
+        const adapter = await loadChainAdapter("hedera");
+        const kit = await adapter.walletFlows();
+        const senders = wallets.map((w) => w.address).sort(kit.compareIds);
+        const { client } = kit.countRequests(adapter.mirrorClient(chainCfg));
+        const target = resolveSettledDate({});
+        const { ends } = await kit.resolveDayEnds(project, { key: chain, clock: adapter.clock(chainCfg, { client }), firstDate: target, lastDate: target, root });
+        const deadlineMs = now() + (Number(process.env.LEDGER_HEDERA_MAX_MS) || DEFAULT_HEDERA_LEDGER_MS);
+        const res = await kit.scanHederaLedger({ client, chain, symbol: ticker, senders, classifierVersion: kit.FLOW_CLASSIFIER_VERSION, checkpoint: ck.chains[chain], through: ends[target].stamp, nowSec, historyDays, deadlineMs, logger, now });
+        // Cursors and events belong together: a rebuilt scan (other sender set) drops this chain's stored events first.
+        if (res.rebuilt) ck.events = ck.events.filter((e) => e.chain !== chain);
+        for (const t of res.transfers) {
+          const ev = classifyTransfer(t, ix, types);
+          if (ev) newEvents.push({ ...ev, uniqueId: t.uniqueId });
+        }
+        ck.chains[chain] = res.cursor;
+        const left = res.stats.streamsBehind;
+        coverage[chain] = {
+          status: res.complete ? "ok" : `partial (${left} of ${res.stats.streams} sender streams behind${res.failed.length ? `; ${res.failed.length} page failures, first: ${res.failed[0].message}` : ""}; resumes next run)`,
+          provider: "hedera-mirror",
+          ...res.stats,
+          headTime: res.cursor.headTime,
+        };
       } else {
         const assets = evmAssetMap(chainCfg, stables, ticker);
         // Provider order from config/nightly-jobs.json (job "ledger"): keyless

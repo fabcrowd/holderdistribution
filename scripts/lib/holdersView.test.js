@@ -4,6 +4,9 @@ import {
   DISTRIBUTION_RANGES,
   buildBalanceStats,
   buildDistributionRows,
+  buildSnapshotData,
+  buildViewData,
+  dailyPreviousSnapshot,
 } from "./holdersView.js";
 
 // MIN_TEL_RAW is 1 RAW unit and TEL has 2 decimals, so the smallest balance the
@@ -71,5 +74,42 @@ describe("holder bucket floors", () => {
     const bottom = rows.find((row) => row.label === "1-250K");
     // Only the >=1 TEL holder counts; the two dust wallets are excluded.
     expect(bottom?.count).toBe(1);
+  });
+});
+
+describe("dailyPreviousSnapshot", () => {
+  const stamp = (date, extra = {}) => ({ date, blocks: { ethereum: 1 }, settled: true, ...extra });
+  const addr = (n) => `0x${String(n).padStart(40, "0")}`;
+  const raw = (date, ids, asOfExtra = {}) => ({
+    generatedAt: `${date}T12:00:00.000Z`,
+    asOf: stamp(date, asOfExtra),
+    chainOrder: ["ethereum"],
+    chains: { ethereum: { holders: ids.map((n) => ({ address: addr(n), balance: 100 + n })) } },
+  });
+  const noNonRetail = () => false;
+  const view = (snapshot, previous) =>
+    buildViewData("combined", buildSnapshotData(snapshot, null, noNonRetail), buildSnapshotData(previous, null, noNonRetail));
+
+  it("keeps a comparable previous from the day before, so a normal night is byte-identical", () => {
+    const current = raw("2026-11-12", [1, 2, 4]);
+    const previous = raw("2026-11-11", [1, 2, 3]);
+    const daily = dailyPreviousSnapshot(current, previous);
+    expect(daily).toEqual({ previous, reason: null });
+    expect(JSON.stringify(view(current, daily.previous))).toBe(JSON.stringify(view(current, previous)));
+    expect(view(current, daily.previous).velocity).toMatchObject({ added: 1, removed: 1, days: 1 });
+  });
+
+  it("drops a previous that is not exactly one day earlier, a same-day rerun, unpinned or unstamped", () => {
+    const current = raw("2026-11-12", [1]);
+    expect(dailyPreviousSnapshot(current, raw("2026-11-12", [1])).reason).toBe("not-ordered");
+    expect(dailyPreviousSnapshot(current, raw("2026-11-11", [1], { unpinned: ["ethereum"], settled: false })).reason).toBe("previous-not-comparable");
+    expect(dailyPreviousSnapshot(current, { ...raw("2026-11-11", [1]), asOf: undefined }).reason).toBe("previous-unstamped");
+    const gap = dailyPreviousSnapshot(current, raw("2026-11-10", [1]));
+    expect(gap).toEqual({ previous: null, reason: "gap" });
+    expect(view(current, gap.previous).velocity).toBeNull();
+  });
+
+  it("an absent previous stays the first-run shape with no reason", () => {
+    expect(dailyPreviousSnapshot(raw("2026-11-12", [1]), null)).toEqual({ previous: null, reason: null });
   });
 });

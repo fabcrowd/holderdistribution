@@ -100,17 +100,52 @@ export function mergeEvents(stored, fresh, { from, start90 }) {
 }
 
 /**
- * One chain's incremental outflow scan: plan, fetch, merge (carrying stored swap verdicts),
- * then mark swaps on the merged store (null/absent verdicts are retried). Throws if the
- * fetch fails, so the caller never reaches buildState and the previous state stays.
- * @returns {{ plan: object, events: object[], entry: { cursor: number, events: object[] } }}
+ * One chain's resumable outflow scan: plan, then fetch `[plan.from, head]` in segments of
+ * `segmentBlocks`, merging (carrying stored swap verdicts) and calling `onProgress(entry)` after
+ * every segment so a deadline or a kill loses at most one segment. Invariant of every saved
+ * entry: `events` is complete for `[start90, cursor]` (stored events beyond the cursor are
+ * dropped; the resumed run re-reads them). Once the head is reached, swaps are marked on the
+ * merged store (null/absent verdicts are retried) and the final entry is saved.
+ *
+ * A segment is never started after `deadlineMs`. Then `complete` is false and `entry` is the last
+ * saved entry (null when nothing was scanned: the caller keeps the previous state). A fetch
+ * error throws, leaving the last saved entry in place.
+ * @returns {Promise<{ plan: object, fresh: object[], events: object[], entry: object|null, complete: boolean }>}
  */
-export async function scanChainOutflows({ state, chain, hash, start90, head, scan, mark }) {
+export async function scanChainOutflows({
+  state,
+  chain,
+  hash,
+  start90,
+  head,
+  scan,
+  mark,
+  segmentBlocks = Infinity,
+  deadlineMs = Infinity,
+  now = Date.now,
+  onProgress = null,
+}) {
   const plan = planChainScan({ state, chain, hash, start90, head });
-  const fresh = await scan(plan.from, head);
+  const fresh = [];
+  let entry = null;
+  let scannedTo = plan.from - 1;
+  while (scannedTo < head) {
+    if (now() >= deadlineMs) {
+      return { plan, fresh, events: entry?.events ?? [], entry, complete: false };
+    }
+    const to = Math.min(head, scannedTo + segmentBlocks);
+    fresh.push(...(await scan(scannedTo + 1, to)));
+    scannedTo = to;
+    if (scannedTo < head) {
+      entry = { cursor: scannedTo, events: mergeEvents(plan.events, fresh, { from: plan.from, start90 }) };
+      await onProgress?.(entry);
+    }
+  }
   const events = mergeEvents(plan.events, fresh, { from: plan.from, start90 });
   await mark(events);
-  return { plan, fresh, events, entry: { cursor: head, events } };
+  entry = { cursor: head, events };
+  await onProgress?.(entry);
+  return { plan, fresh, events, entry, complete: true };
 }
 
 /**
