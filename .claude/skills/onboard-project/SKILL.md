@@ -21,7 +21,7 @@ Order of work, with the commands that are not in the steps below:
 8. **Step 5** (gates, visual check, verifier, report). Confirm `npm run check:feeds` is green on `main` again. Tell the owner the Netlify deploy is theirs: config and UI reach the browser only then.
 9. **Write it down:** this file (anything that was different from what it says), `README.md`, `.claude/HANDOFF.md`, `tasks/lessons.md`.
 
-Do not dispatch `refresh-holders.yml` by hand for a token whose nightly has already run that day: on 2026-11-14 a second run on the same day published `cex-flows.json` with no comparison (it has no previous snapshot). Check `gh run list --workflow refresh-holders.yml` first.
+Do not dispatch `refresh-holders.yml` by hand for a token whose nightly has already run that day: on 2026-11-14 a second run on the same day published `cex-flows.json` with no comparison (it has no previous snapshot). Check `gh run list --workflow refresh-holders.yml` first. Since the same-day gate (#187) a second run skips the snapshot steps unless `-f force=true` is passed; pass it after a same-day config change (tiers, exclusions, CEX list).
 
 ## Step 0. From a name or ticker
 1. Search CoinGecko: `https://api.coingecko.com/api/v3/search?query=<name or ticker>`. Take the coin whose name or symbol matches exactly; if several match, the one with the best `market_cap_rank`. Say which you picked and why. Ask the owner only if two different coins are equally plausible.

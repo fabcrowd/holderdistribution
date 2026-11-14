@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadRegistry, resolveProject } from "./projects.js";
+import { resolveSettledDate, utcDay } from "./asOf.js";
 import {
   workflowMatrix,
   workflowPlan,
@@ -228,6 +229,110 @@ describe("workflow-paths.js skipped (CLI)", () => {
       expect(typeof parsed[0].error).toBe("string");
       expect(parsed[0].error.length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe("workflow-paths.js done (CLI)", () => {
+  const script = path.join(repo, "scripts/workflow-paths.js");
+  const today = utcDay(new Date());
+  const yesterday = resolveSettledDate({ now: new Date() });
+  const settled = (date) => ({ asOf: { date, blocks: { ethereum: 1 }, settled: true } });
+  const live = (date) => ({ asOf: { date, blocks: { solana: 1 }, settled: false, live: ["solana"] } });
+
+  /** Temp registry with project "x" (chains as given) whose committed snapshot file is `snapshot` (string, object, or null for none). */
+  function withProject(chains, snapshot, fn) {
+    return withRegistry([{ slug: "tel", default: true }, { slug: "x" }], (root) => {
+      const cfgPath = path.join(root, "config/projects/x.json");
+      fs.writeFileSync(cfgPath, JSON.stringify({ ...JSON.parse(fs.readFileSync(cfgPath, "utf8")), chains }));
+      if (snapshot !== null) {
+        fs.mkdirSync(path.join(root, "public/data/x"), { recursive: true });
+        fs.writeFileSync(path.join(root, "public/data/x/tel-holders.json"), typeof snapshot === "string" ? snapshot : JSON.stringify(snapshot));
+      }
+      return fn(root);
+    });
+  }
+  const run = (root, ...extra) => execFileSync(process.execPath, [script, "done", "x", ...extra], { cwd: root, encoding: "utf8" });
+  const lines = (out) => out.trimEnd().split("\n");
+  const evm = [{ key: "ethereum" }];
+  const sol = [{
+    key: "solana", name: "Solana", vm: "solana", cluster: "mainnet-beta", bridge: "native", origin: true,
+    explorer: "https://solscan.io", rpc: { envPrefix: "SOLANA", publicUrls: ["https://api.mainnet-beta.solana.com"] },
+    tokens: [{ address: "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU", program: "spl-token", decimals: 6, status: "canonical", symbol: "ZBCN" }],
+  }];
+
+  it("true for today's expected stamp (settled EVM, live Solana), as exactly two KEY=value lines", () => {
+    withProject(evm, settled(yesterday), (root) => {
+      const out = lines(run(root));
+      expect(out).toHaveLength(2);
+      expect(out[0]).toBe("HD_SNAPSHOT_DONE=true");
+      expect(out[1]).toMatch(/^HD_SNAPSHOT_DONE_REASON=[^\r\n]+$/);
+    });
+    withProject(sol, live(today), (root) => expect(lines(run(root))[0]).toBe("HD_SNAPSHOT_DONE=true"));
+  });
+
+  it("false for yesterday's stamp (first run of the day)", () => {
+    const dayBefore = new Date(Date.parse(`${yesterday}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+    withProject(evm, settled(dayBefore), (root) => {
+      const out = lines(run(root));
+      expect(out).toHaveLength(2);
+      expect(out[0]).toBe("HD_SNAPSHOT_DONE=false");
+    });
+  });
+
+  it("false with --force even when today's stamp is committed", () => {
+    withProject(evm, settled(yesterday), (root) => {
+      const out = lines(run(root, "--force"));
+      expect(out).toHaveLength(2);
+      expect(out[0]).toBe("HD_SNAPSHOT_DONE=false");
+      expect(out[1]).toMatch(/force/i);
+    });
+  });
+
+  it("--force is honored in every argument position: no slug (default project), slug first, slug last", () => {
+    withProject(evm, settled(yesterday), (root) => {
+      // Without --force x is done; each forced form must flip to false with the forced reason.
+      expect(lines(run(root))[0]).toBe("HD_SNAPSHOT_DONE=true");
+      for (const args of [["--force"], ["x", "--force"], ["--force", "x"]]) {
+        const out = lines(execFileSync(process.execPath, [script, "done", ...args], { cwd: root, encoding: "utf8" }));
+        expect(out, args.join(" ")).toHaveLength(2);
+        expect(out[0], args.join(" ")).toBe("HD_SNAPSHOT_DONE=false");
+        expect(out[1], args.join(" ")).toMatch(/force/i);
+      }
+    });
+  });
+
+  it("the slug is the first argument not starting with --, wherever --force sits (an unknown slug is refused in both orders)", () => {
+    withProject(evm, settled(yesterday), (root) => {
+      for (const args of [["nope", "--force"], ["--force", "nope"]]) {
+        let status;
+        try {
+          execFileSync(process.execPath, [script, "done", ...args], { cwd: root, encoding: "utf8", stdio: "pipe" });
+        } catch (err) {
+          status = err.status;
+        }
+        expect(status, args.join(" ")).toBe(2);
+      }
+    });
+  });
+
+  it("without a slug the default project is checked", () => {
+    // Default project tel has no committed snapshot in the temp root, so unforced `done` is false for it even though x is done.
+    withProject(evm, settled(yesterday), (root) => {
+      const out = lines(execFileSync(process.execPath, [script, "done"], { cwd: root, encoding: "utf8" }));
+      expect(out[0]).toBe("HD_SNAPSHOT_DONE=false");
+      expect(out[1]).toMatch(/unreadable/);
+    });
+  });
+
+  it("false (exit 0, reason given) for a missing file and for corrupt JSON", () => {
+    for (const snapshot of [null, "{not json"]) {
+      withProject(evm, snapshot, (root) => {
+        const out = lines(run(root));
+        expect(out).toHaveLength(2);
+        expect(out[0]).toBe("HD_SNAPSHOT_DONE=false");
+        expect(out[1]).toMatch(/^HD_SNAPSHOT_DONE_REASON=[^\r\n]+$/);
+      });
+    }
   });
 });
 

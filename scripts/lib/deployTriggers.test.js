@@ -1,5 +1,45 @@
 import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { readWorkflows, deployBudget, runsPerDay } from "./deployTriggers.js";
+
+/** `conditional` as readWorkflows reports it for a workflow whose commit step carries `ifLine` (or none). */
+const conditionalFor = (ifLine) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hd-deploy-"));
+  try {
+    const src = [
+      "on:",
+      "  schedule:",
+      "    - cron: '7 1 * * *'",
+      "jobs:",
+      "  j:",
+      "    steps:",
+      "      - name: Commit",
+      ...(ifLine ? [`        if: ${ifLine}`] : []),
+      "        run: git commit -m \"Refresh\"",
+      "",
+    ].join("\n");
+    fs.writeFileSync(path.join(dir, "w.yml"), src);
+    return readWorkflows(dir)[0].conditional;
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+};
+
+describe("commit step conditional", () => {
+  it("no if: is not conditional", () => expect(conditionalFor(null)).toBe(false));
+  it("the same-day gate alone is not conditional (it only skips a duplicate run)", () => {
+    expect(conditionalFor("${{ env.HD_SNAPSHOT_DONE != 'true' }}")).toBe(false);
+    expect(conditionalFor("env.HD_SNAPSHOT_DONE != 'true'")).toBe(false);
+  });
+  it("the gate combined with another condition is conditional", () => {
+    expect(conditionalFor("${{ env.HD_SNAPSHOT_DONE != 'true' && steps.x.outputs.changed == 'true' }}")).toBe(true);
+  });
+  it("any other if: is conditional", () => {
+    expect(conditionalFor("${{ steps.x.outputs.changed == 'true' }}")).toBe(true);
+  });
+});
 
 /**
  * The deploy-frequency contract, enforced rather than asserted in a commit

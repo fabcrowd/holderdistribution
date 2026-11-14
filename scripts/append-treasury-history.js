@@ -26,7 +26,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { selectPipelineProject, projectPaths } from "./lib/projects.js";
 import { projectExclusions, reconcilePaths } from "./reconcile-supply.js";
-import { vanishedLabelledWallets } from "./lib/labelledWalletGuard.js";
+import { vanishedLabelledWallets, previousIsEarlierStampedDay } from "./lib/labelledWalletGuard.js";
 import { inheritAsOf, shouldEmitRow } from "./lib/asOf.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
@@ -102,6 +102,11 @@ const main = async () => {
   const previousHolders = await readJson(PREVIOUS_HOLDERS_PATH).catch(() => null);
   if (!previousHolders || !holders) {
     console.log("Vanished-wallet guard skipped: no previous snapshot.");
+  } else if (!previousIsEarlierStampedDay(previousHolders.asOf, holders.asOf)) {
+    console.log(
+      `Vanished-wallet guard skipped: previous snapshot (asOf ${previousHolders.asOf?.date ?? "none"}) ` +
+        `is not an earlier settled day than ${holders.asOf?.date ?? "none"}.`,
+    );
   } else {
     const exclusions = await readJson(reconcilePaths(project, ROOT).exclusions).catch(() => ({ labels: {} }));
     const labels = projectExclusions(project, exclusions, holders).labels ?? {};

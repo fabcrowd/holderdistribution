@@ -215,6 +215,29 @@ describe("data pipeline workflow chain", () => {
     expect(steps[flows].env?.RPC_PREFER_PUBLIC).toBe("1");
   });
 
+  it("a rerun skips the snapshot half only: gate on HD_SNAPSHOT_DONE, downstream stages untouched", () => {
+    const doc = load("refresh-holders.yml");
+    const steps = doc.jobs.refresh.steps;
+    const named = (name) => steps.findIndex((s) => s.name === name);
+    const resolve = named("Resolve project data paths");
+    const check = named("Already published today?");
+    const commit = named("Commit snapshot changes");
+    expect(resolve).toBeGreaterThanOrEqual(0);
+    expect(check, "the done check must come right after Resolve project data paths").toBe(resolve + 1);
+    expect(commit).toBeGreaterThan(check);
+    expect(String(steps[check].run)).toContain("workflow-paths.js done");
+    for (const [i, s] of steps.entries()) {
+      if (i <= check || i > commit || s.name === "Configure git user") continue;
+      expect(String(s.if ?? ""), `step "${s.name}" must be gated on HD_SNAPSHOT_DONE`).toContain("env.HD_SNAPSHOT_DONE != 'true'");
+    }
+    for (const s of steps.slice(commit + 1)) {
+      expect(JSON.stringify(s), `downstream step "${s.name}" must not be gated`).not.toContain("HD_SNAPSHOT_DONE");
+    }
+    const force = triggers(doc).workflow_dispatch.inputs.force;
+    expect(force.type).toBe("boolean");
+    expect(force.default).toBe(false);
+  });
+
   it("the daily workflow gates on cross-feed consistency before committing", () => {
     const doc = load("refresh-holders.yml");
     const steps = doc.jobs.refresh.steps;

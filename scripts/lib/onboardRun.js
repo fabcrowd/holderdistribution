@@ -185,7 +185,7 @@ const megaRaiseBlocked = (slug, findings) =>
 const goLiveBlocked = (slug, problems) =>
   `${problems.map((p) => `  - ${p}`).join("\n")}\n` +
   `Fix: apply the "fix:" hint inside each problem above (it names the file and field), ${mergeAndDispatch(slug)}. ` +
-  `A problem with no "fix:" hint is a stale or missing report: regenerate it with gh workflow run refresh-wallet-flows.yml -f project=${slug} (wallet-flows), gh workflow run refresh-ledger.yml -f project=${slug} (ledger) or gh workflow run refresh-holders.yml -f project=${slug} (feeds). ` +
+  `A problem with no "fix:" hint is a stale or missing report: regenerate it with gh workflow run refresh-wallet-flows.yml -f project=${slug} (wallet-flows), gh workflow run refresh-ledger.yml -f project=${slug} (ledger) or gh workflow run refresh-holders.yml -f project=${slug} -f force=true (feeds; force redoes a snapshot already published today). ` +
   `Reproduce locally: node scripts/check-go-live.js --project ${slug} --alignment strict`;
 
 const alignmentStuckHint = (slug) =>
@@ -363,7 +363,7 @@ export function onboardingSteps({ slug, config, readJson, today, goLive = null, 
     id: "snapshot",
     done: Boolean(snapshot),
     why: snapshot ? "first holders snapshot is on main" : "no holders snapshot yet",
-    action: { workflow: "refresh-holders.yml", inputs: { project: slug } },
+    action: { workflow: "refresh-holders.yml", inputs: { project: slug, force: "true" } },
   });
 
   // none-known is "done" only when the machine-built candidate list is empty or fully decided (accepted under cex.wallets or rejected).
@@ -425,7 +425,7 @@ export function onboardingSteps({ slug, config, readJson, today, goLive = null, 
     done: onTiers && megaFresh,
     why: !onTiers ? "feeds still use other tiers (refresh after the tier change)" : !megaFresh ? `the snapshot ran with megaHolderThreshold ${fmtNumber(snapMega)}, config says ${fmtNumber(tiersNow.megaHolderThreshold)} (refresh after the threshold change)` : "holders-lite uses the project's tiers",
     stuck: `holders-lite.json (views.combined.distribution) must list exactly the labels of holders.distributionTiers in config/projects/${slug}.json; compare them with: node -e "console.log(require('./public/data/${slug}/holders-lite.json').views.combined.distribution.map(d=>d.label))"`,
-    action: { workflow: "refresh-holders.yml", inputs: { project: slug } },
+    action: { workflow: "refresh-holders.yml", inputs: { project: slug, force: "true" } },
   });
 
   if (historyStart) {
@@ -547,7 +547,7 @@ export function onboardingSteps({ slug, config, readJson, today, goLive = null, 
       done: aligned,
       why: aligned ? "strict alignment passes (feeds share asOf and day cutoffs)" : `strict alignment: ${alignment.length} problem(s): ${alignment.slice(0, 3).join(" | ")}${alignment.length > 3 ? " | ..." : ""}`,
       stuck: `${alignment.join("; ")}. ${alignmentStuckHint(slug)}`,
-      action: { workflow: "refresh-holders.yml", inputs: { project: slug } },
+      action: { workflow: "refresh-holders.yml", inputs: { project: slug, force: "true" } },
     });
   }
 

@@ -85,7 +85,10 @@ and an empty browser console on all three tabs.
 (one matrix job each, one at a time, TEL first; a failing project never blocks the others;
 onboarding a token needs no new workflow). Each job runs every stage: staker balances →
 holders scan → derived feeds → commit → exchange flows → tier outflows → history-gap fill →
-consistency gate → commit. `scan-exchange-flows`, `generate-tier-outflows` and
+consistency gate → commit. A second run on the same day skips the snapshot steps (staker
+balances through the first commit) for a project whose committed snapshot is already published
+for that day, and still runs the checkpointed downstream stages; `force: true` on a manual
+dispatch redoes the snapshot (the redo has no previous-day snapshot, so `cex-flows` loses its day comparison until the next nightly). `scan-exchange-flows`, `generate-tier-outflows` and
 `fill-history-gaps` are manual (`workflow_dispatch`) backfill tools now; `pipeline-watchdog`
 runs weekly (Mon), `detect-cex-candidates` weekly, `sync-cex-wallets` on the 1st/15th.
 The log scanners run with `RPC_PREFER_PUBLIC=1` (keyless public RPCs take wide `eth_getLogs`

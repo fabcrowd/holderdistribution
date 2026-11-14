@@ -1,4 +1,12 @@
 import { normalizeAnyAddress } from "./address.js";
+import { canRotatePrevious } from "./cexFlows.js";
+
+/**
+ * Whether a previous snapshot is a valid baseline for the vanished-wallet check: a comparable
+ * stamped snapshot from an earlier day (the same rule that rotates it into "previous"). A same-day
+ * or unstamped file is a stale or same-run scratch copy and would flag wallets that did not vanish.
+ */
+export const previousIsEarlierStampedDay = (previousAsOf, currentAsOf) => canRotatePrevious(previousAsOf, currentAsOf);
 
 /**
  * Labelled wallets in `categories` that held a material balance in `previous`

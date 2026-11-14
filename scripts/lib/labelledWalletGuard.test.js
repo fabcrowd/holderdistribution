@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { vanishedLabelledWallets } from "./labelledWalletGuard.js";
+import { vanishedLabelledWallets, previousIsEarlierStampedDay } from "./labelledWalletGuard.js";
+
+describe("previousIsEarlierStampedDay", () => {
+  const stamp = (date) => ({ date, blocks: { ethereum: 1 }, settled: true });
+  it("true only for a stamped snapshot from an earlier day", () => {
+    expect(previousIsEarlierStampedDay(stamp("2026-11-13"), stamp("2026-11-14"))).toBe(true);
+  });
+  it("false for the same day (a same-run rerun has no real baseline)", () => {
+    expect(previousIsEarlierStampedDay(stamp("2026-11-14"), stamp("2026-11-14"))).toBe(false);
+  });
+  it("false for an unstamped previous (stale tel-holders-previous.json with no asOf)", () => {
+    expect(previousIsEarlierStampedDay(undefined, stamp("2026-11-14"))).toBe(false);
+    expect(previousIsEarlierStampedDay(null, stamp("2026-11-14"))).toBe(false);
+  });
+  it("false for a later day", () => {
+    expect(previousIsEarlierStampedDay(stamp("2026-11-15"), stamp("2026-11-14"))).toBe(false);
+  });
+});
 
 const SAFE = "0x84b94024463f01d5cbb3086f14f574d7ed83b794";
 const CATEGORIES = ["treasury", "council", "holdings", "escrow"];

@@ -70,7 +70,7 @@ describe("onboardingSteps", () => {
     const s = steps(config, {});
     expect(nextStep(s)).toMatchObject({ id: "cex-wallets", action: { workflow: "sync-cex-wallets.yml", inputs: { project: "foo" } } });
     const afterCex = steps(config, { "config/projects/foo/cex-wallets.json": { wallets: [{ address: "0x1" }] } });
-    expect(nextStep(afterCex)).toMatchObject({ id: "snapshot", action: { workflow: "refresh-holders.yml" } });
+    expect(nextStep(afterCex)).toMatchObject({ id: "snapshot", action: { workflow: "refresh-holders.yml", inputs: { project: "foo", force: "true" } } });
   });
 
   it("a Solana project without a reviewed CEX list is blocked with the answers field and the announced post-snapshot review", () => {
@@ -100,7 +100,7 @@ describe("onboardingSteps", () => {
     const s = steps(baseConfig(), files);
     expect(nextStep(s)).toMatchObject({ id: "tiers", action: { edit: "derive-tiers" } });
     const withTiers = baseConfig({ holders: { distributionTiers: OWN_TIERS } });
-    expect(nextStep(steps(withTiers, files))).toMatchObject({ id: "snapshot-on-tiers", action: { workflow: "refresh-holders.yml" } });
+    expect(nextStep(steps(withTiers, files))).toMatchObject({ id: "snapshot-on-tiers", action: { workflow: "refresh-holders.yml", inputs: { project: "foo", force: "true" } } });
   });
 
   it("rebuilds history per EVM chain from pipeline.historyStart", () => {
@@ -243,6 +243,8 @@ describe("onboardingSteps", () => {
     const on = { ...config, capabilities: { projectWallets: true } };
     const blocked = nextStep(steps(on, complete(on), { goLive: ["foo: image is not set"], onboardingFlag: true }));
     expect(blocked).toMatchObject({ id: "go-live", blocked: expect.stringContaining("foo: image is not set") });
+    // A same-day redo of the snapshot is skipped unless forced, so the hint must say force=true.
+    expect(blocked.blocked).toContain("gh workflow run refresh-holders.yml -f project=foo -f force=true");
     expect(blocked.blocked).toMatch(/Fix:/);
     expect(nextStep(steps(on, complete(on), { goLive: [], onboardingFlag: true }))).toMatchObject({ id: "list-on-site", action: { edit: "clear-onboarding-flag" } });
     expect(nextStep(steps(on, complete(on), { goLive: [], onboardingFlag: false }))).toBeNull();
@@ -265,7 +267,7 @@ describe("registry, alignment and the onboarding flag", () => {
   it("refreshes once more until strict alignment passes, and never clears the flag while it fails", () => {
     const problems = ["foo: alignment: tier-outflows ends 2026-11-08 but holders-lite ends 2026-11-10 (fix: run the settled nightly)"];
     const failing = steps(on, complete(on), { goLive: [], onboardingFlag: true, alignment: problems });
-    expect(nextStep(failing)).toMatchObject({ id: "alignment", action: { workflow: "refresh-holders.yml", inputs: { project: "foo" } } });
+    expect(nextStep(failing)).toMatchObject({ id: "alignment", action: { workflow: "refresh-holders.yml", inputs: { project: "foo", force: "true" } } });
     const ids = failing.map((s) => s.id);
     expect(ids.indexOf("alignment")).toBeLessThan(ids.indexOf("go-live"));
     expect(ids.indexOf("alignment")).toBeLessThan(ids.indexOf("list-on-site"));
