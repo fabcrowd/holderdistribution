@@ -30,6 +30,7 @@ import { sharedScanEnabled } from "./lib/sharedTransferLogs.js";
 import { ensureCutoffs, findFirstBlockAtOrAfter, nextDate } from "./lib/dayBlocks.js";
 import { resolveSettledDate, planPins, finalizeAsOf, utcDay, aheadAction } from "./lib/asOf.js";
 import { canRotatePrevious } from "./lib/cexFlows.js";
+import { serializePrevious, serializeVerified } from "./lib/snapshotFormat.js";
 import { partialName, serializePartial, writePartial, readPartial, removePartial, partialResumeDecision, partialRaw, buildChunks, streamChunks, loadResumable, keepsFinishedScan, settlePartial } from "./lib/partialCheckpoint.js";
 
 // Mid-scan checkpoint cadence (seconds); 0 disables. See lib/partialCheckpoint.js.
@@ -1262,14 +1263,20 @@ async function main() {
     }
   }
 
-  await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`, "utf8");
+  // Serialize both files before writing either, so a refusal of the snapshot (round trip or size) leaves
+  // disk untouched. The previous snapshot is scratch: it falls back to the legacy layout and has no size gate.
+  const outputText = serializeVerified(output, OUTPUT_PATH);
+  const previousText =
+    priorSnapshot && canRotatePrevious(priorSnapshot.asOf, asOf) ? serializePrevious(priorSnapshot) : null;
+
+  await fs.writeFile(OUTPUT_PATH, outputText, "utf8");
   console.log(`Wrote ${OUTPUT_PATH}`);
 
   // Only a comparable snapshot from an earlier day becomes "previous": a same-day
   // rerun or an unpinned/unstamped file must not displace the older settled one,
   // or cex-flows would compare against the wrong day (lib/cexFlows.js).
   if (priorSnapshot && canRotatePrevious(priorSnapshot.asOf, asOf)) {
-    await fs.writeFile(PREVIOUS_SNAPSHOT_PATH, `${JSON.stringify(priorSnapshot, null, 2)}\n`, "utf8");
+    await fs.writeFile(PREVIOUS_SNAPSHOT_PATH, previousText, "utf8");
     console.log(`Archived prior snapshot to ${PREVIOUS_SNAPSHOT_PATH}`);
   } else if (priorSnapshot) {
     console.warn(`Prior snapshot (asOf ${priorSnapshot.asOf?.date ?? "none"}) is not a comparable earlier day than ${asOf?.date}; previous snapshot left unchanged.`);

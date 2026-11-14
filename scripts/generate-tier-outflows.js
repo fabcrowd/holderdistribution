@@ -68,6 +68,7 @@ import { getTransferLogsCached, sharedScanEnabled } from "./lib/sharedTransferLo
 import { cutoffScanWindow, readCutoffMap, flowFeedAsOf, settledEndBlock } from "./lib/dayBlocks.js";
 import { chainCaughtUp } from "./lib/tierOutflowsComplete.js";
 import { loadChainAdapter, projectHasVm } from "./lib/chainAdapters.js";
+import { hydrateChainHolders } from "./lib/snapshotFormat.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk + git history), work dir (day store / checkpoint), chain
@@ -260,7 +261,7 @@ const makeTierResolver = (snapCommits, fundCommits, snapDates, fundDates, excl) 
     const fd = fundDates.length ? nearest(fundDates, snapDate) : null;
     if (fd) { try { fund = showJson(fundCommits.get(fd), FUND_REL); } catch { /* skip bad funding snapshot */ } }
     const bal = new Map();
-    for (const chain of Object.values(snap.chains ?? {})) {
+    for (const chain of Object.values(hydrateChainHolders(snap).chains ?? {})) {
       for (const h of chain.holders ?? []) {
         const a = (h.address ?? "").trim().toLowerCase();
         if (!a || excl.has(a)) continue;
@@ -570,7 +571,8 @@ const applySolanaFlows = async (dayBuckets, snapCommits, snapDates) => {
     if (cache.has(snapDate)) return cache.get(snapDate);
     const snap = showJson(snapCommits.get(snapDate), SNAP_REL);
     const bal = new Map();
-    for (const c of chains) for (const h of snap.chains?.[c.key]?.holders ?? []) {
+    const hydrated = hydrateChainHolders(snap);
+    for (const c of chains) for (const h of hydrated.chains?.[c.key]?.holders ?? []) {
       const a = (h.address ?? "").trim();
       if (a && !excl.has(a)) bal.set(a, (bal.get(a) ?? 0) + Number(h.balance ?? 0));
     }
@@ -623,7 +625,7 @@ const applyHederaFlows = async (hedera, dayBuckets, snapCommits, snapDates) => {
     if (cache.has(snapDate)) return cache.get(snapDate);
     const snap = showJson(snapCommits.get(snapDate), SNAP_REL);
     const tiers = new Map();
-    for (const h of snap.chains?.[key]?.holders ?? []) {
+    for (const h of hydrateChainHolders(snap).chains?.[key]?.holders ?? []) {
       const a = (h.address ?? "").trim();
       const t = a && !excl.has(a) ? tierOf(Number(h.balance ?? 0)) : null;
       if (t) tiers.set(a, t);

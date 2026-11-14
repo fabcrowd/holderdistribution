@@ -8,7 +8,10 @@
  * Use this only when exclusions changed and a rescan is not practical.
  *
  * Metrics (holderCount / retail / underThreshold / totalBalance) are always
- * recomputed via scripts/lib/holderMetrics.js — never set retail.count = kept.length.
+ * recomputed via computeChainMetrics (scripts/lib/holderMetrics.js, called from resyncSnapshot in
+ * scripts/lib/snapshotFormat.js) — never set retail.count = kept.length.
+ *
+ * A single-chain (slim) snapshot is hydrated first and written back slim; see snapshotFormat.js.
  *
  * Idempotent for holders lists; metrics are rewritten whenever they drift.
  *
@@ -17,10 +20,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
-import { computeChainMetrics, buildSummary } from "./lib/holderMetrics.js";
+import { loadNonRetailSet } from "./lib/nonRetailSet.js";
+import { buildSummary } from "./lib/holderMetrics.js";
 import { projectHolderTiers } from "./lib/holderTiers.js";
 import { selectPipelineProject, projectPaths, projectNonRetailPaths } from "./lib/projects.js";
+import { hydrateChainHolders, resyncSnapshot, serializeVerified } from "./lib/snapshotFormat.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir and its own exclusions/CEX/DEX lists — see scripts/lib/projects.js.
@@ -42,7 +46,7 @@ const readJson = async (p, fallback = null) => {
 
 const main = async () => {
   const dryRun = process.argv.includes("--dry-run");
-  const snapshot = await readJson(HOLDERS_PATH);
+  let snapshot = await readJson(HOLDERS_PATH);
   if (!snapshot) throw new Error("tel-holders.json not found");
 
   const { set: excluded, sizes } = await loadNonRetailSet(projectNonRetailPaths(project, process.cwd(), snapshot));
@@ -51,68 +55,9 @@ const main = async () => {
       `(exclusions ${sizes.exclusions}, CEX config ${sizes.cex}, DEX config ${sizes.dex}).`,
   );
 
-  let added = 0;
-  let removed = 0;
-
-  for (const [chainKey, chain] of Object.entries(snapshot.chains ?? {})) {
-    const holders = chain.holders ?? [];
-    const present = new Map(
-      holders
-        .map((h) => [normalizeAddress(h?.address), h])
-        .filter(([addr]) => Boolean(addr)),
-    );
-    const field = `${chainKey}_balance`;
-
-    // Drop any holder that is now excluded. Skip address-less entries (do not
-    // treat "" as an exclusion match — that would drop every blank-address row).
-    const kept = [];
-    for (const h of holders) {
-      const address = normalizeAddress(h?.address);
-      if (!address) continue;
-      if (excluded.has(address)) {
-        removed += 1;
-        continue;
-      }
-      kept.push(h);
-    }
-
-    // Add any non-excluded wallet with a positive balance on this chain.
-    for (const wallet of snapshot.wallets ?? []) {
-      const address = normalizeAddress(wallet?.address);
-      if (!address || excluded.has(address) || present.has(address)) continue;
-      const balance = Number(wallet?.[field]) || 0;
-      if (balance <= 0) continue;
-      kept.push({ address: wallet.address, balance });
-      added += 1;
-    }
-
-    kept.sort((a, b) => (b.balance ?? 0) - (a.balance ?? 0));
-    chain.holders = kept;
-
-    const fromHolders = computeChainMetrics(kept, { retailThreshold: RETAIL_THRESHOLD });
-    if (!chain.metrics) chain.metrics = {};
-    // Preserve mega/excluded tallies from the scan; recompute retail metrics.
-    chain.metrics.holderCount = fromHolders.holderCount;
-    chain.metrics.totalBalance = fromHolders.totalBalance;
-    chain.metrics.retail = fromHolders.retail;
-    chain.metrics.underThreshold = fromHolders.underThreshold;
-  }
-
-  // Rebuild combined holder metrics from per-chain results.
-  if (!snapshot.combined) snapshot.combined = {};
-  snapshot.combined.holderCount = 0;
-  snapshot.combined.totalBalance = 0;
-  snapshot.combined.retail = { count: 0, balance: 0 };
-  snapshot.combined.underThreshold = { count: 0, balance: 0 };
-  for (const chain of Object.values(snapshot.chains ?? {})) {
-    const m = chain.metrics ?? {};
-    snapshot.combined.holderCount += m.holderCount ?? 0;
-    snapshot.combined.totalBalance += m.totalBalance ?? 0;
-    snapshot.combined.retail.count += m.retail?.count ?? 0;
-    snapshot.combined.retail.balance += m.retail?.balance ?? 0;
-    snapshot.combined.underThreshold.count += m.underThreshold?.count ?? 0;
-    snapshot.combined.underThreshold.balance += m.underThreshold?.balance ?? 0;
-  }
+  // A slim single-chain snapshot has no holders[]: rebuild it, resync, and write back (slim again).
+  const { snapshot: resynced, added, removed } = resyncSnapshot(hydrateChainHolders(snapshot), excluded, RETAIL_THRESHOLD);
+  snapshot = resynced;
 
   const summary = buildSummary(snapshot);
 
@@ -130,7 +75,9 @@ const main = async () => {
     return;
   }
 
-  await fs.writeFile(HOLDERS_PATH, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
+  // Serialize before writing either file: a refusal (round trip or size gate) leaves both untouched.
+  const holdersText = serializeVerified(snapshot, HOLDERS_PATH);
+  await fs.writeFile(HOLDERS_PATH, holdersText, "utf8");
   console.log(`Wrote ${HOLDERS_PATH}`);
   await fs.writeFile(SUMMARY_PATH, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
   console.log(`Wrote ${SUMMARY_PATH}`);
