@@ -38,6 +38,7 @@ import {
   mergeRoleExclusions,
 } from "./lib/reconcileSupply.js";
 import { resolveCirculatingSubtract } from "./lib/circulatingSubtract.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 import { resolveCoingeckoCirculating } from "./lib/coingeckoCirculating.js";
 import {
   selectPipelineProject,
@@ -123,6 +124,15 @@ const readJson = async (p, fallback = null) => {
   }
 };
 
+const readSnapshotOrFallback = async (p, fallback = null) => {
+  try {
+    return await readSnapshot(p);
+  } catch (error) {
+    if (error.code === "ENOENT") return fallback;
+    throw error;
+  }
+};
+
 const fmt = (n) => Math.round(n).toLocaleString();
 
 /**
@@ -145,7 +155,7 @@ const main = async (project) => {
   const paths = reconcilePaths(project);
   const OUTPUT_PATH = paths.output;
   const [snapshot, exclusions, cexWallets] = await Promise.all([
-    readJson(paths.holders),
+    readSnapshotOrFallback(paths.holders),
     readJson(paths.exclusions, { addresses: [], labels: {} }),
     readJson(paths.cexWallets, { wallets: [] }),
   ]);

@@ -53,6 +53,8 @@ jobs:
     env:
       HD_PROJECT: ${{ matrix.slug }}
       HD_JOB_ID: cex-candidates
+      # The detector loads a full snapshot (HBAR: ~4.84M rows, 4-5.5 GB); Node's default old-space limit is too small.
+      NODE_OPTIONS: --max-old-space-size=8192
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:

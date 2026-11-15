@@ -43,8 +43,8 @@ export const checkSnapshotSize = (bytes, file) => {
       level: "fail",
       message:
         `${file} is ${size}, at or above the ${toMiB(SNAPSHOT_FAIL_BYTES)} MiB safety limit; ` +
-        `it cannot be pushed to GitHub (limit ${GITHUB_LIMIT_MIB} MiB). The layout is already slim: ` +
-        `raise the balance floor or drop the per-chain balance column (an owner decision).`,
+        `it cannot be pushed to GitHub (limit ${GITHUB_LIMIT_MIB} MiB). Size is fixed by layout, never by ` +
+        `dropping rows: write the snapshot with the sharded layout (sharded-v1) or split it into more, smaller shards.`,
     };
   }
   if (bytes >= SNAPSHOT_WARN_BYTES) {
@@ -57,7 +57,7 @@ export const checkSnapshotSize = (bytes, file) => {
 };
 
 /** Chain entry with `holders` replaced by `holdersOmitted` (same key position). */
-const slimChain = (snapshot, key, chain) => {
+export const slimChain = (snapshot, key, chain) => {
   if (!Array.isArray(chain?.holders)) return chain;
   const inHolders = new Set(chain.holders.map((holder) => holder.address));
   const omitted = [];
@@ -129,15 +129,21 @@ export const hydrateChainHolders = (snapshot) => {
  * exactly the holders it was written from (else throw), and the byte size must pass checkSnapshotSize
  * ("fail" throws, "warn" logs). Throws before the caller has written anything.
  */
+/** Key of the first chain whose `holders` array differs from the rebuilt (hydrated) snapshot, else null. */
+export const findHoldersMismatch = (snapshot, rebuilt) => {
+  for (const [key, chain] of Object.entries(snapshot.chains)) {
+    if (!Array.isArray(chain?.holders)) continue;
+    if (!isDeepStrictEqual(rebuilt.chains[key]?.holders, chain.holders)) return key;
+  }
+  return null;
+};
+
 const serializeRoundTripChecked = (snapshot, file) => {
   const text = serializeSnapshot(snapshot);
   if (snapshotLayout(snapshot) === SNAPSHOT_LAYOUT_SLIM) {
-    const rebuilt = hydrateChainHolders(JSON.parse(text));
-    for (const [key, chain] of Object.entries(snapshot.chains)) {
-      if (!Array.isArray(chain?.holders)) continue;
-      if (!isDeepStrictEqual(rebuilt.chains[key]?.holders, chain.holders)) {
-        throw new Error(`Slim snapshot ${file}: chain "${key}" holders do not survive the slim round trip; nothing written.`);
-      }
+    const key = findHoldersMismatch(snapshot, hydrateChainHolders(JSON.parse(text)));
+    if (key !== null) {
+      throw new Error(`Slim snapshot ${file}: chain "${key}" holders do not survive the slim round trip; nothing written.`);
     }
   }
   return text;
@@ -149,19 +155,6 @@ export const serializeVerified = (snapshot, file, log = console) => {
   if (size.level === "fail") throw new Error(size.message);
   if (size.level === "warn") log.warn(size.message);
   return text;
-};
-
-/**
- * Text for the rotated previous snapshot, a same-run scratch file that is never committed: slim and
- * verified when it can be, otherwise the legacy pretty print with a warning. Never throws, no size gate.
- */
-export const serializePrevious = (prior, log = console) => {
-  try {
-    return serializeRoundTripChecked(prior, "previous snapshot");
-  } catch (error) {
-    log.warn(`Previous snapshot could not be written slim (${error.message}); writing the legacy layout instead.`);
-    return `${JSON.stringify(prior, null, 2)}\n`;
-  }
 };
 
 /**

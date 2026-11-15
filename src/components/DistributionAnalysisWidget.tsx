@@ -29,7 +29,7 @@ import { mergeDistributionBaseline, summarizeTierGrowth } from "@/lib/distributi
 import { TierFlowDiagram, type TierMetric } from "@/components/TierFlowDiagram";
 import { useMediaQuery, PHONE_QUERY } from "@/hooks/useMediaQuery";
 import { tierDisplayLabel } from "@/components/tierflow/geometry";
-import { bucketFloor } from "@/lib/holderTiers";
+import { dustFloorText } from "@/lib/holderTiers";
 import { DexSwaps } from "@/components/DexSwaps";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -65,7 +65,7 @@ const DistributionAnalysisWidget = ({
 }: DistributionAnalysisWidgetProps) => {
   const { ticker, tiers } = useProjectCopy();
   const { project } = useProject();
-  const dustFloor = new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(bucketFloor(tiers));
+  const dustFloor = dustFloorText(tiers);
   // Range-aware baseline: history distribution at the start of the selected
   // window (combined view only — chain views keep the snapshot baseline).
   const { data: historicalDelta } = useHolderHistoricalDelta({
@@ -137,7 +137,7 @@ const DistributionAnalysisWidget = ({
 
   // Scope + dust note: lives in the (i) beside the chart title (floors at the
   // project's lowest tier; see scripts/lib/holdersView.js reconcileDistributionCounts).
-  const scopeNote = `Retail only, excluding exchange & hot wallets. Sub-${dustFloor}-${ticker} dust wallets are counted in the lowest tier.`;
+  const scopeNote = `Retail only, excluding exchange & hot wallets.${dustFloor === null ? "" : ` Sub-${dustFloor}-${ticker} dust wallets are counted in the lowest tier.`}`;
 
   const tierFlow = (
     <TierFlowDiagram

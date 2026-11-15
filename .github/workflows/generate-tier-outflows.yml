@@ -74,8 +74,9 @@ jobs:
           # Stop and save 20 minutes before the 330-minute job timeout, so a long scan always commits its progress.
           TIER_OUTFLOWS_MAX_MS: '18600000'
           # Larger heap for the one-time full-year rebuild (fan-out tracking
-          # holds a per-(day,sender) map for the scanned span).
-          NODE_OPTIONS: --max-old-space-size=6144
+          # holds a per-(day,sender) map for the scanned span) and for a large
+          # snapshot (HBAR: ~4.84M rows) plus two dates' tier maps.
+          NODE_OPTIONS: --max-old-space-size=8192
         run: node scripts/generate-tier-outflows.js
 
       - name: Commit results

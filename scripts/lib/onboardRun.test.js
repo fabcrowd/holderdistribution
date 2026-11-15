@@ -13,6 +13,7 @@ import {
   noRunAppearedMessage,
   notOnMainMessage,
   onboardingSteps,
+  pickActiveRun,
   STEP_VMS,
   sizingFromSnapshot,
   stuckMessage,
@@ -339,6 +340,31 @@ describe("sizingFromSnapshot", () => {
     expect(sized.blocked).toMatch(/Fix:/);
     expect(sized.blocked).toMatch(/holders block of config\/projects\/foo\.json/);
     expect(sized.blocked).toMatch(/node scripts\/derive-holder-tiers\.js --project foo/);
+    expect(sized.blocked).toMatch(/wallets with a positive balance in one tier/);
+    expect(sized.blocked).toMatch(/set distributionTiers/);
+  });
+
+  it("writes dust tiers and the unchanged retail threshold when sub-1 wallets dominate", () => {
+    const dust = Array.from({ length: 20000 }, (_, i) => 10 ** (-8 + (8 * (i + 0.5)) / 20000));
+    const snapshot = { generatedAt: "2026-11-09T06:00:00Z", wallets: wallets([...spread, ...dust]) };
+    const sized = sizingFromSnapshot({ slug: "foo", snapshot, isNonRetail: () => false, supplyTarget: 1_000_000_000, today: TODAY });
+    const base = sizingFromSnapshot({ slug: "foo", snapshot: { wallets: wallets(spread) }, isNonRetail: () => false, supplyTarget: 1_000_000_000, today: TODAY });
+    expect(sized.blocked).toBeUndefined();
+    expect(sized.holders.distributionTiers.at(-1)).toMatchObject({ min: 0 });
+    expect(sized.holders.distributionTiers.length).toBeGreaterThan(base.holders.distributionTiers.length);
+    expect(sized.holders.retailThreshold).toBe(base.holders.retailThreshold);
+    expect(sized.holders.balanceRanges[0]).toEqual({ label: "<1", min: 0, max: 1 });
+    expect(sized.holders.$comment).toMatch(/Tiers below 1 are included/);
+    expect(sized.holders.$comment).toMatch(/JOIN KEYS/);
+    expect(sized.result.holders).toBe(spread.length + dust.length);
+  });
+
+  it("blocks without telling the reader to set edges when one dust value dominates a tier below 1", () => {
+    const sized = sizingFromSnapshot({ slug: "foo", snapshot: { wallets: wallets([...Array(50).fill(5), ...Array(2000).fill(1e-8)]) }, isNonRetail: () => false, supplyTarget: 1_000_000_000, today: TODAY });
+    expect(sized.blocked).toMatch(/Tier <1 is below 1 and cannot be split/);
+    expect(sized.blocked).toMatch(/owner decision/);
+    expect(sized.blocked).toMatch(/Fix:/);
+    expect(sized.blocked).not.toMatch(/set distributionTiers/);
   });
 });
 
@@ -641,5 +667,44 @@ describe("non-EVM CEX review (candidates from the spellbook list, after the firs
       expect(cexReviewPending([{ chain: "polygon", address: evm }], decided([{ chain: "ethereum", address: evm }]))).toHaveLength(1);
       expect(cexReviewPending([{ chain: "ethereum", address: evm }], { cex: { wallets: [{ chain: "ethereum", address: evm }], rejected: [] } })).toEqual([]);
     });
+  });
+});
+
+describe("pickActiveRun", () => {
+  const NOW = Date.parse("2026-11-14T12:00:00Z");
+  const HOUR = 3_600_000;
+  const ago = (hours) => new Date(NOW - hours * HOUR).toISOString();
+  const run = (databaseId, status, createdAt) => ({ databaseId, status, createdAt });
+
+  it("returns a fresh queued run as active", () => {
+    const r = run(1, "queued", ago(1));
+    expect(pickActiveRun([r], NOW)).toEqual({ active: r, stale: [] });
+  });
+
+  it("treats a queued run created 3 days ago as stale, not active", () => {
+    const r = run(2, "queued", ago(72));
+    expect(pickActiveRun([r], NOW)).toEqual({ active: null, stale: [r] });
+  });
+
+  it("returns a fresh in_progress run behind a stale queued one and lists the stale one", () => {
+    const old = run(3, "queued", ago(72));
+    const fresh = run(4, "in_progress", ago(2));
+    expect(pickActiveRun([old, fresh], NOW)).toEqual({ active: fresh, stale: [old] });
+  });
+
+  it("ignores completed runs", () => {
+    expect(pickActiveRun([run(5, "completed", ago(1)), run(6, "completed", ago(100))], NOW)).toEqual({ active: null, stale: [] });
+  });
+
+  it("treats an unparseable createdAt as stale", () => {
+    const r = run(7, "queued", "not a date");
+    expect(pickActiveRun([r], NOW)).toEqual({ active: null, stale: [r] });
+  });
+
+  it("pins the boundary: exactly 24h old is still active, 1 ms older is stale", () => {
+    const exact = run(8, "queued", ago(24));
+    const over = run(9, "queued", new Date(NOW - 24 * HOUR - 1).toISOString());
+    expect(pickActiveRun([exact], NOW).active).toBe(exact);
+    expect(pickActiveRun([over], NOW)).toEqual({ active: null, stale: [over] });
   });
 });

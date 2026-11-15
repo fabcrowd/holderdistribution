@@ -140,7 +140,7 @@ function validateNativeAssetChain(c, where, errors) {
   for (const f of EVM_ONLY_CHAIN_FIELDS) if (c[f] !== undefined) errors.push(`${where}: ${f} is EVM-only; remove it from a hedera chain`);
   if (c.mirrorUrl !== undefined && !(typeof c.mirrorUrl === "string" && /^https:\/\/\S+$/.test(c.mirrorUrl))) errors.push(`${where}: mirrorUrl must be an https URL`);
   if (c.rangeWidth !== undefined && !(Number.isInteger(c.rangeWidth) && c.rangeWidth > 0)) errors.push(`${where}: rangeWidth must be a positive integer`);
-  if (c.holderFloorTinybar !== undefined && !/^[1-9]\d*$/.test(String(c.holderFloorTinybar))) errors.push(`${where}: holderFloorTinybar must be a positive whole number of tinybars`);
+  if (c.holderFloorTinybar !== undefined) errors.push(`${where}: holderFloorTinybar was removed by the every-positive-balance rule (owner, 2026-11-14): every account with a positive balance is listed; delete the key`);
 }
 
 /**

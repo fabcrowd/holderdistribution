@@ -46,6 +46,20 @@ describe("browser data files", () => {
     expect(removed).toEqual(["cex-wallets.json", "holders-checkpoint.json", "tel-holders.json", "wallet-analysis"]);
   });
 
+  it("prunes a sharded snapshot's tel-holders.d/ directory at the root and inside a project folder", async () => {
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "dist-data-"));
+    await fsp.mkdir(path.join(dir, "abc", "tel-holders.d"), { recursive: true });
+    await fsp.mkdir(path.join(dir, "tel-holders.d"));
+    for (const f of [path.join("abc", "tel-holders.d", "wallets-000.tsv"), path.join("tel-holders.d", "wallets-000.tsv"), path.join("abc", "holders-lite.json")]) {
+      await fsp.writeFile(path.join(dir, f), "x");
+    }
+    const out = await pruneDistData(dir, { slugs: ["abc"] });
+    expect(out.removed).toEqual(["tel-holders.d"]);
+    expect(out.projects.abc).toEqual({ kept: ["holders-lite.json"], removed: ["tel-holders.d"] });
+    expect(fs.existsSync(path.join(dir, "abc", "tel-holders.d"))).toBe(false);
+    expect(fs.existsSync(path.join(dir, "tel-holders.d"))).toBe(false);
+  });
+
   it("multi-token: copies a legacy-root project's feeds into /data/<slug>/ and prunes every project folder", async () => {
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "dist-data-"));
     for (const f of ["holders-lite.json", "chain-status.json", "tel-holders.json"]) await fsp.writeFile(path.join(dir, f), `"${f}"`);

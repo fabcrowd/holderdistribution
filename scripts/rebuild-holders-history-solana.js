@@ -75,6 +75,7 @@ import {
 } from "./lib/solana/holderReplay.js";
 import { readCutoffMap } from "./lib/dayBlocks.js";
 import { buildAsOf } from "./lib/asOf.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 
 await loadEnv();
 const project = selectPipelineProject("rebuild-holders-history-solana", { ported: true });
@@ -125,6 +126,15 @@ const CHECKPOINT_PATH = work("holders-replay-solana.checkpoint.json");
 const HISTORY_PATH = data("holders-history.json");
 const EVER_PATH = data("holders-ever-checkpoint.json");
 
+const readOptionalSnapshot = async (p) => {
+  try {
+    return await readSnapshot(p);
+  } catch (err) {
+    if (err.code === "ENOENT") return null;
+    throw err;
+  }
+};
+
 const readOptionalJson = async (p) => {
   try {
     return JSON.parse(await fs.readFile(p, "utf8"));
@@ -137,7 +147,7 @@ const readOptionalJson = async (p) => {
 // Owners come from the current on-disk snapshot only: tokenAccountOwnersByChain is not
 // kept per date, and vault ownership is stable, so history uses the same non-retail set.
 const { set: nonRetail } = await loadNonRetailSet(
-  projectNonRetailPaths(project, process.cwd(), await readOptionalJson(data("tel-holders.json"))),
+  projectNonRetailPaths(project, process.cwd(), await readOptionalSnapshot(data("tel-holders.json"))),
 );
 console.log(`Non-retail set: ${nonRetail.size} addresses.`);
 
@@ -239,7 +249,7 @@ function countMismatches(ledgerBalances, discovered) {
 
 async function main() {
   console.log(`Replaying ${project.slug} ${chainKey} ${mint} (${program}, ${decimals} decimals).`);
-  const snapshot = await readOptionalJson(data("tel-holders.json"));
+  const snapshot = await readOptionalSnapshot(data("tel-holders.json"));
 
   const prev = await readOptionalJson(CHECKPOINT_PATH);
   const compatible =

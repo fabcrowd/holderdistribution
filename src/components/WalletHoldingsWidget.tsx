@@ -3,13 +3,10 @@ import type { LegendItem } from "@/components/chart/ChartLegend";
 import { useMemo, useState, Fragment, type ReactNode } from "react";
 import { useProjectCopy, type UseProjectCopy } from "@/hooks/useProjectCopy";
 import { useProject } from "@/hooks/useProject";
-import { bucketFloor, type HolderTiers, type TierRange } from "@/lib/holderTiers";
+import { dustFloorText, type TierRange } from "@/lib/holderTiers";
 import { chainExplorerLink, chainForAddress } from "@/lib/explorerLinks";
 import type { ProjectChain } from "@/lib/projects";
 
-/** The project's smallest bucket floor as text ("1" for TEL), for the dust-exclusion notes. */
-const dustFloorText = (tiers: HolderTiers): string =>
-  new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(bucketFloor(tiers));
 import {
   Card,
   CardContent,
@@ -643,8 +640,9 @@ export const logMidFor = (label: string, ranges: readonly TierRange[]): number =
 };
 
 // Display-only override, currently a no-op: BALANCE_RANGES' bottom bucket
-// ("1–100") floors at 1 TEL (scripts/lib/holdersView.js — sub-1-TEL dust
-// wallets are deliberately excluded from every bucket, see lessons.md
+// ("1–100") floors at 1 TEL (scripts/lib/holdersView.js — for a token whose
+// ranges start at 1, sub-1 dust wallets are excluded from every bucket; a
+// token whose ranges start at 0 excludes nothing), see lessons.md
 // "Sub-1-TEL Dust Wallets Are Deliberately Excluded From Buckets, Not
 // Counts"), so the raw label is accurate as written. Kept as a formatter
 // hook (wired into the XAxis/tooltip below) in case the floor changes again
@@ -772,7 +770,7 @@ const renderBalanceInsights = (copy: UseProjectCopy, stats: HolderLiteView["bala
             <p className="text-xs text-muted-foreground font-semibold mb-1 text-center">Balance distribution — holder count by range</p>
             <p data-panel-desc className="text-xs text-muted-foreground mb-3 text-center">
               Balance buckets are log-spaced; the count axis is linear. The curve is a log-normal fit.
-              Buckets exclude sub-{dustFloorText(copy.tiers)}-{copy.ticker} dust wallets, so bars sum to slightly fewer holders than the tiles above.
+              {dustFloorText(copy.tiers) !== null && ` Buckets exclude sub-${dustFloorText(copy.tiers)}-${copy.ticker} dust wallets, so bars sum to slightly fewer holders than the tiles above.`}
             </p>
             <ToggleableSeries items={FIT_LEGEND} className="mb-2 justify-center">
               {(isVisible) => {
@@ -894,7 +892,9 @@ const renderStakingInsights = (
         {chartData.some((d) => d.count > 0) && (
           <div className="premium-surface-card p-4">
             <p className="text-xs text-muted-foreground font-semibold mb-1 text-center">Staked balance distribution (staker count by range)</p>
-            <p className="text-xs text-muted-foreground mb-3 text-center">Buckets exclude sub-{dustFloorText(copy.tiers)}-{copy.ticker} dust amounts, so bars sum to slightly fewer stakers than the tiles above.</p>
+            {dustFloorText(copy.tiers) !== null && (
+              <p className="text-xs text-muted-foreground mb-3 text-center">Buckets exclude sub-{dustFloorText(copy.tiers)}-{copy.ticker} dust amounts, so bars sum to slightly fewer stakers than the tiles above.</p>
+            )}
             <ChartContainer config={stakingInsightsChartConfig} className={`${CHART_HEIGHT_CLASS.standard} w-full`}>
               <BarChart
                 data={chartData}

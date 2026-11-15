@@ -57,6 +57,8 @@ import {
 } from "./lib/dayBlocks.js";
 import { selectPipelineProject, projectPaths, projectChains, projectWork } from "./lib/projects.js";
 import { missingHistoryDates } from "./lib/missingHistoryDates.js";
+import { copySnapshotFiles } from "./lib/snapshotIo.js";
+import os from "node:os";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir, its chain map and its own as-of block cache (TEL: public/data/ +
@@ -71,8 +73,10 @@ const data = projectPaths(project, ROOT);
 const HISTORY_PATH = data("holders-history.json");
 const BLOCKS_PATH = projectWork(project, ROOT)("holders-asof-blocks.json");
 // Restored after the run — an --as-of run overwrites these with a past day.
+// The holder snapshot is a head plus an optional shard directory, so it is backed up and restored with
+// copySnapshotFiles rather than as text.
+const LIVE_SNAPSHOT = data("tel-holders.json");
 const LIVE_ARTIFACTS = [
-  data.rel("tel-holders.json"),
   data.rel("holders-summary.json"),
   data.rel("holders-lite.json"),
   data.rel("funding-wallets.json"),
@@ -158,6 +162,15 @@ const main = async () => {
   for (const rel of LIVE_ARTIFACTS) {
     backups.set(rel, await fs.readFile(path.resolve(ROOT, rel), "utf8").catch(() => null));
   }
+  const snapshotBackupDir = await fs.mkdtemp(path.join(os.tmpdir(), "hd-fill-gaps-"));
+  const snapshotBackup = path.join(snapshotBackupDir, "tel-holders.json");
+  const hadSnapshot = await copySnapshotFiles(LIVE_SNAPSHOT, snapshotBackup).then(
+    () => true,
+    (error) => {
+      if (error.code === "ENOENT") return false;
+      throw error;
+    },
+  );
 
   try {
     for (const date of missing) {
@@ -172,6 +185,8 @@ const main = async () => {
     for (const [rel, content] of backups) {
       if (content !== null) await fs.writeFile(path.resolve(ROOT, rel), content, "utf8");
     }
+    if (hadSnapshot) await copySnapshotFiles(snapshotBackup, LIVE_SNAPSHOT);
+    await fs.rm(snapshotBackupDir, { recursive: true, force: true });
     console.log("\nRestored live snapshot artifacts.");
   }
 

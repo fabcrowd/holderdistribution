@@ -63,6 +63,9 @@ jobs:
     # Was unbounded (360-minute default); failing runs burned ~50 billed minutes
     # each on a throttled fallback path.
     timeout-minutes: 120
+    # pull-holders-rpc.js holds every account in memory (HBAR: measured 4-5.5 GB); the default limit is too small.
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - name: Check out repository
         uses: actions/checkout@v5

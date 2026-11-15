@@ -13,6 +13,9 @@ import { hydrateChainHolders } from "./snapshotFormat.js";
 export const TEL_CONCENTRATION_BUCKETS = [10, 25, 50, 100, 250, 500, 1000];
 
 export const TEL_BALANCE_RANGES = [
+  // TEL only. Other tokens list every positive balance (owner rule 2026-11-14): deriveHolderTiers
+  // adds tiers below 1 with min 0 when dust would otherwise dominate the bottom tier, and
+  // setHolderTiers swaps them in, so this exclusion does not apply to them.
   // Floor is 1 TEL, deliberately, by explicit product decision (2026-08-15):
   // sub-1-TEL dust wallets should not be counted in any breakdown/bucket,
   // even though metrics.holderCount and balanceStats.count still count them

@@ -125,6 +125,7 @@ import {
 import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 import { endOfDayLabel } from "./relabel-midnight-history.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir, work dir (transfer caches), chain map, non-retail lists and
@@ -300,7 +301,7 @@ async function main() {
   // Owners come from the current on-disk snapshot only: tokenAccountOwnersByChain is not
   // kept per date, and vault ownership is stable, so history uses the same non-retail set.
   const { set: nonRetail, sizes } = await loadNonRetailSet(
-    projectNonRetailPaths(project, ROOT, await readJsonOr(data("tel-holders.json"), null)),
+    projectNonRetailPaths(project, ROOT, await readSnapshot(data("tel-holders.json")).catch(() => null)),
   );
   console.log(`Non-retail set: ${sizes.total} (exclusions ${sizes.exclusions}, CEX ${sizes.cex}, DEX ${sizes.dex}).`);
 

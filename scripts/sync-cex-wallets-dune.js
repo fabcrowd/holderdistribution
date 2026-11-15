@@ -43,6 +43,7 @@ import {
   projectWork,
 } from "./lib/projects.js";
 import { normalizeAddressForVm } from "./lib/address.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 import {
   cexVmForProject,
   intersectCexWithHolders,
@@ -145,7 +146,7 @@ const fetchRows = async () => {
 };
 
 const writeCandidates = async (duneEntries, source) => {
-  const snapshot = JSON.parse(await fs.readFile(projectPaths(project)("tel-holders.json"), "utf8"));
+  const snapshot = await readSnapshot(projectPaths(project)("tel-holders.json"));
   const candidates = intersectCexWithHolders(duneEntries, snapshot.wallets ?? [], {
     totalSupply: snapshot?.totals?.totalSupply ?? null,
   }).map((c) => ({ ...c, status: "candidate", source: source.type }));

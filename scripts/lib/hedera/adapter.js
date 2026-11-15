@@ -4,16 +4,17 @@
  * public mirror node; no key. scanChain() returns the same pieces as the
  * Solana adapter (balances Map, tokenTotals, checkpointData, tokenAccountOwners).
  *
- * Holder rule (owner decision 2026-11-08): at least 1 HBAR, contracts excluded,
- * HTS-only accounts (0 HBAR) excluded. The /balances rows do not say whether an
- * id is an account or a contract, so contracts come from a separate full pass of
- * /contracts (about 1k pages, against about 40k for the balance scan).
+ * Holder rule (owner, 2026-11-14; replaces the 2026-11-08 decision of at least 1 HBAR with
+ * contracts excluded): every account with a positive HBAR balance is listed, with no minimum
+ * and contracts included, so the balances match what explorers show. A contract is classified
+ * later like any other row (chain contracts{} roles, exclusions, CEX/DEX lists). Accounts that
+ * hold only HTS tokens (0 HBAR) stay out.
  */
 import { chainExplorerUrl } from "../chainAdapters.js";
 import { parseHederaAddress } from "./address.js";
 import { createHederaClock } from "./clock.js";
 import { createMirrorClient, HEDERA_MAINNET_MIRROR } from "./mirror.js";
-import { HEDERA_RANGE_WIDTH, resumeProblem, scanBalanceSnapshot, scanContractIds } from "./scan.js";
+import { HEDERA_RANGE_WIDTH, resumeProblem, scanBalanceSnapshot } from "./scan.js";
 import { settleRows } from "./settle.js";
 
 /** True when mirror stamp `a` is later than `b` ("seconds.nanos" strings). */
@@ -27,7 +28,8 @@ const stampAfter = (a, b) => {
 
 export const HEDERA_DECIMALS = 8;
 const TINYBAR_PER_HBAR = 100_000_000n;
-export const HEDERA_HOLDER_FLOOR_TINYBAR = TINYBAR_PER_HBAR; // 1 HBAR
+// One tinybar: any positive balance is a holder (owner, 2026-11-14). Not configurable; scan.js needs a floor above 0.
+export const HEDERA_HOLDER_FLOOR_TINYBAR = 1n;
 const HASHSCAN = Object.freeze({
   token: "https://hashscan.io/mainnet/token/{address}",
   address: "https://hashscan.io/mainnet/account/{address}",
@@ -45,8 +47,6 @@ function clientFor(chain, opts = {}) {
   const overrides = Object.fromEntries(Object.entries(CLIENT_KEYS).filter(([k]) => opts[k] !== undefined).map(([k, to]) => [to, opts[k]]));
   return createMirrorClient({ baseUrl, ...overrides });
 }
-
-const floorOf = (chain) => BigInt(chain?.holderFloorTinybar ?? HEDERA_HOLDER_FLOOR_TINYBAR);
 
 export const hederaAdapter = {
   vm: "hedera",
@@ -100,8 +100,9 @@ export const hederaAdapter = {
   /**
    * Classification a project on this chain's native coin starts with (onboard.js writes it):
    * network treasury exclusions, chain contracts{} roles, the treasury categories they fill, and
-   * job limits that fit one full /balances scan until daily replay replaces it. Two measurements: 93 min
-   * locally, 67 min in the newer end-to-end run; the step cap takes the slower one plus headroom.
+   * job limits that fit one full /balances scan until daily replay replaces it. Two measurements (taken
+   * while a separate /contracts pass still ran): 93 min locally, 67 min in the newer end-to-end run; the
+   * step cap takes the slower one plus headroom.
    */
   async nativeClassification() {
     const { hederaChainContracts, hederaTreasuryExclusions } = await import("./treasury.js");
@@ -127,9 +128,9 @@ export const hederaAdapter = {
     return (await import("./nativeDecisions.js")).hederaNativeDecisions();
   },
 
-  /** Why a saved scan state cannot be resumed for this chain config (other floor or range width), or null when it can. */
+  /** Why a saved scan state cannot be resumed (saved under another floor, such as the old 1 HBAR one, or another range width), or null when it can. */
   resumeProblem: (chain, resume) =>
-    resumeProblem(resume, { floor: floorOf(chain), width: chain?.rangeWidth ?? HEDERA_RANGE_WIDTH }),
+    resumeProblem(resume, { floor: HEDERA_HOLDER_FLOOR_TINYBAR, width: chain?.rangeWidth ?? HEDERA_RANGE_WIDTH }),
 
   /** Opt-in: a finished scan state may stay on disk after the checkpoint is saved; scanChain serves it only for the same resolved stamp. */
   keepsFinishedScan: true,
@@ -140,15 +141,15 @@ export const hederaAdapter = {
   },
 
   /**
-   * Snapshot HBAR holders. Pages /balances at one explicit timestamp, then drops
-   * contracts. Rejects (never partial) when any page fails after retries.
+   * Snapshot HBAR holders. Pages /balances at one explicit timestamp and lists every positive balance.
+   * Rejects (never partial) when any page fails after retries or the listed rows do not add up to total supply.
    * opts: { logger, resume, onProgress, now (Date factory), client | fetch/sleep/nowMs/maxAttempts/... }.
    */
   async scanChain(chain, opts = {}) {
     const { logger = console, onProgress = null, now = () => new Date(), pinBlock = null } = opts;
     let { resume = null } = opts;
     const client = clientFor(chain, opts);
-    const floor = floorOf(chain);
+    const floor = HEDERA_HOLDER_FLOOR_TINYBAR;
     const width = chain?.rangeWidth ?? HEDERA_RANGE_WIDTH;
     const meta = await this.tokenMeta(chain, null, { client });
     const waitOpts = { ...(opts.nowMs ? { nowMs: opts.nowMs } : {}), ...(opts.sleep ? { sleep: opts.sleep } : {}), ...(opts.random ? { random: opts.random } : {}), ...(opts.snapshotWaitMs !== undefined ? { snapshotWaitMs: opts.snapshotWaitMs } : {}) };
@@ -183,8 +184,6 @@ export const hederaAdapter = {
       ? await settleRows(client, { rows: snapshot.rows, stamp: snapshot.timestamp, cluster: snapshot.clusterId, through: settle.to, floor, ...waitOpts })
       : null;
     const rowsAtEnd = settled ? settled.rows : snapshot.rows;
-    // A contract created inside the settle window has an id above the snapshot's highest.
-    const contractIds = await scanContractIds(client, { maxId: Math.max(snapshot.maxId, settled?.maxTouched ?? 0), width });
     const block = settle ? { number: settle.number } : await createHederaClock(client).blockAtOrBefore(snapshot.timestamp);
     if (settled) {
       logger.log?.(
@@ -193,30 +192,19 @@ export const hederaAdapter = {
       );
     }
 
-    // A contract with a configured role (WHBAR as dex) stays in the snapshot as a non-retail row, so its HBAR
-    // lands in its supply bucket instead of the supply gap; every other contract is dropped.
-    const roleIds = new Set(Object.values(chain?.contracts ?? {}).map((c) => parseHederaAddress(c?.address)).filter(Boolean));
     const balances = new Map();
     let heldRaw = 0n;
-    let contractsExcluded = 0;
-    let roleContractsKept = 0;
     for (const [num, text] of rowsAtEnd) {
       const raw = BigInt(text);
       if (raw < floor) continue;
-      if (contractIds.has(num)) {
-        if (!roleIds.has(`0.0.${num}`)) {
-          contractsExcluded += 1;
-          continue;
-        }
-        roleContractsKept += 1;
-      }
       balances.set(`0.0.${num}`, tinybarToHbar(raw));
       heldRaw += raw;
     }
-    logger.log?.(
-      `  ${chain.key}: ${balances.size} holders >= ${tinybarToHbar(floor)} HBAR, ${contractsExcluded} contracts excluded ` +
-        `(${contractIds.size} contracts listed) at snapshot ${snapshot.timestamp}`,
-    );
+    // Settled or not, no row is dropped and HBAR is never burned, so the listed rows must be the whole supply.
+    if (heldRaw !== supplyAtRaw) {
+      throw new Error(`hedera snapshot ${snapshot.timestamp}: listed rows sum to ${heldRaw} tinybar, total supply is ${supplyAtRaw} (difference ${supplyAtRaw - heldRaw})`);
+    }
+    logger.log?.(`  ${chain.key}: ${balances.size} holders with a positive balance (contracts included) at snapshot ${snapshot.timestamp}`);
     return {
       chainKey: chain.key,
       balances,
@@ -234,11 +222,9 @@ export const hederaAdapter = {
         snapshotClusterId: snapshot.clusterId,
         snapshotMismatchRetries: snapshot.mismatchRetries,
         snapshotWaitByCluster: snapshot.waitByCluster,
-        contractsExcluded,
-        roleContractsKept,
         heldRawTotal: heldRaw.toString(),
-        // HBAR outside every row: unlabelled contracts plus accounts under the holder floor.
-        unlistedRawTotal: (snapshot.allRaw - heldRaw).toString(),
+        // HBAR outside every row: always 0 now (the completeness check above); reconcile-supply.js still reads it.
+        unlistedRawTotal: (supplyAtRaw - heldRaw).toString(),
         snapshotRawTotal: snapshot.allRaw.toString(),
         nonzeroAccounts: snapshot.nonzero,
         supplyRaw: meta.supplyRaw.toString(),

@@ -58,3 +58,23 @@ data/**/transfer-window-*
 # it); per-project workflows stage public/data/<slug>/ as a whole dir, so the
 # (very large) scratch copy is ignored there.
 public/data/*/tel-holders-previous.json
+public/data/*/tel-holders-previous.d/
+# publishSnapshot's staging copy of the prior snapshot (moved into place after the new write).
+public/data/*/tel-holders-previous.json.stage.json
+public/data/*/tel-holders-previous.json.stage.d/
+# snapshotIo.js temporary names (writeSharded: head `<file>.tmp`, shard dir `<dir>.tmp`), left behind by a crashed
+# write. Staged whole by `git add public/data/<slug>`, so ignored at both scopes. The real `.d/` dirs are not.
+public/data/tel-holders.json.tmp
+public/data/tel-holders.d.tmp/
+public/data/tel-holders-previous.json.tmp
+public/data/tel-holders-previous.d.tmp/
+public/data/tel-holders-previous.json.stage.json
+public/data/tel-holders-previous.json.stage.d/
+public/data/tel-holders-previous.json.stage.json.tmp
+public/data/tel-holders-previous.json.stage.d.tmp/
+public/data/*/tel-holders.json.tmp
+public/data/*/tel-holders.d.tmp/
+public/data/*/tel-holders-previous.json.tmp
+public/data/*/tel-holders-previous.d.tmp/
+public/data/*/tel-holders-previous.json.stage.json.tmp
+public/data/*/tel-holders-previous.json.stage.d.tmp/

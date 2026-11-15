@@ -35,6 +35,7 @@ import { getUsableRpcUrls, getLogs, rpcCall } from "./lib/rpc.js";
 import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
 import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
 import { projectSizing } from "./lib/projectSizing.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // snapshot, chain map and non-retail lists; the review queue goes to its work
@@ -73,7 +74,6 @@ const lookbackFor = (chainKey) => {
   return rpcSettingsFor(chainKey).defaultLookback;
 };
 
-const readJson = async (absolutePath) => JSON.parse(await fs.readFile(absolutePath, "utf8"));
 
 const hex = (n) => "0x" + n.toString(16);
 
@@ -141,7 +141,7 @@ const counterpartyStats = (logs, self) => {
 };
 
 const main = async () => {
-  const [snapshot, chains] = await Promise.all([readJson(HOLDERS_PATH), projectChains(project)]);
+  const [snapshot, chains] = await Promise.all([readSnapshot(HOLDERS_PATH), projectChains(project)]);
   const { set: nonRetailSet } = await loadNonRetailSet(projectNonRetailPaths(project, process.cwd(), snapshot));
 
   const candidates = (snapshot.wallets ?? [])

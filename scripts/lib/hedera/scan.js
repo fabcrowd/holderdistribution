@@ -30,8 +30,6 @@ export const HEDERA_SNAPSHOT_WAIT_MS = 20 * 60 * 1000;
 const SNAPSHOT_BACKOFF_CAP_MS = 30_000;
 /** Resolutions tried for a pinned finished state before it counts as a miss (2 requests each); an unpinned run tries once. */
 export const HEDERA_FINISHED_ATTEMPTS = 8;
-/** How long the /contracts pass keeps retrying a 404 before it fails the scan. */
-export const HEDERA_LIST_404_WAIT_MS = 2 * 60 * 1000;
 
 import { backoffMs } from "../rpcLimiter.js";
 import { nanosOf } from "./flowScan.js";
@@ -443,30 +441,4 @@ export async function balanceAtSnapshot(client, { id, stamp, cluster, sleep = sl
     pageRows(await pinnedPageOf(client, `/balances?account.id=${id}&timestamp=${stamp}`), { rowsKey: "balances", held, label: `hedera /balances ${id}` }),
   );
   return BigInt(rows[0]?.balance ?? 0);
-}
-
-/** Ids of every contract up to `maxId`. The mirror's balance rows do not say account vs contract; this list does. */
-export async function scanContractIds(client, { maxId, width = HEDERA_RANGE_WIDTH, concurrency = HEDERA_SCAN_CONCURRENCY }) {
-  const byRange = new Map();
-  // A list endpoint answers 200 with an empty list, never 404; one 404 in a 66-minute run is a transient mirror fault (seen live 2026-11-13), so it is retried briefly.
-  const retry = { sleep: sleepReal, random: Math.random, now: Date.now, waitMs: HEDERA_LIST_404_WAIT_MS, stats: { mismatchRetries: 0, byCluster: {} } };
-  await runRanges(idRanges(maxId, width), concurrency, async ({ lo, hi }) => {
-    byRange.set(
-      lo,
-      await pageRange(client, {
-        path: "/contracts",
-        rowsKey: "contracts",
-        idParam: "contract.id",
-        idField: "contract_id",
-        params: [],
-        lo,
-        hi,
-        held: null,
-        label: "hedera /contracts",
-        retry,
-        mapRow: (_row, num) => num,
-      }),
-    );
-  });
-  return new Set(idRanges(maxId, width).flatMap((r) => byRange.get(r.lo)));
 }

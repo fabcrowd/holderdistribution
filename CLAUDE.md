@@ -8,6 +8,12 @@ Never create a branch, commit or push unless the owner explicitly says so. Edit 
 
 **README rule (owner, standing):** every PR that is pushed must update `README.md` in the same PR: the project list, the layout map, and "Recent work" with the merged PR numbers and what changed. A PR without that update is not ready to push.
 
+## Explorer parity rule (owner, standing, 2026-11-14)
+
+The holder balance must match what blockchain explorers show, for all tokens. This is a repo-wide rule.
+
+Scope (owner, same day): every token lists every address with a positive balance. No minimum-balance floor, and a contract is a holder unless a classification list (exclusions, CEX, DEX) says otherwise. A snapshot that is too large is fixed by its storage layout, never by listing fewer rows or changing a balance.
+
 ---
 
 ## What this repo is

@@ -54,6 +54,8 @@ jobs:
     env:
       HD_PROJECT: ${{ matrix.slug }}
       HD_JOB_ID: cex-sync
+      # resync-chain-holders.js hydrates every account (HBAR: ~4.84M rows); the default heap is too small.
+      NODE_OPTIONS: --max-old-space-size=8192
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository

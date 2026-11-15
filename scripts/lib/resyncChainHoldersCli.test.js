@@ -3,7 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { hydrateChainHolders, serializeSnapshot, serializeVerified } from "./snapshotFormat.js";
+import { hydrateChainHolders, resyncSnapshot, serializeSnapshot, serializeVerified } from "./snapshotFormat.js";
+import { readSnapshot, writeSnapshotFiles } from "./snapshotIo.js";
 
 // Runs the real scripts/resync-chain-holders.js against a temp root: the CLI resolves config and data from
 // process.cwd(), and the pure-function tests cannot see how the CLI writes the file back.
@@ -147,6 +148,93 @@ describe("resync-chain-holders CLI", () => {
     expect(parsed.layout).toBeUndefined();
     expect(text).toBe(`${JSON.stringify(parsed, null, 2)}\n`);
     expect(text).toBe(serializeSnapshot(parsed));
+  });
+
+  describe("hedera-shaped single chain forced to shards", () => {
+    const SHARD_ENV = { HD_SNAPSHOT_SHARD_BYTES: "1" };
+    const hbarDir = () => path.join(root, "public/data/hbar");
+    const hbarHead = () => path.join(hbarDir(), "tel-holders.json");
+    const hbarShardDir = () => path.join(hbarDir(), "tel-holders.d");
+    const runHbar = (args = []) =>
+      execFileSync(process.execPath, [cli, "--project", "hbar", ...args], {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        env: { ...process.env, ...SHARD_ENV },
+      });
+    const dirBytes = () => {
+      const files = { head: fs.readFileSync(hbarHead(), "utf8") };
+      for (const name of fs.readdirSync(hbarShardDir()).sort()) files[name] = fs.readFileSync(path.join(hbarShardDir(), name), "utf8");
+      return files;
+    };
+
+    // Account numbers span two shard ranges; wallets are in canonical order (total desc, id asc).
+    const hbarSnapshot = () => {
+      const wallets = [
+        { address: "0.0.9", hedera_balance: 9000, total_telcoin_balance: 9000 },
+        { address: "0.0.1000002", hedera_balance: 5000, total_telcoin_balance: 5000 },
+        { address: "0.0.20", hedera_balance: 2000, total_telcoin_balance: 2000 },
+        { address: "0.0.1000001", hedera_balance: 2000, total_telcoin_balance: 2000 },
+        { address: "0.0.1000003", hedera_balance: 10, total_telcoin_balance: 10 },
+      ];
+      const holders = wallets.filter((w) => w.address !== "0.0.20").map((w) => ({ address: w.address, balance: w.hedera_balance }));
+      return {
+        generatedAt: "2026-11-14T00:00:00.000Z",
+        chains: { hedera: chainEntry("hedera", holders) },
+        combined: { holderCount: holders.length },
+        wallets,
+        chainOrder: ["hedera"],
+        source: { type: "rpc" },
+      };
+    };
+
+    const seedSharded = async () => {
+      write(root, "config/projects.json", { projects: [{ slug: "tel", default: true, legacyRoot: true }, { slug: "hbar" }] });
+      write(root, "config/projects/hbar.json", projectConfig("hbar", ["hedera"], {
+        data: { legacyRoot: false, dir: "public/data/hbar" },
+        classification: { exclusions: "config/projects/hbar/exclusions.json", cexWallets: "config/projects/hbar/cex-wallets.json" },
+      }));
+      write(root, "config/projects/hbar/exclusions.json", { addresses: ["0.0.9"] });
+      write(root, "config/projects/hbar/cex-wallets.json", { wallets: [] });
+      write(root, "public/data/hbar/holders-summary.json", {});
+      const saved = process.env.HD_SNAPSHOT_SHARD_BYTES;
+      process.env.HD_SNAPSHOT_SHARD_BYTES = "1";
+      try {
+        await writeSnapshotFiles(hbarHead(), hbarSnapshot(), { log: { log: () => {}, warn: () => {} } });
+      } finally {
+        if (saved === undefined) delete process.env.HD_SNAPSHOT_SHARD_BYTES;
+        else process.env.HD_SNAPSHOT_SHARD_BYTES = saved;
+      }
+    };
+
+    it("rewrites head and shards, is byte-stable on a second run, and matches the expected resync", async () => {
+      await seedSharded();
+      expect(JSON.parse(fs.readFileSync(hbarHead(), "utf8")).layout).toBe("sharded-v1");
+      write(root, "config/projects/hbar/exclusions.json", { addresses: ["0.0.9", "0.0.1000001"] });
+
+      runHbar();
+      const first = dirBytes();
+      expect(JSON.parse(first.head).layout).toBe("sharded-v1");
+      expect(Object.keys(first).sort()).toEqual(["head", "wallets-000.tsv", "wallets-001.tsv"]);
+
+      runHbar();
+      expect(dirBytes()).toEqual(first);
+
+      const expected = resyncSnapshot(hydrateChainHolders(hbarSnapshot()), new Set(["0.0.9", "0.0.1000001"]), 1000).snapshot;
+      const actual = hydrateChainHolders(await readSnapshot(hbarHead()));
+      expect(actual.wallets).toEqual(expected.wallets);
+      expect(actual.chains.hedera.holders).toEqual(expected.chains.hedera.holders);
+      expect(actual.chains.hedera.metrics).toEqual(expected.chains.hedera.metrics);
+      expect(actual.combined).toEqual(expected.combined);
+    });
+
+    it("writes nothing with --dry-run", async () => {
+      await seedSharded();
+      write(root, "config/projects/hbar/exclusions.json", { addresses: ["0.0.9", "0.0.1000001"] });
+      const before = dirBytes();
+      expect(runHbar(["--dry-run"])).toMatch(/nothing written/);
+      expect(dirBytes()).toEqual(before);
+    });
   });
 
   it("does not touch the file with --dry-run", () => {

@@ -1,7 +1,7 @@
 /**
  * In-memory stand-in for the Hedera mirror node REST API, for tests only.
  * Mirrors the measured behaviour of mainnet-public.mirrornode.hedera.com:
- * limit capped at 100, `account.id` / `contract.id` range filters, a `next`
+ * limit capped at 100, `account.id` range filters, a `next`
  * link only when a page is full, a snapshot `timestamp` on /balances (the
  * latest snapshot at or before the requested `timestamp`), and balances as raw
  * JSON integers that exceed 2^53.
@@ -29,7 +29,6 @@ function applyFilters(values, num, params, name) {
 
 export function createMockMirror({
   accounts = [], // { num, balance: bigint, tokens?: [{ token_id, balance }] }
-  contracts = [], // numeric ids
   snapshotTimestamp = "1794165040.107980111",
   headTimestamp = "1794165294.000000001", // /balances without a timestamp reports "now", not a snapshot
   totalSupply = null, // default: the sum of every balance, as on mainnet where no HBAR is burned
@@ -38,7 +37,7 @@ export function createMockMirror({
   blockTime = (n) => 1_568_332_800 + n * 2,
   clusters = null, // { <id>: [sorted "seconds.nanos" stamps] }; each cluster answers a pinned timestamp with its latest stamp at or before it
   route = () => null, // (callIndex) => cluster id that answers this call (default: the first cluster)
-  tamper = null, // (path, params, body) => body | undefined; edits a parsed /balances or /contracts response
+  tamper = null, // (path, params, body) => body | undefined; edits a parsed /balances response
   notFound = () => false, // (path, query, callIndex, cluster) => true answers HTTP 404 (a cluster that lacks the pinned stamp)
   fail = () => null, // (path, query, callIndex) => status code | "network" | null
   transactions = [], // { consensus_timestamp, result, transfers: [{ account, amount }] } after the snapshot, any order
@@ -77,13 +76,6 @@ export function createMockMirror({
     return `{"timestamp":${stamp === null ? "null" : `"${stamp}"`},"balances":[${text}],"links":{"next":${next}}}`;
   }
 
-  function contractList(params) {
-    const limit = Math.min(Number(params.get("limit") ?? 25), 100);
-    const rows = [...contracts].sort((a, b) => a - b).filter((n) => applyFilters(null, n, params, "contract.id"));
-    const page = rows.slice(0, limit).map((n) => ({ contract_id: `0.0.${n}`, deleted: false }));
-    return { contracts: page, links: { next: page.length === limit ? "/api/v1/contracts?next" : null } };
-  }
-
   const txSorted = [...transactions].sort((a, b) => (nanosOf(a.consensus_timestamp) < nanosOf(b.consensus_timestamp) ? -1 : 1));
   function transactionList(params) {
     const limit = Math.min(Number(params.get("limit") ?? 25), 100);
@@ -118,8 +110,8 @@ export function createMockMirror({
     if (injected === "network") throw new TypeError("fetch failed");
     if (injected) return respond(injected, `{"_status":{"messages":[{"message":"injected ${injected}"}]}}`);
     if (notFound(path, query, index, cluster)) return respond(404, { _status: { messages: [{ message: "Not found" }] } }, cluster ?? "mock");
-    if (path === "/balances" || path === "/contracts") {
-      const raw = path === "/balances" ? balances(u.searchParams, cluster) : contractList(u.searchParams);
+    if (path === "/balances") {
+      const raw = balances(u.searchParams, cluster);
       const edited = tamper ? tamper(path, u.searchParams, JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw))) : undefined;
       return respond(200, edited === undefined ? raw : JSON.stringify(edited), cluster === "unknown" ? null : (cluster ?? "mock")); // cluster "unknown" sends no x-cluster-id
     }

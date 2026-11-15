@@ -34,6 +34,7 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { appliedMismatches, answersRelPath, readProjectFiles, validateAnswers, writeBlockers } from "./lib/onboardAnswers.js";
 import { projectHolderTiers } from "./lib/holderTiers.js";
+import { readSnapshotSync } from "./lib/snapshotIo.js";
 import {
   MAX_RUNS_PER_STEP,
   blockedMessage,
@@ -46,6 +47,7 @@ import {
   noRunAppearedMessage,
   notOnMainMessage,
   onboardingSteps,
+  pickActiveRun,
   sizingFromSnapshot,
   stuckMessage,
   timeBudgetMessage,
@@ -226,7 +228,13 @@ async function evaluate(slug, { local = false, cwd = process.cwd() } = {}) {
     const answers = readJson(answersRelPath(slug));
     const nativeDecisions = answers ? null : await nativeDecisionsFor(project.config);
     const onboardingFlag = entry.onboarding === true;
-    const snapshot = readJson(projectDataRelPath(project, "tel-holders.json"));
+    const snapshot = (() => {
+      try {
+        return readSnapshotSync(path.join(root, projectDataRelPath(project, "tel-holders.json")));
+      } catch {
+        return null;
+      }
+    })();
     // Existing projects without answers and without the onboarding flag keep today's behaviour: none of these gates apply.
     const reviewApplies = onboardingFlag || answers !== null;
     const steps = onboardingSteps({
@@ -250,14 +258,15 @@ async function evaluate(slug, { local = false, cwd = process.cwd() } = {}) {
   }
 }
 
-const ACTIVE = new Set(["queued", "in_progress", "waiting", "pending", "requested"]);
-
 function runsOf(workflow) {
   return JSON.parse(gh(["run", "list", "--workflow", workflow, "--limit", "10", "--json", "databaseId,status,conclusion,createdAt,event"]));
 }
 
 async function dispatchAndWait(workflow, inputs, logger) {
-  const active = runsOf(workflow).find((r) => ACTIVE.has(r.status));
+  const { active, stale } = pickActiveRun(runsOf(workflow), Date.now());
+  for (const run of stale) {
+    logger.log(`  ${workflow}: run ${run.databaseId} has been ${run.status} since ${run.createdAt}; ignoring it (older than 24h). Cancel it with: gh run cancel ${run.databaseId}`);
+  }
   let id = active?.databaseId;
   if (id) {
     logger.log(`  ${workflow}: run ${id} already ${active.status}; waiting for it instead of dispatching`);
@@ -290,7 +299,7 @@ export async function applyEdit(edit, slug, mainRoot, logger) {
     const { loadNonRetailSet, createNonRetailChecker } = await import("./lib/nonRetailSet.js");
     const { projectDataPath, projectNonRetailPaths, resolveProject } = await import("./lib/projects.js");
     const project = resolveProject(slug, mainRoot);
-    const snap = JSON.parse(fs.readFileSync(projectDataPath(project, "tel-holders.json", mainRoot), "utf8"));
+    const snap = readSnapshotSync(projectDataPath(project, "tel-holders.json", mainRoot));
     const { set } = await loadNonRetailSet(projectNonRetailPaths(project, mainRoot, snap));
     const cfg = readCfg();
     const { nativeDecisionsFor } = await import("./lib/chainAdapters.js");
@@ -313,7 +322,7 @@ export async function applyEdit(edit, slug, mainRoot, logger) {
   if (edit === "raise-mega-threshold") {
     const { projectDataPath, resolveProject } = await import("./lib/projects.js");
     const project = resolveProject(slug, mainRoot);
-    const snap = JSON.parse(fs.readFileSync(projectDataPath(project, "tel-holders.json", mainRoot), "utf8"));
+    const snap = readSnapshotSync(projectDataPath(project, "tel-holders.json", mainRoot));
     const { nativeDecisionsFor } = await import("./lib/chainAdapters.js");
     const decisions = decisionsOf(readAnswersOn(mainRoot, slug), await nativeDecisionsFor(project.config));
     const findings = (await largeHolderReview(project, mainRoot, snap, decisions)).filter((f) => f.kind === "dropped");

@@ -7,6 +7,7 @@ import {
   buildSnapshotData,
   buildViewData,
   dailyPreviousSnapshot,
+  setHolderTiers,
 } from "./holdersView.js";
 
 // MIN_TEL_RAW is 1 RAW unit and TEL has 2 decimals, so the smallest balance the
@@ -111,5 +112,43 @@ describe("dailyPreviousSnapshot", () => {
 
   it("an absent previous stays the first-run shape with no reason", () => {
     expect(dailyPreviousSnapshot(raw("2026-11-12", [1]), null)).toEqual({ previous: null, reason: null });
+  });
+});
+
+describe("tiers below 1 (min 0 bottom tier)", () => {
+  const addr = (n) => `0x${String(n).padStart(40, "0")}`;
+  const tiers = {
+    concentrationBuckets: [10],
+    balanceRanges: [
+      { label: "<1", min: 0, max: 1 },
+      { label: "1+", min: 1, max: Number.POSITIVE_INFINITY },
+    ],
+    distributionTiers: [
+      { label: "10+", min: 10, max: Number.POSITIVE_INFINITY },
+      { label: "1-10", min: 1, max: 10 },
+      { label: "0.001-1", min: 0.001, max: 1 },
+      { label: "<0.001", min: 0, max: 0.001 },
+    ],
+  };
+
+  it("gives a row per non-empty tier, counts sum to the holder count and reconcile adds nothing", () => {
+    const balances = [500, 50, 5, 2, 0.5, 0.2, 0.01, 0.0005, 0.00000001];
+    const snapshot = {
+      generatedAt: "2026-11-14T00:00:00.000Z",
+      chainOrder: ["ethereum"],
+      chains: { ethereum: { holders: balances.map((b, i) => ({ address: addr(i + 1), balance: b })) } },
+    };
+    try {
+      setHolderTiers(tiers);
+      const data = buildSnapshotData(snapshot, null, () => false);
+      const { distribution, metrics } = buildViewData("combined", data, null);
+      expect(distribution.map((r) => [r.label, r.count])).toEqual([["10+", 2], ["1-10", 2], ["0.001-1", 3], ["<0.001", 2]]);
+      expect(distribution.reduce((sum, r) => sum + r.count, 0)).toBe(balances.length);
+      expect(metrics.holderCount).toBe(balances.length);
+      const raw = buildDistributionRows(data.chains.ethereum.holders, metrics.retail.balance, [], 0);
+      expect(distribution.map((r) => r.count)).toEqual(raw.map((r) => r.count));
+    } finally {
+      setHolderTiers(null);
+    }
   });
 });

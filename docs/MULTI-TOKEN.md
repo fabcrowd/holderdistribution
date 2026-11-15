@@ -1101,8 +1101,9 @@ HBAR is registered in `config/projects.json` as onboarding (2026-11-13). Its onb
 nothing is proven on GitHub until `onboard-project.yml` has run for it. All data comes from the public mirror node (no key, no Alchemy).
 
 - **Config shape:** the chain carries `asset: { kind: "native", decimals }` instead of `tokens[]`.
-  Supply (50B) and decimals come from the mirror's `/network/supply`. A holder is an account with
-  at least 1 HBAR; contracts are excluded (owner decision 2026-11-08).
+  Supply (50B) and decimals come from the mirror's `/network/supply`. A holder is any account with
+  a positive balance, contracts included (owner, 2026-11-14; replaces the 2026-11-08 rule of at least 1 HBAR with contracts
+  excluded); HTS-only accounts (0 HBAR) stay out, and `holderFloorTinybar` is no longer accepted.
 - **Scaffold, no answers file:** `npm run onboard -- --chain hedera` (dry run) and `--write`.
   `0.0.N` addresses are Hedera tokens (HTS) and are refused; only the coin itself is supported.
   The owner's judgement lives in the chain adapter (`scripts/lib/hedera/`), not in an answers file.

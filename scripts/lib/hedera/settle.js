@@ -8,8 +8,10 @@
  * (902 s, 8,416 transactions, 267 failed) this matched the next snapshot to the
  * tinybar for all 169 touched accounts.
  *
- * The scan keeps only rows at or above the holder floor, so an account the window
- * touches that has no row is read on its own at S (usually a few hundred per window).
+ * The scan keeps a row for every positive balance (floor 1 tinybar, owner 2026-11-14), so an account the
+ * window touches that has no row (zero at S, or created after S) is read on its own at S, usually a few
+ * hundred per window. An account that ends at 0 leaves the rows; each transaction nets to zero, so the
+ * settled rows still add up to total supply.
  */
 import { applyHbarTransfers } from "./replay.js";
 import { balanceAtSnapshot } from "./scan.js";
