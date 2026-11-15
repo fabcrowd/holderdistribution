@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import DistributionAnalysisWidget from "./DistributionAnalysisWidget";
 import type { HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 
-const env = vi.hoisted(() => ({ phone: false }));
+const env = vi.hoisted(() => ({ phone: false, dust: "1" as string | null }));
 
 vi.mock("@/hooks/useMediaQuery", () => ({
   PHONE_QUERY: "(max-width: 639px)",
@@ -20,10 +20,12 @@ vi.mock("@/hooks/useClassificationChangelog", () => ({
   useClassificationChangelog: () => ({ data: undefined }),
   getEventsAffecting: () => [],
 }));
-vi.mock("@/components/TierFlowDiagram", () => ({ TierFlowDiagram: () => <div data-testid="tier-flow" /> }));
+vi.mock("@/components/TierFlowDiagram", () => ({
+  TierFlowDiagram: ({ infoPrefix }: { infoPrefix?: string }) => <div data-testid="tier-flow" data-prefix={infoPrefix} />,
+}));
 vi.mock("@/components/DexSwaps", () => ({ DexSwaps: () => <div data-testid="dex-swaps" /> }));
 vi.mock("@/components/MethodologyInfo", () => ({ MethodologyInfo: () => null }));
-vi.mock("@/lib/holderTiers", () => ({ bucketFloor: () => 1 }));
+vi.mock("@/lib/holderTiers", () => ({ dustFloorText: () => env.dust }));
 
 const distribution = [
   { label: "1-10", count: 5, totalBalance: 10, percent: 40 },
@@ -43,6 +45,20 @@ const STACKED_CHART = "% of retail by balance range";
 describe("DistributionAnalysisWidget layout", () => {
   beforeEach(() => {
     env.phone = false;
+    env.dust = "1";
+  });
+
+  it("says sub-floor dust is counted in the lowest tier when the floor is above 0", () => {
+    expect(render("combined", 7)).toContain(
+      "Retail only, excluding exchange &amp; hot wallets. Sub-1-ZBCN dust wallets are counted in the lowest tier.",
+    );
+  });
+
+  it("drops the dust sentence when tiers start at 0", () => {
+    env.dust = null;
+    const html = render("combined", 7);
+    expect(html).toContain('data-prefix="Retail only, excluding exchange &amp; hot wallets."');
+    expect(html).not.toContain("dust");
   });
 
   it("phone, All chains: uses the same stacked chart and table as the Ethereum view", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hederaAdapter, HEDERA_HOLDER_FLOOR_TINYBAR } from "./adapter.js";
+import { hederaAdapter, HEDERA_HOLDER_FLOOR_TINYBAR, tinybarToHbar } from "./adapter.js";
 import { createMockMirror } from "./mockMirror.js";
 
 const BASE = "https://mirror.test/api/v1";
@@ -14,8 +14,8 @@ const CONTRACTS = [10, 11, 200, 454, 460];
 function population() {
   const accounts = [];
   for (let n = 1; n <= 450; n += 1) accounts.push(acct(n, n % 7 === 0 ? 0 : 5 + n));
-  accounts.push({ num: 451, balance: HBAR - 1n }); // one tinybar under the floor
-  accounts.push({ num: 452, balance: HBAR }); // exactly the floor
+  accounts.push({ num: 451, balance: HBAR - 1n }); // dust under 1 HBAR: still a holder
+  accounts.push({ num: 452, balance: HBAR });
   accounts.push({ num: 453, balance: 0n, tokens: [{ token_id: "0.0.9", balance: 123 }] }); // HTS only
   accounts.push({ num: 454, balance: 320_000_000_000_000_001n }); // contract, above 2^53 tinybar
   return { accounts, contracts: CONTRACTS };
@@ -85,21 +85,23 @@ describe("hedera clock", () => {
 });
 
 describe("hedera scanChain", () => {
-  it("returns holders >= 1 HBAR, no contracts, no HTS-only, with exact balances", async () => {
+  it("lists every positive balance: contracts and sub-1-HBAR dust included, zero and HTS-only accounts out", async () => {
     const pop = population();
     const scan = await hederaAdapter.scanChain(chain, opts(createMockMirror(pop)));
     const b = scan.balances;
     expect(b.get("0.0.1")).toBe(6);
     expect(b.has("0.0.7")).toBe(false); // zero HBAR
-    expect(b.has("0.0.451")).toBe(false); // 1 tinybar short of the floor
+    expect(b.get("0.0.451")).toBe(tinybarToHbar(HBAR - 1n)); // 1 tinybar under 1 HBAR
     expect(b.get("0.0.452")).toBe(1);
     expect(b.has("0.0.453")).toBe(false); // HTS only
-    for (const id of CONTRACTS) expect(b.has(`0.0.${id}`)).toBe(false);
-    const expected = pop.accounts.filter((a) => a.balance >= HBAR && !CONTRACTS.includes(a.num));
+    for (const id of [10, 11, 200]) expect(b.get(`0.0.${id}`)).toBe(5 + id); // contracts are holders
+    expect(b.get("0.0.454")).toBeCloseTo(3_200_000_000.00000001, 6);
+    const expected = pop.accounts.filter((a) => a.balance > 0n);
     expect(b.size).toBe(expected.length);
     expect(scan.tokenTotals.legacy).toBe(Number(pop.accounts.reduce((sum, a) => sum + a.balance, 0n) / HBAR));
-    expect(scan.checkpointData).toMatchObject({ vm: "hedera", holders: b.size, floorTinybar: "100000000", snapshotTimestamp: TS });
-    expect(scan.checkpointData.contractsExcluded).toBe(4); // 10, 11, 200 and 454 are contracts holding >= 1 HBAR; 460 is not in the snapshot
+    expect(scan.checkpointData).toMatchObject({ vm: "hedera", holders: b.size, nonzeroAccounts: b.size, floorTinybar: "1", unlistedRawTotal: "0", snapshotTimestamp: TS });
+    expect(scan.checkpointData.heldRawTotal).toBe(scan.checkpointData.snapshotRawTotal);
+    expect(scan.checkpointData).not.toHaveProperty("contractsExcluded");
     expect(scan.tokenAccountOwners).toBeInstanceOf(Map);
     expect(scan.chainKey).toBe("hedera");
   });
@@ -125,8 +127,29 @@ describe("hedera scanChain", () => {
     expect(b.get("0.0.3")).toBe(1.25);
     expect(b.get("0.0.500")).toBe(3);
     expect(b.get("0.0.98")).toBe(10 + 0.1 + 0.05);
-    expect(scan.checkpointData).toMatchObject({ lastBlock: 100, settledBlock: 100, settledThrough: "1794165202.000000000", settleTransactions: 5, settleFailedTransactions: 1, settleLookups: 2 });
-    expect(BigInt(scan.checkpointData.unlistedRawTotal) + BigInt(scan.checkpointData.heldRawTotal)).toBe(accounts.reduce((s, a) => s + a.balance, 0n));
+    expect(scan.checkpointData).toMatchObject({ lastBlock: 100, settledBlock: 100, settledThrough: "1794165202.000000000", settleTransactions: 5, settleFailedTransactions: 1, settleLookups: 1 }); // only 0.0.500 (created in the window) is read on its own; 0.0.3 dust has a row
+    expect(scan.checkpointData.unlistedRawTotal).toBe("0");
+    expect(BigInt(scan.checkpointData.heldRawTotal)).toBe(accounts.reduce((s, a) => s + a.balance, 0n));
+  });
+
+  it("settled rows still add up to total supply: an account that drops to zero leaves, one created in the window arrives", async () => {
+    const accounts = [acct(1, 10), acct(2, 3), { num: 4, balance: 0n }, acct(98, 1)];
+    const tx = (ts, legs) => ({ consensus_timestamp: ts, result: "SUCCESS", transfers: legs.map(([a, v]) => ({ account: `0.0.${a}`, amount: String(v) })) });
+    const transactions = [
+      tx("1794165100.000000001", [[2, -3n * HBAR], [1, 3n * HBAR - 1000n], [98, 1000n]]), // 0.0.2 empties completely
+      tx("1794165110.000000001", [[1, -HBAR], [600, HBAR]]), // 0.0.600 is created in the window
+      tx("1794165120.000000001", [[1, -5n], [4, 5n]]), // 0.0.4 held a zero row; now holds 5 tinybar of dust
+    ];
+    const mock = createMockMirror({ accounts, contracts: [], transactions, blockCount: 1000, blockTime: (n) => 1794165000 + n * 2 });
+    const scan = await hederaAdapter.scanChain(chain, opts(mock, { pinBlock: 100 }));
+    const b = scan.balances;
+    expect(b.has("0.0.2")).toBe(false);
+    expect(b.get("0.0.600")).toBe(1);
+    expect(b.get("0.0.4")).toBe(tinybarToHbar(5n));
+    expect(b.get("0.0.1")).toBe(tinybarToHbar(10n * HBAR + 3n * HBAR - 1000n - HBAR - 5n));
+    const supply = accounts.reduce((s, a) => s + a.balance, 0n);
+    expect(BigInt(scan.checkpointData.heldRawTotal)).toBe(supply);
+    expect(scan.checkpointData).toMatchObject({ unlistedRawTotal: "0", holders: 4, settleTransactions: 3 }); // accounts 1, 4, 98, 600
   });
 
   it("drops a saved scan state that is later than the pinned block instead of replaying backwards", async () => {
@@ -139,15 +162,26 @@ describe("hedera scanChain", () => {
     expect(scan.checkpointData.snapshotTimestamp).toBe(TS);
   });
 
-  it("keeps a contract that has a configured role (WHBAR as dex) and reports the HBAR left out", async () => {
+  it("lists a contract with a configured role (WHBAR as dex) like any other row, with nothing left out", async () => {
     const pop = population();
     const withRole = { ...chain, contracts: { whbar: { address: "0.0.200", role: "dex" } } };
     const scan = await hederaAdapter.scanChain(withRole, opts(createMockMirror(pop)));
     expect(scan.balances.get("0.0.200")).toBe(205);
-    expect(scan.balances.has("0.0.10")).toBe(false);
-    expect(scan.checkpointData).toMatchObject({ contractsExcluded: 3, roleContractsKept: 1 });
+    expect(scan.balances.get("0.0.10")).toBe(15);
     const all = pop.accounts.reduce((s, a) => s + a.balance, 0n);
-    expect(BigInt(scan.checkpointData.unlistedRawTotal) + BigInt(scan.checkpointData.heldRawTotal)).toBe(all);
+    expect(scan.checkpointData.unlistedRawTotal).toBe("0");
+    expect(BigInt(scan.checkpointData.heldRawTotal)).toBe(all);
+  });
+
+  it("refuses a scan whose listed rows lose HBAR even though the scan layer's own total still matches supply", async () => {
+    // A saved state whose range rows lost one row while its running totals kept the amount: the scan-layer sum check
+    // (allRaw vs supply) passes, so only the adapter's listed-rows check can catch it.
+    const states = [];
+    await hederaAdapter.scanChain(chain, opts(createMockMirror(population()), { onProgress: (s) => states.push(structuredClone(s)) }));
+    const saved = states.find((s) => Object.keys(s.ranges).length > 0);
+    const lo = Object.keys(saved.ranges).find((k) => saved.ranges[k].length > 0);
+    saved.ranges[lo] = saved.ranges[lo].slice(1);
+    await expect(hederaAdapter.scanChain(chain, opts(createMockMirror(population()), { resume: saved }))).rejects.toThrow(/listed rows sum to \d+ tinybar, total supply is \d+ \(difference \d+\)/);
   });
 
   it("keeps a balance above 2^53 exact in the raw total", async () => {
@@ -169,11 +203,11 @@ describe("hedera scanChain", () => {
     }
   });
 
-  it("retains only rows at or above the floor, as [id, tinybar text], but totals every balance", async () => {
+  it("retains every positive row, as [id, tinybar text], and none for a zero balance", async () => {
     const accounts = [acct(1, 0, [{ token_id: "0.0.9", balance: 5 }]), acct(2, 3, [{ token_id: "0.0.9", balance: 5 }]), { num: 3, balance: HBAR - 1n }, acct(4, 7)];
     const states = [];
     const scan = await hederaAdapter.scanChain(chain, opts(createMockMirror({ accounts, contracts: [] }), { onProgress: (s) => states.push(structuredClone(s)) }));
-    expect(Object.values(states.at(-1).ranges).flat()).toEqual([[2, "300000000"], [4, "700000000"]]);
+    expect(Object.values(states.at(-1).ranges).flat()).toEqual([[2, "300000000"], [3, "99999999"], [4, "700000000"]]);
     expect(scan.checkpointData.snapshotRawTotal).toBe(String(10n * HBAR + HBAR - 1n));
     expect(scan.checkpointData.nonzeroAccounts).toBe(3);
   });
@@ -191,10 +225,12 @@ describe("hedera scanChain", () => {
     expect(scan.checkpointData.releasedAtSnapshotRaw).toBe("4432714701836802108");
   });
 
-  it("honours a configured floor", async () => {
-    const mock = createMockMirror({ accounts: [acct(1, 1), acct(2, 10), acct(3, 100)], contracts: [] });
+  it("ignores a holderFloorTinybar left on a chain object: the floor is one tinybar", async () => {
+    const mock = createMockMirror({ accounts: [{ num: 1, balance: 1n }, acct(2, 10), acct(3, 100), { num: 4, balance: 0n }], contracts: [] });
     const scan = await hederaAdapter.scanChain({ ...chain, holderFloorTinybar: "1000000000" }, opts(mock));
-    expect([...scan.balances.keys()]).toEqual(["0.0.2", "0.0.3"]);
+    expect([...scan.balances.keys()]).toEqual(["0.0.1", "0.0.2", "0.0.3"]);
+    expect(scan.balances.get("0.0.1")).toBe(1e-8);
+    expect(HEDERA_HOLDER_FLOOR_TINYBAR).toBe(1n);
   });
 
   it("ends cleanly when the last full page is followed by an empty page", async () => {
@@ -232,9 +268,10 @@ describe("hedera scanChain", () => {
     await expect(hederaAdapter.scanChain(chain, opts(mock, { maxAttempts: 3 }))).rejects.toThrow(/500/);
   });
 
-  it("a failing contract list rejects the scan too", async () => {
-    const mock = createMockMirror({ ...population(), fail: (path) => (path === "/contracts" ? 500 : null) });
-    await expect(hederaAdapter.scanChain(chain, opts(mock, { maxAttempts: 2 }))).rejects.toThrow(/500/);
+  it("never reads /contracts: contracts are holders", async () => {
+    const mock = createMockMirror(population());
+    await hederaAdapter.scanChain(chain, opts(mock));
+    expect(mock.calls.some((c) => c.path === "/contracts")).toBe(false);
   });
 
   it("resumes a range from the last full page after a later page fails", async () => {
@@ -302,7 +339,7 @@ describe("hedera scanChain", () => {
     await hederaAdapter.scanChain(chain, opts(createMockMirror(population()), { onProgress: (s) => states.push(structuredClone(s)) }));
     const run = (c, resume) => hederaAdapter.scanChain(c, opts(createMockMirror(population()), { resume }));
     const saved = states.find((s) => Object.keys(s.ranges).length > 0);
-    await expect(run({ ...chain, holderFloorTinybar: "200000000" }, saved)).rejects.toThrow(/floor/);
+    await expect(run(chain, { ...saved, floor: "100000000" })).rejects.toThrow(/floor 100000000 differs from 1/); // a state saved under the old 1 HBAR floor
     await expect(run({ ...chain, rangeWidth: 50 }, saved)).rejects.toThrow(/range width/);
   });
 
@@ -353,21 +390,22 @@ describe("hedera scanChain", () => {
     expect(scan.balances.get("0.0.6")).toBe(100000000.00000001);
   });
 
-  it("lists more than one page of contracts", async () => {
+  it("lists more than one page of contracts as holders", async () => {
     const accounts = Array.from({ length: 300 }, (_, i) => acct(i + 1, 5));
     const contracts = Array.from({ length: 250 }, (_, i) => i + 1);
     const scan = await hederaAdapter.scanChain({ ...chain, rangeWidth: 1000 }, opts(createMockMirror({ accounts, contracts })));
-    expect(scan.balances.size).toBe(50);
-    expect(scan.checkpointData.contractsExcluded).toBe(250);
+    expect(scan.balances.size).toBe(300);
   });
 });
 
 describe("hedera resumeProblem", () => {
-  const saved = (extra = {}) => ({ version: 2, timestamp: "1794165040.107980111", maxId: 10, floor: "100000000", width: 100, ranges: {}, totals: {}, open: {}, ...extra });
+  const saved = (extra = {}) => ({ version: 2, timestamp: "1794165040.107980111", maxId: 10, floor: "1", width: 100, ranges: {}, totals: {}, open: {}, ...extra });
   const at = (s) => ({ nowMs: () => Number(s) * 1000 });
   it("is null for a fitting, fresh checkpoint and names the problem otherwise", () => {
     expect(hederaAdapter.resumeProblem(chain, saved(), at(1794165040 + 3600))).toBeNull();
     expect(hederaAdapter.resumeProblem(chain, saved({ floor: "5" }), at(1794165040))).toMatch(/floor/);
+    expect(hederaAdapter.resumeProblem(chain, saved({ floor: "1" }), at(1794165040))).toBeNull();
+    expect(hederaAdapter.resumeProblem(chain, saved({ floor: "100000000" }), at(1794165040))).toMatch(/floor 100000000 differs from 1/);
     expect(hederaAdapter.resumeProblem(chain, saved(), at(1794165040 + 48 * 3600))).toBeNull();
   });
 });
@@ -539,8 +577,4 @@ describe("hedera range completeness", () => {
     expect(checks).toHaveLength(1);
   });
 
-  it("rejects a /contracts page with no links", async () => {
-    const mock = createMockMirror({ ...base(), contracts: [1, 2], tamper: (p, q, body) => (p === "/contracts" ? { contracts: body.contracts } : undefined) });
-    await expect(hederaAdapter.scanChain(w, opts(mock))).rejects.toThrow(/links/);
-  });
 });

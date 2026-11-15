@@ -17,6 +17,7 @@ import { selectPipelineProject, projectPaths, projectClassificationPath } from "
 import { normalizeValidAddress } from "./lib/address.js";
 import { inheritAsOf, rowDateOf, shouldEmitRow } from "./lib/asOf.js";
 import { buildCexFlowsFromSnapshots, summaryCexTotals } from "./lib/cexFlows.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads the
 // project's own `classification.cexWallets` list and writes its data dir
@@ -41,6 +42,15 @@ const readJson = async (absolutePath) => {
 const readOptionalJson = async (absolutePath) => {
   try {
     return await readJson(absolutePath);
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+};
+
+const readOptionalSnapshot = async (absolutePath) => {
+  try {
+    return await readSnapshot(absolutePath);
   } catch (error) {
     if (error.code === "ENOENT") return null;
     throw error;
@@ -86,13 +96,13 @@ const main = async () => {
   console.log(`Wrote ${OUTPUT_PATH} (${wallets.length} wallets)`);
 
   // Compute flows against current and previous holder snapshots
-  const snapshot = await readOptionalJson(HOLDERS_PATH);
+  const snapshot = await readOptionalSnapshot(HOLDERS_PATH);
   if (!snapshot) {
     console.warn("Holder snapshot not found. Skipping CEX flow generation.");
     return;
   }
 
-  const previousSnapshot = await readOptionalJson(PREVIOUS_SNAPSHOT_PATH);
+  const previousSnapshot = await readOptionalSnapshot(PREVIOUS_SNAPSHOT_PATH);
 
   // The previous snapshot is only a baseline when both snapshots are comparable and
   // exactly one day apart (lib/cexFlows.js); otherwise the feed says why it has none.

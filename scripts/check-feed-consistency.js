@@ -36,6 +36,7 @@ import { forensicsRegistryProblems } from "./lib/walletFlowsProject.js";
 import { projectSizing } from "./lib/projectSizing.js";
 import { checkCexFlowsWindow } from "./lib/feedAlignment.js";
 import { resolveChainVm, vmUsesNativeAsset } from "./lib/chainVms.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 
 // `--all`: once per registered project; fail if any project fails.
 if (process.argv.includes("--all")) {
@@ -70,7 +71,8 @@ const checks = [];
 
 const read = async (rel, { optional = false } = {}) => {
   try {
-    return JSON.parse(await fs.readFile(path.resolve(DATA, rel), "utf8"));
+    const file = path.resolve(DATA, rel);
+    return rel === "tel-holders.json" ? await readSnapshot(file) : JSON.parse(await fs.readFile(file, "utf8"));
   } catch (error) {
     if (error.code === "ENOENT" && optional) return null;
     throw error;

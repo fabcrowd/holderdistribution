@@ -19,6 +19,20 @@ describe("tierFingerprint", () => {
   });
 });
 
+describe("tierFingerprint with tiers below 1", () => {
+  const dust = [
+    { label: "0.001-1", min: 0.001, max: 1 },
+    { label: "<0.001", min: 0, max: 0.001 },
+  ];
+  const withDust = [...A.map((t) => (t.min === 1 ? { ...t, max: 10 } : t)), ...dust];
+
+  it("is deterministic for decimal mins and a min 0 tier, and differs from the same tiers without them", () => {
+    expect(tierFingerprint(withDust)).toBe(tierFingerprint(withDust.map((t) => ({ ...t }))));
+    expect(tierFingerprint(withDust)).not.toBe(tierFingerprint(A));
+    expect(tierFingerprint(withDust)).not.toBe(tierFingerprint(withDust.slice(0, 3)));
+  });
+});
+
 describe("shouldResetForTiers", () => {
   it("keeps a store whose fingerprint matches", () => {
     expect(shouldResetForTiers({ tierFingerprint: tierFingerprint(A), days: [day("10+")] }, A).reset).toBe(false);

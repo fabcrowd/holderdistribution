@@ -161,3 +161,37 @@ describe("a project can set its own tiers", () => {
     expect(bad({ concentrationBuckets: [0] })).toThrow(/concentrationBuckets/);
   });
 });
+
+describe("tiers below 1 (min 0 bottom tier)", () => {
+  const tiers = normalizeHolderTiers({
+    retailThreshold: 1,
+    megaHolderThreshold: 1e9,
+    concentrationBuckets: [10],
+    balanceRanges: [
+      { label: "<1", min: 0, max: 1 },
+      { label: "1+", min: 1, max: null },
+    ],
+    distributionTiers: [
+      { label: "5+", min: 5, max: null },
+      { label: "1-5", min: 1, max: 5 },
+      { label: "0.001-1", min: 0.001, max: 1 },
+      { label: "<0.001", min: 0, max: 0.001 },
+    ],
+  });
+
+  it("rangeLabelOf returns null for zero, negative and NaN, never the dust tier", () => {
+    for (const v of [0, -0, -1, -1e-9, Number.NaN]) expect(rangeLabelOf(tiers.distributionTiers, v)).toBeNull();
+    expect(rangeLabelOf(tiers.balanceRanges, 0)).toBeNull();
+  });
+
+  it("puts the smallest positive balance in the bottom tier and an edge value in the upper tier", () => {
+    expect(rangeLabelOf(tiers.distributionTiers, 1e-8)).toBe("<0.001");
+    expect(rangeLabelOf(tiers.distributionTiers, 0.001)).toBe("0.001-1");
+    expect(rangeLabelOf(tiers.distributionTiers, 1)).toBe("1-5");
+    expect(rangeLabelOf(tiers.distributionTiers, 5)).toBe("5+");
+  });
+
+  it("bucketFloor is 0 for a tier set whose bottom tier starts at 0", () => {
+    expect(bucketFloor(tiers)).toBe(0);
+  });
+});

@@ -52,6 +52,10 @@ jobs:
     # them afterwards, including on error.
     runs-on: ubuntu-24.04
     timeout-minutes: 330
+    # NODE_OPTIONS: pull-holders-rpc.js --as-of loads and writes a full snapshot (HBAR: ~4.84M rows, 4-5.5 GB);
+    # Node's default old-space limit is too small.
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - name: Check out repository
         uses: actions/checkout@v5

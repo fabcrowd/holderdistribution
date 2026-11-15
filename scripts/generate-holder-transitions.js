@@ -36,6 +36,7 @@ import { normalizeAnyAddress } from "./lib/address.js";
 import { emptyTransitions } from "./lib/emptyTransitions.js";
 import { inheritAsOf } from "./lib/asOf.js";
 import { hydrateChainHolders } from "./lib/snapshotFormat.js";
+import { readSnapshot, readSnapshotAtRev } from "./lib/snapshotIo.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk and in git history) and its own non-retail lists. Tier
@@ -55,7 +56,8 @@ const FUND_REL = data.rel("funding-wallets.json");
 const RANGES = projectHolderTiers(project).distributionTiers;
 const bucketOf = (v) => rangeLabelOf(RANGES, v);
 
-const git = (args) => execFileSync("git", args, { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 });
+const GIT_MAX_BUFFER = 512 * 1024 * 1024;
+const git = (args) => execFileSync("git", args, { encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
 
 const commitsByDate = (file) => {
   const out = git(["log", "--format=%H %ad", "--date=short", "--", file]);
@@ -68,14 +70,20 @@ const commitsByDate = (file) => {
 };
 
 const showJson = (commit, file) => JSON.parse(git(["show", `${commit}:${file}`]));
+const showSnapshot = (commit, file) => readSnapshotAtRev(commit, file, { maxBuffer: GIT_MAX_BUFFER });
 
 const readOptionalJson = async (p) => {
   try { return JSON.parse(await fs.readFile(p, "utf8")); }
   catch (e) { if (e.code === "ENOENT") return null; throw e; }
 };
 
+const readOptionalSnapshot = async (p) => {
+  try { return await readSnapshot(p); }
+  catch (e) { if (e.code === "ENOENT") return null; throw e; }
+};
+
 const main = async () => {
-  const { set: excl, sizes } = await loadNonRetailSet(projectNonRetailPaths(project, process.cwd(), await readOptionalJson(TEL_HOLDERS_PATH)));
+  const { set: excl, sizes } = await loadNonRetailSet(projectNonRetailPaths(project, process.cwd(), await readOptionalSnapshot(TEL_HOLDERS_PATH)));
   console.log(
     `Non-retail set: ${sizes.total} addresses ` +
       `(exclusions ${sizes.exclusions}, CEX config ${sizes.cex}, DEX config ${sizes.dex}).`,
@@ -88,7 +96,7 @@ const main = async () => {
   if (snapDates.length === 0) {
     console.warn("No snapshots in git history yet (first run); writing an empty transitions feed.");
     await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
-    await fs.writeFile(OUT_PATH, `${JSON.stringify(emptyTransitions(new Date(), inheritAsOf(await readOptionalJson(TEL_HOLDERS_PATH))), null, 2)}\n`, "utf8");
+    await fs.writeFile(OUT_PATH, `${JSON.stringify(emptyTransitions(new Date(), inheritAsOf(await readOptionalSnapshot(TEL_HOLDERS_PATH))), null, 2)}\n`, "utf8");
     return;
   }
 
@@ -136,7 +144,7 @@ const main = async () => {
 
   const balancesAt = (date) => {
     const sd = nearestOnOrBefore(snapDates, date);
-    const snap = showJson(snapCommits.get(sd), SNAP_REL);
+    const snap = showSnapshot(snapCommits.get(sd), SNAP_REL);
     const fd = nearestOnOrBefore(fundDates, date);
     const fund = fd ? showJson(fundCommits.get(fd), FUND_REL) : { wallets: [] };
     return { bal: aggregateBalances(snap, fund), snapshotDate: (snap.source ?? {}).snapshotDate ?? sd };
@@ -146,7 +154,7 @@ const main = async () => {
   // run's just-pulled data, which git history won't see until this job's
   // later commit step. Falls back to the last git-committed snapshot only if
   // the on-disk file is somehow missing (e.g. run outside the normal job).
-  const onDiskSnap = await readOptionalJson(TEL_HOLDERS_PATH);
+  const onDiskSnap = await readOptionalSnapshot(TEL_HOLDERS_PATH);
   const onDiskFund = (await readOptionalJson(FUNDING_WALLETS_PATH)) ?? { wallets: [] };
   const today = new Date().toISOString().slice(0, 10);
   const { b1, toDate } = onDiskSnap

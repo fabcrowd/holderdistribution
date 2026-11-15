@@ -13,6 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { deriveHolderTiers, MAX_TIER_SHARE } from "./lib/deriveHolderTiers.js";
 import { projectDataPath, resolveProject } from "./lib/projects.js";
+import { readSnapshotSync } from "./lib/snapshotIo.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const arg = (k) => {
@@ -36,7 +37,7 @@ function readBalances() {
   if (!project) throw new Error("usage: --project <slug> | --balances <file.tsv> [--project <slug> for the supply target]");
   const file = projectDataPath(project, "tel-holders.json", ROOT);
   if (!fs.existsSync(file)) throw new Error(`${file} not found: run the first holders snapshot for ${project.slug}, or pass --balances`);
-  const snapshot = JSON.parse(fs.readFileSync(file, "utf8"));
+  const snapshot = readSnapshotSync(file);
   return (snapshot.wallets ?? []).map((w) => Number(w.total_telcoin_balance));
 }
 

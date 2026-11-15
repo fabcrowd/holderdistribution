@@ -5,7 +5,6 @@ import {
   checkSnapshotSize,
   hydrateChainHolders,
   resyncSnapshot,
-  serializePrevious,
   serializeSnapshot,
   serializeVerified,
   snapshotLayout,
@@ -151,7 +150,8 @@ describe("checkSnapshotSize", () => {
     expect(r.message).toContain("95.00 MiB");
     expect(r.message).toContain("100 MiB");
     expect(r.message).toMatch(/cannot be pushed to GitHub/);
-    expect(r.message).toMatch(/balance floor/);
+    expect(r.message).toMatch(/sharded/);
+    expect(r.message).not.toMatch(/balance floor/);
   });
 
   it("uses MiB constants", () => {
@@ -184,45 +184,6 @@ describe("hydrateChainHolders without metrics.holderCount", () => {
     const parsed = JSON.parse(serializeSnapshot(singleChain()));
     delete parsed.chains.hedera.metrics.holderCount;
     expect(hydrateChainHolders(parsed).chains.hedera.holders).toEqual(singleChain().chains.hedera.holders);
-  });
-});
-
-describe("serializePrevious", () => {
-  const warnings = () => {
-    const calls = [];
-    return { calls, log: { warn: (m) => calls.push(m) } };
-  };
-
-  it("slims a healthy old-layout single-chain prior", () => {
-    const o = singleChain();
-    const w = warnings();
-    expect(serializePrevious(o, w.log)).toBe(serializeSnapshot(o));
-    expect(w.calls).toEqual([]);
-  });
-
-  it("falls back to legacy text with a warning when a holder is missing from wallets", () => {
-    const o = singleChain();
-    o.wallets = o.wallets.filter((row) => row.address !== "0.0.3");
-    const w = warnings();
-    expect(serializePrevious(o, w.log)).toBe(`${JSON.stringify(o, null, 2)}\n`);
-    expect(w.calls).toHaveLength(1);
-    expect(w.calls[0]).toMatch(/hedera/);
-  });
-
-  it("is stable for an already-slim prior", () => {
-    const once = serializeSnapshot(singleChain());
-    expect(serializePrevious(JSON.parse(once), warnings().log)).toBe(once);
-  });
-
-  it("writes a two-chain prior as legacy bytes", () => {
-    const o = twoChain();
-    expect(serializePrevious(o, warnings().log)).toBe(`${JSON.stringify(o, null, 2)}\n`);
-  });
-
-  it("applies no size gate", () => {
-    const o = singleChain();
-    const w = warnings();
-    expect(() => serializePrevious(o, w.log)).not.toThrow();
   });
 });
 

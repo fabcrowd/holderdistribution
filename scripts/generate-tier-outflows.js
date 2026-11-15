@@ -69,6 +69,7 @@ import { cutoffScanWindow, readCutoffMap, flowFeedAsOf, settledEndBlock } from "
 import { chainCaughtUp } from "./lib/tierOutflowsComplete.js";
 import { loadChainAdapter, projectHasVm } from "./lib/chainAdapters.js";
 import { hydrateChainHolders } from "./lib/snapshotFormat.js";
+import { readSnapshotAtRev } from "./lib/snapshotIo.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk + git history), work dir (day store / checkpoint), chain
@@ -184,8 +185,31 @@ const CHAINS = Object.fromEntries(Object.keys(CHAIN_CONFIG).map((k) => [k, chain
 const TIERS = projectHolderTiers(project).distributionTiers;
 const tierOf = (v) => rangeLabelOf(TIERS, v);
 
-const git = (a) => execFileSync("git", a, { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 });
+const GIT_MAX_BUFFER = 512 * 1024 * 1024;
+const git = (a) => execFileSync("git", a, { encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
 const showJson = (commit, file) => JSON.parse(git(["show", `${commit}:${file}`]));
+const showSnapshot = (commit, file) => readSnapshotAtRev(commit, file, { maxBuffer: GIT_MAX_BUFFER });
+
+// A holder-to-tier Map per snapshot date holds one entry per holder (millions on HBAR), so only the most
+// recently used dates stay in memory; the day loops walk dates in order and rarely go back.
+const TIER_MAP_CACHE_DATES = 2;
+const recentDatesCache = (limit = TIER_MAP_CACHE_DATES) => {
+  const entries = new Map();
+  return {
+    get(date) {
+      if (!entries.has(date)) return undefined;
+      const value = entries.get(date);
+      entries.delete(date);
+      entries.set(date, value);
+      return value;
+    },
+    set(date, value) {
+      entries.delete(date);
+      entries.set(date, value);
+      while (entries.size > limit) entries.delete(entries.keys().next().value);
+    },
+  };
+};
 const commitsByDate = (file) => {
   const out = git(["log", "--format=%H %ad", "--date=short", "--", file]);
   const map = new Map();
@@ -256,7 +280,7 @@ const makeTierResolver = (snapCommits, fundCommits, snapDates, fundDates, excl) 
   const buildFor = (snapDate) => {
     // Some old snapshot blobs are malformed / non-JSON; a caller catches the
     // throw and falls back to the next valid snapshot rather than crashing.
-    const snap = showJson(snapCommits.get(snapDate), SNAP_REL);
+    const snap = showSnapshot(snapCommits.get(snapDate), SNAP_REL);
     let fund = { wallets: [] };
     const fd = fundDates.length ? nearest(fundDates, snapDate) : null;
     if (fd) { try { fund = showJson(fundCommits.get(fd), FUND_REL); } catch { /* skip bad funding snapshot */ } }
@@ -566,10 +590,11 @@ const applySolanaFlows = async (dayBuckets, snapCommits, snapDates) => {
     addAll(v.cexWallets.map((w) => w.address)); addAll(v.dexOwners); addAll(v.stakingAddresses);
     addAll((projectRoleAddresses(project.config)[c.key] ?? []).map((r) => r.address));
   }
-  const cache = new Map();
+  const cache = recentDatesCache();
   const mapFor = (snapDate) => {
-    if (cache.has(snapDate)) return cache.get(snapDate);
-    const snap = showJson(snapCommits.get(snapDate), SNAP_REL);
+    const cached = cache.get(snapDate);
+    if (cached) return cached;
+    const snap = showSnapshot(snapCommits.get(snapDate), SNAP_REL);
     const bal = new Map();
     const hydrated = hydrateChainHolders(snap);
     for (const c of chains) for (const h of hydrated.chains?.[c.key]?.holders ?? []) {
@@ -620,10 +645,11 @@ const applyHederaFlows = async (hedera, dayBuckets, snapCommits, snapDates) => {
   addAll((EXCLUSIONS_PATH ? await readOptionalJson(EXCLUSIONS_PATH) : null)?.addresses);
   addAll(kit.hederaFlowAccounts(project).map((a) => a.id));
   addAll((projectRoleAddresses(project.config)[key] ?? []).map((r) => r.address));
-  const cache = new Map();
+  const cache = recentDatesCache();
   const mapFor = (snapDate) => {
-    if (cache.has(snapDate)) return cache.get(snapDate);
-    const snap = showJson(snapCommits.get(snapDate), SNAP_REL);
+    const cached = cache.get(snapDate);
+    if (cached) return cached;
+    const snap = showSnapshot(snapCommits.get(snapDate), SNAP_REL);
     const tiers = new Map();
     for (const h of hydrateChainHolders(snap).chains?.[key]?.holders ?? []) {
       const a = (h.address ?? "").trim();

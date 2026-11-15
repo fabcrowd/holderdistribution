@@ -66,8 +66,11 @@ describe("pipeline wiring", () => {
   const source = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
   it("pull-holders-rpc rotates previous only through canRotatePrevious", () => {
     const src = source("pull-holders-rpc.js");
-    expect(src).toMatch(/if \(priorSnapshot && canRotatePrevious\(priorSnapshot\.asOf, asOf\)\)\s*\{\s*await fs\.writeFile\(PREVIOUS_SNAPSHOT_PATH/);
-    expect(src.match(/writeFile\(PREVIOUS_SNAPSHOT_PATH/g)).toHaveLength(1);
+    // The only call that can produce the previous file is publishSnapshot, and its rotate flag is the guard.
+    expect(src).toMatch(/publishSnapshot\(\{[^}]*previousFile: PREVIOUS_SNAPSHOT_PATH,[^}]*rotate: Boolean\(priorHead\) && canRotatePrevious\(priorHead\.asOf, asOf\),?\s*\}\)/);
+    expect(src.match(/PREVIOUS_SNAPSHOT_PATH/g)).toHaveLength(2);
+    expect(src.match(/publishSnapshot\(/g)).toHaveLength(1);
+    expect(src).not.toMatch(/writeFile\(PREVIOUS_SNAPSHOT_PATH/);
   });
   it("pull-cex-wallets builds flows only through buildCexFlowsFromSnapshots", () => {
     const src = source("pull-cex-wallets.js");

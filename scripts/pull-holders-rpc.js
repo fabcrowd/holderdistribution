@@ -30,7 +30,7 @@ import { sharedScanEnabled } from "./lib/sharedTransferLogs.js";
 import { ensureCutoffs, findFirstBlockAtOrAfter, nextDate } from "./lib/dayBlocks.js";
 import { resolveSettledDate, planPins, finalizeAsOf, utcDay, aheadAction } from "./lib/asOf.js";
 import { canRotatePrevious } from "./lib/cexFlows.js";
-import { serializePrevious, serializeVerified } from "./lib/snapshotFormat.js";
+import { publishSnapshot, readSnapshotHead } from "./lib/snapshotIo.js";
 import { partialName, serializePartial, writePartial, readPartial, removePartial, partialResumeDecision, partialRaw, buildChunks, streamChunks, loadResumable, keepsFinishedScan, settlePartial } from "./lib/partialCheckpoint.js";
 
 // Mid-scan checkpoint cadence (seconds); 0 disables. See lib/partialCheckpoint.js.
@@ -1253,33 +1253,29 @@ async function main() {
 
   // A reconstructed snapshot is a historical row, not the newest state, so it
   // must not become "previous" for the live snapshot either.
-  let priorSnapshot = null;
+  // Only the prior stamp (asOf) is needed to decide rotation, so a sharded prior is not loaded row by row.
+  let priorHead = null;
   try {
-    const existing = ARG_AS_OF ? null : await fs.readFile(OUTPUT_PATH, "utf8");
-    if (existing) priorSnapshot = JSON.parse(existing);
+    if (!ARG_AS_OF) priorHead = await readSnapshotHead(OUTPUT_PATH);
   } catch (error) {
     if (error.code !== "ENOENT") {
       console.warn("Unable to load previous snapshot for archival:", error);
     }
   }
 
-  // Serialize both files before writing either, so a refusal of the snapshot (round trip or size) leaves
-  // disk untouched. The previous snapshot is scratch: it falls back to the legacy layout and has no size gate.
-  const outputText = serializeVerified(output, OUTPUT_PATH);
-  const previousText =
-    priorSnapshot && canRotatePrevious(priorSnapshot.asOf, asOf) ? serializePrevious(priorSnapshot) : null;
-
-  await fs.writeFile(OUTPUT_PATH, outputText, "utf8");
-  console.log(`Wrote ${OUTPUT_PATH}`);
-
   // Only a comparable snapshot from an earlier day becomes "previous": a same-day
   // rerun or an unpinned/unstamped file must not displace the older settled one,
   // or cex-flows would compare against the wrong day (lib/cexFlows.js).
-  if (priorSnapshot && canRotatePrevious(priorSnapshot.asOf, asOf)) {
-    await fs.writeFile(PREVIOUS_SNAPSHOT_PATH, previousText, "utf8");
-    console.log(`Archived prior snapshot to ${PREVIOUS_SNAPSHOT_PATH}`);
-  } else if (priorSnapshot) {
-    console.warn(`Prior snapshot (asOf ${priorSnapshot.asOf?.date ?? "none"}) is not a comparable earlier day than ${asOf?.date}; previous snapshot left unchanged.`);
+  // publishSnapshot copies the prior files aside before the write and moves them into place only after
+  // the new snapshot is written, so a refusal (round trip or size) leaves current and previous untouched.
+  await publishSnapshot({
+    file: OUTPUT_PATH,
+    previousFile: PREVIOUS_SNAPSHOT_PATH,
+    snapshot: output,
+    rotate: Boolean(priorHead) && canRotatePrevious(priorHead.asOf, asOf),
+  });
+  if (priorHead && !canRotatePrevious(priorHead.asOf, asOf)) {
+    console.warn(`Prior snapshot (asOf ${priorHead.asOf?.date ?? "none"}) is not a comparable earlier day than ${asOf?.date}; previous snapshot left unchanged.`);
   }
 
   // Count unique stakers for informational logging.

@@ -22,6 +22,23 @@ export const FLOW_ASOF_MAX_AGE_DAYS = 2;
 export const MAX_RUNS_PER_STEP = 6;
 /** A wallet holding more than this share of supply.target must be traced by a person before tiers are derived. */
 export const LARGE_HOLDER_SHARE = 0.01;
+/** A run still "active" a day after it was created is not going to run: GitHub's job limit is 6 hours; 2026-11-14 a three-day-old queued run with no jobs blocked onboarding. */
+export const ACTIVE_RUN_MAX_AGE_HOURS = 24;
+export const ACTIVE_RUN_STATUSES = new Set(["queued", "in_progress", "waiting", "pending", "requested"]);
+
+/** Splits a workflow's recent runs into the first fresh active run and the stale active ones. A run exactly ACTIVE_RUN_MAX_AGE_HOURS old is still fresh; an unparseable createdAt is stale. */
+export function pickActiveRun(runs, nowMs) {
+  const maxAgeMs = ACTIVE_RUN_MAX_AGE_HOURS * 3_600_000;
+  let active = null;
+  const stale = [];
+  for (const run of runs) {
+    if (!ACTIVE_RUN_STATUSES.has(run.status)) continue;
+    const createdMs = Date.parse(run.createdAt);
+    if (Number.isNaN(createdMs) || nowMs - createdMs > maxAgeMs) stale.push(run);
+    else if (!active) active = run;
+  }
+  return { active, stale };
+}
 
 /**
  * Chain VMs each data workflow can read today. A step for a project on any other
@@ -290,10 +307,23 @@ export function sizingFromSnapshot({ slug, snapshot, isNonRetail, supplyTarget, 
   }
   if (result.largestTierShare > MAX_TIER_SHARE) {
     const shares = Object.entries(result.tierShares).map(([label, share]) => `${label} ${(share * 100).toFixed(1)}%`).join(", ");
+    const [biggest] = Object.entries(result.tierShares).sort((a, b) => b[1] - a[1]);
+    const biggestTier = result.distributionTiers.find((t) => t.label === biggest[0]);
+    const unsplittableDust = biggestTier.max !== null && biggestTier.max <= 1;
+    const head = `derived tiers put ${(result.largestTierShare * 100).toFixed(1)}% of wallets with a positive balance in one tier (limit ${MAX_TIER_SHARE * 100}%): ${shares}.
+`;
+    if (unsplittableDust) {
+      return {
+        blocked:
+          `${head}Tier ${biggest[0]} is below 1 and cannot be split: one balance value dominates it, so no edges separate those wallets. ` +
+          `Every positive balance is listed (owner rule), so this needs an owner decision.
+` +
+          `Fix: ask the owner how to present these wallets (node scripts/derive-holder-tiers.js --project ${slug} prints the shares), put the decision in the holders block of config/projects/${slug}.json, ${mergeAndDispatch(slug)}`,
+      };
+    }
     return {
       blocked:
-        `derived tiers put ${(result.largestTierShare * 100).toFixed(1)}% of retail wallets in one tier (limit ${MAX_TIER_SHARE * 100}%): ${shares}.\n` +
-        `Fix: in the holders block of config/projects/${slug}.json set distributionTiers (edges so that no tier holds more than ${MAX_TIER_SHARE * 100}% of wallets; node scripts/derive-holder-tiers.js --project ${slug} prints a starting point), ` +
+        `${head}Fix: in the holders block of config/projects/${slug}.json set distributionTiers (edges so that no tier holds more than ${MAX_TIER_SHARE * 100}% of wallets; node scripts/derive-holder-tiers.js --project ${slug} prints a starting point), ` +
         `balanceRanges, retailThreshold and concentrationBuckets (leave megaHolderThreshold alone: it is ${fmtNumber(megaCap)}, derived from supply.target and the acknowledged large holders), ${mergeAndDispatch(slug)}`,
     };
   }
@@ -301,7 +331,7 @@ export function sizingFromSnapshot({ slug, snapshot, isNonRetail, supplyTarget, 
   return {
     result,
     holders: {
-      $comment: `Derived by the onboarding runner (scripts/onboard-run.js) from ${slug}'s own snapshot of ${date} (${result.holders} retail holders; non-retail and mega wallets excluded). distributionTiers labels are JOIN KEYS into holder-transitions.json / tier-outflows.json / holders-history.json: changing them needs the history replay and downstream regeneration (README).`,
+      $comment: `Derived by the onboarding runner (scripts/onboard-run.js) from ${slug}'s own snapshot of ${date} (${result.holders} retail holders with a positive balance; non-retail and mega wallets excluded). Tiers below 1 are included when sub-1 wallets would otherwise exceed the tier share limit; retailThreshold comes from the at-or-above-1 ladder. distributionTiers labels are JOIN KEYS into holder-transitions.json / tier-outflows.json / holders-history.json: changing them needs the history replay and downstream regeneration (README).`,
       distributionTiers: result.distributionTiers,
       balanceRanges: result.balanceRanges,
       megaHolderThreshold: megaCap,

@@ -133,8 +133,12 @@ jobs:
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     # Every pipeline script reads HD_PROJECT as its default `--project` (see
     # scripts/lib/projects.js).
+    # NODE_OPTIONS: the holders steps keep every account in memory (HBAR: ~4.84M rows, measured 4-5.5 GB);
+    # Node's default old-space limit (~4 GB on this runner) is too small. A step that sets its own
+    # NODE_OPTIONS (tier outflows, 8192) keeps it.
     env:
       HD_PROJECT: ${{ matrix.slug }}
+      NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -268,7 +272,7 @@ jobs:
         # EVM/Solana: a finished scan removes its partial, so nothing is saved then
         # (older keys hold files that partialUsable rejects). A keepsFinishedScan VM
         # (Hedera) keeps its finished state, so this step also runs after success:
-        # ~25 MB per run under a new key; GitHub evicts cache entries unused for
+        # ~89 MiB per run under a new key (the Hedera partial scan state); GitHub evicts cache entries unused for
         # 7 days, so it stays far under the 10 GB limit.
         if: ${{ always() && hashFiles(format('{0}/holders-partial-*.json', env.HD_WORK_DIR)) != '' }}
         uses: actions/cache/save@v4
@@ -442,7 +446,7 @@ jobs:
           # Stop and save 5 minutes before the step timeout: a reset rescan then advances every night instead of dying unsaved.
           TIER_OUTFLOWS_MAX_MS: '1200000'
           RPC_PREFER_PUBLIC: '1'
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
         run: node scripts/generate-tier-outflows.js
 
       - name: Fill holders-history gaps

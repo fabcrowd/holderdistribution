@@ -29,6 +29,10 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # NODE_OPTIONS: check:feeds loads every project's snapshot (HBAR: ~4.84M rows);
+    # Node's default old-space limit is too small.
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

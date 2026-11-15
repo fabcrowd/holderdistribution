@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_SELECTION, hasSelection, reduceSelection, shouldClearOnEscape, type DistSelection } from "./distributionSelection";
+import { defaultTierLabel, EMPTY_SELECTION, hasSelection, reduceSelection, shouldClearOnEscape, type DistSelection } from "./distributionSelection";
 
 const run = (...actions: Parameters<typeof reduceSelection>[1][]) =>
   actions.reduce<DistSelection>((s, a) => reduceSelection(s, a), EMPTY_SELECTION);
@@ -54,5 +54,20 @@ describe("Escape handling", () => {
   });
   it("lets an open popover / dialog close first", () => {
     expect(shouldClearOnEscape({ key: "Escape" }, { querySelector: () => ({}) })).toBe(false);
+  });
+});
+
+describe("defaultTierLabel with dust tiers holding most wallets", () => {
+  const order = ["100M+", "10M-100M", "1M-10M", "100K-1M", "10K-100K", "1K-10K", "100-1K", "10-100", "1-10", "0.001-1", "0.000001-0.001", "<0.000001", "dust-extra"];
+  const counts = [2, 5, 20, 90, 400, 1500, 9000, 30000, 80000, 500000, 700000, 900000, 100];
+  const rows = order.map((label, i) => ({ label, count: counts[i]! }));
+
+  it("does not crash and picks the busiest tier inside the visible top 70%", () => {
+    // 13 tiers -> ceil(9.1) = 10 visible: indexes 0-9; busiest of those is "0.001-1".
+    expect(defaultTierLabel(rows, order)).toBe("0.001-1");
+  });
+
+  it("without an order, picks the busiest tier overall", () => {
+    expect(defaultTierLabel(rows)).toBe("<0.000001");
   });
 });

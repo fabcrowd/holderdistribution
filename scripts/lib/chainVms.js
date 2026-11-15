@@ -38,4 +38,4 @@ const NATIVE_ASSET_VMS = new Set(["hedera"]);
 export const vmUsesNativeAsset = (vm) => NATIVE_ASSET_VMS.has(assertChainVm(vm));
 
 /** Chain-entry fields only one vm understands; a derived chain copies them through, any other vm rejects them. */
-export const VM_CHAIN_FIELDS = Object.freeze({ hedera: Object.freeze(["mirrorUrl", "rangeWidth", "holderFloorTinybar"]) });
+export const VM_CHAIN_FIELDS = Object.freeze({ hedera: Object.freeze(["mirrorUrl", "rangeWidth"]) });

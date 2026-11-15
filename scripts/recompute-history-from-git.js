@@ -102,6 +102,7 @@ import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS, setHolderTiers } from "./lib/holdersView.js";
 import { classifySnapshot, stakedAmountsByAddress } from "./lib/phantomStakers.js";
 import { readJsonOptional } from "./lib/readJsonOptional.js";
+import { readSnapshot, readSnapshotAtRev } from "./lib/snapshotIo.js";
 import { extractHeldAddresses, advanceEverHeld } from "./lib/everHeldReplay.js";
 import { selectPipelineProject, projectPaths, projectNonRetailPaths, projectClassificationPath } from "./lib/projects.js";
 
@@ -127,8 +128,10 @@ const EVER_CHECKPOINT_PATH = data("holders-ever-checkpoint.json");
 
 const dryRun = process.argv.includes("--dry-run");
 
-const git = (args) => execFileSync("git", args, { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 });
+const GIT_MAX_BUFFER = 512 * 1024 * 1024;
+const git = (args) => execFileSync("git", args, { encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
 const showJson = (commit, file) => JSON.parse(git(["show", `${commit}:${file}`]));
+const showSnapshot = (commit, file) => readSnapshotAtRev(commit, file, { maxBuffer: GIT_MAX_BUFFER });
 
 const readJson = async (p) => JSON.parse(await fs.readFile(p, "utf8"));
 
@@ -266,7 +269,7 @@ const main = async () => {
   // Owners come from the current on-disk snapshot only: tokenAccountOwnersByChain is not
   // kept per date, and vault ownership is stable, so history uses the same non-retail set.
   const { set: excluded, sizes } = await loadNonRetailSet(
-    projectNonRetailPaths(project, ROOT, await readJson(data("tel-holders.json")).catch(() => null)),
+    projectNonRetailPaths(project, ROOT, await readSnapshot(data("tel-holders.json")).catch(() => null)),
   );
   console.log(`Current non-retail set: ${sizes.total} addresses (exclusions ${sizes.exclusions}, CEX ${sizes.cex}, DEX ${sizes.dex}).`);
 
@@ -345,7 +348,7 @@ const main = async () => {
   for (const date of seedDates) {
     const commit = snapCommits.get(date);
     let snap = null;
-    try { snap = showJson(commit, HOLDERS_SNAPSHOT_FILE); }
+    try { snap = showSnapshot(commit, HOLDERS_SNAPSHOT_FILE); }
     catch (e) { console.warn(`  ${date} (${commit.slice(0, 8)}): unparseable during seed — ${e.message}`); continue; }
     const { phantoms } = classifySnapshot(snap, stakesAsOf(date), currentStakes);
     for (const a of extractHeldAddresses(snap, excluded, phantoms)) everSeen.add(a);
@@ -424,7 +427,7 @@ const main = async () => {
       continue;
     }
     let snap = null;
-    try { snap = showJson(commit, HOLDERS_SNAPSHOT_FILE); }
+    try { snap = showSnapshot(commit, HOLDERS_SNAPSHOT_FILE); }
     catch (e) { console.warn(`  ${date} (${commit.slice(0, 8)}): unparseable — ${e.message}`); continue; }
 
     const { phantoms, ambiguous } = classifySnapshot(snap, stakesAsOf(date), currentStakes);

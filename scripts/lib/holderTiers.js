@@ -81,8 +81,12 @@ export function projectHolderTiers(project) {
   return normalizeHolderTiers(config?.holders ?? {}, loadDefaultHolderTiersRaw(), `project ${config?.slug ?? "?"}`);
 }
 
-/** Label of the range containing `v` (min inclusive, max exclusive), or null. */
+/**
+ * Label of the range containing `v` (min inclusive, max exclusive), or null. A balance that is not > 0 (absent
+ * wallet, negative, NaN) is in no range, even when the lowest tier starts at 0.
+ */
 export const rangeLabelOf = (ranges, v) => {
+  if (!(v > 0)) return null;
   for (const r of ranges) if (v >= r.min && v < r.max) return r.label;
   return null;
 };

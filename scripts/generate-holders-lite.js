@@ -15,6 +15,7 @@ import { loadV3StakingPositions } from "./lib/v3Staking.js";
 import { loadSolanaStakingPositions } from "./lib/solanaStaking.js";
 import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPaths, projectWork } from "./lib/projects.js";
 import { inheritAsOf } from "./lib/asOf.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 import { resolveNetworkStake, withNetworkStake } from "./lib/networkStake.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
@@ -43,14 +44,23 @@ const readJson = async (absolutePath, fallback = null) => {
   }
 };
 
+const readSnapshotOrNull = async (absolutePath) => {
+  try {
+    return await readSnapshot(absolutePath);
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+};
+
 const main = async () => {
-  const snapshot = await readJson(INPUT_PATH);
+  const snapshot = await readSnapshotOrNull(INPUT_PATH);
   if (!snapshot) {
     console.error("tel-holders.json not found. Unable to generate lite snapshot.");
     process.exit(1);
   }
 
-  const previousSnapshot = await readJson(PREVIOUS_PATH);
+  const previousSnapshot = await readSnapshotOrNull(PREVIOUS_PATH);
 
   // Suppress deltas when the minimum balance threshold changed between runs.
   // This prevents misleading +/- badges when methodology (MIN_TEL_RAW) changes.

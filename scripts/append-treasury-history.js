@@ -28,6 +28,7 @@ import { selectPipelineProject, projectPaths } from "./lib/projects.js";
 import { projectExclusions, reconcilePaths } from "./reconcile-supply.js";
 import { vanishedLabelledWallets } from "./lib/labelledWalletGuard.js";
 import { inheritAsOf, shouldEmitRow } from "./lib/asOf.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
 // the project's data dir (TEL: public/data/, others: public/data/<slug>/).
@@ -53,6 +54,14 @@ const DRY_RUN = process.argv.includes("--dry-run");
 
 const readJson = async (p) => JSON.parse(await fs.readFile(p, "utf8"));
 
+// Only an absent head file means "no snapshot". A corrupt head, a missing shard (wrapped without a code by
+// snapshotIo) or a shard hash mismatch must fail the run, not read as "no snapshot".
+const readSnapshotIfPresent = (file) =>
+  readSnapshot(file).catch((error) => {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  });
+
 const main = async () => {
   let history = await readJson(HISTORY_PATH).catch(() => null);
   if (!history?.entries?.length && ALLOW_NEW_SERIES) {
@@ -72,7 +81,7 @@ const main = async () => {
 
   // Date the entry by the snapshot the balances actually came from, not by
   // "now" — a run at 00:10 UTC would otherwise label yesterday's scan as today.
-  const holders = await readJson(HOLDERS_PATH).catch(() => null);
+  const holders = await readSnapshotIfPresent(HOLDERS_PATH);
   // A settled snapshot (asOf) is dated the day it closes; older ones by generatedAt.
   const date = holders?.asOf?.date ?? (holders?.generatedAt ?? new Date().toISOString()).slice(0, 10);
   if (!shouldEmitRow(holders?.asOf)) {
@@ -99,7 +108,7 @@ const main = async () => {
 
   // A labelled treasury wallet missing from today's snapshot reads as 0 and
   // silently undercounts its category, so refuse to write instead.
-  const previousHolders = await readJson(PREVIOUS_HOLDERS_PATH).catch(() => null);
+  const previousHolders = await readSnapshotIfPresent(PREVIOUS_HOLDERS_PATH);
   if (!previousHolders || !holders) {
     console.log("Vanished-wallet guard skipped: no previous snapshot.");
   } else {

@@ -4,7 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DistributionTerminal } from "./DistributionTerminal";
 import type { HolderLiteSnapshot } from "@/hooks/useHolderSnapshot";
 
-vi.mock("@/hooks/useProject", () => ({ useProject: () => ({ project: { ticker: "ZBCN" } }) }));
+const proj = vi.hoisted(() => ({ holders: undefined as unknown }));
+vi.mock("@/hooks/useProject", () => ({ useProject: () => ({ project: { ticker: "ZBCN", holders: proj.holders } }) }));
 vi.mock("@/hooks/useProjectCopy", () => ({ useProjectCopy: () => ({ t: (s: string) => s.replace(/\{ticker\}/g, "ZBCN") }) }));
 const baseline = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock("@/hooks/useHolderHistoricalDelta", () => ({ useHolderHistoricalDelta: () => ({ data: baseline.data }) }));
@@ -16,6 +17,9 @@ vi.mock("@/components/tierflow/useTierGeometry", () => ({ useTierGeometry: () =>
 vi.mock("@/hooks/useMotion", () => ({ useIntro: () => false, useChartIntro: () => false }));
 const flow = vi.hoisted(() => ({ ready: true, fields: [] as unknown[], avail: { hasTransitions: true, hasOutflows: true } }));
 vi.mock("@/components/tierflow/useFlowField", () => ({ useFlowField: () => ({ fields: flow.fields, ready: flow.ready, avail: flow.avail }) }));
+vi.mock("@/components/InfoTip", () => ({
+  InfoTip: ({ content, label }: { content: unknown; label: string }) => <span data-info={label}>{typeof content === "string" ? content : null}</span>,
+}));
 vi.mock("@/components/TierFlowDiagram", () => ({ TierFlowDiagram: () => <div data-testid="tier-flow" /> }));
 
 const snapshot = {
@@ -43,6 +47,28 @@ const render = () =>
       <DistributionTerminal snapshot={snapshot} snapshotError={false} selectedView="combined" rangeDays={7} />
     </QueryClientProvider>,
   );
+
+describe("DistributionTerminal dust note", () => {
+  const DUST = "sub-1-ZBCN dust wallets are counted in the lowest tier.";
+  it("keeps the exact sentence for tiers whose floor is 1", () => {
+    proj.holders = undefined;
+    const html = render();
+    expect(html).toContain(`Retail only; ${DUST}`);
+  });
+  it("omits the sentence when the lowest tier starts at 0", () => {
+    proj.holders = {
+      distributionTiers: [
+        { label: "1+", min: 1, max: null },
+        { label: "<1", min: 0, max: 1 },
+      ],
+      balanceRanges: [{ label: "<1", min: 0, max: 1 }, { label: "1+", min: 1, max: null }],
+    };
+    const html = render();
+    expect(html).not.toContain("dust wallets");
+    expect(html).toContain("Retail only.");
+    proj.holders = undefined;
+  });
+});
 
 describe("DistributionTerminal", () => {
   it("keeps the net-change chart behind a collapsed Details accordion", () => {

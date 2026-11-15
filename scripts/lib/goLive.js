@@ -194,7 +194,7 @@ function largestTierProblems(project, root) {
   if (share <= MAX_TIER_WALLET_SHARE) return [];
   return [
     `${project.slug}: distribution tier ${top.label} holds ${(share * 100).toFixed(1)}% of wallets (limit ${MAX_TIER_WALLET_SHARE * 100}%); ` +
-      `fix: node scripts/derive-holder-tiers.js --project ${project.slug}, put the result in holders.distributionTiers of config/projects/${project.slug}.json, then regenerate the feeds`,
+      `fix: node scripts/derive-holder-tiers.js --project ${project.slug}, put the result in holders.distributionTiers of config/projects/${project.slug}.json (it adds tiers below 1 when sub-1 wallets dominate; if one balance value dominates a tier, edges cannot split it and the owner decides), then regenerate the feeds`,
   ];
 }
 

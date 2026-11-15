@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { hederaAdapter } from "./adapter.js";
+import { hederaAdapter, HEDERA_HOLDER_FLOOR_TINYBAR } from "./adapter.js";
 import { HEDERA_FINISHED_ATTEMPTS, HEDERA_RESUME_PINNED_MAX_DRIFT_SECONDS, HEDERA_RESUME_UNPINNED_MAX_AGE_SECONDS, resumeStaleReason, scanBalanceSnapshot } from "./scan.js";
 import { createMirrorClient } from "./mirror.js";
 import { createMockMirror } from "./mockMirror.js";
@@ -159,8 +159,9 @@ describe("hedera saved state on disk (loadResumable): a bad file means a fresh s
 
   it("a different floor or range width drops the file and scans fresh", async () => {
     const { finished } = await scanAndKeep();
-    for (const other of [{ ...chain, holderFloorTinybar: "200000000" }, { ...chain, rangeWidth: 50 }]) {
-      await withFile(finished, async (file) => {
+    const oldFloor = { ...finished, floor: "100000000" }; // real saved states from the 1 HBAR days still sit in the Actions cache
+    for (const [other, saved] of [[chain, oldFloor], [{ ...chain, rangeWidth: 50 }, finished]]) {
+      await withFile(saved, async (file) => {
         const log = warnings();
         const resume = await loadResumable(hederaAdapter, other, file, log);
         expect(resume).toBeNull();
@@ -542,7 +543,7 @@ describe("hedera in-progress state age rule at the adapter", () => {
 
   it("(2f) scanBalanceSnapshot reports resumeDropped: the reason on a drop, null on a resume and on a no-state run", async () => {
     const clientOf = (mock) => createMirrorClient({ baseUrl: BASE, fetch: mock.fetch, sleep: async () => {}, now: () => 0 });
-    const scanWith = (mock, extra = {}) => scanBalanceSnapshot(clientOf(mock), { floor: HBAR, width: 100, ...extra });
+    const scanWith = (mock, extra = {}) => scanBalanceSnapshot(clientOf(mock), { floor: HEDERA_HOLDER_FLOOR_TINYBAR, width: 100, ...extra });
     const dropped = shift(NEAR, -7 * 3600);
     const resumable = shift(NEAR, -5 * 3600);
     const grid = { clusters: { a: [dropped, resumable, NEAR] } };

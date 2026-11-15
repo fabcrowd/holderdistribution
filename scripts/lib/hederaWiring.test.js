@@ -14,7 +14,6 @@ const hbar = (extra = {}) => ({
   asset: { kind: "native", decimals: 8 },
   mirrorUrl: "https://mirror.example/api/v1",
   rangeWidth: 100000,
-  holderFloorTinybar: "100000000",
   contracts: { whbar: { address: "0.0.1456985", role: "dex" } },
   ...extra,
 });
@@ -39,10 +38,12 @@ describe("validateProjectConfig: vm hedera", () => {
     expect(errorsOf(hbar({ asset: { kind: "native", decimals: 99 } })).join()).toMatch(/decimals/);
   });
   it("rejects EVM-only fields", () => expect(errorsOf(hbar({ chainId: 295 })).join()).toMatch(/chainId/));
-  it("checks mirrorUrl, rangeWidth and holderFloorTinybar", () => {
+  it("checks mirrorUrl and rangeWidth", () => {
     expect(errorsOf(hbar({ mirrorUrl: "http://x" })).join()).toMatch(/mirrorUrl/);
     expect(errorsOf(hbar({ rangeWidth: 0 })).join()).toMatch(/rangeWidth/);
-    expect(errorsOf(hbar({ holderFloorTinybar: "1.5" })).join()).toMatch(/holderFloorTinybar/);
+  });
+  it("rejects holderFloorTinybar: the every-positive-balance rule removed the floor", () => {
+    for (const value of ["100000000", "1", "1.5"]) expect(errorsOf(hbar({ holderFloorTinybar: value })).join()).toMatch(/holderFloorTinybar was removed.*2026-11-14/);
   });
   it("checks contract addresses as 0.0.N", () => expect(errorsOf(hbar({ contracts: { x: { address: "0xabc" } } })).join()).toMatch(/contracts\.x/));
   it("does not let an asset or the hedera fields onto an EVM chain", () => {
@@ -53,7 +54,7 @@ describe("validateProjectConfig: vm hedera", () => {
 });
 
 describe("deriveChainsFromProject: vm hedera", () => {
-  it("derives a native chain and keeps mirrorUrl, rangeWidth and holderFloorTinybar", () => {
+  it("derives a native chain and keeps mirrorUrl and rangeWidth", () => {
     const chain = deriveChainsFromProject(config()).hedera;
     expect(chain).toMatchObject({
       key: "hedera",
@@ -63,15 +64,15 @@ describe("deriveChainsFromProject: vm hedera", () => {
       decimals: 8,
       mirrorUrl: "https://mirror.example/api/v1",
       rangeWidth: 100000,
-      holderFloorTinybar: "100000000",
     });
+    expect("holderFloorTinybar" in chain).toBe(false);
     expect(chain.contracts.whbar).toEqual({ address: "0.0.1456985", role: "dex" });
     expect(chain.tokenAddress).toBeUndefined();
     expect(chain.explorerTemplates.address).toBe("https://hashscan.io/mainnet/account/{address}");
   });
   it("omits fields the config does not set", () => {
-    const chain = deriveChainsFromProject(config({ ...hbar(), mirrorUrl: undefined, rangeWidth: undefined, holderFloorTinybar: undefined })).hedera;
-    expect("mirrorUrl" in chain || "rangeWidth" in chain || "holderFloorTinybar" in chain).toBe(false);
+    const chain = deriveChainsFromProject(config({ ...hbar(), mirrorUrl: undefined, rangeWidth: undefined })).hedera;
+    expect("mirrorUrl" in chain || "rangeWidth" in chain).toBe(false);
   });
 });
 

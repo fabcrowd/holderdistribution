@@ -33,6 +33,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { loadEnv } from "./loadEnv.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 import { balanceAtBlock, createEtherscanKeyPool, fetchAddressTransfers, keysFromEnv } from "./lib/etherscanMultiKey.js";
 
 await loadEnv();
@@ -74,7 +75,7 @@ const main = async () => {
     : Object.keys(chainDateBlocks).filter((_, i, arr) => i % Math.max(1, Math.floor(arr.length / 5)) === 0).slice(0, 5);
   console.log(`Sampling dates: ${dates.join(", ")}`);
 
-  const snapshot = await readJson(path.resolve(ROOT, "public/data/tel-holders.json"));
+  const snapshot = await readSnapshot(path.resolve(ROOT, "public/data/tel-holders.json"));
   const balanceField = `${onlyChain}_balance`;
   const sampleAddresses = [...snapshot.wallets]
     .filter((w) => Number(w[balanceField]) > 0)

@@ -40,13 +40,13 @@ export const tierIndex = (label: string, tiers: readonly string[] = TIERS): numb
  * migration matrix and tier-outflows.json's per-tier cells, so renaming one in
  * the data would break the join until every dataset is regenerated.
  *
- * Currently empty: the bottom bucket's floor is 1 TEL (sub-1-TEL dust wallets
- * are deliberately excluded from every bucket — see
- * scripts/lib/holdersView.js and lessons.md "Sub-1-TEL Dust Wallets Are
- * Deliberately Excluded From Buckets, Not Counts"), so "1-250K" is accurate
- * as written and needs no override. Kept as infrastructure in case the floor
- * changes again — do not add a "1-250K" override back without also checking
- * the floor is actually 0 at that point.
+ * Currently empty: for tokens whose bottom tier floors at 1 (TEL), sub-1
+ * dust wallets are folded into the lowest tier and excluded from the Wallet
+ * Holdings buckets (see scripts/lib/holdersView.js and lessons.md "Sub-1-TEL
+ * Dust Wallets Are Deliberately Excluded From Buckets, Not Counts"), so
+ * "1-250K" is accurate as written and needs no override. Tokens whose tiers
+ * start at 0 (dust tiers such as "<0.000001") fold nothing; their labels are
+ * accurate as written too. Kept as infrastructure in case a floor changes.
  */
 const TIER_DISPLAY_LABELS: Record<string, string> = {};
 

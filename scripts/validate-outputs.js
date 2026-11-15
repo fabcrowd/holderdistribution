@@ -11,6 +11,7 @@ import path from "node:path";
 import process from "node:process";
 import { selectPipelineProject, projectPaths } from "./lib/projects.js";
 import { runForEachProject } from "./lib/feedHealth.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 
 // `--all`: once per registered project; fail if any project fails.
 if (process.argv.includes("--all")) {
@@ -44,8 +45,8 @@ let failed = 0;
 for (const { file, keys } of required) {
   const p = path.join(DATA_DIR, file);
   try {
-    const raw = await fs.readFile(p, "utf8");
-    const data = JSON.parse(raw);
+    // The holder snapshot may be a head plus shard files: validate it as assembled, so a head whose shards are missing fails.
+    const data = file === "tel-holders.json" ? await readSnapshot(p) : JSON.parse(await fs.readFile(p, "utf8"));
     const missing = keys.filter((k) => !(k in data));
     const stakeProblem = file === "holders-lite.json" && "networkStake" in data ? networkStakeProblem(data.networkStake) : null;
     if (stakeProblem) {

@@ -60,5 +60,20 @@ export const holderTiersFor = (project: Pick<ProjectConfig, "holders"> | null | 
 /** TEL's historical tiers (config/holder-tiers.default.json). */
 export const defaultHolderTiers = (): HolderTiers => DEFAULT_TIERS;
 
-/** Smallest balance any bucket counts (TEL: 1 — sub-1 dust is left out of buckets). */
-export const bucketFloor = (t: HolderTiers): number => Math.min(...t.balanceRanges.map((r) => r.min));
+/**
+ * Smallest balance any bucket or tier counts: the minimum over balance ranges
+ * and distribution tiers, same as scripts/lib/holderTiers.js. TEL: 1 (sub-1
+ * dust is left out of buckets and folded into the lowest tier). 0 when the
+ * lowest ones start at 0 (every positive balance sits in a tier).
+ */
+export const bucketFloor = (t: HolderTiers): number =>
+  Math.min(...t.balanceRanges.map((r) => r.min), ...t.distributionTiers.map((r) => r.min));
+
+/**
+ * The floor as display text for the "sub-<floor> dust" notes, or null when the
+ * floor is 0 and there is no dust to describe.
+ */
+export const dustFloorText = (t: HolderTiers): string | null => {
+  const floor = bucketFloor(t);
+  return floor > 0 ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(floor) : null;
+};

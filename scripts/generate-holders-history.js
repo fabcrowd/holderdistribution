@@ -8,6 +8,7 @@ import { loadNonRetailSet, normalizeAddress } from "./lib/nonRetailSet.js";
 import { selectPipelineProject, projectChainEntries, projectPaths, projectClassificationPath, projectNonRetailPaths } from "./lib/projects.js";
 import { normalizeAnyAddress } from "./lib/address.js";
 import { shouldEmitRow, inheritAsOf, mergeTopLevelAsOf } from "./lib/asOf.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
 // the project's data dir (TEL: public/data/, others: public/data/<slug>/) and
@@ -175,11 +176,22 @@ const readOptionalJson = async (absolutePath) => {
   }
 };
 
+const readOptionalSnapshot = async (absolutePath) => {
+  try {
+    return await readSnapshot(absolutePath);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return null;
+    }
+    throw error;
+  }
+};
+
 const main = async () => {
   const [summary, snapshot, previousSnapshot, existingHistory, fundingWallets, solanaStaking, lite, exclusions, dexConfig] = await Promise.all([
     readOptionalJson(SUMMARY_PATH),
-    readOptionalJson(SNAPSHOT_PATH),
-    readOptionalJson(PREVIOUS_SNAPSHOT_PATH),
+    readOptionalSnapshot(SNAPSHOT_PATH),
+    readOptionalSnapshot(PREVIOUS_SNAPSHOT_PATH),
     readOptionalJson(HISTORY_PATH),
     readOptionalJson(FUNDING_WALLETS_PATH),
     readOptionalJson(SOLANA_STAKING_PATH),
