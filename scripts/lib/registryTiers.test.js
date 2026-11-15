@@ -25,9 +25,12 @@ describe("registry-wide distribution tiers", () => {
         }
       });
 
-      it("has an open top tier and a bottom tier starting at 1", () => {
+      // A token whose sub-1 wallets are the majority gets tiers below 1 (deriveHolderTiers.js); its
+      // bottom tier then starts at 0 so every positive balance has a tier.
+      it("has an open top tier and a bottom tier starting at 1, or at 0 when it has tiers below 1", () => {
         expect(tiers[0].max).toBe(Number.POSITIVE_INFINITY);
-        expect(tiers[tiers.length - 1].min).toBe(1);
+        const hasTiersBelowOne = tiers.some((t) => t.max <= 1);
+        expect(tiers[tiers.length - 1].min).toBe(hasTiersBelowOne ? 0 : 1);
       });
 
       it("has unique labels", () => {

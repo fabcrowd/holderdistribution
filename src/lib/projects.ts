@@ -41,7 +41,8 @@ export type ProjectChain = {
   explorer?: string;
   /** Link overrides with {address} / {tx} placeholders (src/lib/explorerLinks.ts). */
   explorerTemplates?: ExplorerTemplates;
-  tokens: Array<{
+  /** Absent when the project is the chain's native coin (HBAR): there is no token contract. */
+  tokens?: Array<{
     generation?: string;
     address: string;
     decimals?: number;

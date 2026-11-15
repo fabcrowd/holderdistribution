@@ -165,4 +165,24 @@ describe("methodology", () => {
       expect(hrefs).toContain(`https://solscan.io/account/${addr}`);
     }
   });
+
+  // A chain's native coin (HBAR) has no `tokens` list. Every registered project must resolve every
+  // methodology entry without throwing, or its page renders the error boundary.
+  it.each(PROJECTS.map((p) => p.slug))("%s resolves every methodology entry", (slug) => {
+    const project = getProject(slug);
+    for (const key of METHODOLOGY_KEYS) {
+      const m = methodologyFor(project, key);
+      expect(m.how.length, `${slug} ${key} how`).toBeGreaterThan(0);
+      for (const link of m.links) expect(link.href.startsWith("https://"), `${slug} ${key} ${link.label}`).toBe(true);
+    }
+  });
+
+  it("a chain without tokens has no token links and leaves a {token:...} placeholder unresolved", () => {
+    const native = {
+      ticker: "NAT",
+      chains: [{ key: "nat", name: "Native", explorer: "https://example.org" }],
+    } as unknown as Pick<ProjectConfig, "ticker" | "chains" | "staking">;
+    expect(projectTokenLinks(native)).toEqual([]);
+    expect(resolveHref(native, "{token:nat:v1}")).toBe("{token:nat:v1}");
+  });
 });

@@ -37,6 +37,7 @@ import { emptyTransitions } from "./lib/emptyTransitions.js";
 import { inheritAsOf } from "./lib/asOf.js";
 import { hydrateChainHolders } from "./lib/snapshotFormat.js";
 import { readSnapshot, readSnapshotAtRev } from "./lib/snapshotIo.js";
+import { baseSnapshotIndex } from "./lib/transitionBase.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk and in git history) and its own non-retail lists. Tier
@@ -142,10 +143,35 @@ const main = async () => {
     return bal;
   };
 
+  const holdersHistory = await readOptionalJson(HOLDERS_HISTORY_PATH);
+  const holdersHistoryEarliest = Array.isArray(holdersHistory?.entries) && holdersHistory.entries.length > 0
+    ? holdersHistory.entries.map((e) => e.date).filter(Boolean).sort()[0]
+    : null;
+
+  // Snapshots are found by commit date; each carries its own date. The last one loaded is kept so
+  // windows that resolve to the same snapshot read it once; the dates of all loaded ones are kept.
+  let lastLoaded = null;
+  const snapshotOn = (sd) => {
+    if (lastLoaded?.sd !== sd) lastLoaded = { sd, snap: showSnapshot(snapCommits.get(sd), SNAP_REL) };
+    return lastLoaded.snap;
+  };
+  const ownDates = new Map();
+  const ownDateOf = (sd) => {
+    if (!ownDates.has(sd)) ownDates.set(sd, (snapshotOn(sd).source ?? {}).snapshotDate ?? sd);
+    return ownDates.get(sd);
+  };
+
   const balancesAt = (date) => {
-    const sd = nearestOnOrBefore(snapDates, date);
-    const snap = showSnapshot(snapCommits.get(sd), SNAP_REL);
-    const fd = nearestOnOrBefore(fundDates, date);
+    const wanted = nearestOnOrBefore(snapDates, date);
+    // Never a snapshot dated before the first history row (scripts/lib/transitionBase.js).
+    const sd = snapDates[baseSnapshotIndex({
+      startIndex: snapDates.indexOf(wanted),
+      count: snapDates.length,
+      earliest: holdersHistoryEarliest,
+      snapshotDateAt: (i) => ownDateOf(snapDates[i]),
+    })];
+    const snap = snapshotOn(sd);
+    const fd = nearestOnOrBefore(fundDates, sd === wanted ? date : sd);
     const fund = fd ? showJson(fundCommits.get(fd), FUND_REL) : { wallets: [] };
     return { bal: aggregateBalances(snap, fund), snapshotDate: (snap.source ?? {}).snapshotDate ?? sd };
   };
@@ -174,10 +200,6 @@ const main = async () => {
   // places them side by side. holders-history.json is generally shallower
   // than tel-holders.json's own git history (this script's other source),
   // so this only ever pulls ytdStart forward, never back.
-  const holdersHistory = await readOptionalJson(HOLDERS_HISTORY_PATH);
-  const holdersHistoryEarliest = Array.isArray(holdersHistory?.entries) && holdersHistory.entries.length > 0
-    ? holdersHistory.entries.map((e) => e.date).filter(Boolean).sort()[0]
-    : null;
   const ytdStart = holdersHistoryEarliest && holdersHistoryEarliest > ytdCandidate
     ? holdersHistoryEarliest
     : ytdCandidate;

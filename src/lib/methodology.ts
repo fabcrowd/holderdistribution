@@ -113,7 +113,8 @@ const chainFor = (p: LinkProject, chainKey: string) => p.chains.find((c) => c.ke
 /** Each chain's canonical token (or its only token) on that chain's explorer. */
 export const projectTokenLinks = (p: LinkProject): MethodologyLink[] =>
   p.chains.flatMap((c) => {
-    const token = c.tokens.find((t) => t.status === "canonical") ?? c.tokens[0];
+    const tokens = c.tokens ?? []; // a native coin has no token contract, so no token link
+    const token = tokens.find((t) => t.status === "canonical") ?? tokens[0];
     const root = explorerRoot(c); // Solana defaults to Solscan
     if (!token || !root) return [];
     return [{ label: `${p.ticker} on ${explorerName(root)}`, href: chainExplorerLink(c, "token", token.address) }];
@@ -133,7 +134,7 @@ export const resolveHref = (p: LinkProject, href: string): string =>
     const chain = p.chains.find((c) => c.key === chainKey);
     if (!chain || !explorerRoot(chain)) return whole;
     if (kind === "explorer") return explorerRoot(chain);
-    const token = chain.tokens.find((t) => t.generation === generation);
+    const token = (chain.tokens ?? []).find((t) => t.generation === generation);
     return token ? chainExplorerLink(chain, "token", token.address) : whole;
   });
 
