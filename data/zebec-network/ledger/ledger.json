@@ -3,7 +3,7 @@
  "slug": "zebec-network",
  "name": "Zebec Network",
  "ticker": "ZBCN",
- "generated": "2026-11-14T14:25:26.000Z",
+ "generated": "2026-11-15T10:05:02.000Z",
  "windows": [
   "24h",
   "72h",
@@ -123,15 +123,15 @@
    "processed": 0,
    "backlog": 0,
    "transfers": 0,
-   "headTime": "2026-11-14T14:25:26.000Z"
+   "headTime": "2026-11-15T10:05:02.000Z"
   }
  },
  "crossCheck": null,
  "botCluster": null,
  "byWindow": {
   "24h": {
-   "from": "2026-11-13T14:25:26.000Z",
-   "to": "2026-11-14T14:25:26.000Z",
+   "from": "2026-11-14T10:05:02.000Z",
+   "to": "2026-11-15T10:05:02.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -159,8 +159,8 @@
    "byType": {}
   },
   "72h": {
-   "from": "2026-11-11T14:25:26.000Z",
-   "to": "2026-11-14T14:25:26.000Z",
+   "from": "2026-11-12T10:05:02.000Z",
+   "to": "2026-11-15T10:05:02.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -177,53 +177,19 @@
    },
    "received": 0,
    "payments": {
-    "stableOut": 20000,
-    "stableOutCount": 2,
-    "stableIn": 9173,
-    "stableInCount": 3,
-    "bySymbol": {
-     "USDC": 20000
-    },
-    "topStableRecipients": [
-     {
-      "address": null,
-      "label": null,
-      "asset": "stable",
-      "symbol": "USDC",
-      "type": "stable_out",
-      "count": 1,
-      "amount": 19998,
-      "lastHash": "2e7u5dKZJ1uCV8SDRpmKYtoXZ4X4o8YUL6F7GFQTAjk7CZCkhUuHfGUW3yvUBuQX2ewsWYPf2ECXZ1bMGSf3jXMU",
-      "lastTime": 1794411760
-     },
-     {
-      "address": "14MtvNdzYPKM3kYrBya51fsjbh5WLKot8fZu7szbgC66",
-      "label": null,
-      "asset": "stable",
-      "symbol": "USDC",
-      "type": "stable_out",
-      "count": 1,
-      "amount": 2,
-      "lastHash": "2e7u5dKZJ1uCV8SDRpmKYtoXZ4X4o8YUL6F7GFQTAjk7CZCkhUuHfGUW3yvUBuQX2ewsWYPf2ECXZ1bMGSf3jXMU",
-      "lastTime": 1794411760
-     }
-    ],
+    "stableOut": 0,
+    "stableOutCount": 0,
+    "stableIn": 0,
+    "stableInCount": 0,
+    "bySymbol": {},
+    "topStableRecipients": [],
     "topTokenDestinations": []
    },
-   "byType": {
-    "stable_in": {
-     "count": 3,
-     "amount": 9173
-    },
-    "stable_out": {
-     "count": 2,
-     "amount": 20000
-    }
-   }
+   "byType": {}
   },
   "30d": {
-   "from": "2026-10-15T14:25:26.000Z",
-   "to": "2026-11-14T14:25:26.000Z",
+   "from": "2026-10-16T10:05:02.000Z",
+   "to": "2026-11-15T10:05:02.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -235,17 +201,17 @@
    "botSold": 0,
    "sellDays": 0,
    "internal": {
-    "count": 5,
-    "amount": 190500000
+    "count": 4,
+    "amount": 180500000
    },
    "received": 43419166,
    "payments": {
-    "stableOut": 418671,
-    "stableOutCount": 27,
+    "stableOut": 354630,
+    "stableOutCount": 26,
     "stableIn": 351782,
-    "stableInCount": 477,
+    "stableInCount": 476,
     "bySymbol": {
-     "USDC": 418672
+     "USDC": 354631
     },
     "topStableRecipients": [
      {
@@ -254,8 +220,8 @@
       "asset": "stable",
       "symbol": "USDC",
       "type": "stable_out",
-      "count": 5,
-      "amount": 262715,
+      "count": 4,
+      "amount": 198674,
       "lastHash": "4WMSpHBPNdND5rv7uzNLeMQcg9oB7TzEuRboMjKMjG4XS6gDY3wyzxYfMXZgH9Y7P9pwp12WgFY7tqB6U8LYj1iT",
       "lastTime": 1793707180
      },
@@ -474,30 +440,30 @@
    },
    "byType": {
     "stable_in": {
-     "count": 477,
+     "count": 476,
      "amount": 351782
     },
     "stable_out": {
-     "count": 27,
-     "amount": 418671
+     "count": 26,
+     "amount": 354630
     },
     "transfer_out": {
      "count": 24,
      "amount": 186956094
     },
     "receive": {
-     "count": 8,
+     "count": 7,
      "amount": 43419166
     },
     "internal_shuffle": {
-     "count": 5,
-     "amount": 190500000
+     "count": 4,
+     "amount": 180500000
     }
    }
   },
   "90d": {
-   "from": "2026-08-16T14:25:26.000Z",
-   "to": "2026-11-14T14:25:26.000Z",
+   "from": "2026-08-17T10:05:02.000Z",
+   "to": "2026-11-15T10:05:02.000Z",
    "devSold": {
     "dex": 3025637,
     "cex": 0,
@@ -509,15 +475,15 @@
    "botSold": 0,
    "sellDays": 2,
    "internal": {
-    "count": 20,
-    "amount": 2190125637
+    "count": 19,
+    "amount": 2188538999
    },
    "received": 897918581,
    "payments": {
     "stableOut": 1230043,
     "stableOutCount": 94,
     "stableIn": 1164813,
-    "stableInCount": 796,
+    "stableInCount": 782,
     "bySymbol": {
      "USDC": 1210036,
      "USDT": 20008
@@ -749,7 +715,7 @@
    },
    "byType": {
     "stable_in": {
-     "count": 796,
+     "count": 782,
      "amount": 1164813
     },
     "stable_out": {
@@ -757,16 +723,16 @@
      "amount": 1230043
     },
     "transfer_out": {
-     "count": 85,
-     "amount": 1865968533
+     "count": 80,
+     "amount": 1861846788
     },
     "receive": {
      "count": 16,
      "amount": 897918581
     },
     "internal_shuffle": {
-     "count": 20,
-     "amount": 2190125637
+     "count": 19,
+     "amount": 2188538999
     },
     "dex_sell": {
      "count": 7,
@@ -780,24 +746,22 @@
    "No developer selling found in the last 24h."
   ],
   "72h": [
-   "No developer selling found in the last 72h.",
-   "They paid out $20.0k in stablecoins (2 payments); the largest recipient was null ($20.0k).",
-   "They received $9.2k in stablecoins (3 transfers)."
+   "No developer selling found in the last 72h."
   ],
   "30d": [
    "No developer selling found in the last 30d.",
-   "They paid out $418.7k in stablecoins (27 payments); the largest recipient was 41zCUJsKk6cMB94DDtm99qWmyMZfp4GkAhhuz4xTwePu ($262.7k).",
-   "They received $351.8k in stablecoins (477 transfers).",
+   "They paid out $354.6k in stablecoins (26 payments); the largest recipient was 41zCUJsKk6cMB94DDtm99qWmyMZfp4GkAhhuz4xTwePu ($198.7k).",
+   "They received $351.8k in stablecoins (476 transfers).",
    "Largest ZBCN destination: AHrdAPnnPbUW2MeYiddAwmd8J4zmzNbcKiYzYfK3kqaY (85.1M ZBCN, 2 transfers).",
-   "5 internal shuffles between developer wallets (190.5M ZBCN) are noted but not counted as selling."
+   "4 internal shuffles between developer wallets (180.5M ZBCN) are noted but not counted as selling."
   ],
   "90d": [
    "Developer wallets sold 3.0M ZBCN in the last 90d: 3.0M on DEXs.",
    "Selling happened on 2 of 90 days (7 direct sale/deposit transactions).",
    "They paid out $1.2M in stablecoins (94 payments); the largest recipient was 41zCUJsKk6cMB94DDtm99qWmyMZfp4GkAhhuz4xTwePu ($768.5k).",
-   "They received $1.2M in stablecoins (796 transfers).",
+   "They received $1.2M in stablecoins (782 transfers).",
    "Largest ZBCN destination: GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J (853.0M ZBCN, 3 transfers).",
-   "20 internal shuffles between developer wallets (2.19B ZBCN) are noted but not counted as selling."
+   "19 internal shuffles between developer wallets (2.19B ZBCN) are noted but not counted as selling."
   ]
  },
  "developerWallets": [
@@ -937,8 +901,8 @@
     "30d": {
      "sold": 0,
      "stableOut": 0,
-     "internal": 5,
-     "txs": 5
+     "internal": 4,
+     "txs": 4
     },
     "90d": {
      "sold": 0,
@@ -975,13 +939,13 @@
      "sold": 0,
      "stableOut": 0,
      "internal": 0,
-     "txs": 26
+     "txs": 25
     },
     "90d": {
      "sold": 0,
      "stableOut": 0,
-     "internal": 3,
-     "txs": 164
+     "internal": 2,
+     "txs": 146
     }
    },
    "lastActivity": "2026-11-08T19:56:54.000Z"
@@ -1006,7 +970,7 @@
      "sold": 0,
      "stableOut": 0,
      "internal": 0,
-     "txs": 3
+     "txs": 0
     },
     "30d": {
      "sold": 0,
@@ -1055,7 +1019,7 @@
      "sold": 3025637,
      "stableOut": 6148,
      "internal": 1,
-     "txs": 30
+     "txs": 28
     }
    },
    "lastActivity": "2026-10-04T03:01:30.000Z"
@@ -1078,15 +1042,15 @@
     },
     "72h": {
      "sold": 0,
-     "stableOut": 20000,
+     "stableOut": 0,
      "internal": 0,
-     "txs": 2
+     "txs": 0
     },
     "30d": {
      "sold": 0,
-     "stableOut": 318511,
+     "stableOut": 254470,
      "internal": 0,
-     "txs": 488
+     "txs": 486
     },
     "90d": {
      "sold": 0,
@@ -1247,25 +1211,6 @@
   }
  ],
  "daily": [
-  {
-   "date": "2026-08-17",
-   "devSold": 0,
-   "botSold": 0,
-   "botDevShare": 0,
-   "dexSell": 0,
-   "cexDeposit": 0,
-   "internal": 1586638,
-   "botFunding": 0,
-   "bridge": 0,
-   "custody": 0,
-   "staking": 0,
-   "burn": 0,
-   "transferOut": 4121746,
-   "receive": 0,
-   "stableIn": 0,
-   "stableOut": 0,
-   "stableInternal": 0
-  },
   {
    "date": "2026-08-18",
    "devSold": 0,
@@ -2956,27 +2901,28 @@
    "stableIn": 0,
    "stableOut": 0,
    "stableInternal": 0
+  },
+  {
+   "date": "2026-11-15",
+   "devSold": 0,
+   "botSold": 0,
+   "botDevShare": 0,
+   "dexSell": 0,
+   "cexDeposit": 0,
+   "internal": 0,
+   "botFunding": 0,
+   "bridge": 0,
+   "custody": 0,
+   "staking": 0,
+   "burn": 0,
+   "transferOut": 0,
+   "receive": 0,
+   "stableIn": 0,
+   "stableOut": 0,
+   "stableInternal": 0
   }
  ],
  "patterns": [
-  {
-   "kind": "recurring_payment",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk",
-   "counterpartyLabel": null,
-   "type": "transfer_out",
-   "count": 3,
-   "typicalAmount": 465551,
-   "total": 1408761,
-   "intervalDays": 15.42,
-   "description": "Team ops and admin wallet sent about 465.6k ZBCN to the same wallet 3 times, roughly every 15 days.",
-   "sampleHashes": [
-    "M2qdeTpmbR4X8nbeLwoCfcECHuQ69QKXbM5bdAVgLZtDDAXbkj749K1BjgYk8uz2NpG7MvqAZKmBLao6nDjUvR8",
-    "2n48Pi8y1Eppedzd86zaaDSmpHyEZFgeyqVRfZ2NGxt8PKVZPUt1AEM7hhpt9zGxuGihQ4rFA7TE6qajNvdGZRR4",
-    "2kSSoUjTbexXG1qp5K36jpRqADC3NhVEdSpzWBRJGTaCXuhSjEn2hLgXV4G3CcoA7rr9b4xEqLNpfEKzE73FmBxe"
-   ]
-  },
   {
    "kind": "recurring_payment",
    "wallet": "G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7",
@@ -21978,386 +21924,6 @@
    "internal": false,
    "headline": false,
    "uniqueId": "5gZKBjvMtpe3yCX78kzkcGw7njbU9QACmqrsQWpUgmzH4mzrGXMLuJzbxoXMhPmN2TrrSMcufaoAN77VdbBus1UU:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7:41zCUJsKk6cMB94DDtm99qWmyMZfp4GkAhhuz4xTwePu:73058000000"
-  },
-  {
-   "chain": "solana",
-   "hash": "2MSUBcDMAzxKavrBb8J2PLubi4CF9VviCt6v4hvxdhG3z7XpGPGfcatmKzGB8QCpFPvTr18jjhJbhi5EEtcAj7TL",
-   "time": 1786943043,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "AqUuy926JDGjrAY135bYKyGfJAyqae35qi7okEpxD1wk",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet AqUuy9…D1wk.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "2MSUBcDMAzxKavrBb8J2PLubi4CF9VviCt6v4hvxdhG3z7XpGPGfcatmKzGB8QCpFPvTr18jjhJbhi5EEtcAj7TL:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:AqUuy926JDGjrAY135bYKyGfJAyqae35qi7okEpxD1wk:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:1000"
-  },
-  {
-   "chain": "solana",
-   "hash": "3cA6A19k76abTsU9MZHYM98ukNid6A14SC3ZTgzLFq4cz1AbbfWEKDi1KYBpCSsimZETqZ9BwSyQD8BRieMVQR5h",
-   "time": 1786942996,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "8mUKszCDfAJuNVxTmZjE9vvesyvY5umX5rb81fmDguTc",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet 8mUKsz…guTc.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "3cA6A19k76abTsU9MZHYM98ukNid6A14SC3ZTgzLFq4cz1AbbfWEKDi1KYBpCSsimZETqZ9BwSyQD8BRieMVQR5h:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:8mUKszCDfAJuNVxTmZjE9vvesyvY5umX5rb81fmDguTc:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:1000"
-  },
-  {
-   "chain": "solana",
-   "hash": "5yw7XJGm2dKMqBXbq8c6LUdGB4UNfvk2Bb7sAftrg1dksNvxq19YcnLpbUFdpm2NiyFQoNUtHhEvcCvnqwNg39oU",
-   "time": 1786942942,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "FNuqsz2cH5zJAD9w7Z4CXrxeRLbWAPw8Kc3bdMaDcgtM",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet FNuqsz…cgtM.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "5yw7XJGm2dKMqBXbq8c6LUdGB4UNfvk2Bb7sAftrg1dksNvxq19YcnLpbUFdpm2NiyFQoNUtHhEvcCvnqwNg39oU:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:FNuqsz2cH5zJAD9w7Z4CXrxeRLbWAPw8Kc3bdMaDcgtM:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:1000"
-  },
-  {
-   "chain": "solana",
-   "hash": "5pTZhXLZBWvNRYSFHyDSczBEn5eGm6q5nX8CgzUN7UcUJti5C2sVua1C31rzYvmqqSWwaX6C61W1wnjUUzY6RSUt",
-   "time": 1786942939,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM",
-   "walletLabel": "Team signer FNuq",
-   "counterparty": "9Sq2MWYxapUJVWEPQFFyfrr1ATDFgBTpthEt3FptEine",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.001,
-   "reason": "USDC arrived at Team signer FNuq from unlabelled wallet 9Sq2MW…Eine.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "5pTZhXLZBWvNRYSFHyDSczBEn5eGm6q5nX8CgzUN7UcUJti5C2sVua1C31rzYvmqqSWwaX6C61W1wnjUUzY6RSUt:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:9Sq2MWYxapUJVWEPQFFyfrr1ATDFgBTpthEt3FptEine:FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM:1000"
-  },
-  {
-   "chain": "solana",
-   "hash": "4MCfVJuPbJUsY6xdvdT9Pc8hofE8v5so2dshuBLoLM8Q4ngPrgReDvKnBfxPK2PR1EY1hNZ1ceG59Gv88AkobMBe",
-   "time": 1786942880,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "2RBTc41bRHLFUJHQMDLaqt1hvnoC3ytdpPLvxZNVoitY",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet 2RBTc4…oitY.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "4MCfVJuPbJUsY6xdvdT9Pc8hofE8v5so2dshuBLoLM8Q4ngPrgReDvKnBfxPK2PR1EY1hNZ1ceG59Gv88AkobMBe:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:2RBTc41bRHLFUJHQMDLaqt1hvnoC3ytdpPLvxZNVoitY:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:1000"
-  },
-  {
-   "chain": "solana",
-   "hash": "4oYkMoYCMdYhvCEPShFgAWkxwLkziqLuERBd5YpzYPUJZZ2h95NVhKDf6zw6a7n5zv7FdYBwrxGpYKxzJHXF7oa5",
-   "time": 1786942858,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "F9wCaNFKKH5kZBc8fDRsGg1QHNWr3h8xJakzmHPXLZDt",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet F9wCaN…LZDt.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "4oYkMoYCMdYhvCEPShFgAWkxwLkziqLuERBd5YpzYPUJZZ2h95NVhKDf6zw6a7n5zv7FdYBwrxGpYKxzJHXF7oa5:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:F9wCaNFKKH5kZBc8fDRsGg1QHNWr3h8xJakzmHPXLZDt:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:1000"
-  },
-  {
-   "chain": "solana",
-   "hash": "67pDgkVcjsR5r8YLbe3u8gUeK4JLRoQyaNjCS3wYNTHPTjkabEc93o9GvYfhmGR8yGZXjSRFoJZTroQKZxW8JQ8w",
-   "time": 1786942825,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "ACjqt3JgK6NgS5dUX6w7E5ocZno3ggeNqVBvmd51n54e",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet ACjqt3…n54e.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "67pDgkVcjsR5r8YLbe3u8gUeK4JLRoQyaNjCS3wYNTHPTjkabEc93o9GvYfhmGR8yGZXjSRFoJZTroQKZxW8JQ8w:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:ACjqt3JgK6NgS5dUX6w7E5ocZno3ggeNqVBvmd51n54e:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:1000"
-  },
-  {
-   "chain": "solana",
-   "hash": "pUhEeTH1N1EPtARR6gSirG1wBEcVX1TBdp5ixHuaBiiznprUzcDymeBUUvNKUPjXTayeBgCXfaePM8CZqXEdQxf",
-   "time": 1786942638,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "AqUuy926JDGjrAY135bYKyGfJAyqae35qi7okEpxD1wk",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.0001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet AqUuy9…D1wk.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "pUhEeTH1N1EPtARR6gSirG1wBEcVX1TBdp5ixHuaBiiznprUzcDymeBUUvNKUPjXTayeBgCXfaePM8CZqXEdQxf:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:AqUuy926JDGjrAY135bYKyGfJAyqae35qi7okEpxD1wk:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:100"
-  },
-  {
-   "chain": "solana",
-   "hash": "M2qdeTpmbR4X8nbeLwoCfcECHuQ69QKXbM5bdAVgLZtDDAXbkj749K1BjgYk8uz2NpG7MvqAZKmBLao6nDjUvR8",
-   "time": 1786942617,
-   "date": "2026-08-17",
-   "type": "transfer_out",
-   "direction": "out",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk",
-   "counterpartyLabel": null,
-   "asset": "token",
-   "symbol": "ZBCN",
-   "amount": 465551.001117,
-   "reason": "Recipient AqUuUe…D1wk has no label, is not a developer wallet and the receipt has no Swap event.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "M2qdeTpmbR4X8nbeLwoCfcECHuQ69QKXbM5bdAVgLZtDDAXbkj749K1BjgYk8uz2NpG7MvqAZKmBLao6nDjUvR8:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk:465551001117"
-  },
-  {
-   "chain": "solana",
-   "hash": "5KjDciyFwvMWvHFCmZj1iDz3mW9kKEv9AkhuBJ78bUWftQ9rScmZAoS4ca9Aiuwjnv1rhFkrQ6ghcJwyHtQ5pByu",
-   "time": 1786942593,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "8mUKszCDfAJuNVxTmZjE9vvesyvY5umX5rb81fmDguTc",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.0001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet 8mUKsz…guTc.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "5KjDciyFwvMWvHFCmZj1iDz3mW9kKEv9AkhuBJ78bUWftQ9rScmZAoS4ca9Aiuwjnv1rhFkrQ6ghcJwyHtQ5pByu:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:8mUKszCDfAJuNVxTmZjE9vvesyvY5umX5rb81fmDguTc:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:100"
-  },
-  {
-   "chain": "solana",
-   "hash": "51EQQ8vtUbMRMVxdnphnJbNxYhswhLPqanuUWfrJqNHGdXS3p8QortKGw7i1YqbQ9W8Eh33Sb2VxmQX93qoNyu9J",
-   "time": 1786942573,
-   "date": "2026-08-17",
-   "type": "transfer_out",
-   "direction": "out",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-   "counterpartyLabel": null,
-   "asset": "token",
-   "symbol": "ZBCN",
-   "amount": 799884.118469,
-   "reason": "Recipient 8mUKxV…guTc has no label, is not a developer wallet and the receipt has no Swap event.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "51EQQ8vtUbMRMVxdnphnJbNxYhswhLPqanuUWfrJqNHGdXS3p8QortKGw7i1YqbQ9W8Eh33Sb2VxmQX93qoNyu9J:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc:799884118469"
-  },
-  {
-   "chain": "solana",
-   "hash": "4PCTTzCd9fFMZLmko9NyFbuDExCto3347cucb8hLDEjZm7hWyd3e41fvVAZRQ29Gv7YBrr28BFm62musbeASAKai",
-   "time": 1786942538,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "FNuqsz2cH5zJAD9w7Z4CXrxeRLbWAPw8Kc3bdMaDcgtM",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.0001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet FNuqsz…cgtM.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "4PCTTzCd9fFMZLmko9NyFbuDExCto3347cucb8hLDEjZm7hWyd3e41fvVAZRQ29Gv7YBrr28BFm62musbeASAKai:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:FNuqsz2cH5zJAD9w7Z4CXrxeRLbWAPw8Kc3bdMaDcgtM:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:100"
-  },
-  {
-   "chain": "solana",
-   "hash": "5J5HYoti2ZwVof7KFxLjio61LwxjLvuEh7xWdPZvYdDr8W7KSiEpcXBWetsHfumJM8krV7xrtLFtbMw3Duk2DSjq",
-   "time": 1786942533,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM",
-   "walletLabel": "Team signer FNuq",
-   "counterparty": "9Sq2MWYxapUJVWEPQFFyfrr1ATDFgBTpthEt3FptEine",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.0001,
-   "reason": "USDC arrived at Team signer FNuq from unlabelled wallet 9Sq2MW…Eine.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "5J5HYoti2ZwVof7KFxLjio61LwxjLvuEh7xWdPZvYdDr8W7KSiEpcXBWetsHfumJM8krV7xrtLFtbMw3Duk2DSjq:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:9Sq2MWYxapUJVWEPQFFyfrr1ATDFgBTpthEt3FptEine:FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM:100"
-  },
-  {
-   "chain": "solana",
-   "hash": "273PpZzwzGzktXKvcGsZAXyPyg1CtszCvCq2twxpJWyyioehYZt2qeag2su54NYVUeah5gbo6Lp3aAwiMfBeHJYG",
-   "time": 1786942513,
-   "date": "2026-08-17",
-   "type": "internal_shuffle",
-   "direction": "internal",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM",
-   "counterpartyLabel": "Team signer FNuq",
-   "asset": "token",
-   "symbol": "ZBCN",
-   "amount": 1586638.329493,
-   "reason": "Sender Team ops and admin wallet and recipient Team signer FNuq are both developer wallets (ledger developerWallets).",
-   "internal": true,
-   "headline": false,
-   "uniqueId": "273PpZzwzGzktXKvcGsZAXyPyg1CtszCvCq2twxpJWyyioehYZt2qeag2su54NYVUeah5gbo6Lp3aAwiMfBeHJYG:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM:1586638329493"
-  },
-  {
-   "chain": "solana",
-   "hash": "4xCVzg6BR4LTCcGctoko4jsSf1KMgP4Z7yiPAbiSXqAekU4dw7NdmdGkq7waf6DV8Si9GrWuZb6K8r5qxZgupvAD",
-   "time": 1786942476,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "2RBTc41bRHLFUJHQMDLaqt1hvnoC3ytdpPLvxZNVoitY",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.0001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet 2RBTc4…oitY.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "4xCVzg6BR4LTCcGctoko4jsSf1KMgP4Z7yiPAbiSXqAekU4dw7NdmdGkq7waf6DV8Si9GrWuZb6K8r5qxZgupvAD:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:2RBTc41bRHLFUJHQMDLaqt1hvnoC3ytdpPLvxZNVoitY:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:100"
-  },
-  {
-   "chain": "solana",
-   "hash": "3NBe1g58NK4hFFjRAZntNyAj5y7MtUbqeaGo8W6U1jnAQ9CGVRMXVEmGmAdwAmE8ZpeKftkKSpHXRGVN1Z1hwhoD",
-   "time": 1786942457,
-   "date": "2026-08-17",
-   "type": "transfer_out",
-   "direction": "out",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-   "counterpartyLabel": null,
-   "asset": "token",
-   "symbol": "ZBCN",
-   "amount": 793990.591892,
-   "reason": "Recipient 2RBTh5…oitY has no label, is not a developer wallet and the receipt has no Swap event.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "3NBe1g58NK4hFFjRAZntNyAj5y7MtUbqeaGo8W6U1jnAQ9CGVRMXVEmGmAdwAmE8ZpeKftkKSpHXRGVN1Z1hwhoD:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY:793990591892"
-  },
-  {
-   "chain": "solana",
-   "hash": "SzKUkwefrQYA9rcQNZ1s5manxowxSDCK9MJrAeMgS6m4sx1iDJkyTPcrzNTqqrTCL4yVuS7ifJttDzZYEUaws9H",
-   "time": 1786942453,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "F9wCaNFKKH5kZBc8fDRsGg1QHNWr3h8xJakzmHPXLZDt",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.0001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet F9wCaN…LZDt.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "SzKUkwefrQYA9rcQNZ1s5manxowxSDCK9MJrAeMgS6m4sx1iDJkyTPcrzNTqqrTCL4yVuS7ifJttDzZYEUaws9H:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:F9wCaNFKKH5kZBc8fDRsGg1QHNWr3h8xJakzmHPXLZDt:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:100"
-  },
-  {
-   "chain": "solana",
-   "hash": "2kVouaXssQyKZKU1VSL6Ff8Hn4KBnf9bZGWQfRtRgr9stmd1oMQYNYF1EvRFvf3hUkmjbtgKc5LkK6M3gSMESA4b",
-   "time": 1786942434,
-   "date": "2026-08-17",
-   "type": "transfer_out",
-   "direction": "out",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "F9wCYEaem2CXEBjtmp8hAp7FEQD1KT6pDF6oaFLBLZDt",
-   "counterpartyLabel": null,
-   "asset": "token",
-   "symbol": "ZBCN",
-   "amount": 476014.05884,
-   "reason": "Recipient F9wCYE…LZDt has no label, is not a developer wallet and the receipt has no Swap event.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "2kVouaXssQyKZKU1VSL6Ff8Hn4KBnf9bZGWQfRtRgr9stmd1oMQYNYF1EvRFvf3hUkmjbtgKc5LkK6M3gSMESA4b:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:F9wCYEaem2CXEBjtmp8hAp7FEQD1KT6pDF6oaFLBLZDt:476014058840"
-  },
-  {
-   "chain": "solana",
-   "hash": "2L5qPNZQnrcfg18oUfTjTJ9ffFdihQJfNEmGNwsD7NrpK99f2cWHVjprk9yfvcx2Sf8yDCyxBCBCMTGQCSzbkrc",
-   "time": 1786942420,
-   "date": "2026-08-17",
-   "type": "stable_in",
-   "direction": "in",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "ACjqt3JgK6NgS5dUX6w7E5ocZno3ggeNqVBvmd51n54e",
-   "counterpartyLabel": null,
-   "asset": "stable",
-   "symbol": "USDC",
-   "amount": 0.0001,
-   "reason": "USDC arrived at Team ops and admin wallet from unlabelled wallet ACjqt3…n54e.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "2L5qPNZQnrcfg18oUfTjTJ9ffFdihQJfNEmGNwsD7NrpK99f2cWHVjprk9yfvcx2Sf8yDCyxBCBCMTGQCSzbkrc:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:ACjqt3JgK6NgS5dUX6w7E5ocZno3ggeNqVBvmd51n54e:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:100"
-  },
-  {
-   "chain": "solana",
-   "hash": "5P2iRfRoEyRB1cZscjUcGebA1PgfeZeN9ZwTfU9Ytf4yGZzNuGnrAAekYWWT5m77EQBadAS9hTwZLsXxegPcG8oT",
-   "time": 1786942401,
-   "date": "2026-08-17",
-   "type": "transfer_out",
-   "direction": "out",
-   "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-   "walletLabel": "Team ops and admin wallet",
-   "counterparty": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
-   "counterpartyLabel": null,
-   "asset": "token",
-   "symbol": "ZBCN",
-   "amount": 1586305.954638,
-   "reason": "Recipient ACjqBW…n54e has no label, is not a developer wallet and the receipt has no Swap event.",
-   "internal": false,
-   "headline": false,
-   "uniqueId": "5P2iRfRoEyRB1cZscjUcGebA1PgfeZeN9ZwTfU9Ytf4yGZzNuGnrAAekYWWT5m77EQBadAS9hTwZLsXxegPcG8oT:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine:ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e:1586305954638"
   }
  ],
  "eventsTruncated": false
