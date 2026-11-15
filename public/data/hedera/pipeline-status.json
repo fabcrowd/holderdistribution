@@ -1,11 +1,10 @@
 {
   "schemaVersion": 1,
   "project": "hedera",
-  "generatedAt": "2026-11-15T09:40:06.617Z",
+  "generatedAt": "2026-11-15T13:00:27.073Z",
   "healthy": false,
   "problems": [
-    "wallet-flows: missing",
-    "ledger: missing"
+    "wallet-flows: missing"
   ],
   "jobs": [
     {
@@ -24,29 +23,29 @@
         {
           "path": "public/data/hedera/holders-summary.json",
           "maxAgeHours": 30,
-          "ageHours": 0.1,
-          "generatedAt": "2026-11-15T09:36:28.652Z",
+          "ageHours": 0,
+          "generatedAt": "2026-11-15T12:57:44.302Z",
           "status": "fresh"
         },
         {
           "path": "public/data/hedera/holders-history.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-15T09:38:18.403Z",
+          "generatedAt": "2026-11-15T12:59:12.367Z",
           "status": "fresh"
         },
         {
           "path": "public/data/hedera/supply-reconciliation.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-15T09:39:37.000Z",
+          "generatedAt": "2026-11-15T13:00:16.000Z",
           "status": "fresh"
         },
         {
           "path": "public/data/hedera/cex-wallets.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-15T09:37:12.303Z",
+          "generatedAt": "2026-11-15T12:58:23.074Z",
           "status": "fresh"
         }
       ],
@@ -72,7 +71,7 @@
           "path": "public/data/hedera/exchange-flow-history.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-15T09:39:55.764Z",
+          "generatedAt": "2026-11-15T13:00:17.624Z",
           "status": "fresh"
         }
       ],
@@ -98,7 +97,7 @@
           "path": "public/data/hedera/tier-outflows.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-15T09:39:56.904Z",
+          "generatedAt": "2026-11-15T13:00:18.527Z",
           "status": "fresh"
         }
       ],
@@ -218,14 +217,14 @@
       "alchemyOnly": false,
       "alchemyCuBudget": 0,
       "budgetMode": "enforce",
-      "health": "missing",
+      "health": "ok",
       "outputs": [
         {
           "path": "data/hedera/ledger/ledger.json",
           "maxAgeHours": 30,
-          "ageHours": null,
-          "generatedAt": null,
-          "status": "missing"
+          "ageHours": 2.9,
+          "generatedAt": "2026-11-15T10:07:17.000Z",
+          "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
