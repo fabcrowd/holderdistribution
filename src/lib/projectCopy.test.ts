@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { copyContext, copyTextsByPrefix, fillCopy, hasTokenGenerations, joinList } from "./projectCopy";
-import { getProject } from "./projects";
+import { getProject, PROJECTS } from "./projects";
 
 describe("projectCopy", () => {
   it("joins lists in house style", () => {
@@ -56,5 +56,13 @@ describe("projectCopy", () => {
       { suffix: "2026-09-29", text: "first ABC" },
       { suffix: "2026-10-02", text: "second ABC" },
     ]);
+  });
+
+  it.each(PROJECTS.map((p) => p.slug))("%s: hasTokenGenerations does not throw", (slug) => {
+    expect(typeof hasTokenGenerations(getProject(slug))).toBe("boolean");
+  });
+
+  it("a chain without tokens (a native coin) has no token generations", () => {
+    expect(hasTokenGenerations({ chains: [{ key: "nat", name: "Native" }] } as never)).toBe(false);
   });
 });

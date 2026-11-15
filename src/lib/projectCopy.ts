@@ -48,7 +48,7 @@ export const fillCopy = (template: string, ctx: CopyContext): string =>
 
 /** True when the project tracks more than one token generation (e.g. legacy + v3). */
 export const hasTokenGenerations = (p: Pick<ProjectConfig, "chains">): boolean =>
-  new Set((p.chains ?? []).flatMap((c) => c.tokens.map((t) => t.generation))).size > 1;
+  new Set((p.chains ?? []).flatMap((c) => (c.tokens ?? []).map((t) => t.generation))).size > 1;
 
 /**
  * A widget string by id: the project's `copy.text[id]` override when it has
