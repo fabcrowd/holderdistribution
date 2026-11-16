@@ -1,22 +1,22 @@
 {
  "version": 1,
- "generated": "2026-11-15T19:45:47.818Z",
+ "generated": "2026-11-16T23:20:18.042Z",
  "generator": "scripts/generate-wallet-flows.js",
  "project": "ondo",
- "priceUsd": 0.30715,
+ "priceUsd": 0.307609,
  "priceSource": "CoinGecko simple/price (ondo-finance)",
  "chains": [
   "ethereum"
  ],
  "windows": {
   "ethereum": {
-   "head": 26422569,
-   "headTime": "2026-11-15T19:42:23.000Z",
+   "head": 26430828,
+   "headTime": "2026-11-16T23:17:47.000Z",
    "startBlocks": {
-    "24h": 26415387,
-    "72h": 26401027,
-    "30d": 26207264,
-    "90d": 25776965
+    "24h": 26423644,
+    "72h": 26409282,
+    "30d": 26215511,
+    "90d": 25785214
    }
   }
  },
@@ -35,7 +35,7 @@
     "label": "Telcoin-linked: TEL Treasury",
     "group": "telcoin",
     "tel": 5179207574,
-    "share": 0.5179207574162525
+    "share": 0.5179207574162523
    },
    {
     "key": "association",
@@ -49,7 +49,7 @@
     "label": "Telcoin-linked: Telcoin Holdings (company)",
     "group": "telcoin",
     "tel": 324719710,
-    "share": 0.03247197096556833
+    "share": 0.032471970965568316
    },
    {
     "key": "escrow",
@@ -69,8 +69,8 @@
     "key": "cex",
     "label": "Centralised exchanges (incl. deposit relays)",
     "group": "market",
-    "tel": 1148549696,
-    "share": 0.11485496964397834
+    "tel": 1143555021,
+    "share": 0.11435550212307874
    },
    {
     "key": "dex",
@@ -97,8 +97,8 @@
     "key": "retail",
     "label": "Retail & unlabelled holders",
     "group": "retail",
-    "tel": 3347523020,
-    "share": 0.33475230197420086
+    "tel": 3352517695,
+    "share": 0.33525176949510055
    }
   ],
   "movedFromRetail": [],
@@ -141,7 +141,7 @@
    "balanceDetail": {
     "ethereum_legacy": 5179207574
    },
-   "balanceUsd": 1590793606,
+   "balanceUsd": 1593170863,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -174,7 +174,7 @@
    "balanceDetail": {
     "ethereum_legacy": 100182196
    },
-   "balanceUsd": 30770962,
+   "balanceUsd": 30816945,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -204,7 +204,7 @@
    "balanceDetail": {
     "ethereum_legacy": 95738091
    },
-   "balanceUsd": 29405955,
+   "balanceUsd": 29449898,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -234,7 +234,7 @@
    "balanceDetail": {
     "ethereum_legacy": 48443680
    },
-   "balanceUsd": 14879476,
+   "balanceUsd": 14901712,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -264,7 +264,7 @@
    "balanceDetail": {
     "ethereum_legacy": 44109630
    },
-   "balanceUsd": 13548273,
+   "balanceUsd": 13568519,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -295,13 +295,13 @@
    "balanceDetail": {
     "ethereum_legacy": 36007902
    },
-   "balanceUsd": 11059827,
+   "balanceUsd": 11076355,
    "outflows": {
     "24h": {},
     "72h": {},
     "30d": {},
     "90d": {
-     "unlabelled": 273422106
+     "unlabelled": 263992106
     }
    },
    "sellVenue": {
@@ -328,7 +328,7 @@
    "balanceDetail": {
     "ethereum_legacy": 238210
    },
-   "balanceUsd": 73166,
+   "balanceUsd": 73276,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -539,51 +539,5 @@
    "90d": 0
   }
  },
- "largeSellers": [
-  {
-   "rank": 1,
-   "entity": "Unlabelled wallet",
-   "addresses": [
-    "0xffef03574ece382d1456e9030645c048a219d72c"
-   ],
-   "chains": [
-    "ethereum"
-   ],
-   "destination": "Coinbase Prime",
-   "tel": 10188401,
-   "netTel": 10188401,
-   "usd": 3129367,
-   "sampleTx": "https://etherscan.io/tx/0x7fb31bd500205051bba3b34968c7a0921d4d34fb6b23b7bf748761f7a9b7e80b"
-  },
-  {
-   "rank": 2,
-   "entity": "Unlabelled wallet",
-   "addresses": [
-    "0x6ca447e10025b0c1998ad854241cfec920f45c2a"
-   ],
-   "chains": [
-    "ethereum"
-   ],
-   "destination": "Coinbase Prime",
-   "tel": 7672473,
-   "netTel": 7672473,
-   "usd": 2356600,
-   "sampleTx": "https://etherscan.io/tx/0xed5eb169686d61129e327c84b9b0b9b1aaba1a988f7f6d1312791c7a7161cfe0"
-  },
-  {
-   "rank": 3,
-   "entity": "Unlabelled wallet",
-   "addresses": [
-    "0xe57e42ee9265d0387a29e8d80c1fc59e401be175"
-   ],
-   "chains": [
-    "ethereum"
-   ],
-   "destination": "Bithumb, OKX via 0x1842…6d7f, OKX via 0x7d70…84eb",
-   "tel": 9094090,
-   "netTel": 7094090,
-   "usd": 2793250,
-   "sampleTx": "https://etherscan.io/tx/0x26baba003bc44cf369e3a1a065eb4f77f1cd5b0a2067e95c9e0a6ffd5fe76c6f"
-  }
- ]
+ "largeSellers": []
 }
