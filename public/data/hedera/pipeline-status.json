@@ -1,11 +1,9 @@
 {
   "schemaVersion": 1,
   "project": "hedera",
-  "generatedAt": "2026-11-15T13:00:27.073Z",
-  "healthy": false,
-  "problems": [
-    "wallet-flows: missing"
-  ],
+  "generatedAt": "2026-11-16T09:34:55.907Z",
+  "healthy": true,
+  "problems": [],
   "jobs": [
     {
       "id": "holders",
@@ -23,34 +21,34 @@
         {
           "path": "public/data/hedera/holders-summary.json",
           "maxAgeHours": 30,
-          "ageHours": 0,
-          "generatedAt": "2026-11-15T12:57:44.302Z",
+          "ageHours": 0.1,
+          "generatedAt": "2026-11-16T09:29:41.869Z",
           "status": "fresh"
         },
         {
           "path": "public/data/hedera/holders-history.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-15T12:59:12.367Z",
+          "generatedAt": "2026-11-16T09:32:00.903Z",
           "status": "fresh"
         },
         {
           "path": "public/data/hedera/supply-reconciliation.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-15T13:00:16.000Z",
+          "generatedAt": "2026-11-16T09:34:08.000Z",
           "status": "fresh"
         },
         {
           "path": "public/data/hedera/cex-wallets.json",
           "maxAgeHours": 30,
-          "ageHours": 0,
-          "generatedAt": "2026-11-15T12:58:23.074Z",
+          "ageHours": 0.1,
+          "generatedAt": "2026-11-16T09:30:26.175Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-15",
+        "day": "2026-11-16",
         "cu": 0
       }
     },
@@ -71,12 +69,12 @@
           "path": "public/data/hedera/exchange-flow-history.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-15T13:00:17.624Z",
+          "generatedAt": "2026-11-16T09:34:37.587Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-15",
+        "day": "2026-11-16",
         "cu": 0
       }
     },
@@ -97,12 +95,12 @@
           "path": "public/data/hedera/tier-outflows.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-15T13:00:18.527Z",
+          "generatedAt": "2026-11-16T09:34:47.108Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-15",
+        "day": "2026-11-16",
         "cu": 0
       }
     },
@@ -134,7 +132,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-15",
+        "day": "2026-11-16",
         "cu": 0
       }
     },
@@ -190,18 +188,18 @@
       "alchemyOnly": false,
       "alchemyCuBudget": 0,
       "budgetMode": "enforce",
-      "health": "missing",
+      "health": "ok",
       "outputs": [
         {
           "path": "data/hedera/forensics/wallet-flows.json",
           "maxAgeHours": 30,
-          "ageHours": null,
-          "generatedAt": null,
-          "status": "missing"
+          "ageHours": 13.8,
+          "generatedAt": "2026-11-15T19:46:48.709Z",
+          "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-15",
+        "day": "2026-11-16",
         "cu": 0
       }
     },
@@ -222,13 +220,13 @@
         {
           "path": "data/hedera/ledger/ledger.json",
           "maxAgeHours": 30,
-          "ageHours": 2.9,
+          "ageHours": 23.5,
           "generatedAt": "2026-11-15T10:07:17.000Z",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-15",
+        "day": "2026-11-16",
         "cu": 0
       }
     },
@@ -260,7 +258,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-15",
+        "day": "2026-11-16",
         "cu": 0
       }
     }
