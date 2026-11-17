@@ -1,38 +1,46 @@
 {
   "schema": 9,
   "tierFingerprint": "a47219baf0ceafbc",
-  "generatedAt": "2026-11-16T09:34:47.108Z",
+  "generatedAt": "2026-11-17T11:15:54.272Z",
   "asOf": {
-    "date": "2026-11-15",
+    "date": "2026-11-16",
     "blocks": {
-      "hedera": 102384209
+      "hedera": 102423846
     },
     "settled": true
   },
-  "latestDate": "2026-11-15",
+  "latestDate": "2026-11-16",
   "partialDate": null,
   "complete": true,
   "sourceTierSince": null,
   "ranges": {
     "1": {
-      "from": "2026-11-15",
-      "to": "2026-11-15",
+      "from": "2026-11-16",
+      "to": "2026-11-16",
       "tiers": {
-        "0.01-0.1": {
+        "unattributed": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 0,
+          "cex": 617195,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
-          "byExchange": {},
+          "byExchange": {
+            "Coinbase": 288146,
+            "Bybit": 9805,
+            "Crypto.com": 5996,
+            "Kraken": 299622,
+            "Binance": 5048,
+            "MEXC": 8366,
+            "Gate": 214
+          },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 48101,
+            "cex": 1625060,
             "wallet": 0
           },
           "byChain": {
@@ -40,13 +48,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 0,
+              "cex": 617195,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 48101,
+                "cex": 1625060,
                 "wallet": 0
               }
             }
@@ -59,27 +67,27 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 588622,
+          "cex": 3212497,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 132355,
-            "Crypto.com": 64125,
-            "Kraken": 158009,
-            "Binance": 62629,
-            "MEXC": 68714,
+            "Bybit": 0,
+            "Upbit": 2781896,
+            "Crypto.com": 0,
+            "Kraken": 385501,
+            "Binance": 25100,
+            "MEXC": 0,
             "Gate": 0,
-            "Coinbase": 102790,
-            "KuCoin": 0,
-            "HTX": 0
+            "Coinbase": 20000,
+            "KuCoin": 0
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 518434,
+            "cex": 2051608,
             "wallet": 0
           },
           "byChain": {
@@ -87,189 +95,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 588622,
+              "cex": 3212497,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 518434,
-                "wallet": 0
-              }
-            }
-          },
-          "inflowsBySourceTier": {},
-          "movedByDestTier": {},
-          "splitDestinationSlots": 0
-        },
-        "5-1K": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 539233,
-          "moved": 0,
-          "splitWallets": 0,
-          "splitEvents": 0,
-          "splitTel": 0,
-          "byExchange": {
-            "Bybit": 236405,
-            "Crypto.com": 628,
-            "Binance": 29628,
-            "MEXC": 2592,
-            "Gate": 214370,
-            "Coinbase": 55610
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 2592377,
-            "wallet": 0
-          },
-          "byChain": {
-            "hedera": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 539233,
-              "moved": 0,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 2592377,
-                "wallet": 0
-              }
-            }
-          },
-          "inflowsBySourceTier": {},
-          "movedByDestTier": {},
-          "splitDestinationSlots": 0
-        },
-        "10M-100M": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 26018301,
-          "moved": 0,
-          "splitWallets": 0,
-          "splitEvents": 0,
-          "splitTel": 0,
-          "byExchange": {
-            "Bybit": 8881,
-            "Kraken": 341650,
-            "Binance": 523426,
-            "Coinbase": 25144344
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 17702131,
-            "wallet": 0
-          },
-          "byChain": {
-            "hedera": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 26018301,
-              "moved": 0,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 17702131,
-                "wallet": 0
-              }
-            }
-          },
-          "inflowsBySourceTier": {},
-          "movedByDestTier": {},
-          "splitDestinationSlots": 0
-        },
-        "100K-500K": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 1160117,
-          "moved": 0,
-          "splitWallets": 0,
-          "splitEvents": 0,
-          "splitTel": 0,
-          "byExchange": {
-            "Bybit": 142215,
-            "Kraken": 240097,
-            "Binance": 104768,
-            "MEXC": 206000,
-            "Coinbase": 467037
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 2091321,
-            "wallet": 0
-          },
-          "byChain": {
-            "hedera": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 1160117,
-              "moved": 0,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 2091321,
-                "wallet": 0
-              }
-            }
-          },
-          "inflowsBySourceTier": {},
-          "movedByDestTier": {},
-          "splitDestinationSlots": 0
-        },
-        "unattributed": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 5817061,
-          "moved": 0,
-          "splitWallets": 0,
-          "splitEvents": 0,
-          "splitTel": 0,
-          "byExchange": {
-            "Coinbase": 4161161,
-            "Crypto.com": 48106,
-            "Binance": 61111,
-            "Bybit": 27865,
-            "Kraken": 51411,
-            "MEXC": 414313,
-            "Gate": 533706,
-            "KuCoin": 197067,
-            "HTX": 322320
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 6792556,
-            "wallet": 0
-          },
-          "byChain": {
-            "hedera": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 5817061,
-              "moved": 0,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 6792556,
+                "cex": 2051608,
                 "wallet": 0
               }
             }
@@ -282,21 +114,23 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 520667,
+          "cex": 568408,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Binance": 39659,
-            "Gate": 46797,
-            "Coinbase": 434211
+            "Bybit": 33889,
+            "Kraken": 8570,
+            "Binance": 425443,
+            "Gate": 14327,
+            "Coinbase": 86180
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 738661,
+            "cex": 271338,
             "wallet": 0
           },
           "byChain": {
@@ -304,13 +138,57 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 520667,
+              "cex": 568408,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 738661,
+                "cex": 271338,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "10M-100M": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 52036992,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "Bybit": 108945,
+            "Crypto.com": 9633,
+            "Kraken": 68181,
+            "Binance": 1272327,
+            "Gate": 1094,
+            "Coinbase": 50576811
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 3766374,
+            "wallet": 0
+          },
+          "byChain": {
+            "hedera": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 52036992,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 3766374,
                 "wallet": 0
               }
             }
@@ -323,24 +201,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 15863338,
+          "cex": 14841611,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 774780,
-            "Crypto.com": 16600,
-            "Kraken": 4741676,
-            "Binance": 553434,
-            "Gate": 295940,
-            "Coinbase": 9480907
+            "Bybit": 377122,
+            "Crypto.com": 25744,
+            "Kraken": 5692535,
+            "Binance": 2838078,
+            "MEXC": 3386,
+            "Gate": 84276,
+            "Coinbase": 5820471
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 8460552,
+            "cex": 57852498,
             "wallet": 0
           },
           "byChain": {
@@ -348,13 +227,57 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 15863338,
+              "cex": 14841611,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 8460552,
+                "cex": 57852498,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "100K-500K": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 3010415,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "Bybit": 140817,
+            "Kraken": 26331,
+            "Binance": 2040664,
+            "MEXC": 232109,
+            "Gate": 1829,
+            "Coinbase": 568665
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1118879,
+            "wallet": 0
+          },
+          "byChain": {
+            "hedera": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 3010415,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1118879,
                 "wallet": 0
               }
             }
@@ -367,25 +290,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 259003,
+          "cex": 5791727,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 5774,
-            "Crypto.com": 1700,
-            "Kraken": 27534,
-            "Binance": 174561,
-            "MEXC": 2158,
-            "Gate": 7118,
-            "Coinbase": 40158
+            "Bybit": 2925,
+            "Crypto.com": 5000,
+            "Kraken": 12775,
+            "Binance": 11597,
+            "MEXC": 6000,
+            "Coinbase": 5753430
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 25391577,
+            "cex": 6924178,
             "wallet": 0
           },
           "byChain": {
@@ -393,182 +315,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 259003,
+              "cex": 5791727,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 25391577,
-                "wallet": 0
-              }
-            }
-          },
-          "inflowsBySourceTier": {},
-          "movedByDestTier": {},
-          "splitDestinationSlots": 0
-        },
-        "10K-50K": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 1271890,
-          "moved": 0,
-          "splitWallets": 0,
-          "splitEvents": 0,
-          "splitTel": 0,
-          "byExchange": {
-            "Bybit": 24633,
-            "Crypto.com": 755,
-            "Kraken": 193315,
-            "Binance": 59715,
-            "MEXC": 16407,
-            "Coinbase": 253515,
-            "KuCoin": 723549
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 1379449,
-            "wallet": 0
-          },
-          "byChain": {
-            "hedera": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 1271890,
-              "moved": 0,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 1379449,
-                "wallet": 0
-              }
-            }
-          },
-          "inflowsBySourceTier": {},
-          "movedByDestTier": {},
-          "splitDestinationSlots": 0
-        },
-        "100M+": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 8669989,
-          "moved": 0,
-          "splitWallets": 0,
-          "splitEvents": 0,
-          "splitTel": 0,
-          "byExchange": {
-            "Bybit": 78305,
-            "Binance": 1426319,
-            "Gate": 632253,
-            "Coinbase": 6533112
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 37845,
-            "wallet": 0
-          },
-          "byChain": {
-            "hedera": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 8669989,
-              "moved": 0,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 37845,
-                "wallet": 0
-              }
-            }
-          },
-          "inflowsBySourceTier": {},
-          "movedByDestTier": {},
-          "splitDestinationSlots": 0
-        },
-        "1-5": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 94836,
-          "moved": 0,
-          "splitWallets": 0,
-          "splitEvents": 0,
-          "splitTel": 0,
-          "byExchange": {
-            "Kraken": 487,
-            "Binance": 788,
-            "MEXC": 1300,
-            "Coinbase": 92261
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 33967,
-            "wallet": 0
-          },
-          "byChain": {
-            "hedera": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 94836,
-              "moved": 0,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 33967,
-                "wallet": 0
-              }
-            }
-          },
-          "inflowsBySourceTier": {},
-          "movedByDestTier": {},
-          "splitDestinationSlots": 0
-        },
-        "<0.01": {
-          "dex": 0,
-          "dexSwap": 0,
-          "dexLp": 0,
-          "cex": 19385,
-          "moved": 0,
-          "splitWallets": 0,
-          "splitEvents": 0,
-          "splitTel": 0,
-          "byExchange": {
-            "Kraken": 1735,
-            "Coinbase": 17650
-          },
-          "inflows": {
-            "dex": 0,
-            "dexSwap": 0,
-            "dexLp": 0,
-            "cex": 157935,
-            "wallet": 0
-          },
-          "byChain": {
-            "hedera": {
-              "dex": 0,
-              "dexSwap": 0,
-              "dexLp": 0,
-              "cex": 19385,
-              "moved": 0,
-              "inflows": {
-                "dex": 0,
-                "dexSwap": 0,
-                "dexLp": 0,
-                "cex": 157935,
+                "cex": 6924178,
                 "wallet": 0
               }
             }
@@ -581,21 +334,20 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 17833,
+          "cex": 2391,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Kraken": 6449,
-            "Binance": 1112,
-            "Coinbase": 10271
+            "Binance": 69,
+            "Coinbase": 2322
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 365197,
+            "cex": 178282,
             "wallet": 0
           },
           "byChain": {
@@ -603,13 +355,266 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 17833,
+              "cex": 2391,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 365197,
+                "cex": 178282,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "10K-50K": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 2803393,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "Bybit": 10136,
+            "Crypto.com": 3140,
+            "Kraken": 119764,
+            "Binance": 2346855,
+            "MEXC": 21960,
+            "Gate": 40500,
+            "Coinbase": 161985,
+            "KuCoin": 99053
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 1327500,
+            "wallet": 0
+          },
+          "byChain": {
+            "hedera": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 2803393,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 1327500,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "5-1K": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 476898,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "Bybit": 2141,
+            "Crypto.com": 936,
+            "Kraken": 58887,
+            "Binance": 191767,
+            "MEXC": 35968,
+            "Gate": 319,
+            "Coinbase": 186880
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 15170517,
+            "wallet": 0
+          },
+          "byChain": {
+            "hedera": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 476898,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 15170517,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "<0.01": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 5305,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "Bybit": 227,
+            "Coinbase": 5077
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 71654,
+            "wallet": 0
+          },
+          "byChain": {
+            "hedera": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 5305,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 71654,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "1-5": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 32496,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "Bybit": 572,
+            "Kraken": 1,
+            "Binance": 1,
+            "MEXC": 30514,
+            "Gate": 1409
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 103986,
+            "wallet": 0
+          },
+          "byChain": {
+            "hedera": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 32496,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 103986,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "100M+": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 5143385,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "Kraken": 1909264,
+            "Coinbase": 3234120
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 6740,
+            "wallet": 0
+          },
+          "byChain": {
+            "hedera": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 5143385,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 6740,
+                "wallet": 0
+              }
+            }
+          },
+          "inflowsBySourceTier": {},
+          "movedByDestTier": {},
+          "splitDestinationSlots": 0
+        },
+        "0.01-0.1": {
+          "dex": 0,
+          "dexSwap": 0,
+          "dexLp": 0,
+          "cex": 1,
+          "moved": 0,
+          "splitWallets": 0,
+          "splitEvents": 0,
+          "splitTel": 0,
+          "byExchange": {
+            "Kraken": 1
+          },
+          "inflows": {
+            "dex": 0,
+            "dexSwap": 0,
+            "dexLp": 0,
+            "cex": 18239,
+            "wallet": 0
+          },
+          "byChain": {
+            "hedera": {
+              "dex": 0,
+              "dexSwap": 0,
+              "dexLp": 0,
+              "cex": 1,
+              "moved": 0,
+              "inflows": {
+                "dex": 0,
+                "dexSwap": 0,
+                "dexLp": 0,
+                "cex": 18239,
                 "wallet": 0
               }
             }
@@ -623,26 +628,26 @@
       "totalDays": 1
     },
     "7": {
-      "from": "2026-11-09",
-      "to": "2026-11-15",
+      "from": "2026-11-10",
+      "to": "2026-11-16",
       "tiers": {
         "unattributed": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 9367216,
+          "cex": 9984411,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Binance": 156120,
-            "Coinbase": 6840288,
-            "Crypto.com": 372223,
-            "Bybit": 234134,
-            "Kraken": 91469,
-            "MEXC": 430415,
-            "Gate": 723179,
+            "Binance": 161168,
+            "Coinbase": 7128434,
+            "Crypto.com": 378219,
+            "Bybit": 243939,
+            "Kraken": 391091,
+            "MEXC": 438781,
+            "Gate": 723393,
             "KuCoin": 197067,
             "HTX": 322320
           },
@@ -650,7 +655,7 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 15242110,
+            "cex": 16867170,
             "wallet": 0
           },
           "byChain": {
@@ -658,13 +663,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 9367216,
+              "cex": 9984411,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 15242110,
+                "cex": 16867170,
                 "wallet": 0
               }
             }
@@ -677,20 +682,20 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 828126,
+          "cex": 4040623,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Bybit": 132373,
-            "Upbit": 0,
+            "Upbit": 2781896,
             "Crypto.com": 64125,
-            "Kraken": 158009,
-            "Binance": 147944,
+            "Kraken": 543510,
+            "Binance": 173044,
             "MEXC": 68839,
             "Gate": 0,
-            "Coinbase": 256836,
+            "Coinbase": 276836,
             "KuCoin": 0,
             "HTX": 0
           },
@@ -698,7 +703,7 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 1258505,
+            "cex": 3310113,
             "wallet": 0
           },
           "byChain": {
@@ -706,13 +711,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 828126,
+              "cex": 4040623,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 1258505,
+                "cex": 3310113,
                 "wallet": 0
               }
             }
@@ -725,25 +730,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 807631,
+          "cex": 1284529,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 242392,
-            "Crypto.com": 4232,
-            "Kraken": 97688,
-            "Binance": 37285,
-            "MEXC": 90192,
-            "Gate": 220141,
-            "Coinbase": 115702
+            "Bybit": 244533,
+            "Crypto.com": 5168,
+            "Kraken": 156575,
+            "Binance": 229052,
+            "MEXC": 126160,
+            "Gate": 220460,
+            "Coinbase": 302582
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7967785,
+            "cex": 23138302,
             "wallet": 0
           },
           "byChain": {
@@ -751,13 +756,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 807631,
+              "cex": 1284529,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7967785,
+                "cex": 23138302,
                 "wallet": 0
               }
             }
@@ -770,25 +775,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 489875,
+          "cex": 6281602,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 54419,
-            "Crypto.com": 1710,
-            "Kraken": 45035,
-            "Binance": 215696,
-            "MEXC": 8800,
+            "Bybit": 57344,
+            "Crypto.com": 6710,
+            "Kraken": 57810,
+            "Binance": 227293,
+            "MEXC": 14800,
             "Gate": 28586,
-            "Coinbase": 135629
+            "Coinbase": 5889059
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 26120283,
+            "cex": 33044461,
             "wallet": 0
           },
           "byChain": {
@@ -796,13 +801,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 489875,
+              "cex": 6281602,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 26120283,
+                "cex": 33044461,
                 "wallet": 0
               }
             }
@@ -815,23 +820,23 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6944857,
+          "cex": 7513265,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 60785,
-            "Kraken": 6290666,
-            "Binance": 40581,
-            "Gate": 68613,
-            "Coinbase": 484211
+            "Bybit": 94674,
+            "Kraken": 6299236,
+            "Binance": 466024,
+            "Gate": 82940,
+            "Coinbase": 570391
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 4466418,
+            "cex": 4737756,
             "wallet": 0
           },
           "byChain": {
@@ -839,13 +844,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6944857,
+              "cex": 7513265,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 4466418,
+                "cex": 4737756,
                 "wallet": 0
               }
             }
@@ -858,25 +863,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 18248171,
+          "cex": 33089782,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 1126063,
-            "Crypto.com": 219186,
-            "Kraken": 4753567,
-            "Binance": 878385,
-            "MEXC": 25132,
-            "Gate": 521535,
-            "Coinbase": 10724300
+            "Bybit": 1503185,
+            "Crypto.com": 244930,
+            "Kraken": 10446102,
+            "Binance": 3716463,
+            "MEXC": 28518,
+            "Gate": 605811,
+            "Coinbase": 16544771
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 17629296,
+            "cex": 75481794,
             "wallet": 0
           },
           "byChain": {
@@ -884,13 +889,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 18248171,
+              "cex": 33089782,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 17629296,
+                "cex": 75481794,
                 "wallet": 0
               }
             }
@@ -903,27 +908,27 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6920609,
+          "cex": 9724002,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 81163,
+            "Bybit": 91299,
             "Upbit": 4623449,
-            "Crypto.com": 762,
-            "Kraken": 283059,
-            "Binance": 132520,
-            "MEXC": 17423,
-            "Gate": 35000,
-            "Coinbase": 561872,
-            "KuCoin": 1185361
+            "Crypto.com": 3902,
+            "Kraken": 402823,
+            "Binance": 2479375,
+            "MEXC": 39383,
+            "Gate": 75500,
+            "Coinbase": 723857,
+            "KuCoin": 1284414
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 3761203,
+            "cex": 5088703,
             "wallet": 0
           },
           "byChain": {
@@ -931,13 +936,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6920609,
+              "cex": 9724002,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 3761203,
+                "cex": 5088703,
                 "wallet": 0
               }
             }
@@ -950,25 +955,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 5381243,
+          "cex": 8391658,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 262383,
+            "Bybit": 403200,
             "Crypto.com": 734,
-            "Kraken": 314615,
-            "Binance": 2983031,
-            "MEXC": 215180,
-            "Gate": 446578,
-            "Coinbase": 1158721
+            "Kraken": 340946,
+            "Binance": 5023695,
+            "MEXC": 447289,
+            "Gate": 448407,
+            "Coinbase": 1727386
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7058101,
+            "cex": 8176980,
             "wallet": 0
           },
           "byChain": {
@@ -976,13 +981,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 5381243,
+              "cex": 8391658,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7058101,
+                "cex": 8176980,
                 "wallet": 0
               }
             }
@@ -995,23 +1000,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 26172366,
+          "cex": 78209358,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 33733,
-            "Kraken": 364437,
-            "Binance": 528040,
-            "Gate": 5394,
-            "Coinbase": 25240762
+            "Bybit": 142678,
+            "Kraken": 432618,
+            "Binance": 1800367,
+            "Gate": 6488,
+            "Coinbase": 75817573,
+            "Crypto.com": 9633
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 20114624,
+            "cex": 23880998,
             "wallet": 0
           },
           "byChain": {
@@ -1019,13 +1025,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 26172366,
+              "cex": 78209358,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 20114624,
+                "cex": 23880998,
                 "wallet": 0
               }
             }
@@ -1038,24 +1044,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 140360,
+          "cex": 172856,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 362,
-            "Kraken": 638,
-            "Binance": 1174,
-            "Gate": 17356,
+            "Bybit": 934,
+            "Kraken": 639,
+            "Binance": 1175,
+            "Gate": 18765,
             "Coinbase": 119530,
-            "MEXC": 1300
+            "MEXC": 31814
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 90850,
+            "cex": 194836,
             "wallet": 0
           },
           "byChain": {
@@ -1063,13 +1069,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 140360,
+              "cex": 172856,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 90850,
+                "cex": 194836,
                 "wallet": 0
               }
             }
@@ -1082,24 +1088,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 21671837,
+          "cex": 26815222,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Bybit": 114439,
-            "Kraken": 149,
+            "Kraken": 1909413,
             "Binance": 1456726,
             "MEXC": 620,
             "Gate": 813676,
-            "Coinbase": 19286226
+            "Coinbase": 22520346
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 43366,
+            "cex": 50106,
             "wallet": 0
           },
           "byChain": {
@@ -1107,13 +1113,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 21671837,
+              "cex": 26815222,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 43366,
+                "cex": 50106,
                 "wallet": 0
               }
             }
@@ -1126,17 +1132,19 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 0,
+          "cex": 1,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
-          "byExchange": {},
+          "byExchange": {
+            "Kraken": 1
+          },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 48101,
+            "cex": 66340,
             "wallet": 0
           },
           "byChain": {
@@ -1144,13 +1152,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 0,
+              "cex": 1,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 48101,
+                "cex": 66340,
                 "wallet": 0
               }
             }
@@ -1163,20 +1171,21 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 19385,
+          "cex": 24690,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Kraken": 1735,
-            "Coinbase": 17650
+            "Coinbase": 22727,
+            "Bybit": 227
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 157935,
+            "cex": 229589,
             "wallet": 0
           },
           "byChain": {
@@ -1184,13 +1193,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 19385,
+              "cex": 24690,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 157935,
+                "cex": 229589,
                 "wallet": 0
               }
             }
@@ -1203,21 +1212,21 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 17833,
+          "cex": 20224,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Kraken": 6449,
-            "Binance": 1112,
-            "Coinbase": 10271
+            "Binance": 1181,
+            "Coinbase": 12593
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 365197,
+            "cex": 543479,
             "wallet": 0
           },
           "byChain": {
@@ -1225,13 +1234,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 17833,
+              "cex": 20224,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 365197,
+                "cex": 543479,
                 "wallet": 0
               }
             }
@@ -1242,29 +1251,29 @@
         }
       },
       "attributedDays": 0,
-      "totalDays": 2
+      "totalDays": 3
     },
     "30": {
-      "from": "2026-10-17",
-      "to": "2026-11-15",
+      "from": "2026-10-18",
+      "to": "2026-11-16",
       "tiers": {
         "unattributed": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 9367216,
+          "cex": 9984411,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Binance": 156120,
-            "Coinbase": 6840288,
-            "Crypto.com": 372223,
-            "Bybit": 234134,
-            "Kraken": 91469,
-            "MEXC": 430415,
-            "Gate": 723179,
+            "Binance": 161168,
+            "Coinbase": 7128434,
+            "Crypto.com": 378219,
+            "Bybit": 243939,
+            "Kraken": 391091,
+            "MEXC": 438781,
+            "Gate": 723393,
             "KuCoin": 197067,
             "HTX": 322320
           },
@@ -1272,7 +1281,7 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 15242110,
+            "cex": 16867170,
             "wallet": 0
           },
           "byChain": {
@@ -1280,13 +1289,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 9367216,
+              "cex": 9984411,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 15242110,
+                "cex": 16867170,
                 "wallet": 0
               }
             }
@@ -1299,20 +1308,20 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 828126,
+          "cex": 4040623,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Bybit": 132373,
-            "Upbit": 0,
+            "Upbit": 2781896,
             "Crypto.com": 64125,
-            "Kraken": 158009,
-            "Binance": 147944,
+            "Kraken": 543510,
+            "Binance": 173044,
             "MEXC": 68839,
             "Gate": 0,
-            "Coinbase": 256836,
+            "Coinbase": 276836,
             "KuCoin": 0,
             "HTX": 0
           },
@@ -1320,7 +1329,7 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 1258505,
+            "cex": 3310113,
             "wallet": 0
           },
           "byChain": {
@@ -1328,13 +1337,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 828126,
+              "cex": 4040623,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 1258505,
+                "cex": 3310113,
                 "wallet": 0
               }
             }
@@ -1347,25 +1356,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 807631,
+          "cex": 1284529,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 242392,
-            "Crypto.com": 4232,
-            "Kraken": 97688,
-            "Binance": 37285,
-            "MEXC": 90192,
-            "Gate": 220141,
-            "Coinbase": 115702
+            "Bybit": 244533,
+            "Crypto.com": 5168,
+            "Kraken": 156575,
+            "Binance": 229052,
+            "MEXC": 126160,
+            "Gate": 220460,
+            "Coinbase": 302582
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7967785,
+            "cex": 23138302,
             "wallet": 0
           },
           "byChain": {
@@ -1373,13 +1382,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 807631,
+              "cex": 1284529,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7967785,
+                "cex": 23138302,
                 "wallet": 0
               }
             }
@@ -1392,25 +1401,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 489875,
+          "cex": 6281602,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 54419,
-            "Crypto.com": 1710,
-            "Kraken": 45035,
-            "Binance": 215696,
-            "MEXC": 8800,
+            "Bybit": 57344,
+            "Crypto.com": 6710,
+            "Kraken": 57810,
+            "Binance": 227293,
+            "MEXC": 14800,
             "Gate": 28586,
-            "Coinbase": 135629
+            "Coinbase": 5889059
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 26120283,
+            "cex": 33044461,
             "wallet": 0
           },
           "byChain": {
@@ -1418,13 +1427,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 489875,
+              "cex": 6281602,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 26120283,
+                "cex": 33044461,
                 "wallet": 0
               }
             }
@@ -1437,23 +1446,23 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6944857,
+          "cex": 7513265,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 60785,
-            "Kraken": 6290666,
-            "Binance": 40581,
-            "Gate": 68613,
-            "Coinbase": 484211
+            "Bybit": 94674,
+            "Kraken": 6299236,
+            "Binance": 466024,
+            "Gate": 82940,
+            "Coinbase": 570391
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 4466418,
+            "cex": 4737756,
             "wallet": 0
           },
           "byChain": {
@@ -1461,13 +1470,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6944857,
+              "cex": 7513265,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 4466418,
+                "cex": 4737756,
                 "wallet": 0
               }
             }
@@ -1480,25 +1489,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 18248171,
+          "cex": 33089782,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 1126063,
-            "Crypto.com": 219186,
-            "Kraken": 4753567,
-            "Binance": 878385,
-            "MEXC": 25132,
-            "Gate": 521535,
-            "Coinbase": 10724300
+            "Bybit": 1503185,
+            "Crypto.com": 244930,
+            "Kraken": 10446102,
+            "Binance": 3716463,
+            "MEXC": 28518,
+            "Gate": 605811,
+            "Coinbase": 16544771
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 17629296,
+            "cex": 75481794,
             "wallet": 0
           },
           "byChain": {
@@ -1506,13 +1515,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 18248171,
+              "cex": 33089782,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 17629296,
+                "cex": 75481794,
                 "wallet": 0
               }
             }
@@ -1525,27 +1534,27 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6920609,
+          "cex": 9724002,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 81163,
+            "Bybit": 91299,
             "Upbit": 4623449,
-            "Crypto.com": 762,
-            "Kraken": 283059,
-            "Binance": 132520,
-            "MEXC": 17423,
-            "Gate": 35000,
-            "Coinbase": 561872,
-            "KuCoin": 1185361
+            "Crypto.com": 3902,
+            "Kraken": 402823,
+            "Binance": 2479375,
+            "MEXC": 39383,
+            "Gate": 75500,
+            "Coinbase": 723857,
+            "KuCoin": 1284414
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 3761203,
+            "cex": 5088703,
             "wallet": 0
           },
           "byChain": {
@@ -1553,13 +1562,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6920609,
+              "cex": 9724002,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 3761203,
+                "cex": 5088703,
                 "wallet": 0
               }
             }
@@ -1572,25 +1581,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 5381243,
+          "cex": 8391658,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 262383,
+            "Bybit": 403200,
             "Crypto.com": 734,
-            "Kraken": 314615,
-            "Binance": 2983031,
-            "MEXC": 215180,
-            "Gate": 446578,
-            "Coinbase": 1158721
+            "Kraken": 340946,
+            "Binance": 5023695,
+            "MEXC": 447289,
+            "Gate": 448407,
+            "Coinbase": 1727386
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7058101,
+            "cex": 8176980,
             "wallet": 0
           },
           "byChain": {
@@ -1598,13 +1607,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 5381243,
+              "cex": 8391658,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7058101,
+                "cex": 8176980,
                 "wallet": 0
               }
             }
@@ -1617,23 +1626,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 26172366,
+          "cex": 78209358,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 33733,
-            "Kraken": 364437,
-            "Binance": 528040,
-            "Gate": 5394,
-            "Coinbase": 25240762
+            "Bybit": 142678,
+            "Kraken": 432618,
+            "Binance": 1800367,
+            "Gate": 6488,
+            "Coinbase": 75817573,
+            "Crypto.com": 9633
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 20114624,
+            "cex": 23880998,
             "wallet": 0
           },
           "byChain": {
@@ -1641,13 +1651,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 26172366,
+              "cex": 78209358,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 20114624,
+                "cex": 23880998,
                 "wallet": 0
               }
             }
@@ -1660,24 +1670,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 140360,
+          "cex": 172856,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 362,
-            "Kraken": 638,
-            "Binance": 1174,
-            "Gate": 17356,
+            "Bybit": 934,
+            "Kraken": 639,
+            "Binance": 1175,
+            "Gate": 18765,
             "Coinbase": 119530,
-            "MEXC": 1300
+            "MEXC": 31814
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 90850,
+            "cex": 194836,
             "wallet": 0
           },
           "byChain": {
@@ -1685,13 +1695,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 140360,
+              "cex": 172856,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 90850,
+                "cex": 194836,
                 "wallet": 0
               }
             }
@@ -1704,24 +1714,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 21671837,
+          "cex": 26815222,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Bybit": 114439,
-            "Kraken": 149,
+            "Kraken": 1909413,
             "Binance": 1456726,
             "MEXC": 620,
             "Gate": 813676,
-            "Coinbase": 19286226
+            "Coinbase": 22520346
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 43366,
+            "cex": 50106,
             "wallet": 0
           },
           "byChain": {
@@ -1729,13 +1739,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 21671837,
+              "cex": 26815222,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 43366,
+                "cex": 50106,
                 "wallet": 0
               }
             }
@@ -1748,17 +1758,19 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 0,
+          "cex": 1,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
-          "byExchange": {},
+          "byExchange": {
+            "Kraken": 1
+          },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 48101,
+            "cex": 66340,
             "wallet": 0
           },
           "byChain": {
@@ -1766,13 +1778,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 0,
+              "cex": 1,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 48101,
+                "cex": 66340,
                 "wallet": 0
               }
             }
@@ -1785,20 +1797,21 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 19385,
+          "cex": 24690,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Kraken": 1735,
-            "Coinbase": 17650
+            "Coinbase": 22727,
+            "Bybit": 227
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 157935,
+            "cex": 229589,
             "wallet": 0
           },
           "byChain": {
@@ -1806,13 +1819,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 19385,
+              "cex": 24690,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 157935,
+                "cex": 229589,
                 "wallet": 0
               }
             }
@@ -1825,21 +1838,21 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 17833,
+          "cex": 20224,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Kraken": 6449,
-            "Binance": 1112,
-            "Coinbase": 10271
+            "Binance": 1181,
+            "Coinbase": 12593
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 365197,
+            "cex": 543479,
             "wallet": 0
           },
           "byChain": {
@@ -1847,13 +1860,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 17833,
+              "cex": 20224,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 365197,
+                "cex": 543479,
                 "wallet": 0
               }
             }
@@ -1864,29 +1877,29 @@
         }
       },
       "attributedDays": 0,
-      "totalDays": 2
+      "totalDays": 3
     },
     "90": {
-      "from": "2026-08-18",
-      "to": "2026-11-15",
+      "from": "2026-08-19",
+      "to": "2026-11-16",
       "tiers": {
         "unattributed": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 9367216,
+          "cex": 9984411,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Binance": 156120,
-            "Coinbase": 6840288,
-            "Crypto.com": 372223,
-            "Bybit": 234134,
-            "Kraken": 91469,
-            "MEXC": 430415,
-            "Gate": 723179,
+            "Binance": 161168,
+            "Coinbase": 7128434,
+            "Crypto.com": 378219,
+            "Bybit": 243939,
+            "Kraken": 391091,
+            "MEXC": 438781,
+            "Gate": 723393,
             "KuCoin": 197067,
             "HTX": 322320
           },
@@ -1894,7 +1907,7 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 15242110,
+            "cex": 16867170,
             "wallet": 0
           },
           "byChain": {
@@ -1902,13 +1915,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 9367216,
+              "cex": 9984411,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 15242110,
+                "cex": 16867170,
                 "wallet": 0
               }
             }
@@ -1921,20 +1934,20 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 828126,
+          "cex": 4040623,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Bybit": 132373,
-            "Upbit": 0,
+            "Upbit": 2781896,
             "Crypto.com": 64125,
-            "Kraken": 158009,
-            "Binance": 147944,
+            "Kraken": 543510,
+            "Binance": 173044,
             "MEXC": 68839,
             "Gate": 0,
-            "Coinbase": 256836,
+            "Coinbase": 276836,
             "KuCoin": 0,
             "HTX": 0
           },
@@ -1942,7 +1955,7 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 1258505,
+            "cex": 3310113,
             "wallet": 0
           },
           "byChain": {
@@ -1950,13 +1963,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 828126,
+              "cex": 4040623,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 1258505,
+                "cex": 3310113,
                 "wallet": 0
               }
             }
@@ -1969,25 +1982,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 807631,
+          "cex": 1284529,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 242392,
-            "Crypto.com": 4232,
-            "Kraken": 97688,
-            "Binance": 37285,
-            "MEXC": 90192,
-            "Gate": 220141,
-            "Coinbase": 115702
+            "Bybit": 244533,
+            "Crypto.com": 5168,
+            "Kraken": 156575,
+            "Binance": 229052,
+            "MEXC": 126160,
+            "Gate": 220460,
+            "Coinbase": 302582
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7967785,
+            "cex": 23138302,
             "wallet": 0
           },
           "byChain": {
@@ -1995,13 +2008,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 807631,
+              "cex": 1284529,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7967785,
+                "cex": 23138302,
                 "wallet": 0
               }
             }
@@ -2014,25 +2027,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 489875,
+          "cex": 6281602,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 54419,
-            "Crypto.com": 1710,
-            "Kraken": 45035,
-            "Binance": 215696,
-            "MEXC": 8800,
+            "Bybit": 57344,
+            "Crypto.com": 6710,
+            "Kraken": 57810,
+            "Binance": 227293,
+            "MEXC": 14800,
             "Gate": 28586,
-            "Coinbase": 135629
+            "Coinbase": 5889059
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 26120283,
+            "cex": 33044461,
             "wallet": 0
           },
           "byChain": {
@@ -2040,13 +2053,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 489875,
+              "cex": 6281602,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 26120283,
+                "cex": 33044461,
                 "wallet": 0
               }
             }
@@ -2059,23 +2072,23 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6944857,
+          "cex": 7513265,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 60785,
-            "Kraken": 6290666,
-            "Binance": 40581,
-            "Gate": 68613,
-            "Coinbase": 484211
+            "Bybit": 94674,
+            "Kraken": 6299236,
+            "Binance": 466024,
+            "Gate": 82940,
+            "Coinbase": 570391
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 4466418,
+            "cex": 4737756,
             "wallet": 0
           },
           "byChain": {
@@ -2083,13 +2096,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6944857,
+              "cex": 7513265,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 4466418,
+                "cex": 4737756,
                 "wallet": 0
               }
             }
@@ -2102,25 +2115,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 18248171,
+          "cex": 33089782,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 1126063,
-            "Crypto.com": 219186,
-            "Kraken": 4753567,
-            "Binance": 878385,
-            "MEXC": 25132,
-            "Gate": 521535,
-            "Coinbase": 10724300
+            "Bybit": 1503185,
+            "Crypto.com": 244930,
+            "Kraken": 10446102,
+            "Binance": 3716463,
+            "MEXC": 28518,
+            "Gate": 605811,
+            "Coinbase": 16544771
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 17629296,
+            "cex": 75481794,
             "wallet": 0
           },
           "byChain": {
@@ -2128,13 +2141,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 18248171,
+              "cex": 33089782,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 17629296,
+                "cex": 75481794,
                 "wallet": 0
               }
             }
@@ -2147,27 +2160,27 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6920609,
+          "cex": 9724002,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 81163,
+            "Bybit": 91299,
             "Upbit": 4623449,
-            "Crypto.com": 762,
-            "Kraken": 283059,
-            "Binance": 132520,
-            "MEXC": 17423,
-            "Gate": 35000,
-            "Coinbase": 561872,
-            "KuCoin": 1185361
+            "Crypto.com": 3902,
+            "Kraken": 402823,
+            "Binance": 2479375,
+            "MEXC": 39383,
+            "Gate": 75500,
+            "Coinbase": 723857,
+            "KuCoin": 1284414
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 3761203,
+            "cex": 5088703,
             "wallet": 0
           },
           "byChain": {
@@ -2175,13 +2188,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6920609,
+              "cex": 9724002,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 3761203,
+                "cex": 5088703,
                 "wallet": 0
               }
             }
@@ -2194,25 +2207,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 5381243,
+          "cex": 8391658,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 262383,
+            "Bybit": 403200,
             "Crypto.com": 734,
-            "Kraken": 314615,
-            "Binance": 2983031,
-            "MEXC": 215180,
-            "Gate": 446578,
-            "Coinbase": 1158721
+            "Kraken": 340946,
+            "Binance": 5023695,
+            "MEXC": 447289,
+            "Gate": 448407,
+            "Coinbase": 1727386
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7058101,
+            "cex": 8176980,
             "wallet": 0
           },
           "byChain": {
@@ -2220,13 +2233,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 5381243,
+              "cex": 8391658,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7058101,
+                "cex": 8176980,
                 "wallet": 0
               }
             }
@@ -2239,23 +2252,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 26172366,
+          "cex": 78209358,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 33733,
-            "Kraken": 364437,
-            "Binance": 528040,
-            "Gate": 5394,
-            "Coinbase": 25240762
+            "Bybit": 142678,
+            "Kraken": 432618,
+            "Binance": 1800367,
+            "Gate": 6488,
+            "Coinbase": 75817573,
+            "Crypto.com": 9633
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 20114624,
+            "cex": 23880998,
             "wallet": 0
           },
           "byChain": {
@@ -2263,13 +2277,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 26172366,
+              "cex": 78209358,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 20114624,
+                "cex": 23880998,
                 "wallet": 0
               }
             }
@@ -2282,24 +2296,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 140360,
+          "cex": 172856,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 362,
-            "Kraken": 638,
-            "Binance": 1174,
-            "Gate": 17356,
+            "Bybit": 934,
+            "Kraken": 639,
+            "Binance": 1175,
+            "Gate": 18765,
             "Coinbase": 119530,
-            "MEXC": 1300
+            "MEXC": 31814
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 90850,
+            "cex": 194836,
             "wallet": 0
           },
           "byChain": {
@@ -2307,13 +2321,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 140360,
+              "cex": 172856,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 90850,
+                "cex": 194836,
                 "wallet": 0
               }
             }
@@ -2326,24 +2340,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 21671837,
+          "cex": 26815222,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Bybit": 114439,
-            "Kraken": 149,
+            "Kraken": 1909413,
             "Binance": 1456726,
             "MEXC": 620,
             "Gate": 813676,
-            "Coinbase": 19286226
+            "Coinbase": 22520346
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 43366,
+            "cex": 50106,
             "wallet": 0
           },
           "byChain": {
@@ -2351,13 +2365,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 21671837,
+              "cex": 26815222,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 43366,
+                "cex": 50106,
                 "wallet": 0
               }
             }
@@ -2370,17 +2384,19 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 0,
+          "cex": 1,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
-          "byExchange": {},
+          "byExchange": {
+            "Kraken": 1
+          },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 48101,
+            "cex": 66340,
             "wallet": 0
           },
           "byChain": {
@@ -2388,13 +2404,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 0,
+              "cex": 1,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 48101,
+                "cex": 66340,
                 "wallet": 0
               }
             }
@@ -2407,20 +2423,21 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 19385,
+          "cex": 24690,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Kraken": 1735,
-            "Coinbase": 17650
+            "Coinbase": 22727,
+            "Bybit": 227
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 157935,
+            "cex": 229589,
             "wallet": 0
           },
           "byChain": {
@@ -2428,13 +2445,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 19385,
+              "cex": 24690,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 157935,
+                "cex": 229589,
                 "wallet": 0
               }
             }
@@ -2447,21 +2464,21 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 17833,
+          "cex": 20224,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Kraken": 6449,
-            "Binance": 1112,
-            "Coinbase": 10271
+            "Binance": 1181,
+            "Coinbase": 12593
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 365197,
+            "cex": 543479,
             "wallet": 0
           },
           "byChain": {
@@ -2469,13 +2486,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 17833,
+              "cex": 20224,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 365197,
+                "cex": 543479,
                 "wallet": 0
               }
             }
@@ -2486,29 +2503,29 @@
         }
       },
       "attributedDays": 0,
-      "totalDays": 2
+      "totalDays": 3
     },
     "365": {
-      "from": "2025-11-16",
-      "to": "2026-11-15",
+      "from": "2025-11-17",
+      "to": "2026-11-16",
       "tiers": {
         "unattributed": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 9367216,
+          "cex": 9984411,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Binance": 156120,
-            "Coinbase": 6840288,
-            "Crypto.com": 372223,
-            "Bybit": 234134,
-            "Kraken": 91469,
-            "MEXC": 430415,
-            "Gate": 723179,
+            "Binance": 161168,
+            "Coinbase": 7128434,
+            "Crypto.com": 378219,
+            "Bybit": 243939,
+            "Kraken": 391091,
+            "MEXC": 438781,
+            "Gate": 723393,
             "KuCoin": 197067,
             "HTX": 322320
           },
@@ -2516,7 +2533,7 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 15242110,
+            "cex": 16867170,
             "wallet": 0
           },
           "byChain": {
@@ -2524,13 +2541,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 9367216,
+              "cex": 9984411,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 15242110,
+                "cex": 16867170,
                 "wallet": 0
               }
             }
@@ -2543,20 +2560,20 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 828126,
+          "cex": 4040623,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Bybit": 132373,
-            "Upbit": 0,
+            "Upbit": 2781896,
             "Crypto.com": 64125,
-            "Kraken": 158009,
-            "Binance": 147944,
+            "Kraken": 543510,
+            "Binance": 173044,
             "MEXC": 68839,
             "Gate": 0,
-            "Coinbase": 256836,
+            "Coinbase": 276836,
             "KuCoin": 0,
             "HTX": 0
           },
@@ -2564,7 +2581,7 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 1258505,
+            "cex": 3310113,
             "wallet": 0
           },
           "byChain": {
@@ -2572,13 +2589,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 828126,
+              "cex": 4040623,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 1258505,
+                "cex": 3310113,
                 "wallet": 0
               }
             }
@@ -2591,25 +2608,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 807631,
+          "cex": 1284529,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 242392,
-            "Crypto.com": 4232,
-            "Kraken": 97688,
-            "Binance": 37285,
-            "MEXC": 90192,
-            "Gate": 220141,
-            "Coinbase": 115702
+            "Bybit": 244533,
+            "Crypto.com": 5168,
+            "Kraken": 156575,
+            "Binance": 229052,
+            "MEXC": 126160,
+            "Gate": 220460,
+            "Coinbase": 302582
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7967785,
+            "cex": 23138302,
             "wallet": 0
           },
           "byChain": {
@@ -2617,13 +2634,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 807631,
+              "cex": 1284529,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7967785,
+                "cex": 23138302,
                 "wallet": 0
               }
             }
@@ -2636,25 +2653,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 489875,
+          "cex": 6281602,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 54419,
-            "Crypto.com": 1710,
-            "Kraken": 45035,
-            "Binance": 215696,
-            "MEXC": 8800,
+            "Bybit": 57344,
+            "Crypto.com": 6710,
+            "Kraken": 57810,
+            "Binance": 227293,
+            "MEXC": 14800,
             "Gate": 28586,
-            "Coinbase": 135629
+            "Coinbase": 5889059
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 26120283,
+            "cex": 33044461,
             "wallet": 0
           },
           "byChain": {
@@ -2662,13 +2679,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 489875,
+              "cex": 6281602,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 26120283,
+                "cex": 33044461,
                 "wallet": 0
               }
             }
@@ -2681,23 +2698,23 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6944857,
+          "cex": 7513265,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 60785,
-            "Kraken": 6290666,
-            "Binance": 40581,
-            "Gate": 68613,
-            "Coinbase": 484211
+            "Bybit": 94674,
+            "Kraken": 6299236,
+            "Binance": 466024,
+            "Gate": 82940,
+            "Coinbase": 570391
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 4466418,
+            "cex": 4737756,
             "wallet": 0
           },
           "byChain": {
@@ -2705,13 +2722,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6944857,
+              "cex": 7513265,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 4466418,
+                "cex": 4737756,
                 "wallet": 0
               }
             }
@@ -2724,25 +2741,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 18248171,
+          "cex": 33089782,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 1126063,
-            "Crypto.com": 219186,
-            "Kraken": 4753567,
-            "Binance": 878385,
-            "MEXC": 25132,
-            "Gate": 521535,
-            "Coinbase": 10724300
+            "Bybit": 1503185,
+            "Crypto.com": 244930,
+            "Kraken": 10446102,
+            "Binance": 3716463,
+            "MEXC": 28518,
+            "Gate": 605811,
+            "Coinbase": 16544771
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 17629296,
+            "cex": 75481794,
             "wallet": 0
           },
           "byChain": {
@@ -2750,13 +2767,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 18248171,
+              "cex": 33089782,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 17629296,
+                "cex": 75481794,
                 "wallet": 0
               }
             }
@@ -2769,27 +2786,27 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6920609,
+          "cex": 9724002,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 81163,
+            "Bybit": 91299,
             "Upbit": 4623449,
-            "Crypto.com": 762,
-            "Kraken": 283059,
-            "Binance": 132520,
-            "MEXC": 17423,
-            "Gate": 35000,
-            "Coinbase": 561872,
-            "KuCoin": 1185361
+            "Crypto.com": 3902,
+            "Kraken": 402823,
+            "Binance": 2479375,
+            "MEXC": 39383,
+            "Gate": 75500,
+            "Coinbase": 723857,
+            "KuCoin": 1284414
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 3761203,
+            "cex": 5088703,
             "wallet": 0
           },
           "byChain": {
@@ -2797,13 +2814,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6920609,
+              "cex": 9724002,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 3761203,
+                "cex": 5088703,
                 "wallet": 0
               }
             }
@@ -2816,25 +2833,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 5381243,
+          "cex": 8391658,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 262383,
+            "Bybit": 403200,
             "Crypto.com": 734,
-            "Kraken": 314615,
-            "Binance": 2983031,
-            "MEXC": 215180,
-            "Gate": 446578,
-            "Coinbase": 1158721
+            "Kraken": 340946,
+            "Binance": 5023695,
+            "MEXC": 447289,
+            "Gate": 448407,
+            "Coinbase": 1727386
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7058101,
+            "cex": 8176980,
             "wallet": 0
           },
           "byChain": {
@@ -2842,13 +2859,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 5381243,
+              "cex": 8391658,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7058101,
+                "cex": 8176980,
                 "wallet": 0
               }
             }
@@ -2861,23 +2878,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 26172366,
+          "cex": 78209358,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 33733,
-            "Kraken": 364437,
-            "Binance": 528040,
-            "Gate": 5394,
-            "Coinbase": 25240762
+            "Bybit": 142678,
+            "Kraken": 432618,
+            "Binance": 1800367,
+            "Gate": 6488,
+            "Coinbase": 75817573,
+            "Crypto.com": 9633
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 20114624,
+            "cex": 23880998,
             "wallet": 0
           },
           "byChain": {
@@ -2885,13 +2903,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 26172366,
+              "cex": 78209358,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 20114624,
+                "cex": 23880998,
                 "wallet": 0
               }
             }
@@ -2904,24 +2922,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 140360,
+          "cex": 172856,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 362,
-            "Kraken": 638,
-            "Binance": 1174,
-            "Gate": 17356,
+            "Bybit": 934,
+            "Kraken": 639,
+            "Binance": 1175,
+            "Gate": 18765,
             "Coinbase": 119530,
-            "MEXC": 1300
+            "MEXC": 31814
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 90850,
+            "cex": 194836,
             "wallet": 0
           },
           "byChain": {
@@ -2929,13 +2947,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 140360,
+              "cex": 172856,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 90850,
+                "cex": 194836,
                 "wallet": 0
               }
             }
@@ -2948,24 +2966,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 21671837,
+          "cex": 26815222,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Bybit": 114439,
-            "Kraken": 149,
+            "Kraken": 1909413,
             "Binance": 1456726,
             "MEXC": 620,
             "Gate": 813676,
-            "Coinbase": 19286226
+            "Coinbase": 22520346
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 43366,
+            "cex": 50106,
             "wallet": 0
           },
           "byChain": {
@@ -2973,13 +2991,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 21671837,
+              "cex": 26815222,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 43366,
+                "cex": 50106,
                 "wallet": 0
               }
             }
@@ -2992,17 +3010,19 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 0,
+          "cex": 1,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
-          "byExchange": {},
+          "byExchange": {
+            "Kraken": 1
+          },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 48101,
+            "cex": 66340,
             "wallet": 0
           },
           "byChain": {
@@ -3010,13 +3030,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 0,
+              "cex": 1,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 48101,
+                "cex": 66340,
                 "wallet": 0
               }
             }
@@ -3029,20 +3049,21 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 19385,
+          "cex": 24690,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Kraken": 1735,
-            "Coinbase": 17650
+            "Coinbase": 22727,
+            "Bybit": 227
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 157935,
+            "cex": 229589,
             "wallet": 0
           },
           "byChain": {
@@ -3050,13 +3071,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 19385,
+              "cex": 24690,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 157935,
+                "cex": 229589,
                 "wallet": 0
               }
             }
@@ -3069,21 +3090,21 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 17833,
+          "cex": 20224,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Kraken": 6449,
-            "Binance": 1112,
-            "Coinbase": 10271
+            "Binance": 1181,
+            "Coinbase": 12593
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 365197,
+            "cex": 543479,
             "wallet": 0
           },
           "byChain": {
@@ -3091,13 +3112,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 17833,
+              "cex": 20224,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 365197,
+                "cex": 543479,
                 "wallet": 0
               }
             }
@@ -3108,29 +3129,29 @@
         }
       },
       "attributedDays": 0,
-      "totalDays": 2
+      "totalDays": 3
     },
     "ytd": {
       "from": "2026-01-01",
-      "to": "2026-11-15",
+      "to": "2026-11-16",
       "tiers": {
         "unattributed": {
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 9367216,
+          "cex": 9984411,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Binance": 156120,
-            "Coinbase": 6840288,
-            "Crypto.com": 372223,
-            "Bybit": 234134,
-            "Kraken": 91469,
-            "MEXC": 430415,
-            "Gate": 723179,
+            "Binance": 161168,
+            "Coinbase": 7128434,
+            "Crypto.com": 378219,
+            "Bybit": 243939,
+            "Kraken": 391091,
+            "MEXC": 438781,
+            "Gate": 723393,
             "KuCoin": 197067,
             "HTX": 322320
           },
@@ -3138,7 +3159,7 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 15242110,
+            "cex": 16867170,
             "wallet": 0
           },
           "byChain": {
@@ -3146,13 +3167,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 9367216,
+              "cex": 9984411,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 15242110,
+                "cex": 16867170,
                 "wallet": 0
               }
             }
@@ -3165,20 +3186,20 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 828126,
+          "cex": 4040623,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Bybit": 132373,
-            "Upbit": 0,
+            "Upbit": 2781896,
             "Crypto.com": 64125,
-            "Kraken": 158009,
-            "Binance": 147944,
+            "Kraken": 543510,
+            "Binance": 173044,
             "MEXC": 68839,
             "Gate": 0,
-            "Coinbase": 256836,
+            "Coinbase": 276836,
             "KuCoin": 0,
             "HTX": 0
           },
@@ -3186,7 +3207,7 @@
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 1258505,
+            "cex": 3310113,
             "wallet": 0
           },
           "byChain": {
@@ -3194,13 +3215,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 828126,
+              "cex": 4040623,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 1258505,
+                "cex": 3310113,
                 "wallet": 0
               }
             }
@@ -3213,25 +3234,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 807631,
+          "cex": 1284529,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 242392,
-            "Crypto.com": 4232,
-            "Kraken": 97688,
-            "Binance": 37285,
-            "MEXC": 90192,
-            "Gate": 220141,
-            "Coinbase": 115702
+            "Bybit": 244533,
+            "Crypto.com": 5168,
+            "Kraken": 156575,
+            "Binance": 229052,
+            "MEXC": 126160,
+            "Gate": 220460,
+            "Coinbase": 302582
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7967785,
+            "cex": 23138302,
             "wallet": 0
           },
           "byChain": {
@@ -3239,13 +3260,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 807631,
+              "cex": 1284529,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7967785,
+                "cex": 23138302,
                 "wallet": 0
               }
             }
@@ -3258,25 +3279,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 489875,
+          "cex": 6281602,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 54419,
-            "Crypto.com": 1710,
-            "Kraken": 45035,
-            "Binance": 215696,
-            "MEXC": 8800,
+            "Bybit": 57344,
+            "Crypto.com": 6710,
+            "Kraken": 57810,
+            "Binance": 227293,
+            "MEXC": 14800,
             "Gate": 28586,
-            "Coinbase": 135629
+            "Coinbase": 5889059
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 26120283,
+            "cex": 33044461,
             "wallet": 0
           },
           "byChain": {
@@ -3284,13 +3305,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 489875,
+              "cex": 6281602,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 26120283,
+                "cex": 33044461,
                 "wallet": 0
               }
             }
@@ -3303,23 +3324,23 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6944857,
+          "cex": 7513265,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 60785,
-            "Kraken": 6290666,
-            "Binance": 40581,
-            "Gate": 68613,
-            "Coinbase": 484211
+            "Bybit": 94674,
+            "Kraken": 6299236,
+            "Binance": 466024,
+            "Gate": 82940,
+            "Coinbase": 570391
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 4466418,
+            "cex": 4737756,
             "wallet": 0
           },
           "byChain": {
@@ -3327,13 +3348,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6944857,
+              "cex": 7513265,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 4466418,
+                "cex": 4737756,
                 "wallet": 0
               }
             }
@@ -3346,25 +3367,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 18248171,
+          "cex": 33089782,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 1126063,
-            "Crypto.com": 219186,
-            "Kraken": 4753567,
-            "Binance": 878385,
-            "MEXC": 25132,
-            "Gate": 521535,
-            "Coinbase": 10724300
+            "Bybit": 1503185,
+            "Crypto.com": 244930,
+            "Kraken": 10446102,
+            "Binance": 3716463,
+            "MEXC": 28518,
+            "Gate": 605811,
+            "Coinbase": 16544771
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 17629296,
+            "cex": 75481794,
             "wallet": 0
           },
           "byChain": {
@@ -3372,13 +3393,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 18248171,
+              "cex": 33089782,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 17629296,
+                "cex": 75481794,
                 "wallet": 0
               }
             }
@@ -3391,27 +3412,27 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 6920609,
+          "cex": 9724002,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 81163,
+            "Bybit": 91299,
             "Upbit": 4623449,
-            "Crypto.com": 762,
-            "Kraken": 283059,
-            "Binance": 132520,
-            "MEXC": 17423,
-            "Gate": 35000,
-            "Coinbase": 561872,
-            "KuCoin": 1185361
+            "Crypto.com": 3902,
+            "Kraken": 402823,
+            "Binance": 2479375,
+            "MEXC": 39383,
+            "Gate": 75500,
+            "Coinbase": 723857,
+            "KuCoin": 1284414
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 3761203,
+            "cex": 5088703,
             "wallet": 0
           },
           "byChain": {
@@ -3419,13 +3440,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 6920609,
+              "cex": 9724002,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 3761203,
+                "cex": 5088703,
                 "wallet": 0
               }
             }
@@ -3438,25 +3459,25 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 5381243,
+          "cex": 8391658,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 262383,
+            "Bybit": 403200,
             "Crypto.com": 734,
-            "Kraken": 314615,
-            "Binance": 2983031,
-            "MEXC": 215180,
-            "Gate": 446578,
-            "Coinbase": 1158721
+            "Kraken": 340946,
+            "Binance": 5023695,
+            "MEXC": 447289,
+            "Gate": 448407,
+            "Coinbase": 1727386
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 7058101,
+            "cex": 8176980,
             "wallet": 0
           },
           "byChain": {
@@ -3464,13 +3485,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 5381243,
+              "cex": 8391658,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 7058101,
+                "cex": 8176980,
                 "wallet": 0
               }
             }
@@ -3483,23 +3504,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 26172366,
+          "cex": 78209358,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 33733,
-            "Kraken": 364437,
-            "Binance": 528040,
-            "Gate": 5394,
-            "Coinbase": 25240762
+            "Bybit": 142678,
+            "Kraken": 432618,
+            "Binance": 1800367,
+            "Gate": 6488,
+            "Coinbase": 75817573,
+            "Crypto.com": 9633
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 20114624,
+            "cex": 23880998,
             "wallet": 0
           },
           "byChain": {
@@ -3507,13 +3529,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 26172366,
+              "cex": 78209358,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 20114624,
+                "cex": 23880998,
                 "wallet": 0
               }
             }
@@ -3526,24 +3548,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 140360,
+          "cex": 172856,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
-            "Bybit": 362,
-            "Kraken": 638,
-            "Binance": 1174,
-            "Gate": 17356,
+            "Bybit": 934,
+            "Kraken": 639,
+            "Binance": 1175,
+            "Gate": 18765,
             "Coinbase": 119530,
-            "MEXC": 1300
+            "MEXC": 31814
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 90850,
+            "cex": 194836,
             "wallet": 0
           },
           "byChain": {
@@ -3551,13 +3573,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 140360,
+              "cex": 172856,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 90850,
+                "cex": 194836,
                 "wallet": 0
               }
             }
@@ -3570,24 +3592,24 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 21671837,
+          "cex": 26815222,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Bybit": 114439,
-            "Kraken": 149,
+            "Kraken": 1909413,
             "Binance": 1456726,
             "MEXC": 620,
             "Gate": 813676,
-            "Coinbase": 19286226
+            "Coinbase": 22520346
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 43366,
+            "cex": 50106,
             "wallet": 0
           },
           "byChain": {
@@ -3595,13 +3617,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 21671837,
+              "cex": 26815222,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 43366,
+                "cex": 50106,
                 "wallet": 0
               }
             }
@@ -3614,17 +3636,19 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 0,
+          "cex": 1,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
-          "byExchange": {},
+          "byExchange": {
+            "Kraken": 1
+          },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 48101,
+            "cex": 66340,
             "wallet": 0
           },
           "byChain": {
@@ -3632,13 +3656,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 0,
+              "cex": 1,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 48101,
+                "cex": 66340,
                 "wallet": 0
               }
             }
@@ -3651,20 +3675,21 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 19385,
+          "cex": 24690,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Kraken": 1735,
-            "Coinbase": 17650
+            "Coinbase": 22727,
+            "Bybit": 227
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 157935,
+            "cex": 229589,
             "wallet": 0
           },
           "byChain": {
@@ -3672,13 +3697,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 19385,
+              "cex": 24690,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 157935,
+                "cex": 229589,
                 "wallet": 0
               }
             }
@@ -3691,21 +3716,21 @@
           "dex": 0,
           "dexSwap": 0,
           "dexLp": 0,
-          "cex": 17833,
+          "cex": 20224,
           "moved": 0,
           "splitWallets": 0,
           "splitEvents": 0,
           "splitTel": 0,
           "byExchange": {
             "Kraken": 6449,
-            "Binance": 1112,
-            "Coinbase": 10271
+            "Binance": 1181,
+            "Coinbase": 12593
           },
           "inflows": {
             "dex": 0,
             "dexSwap": 0,
             "dexLp": 0,
-            "cex": 365197,
+            "cex": 543479,
             "wallet": 0
           },
           "byChain": {
@@ -3713,13 +3738,13 @@
               "dex": 0,
               "dexSwap": 0,
               "dexLp": 0,
-              "cex": 17833,
+              "cex": 20224,
               "moved": 0,
               "inflows": {
                 "dex": 0,
                 "dexSwap": 0,
                 "dexLp": 0,
-                "cex": 365197,
+                "cex": 543479,
                 "wallet": 0
               }
             }
@@ -3730,7 +3755,7 @@
         }
       },
       "attributedDays": 0,
-      "totalDays": 2
+      "totalDays": 3
     }
   }
 }
