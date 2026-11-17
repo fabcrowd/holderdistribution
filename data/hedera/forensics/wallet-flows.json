@@ -1,17 +1,17 @@
 {
  "version": 1,
- "generated": "2026-11-16T23:21:34.979Z",
+ "generated": "2026-11-17T22:13:38.785Z",
  "generator": "scripts/generate-wallet-flows-hedera.js",
  "project": "hedera",
- "priceUsd": 0.057469,
+ "priceUsd": 0.056938,
  "priceSource": "CoinGecko simple/price (hedera-hashgraph)",
  "chains": [
   "hedera"
  ],
  "asOf": {
-  "date": "2026-11-15",
-  "through": "1794787200.128222214",
-  "anchor": "2026-11-16T00:00:00.000Z",
+  "date": "2026-11-16",
+  "through": "1794873598.006445470",
+  "anchor": "2026-11-16T23:59:58.000Z",
   "settled": true
  },
  "notes": [
@@ -19,7 +19,7 @@
   "Reaching a sell venue is not proof of a market sale: it can be market making, OTC settlement or treasury operations.",
   "Labels marked medium/low confidence come from this repo's own forensics, not from Hedera.",
   "USD values use the price above and are rough.",
-  "Hedera outflows are first-hop HBAR transfers sent by the project-controlled treasury accounts, classified by recipient (exchange list, DEX/wrapped HBAR, another treasury account, or unlabelled). Windows end at the settled day end 2026-11-16T00:00:00.000Z.",
+  "Hedera outflows are first-hop HBAR transfers sent by the project-controlled treasury accounts, classified by recipient (exchange list, DEX/wrapped HBAR, another treasury account, or unlabelled). Windows end at the settled day end 2026-11-16T23:59:58.000Z.",
   "Treasury accounts that are not traced (they stay treasury for supply): 0.0.54 (Network administration account (about 100 HBAR): an estimated 5.6 million file-update records with no HBAR movement in 90 days (about 56,000 mirror pages, over the 20,000-page limit for one account), so it is not traced. Owner decision pending.) 0.0.98 (Network system account: its payouts are protocol rewards or fees, not project disbursements, so they are not traced.) 0.0.800 (Network system account: its payouts are protocol rewards or fees, not project disbursements, so they are not traced.) 0.0.801 (Network system account: its payouts are protocol rewards or fees, not project disbursements, so they are not traced.)",
   "Onward hops from unlabelled recipients are not traced for Hedera. Wrapped HBAR (WHBAR) is counted as DEX with no look-through to its holders.",
   "Fees are not flows, staking-reward legs are removed, and a failed transaction moves nothing but its fee. In a transaction with several senders and recipients, transfers are paired largest to largest.",
@@ -55,8 +55,8 @@
     "key": "treasury",
     "label": "Treasury",
     "group": "telcoin",
-    "tel": 5800974317,
-    "share": 0.11601948634759046
+    "tel": 5800736326,
+    "share": 0.11601472652990472
    },
    {
     "key": "association",
@@ -90,15 +90,15 @@
     "key": "cex",
     "label": "Centralised exchanges",
     "group": "market",
-    "tel": 5553110467,
-    "share": 0.11106220935073303
+    "tel": 5551166325,
+    "share": 0.11102332649370313
    },
    {
     "key": "dex",
     "label": "DEX pools",
     "group": "market",
-    "tel": 219765260,
-    "share": 0.004395305190597562
+    "tel": 220109907,
+    "share": 0.004402198144745365
    },
    {
     "key": "bots",
@@ -118,8 +118,8 @@
     "key": "retail",
     "label": "Retail & unlabelled holders",
     "group": "retail",
-    "tel": 38426149955,
-    "share": 0.768522999111079
+    "tel": 38427987441,
+    "share": 0.7685597488316468
    }
   ],
   "movedFromRetail": [],
@@ -127,29 +127,27 @@
  },
  "telcoinTotals": {
   "24h": {
-   "total": 35852,
-   "usd": 2060,
-   "byVenue": {
-    "CEX": 35852
-   }
+   "total": 0,
+   "usd": 0,
+   "byVenue": {}
   },
   "72h": {
    "total": 35852,
-   "usd": 2060,
+   "usd": 2041,
    "byVenue": {
     "CEX": 35852
    }
   },
   "30d": {
    "total": 150035856,
-   "usd": 8622411,
+   "usd": 8542742,
    "byVenue": {
     "CEX": 150035856
    }
   },
   "90d": {
    "total": 152726327,
-   "usd": 8777029,
+   "usd": 8695932,
    "byVenue": {
     "CEX": 152726327
    }
@@ -170,7 +168,7 @@
    "balanceDetail": {
     "hedera": 3563356
    },
-   "balanceUsd": 204783,
+   "balanceUsd": 202890,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -189,7 +187,7 @@
     "30d": 150000000,
     "90d": 150000000
    },
-   "sellVenueUsd90d": 8620350,
+   "sellVenueUsd90d": 8540700,
    "sampleTxs": [
     "https://hashscan.io/mainnet/transaction/1792778705.753586242"
    ],
@@ -225,7 +223,7 @@
     "30d": 0,
     "90d": 2600842
    },
-   "sellVenueUsd90d": 149468,
+   "sellVenueUsd90d": 148087,
    "sampleTxs": [
     "https://hashscan.io/mainnet/transaction/1790786105.373495008",
     "https://hashscan.io/mainnet/transaction/1790786105.489734732",
@@ -250,10 +248,7 @@
    },
    "balanceUsd": 57,
    "outflows": {
-    "24h": {
-     "unlabelled": 448145,
-     "CEX": 35852
-    },
+    "24h": {},
     "72h": {
      "unlabelled": 448145,
      "CEX": 35852
@@ -268,12 +263,12 @@
     }
    },
    "sellVenue": {
-    "24h": 35852,
+    "24h": 0,
     "72h": 35852,
     "30d": 35852,
     "90d": 125481
    },
-   "sellVenueUsd90d": 7211,
+   "sellVenueUsd90d": 7145,
    "sampleTxs": [
     "https://hashscan.io/mainnet/transaction/1792083605.428414216",
     "https://hashscan.io/mainnet/transaction/1794762005.763914104"
@@ -334,7 +329,7 @@
    "balanceDetail": {
     "hedera": 378275343
    },
-   "balanceUsd": 21739106,
+   "balanceUsd": 21538241,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -365,7 +360,7 @@
    "balanceDetail": {
     "hedera": 354611852
    },
-   "balanceUsd": 20379189,
+   "balanceUsd": 20190890,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -398,7 +393,7 @@
    "balanceDetail": {
     "hedera": 336643634
    },
-   "balanceUsd": 19346573,
+   "balanceUsd": 19167815,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -429,7 +424,7 @@
    "balanceDetail": {
     "hedera": 319937600
    },
-   "balanceUsd": 18386494,
+   "balanceUsd": 18216607,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -464,7 +459,7 @@
    "balanceDetail": {
     "hedera": 319639654
    },
-   "balanceUsd": 18369371,
+   "balanceUsd": 18199643,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -497,7 +492,7 @@
    "balanceDetail": {
     "hedera": 300317355
    },
-   "balanceUsd": 17258938,
+   "balanceUsd": 17099470,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -528,7 +523,7 @@
    "balanceDetail": {
     "hedera": 289453932
    },
-   "balanceUsd": 16634628,
+   "balanceUsd": 16480928,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -559,7 +554,7 @@
    "balanceDetail": {
     "hedera": 262000000
    },
-   "balanceUsd": 15056878,
+   "balanceUsd": 14917756,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -590,7 +585,7 @@
    "balanceDetail": {
     "hedera": 258664386
    },
-   "balanceUsd": 14865184,
+   "balanceUsd": 14727833,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -621,7 +616,7 @@
    "balanceDetail": {
     "hedera": 257529590
    },
-   "balanceUsd": 14799968,
+   "balanceUsd": 14663220,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -652,7 +647,7 @@
    "balanceDetail": {
     "hedera": 250000238
    },
-   "balanceUsd": 14367264,
+   "balanceUsd": 14234514,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -683,7 +678,7 @@
    "balanceDetail": {
     "hedera": 249040843
    },
-   "balanceUsd": 14312128,
+   "balanceUsd": 14179888,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -718,7 +713,7 @@
    "balanceDetail": {
     "hedera": 237236787
    },
-   "balanceUsd": 13633761,
+   "balanceUsd": 13507788,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -749,7 +744,7 @@
    "balanceDetail": {
     "hedera": 224116366
    },
-   "balanceUsd": 12879743,
+   "balanceUsd": 12760738,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -780,7 +775,7 @@
    "balanceDetail": {
     "hedera": 196489687
    },
-   "balanceUsd": 11292066,
+   "balanceUsd": 11187730,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -815,7 +810,7 @@
    "balanceDetail": {
     "hedera": 133165643
    },
-   "balanceUsd": 7652896,
+   "balanceUsd": 7582185,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -846,7 +841,7 @@
    "balanceDetail": {
     "hedera": 113380643
    },
-   "balanceUsd": 6515872,
+   "balanceUsd": 6455667,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -877,7 +872,7 @@
    "balanceDetail": {
     "hedera": 101029994
    },
-   "balanceUsd": 5806093,
+   "balanceUsd": 5752446,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -912,7 +907,7 @@
    "balanceDetail": {
     "hedera": 94637927
    },
-   "balanceUsd": 5438747,
+   "balanceUsd": 5388494,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -947,7 +942,7 @@
    "balanceDetail": {
     "hedera": 82119199
    },
-   "balanceUsd": 4719308,
+   "balanceUsd": 4675703,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -980,7 +975,7 @@
    "balanceDetail": {
     "hedera": 77218899
    },
-   "balanceUsd": 4437693,
+   "balanceUsd": 4396690,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1011,7 +1006,7 @@
    "balanceDetail": {
     "hedera": 73259819
    },
-   "balanceUsd": 4210169,
+   "balanceUsd": 4171268,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1044,7 +1039,7 @@
    "balanceDetail": {
     "hedera": 65718723
    },
-   "balanceUsd": 3776789,
+   "balanceUsd": 3741893,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1075,7 +1070,7 @@
    "balanceDetail": {
     "hedera": 63169255
    },
-   "balanceUsd": 3630274,
+   "balanceUsd": 3596731,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1110,7 +1105,7 @@
    "balanceDetail": {
     "hedera": 63147260
    },
-   "balanceUsd": 3629010,
+   "balanceUsd": 3595479,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1145,7 +1140,7 @@
    "balanceDetail": {
     "hedera": 62031303
    },
-   "balanceUsd": 3564877,
+   "balanceUsd": 3531938,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1176,7 +1171,7 @@
    "balanceDetail": {
     "hedera": 56747494
    },
-   "balanceUsd": 3261222,
+   "balanceUsd": 3231089,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1207,7 +1202,7 @@
    "balanceDetail": {
     "hedera": 50000019
    },
-   "balanceUsd": 2873451,
+   "balanceUsd": 2846901,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1240,7 +1235,7 @@
    "balanceDetail": {
     "hedera": 45000005
    },
-   "balanceUsd": 2586105,
+   "balanceUsd": 2562210,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1271,7 +1266,7 @@
    "balanceDetail": {
     "hedera": 44591947
    },
-   "balanceUsd": 2562655,
+   "balanceUsd": 2538976,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1302,7 +1297,7 @@
    "balanceDetail": {
     "hedera": 44200038
    },
-   "balanceUsd": 2540132,
+   "balanceUsd": 2516662,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1333,7 +1328,7 @@
    "balanceDetail": {
     "hedera": 38747501
    },
-   "balanceUsd": 2226780,
+   "balanceUsd": 2206205,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1364,7 +1359,7 @@
    "balanceDetail": {
     "hedera": 32304030
    },
-   "balanceUsd": 1856480,
+   "balanceUsd": 1839327,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1399,7 +1394,7 @@
    "balanceDetail": {
     "hedera": 25655341
    },
-   "balanceUsd": 1474387,
+   "balanceUsd": 1460764,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1430,7 +1425,7 @@
    "balanceDetail": {
     "hedera": 24402475
    },
-   "balanceUsd": 1402386,
+   "balanceUsd": 1389428,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1461,7 +1456,7 @@
    "balanceDetail": {
     "hedera": 23747558
    },
-   "balanceUsd": 1364748,
+   "balanceUsd": 1352138,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1492,7 +1487,7 @@
    "balanceDetail": {
     "hedera": 21395230
    },
-   "balanceUsd": 1229562,
+   "balanceUsd": 1218202,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1523,7 +1518,7 @@
    "balanceDetail": {
     "hedera": 16630126
    },
-   "balanceUsd": 955717,
+   "balanceUsd": 946886,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1554,7 +1549,7 @@
    "balanceDetail": {
     "hedera": 15559134
    },
-   "balanceUsd": 894168,
+   "balanceUsd": 885906,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1585,7 +1580,7 @@
    "balanceDetail": {
     "hedera": 14000023
    },
-   "balanceUsd": 804567,
+   "balanceUsd": 797133,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1616,7 +1611,7 @@
    "balanceDetail": {
     "hedera": 9000029
    },
-   "balanceUsd": 517223,
+   "balanceUsd": 512444,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1647,7 +1642,7 @@
    "balanceDetail": {
     "hedera": 8747501
    },
-   "balanceUsd": 502710,
+   "balanceUsd": 498065,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1678,11 +1673,9 @@
    "balanceDetail": {
     "hedera": 5433567
    },
-   "balanceUsd": 312262,
+   "balanceUsd": 309376,
    "outflows": {
-    "24h": {
-     "internal": 483997
-    },
+    "24h": {},
     "72h": {
      "internal": 483997
     },
@@ -1717,7 +1710,7 @@
    "balanceDetail": {
     "hedera": 5000019
    },
-   "balanceUsd": 287346,
+   "balanceUsd": 284691,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1748,7 +1741,7 @@
    "balanceDetail": {
     "hedera": 5000000
    },
-   "balanceUsd": 287345,
+   "balanceUsd": 284690,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1779,7 +1772,7 @@
    "balanceDetail": {
     "hedera": 3747499
    },
-   "balanceUsd": 215365,
+   "balanceUsd": 213375,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1810,7 +1803,7 @@
    "balanceDetail": {
     "hedera": 3517889
    },
-   "balanceUsd": 202170,
+   "balanceUsd": 200302,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1841,7 +1834,7 @@
    "balanceDetail": {
     "hedera": 2705384
    },
-   "balanceUsd": 155476,
+   "balanceUsd": 154039,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1872,7 +1865,7 @@
    "balanceDetail": {
     "hedera": 2000031
    },
-   "balanceUsd": 114940,
+   "balanceUsd": 113878,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1903,7 +1896,7 @@
    "balanceDetail": {
     "hedera": 1370118
    },
-   "balanceUsd": 78739,
+   "balanceUsd": 78012,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1934,7 +1927,7 @@
    "balanceDetail": {
     "hedera": 1000025
    },
-   "balanceUsd": 57470,
+   "balanceUsd": 56939,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1965,7 +1958,7 @@
    "balanceDetail": {
     "hedera": 1000025
    },
-   "balanceUsd": 57470,
+   "balanceUsd": 56939,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1996,7 +1989,7 @@
    "balanceDetail": {
     "hedera": 1000025
    },
-   "balanceUsd": 57470,
+   "balanceUsd": 56939,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2027,7 +2020,7 @@
    "balanceDetail": {
     "hedera": 843528
    },
-   "balanceUsd": 48477,
+   "balanceUsd": 48029,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2058,7 +2051,7 @@
    "balanceDetail": {
     "hedera": 747497
    },
-   "balanceUsd": 42958,
+   "balanceUsd": 42561,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2089,7 +2082,7 @@
    "balanceDetail": {
     "hedera": 747497
    },
-   "balanceUsd": 42958,
+   "balanceUsd": 42561,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2120,7 +2113,7 @@
    "balanceDetail": {
     "hedera": 401399
    },
-   "balanceUsd": 23068,
+   "balanceUsd": 22855,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2151,7 +2144,7 @@
    "balanceDetail": {
     "hedera": 385431
    },
-   "balanceUsd": 22150,
+   "balanceUsd": 21946,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2182,7 +2175,7 @@
    "balanceDetail": {
     "hedera": 115505
    },
-   "balanceUsd": 6638,
+   "balanceUsd": 6577,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2213,7 +2206,7 @@
    "balanceDetail": {
     "hedera": 77920
    },
-   "balanceUsd": 4478,
+   "balanceUsd": 4437,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2244,7 +2237,7 @@
    "balanceDetail": {
     "hedera": 54471
    },
-   "balanceUsd": 3130,
+   "balanceUsd": 3101,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2275,7 +2268,7 @@
    "balanceDetail": {
     "hedera": 28053
    },
-   "balanceUsd": 1612,
+   "balanceUsd": 1597,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2302,11 +2295,11 @@
    "chains": [
     "hedera"
    ],
-   "balance": 19476,
+   "balance": 20670,
    "balanceDetail": {
-    "hedera": 19476
+    "hedera": 20670
    },
-   "balanceUsd": 1119,
+   "balanceUsd": 1177,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2341,7 +2334,7 @@
    "balanceDetail": {
     "hedera": 9988
    },
-   "balanceUsd": 574,
+   "balanceUsd": 569,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2372,7 +2365,7 @@
    "balanceDetail": {
     "hedera": 7264
    },
-   "balanceUsd": 417,
+   "balanceUsd": 414,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2403,7 +2396,7 @@
    "balanceDetail": {
     "hedera": 5097
    },
-   "balanceUsd": 293,
+   "balanceUsd": 290,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2434,7 +2427,7 @@
    "balanceDetail": {
     "hedera": 5094
    },
-   "balanceUsd": 293,
+   "balanceUsd": 290,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2465,7 +2458,7 @@
    "balanceDetail": {
     "hedera": 4352
    },
-   "balanceUsd": 250,
+   "balanceUsd": 248,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2496,7 +2489,7 @@
    "balanceDetail": {
     "hedera": 3614
    },
-   "balanceUsd": 208,
+   "balanceUsd": 206,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2527,7 +2520,7 @@
    "balanceDetail": {
     "hedera": 2502
    },
-   "balanceUsd": 144,
+   "balanceUsd": 142,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2558,7 +2551,7 @@
    "balanceDetail": {
     "hedera": 2255
    },
-   "balanceUsd": 130,
+   "balanceUsd": 128,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2740,11 +2733,11 @@
    "chains": [
     "hedera"
    ],
-   "balance": 828,
+   "balance": 826,
    "balanceDetail": {
-    "hedera": 828
+    "hedera": 826
    },
-   "balanceUsd": 48,
+   "balanceUsd": 47,
    "outflows": {
     "24h": {
      "unlabelled": 1
@@ -2753,7 +2746,7 @@
      "unlabelled": 4
     },
     "30d": {
-     "unlabelled": 34
+     "unlabelled": 35
     },
     "90d": {
      "unlabelled": 91
@@ -2938,7 +2931,7 @@
    "balanceDetail": {
     "hedera": 500
    },
-   "balanceUsd": 29,
+   "balanceUsd": 28,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -3027,9 +3020,9 @@
    "chains": [
     "hedera"
    ],
-   "balance": 333,
+   "balance": 335,
    "balanceDetail": {
-    "hedera": 333
+    "hedera": 335
    },
    "balanceUsd": 19,
    "outflows": {
