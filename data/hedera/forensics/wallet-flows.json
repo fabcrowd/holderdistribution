@@ -1,17 +1,17 @@
 {
  "version": 1,
- "generated": "2026-11-17T22:13:38.785Z",
+ "generated": "2026-11-18T21:56:20.912Z",
  "generator": "scripts/generate-wallet-flows-hedera.js",
  "project": "hedera",
- "priceUsd": 0.056938,
+ "priceUsd": 0.055653,
  "priceSource": "CoinGecko simple/price (hedera-hashgraph)",
  "chains": [
   "hedera"
  ],
  "asOf": {
-  "date": "2026-11-16",
-  "through": "1794873598.006445470",
-  "anchor": "2026-11-16T23:59:58.000Z",
+  "date": "2026-11-17",
+  "through": "1794960001.927984413",
+  "anchor": "2026-11-18T00:00:01.000Z",
   "settled": true
  },
  "notes": [
@@ -19,7 +19,7 @@
   "Reaching a sell venue is not proof of a market sale: it can be market making, OTC settlement or treasury operations.",
   "Labels marked medium/low confidence come from this repo's own forensics, not from Hedera.",
   "USD values use the price above and are rough.",
-  "Hedera outflows are first-hop HBAR transfers sent by the project-controlled treasury accounts, classified by recipient (exchange list, DEX/wrapped HBAR, another treasury account, or unlabelled). Windows end at the settled day end 2026-11-16T23:59:58.000Z.",
+  "Hedera outflows are first-hop HBAR transfers sent by the project-controlled treasury accounts, classified by recipient (exchange list, DEX/wrapped HBAR, another treasury account, or unlabelled). Windows end at the settled day end 2026-11-18T00:00:01.000Z.",
   "Treasury accounts that are not traced (they stay treasury for supply): 0.0.54 (Network administration account (about 100 HBAR): an estimated 5.6 million file-update records with no HBAR movement in 90 days (about 56,000 mirror pages, over the 20,000-page limit for one account), so it is not traced. Owner decision pending.) 0.0.98 (Network system account: its payouts are protocol rewards or fees, not project disbursements, so they are not traced.) 0.0.800 (Network system account: its payouts are protocol rewards or fees, not project disbursements, so they are not traced.) 0.0.801 (Network system account: its payouts are protocol rewards or fees, not project disbursements, so they are not traced.)",
   "Onward hops from unlabelled recipients are not traced for Hedera. Wrapped HBAR (WHBAR) is counted as DEX with no look-through to its holders.",
   "Fees are not flows, staking-reward legs are removed, and a failed transaction moves nothing but its fee. In a transaction with several senders and recipients, transfers are paired largest to largest.",
@@ -55,8 +55,8 @@
     "key": "treasury",
     "label": "Treasury",
     "group": "telcoin",
-    "tel": 5800736326,
-    "share": 0.11601472652990472
+    "tel": 5800145776,
+    "share": 0.11600291552698334
    },
    {
     "key": "association",
@@ -90,15 +90,15 @@
     "key": "cex",
     "label": "Centralised exchanges",
     "group": "market",
-    "tel": 5551166325,
-    "share": 0.11102332649370313
+    "tel": 5543065828,
+    "share": 0.1108613165624854
    },
    {
     "key": "dex",
     "label": "DEX pools",
     "group": "market",
-    "tel": 220109907,
-    "share": 0.004402198144745365
+    "tel": 220372778,
+    "share": 0.004407455569369086
    },
    {
     "key": "bots",
@@ -118,8 +118,8 @@
     "key": "retail",
     "label": "Retail & unlabelled holders",
     "group": "retail",
-    "tel": 38427987441,
-    "share": 0.7685597488316468
+    "tel": 38436415617,
+    "share": 0.7687283123411622
    }
   ],
   "movedFromRetail": [],
@@ -133,21 +133,21 @@
   },
   "72h": {
    "total": 35852,
-   "usd": 2041,
+   "usd": 1995,
    "byVenue": {
     "CEX": 35852
    }
   },
   "30d": {
    "total": 150035856,
-   "usd": 8542742,
+   "usd": 8349945,
    "byVenue": {
     "CEX": 150035856
    }
   },
   "90d": {
    "total": 152726327,
-   "usd": 8695932,
+   "usd": 8499678,
    "byVenue": {
     "CEX": 152726327
    }
@@ -168,7 +168,7 @@
    "balanceDetail": {
     "hedera": 3563356
    },
-   "balanceUsd": 202890,
+   "balanceUsd": 198311,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -187,7 +187,7 @@
     "30d": 150000000,
     "90d": 150000000
    },
-   "sellVenueUsd90d": 8540700,
+   "sellVenueUsd90d": 8347950,
    "sampleTxs": [
     "https://hashscan.io/mainnet/transaction/1792778705.753586242"
    ],
@@ -207,7 +207,7 @@
    "balanceDetail": {
     "hedera": 1000
    },
-   "balanceUsd": 57,
+   "balanceUsd": 56,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -223,7 +223,7 @@
     "30d": 0,
     "90d": 2600842
    },
-   "sellVenueUsd90d": 148087,
+   "sellVenueUsd90d": 144745,
    "sampleTxs": [
     "https://hashscan.io/mainnet/transaction/1790786105.373495008",
     "https://hashscan.io/mainnet/transaction/1790786105.489734732",
@@ -246,7 +246,7 @@
    "balanceDetail": {
     "hedera": 1000
    },
-   "balanceUsd": 57,
+   "balanceUsd": 56,
    "outflows": {
     "24h": {},
     "72h": {
@@ -268,7 +268,7 @@
     "30d": 35852,
     "90d": 125481
    },
-   "sellVenueUsd90d": 7145,
+   "sellVenueUsd90d": 6983,
    "sampleTxs": [
     "https://hashscan.io/mainnet/transaction/1792083605.428414216",
     "https://hashscan.io/mainnet/transaction/1794762005.763914104"
@@ -289,7 +289,7 @@
    "balanceDetail": {
     "hedera": 328
    },
-   "balanceUsd": 19,
+   "balanceUsd": 18,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -329,7 +329,7 @@
    "balanceDetail": {
     "hedera": 378275343
    },
-   "balanceUsd": 21538241,
+   "balanceUsd": 21052158,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -360,7 +360,7 @@
    "balanceDetail": {
     "hedera": 354611852
    },
-   "balanceUsd": 20190890,
+   "balanceUsd": 19735213,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -389,11 +389,11 @@
    "chains": [
     "hedera"
    ],
-   "balance": 336643634,
+   "balance": 322577184,
    "balanceDetail": {
-    "hedera": 336643634
+    "hedera": 322577184
    },
-   "balanceUsd": 19167815,
+   "balanceUsd": 17952388,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -424,7 +424,7 @@
    "balanceDetail": {
     "hedera": 319937600
    },
-   "balanceUsd": 18216607,
+   "balanceUsd": 17805487,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -459,7 +459,7 @@
    "balanceDetail": {
     "hedera": 319639654
    },
-   "balanceUsd": 18199643,
+   "balanceUsd": 17788906,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -492,7 +492,7 @@
    "balanceDetail": {
     "hedera": 300317355
    },
-   "balanceUsd": 17099470,
+   "balanceUsd": 16713562,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -523,7 +523,38 @@
    "balanceDetail": {
     "hedera": 289453932
    },
-   "balanceUsd": 16480928,
+   "balanceUsd": 16108980,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {},
+    "90d": {}
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "inactive (no outflows in window)"
+  },
+  {
+   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.406",
+   "group": "treasury",
+   "entityClass": "treasury",
+   "source": "config/projects/hedera/exclusions.json",
+   "confidence": "high",
+   "address": "0.0.406",
+   "chains": [
+    "hedera"
+   ],
+   "balance": 271527977,
+   "balanceDetail": {
+    "hedera": 271527977
+   },
+   "balanceUsd": 15111346,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -554,7 +585,7 @@
    "balanceDetail": {
     "hedera": 262000000
    },
-   "balanceUsd": 14917756,
+   "balanceUsd": 14581086,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -585,7 +616,7 @@
    "balanceDetail": {
     "hedera": 258664386
    },
-   "balanceUsd": 14727833,
+   "balanceUsd": 14395449,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -616,7 +647,7 @@
    "balanceDetail": {
     "hedera": 257529590
    },
-   "balanceUsd": 14663220,
+   "balanceUsd": 14332294,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -647,73 +678,7 @@
    "balanceDetail": {
     "hedera": 250000238
    },
-   "balanceUsd": 14234514,
-   "outflows": {
-    "24h": {},
-    "72h": {},
-    "30d": {},
-    "90d": {}
-   },
-   "sellVenue": {
-    "24h": 0,
-    "72h": 0,
-    "30d": 0,
-    "90d": 0
-   },
-   "sellVenueUsd90d": 0,
-   "sampleTxs": [],
-   "verdict": "inactive (no outflows in window)"
-  },
-  {
-   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.429",
-   "group": "treasury",
-   "entityClass": "treasury",
-   "source": "config/projects/hedera/exclusions.json",
-   "confidence": "high",
-   "address": "0.0.429",
-   "chains": [
-    "hedera"
-   ],
-   "balance": 249040843,
-   "balanceDetail": {
-    "hedera": 249040843
-   },
-   "balanceUsd": 14179888,
-   "outflows": {
-    "24h": {},
-    "72h": {},
-    "30d": {
-     "internal": 12585783
-    },
-    "90d": {
-     "internal": 34180293
-    }
-   },
-   "sellVenue": {
-    "24h": 0,
-    "72h": 0,
-    "30d": 0,
-    "90d": 0
-   },
-   "sellVenueUsd90d": 0,
-   "sampleTxs": [],
-   "verdict": "internal / treasury moves"
-  },
-  {
-   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.406",
-   "group": "treasury",
-   "entityClass": "treasury",
-   "source": "config/projects/hedera/exclusions.json",
-   "confidence": "high",
-   "address": "0.0.406",
-   "chains": [
-    "hedera"
-   ],
-   "balance": 237236787,
-   "balanceDetail": {
-    "hedera": 237236787
-   },
-   "balanceUsd": 13507788,
+   "balanceUsd": 13913263,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -744,7 +709,7 @@
    "balanceDetail": {
     "hedera": 224116366
    },
-   "balanceUsd": 12760738,
+   "balanceUsd": 12472748,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -762,6 +727,41 @@
    "verdict": "inactive (no outflows in window)"
   },
   {
+   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.429",
+   "group": "treasury",
+   "entityClass": "treasury",
+   "source": "config/projects/hedera/exclusions.json",
+   "confidence": "high",
+   "address": "0.0.429",
+   "chains": [
+    "hedera"
+   ],
+   "balance": 214749653,
+   "balanceDetail": {
+    "hedera": 214749653
+   },
+   "balanceUsd": 11951462,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {
+     "internal": 12585783
+    },
+    "90d": {
+     "internal": 34180293
+    }
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "internal / treasury moves"
+  },
+  {
    "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.427",
    "group": "treasury",
    "entityClass": "treasury",
@@ -771,11 +771,11 @@
    "chains": [
     "hedera"
    ],
-   "balance": 196489687,
+   "balance": 160383189,
    "balanceDetail": {
-    "hedera": 196489687
+    "hedera": 160383189
    },
-   "balanceUsd": 11187730,
+   "balanceUsd": 8925806,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -810,7 +810,7 @@
    "balanceDetail": {
     "hedera": 133165643
    },
-   "balanceUsd": 7582185,
+   "balanceUsd": 7411068,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -841,7 +841,7 @@
    "balanceDetail": {
     "hedera": 113380643
    },
-   "balanceUsd": 6455667,
+   "balanceUsd": 6309973,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -872,7 +872,7 @@
    "balanceDetail": {
     "hedera": 101029994
    },
-   "balanceUsd": 5752446,
+   "balanceUsd": 5622622,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -881,74 +881,6 @@
     },
     "90d": {
      "internal": 71970006
-    }
-   },
-   "sellVenue": {
-    "24h": 0,
-    "72h": 0,
-    "30d": 0,
-    "90d": 0
-   },
-   "sellVenueUsd90d": 0,
-   "sampleTxs": [],
-   "verdict": "internal / treasury moves"
-  },
-  {
-   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.404",
-   "group": "treasury",
-   "entityClass": "treasury",
-   "source": "config/projects/hedera/exclusions.json",
-   "confidence": "high",
-   "address": "0.0.404",
-   "chains": [
-    "hedera"
-   ],
-   "balance": 94637927,
-   "balanceDetail": {
-    "hedera": 94637927
-   },
-   "balanceUsd": 5388494,
-   "outflows": {
-    "24h": {},
-    "72h": {},
-    "30d": {
-     "internal": 43593623
-    },
-    "90d": {
-     "internal": 83981771
-    }
-   },
-   "sellVenue": {
-    "24h": 0,
-    "72h": 0,
-    "30d": 0,
-    "90d": 0
-   },
-   "sellVenueUsd90d": 0,
-   "sampleTxs": [],
-   "verdict": "internal / treasury moves"
-  },
-  {
-   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.481",
-   "group": "treasury",
-   "entityClass": "treasury",
-   "source": "config/projects/hedera/exclusions.json",
-   "confidence": "high",
-   "address": "0.0.481",
-   "chains": [
-    "hedera"
-   ],
-   "balance": 82119199,
-   "balanceDetail": {
-    "hedera": 82119199
-   },
-   "balanceUsd": 4675703,
-   "outflows": {
-    "24h": {},
-    "72h": {},
-    "30d": {},
-    "90d": {
-     "internal": 16062281
     }
    },
    "sellVenue": {
@@ -971,11 +903,11 @@
    "chains": [
     "hedera"
    ],
-   "balance": 77218899,
+   "balance": 96302202,
    "balanceDetail": {
-    "hedera": 77218899
+    "hedera": 96302202
    },
-   "balanceUsd": 4396690,
+   "balanceUsd": 5359506,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -993,6 +925,74 @@
    "verdict": "inactive (no outflows in window)"
   },
   {
+   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.481",
+   "group": "treasury",
+   "entityClass": "treasury",
+   "source": "config/projects/hedera/exclusions.json",
+   "confidence": "high",
+   "address": "0.0.481",
+   "chains": [
+    "hedera"
+   ],
+   "balance": 82119199,
+   "balanceDetail": {
+    "hedera": 82119199
+   },
+   "balanceUsd": 4570180,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {},
+    "90d": {
+     "internal": 16062281
+    }
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "internal / treasury moves"
+  },
+  {
+   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.426",
+   "group": "treasury",
+   "entityClass": "treasury",
+   "source": "config/projects/hedera/exclusions.json",
+   "confidence": "high",
+   "address": "0.0.426",
+   "chains": [
+    "hedera"
+   ],
+   "balance": 77213709,
+   "balanceDetail": {
+    "hedera": 77213709
+   },
+   "balanceUsd": 4297175,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {
+     "internal": 15070331
+    },
+    "90d": {
+     "internal": 40400481
+    }
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "internal / treasury moves"
+  },
+  {
    "label": "Hedera unreleased supply (0.0.73-87) 0.0.81",
    "group": "treasury",
    "entityClass": "treasury",
@@ -1006,7 +1006,7 @@
    "balanceDetail": {
     "hedera": 73259819
    },
-   "balanceUsd": 4171268,
+   "balanceUsd": 4077129,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1039,7 +1039,7 @@
    "balanceDetail": {
     "hedera": 65718723
    },
-   "balanceUsd": 3741893,
+   "balanceUsd": 3657444,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1070,7 +1070,7 @@
    "balanceDetail": {
     "hedera": 63169255
    },
-   "balanceUsd": 3596731,
+   "balanceUsd": 3515559,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1079,41 +1079,6 @@
     },
     "90d": {
      "internal": 36830746
-    }
-   },
-   "sellVenue": {
-    "24h": 0,
-    "72h": 0,
-    "30d": 0,
-    "90d": 0
-   },
-   "sellVenueUsd90d": 0,
-   "sampleTxs": [],
-   "verdict": "internal / treasury moves"
-  },
-  {
-   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.426",
-   "group": "treasury",
-   "entityClass": "treasury",
-   "source": "config/projects/hedera/exclusions.json",
-   "confidence": "high",
-   "address": "0.0.426",
-   "chains": [
-    "hedera"
-   ],
-   "balance": 63147260,
-   "balanceDetail": {
-    "hedera": 63147260
-   },
-   "balanceUsd": 3595479,
-   "outflows": {
-    "24h": {},
-    "72h": {},
-    "30d": {
-     "internal": 15070331
-    },
-    "90d": {
-     "internal": 40400481
     }
    },
    "sellVenue": {
@@ -1140,7 +1105,104 @@
    "balanceDetail": {
     "hedera": 62031303
    },
-   "balanceUsd": 3531938,
+   "balanceUsd": 3452228,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {},
+    "90d": {}
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "inactive (no outflows in window)"
+  },
+  {
+   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.403",
+   "group": "treasury",
+   "entityClass": "treasury",
+   "source": "config/projects/hedera/exclusions.json",
+   "confidence": "high",
+   "address": "0.0.403",
+   "chains": [
+    "hedera"
+   ],
+   "balance": 60508972,
+   "balanceDetail": {
+    "hedera": 60508972
+   },
+   "balanceUsd": 3367506,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {},
+    "90d": {}
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "inactive (no outflows in window)"
+  },
+  {
+   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.404",
+   "group": "treasury",
+   "entityClass": "treasury",
+   "source": "config/projects/hedera/exclusions.json",
+   "confidence": "high",
+   "address": "0.0.404",
+   "chains": [
+    "hedera"
+   ],
+   "balance": 58531429,
+   "balanceDetail": {
+    "hedera": 58531429
+   },
+   "balanceUsd": 3257450,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {
+     "internal": 43593623
+    },
+    "90d": {
+     "internal": 83981771
+    }
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "internal / treasury moves"
+  },
+  {
+   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.415",
+   "group": "treasury",
+   "entityClass": "treasury",
+   "source": "config/projects/hedera/exclusions.json",
+   "confidence": "high",
+   "address": "0.0.415",
+   "chains": [
+    "hedera"
+   ],
+   "balance": 57501727,
+   "balanceDetail": {
+    "hedera": 57501727
+   },
+   "balanceUsd": 3200144,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1171,7 +1233,7 @@
    "balanceDetail": {
     "hedera": 56747494
    },
-   "balanceUsd": 3231089,
+   "balanceUsd": 3158168,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1202,7 +1264,7 @@
    "balanceDetail": {
     "hedera": 50000019
    },
-   "balanceUsd": 2846901,
+   "balanceUsd": 2782651,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1235,7 +1297,7 @@
    "balanceDetail": {
     "hedera": 45000005
    },
-   "balanceUsd": 2562210,
+   "balanceUsd": 2504385,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1266,7 +1328,7 @@
    "balanceDetail": {
     "hedera": 44591947
    },
-   "balanceUsd": 2538976,
+   "balanceUsd": 2481676,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1297,7 +1359,7 @@
    "balanceDetail": {
     "hedera": 44200038
    },
-   "balanceUsd": 2516662,
+   "balanceUsd": 2459865,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1328,7 +1390,7 @@
    "balanceDetail": {
     "hedera": 38747501
    },
-   "balanceUsd": 2206205,
+   "balanceUsd": 2156415,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1344,41 +1406,6 @@
    "sellVenueUsd90d": 0,
    "sampleTxs": [],
    "verdict": "inactive (no outflows in window)"
-  },
-  {
-   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.436",
-   "group": "treasury",
-   "entityClass": "treasury",
-   "source": "config/projects/hedera/exclusions.json",
-   "confidence": "high",
-   "address": "0.0.436",
-   "chains": [
-    "hedera"
-   ],
-   "balance": 32304030,
-   "balanceDetail": {
-    "hedera": 32304030
-   },
-   "balanceUsd": 1839327,
-   "outflows": {
-    "24h": {},
-    "72h": {},
-    "30d": {
-     "internal": 43593623
-    },
-    "90d": {
-     "internal": 83981771
-    }
-   },
-   "sellVenue": {
-    "24h": 0,
-    "72h": 0,
-    "30d": 0,
-    "90d": 0
-   },
-   "sellVenueUsd90d": 0,
-   "sampleTxs": [],
-   "verdict": "internal / treasury moves"
   },
   {
    "label": "Hedera unreleased supply (0.0.44-71) 0.0.69",
@@ -1394,38 +1421,7 @@
    "balanceDetail": {
     "hedera": 25655341
    },
-   "balanceUsd": 1460764,
-   "outflows": {
-    "24h": {},
-    "72h": {},
-    "30d": {},
-    "90d": {}
-   },
-   "sellVenue": {
-    "24h": 0,
-    "72h": 0,
-    "30d": 0,
-    "90d": 0
-   },
-   "sellVenueUsd90d": 0,
-   "sampleTxs": [],
-   "verdict": "inactive (no outflows in window)"
-  },
-  {
-   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.403",
-   "group": "treasury",
-   "entityClass": "treasury",
-   "source": "config/projects/hedera/exclusions.json",
-   "confidence": "high",
-   "address": "0.0.403",
-   "chains": [
-    "hedera"
-   ],
-   "balance": 24402475,
-   "balanceDetail": {
-    "hedera": 24402475
-   },
-   "balanceUsd": 1389428,
+   "balanceUsd": 1427797,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1456,38 +1452,7 @@
    "balanceDetail": {
     "hedera": 23747558
    },
-   "balanceUsd": 1352138,
-   "outflows": {
-    "24h": {},
-    "72h": {},
-    "30d": {},
-    "90d": {}
-   },
-   "sellVenue": {
-    "24h": 0,
-    "72h": 0,
-    "30d": 0,
-    "90d": 0
-   },
-   "sellVenueUsd90d": 0,
-   "sampleTxs": [],
-   "verdict": "inactive (no outflows in window)"
-  },
-  {
-   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.415",
-   "group": "treasury",
-   "entityClass": "treasury",
-   "source": "config/projects/hedera/exclusions.json",
-   "confidence": "high",
-   "address": "0.0.415",
-   "chains": [
-    "hedera"
-   ],
-   "balance": 21395230,
-   "balanceDetail": {
-    "hedera": 21395230
-   },
-   "balanceUsd": 1218202,
+   "balanceUsd": 1321623,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1518,7 +1483,7 @@
    "balanceDetail": {
     "hedera": 16630126
    },
-   "balanceUsd": 946886,
+   "balanceUsd": 925516,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1549,7 +1514,7 @@
    "balanceDetail": {
     "hedera": 15559134
    },
-   "balanceUsd": 885906,
+   "balanceUsd": 865912,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1580,7 +1545,7 @@
    "balanceDetail": {
     "hedera": 14000023
    },
-   "balanceUsd": 797133,
+   "balanceUsd": 779143,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1598,6 +1563,41 @@
    "verdict": "inactive (no outflows in window)"
   },
   {
+   "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.436",
+   "group": "treasury",
+   "entityClass": "treasury",
+   "source": "config/projects/hedera/exclusions.json",
+   "confidence": "high",
+   "address": "0.0.436",
+   "chains": [
+    "hedera"
+   ],
+   "balance": 13220727,
+   "balanceDetail": {
+    "hedera": 13220727
+   },
+   "balanceUsd": 735773,
+   "outflows": {
+    "24h": {},
+    "72h": {},
+    "30d": {
+     "internal": 43593623
+    },
+    "90d": {
+     "internal": 83981771
+    }
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "internal / treasury moves"
+  },
+  {
    "label": "Hedera Council treasury (0.0.400-750, unreleased) 0.0.452",
    "group": "treasury",
    "entityClass": "treasury",
@@ -1611,7 +1611,7 @@
    "balanceDetail": {
     "hedera": 9000029
    },
-   "balanceUsd": 512444,
+   "balanceUsd": 500879,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1642,7 +1642,7 @@
    "balanceDetail": {
     "hedera": 8747501
    },
-   "balanceUsd": 498065,
+   "balanceUsd": 486825,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1673,7 +1673,7 @@
    "balanceDetail": {
     "hedera": 5433567
    },
-   "balanceUsd": 309376,
+   "balanceUsd": 302394,
    "outflows": {
     "24h": {},
     "72h": {
@@ -1710,7 +1710,7 @@
    "balanceDetail": {
     "hedera": 5000019
    },
-   "balanceUsd": 284691,
+   "balanceUsd": 278266,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1741,7 +1741,7 @@
    "balanceDetail": {
     "hedera": 5000000
    },
-   "balanceUsd": 284690,
+   "balanceUsd": 278265,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1772,7 +1772,7 @@
    "balanceDetail": {
     "hedera": 3747499
    },
-   "balanceUsd": 213375,
+   "balanceUsd": 208560,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1803,7 +1803,7 @@
    "balanceDetail": {
     "hedera": 3517889
    },
-   "balanceUsd": 200302,
+   "balanceUsd": 195781,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1834,7 +1834,7 @@
    "balanceDetail": {
     "hedera": 2705384
    },
-   "balanceUsd": 154039,
+   "balanceUsd": 150563,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1865,7 +1865,7 @@
    "balanceDetail": {
     "hedera": 2000031
    },
-   "balanceUsd": 113878,
+   "balanceUsd": 111308,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1896,7 +1896,7 @@
    "balanceDetail": {
     "hedera": 1370118
    },
-   "balanceUsd": 78012,
+   "balanceUsd": 76251,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1927,7 +1927,7 @@
    "balanceDetail": {
     "hedera": 1000025
    },
-   "balanceUsd": 56939,
+   "balanceUsd": 55654,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1958,7 +1958,7 @@
    "balanceDetail": {
     "hedera": 1000025
    },
-   "balanceUsd": 56939,
+   "balanceUsd": 55654,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1989,7 +1989,7 @@
    "balanceDetail": {
     "hedera": 1000025
    },
-   "balanceUsd": 56939,
+   "balanceUsd": 55654,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2020,7 +2020,7 @@
    "balanceDetail": {
     "hedera": 843528
    },
-   "balanceUsd": 48029,
+   "balanceUsd": 46945,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2051,7 +2051,7 @@
    "balanceDetail": {
     "hedera": 747497
    },
-   "balanceUsd": 42561,
+   "balanceUsd": 41600,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2082,7 +2082,7 @@
    "balanceDetail": {
     "hedera": 747497
    },
-   "balanceUsd": 42561,
+   "balanceUsd": 41600,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2113,7 +2113,7 @@
    "balanceDetail": {
     "hedera": 401399
    },
-   "balanceUsd": 22855,
+   "balanceUsd": 22339,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2144,7 +2144,7 @@
    "balanceDetail": {
     "hedera": 385431
    },
-   "balanceUsd": 21946,
+   "balanceUsd": 21450,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2175,7 +2175,7 @@
    "balanceDetail": {
     "hedera": 115505
    },
-   "balanceUsd": 6577,
+   "balanceUsd": 6428,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2206,7 +2206,7 @@
    "balanceDetail": {
     "hedera": 77920
    },
-   "balanceUsd": 4437,
+   "balanceUsd": 4336,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2237,7 +2237,7 @@
    "balanceDetail": {
     "hedera": 54471
    },
-   "balanceUsd": 3101,
+   "balanceUsd": 3031,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2268,7 +2268,7 @@
    "balanceDetail": {
     "hedera": 28053
    },
-   "balanceUsd": 1597,
+   "balanceUsd": 1561,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2295,11 +2295,11 @@
    "chains": [
     "hedera"
    ],
-   "balance": 20670,
+   "balance": 21862,
    "balanceDetail": {
-    "hedera": 20670
+    "hedera": 21862
    },
-   "balanceUsd": 1177,
+   "balanceUsd": 1217,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2334,7 +2334,7 @@
    "balanceDetail": {
     "hedera": 9988
    },
-   "balanceUsd": 569,
+   "balanceUsd": 556,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2365,7 +2365,7 @@
    "balanceDetail": {
     "hedera": 7264
    },
-   "balanceUsd": 414,
+   "balanceUsd": 404,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2396,7 +2396,7 @@
    "balanceDetail": {
     "hedera": 5097
    },
-   "balanceUsd": 290,
+   "balanceUsd": 284,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2427,7 +2427,7 @@
    "balanceDetail": {
     "hedera": 5094
    },
-   "balanceUsd": 290,
+   "balanceUsd": 283,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2458,7 +2458,7 @@
    "balanceDetail": {
     "hedera": 4352
    },
-   "balanceUsd": 248,
+   "balanceUsd": 242,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2489,7 +2489,7 @@
    "balanceDetail": {
     "hedera": 3614
    },
-   "balanceUsd": 206,
+   "balanceUsd": 201,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2520,7 +2520,7 @@
    "balanceDetail": {
     "hedera": 2502
    },
-   "balanceUsd": 142,
+   "balanceUsd": 139,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2551,7 +2551,7 @@
    "balanceDetail": {
     "hedera": 2255
    },
-   "balanceUsd": 128,
+   "balanceUsd": 125,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2582,7 +2582,7 @@
    "balanceDetail": {
     "hedera": 1000
    },
-   "balanceUsd": 57,
+   "balanceUsd": 56,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2613,7 +2613,7 @@
    "balanceDetail": {
     "hedera": 1000
    },
-   "balanceUsd": 57,
+   "balanceUsd": 56,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2644,7 +2644,7 @@
    "balanceDetail": {
     "hedera": 1000
    },
-   "balanceUsd": 57,
+   "balanceUsd": 56,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2675,7 +2675,7 @@
    "balanceDetail": {
     "hedera": 1000
    },
-   "balanceUsd": 57,
+   "balanceUsd": 56,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2706,7 +2706,7 @@
    "balanceDetail": {
     "hedera": 1000
    },
-   "balanceUsd": 57,
+   "balanceUsd": 56,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2733,11 +2733,11 @@
    "chains": [
     "hedera"
    ],
-   "balance": 826,
+   "balance": 825,
    "balanceDetail": {
-    "hedera": 826
+    "hedera": 825
    },
-   "balanceUsd": 47,
+   "balanceUsd": 46,
    "outflows": {
     "24h": {
      "unlabelled": 1
@@ -2776,7 +2776,7 @@
    "balanceDetail": {
     "hedera": 702
    },
-   "balanceUsd": 40,
+   "balanceUsd": 39,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2807,7 +2807,7 @@
    "balanceDetail": {
     "hedera": 520
    },
-   "balanceUsd": 30,
+   "balanceUsd": 29,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2838,7 +2838,7 @@
    "balanceDetail": {
     "hedera": 510
    },
-   "balanceUsd": 29,
+   "balanceUsd": 28,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2869,7 +2869,7 @@
    "balanceDetail": {
     "hedera": 509
    },
-   "balanceUsd": 29,
+   "balanceUsd": 28,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2900,7 +2900,7 @@
    "balanceDetail": {
     "hedera": 505
    },
-   "balanceUsd": 29,
+   "balanceUsd": 28,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -2962,7 +2962,7 @@
    "balanceDetail": {
     "hedera": 419
    },
-   "balanceUsd": 24,
+   "balanceUsd": 23,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -3020,9 +3020,9 @@
    "chains": [
     "hedera"
    ],
-   "balance": 335,
+   "balance": 336,
    "balanceDetail": {
-    "hedera": 335
+    "hedera": 336
    },
    "balanceUsd": 19,
    "outflows": {
@@ -3179,7 +3179,7 @@
    "balanceDetail": {
     "hedera": 150
    },
-   "balanceUsd": 9,
+   "balanceUsd": 8,
    "outflows": {
     "24h": {},
     "72h": {},
