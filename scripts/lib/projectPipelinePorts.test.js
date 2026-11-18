@@ -115,6 +115,14 @@ describe("per-project working files (data/)", () => {
     expect(work.dir).toBe(path.join(repo, "data"));
   });
 
+  it("the same-run previous snapshot is gitignored at the legacy root and per project, flat and sharded", () => {
+    const paths = ["public/data/tel-holders-previous.json", "public/data/tel-holders-previous.d/wallets-000.tsv",
+      "public/data/demo/tel-holders-previous.json", "public/data/demo/tel-holders-previous.d/wallets-000.tsv"];
+    // --no-index: the verdict must not depend on whether a copy is still tracked.
+    const r = spawnSync("git", ["check-ignore", "--no-index", ...paths], { cwd: repo, encoding: "utf8" });
+    expect(r.stdout.trim().split("\n")).toHaveLength(paths.length);
+  });
+
   it("a non-legacy project gets data/<slug>/ and cannot escape it", () => {
     const demo = resolveProject("demo", tmp);
     expect(projectWorkDir(demo)).toBe("data/demo");

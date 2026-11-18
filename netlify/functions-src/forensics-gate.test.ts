@@ -3,6 +3,12 @@ import { handler } from "./forensics-gate.ts";
 import { digestsEqual, hashPassword, issueToken, passwordMatches, tokenKey, verifySaltedHash, verifyToken, WindowLimiter, corsHeaders, TOKEN_TTL_SECONDS } from "./gateAuth.ts";
 import { __resetWalletFlowsCache, loadWalletFlows } from "./walletFlowsSource.ts";
 
+// TEL's bundled report (a static import in walletFlowsSource.ts) is a trimmed copy of data/forensics/wallet-flows.json,
+// so these tests load without data/. The real report's content is checked by `npm run check:data`.
+vi.mock("../../data/forensics/wallet-flows.json", async () => ({
+  default: (await import("../../scripts/fixtures/forensics/wallet-flows.json")).default,
+}));
+
 // A throwaway test password supplied via env — never the real one.
 const TEST_PASSWORD = "unit-test-password-not-real";
 let ipSeq = 0;

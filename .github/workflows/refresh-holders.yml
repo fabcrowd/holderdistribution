@@ -488,7 +488,7 @@ jobs:
 
       - name: Commit downstream feeds
         run: |
-          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json data/solana-flow-days.json data/hedera-flow-days.json public/data/holders-history.json data/holders-asof-blocks.json public/data/date-blocks.json data/rpc-usage.json public/data/pipeline-status.json)
+          FILES=$(node scripts/workflow-paths.js files public/data/exchange-flow-history.json public/data/exchange-flow-checkpoint.json public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json data/solana-flow-days.json data/hedera-flow-days.json data/tier-counterparty-days public/data/holders-history.json data/holders-asof-blocks.json public/data/date-blocks.json data/rpc-usage.json public/data/pipeline-status.json)
           for f in $FILES; do [ -e "$f" ] && git add "$f"; done
           if git diff --cached --quiet; then
             echo "No downstream changes to commit"
@@ -500,6 +500,16 @@ jobs:
           echo "solana=${{ steps.solana.outcome }} hedera=${{ steps.hedera.outcome }} flows=${{ steps.flows.outcome }} tiers=${{ steps.tiers.outcome }} gaps=${{ steps.gaps.outcome }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check the committed data
+        # The data tests kept out of `npm test` (scripts/datachecks, src/datachecks), for this
+        # project (HD_PROJECT). Runs after both pushes, so a failing check never costs the day's
+        # data. Non-fatal like the other stages: Stage verdict names it and fails the run, and
+        # Notify on failure lists it in the issue.
+        id: datacheck
+        continue-on-error: true
+        timeout-minutes: 10
+        run: npm run check:data
 
       - name: Stage verdict
         # Non-fatal stages use continue-on-error so one failure cannot block the
@@ -520,6 +530,7 @@ jobs:
           OUTCOME_GAPS: ${{ steps.gaps.outcome }}
           OUTCOME_USAGE: ${{ steps.usage.outcome }}
           OUTCOME_NIGHTLY_STATUS: ${{ steps.nightly_status.outcome }}
+          OUTCOME_DATACHECK: ${{ steps.datacheck.outcome }}
         run: |
           failed=""
           summary=""
@@ -540,6 +551,7 @@ jobs:
           gaps|OUTCOME_GAPS|Holders-history gap fill
           usage|OUTCOME_USAGE|monthly RPC budget exceeded or usage summary crashed (config/budgets.json, see the Summarize RPC usage step)
           nightly_status|OUTCOME_NIGHTLY_STATUS|pipeline-status.json writer crashed (scripts/write-pipeline-status.js)
+          datacheck|OUTCOME_DATACHECK|Data checks on the committed data failed (npm run check:data; the data was already pushed)
           STAGES
           if [ -n "$failed" ]; then
             {

@@ -1,12 +1,16 @@
+// Data checks (npm run check:data): moved unchanged from scripts/lib/zebecFlowFeeds.test.js.
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+
+// check:data scope: HD_PROJECT is set by vitest.datacheck.config.ts ("" = every project).
+const inScope = (...slugs) => !process.env.HD_PROJECT || slugs.includes(process.env.HD_PROJECT);
 
 const root = process.cwd();
 const read = (rel) => JSON.parse(fs.readFileSync(path.join(root, rel), "utf8"));
 
 describe("zebec-network flow feeds", () => {
-  it("publishes tier-outflows with every window", () => {
+  it.runIf(inScope("zebec-network"))("publishes tier-outflows with every window", () => {
     const doc = read("public/data/zebec-network/tier-outflows.json");
     expect(doc.schema).toBe(9);
     expect(typeof doc.complete).toBe("boolean");
@@ -18,7 +22,7 @@ describe("zebec-network flow feeds", () => {
     }
   });
 
-  it("publishes a well-formed exchange-flow history (empty until the Solana scan has measured days)", () => {
+  it.runIf(inScope("zebec-network"))("publishes a well-formed exchange-flow history (empty until the Solana scan has measured days)", () => {
     const doc = read("public/data/zebec-network/exchange-flow-history.json");
     expect(doc.schema).toBe(3);
     expect(Array.isArray(doc.entries)).toBe(true);
@@ -28,7 +32,7 @@ describe("zebec-network flow feeds", () => {
     for (const e of doc.entries) expect(Object.keys(e.chains)).toEqual(["solana"]);
   });
 
-  it("does not replace TEL's measured feeds", () => {
+  it.runIf(inScope("tel", "zebec-network"))("does not replace TEL's measured feeds", () => {
     const tiers = read("public/data/tier-outflows.json");
     const flows = read("public/data/exchange-flow-history.json");
     // Shape, not live completeness: `complete` is a daily measurement that a

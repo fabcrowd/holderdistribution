@@ -43,7 +43,8 @@ describe("project registry (node side)", () => {
 
   it("data dirs: TEL keeps the legacy root, others get public/data/<slug>", () => {
     expect(projectDataDir("tel", root)).toBe("public/data");
-    expect(fs.existsSync(path.join(root, projectDataDir("tel", root), "holders-lite.json"))).toBe(true);
+    // That TEL's legacy root really holds holders-lite.json is checked in `npm run check:data`
+    // (scripts/datachecks/projects.datacheck.js).
     for (const p of registry) {
       if (!legacyRootSlugs(root).includes(p.slug)) expect(projectDataDir(p.slug, root)).toBe(`public/data/${p.slug}`);
     }

@@ -91,7 +91,6 @@
  * Then flip the relevant config/classification-changelog.json events'
  * backfillStatus to "complete" and re-run scripts/sync-classification-changelog.js.
  */
-import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -102,7 +101,8 @@ import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS, setHolderTiers } from "./lib/holdersView.js";
 import { classifySnapshot, stakedAmountsByAddress } from "./lib/phantomStakers.js";
 import { readJsonOptional } from "./lib/readJsonOptional.js";
-import { readSnapshot, readSnapshotAtRev } from "./lib/snapshotIo.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
+import { readJsonAt, readSnapshotAtRev, versionsByDate } from "./lib/stateStore.js";
 import { extractHeldAddresses, advanceEverHeld } from "./lib/everHeldReplay.js";
 import { selectPipelineProject, projectPaths, projectNonRetailPaths, projectClassificationPath } from "./lib/projects.js";
 
@@ -129,22 +129,13 @@ const EVER_CHECKPOINT_PATH = data("holders-ever-checkpoint.json");
 const dryRun = process.argv.includes("--dry-run");
 
 const GIT_MAX_BUFFER = 512 * 1024 * 1024;
-const git = (args) => execFileSync("git", args, { encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
-const showJson = (commit, file) => JSON.parse(git(["show", `${commit}:${file}`]));
+const showJson = (commit, file) => readJsonAt(commit, file, { maxBuffer: GIT_MAX_BUFFER });
 const showSnapshot = (commit, file) => readSnapshotAtRev(commit, file, { maxBuffer: GIT_MAX_BUFFER });
 
 const readJson = async (p) => JSON.parse(await fs.readFile(p, "utf8"));
 
 /** Latest commit hash per date the given file was committed at, newest-first. */
-const commitsByDate = (file) => {
-  const out = git(["log", "--format=%H %ad", "--date=short", "--", file]);
-  const map = new Map();
-  for (const line of out.trim().split("\n")) {
-    const [hash, date] = line.split(" ");
-    if (hash && date && !map.has(date)) map.set(date, hash);
-  }
-  return map;
-};
+const commitsByDate = (file) => versionsByDate(file, { maxBuffer: GIT_MAX_BUFFER });
 
 /** Per-chain metrics for one historical tel-holders.json blob, reclassified
  *  against the CURRENT non-retail set.

@@ -3,10 +3,10 @@
  * and generate-tier-outflows.js: the chains (chains[].vm "solana"), the
  * tracked venues (classification.cexWallets, contracts{} role dex/staking,
  * optional classification.dexContracts, the staking feed's vaults) and the
- * floor date (first real holder snapshot). Nothing is hardcoded per token.
+ * floor date (recorded in the scan checkpoint; first real holder snapshot day
+ * on a first scan). Nothing is hardcoded per token.
  */
 import fs from "node:fs";
-import { execFileSync } from "node:child_process";
 import { projectChainEntries, projectClassificationPath, projectRoleAddresses } from "../projects.js";
 import { solanaBaseToken } from "./adapter.js";
 
@@ -52,8 +52,54 @@ export function solanaFlowVenues(project, chainKey, { stakingFeedPath = null } =
   return { cexWallets, dexOwners: [...dexOwners], stakingAddresses: [...staking] };
 }
 
-/** Earliest commit date (YYYY-MM-DD) of the project's holder snapshot, or null. */
-export function firstSnapshotDate(snapshotRelPath, git = (a) => execFileSync("git", a, { encoding: "utf8" })) {
-  const out = git(["log", "--format=%ad", "--date=short", "--", snapshotRelPath]).trim();
-  return out ? out.split("\n").sort()[0] : null;
+const isDay = (d) => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d);
+
+/**
+ * Default floor of a flow scan when no --since / env value is given: `{ since: YYYY-MM-DD | null, source }`.
+ *   1. holders-history.json `firstLiveDate` (source "firstLiveDate"), the first live holder snapshot day
+ *      (lib/firstLiveDate.js), never the earliest row: onboarding may backfill rows months before it. It wins
+ *      over the checkpoint so a one-off --since stays one-off: the next default run returns to this day.
+ *   2. While the history has no usable day (history written before the field existed, or no live row yet): the
+ *      floor recorded in the scan's checkpoint (source "checkpoint"; recordedFlowFloor), so the floor does not
+ *      move. A floor that came from step 3 stays once recorded.
+ *   3. Otherwise the latest history row's day, today's snapshot day (source "latestRow"; the caller warns).
+ * Never derived from git history: checkouts may be shallow and snapshots untracked.
+ */
+export function flowFloor({ checkpoint, chainKeys, historyPath }) {
+  const history = readJson(historyPath);
+  if (isDay(history?.firstLiveDate)) return { since: history.firstLiveDate, source: "firstLiveDate" };
+  const recorded = recordedFlowFloor(checkpoint, chainKeys);
+  if (recorded) return { since: recorded, source: "checkpoint" };
+  const dates = (history?.entries ?? []).map((e) => e?.date).filter(isDay).sort();
+  return dates.length ? { since: dates.at(-1), source: "latestRow" } : { since: null, source: null };
+}
+
+/**
+ * Floor a default run may trust from one chain's checkpoint entry. `since` is the floor the stored days were built
+ * from (the floor-changed checks compare it); after a --since / env override run it is the override, so the entry
+ * also carries `sinceSource: "override"` and `defaultSince`, the floor a default run would have used then. An
+ * entry without `sinceSource` (default run, or written before the markers existed) is trusted as is.
+ */
+export const trustedRecordedSince = (entry) => (entry?.sinceSource === "override" ? entry.defaultSince : entry?.since);
+
+/** Earliest trusted recorded floor across the scanned chains of a flow checkpoint, or null. */
+export function recordedFlowFloor(checkpoint, chainKeys) {
+  return (chainKeys ?? []).map((k) => trustedRecordedSince(checkpoint?.chains?.[k])).filter(isDay).sort()[0] ?? null;
+}
+
+/**
+ * Floor of one scan run: `{ since, source, markers }`. `markers` go on every checkpoint entry the run writes:
+ * an override run records `sinceSource: "override"` and `defaultSince` (omitted when no default exists); a default
+ * run records none, so a rebuilt entry drops the markers of an earlier override run.
+ */
+export function resolveFlowFloor({ override, checkpoint, chainKeys, historyPath }) {
+  const floor = flowFloor({ checkpoint, chainKeys, historyPath });
+  if (!override) return { ...floor, markers: {} };
+  return { since: override, source: "override", markers: { sinceSource: "override", ...(isDay(floor.since) ? { defaultSince: floor.since } : {}) } };
+}
+
+/** Warning text when the floor fell back to the latest history row, else null. */
+export function latestRowFloorWarning(slug, floor) {
+  if (floor?.source !== "latestRow") return null;
+  return `${slug}: holders-history.json has no firstLiveDate and the flow checkpoint records no floor; using the latest history row ${floor.since} as the floor (flow days before it are not scanned; pass --since to choose another).`;
 }

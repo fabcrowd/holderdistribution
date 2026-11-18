@@ -46,6 +46,8 @@ jobs:
       # Same validators the nightly pipeline ends with, over the committed public/data of every
       # registered project: a config/ or scripts/ change that would fail the nightly fails here.
       - run: npm run check:feeds
+      # The tests that assert the committed data itself (scripts/datachecks, src/datachecks), every project.
+      - run: npm run check:data
       - run: npm run build
       - name: Dependency audit (production deps, informational)
         run: npm audit --omit=dev --audit-level=high

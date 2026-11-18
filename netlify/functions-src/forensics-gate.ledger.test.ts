@@ -1,8 +1,14 @@
 /** Gate keys "project-ledger" / "bot-proceeds": password-gated, per project, repo-only, never cross-project. */
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handler } from "./forensics-gate.ts";
 import { __resetLedgerCache, loadLedgerFile } from "./ledgerSource.ts";
 import { ledgerRepoPath } from "./gatedProjects.ts";
+
+// TEL's bundled report (a static import in walletFlowsSource.ts) is a trimmed copy of data/forensics/wallet-flows.json,
+// so these tests load without data/. The real report's content is checked by `npm run check:data`.
+vi.mock("../../data/forensics/wallet-flows.json", async () => ({
+  default: (await import("../../scripts/fixtures/forensics/wallet-flows.json")).default,
+}));
 
 const PW = "unit-test-password-not-real";
 let ip = 0;

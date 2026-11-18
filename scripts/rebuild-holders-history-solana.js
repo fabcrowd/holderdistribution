@@ -76,6 +76,7 @@ import {
 import { readCutoffMap } from "./lib/dayBlocks.js";
 import { buildAsOf } from "./lib/asOf.js";
 import { readSnapshot } from "./lib/snapshotIo.js";
+import { keepFirstLiveDate } from "./lib/firstLiveDate.js";
 
 await loadEnv();
 const project = selectPipelineProject("rebuild-holders-history-solana", { ported: true });
@@ -326,7 +327,8 @@ async function main() {
     console.log("Dry run: public/data untouched. Pass --write to publish.");
     return;
   }
-  const existing = (await readOptionalJson(HISTORY_PATH))?.entries ?? [];
+  const existingDoc = await readOptionalJson(HISTORY_PATH);
+  const existing = existingDoc?.entries ?? [];
   const entries = mergeHistoryEntries(existing, replayed);
   // Replay is time-based (blockTime), not slot-based: the closing slot is known
   // only when date-blocks.json "cutoffs" has it; otherwise asOf.noBlock says so.
@@ -334,7 +336,7 @@ async function main() {
   if (asOf?.noBlock) console.warn(`asOf ${asOf.date}: no ${chainKey} cutoff slot recorded; stamped without a slot.`);
   await fs.writeFile(
     HISTORY_PATH,
-    `${JSON.stringify({ generatedAt: new Date().toISOString(), source: "rebuild-holders-history-solana", ...(asOf ? { asOf } : {}), entries }, null, 2)}\n`,
+    `${JSON.stringify({ generatedAt: new Date().toISOString(), source: "rebuild-holders-history-solana", ...(asOf ? { asOf } : {}), ...keepFirstLiveDate(existingDoc), entries }, null, 2)}\n`,
     "utf8",
   );
   console.log(`Wrote ${HISTORY_PATH} (${entries.length} entries).`);

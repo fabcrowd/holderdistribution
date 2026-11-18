@@ -1,10 +1,9 @@
 /**
- * File and git access for holder snapshots in any layout (legacy, slim-v1, sharded-v1).
+ * File access for holder snapshots in any layout (legacy, slim-v1, sharded-v1); past revisions: stateStore.js.
  * Readers return what a bare JSON.parse returned before, except that a sharded head is
  * assembled (and verified) from its shard directory.
  */
 
-import { execFileSync } from "node:child_process";
 import { cp, copyFile, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -28,7 +27,6 @@ import {
 } from "./snapshotShards.js";
 
 const MIB = 1024 * 1024;
-const GIT_MAX_BUFFER = 512 * MIB;
 
 const isSharded = (head) => head?.layout === SNAPSHOT_LAYOUT_SHARDED;
 
@@ -66,14 +64,15 @@ export const readSnapshotHeadSync = (file) => headOnly(JSON.parse(readFileSync(f
 
 export const readSnapshotHead = async (file) => headOnly(JSON.parse(await readFile(file, "utf8")));
 
-const gitShow = (rev, path, cwd, maxBuffer, encoding) =>
-  execFileSync("git", ["show", `${rev}:${path}`], { cwd, maxBuffer, encoding, stdio: ["ignore", "pipe", "pipe"] });
-
-export const readSnapshotAtRev = (rev, repoRelPath, { cwd = process.cwd(), maxBuffer = GIT_MAX_BUFFER } = {}) => {
-  const head = JSON.parse(gitShow(rev, repoRelPath, cwd, maxBuffer, "utf8"));
+/**
+ * A snapshot from a head text read out of any store (stateStore.js reads past revisions); a sharded head is
+ * assembled from `loadShard(repoRelShardPath)`, which returns each shard's Buffer.
+ */
+export const parseSnapshotFrom = (repoRelPath, headText, loadShard) => {
+  const head = JSON.parse(headText);
   if (!isSharded(head)) return head;
   const dir = shardDirFor(repoRelPath);
-  return assembleSnapshot(head, (file) => gitShow(rev, `${dir}/${file}`, cwd, maxBuffer, null));
+  return assembleSnapshot(head, (file) => loadShard(`${dir}/${file}`));
 };
 
 const removeShardDir = (file) => rm(shardDirFor(file), { recursive: true, force: true });

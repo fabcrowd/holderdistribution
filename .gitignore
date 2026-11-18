@@ -54,9 +54,12 @@ data/*/rebuild-transfers-*.json
 data/**/transfer-window-*
 
 # pull-holders-rpc.js's same-run "before this run" scratch snapshot. TEL's root
-# copy is untouched (refresh-holders.yml names its files and never stages
-# it); per-project workflows stage public/data/<slug>/ as a whole dir, so the
-# (very large) scratch copy is ignored there.
+# copy is never staged by refresh-holders.yml (it names its files) and is
+# ignored and untracked like the others, so a fresh checkout has no stale
+# "previous"; per-project workflows stage public/data/<slug>/ as a whole dir, so
+# the (very large) scratch copy is ignored there too.
+public/data/tel-holders-previous.json
+public/data/tel-holders-previous.d/
 public/data/*/tel-holders-previous.json
 public/data/*/tel-holders-previous.d/
 # publishSnapshot's staging copy of the prior snapshot (moved into place after the new write).

@@ -185,6 +185,14 @@ const dropWallClock = (value) => {
   return value;
 };
 
+// Each counterparty date file records its snapshot's revision, which is a different commit in each fixture repo;
+// it is compared with that one field replaced (the balances still have to match).
+const COMMIT_SPECIFIC_DIR = "/tier-counterparty-days/";
+const dropRevision = (state) => {
+  expect(state.version).toMatch(/^[0-9a-f]{40}$/);
+  return { ...state, version: "<revision>" };
+};
+
 const LAYOUT_SPECIFIC = new Set(["tel-holders.json", "tel-holders-previous.json", "tel-holders.d", "tel-holders-previous.d"]);
 
 /** Every file the CLIs produced under public/data and data, as text with the wall-clock fields dropped. */
@@ -198,7 +206,9 @@ const collectOutputs = (root) => {
       else {
         const text = fs.readFileSync(full, "utf8");
         const rel = path.relative(root, full).split(path.sep).join("/");
-        out[rel] = entry.name.endsWith(".json") ? `${JSON.stringify(dropWallClock(JSON.parse(text)), null, 2)}\n` : text;
+        const parsed = entry.name.endsWith(".json") ? dropWallClock(JSON.parse(text)) : null;
+        const json = rel.includes(COMMIT_SPECIFIC_DIR) ? dropRevision(parsed) : parsed;
+        out[rel] = json ? `${JSON.stringify(json, null, 2)}\n` : text;
       }
     }
   };
@@ -258,6 +268,7 @@ describe("reader CLIs give the same outputs for a slim file and a sharded snapsh
     const b = collectOutputs(sharded);
     expect(Object.keys(b).sort()).toEqual(Object.keys(a).sort());
     for (const file of Object.keys(a)) expect(b[file], file).toBe(a[file]);
+    expect(Object.keys(b).some((file) => file.includes(COMMIT_SPECIFIC_DIR))).toBe(true);
     // The run did real work: the sharded outputs are not the empty-snapshot shape.
     const lite = JSON.parse(b[`${DATA_REL}/holders-lite.json`]);
     expect(lite.views.combined.metrics.holderCount).toBe(3);

@@ -8,7 +8,6 @@ import {
   copySnapshotFiles,
   publishSnapshot,
   readSnapshot,
-  readSnapshotAtRev,
   readSnapshotHead,
   readSnapshotHeadSync,
   readSnapshotSync,
@@ -16,6 +15,7 @@ import {
   writeSnapshotFiles,
 } from "./snapshotIo.js";
 import { SHARD_ID_WIDTH, shardDirFor } from "./snapshotShards.js";
+import { readSnapshotAtRev } from "./stateStore.js";
 
 const ENV = "HD_SNAPSHOT_SHARD_BYTES";
 const RANGES = [0, 1, 3, 7];

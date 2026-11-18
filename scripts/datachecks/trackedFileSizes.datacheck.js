@@ -1,8 +1,10 @@
+// Data check (npm run check:data): moved unchanged from scripts/lib/trackedFileSizes.test.js.
+// Runs for every --project: it guards the whole tracked tree, which every per-project nightly commits to.
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { SNAPSHOT_FAIL_BYTES } from "./snapshotFormat.js";
+import { SNAPSHOT_FAIL_BYTES } from "../lib/snapshotFormat.js";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..");
 

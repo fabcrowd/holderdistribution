@@ -9,13 +9,19 @@
  * discovery / resume rules.
  *
  * Writes (nothing else):
- *   <data>/exchange-flow-checkpoint.json   chains.<key> = { mint, since, accounts{ata:{owner,until}}, complete, missingTx, unavailable[{signature,slot,blockTime}] }
+ *   <data>/exchange-flow-checkpoint.json   chains.<key> = { mint, since, sinceSource?, defaultSince?, accounts{ata:{owner,until}}, complete, missingTx, unavailable[{signature,slot,blockTime}] }
  *   <work>/solana-flow-days.json           exact per-day / per-counterparty raw sums (not served)
  * scan-exchange-flows.js and generate-tier-outflows.js publish the feeds from
  * that store, so run this first.
  *
- * Floor: --since | SOLANA_FLOWS_SINCE | the first committed holder snapshot
- * date (never earlier: no tier / no real data before it).
+ * sinceSource "override" + defaultSince: written only by an override run (lib/solana/flowConfig.js resolveFlowFloor).
+ *
+ * Floor: --since | SOLANA_FLOWS_SINCE (one-off) | holders-history.json
+ * firstLiveDate, the first live holder snapshot day (never earlier: no tier /
+ * no real data before it; backfilled rows do not count) | the floor recorded
+ * in the checkpoint (chains.<key>.since) while the history has no such day |
+ * the latest history row, with a warning. Not read from git
+ * (lib/solana/flowConfig.js flowFloor).
  * Budget: --max-tx | SOLANA_FLOW_MAX_TX (default 15000 transactions per run, about a day of ZBCN venue activity;
  * the rest is picked up by the next run), SOLANA_FLOW_MAX_MS (default 40 min
  * wall clock, under the workflow step's 45-min timeout; the Helius free tier
@@ -35,7 +41,7 @@ import { selectPipelineProject, projectPaths, projectWork } from "./lib/projects
 
 await loadEnv();
 const project = selectPipelineProject("scan-solana-flows", { ported: true });
-const { solanaFlowChains, solanaFlowVenues, firstSnapshotDate } = await import("./lib/solana/flowConfig.js");
+const { solanaFlowChains, solanaFlowVenues, resolveFlowFloor, latestRowFloorWarning } = await import("./lib/solana/flowConfig.js");
 const chains = solanaFlowChains(project.config);
 if (chains.length === 0) {
   console.log(`${project.slug}: no Solana chain; nothing to do.`);
@@ -61,9 +67,15 @@ const readOptionalJson = async (p) => {
   }
 };
 
-const since = argValue("--since") ?? (process.env.SOLANA_FLOWS_SINCE || firstSnapshotDate(data.rel("tel-holders.json")));
+const checkpoint = (await readOptionalJson(CHECKPOINT_PATH)) ?? { chains: {} };
+checkpoint.chains ??= {};
+const override = argValue("--since") ?? (process.env.SOLANA_FLOWS_SINCE || null);
+const floor = resolveFlowFloor({ override, checkpoint, chainKeys: chains.map((c) => c.key), historyPath: data("holders-history.json") });
+const floorWarning = latestRowFloorWarning(project.slug, floor);
+if (floorWarning) console.warn(`  WARNING ${floorWarning}`);
+const { since } = floor;
 if (!/^\d{4}-\d{2}-\d{2}$/.test(since ?? "")) {
-  console.error(`${project.slug}: no flow floor (no committed holder snapshot; pass --since YYYY-MM-DD).`);
+  console.error(`${project.slug}: no flow floor (no recorded floor and no holders-history.json firstLiveDate or row; pass --since YYYY-MM-DD).`);
   process.exit(1);
 }
 const sinceSec = Date.parse(`${since}T00:00:00Z`) / 1000;
@@ -98,8 +110,6 @@ const persist = async () => {
 const backupCall = createFlowBackupCall();
 if (backupCall) console.log(`  Alchemy backup for flow scans enabled (cap ${flowBackupMonthlyCap().toLocaleString("en-US")} CU/month; used only after Helius/public fail)`);
 
-const checkpoint = (await readOptionalJson(CHECKPOINT_PATH)) ?? { chains: {} };
-checkpoint.chains ??= {};
 let store = (await readOptionalJson(STORE_PATH)) ?? null;
 if (!store) {
   // A cursor without its day store would silently drop everything before it.
@@ -135,7 +145,7 @@ for (const c of chains) {
   const scanStartedAt = new Date().toISOString();
   const save = async ({ newEvents, accounts, remaining, missing, unavailable }) => {
     applyFlowEventsOnce(store, c.key, newEvents);
-    checkpoint.chains[c.key] = { mint: c.mint, since, accounts, complete: remaining === 0, scanStartedAt, missingTx: baseMissing + missing, unavailable };
+    checkpoint.chains[c.key] = { mint: c.mint, since, ...floor.markers, accounts, complete: remaining === 0, scanStartedAt, missingTx: baseMissing + missing, unavailable };
     await persist();
   };
   // Shared day cutoffs (first produced slot >= D 00:00Z) into date-blocks.json

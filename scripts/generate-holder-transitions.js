@@ -25,7 +25,6 @@
  * transition that happened on the most recent day. Excludes exchange wallets
  * (a hot wallet isn't a retail tier), matching the distribution methodology.
  */
-import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -36,7 +35,8 @@ import { normalizeAnyAddress } from "./lib/address.js";
 import { emptyTransitions } from "./lib/emptyTransitions.js";
 import { inheritAsOf } from "./lib/asOf.js";
 import { hydrateChainHolders } from "./lib/snapshotFormat.js";
-import { readSnapshot, readSnapshotAtRev } from "./lib/snapshotIo.js";
+import { readSnapshot } from "./lib/snapshotIo.js";
+import { readJsonAt, readSnapshotAtRev, versionsByDate } from "./lib/stateStore.js";
 import { baseSnapshotIndex } from "./lib/transitionBase.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
@@ -58,19 +58,9 @@ const RANGES = projectHolderTiers(project).distributionTiers;
 const bucketOf = (v) => rangeLabelOf(RANGES, v);
 
 const GIT_MAX_BUFFER = 512 * 1024 * 1024;
-const git = (args) => execFileSync("git", args, { encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
+const commitsByDate = (file) => versionsByDate(file, { maxBuffer: GIT_MAX_BUFFER });
 
-const commitsByDate = (file) => {
-  const out = git(["log", "--format=%H %ad", "--date=short", "--", file]);
-  const map = new Map();
-  for (const line of out.trim().split("\n")) {
-    const [h, d] = line.split(" ");
-    if (h && d && !map.has(d)) map.set(d, h);
-  }
-  return map;
-};
-
-const showJson = (commit, file) => JSON.parse(git(["show", `${commit}:${file}`]));
+const showJson = (commit, file) => readJsonAt(commit, file, { maxBuffer: GIT_MAX_BUFFER });
 const showSnapshot = (commit, file) => readSnapshotAtRev(commit, file, { maxBuffer: GIT_MAX_BUFFER });
 
 const readOptionalJson = async (p) => {
