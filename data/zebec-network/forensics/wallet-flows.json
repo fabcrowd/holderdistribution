@@ -1,9 +1,9 @@
 {
  "version": 1,
- "generated": "2026-11-17T22:09:17.195Z",
+ "generated": "2026-11-18T21:51:24.332Z",
  "generator": "scripts/generate-wallet-flows-solana.js",
  "project": "zebec-network",
- "priceUsd": 0.00176431,
+ "priceUsd": 0.00170334,
  "priceSource": "CoinGecko simple/price (zebec-network)",
  "chains": [
   "solana"
@@ -17,14 +17,14 @@
  ],
  "distribution": {
   "totalSupply": 100000000000,
-  "counted": 99998768322,
+  "counted": 99998768313,
   "classes": [
    {
     "key": "treasury",
     "label": "Treasury",
     "group": "telcoin",
     "tel": 12946774852,
-    "share": 0.12946934316694317
+    "share": 0.12946934317893807
    },
    {
     "key": "association",
@@ -38,7 +38,7 @@
     "label": "Team & holdings",
     "group": "telcoin",
     "tel": 402861346,
-    "share": 0.004028663081193718
+    "share": 0.00402866308156696
    },
    {
     "key": "escrow",
@@ -51,22 +51,22 @@
     "key": "staking",
     "label": "Staking",
     "group": "locked",
-    "tel": 25077651,
-    "share": 0.000250779600091647
+    "tel": 24856933,
+    "share": 0.00024857239160575083
    },
    {
     "key": "cex",
     "label": "Centralised exchanges",
     "group": "market",
-    "tel": 44279783288,
-    "share": 0.4428032867883656
+    "tel": 43833540951,
+    "share": 0.43834080849236623
    },
    {
     "key": "dex",
     "label": "DEX pools",
     "group": "market",
-    "tel": 118548792,
-    "share": 0.0011855025228891623
+    "tel": 120751263,
+    "share": 0.0012075274981333782
    },
    {
     "key": "bots",
@@ -86,8 +86,8 @@
     "key": "retail",
     "label": "Retail & unlabelled holders",
     "group": "retail",
-    "tel": 42225722393,
-    "share": 0.4222624248405165
+    "tel": 42669982969,
+    "share": 0.4267050853573896
    }
   ],
   "movedFromRetail": [],
@@ -111,7 +111,7 @@
   },
   "90d": {
    "total": 3025637,
-   "usd": 5338,
+   "usd": 5154,
    "byVenue": {
     "DEX": 3025637
    }
@@ -146,7 +146,7 @@
     "30d": 0,
     "90d": 3025637
    },
-   "sellVenueUsd90d": 5338,
+   "sellVenueUsd90d": 5154,
    "sampleTxs": [
     "https://solscan.io/tx/4u6U7bTJ9Udf1kBXSHzF7JPTQoAQhqoY2iAxXYpXFGF3AmJ5wMmEHfTKESn6xRLadN8JnGBx2qNUVrJeiiHRPw8j",
     "https://solscan.io/tx/f2Fhii1xNZjzpaMWQZWRF9WVLgzGb8CNwk1ePyxbMVXYiiPZLcxv8ZLoiogr2ESvm9oR1Px2nMux9UCc1gitDkm",
@@ -169,7 +169,7 @@
    "balanceDetail": {
     "solana": 7000217587
    },
-   "balanceUsd": 12350554,
+   "balanceUsd": 11923751,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -202,7 +202,7 @@
    "balanceDetail": {
     "solana": 5500000100
    },
-   "balanceUsd": 9703705,
+   "balanceUsd": 9368370,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -235,7 +235,7 @@
    "balanceDetail": {
     "solana": 399920762
    },
-   "balanceUsd": 705584,
+   "balanceUsd": 681201,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -266,7 +266,7 @@
    "balanceDetail": {
     "solana": 338300464
    },
-   "balanceUsd": 596867,
+   "balanceUsd": 576241,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -301,7 +301,7 @@
    "balanceDetail": {
     "solana": 108256701
    },
-   "balanceUsd": 190998,
+   "balanceUsd": 184398,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -332,12 +332,10 @@
    "balanceDetail": {
     "solana": 2940585
    },
-   "balanceUsd": 5188,
+   "balanceUsd": 5009,
    "outflows": {
     "24h": {},
-    "72h": {
-     "unlabelled": 3803300
-    },
+    "72h": {},
     "30d": {
      "unlabelled": 59333747
     },
@@ -680,13 +678,13 @@
   "window": "90d",
   "totals": {
    "received": 1830104276.947235,
-   "receivedUsd": 3228871.2768607764,
+   "receivedUsd": 3117289.8190953033,
    "byKind": {
     "internal": 855883941.474,
     "unlabelled": 900399739.300724,
-    "DEX": 23060841.566649,
+    "DEX": 23769900.771325,
     "CEX": 10019931.751211,
-    "unaccounted": 40739822.854651
+    "unaccounted": 40030763.649975
    }
   },
   "destinations": [
@@ -695,7 +693,7 @@
     "label": "Team ops and admin wallet",
     "dest": "GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J",
     "received": 853000000,
-    "receivedUsd": 1504956.43,
+    "receivedUsd": 1452949.02,
     "t": "2026-10-04T02:57:18.000Z",
     "status": "done",
     "onward": [
@@ -743,7 +741,7 @@
     "label": "Team signer EsDV",
     "dest": "DoBTtiH3q4WC1R4h1bywhELzxWEYXqep6FzmJgvH65tR",
     "received": 166650100,
-    "receivedUsd": 294022.437931,
+    "receivedUsd": 283861.781334,
     "t": "2026-09-30T05:15:14.000Z",
     "status": "done",
     "onward": [
@@ -956,7 +954,7 @@
     "label": "Team signer EsDV",
     "dest": "23c1Ryrg4yxJytMGEebDTqNTeyrd5yZ1kNXkMbxpGTWT",
     "received": 166649900.065168,
-    "receivedUsd": 294022.08518397657,
+    "receivedUsd": 283861.44077700324,
     "t": "2026-09-30T05:15:36.000Z",
     "status": "done",
     "onward": [
@@ -1290,7 +1288,7 @@
     "label": "Team signer EsDV",
     "dest": "DU7NxvumXU8RYmzWadPHeMbNVcC8sx9mhsEfGu5Ye73E",
     "received": 102001000,
-    "receivedUsd": 179961.38431,
+    "receivedUsd": 173742.38334,
     "t": "2026-09-12T04:26:43.000Z",
     "status": "done",
     "onward": [
@@ -1393,7 +1391,7 @@
     "label": "Team signer EsDV",
     "dest": "DP5U1C6TdwbdcQVwXPFCopFL3y3zba2PWB68jsCqrU3S",
     "received": 101999000,
-    "receivedUsd": 179957.85569,
+    "receivedUsd": 173738.97666000001,
     "t": "2026-09-12T04:27:00.000Z",
     "status": "done",
     "onward": [
@@ -1430,7 +1428,7 @@
     "label": "Team signer EsDV",
     "dest": "AHrdAPnnPbUW2MeYiddAwmd8J4zmzNbcKiYzYfK3kqaY",
     "received": 85100000,
-    "receivedUsd": 150142.78100000002,
+    "receivedUsd": 144954.234,
     "t": "2026-11-02T07:45:04.000Z",
     "status": "done",
     "onward": [
@@ -1511,7 +1509,7 @@
     "label": "Team signer EsDV",
     "dest": "44nSXZDpNm6LEf3urRJgtaCNi6SY2PrBkwHR3Hmx1X5Q",
     "received": 46150010,
-    "receivedUsd": 81422.9241431,
+    "receivedUsd": 78609.1580334,
     "t": "2026-08-21T04:52:53.000Z",
     "status": "done",
     "onward": [
@@ -1636,7 +1634,7 @@
     "label": "Team signer EsDV",
     "dest": "Bp4Lm7PUq2PRRRUGVYy9GqA4Wc8fAoMoCNxqHFHLsqCS",
     "received": 46149990,
-    "receivedUsd": 81422.8888569,
+    "receivedUsd": 78609.1239666,
     "t": "2026-08-21T04:53:11.000Z",
     "status": "done",
     "onward": [
@@ -1761,7 +1759,7 @@
     "label": "Team signer EsDV",
     "dest": "96V8SYZaMbxXZjn1EEFvHt7yCY47RX75BgnHrwwA4Fs9",
     "received": 43400000.103105,
-    "receivedUsd": 76571.05418190919,
+    "receivedUsd": 73924.95617562288,
     "t": "2026-11-05T11:57:23.000Z",
     "status": "done",
     "onward": [
@@ -1809,7 +1807,7 @@
     "label": "Team ops and admin wallet",
     "dest": "AC9Ja4o8pW5K8r6TieYWGDTrYqCULju71Ae6XBZA2Xx8",
     "received": 36113941.923,
-    "receivedUsd": 63716.18887416813,
+    "receivedUsd": 61514.32183512282,
     "t": "2026-10-31T16:35:57.000Z",
     "status": "done",
     "onward": [
@@ -1912,7 +1910,7 @@
     "label": "Team signer EsDV",
     "dest": "5xbbnZfxcTgBHifKoNW7jvBRFvpvQ4HMDcnjuYssTHKp",
     "received": 31250100,
-    "receivedUsd": 55134.863931,
+    "receivedUsd": 53229.545334,
     "t": "2026-10-04T02:06:47.000Z",
     "status": "done",
     "onward": [
@@ -2093,7 +2091,7 @@
     "label": "Team signer EsDV",
     "dest": "7usY1E3SZwscrGpjqinDjJLiHor6nVCi3TLfnZZXUMB8",
     "received": 31249900,
-    "receivedUsd": 55134.511069,
+    "receivedUsd": 53229.204666,
     "t": "2026-10-04T02:07:03.000Z",
     "status": "done",
     "onward": [
@@ -2196,7 +2194,7 @@
     "label": "Team ops and admin wallet",
     "dest": "8HdkaVkh7QbpXrXmHUiWDQ7FfdHQ5LFehjZUS21mE9uh",
     "received": 29760696.77,
-    "receivedUsd": 52507.0949182787,
+    "receivedUsd": 50692.5852362118,
     "t": "2026-09-23T02:16:08.000Z",
     "status": "done",
     "onward": [],
@@ -2208,7 +2206,7 @@
     "label": "Team signer EsDV",
     "dest": "D2QTEub4AHsRnPD5DKrFD3qS663857CpzN8KCAtqUXQT",
     "received": 28500000,
-    "receivedUsd": 50282.835,
+    "receivedUsd": 48545.19,
     "t": "2026-08-22T23:13:24.000Z",
     "status": "done",
     "onward": [
@@ -2289,7 +2287,7 @@
     "label": "Team ops and admin wallet",
     "dest": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
     "received": 9322199.438464,
-    "receivedUsd": 16447.24969127642,
+    "receivedUsd": 15878.87519151327,
     "t": "2026-11-15T19:21:39.000Z",
     "status": "done",
     "onward": [
@@ -2655,19 +2653,52 @@
       "amount": 26512.82567,
       "sig": "5FFxNUQBdv8QgqgrBMuwHdg9uPGvU9AGPxmgmbq2qM1D7wCBZXbw8f4WTfhsE6chH8fCEcp8YNxyNNqnPYkcxkCN",
       "t": "2026-11-02T20:00:22.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
+      "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
+      "kind": "DEX",
+      "venue": "dex",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 340264.613422,
+      "sig": "2rcksFvNo1xj4ctPrhn9QY16vaVYBWPXZ6N2wEZt2cRV6AYQZrB3DEhc5tzABRp3UyPCXf9xSpCYfpmjazNVHnGi",
+      "t": "2026-11-17T23:55:00.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
+      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
+      "kind": "DEX",
+      "venue": "dex",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 239574.913681,
+      "sig": "2rcksFvNo1xj4ctPrhn9QY16vaVYBWPXZ6N2wEZt2cRV6AYQZrB3DEhc5tzABRp3UyPCXf9xSpCYfpmjazNVHnGi",
+      "t": "2026-11-17T23:55:00.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
+      "to": "6Mo8W6b67brHWokLNeXPdfwH7B1ir3xYCGd4EcBen6eM",
+      "kind": "DEX",
+      "venue": "dex",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 129219.677573,
+      "sig": "2rcksFvNo1xj4ctPrhn9QY16vaVYBWPXZ6N2wEZt2cRV6AYQZrB3DEhc5tzABRp3UyPCXf9xSpCYfpmjazNVHnGi",
+      "t": "2026-11-17T23:55:00.000Z"
      }
     ],
     "byKind": {
-     "DEX": 8613140.233788
+     "DEX": 9322199.438464
     },
-    "unaccounted": 709059.204676
+    "unaccounted": 0
    },
    {
     "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
     "label": "Team ops and admin wallet",
     "dest": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
     "received": 7519931.751211,
-    "receivedUsd": 13267.490787979079,
+    "receivedUsd": 12809.000549107745,
     "t": "2026-11-15T19:20:39.000Z",
     "status": "done",
     "onward": [
@@ -2748,7 +2779,7 @@
     "label": "Team ops and admin wallet",
     "dest": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
     "received": 6326039.151001,
-    "receivedUsd": 11161.094134502575,
+    "receivedUsd": 10775.395527466044,
     "t": "2026-10-03T01:29:46.000Z",
     "status": "done",
     "onward": [
@@ -2895,7 +2926,7 @@
     "label": "Team ops and admin wallet",
     "dest": "43ovzPyqFgXyLCT9EgN3Lyw8xEHo3daLN95FniR2k7va",
     "received": 5823653.184,
-    "receivedUsd": 10274.72954906304,
+    "receivedUsd": 9919.66141443456,
     "t": "2026-11-02T05:28:05.000Z",
     "status": "done",
     "onward": [
@@ -2921,7 +2952,7 @@
     "label": "Team ops and admin wallet",
     "dest": "9acGHNrdibvN4tsqWhS5uQDeU2dzvXCr23TYKWYoAj2j",
     "received": 5586647.504468,
-    "receivedUsd": 9856.578058607936,
+    "receivedUsd": 9515.960160260522,
     "t": "2026-11-08T19:54:44.000Z",
     "status": "open",
     "onward": [],
@@ -2933,7 +2964,7 @@
     "label": "Team ops and admin wallet",
     "dest": "7CSAwmJhTMqncxMxoFdxoYHLSYhN3fqw9Je2iMPbt2vB",
     "received": 5000000,
-    "receivedUsd": 8821.550000000001,
+    "receivedUsd": 8516.7,
     "t": "2026-10-07T16:05:57.000Z",
     "status": "done",
     "onward": [
@@ -2992,7 +3023,7 @@
     "label": "Team ops and admin wallet",
     "dest": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
     "received": 3833356.167705,
-    "receivedUsd": 6763.228620243609,
+    "receivedUsd": 6529.508894698634,
     "t": "2026-11-15T19:22:08.000Z",
     "status": "done",
     "onward": [
@@ -3162,7 +3193,7 @@
     "label": "Team ops and admin wallet",
     "dest": "3uWEqNcNgUY8FpjPsH43Xq4prcyKAXhamo1amgy1trUw",
     "received": 3521350.067732,
-    "receivedUsd": 6212.753138000245,
+    "receivedUsd": 5998.056424370625,
     "t": "2026-11-07T06:12:14.000Z",
     "status": "done",
     "onward": [
@@ -3221,7 +3252,7 @@
     "label": "Team ops and admin wallet",
     "dest": "F9wCYEaem2CXEBjtmp8hAp7FEQD1KT6pDF6oaFLBLZDt",
     "received": 3211358.278166,
-    "receivedUsd": 5665.831523751055,
+    "receivedUsd": 5470.035009531274,
     "t": "2026-11-15T19:21:07.000Z",
     "status": "done",
     "onward": [
@@ -3380,7 +3411,7 @@
     "label": "Team ops and admin wallet",
     "dest": "6PN6NCxYbrHj1Aiw49S3FVXnRj3B5FXEdAteE5wPbkKQ",
     "received": 3167368.670866,
-    "receivedUsd": 5588.220219695592,
+    "receivedUsd": 5395.105751832893,
     "t": "2026-11-01T15:15:51.000Z",
     "status": "done",
     "onward": [
@@ -3506,7 +3537,7 @@
     "label": "Team ops and admin wallet",
     "dest": "AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk",
     "received": 2511956.105701,
-    "receivedUsd": 4431.869276849331,
+    "receivedUsd": 4278.715313084741,
     "t": "2026-11-15T19:22:54.000Z",
     "status": "done",
     "onward": [
