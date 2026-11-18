@@ -84,32 +84,7 @@ describe("groupSupplyCategories — fixed bucket set", () => {
     expect(OTHER_CATEGORY_KEYS.some((k) => isDeveloperCategory(DEFAULT_DEVELOPER_HOLDINGS, k))).toBe(false);
   });
 
-  it("partitions the real ZBCN feed: treasury, team and reward vaults sit inside Developer holdings", () => {
-    const zbcn = readJson("public/data/zebec-network/supply-reconciliation.json");
-    const buckets = groupSupplyCategories(zbcn.categories, zbcn.residual, zbcnDeveloper());
-    const dev = buckets.find((b) => b.key === "developer");
-    expect(dev?.amount).toBeCloseTo(
-      zbcn.categories.treasury + (zbcn.categories.holdings ?? 0) + (zbcn.categories.team ?? 0) + zbcn.categories.staking,
-      3,
-    );
-    expect(buckets.map((b) => b.key).every((key) => CANONICAL.has(key))).toBe(true);
-    expect(buckets.every((b) => b.amount > 0)).toBe(true);
-    expect(Math.abs(buckets.reduce((s, b) => s + b.amount, 0) - zbcn.totalSupply)).toBeLessThan(1);
-  });
-
-  it("partitions the real TEL feed: escrow and Holdings sit inside Developer holdings", () => {
-    const tel = readJson("public/data/supply-reconciliation.json");
-    const buckets = groupSupplyCategories(tel.categories, tel.residual, telDeveloper());
-    const dev = buckets.find((b) => b.key === "developer");
-    const expected = ["treasury", "council", "holdings", "team", "staking", "escrow", "staking-contract"].reduce(
-      (s, k) => s + (tel.categories[k] ?? 0),
-      0,
-    );
-    expect(dev?.amount).toBeCloseTo(expected, 3);
-    expect(buckets.map((b) => b.key).every((key) => CANONICAL.has(key))).toBe(true);
-    expect(buckets.find((b) => b.key === "supplyGap")?.label).toBe(SUPPLY_GAP_LABEL);
-    expect(Math.abs(buckets.reduce((s, b) => s + b.amount, 0) - tel.totalSupply)).toBeLessThan(1);
-  });
+  // "partitions the real ZBCN/TEL feed" run in `npm run check:data` (src/datachecks/supplyBreakdown.datacheck.ts).
 
   it("config labels all three TELx reward contracts as staking so they land in Developer holdings", () => {
     const exclusions = readJson("config/exclusions.json");
@@ -134,8 +109,9 @@ describe("groupSupplyCategories — fixed bucket set", () => {
 
 describe("circulating formula is unchanged by the grouping", () => {
   it("names only the subtracted pieces, using each project's treasury label", () => {
-    const tel = readJson("public/data/supply-reconciliation.json");
-    const zbcn = readJson("public/data/zebec-network/supply-reconciliation.json");
+    // Fixed samples of each project's supply-reconciliation.json (categories + circulatingExclusions).
+    const tel = readJson("scripts/fixtures/tel/supply-reconciliation.json");
+    const zbcn = readJson("scripts/fixtures/zebec-network/supply-reconciliation.json");
     const telLabels = projectEntities(getProject("tel"));
     const zbcnLabels = projectEntities(getProject("zebec-network"));
     expect(circulatingFormula(tel.categories, telLabels, tel.circulatingExclusions.total)).toBe(
@@ -220,41 +196,8 @@ describe("ZBCN staking copy", () => {
     expect(body).toMatch(/buybacks and burns/);
   });
 
-  it("copy figures match the live staking + supply snapshots (within rounding)", () => {
-    const staking = JSON.parse(
-      readFileSync(resolve(process.cwd(), "public/data/zebec-network/solana-staking.json"), "utf8"),
-    );
-    const supply = JSON.parse(
-      readFileSync(resolve(process.cwd(), "public/data/zebec-network/supply-reconciliation.json"), "utf8"),
-    );
-    // Exempt lockups carry a finite gap ratio; the values themselves drift with the daily refresh.
-    const exempt = (staking.lockups as Array<{ vaultReconcile: string; vaultGapRatio: number }>).filter(
-      (l) => l.vaultReconcile === "exempt",
-    );
-    expect(exempt.length).toBeGreaterThan(0);
-    expect(exempt.every((l) => Number.isFinite(l.vaultGapRatio) && l.vaultGapRatio >= 0)).toBe(true);
-    expect(staking.stakedTotal).toBeGreaterThan(0);
-    // Cumulative lockup counters never decrease on claim: Global Staked = unclaimed + claimed.
-    const lockupTotals = (staking.lockups as Array<{ totalStakedRaw: string; activeRaw: string }>).reduce(
-      (acc, l) => ({
-        total: acc.total + Number(l.totalStakedRaw) / 1e6,
-        active: acc.active + Number(l.activeRaw) / 1e6,
-      }),
-      { total: 0, active: 0 },
-    );
-    expect(lockupTotals.active / 1e9).toBeCloseTo(staking.stakedTotal / 1e9, 2);
-    // Claimed = cumulative minus active, so it can never be negative.
-    expect(lockupTotals.total).toBeGreaterThanOrEqual(lockupTotals.active);
-    // Stake-vault principal is credited to stakers. The staking category is
-    // only the reward-vault remainder, not a ~4.76B sibling of retail.
-    const stakeItems = (supply.items as Array<{ category: string; name: string | null }>).filter(
-      (item) => item.category === "staking",
-    );
-    expect(stakeItems.length).toBeGreaterThan(0);
-    expect(stakeItems.every((item) => /reward/i.test(item.name ?? ""))).toBe(true);
-    expect(supply.categories.staking).toBeLessThan(staking.stakedTotal * 0.01);
-    expect(supply.categories.retail).toBeGreaterThan(staking.stakedTotal);
-  });
+  // "copy figures match the live staking + supply snapshots" runs in `npm run check:data`
+  // (src/datachecks/supplyBreakdown.datacheck.ts).
 });
 
 type HslTriple = [number, number, number];

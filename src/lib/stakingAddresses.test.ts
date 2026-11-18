@@ -84,8 +84,9 @@ describe("stakingAddressLinks", () => {
 describe("supplyRetailStakeModel", () => {
   it("states the live staked total as a subset of ZBCN retail, with principal and reward links split", () => {
     const zbcn = getProject("zebec-network");
+    // Fixed sample of public/data/zebec-network/holders-lite.json (views.combined.stakingStats only).
     const lite = JSON.parse(
-      readFileSync(resolve(process.cwd(), "public/data/zebec-network/holders-lite.json"), "utf8"),
+      readFileSync(resolve(process.cwd(), "scripts/fixtures/zebec-network/holders-lite.json"), "utf8"),
     );
     const staked = lite.views.combined.stakingStats.stakedTotal as number;
     expect(staked).toBeGreaterThan(0);

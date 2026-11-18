@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ClassificationChangelog, ClassificationEvent } from "@/lib/classificationChangelog";
 import { computeBreakAwareDomain, computeSeriesDomain } from "@/lib/chartDomain";
@@ -143,20 +141,8 @@ describe("limitedHistoryCount", () => {
   });
 });
 
-describe("committed feeds", () => {
-  const load = (p: string) => JSON.parse(readFileSync(resolve(process.cwd(), p), "utf8")) as ClassificationChangelog;
-
-  it("declare the known breaks and keep undeclared events untouched", () => {
-    const tel = load("public/data/classification-changelog.json");
-    const telBreaks = getSeriesBreaks(tel, ["retail.balance", "holderCount"], day("2026-09-01"));
-    expect(telBreaks.map((b) => b.t)).toEqual([day("2026-09-29"), day("2026-10-03")]);
-    const zbcn = load("public/data/zebec-network/classification-changelog.json");
-    expect(getSeriesBreaks(zbcn, ["retail.balance"], day("2026-10-01")).map((b) => b.t)).toEqual([day("2026-10-26"), day("2026-10-28")]);
-    expect(getSeriesBreaks(zbcn, ["retail.count"], day("2026-10-01")).map((b) => b.t)).toEqual([day("2026-10-28")]);
-    expect(getSeriesBreaks(zbcn, ["cexBalance"], day("2026-10-01")).map((b) => b.t)).toEqual([day("2026-10-28")]);
-    expect(tel.events.filter((e) => !e.breaksSeries).length).toBeGreaterThan(10);
-  });
-});
+// "committed feeds" (the published classification changelogs) runs in `npm run check:data`
+// (src/datachecks/seriesBreaks.datacheck.ts).
 
 describe("breakTooltip", () => {
   const b = { t: Date.UTC(2026, 9, 3), label: "Methodology change", description: "d" };

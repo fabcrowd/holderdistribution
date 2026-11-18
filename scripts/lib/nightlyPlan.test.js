@@ -59,7 +59,11 @@ describe("nightly job list (config/nightly-jobs.json)", () => {
 
 describe("parity: every project produces every data set", () => {
   const plan = nightlyPlan();
-  const datasets = [...new Set(plan.jobs.map((j) => j.dataset))];
+  // A data set whose job needs a capability read from data/ (forensicsRegistry: the committed
+  // wallet-flows registry) is checked in `npm run check:data` (scripts/datachecks/nightlyPlan.datacheck.js).
+  const DATA_CAPABILITIES = ["forensicsRegistry"];
+  const needsData = (ds) => plan.jobs.some((j) => j.dataset === ds && (j.requires ?? []).some((c) => DATA_CAPABILITIES.includes(c)));
+  const datasets = [...new Set(plan.jobs.map((j) => j.dataset))].filter((ds) => !needsData(ds));
 
   for (const p of plan.projects) {
     it(`${p.slug}: config loads`, () => expect(p.error).toBeUndefined());

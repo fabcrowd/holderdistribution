@@ -5,24 +5,18 @@
 // (data/rebuild-transfers-<chain>.ndjson) from that block up to the target
 // date's block yields the exact balance sheet for that date — verified by
 // reproducing four later committed checkpoints from the 2026-08-21 anchor.
-import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
 import path from "node:path";
 import { fetchAllTransfers } from "./alchemyTransfers.js";
+import { readJsonAt, revisionAsOf } from "./stateStore.js";
 
 /** Latest commit of `file` on or before `date`, parsed as JSON. */
 export function readCommittedJson(file, date) {
-  const sha = execFileSync(
-    "git",
-    ["log", "--format=%H", "-1", `--until=${date} 23:59:59`, "--", file],
-    { encoding: "utf8", maxBuffer: 1 << 20 },
-  ).trim();
+  const sha = revisionAsOf(file, date, { maxBuffer: 1 << 20 });
   if (!sha) throw new Error(`No commit of ${file} at or before ${date}`);
-  return JSON.parse(
-    execFileSync("git", ["show", `${sha}:${file}`], { encoding: "utf8", maxBuffer: 1 << 30 }),
-  );
+  return readJsonAt(sha, file, { maxBuffer: 1 << 30 });
 }
 
 /**

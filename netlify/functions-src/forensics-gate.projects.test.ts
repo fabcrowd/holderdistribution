@@ -5,6 +5,12 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// TEL's bundled report (a static import in walletFlowsSource.ts) is a trimmed copy of data/forensics/wallet-flows.json,
+// so these tests load without data/. The real report's content is checked by `npm run check:data`.
+vi.mock("../../data/forensics/wallet-flows.json", async () => ({
+  default: (await import("../../scripts/fixtures/forensics/wallet-flows.json")).default,
+}));
+
 vi.mock("../../config/projects.json", () => ({
   default: { projects: [
       { slug: "tel", name: "Telcoin", ticker: "TEL", default: true, legacyRoot: true },

@@ -240,7 +240,8 @@ const main = async (project) => {
   }
 
   await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
-  await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(r, null, 2)}\n`, "utf8");
+  // generatedAt dates the feed itself (write-pipeline-status.js freshness), so it never depends on git history.
+  await fs.writeFile(OUTPUT_PATH, `${JSON.stringify({ generatedAt: new Date().toISOString(), ...r }, null, 2)}\n`, "utf8");
   console.log(`\nWrote ${OUTPUT_PATH} (${r.items.length} itemised non-retail addresses)`);
 };
 

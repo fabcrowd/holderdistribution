@@ -8,7 +8,8 @@ const repo = path.resolve(import.meta.dirname, "..", "..");
 const SCAN_ROOTS = ["scripts", "netlify"];
 const SOURCE = /\.(?:js|mjs|cjs)$/;
 const SNAPSHOT_NAME = /tel-holders(?:-previous)?\.json/;
-const SNAPSHOT_IO_IMPORT = /from\s+["'][^"']*snapshotIo\.js["']/;
+// stateStore.js's readSnapshotAtRev reads past revisions through snapshotIo.js, so importing it counts too.
+const SNAPSHOT_IO_IMPORT = /from\s+["'][^"']*snapshotIo\.js["']|import\s*\{[^}]*\breadSnapshotAtRev\b[^}]*\}\s*from\s+["'][^"']*stateStore\.js["']/;
 // A git-history read of a snapshot that parses the blob itself (showJson(commit, SNAP_REL), JSON.parse(git show ...)).
 const BARE_GIT_SNAPSHOT_READ = [
   /showJson\([^)]*(?:SNAP_REL|HOLDERS_SNAPSHOT_FILE|tel-holders)/,
@@ -17,8 +18,6 @@ const BARE_GIT_SNAPSHOT_READ = [
 
 // file (repo-relative, forward slashes) -> why it may name a snapshot file without importing snapshotIo.js.
 const ALLOWED = new Map([
-  ["scripts/scan-hedera-flows.js", "git log on the path, dates only (firstSnapshotDate)"],
-  ["scripts/scan-solana-flows.js", "git log on the path, dates only (firstSnapshotDate)"],
   ["scripts/workflow-paths.js", "file-name list of required outputs, existence check only"],
   ["scripts/lib/onboardRun.js", "existence check on the file list and fix-it message text; the snapshot itself is read in onboard-run.js"],
   ["scripts/lib/cex-write-and-flows.js", "dead file, not imported: reads and writes the snapshot with its own helpers"],
@@ -31,7 +30,7 @@ const walk = (dir) => {
     if (entry.name === "node_modules" || entry.name === ".git") continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...walk(full));
-    else if (SOURCE.test(entry.name) && !/\.test\.[cm]?js$/.test(entry.name)) out.push(full);
+    else if (SOURCE.test(entry.name) && !/\.(?:test|datacheck)\.[cm]?js$/.test(entry.name)) out.push(full);
   }
   return out;
 };
@@ -64,6 +63,11 @@ describe("snapshotReadProblems", () => {
   it("accepts a file that imports snapshotIo.js", () => {
     const text = 'import { readSnapshot } from "./lib/snapshotIo.js";\nconst f = data("tel-holders.json");';
     expect(snapshotReadProblems(text)).toEqual([]);
+  });
+
+  it("accepts a file that reads past snapshots through stateStore.js's readSnapshotAtRev, and only that import", () => {
+    expect(snapshotReadProblems('import { readSnapshotAtRev, versionsByDate } from "./lib/stateStore.js";\nconst f = data.rel("tel-holders.json");')).toEqual([]);
+    expect(snapshotReadProblems('import { readJsonAt } from "./lib/stateStore.js";\nconst f = data.rel("tel-holders.json");')).toHaveLength(1);
   });
 
   it("ignores a mention in a comment", () => {

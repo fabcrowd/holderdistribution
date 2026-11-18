@@ -139,13 +139,10 @@ describe("discoverLargeSellers", () => {
   });
 });
 
+// "is valid" (the committed report itself) runs in `npm run check:data`
+// (scripts/datachecks/walletFlows.datacheck.js).
 describe("committed wallet-flows report", () => {
   const root = path.resolve(import.meta.dirname, "../..");
-  const report = JSON.parse(fs.readFileSync(path.join(root, "data/forensics/wallet-flows.json"), "utf8"));
-
-  it("is valid", () => {
-    expect(validateWalletFlowsReport(report)).toEqual([]);
-  });
 
   it("is NOT in public/ (would ship unauthenticated)", () => {
     const pub = path.join(root, "public");

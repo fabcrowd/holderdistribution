@@ -271,6 +271,8 @@ describe("scripts end to end (fixture repo, no network)", () => {
     expect(r.status, r.stderr).toBe(0);
     const out = JSON.parse(fs.readFileSync(path.join(tmp, "public/data/demo/supply-reconciliation.json"), "utf8"));
     expect(out.totalSupply).toBe(1_000_000);
+    // The feed dates itself; write-pipeline-status.js reads this instead of git history.
+    expect(Number.isFinite(Date.parse(out.generatedAt))).toBe(true);
     expect(fs.existsSync(path.join(tmp, "public/data/supply-reconciliation.json"))).toBe(false);
 
     fs.writeFileSync(path.join(tmp, "public/data/tel-holders.json"), JSON.stringify({ wallets: [{ address: A(1), ethereum_balance: 5, polygon_balance: 0, base_balance: 0 }] }));

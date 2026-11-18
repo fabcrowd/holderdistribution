@@ -26,21 +26,8 @@ describe("coingeckoComparison", () => {
   });
 });
 
-describe("CoinGecko circulating feeds", () => {
-  const read = (file: string) => JSON.parse(readFileSync(resolve(process.cwd(), file), "utf8"));
-
-  it("ZBCN publishes its own CoinGecko circulating supply, never TEL's 95.08B", () => {
-    const zbcn = read("public/data/zebec-network/supply-reconciliation.json");
-    expect(zbcn.coingeckoCirculating).not.toBe(TEL_CG);
-    expect(zbcn.coingeckoCirculating).toBeGreaterThan(0);
-    expect(zbcn.coingeckoCirculating).toBeGreaterThan(99e9);
-  });
-
-  it("TEL still publishes its traced CoinGecko snapshot", () => {
-    const tel = read("public/data/supply-reconciliation.json");
-    expect(tel.coingeckoCirculating).toBe(TEL_CG);
-  });
-});
+// The checks on the published feeds ("CoinGecko circulating feeds") run in `npm run check:data`
+// (src/datachecks/coingeckoComparison.datacheck.ts).
 
 describe("SupplyBreakdown has no hardcoded CoinGecko circulating constant", () => {
   it("does not embed TEL's 95.08B figure", () => {

@@ -543,7 +543,11 @@ The first non-TEL project, mapped 2026-10-25
   no EVM chain) and a second commit; the EVM gap fill is skipped.
   `workflowChain.test.js` pins the matrix wiring.
   `public/data/*/tel-holders-previous.json` (a same-run scratch file) is
-  gitignored, so it is never staged.
+  gitignored, so it is never staged. TEL's root copy
+  `public/data/tel-holders-previous.json` is gitignored and untracked too: a
+  fresh checkout has no "previous" until `pull-holders-rpc.js` rotates one in,
+  and every reader treats an absent file as a first run (no deltas, the cex-flows
+  `comparison` is `available: false`, the vanished-wallet guard is skipped).
 - **RPC:** `SOLANA_RPC_0` is an **Actions secret** (a Helius HTTPS URL). Locally
   it lives in the gitignored `.env`. `loadEnv` only overwrites keys that exist
   in `.env.enc`, and `.env.enc` has no `SOLANA_RPC_*`, so the secret survives.

@@ -88,6 +88,8 @@ Secrets are encrypted via `scripts/encrypt-env.js` / `decrypt-env.js`.
 - `config/projects.json` + `config/projects/<slug>.json`: token registry and per-token config (source of truth). `config/exclusions.json`, `cex-wallets.json`, `chains.json`: shared classification.
 - `scripts/*.js`: feed generators and pipeline CLIs. `scripts/lib/`: shared logic with sibling `*.test.js` (rpc, replay, supply, circulating, holders).
 - `scripts/check-feed-consistency.js` (`npm run check:feeds`), `pipeline-health.js`: feed gates.
+- `scripts/datachecks/`, `src/datachecks/` (`npm run check:data`): checks of the committed data. `npm test` must pass without `public/data/` and `data/`; a test that needs real data belongs in a datacheck file. `scripts/fixtures/`: small inputs for code tests.
+- `scripts/lib/stateStore.js`: the only way to read a past version of a data file (git today). No other script or workflow step reads data out of git history (`gitReadGuard.test.js`).
 - `public/data/` (TEL legacy root) and `public/data/<slug>/`: generated feeds. Never hand-edit; regenerate by script. `data/`: caches and checkpoints.
 - `.github/workflows/`: nightly refresh (`refresh-holders.yml`), backfills, replays.
 - `src/lib/`: pure helpers (charts: `chartAxes`, `chartZoom`; supply: `supplyBreakdown`, `chainViews`; staking: `staking*`; `projects.ts` registry reader).

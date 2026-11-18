@@ -39,6 +39,7 @@ the public Supabase anon key baked in as a default. See [`.env.example`](.env.ex
 | `npm run build` | Sitemap + forensics-gate bundle, then `vite build` → `dist/` |
 | `npm run preview` | Serve `dist/` locally (port 4173) |
 | `npm run check:feeds` / `pipeline:health` | Validate / report on the data feeds |
+| `npm run check:data` | The checks of the committed data itself (`scripts/datachecks/`, `src/datachecks/`); `-- --project <slug>` or `HD_PROJECT` runs one project's. `npm test` passes without `public/data/` and `data/` |
 | `npm run check:go-live` | Fail unless every project is complete: config, feeds, wallet flows, ledger |
 | `npm run onboard:check -- --project <slug> [--skip-tests]` | Local onboarding gates in one go: vitest, typecheck, lint, feed consistency, pipeline health, strict go-live; logs in `tasks/` |
 
@@ -89,7 +90,16 @@ scripts/lib/cexFlows.js            cex-flows one-day comparison rule (previous-s
 scripts/lib/snapshotFormat.js      tel-holders.json layout: slim single-chain writer, `hydrateChainHolders` reader, size gate (warn 50 MiB, fail 95 MiB)
 scripts/lib/transitionBase.js      base snapshot of a holder-transitions window: never one dated before the first history row
 scripts/lib/snapshotShards.js, snapshotIo.js   sharded snapshot (head tel-holders.json + tel-holders.d/wallets-NNN.tsv, from 50 MiB); the only
-                                   way to read or write a holder snapshot: readSnapshot, readSnapshotAtRev (git), writeSnapshotFiles, publishSnapshot
+                                   way to read or write a holder snapshot: readSnapshot, writeSnapshotFiles, publishSnapshot
+scripts/lib/stateStore.js          the only way to read a PAST version of a data file (versionsByDate, revisionAsOf, readJsonAt,
+                                   readSnapshotAtRev); backed by git today. gitReadGuard.test.js fails on any other git read in scripts/
+                                   or in a workflow run step
+scripts/lib/tierCounterpartyDays.js   venue-flow tier outflows: each past snapshot is read once; the looked-up counterparty balances
+                                   are kept per snapshot date in data/<slug>/tier-counterparty-days/<date>.json
+scripts/lib/firstLiveDate.js       `firstLiveDate` of holders-history.json (the first live snapshot day; the venue flow scans' floor)
+scripts/datachecks/, src/datachecks/   *.datacheck.* files: checks of the committed data (npm run check:data, vitest.datacheck.config.ts);
+                                   CI runs all of them, the nightly runs the project's after its last push
+scripts/fixtures/                  small fixed inputs for code tests (never generated feeds)
 scripts/lib/walletFlowsHash.js     EVM wallet-flows scan hash (sender set, tokens, logic only; legacy-hash adoption)
 scripts/validate-outputs.js        feed gates: npm run check:feeds, npm run pipeline:health
 scripts/check-go-live.js           go-live gate (lib/goLive.js): no skips, placeholders, unhealthy feeds, incomplete tier outflows

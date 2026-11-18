@@ -10,12 +10,18 @@
  * freshness SLA. Read-only on every feed; writes only the status file.
  *
  * Timestamps: the output's generatedAt / generated / updatedAt, else the last
- * commit touching the file (git), else "no-timestamp".
+ * commit touching the file (git), else "no-timestamp". Each output row names
+ * its timestampSource ("field" | "git" | null).
+ * TEMPORARY: the git fallback only covers files written before their writer
+ * dated them (supply-reconciliation.json until its next nightly). It is wrong
+ * on shallow or git-less checkouts; --no-git-timestamps or
+ * PIPELINE_STATUS_NO_GIT=1 refuses it (no-timestamp instead). Remove the
+ * fallback once a run with the flag shows no "no-timestamp" output.
  *
  * Exit 1 with --check when any scheduled job is stale, missing or over budget
  * (pipeline-watchdog.yml files an issue from the --json report).
  *
- * Run: node scripts/write-pipeline-status.js [--project <slug> | --all] [--check] [--json] [--out-dir <dir>] [--no-write]
+ * Run: node scripts/write-pipeline-status.js [--project <slug> | --all] [--check] [--json] [--out-dir <dir>] [--no-write] [--no-git-timestamps]
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -33,12 +39,14 @@ const readJson = (p) => {
   }
 };
 
-export function outputTimestamp(absPath, root = process.cwd()) {
+export function outputTimestamp(absPath, root = process.cwd(), { allowGit = true } = {}) {
   const doc = readJson(absPath);
   for (const v of [doc?.generatedAt, doc?.generated, doc?.updatedAt, doc?.meta?.generatedAt]) {
     const t = Date.parse(v ?? "");
     if (Number.isFinite(t)) return { ms: t, source: "field" };
   }
+  if (!allowGit) return null;
+  // Temporary git fallback (see header): files not yet rewritten by a writer that dates them.
   try {
     const out = execFileSync("git", ["log", "-1", "--format=%cI", "--", path.relative(root, absPath)], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
     const t = Date.parse(out);
@@ -57,7 +65,7 @@ export function latestUsage(root = process.cwd(), project = null) {
   return { day: day ?? null, byScript: day ? usage.days[day].byScript ?? {} : {} };
 }
 
-export function projectStatus(slug, { root = process.cwd(), now = Date.now(), plan = nightlyPlan(root), usage } = {}) {
+export function projectStatus(slug, { root = process.cwd(), now = Date.now(), plan = nightlyPlan(root), usage, allowGitTimestamp = true } = {}) {
   const project = resolveProject(slug, root);
   usage ??= latestUsage(root, project);
   const entry = plan.projects.find((p) => p.slug === slug);
@@ -86,10 +94,10 @@ export function projectStatus(slug, { root = process.cwd(), now = Date.now(), pl
         const rel = projectOutputPath(project, o.path);
         const abs = path.resolve(root, rel);
         const exists = fs.existsSync(abs);
-        const ts = exists ? outputTimestamp(abs, root) : null;
+        const ts = exists ? outputTimestamp(abs, root, { allowGit: allowGitTimestamp }) : null;
         const ageHours = ts ? Math.round(((now - ts.ms) / 3600000) * 10) / 10 : null;
         const status = !exists ? "missing" : ageHours == null ? "no-timestamp" : ageHours > o.maxAgeHours ? "stale" : "fresh";
-        row.outputs.push({ path: rel, maxAgeHours: o.maxAgeHours, ageHours, generatedAt: ts ? new Date(ts.ms).toISOString() : null, status });
+        row.outputs.push({ path: rel, maxAgeHours: o.maxAgeHours, ageHours, generatedAt: ts ? new Date(ts.ms).toISOString() : null, timestampSource: ts?.source ?? null, status });
         if (status === "missing" || status === "stale") row.health = status;
       }
     }
@@ -117,9 +125,10 @@ if (isDirectRun) {
   const one = val("--project") ?? process.env.HD_PROJECT;
   const slugs = argv.includes("--all") || !one ? loadRegistry(root).map((p) => p.slug) : [one];
   const plan = nightlyPlan(root);
+  const allowGitTimestamp = !argv.includes("--no-git-timestamps") && process.env.PIPELINE_STATUS_NO_GIT !== "1";
   const reports = [];
   for (const slug of slugs) {
-    const rep = projectStatus(slug, { root, plan });
+    const rep = projectStatus(slug, { root, plan, allowGitTimestamp });
     reports.push(rep);
     if (!argv.includes("--no-write")) {
       const project = resolveProject(slug, root);

@@ -9,7 +9,7 @@
  * scripts/lib/hedera/flowClassify.js, flowScan.js.
  *
  * Writes (nothing else):
- *   <data>/exchange-flow-checkpoint.json   chains.<key> = { since, setHash, accounts{id:{exchange,until}}, through,
+ *   <data>/exchange-flow-checkpoint.json   chains.<key> = { since, sinceSource?, defaultSince?, setHash, accounts{id:{exchange,until}}, through,
  *                                          throughDate, throughBlock, dayEnds{date:{stamp,block}}, complete, failed? }
  *   <work>/hedera-flow-days.json           exact per-day / per-counterparty tinybar sums (not served)
  *   <data>/date-blocks.json                day cutoffs it had to resolve
@@ -21,7 +21,9 @@
  * current set. Reordering the accounts alone changes nothing.
  *
  * Target day: --as-of | yesterday UTC (never earlier than a day already scanned). Floor: --since |
- * HEDERA_FLOWS_SINCE | the first committed holder snapshot date (forward-only history, owner decision 2026-11-11).
+ * HEDERA_FLOWS_SINCE (one-off) | holders-history.json firstLiveDate, the first live holder snapshot day (forward-only
+ * history, owner decision 2026-11-11) | the floor recorded in the checkpoint (chains.<key>.since) while the history
+ * has no such day | the latest history row, with a warning. Not read from git (lib/solana/flowConfig.js flowFloor).
  * Budget: HEDERA_FLOW_MAX_MS (default 40 min wall clock, under the nightly step's 45-minute timeout): stops
  * cleanly before the next page, saves, and the next run resumes. A page that still fails after the client's
  * retries keeps that account's cursor, marks the scan incomplete (the feeds then stamp no day) and exits 1.
@@ -73,13 +75,16 @@ const writeJsonAtomic = async (file, value) => {
   await fs.rename(tmp, file);
 };
 
-let since = argValue("--since") ?? (process.env.HEDERA_FLOWS_SINCE || null);
-if (!since) {
-  const { firstSnapshotDate } = await import("./lib/solana/flowConfig.js");
-  since = firstSnapshotDate(data.rel("tel-holders.json"));
-}
+const checkpoint = (await readOptionalJson(CHECKPOINT_PATH)) ?? { chains: {} };
+checkpoint.chains ??= {};
+const { resolveFlowFloor, latestRowFloorWarning } = await import("./lib/solana/flowConfig.js");
+const override = argValue("--since") ?? (process.env.HEDERA_FLOWS_SINCE || null);
+const floor = resolveFlowFloor({ override, checkpoint, chainKeys: [key], historyPath: data("holders-history.json") });
+const floorWarning = latestRowFloorWarning(project.slug, floor);
+if (floorWarning) console.warn(`  WARNING ${floorWarning}`);
+const { since } = floor;
 if (!day(since)) {
-  console.error(`${project.slug}: no flow floor (no committed holder snapshot; pass --since YYYY-MM-DD).`);
+  console.error(`${project.slug}: no flow floor (no recorded floor and no holders-history.json firstLiveDate or row; pass --since YYYY-MM-DD).`);
   process.exit(1);
 }
 const accounts = kit.hederaFlowAccounts(project);
@@ -88,8 +93,6 @@ if (accounts.length === 0) {
   process.exit(0);
 }
 
-const checkpoint = (await readOptionalJson(CHECKPOINT_PATH)) ?? { chains: {} };
-checkpoint.chains ??= {};
 const { applyFlowEventsOnce } = await import("./lib/solana/flowFeeds.js");
 // The stored flows must equal a fresh scan of the CURRENT inputs: a missing store, another floor, another
 // exchange account set (ids or labels) or classifier version rebuilds this chain from `since`.
@@ -118,6 +121,7 @@ console.log(`  ${key}: ${accounts.length} exchange accounts; floor ${since}, thr
 
 let state = {
   since,
+  ...floor.markers,
   setHash,
   accounts: Object.fromEntries(accounts.map((a) => [a.id, { exchange: a.exchange, until: prev?.accounts?.[a.id]?.until ?? startStamp }])),
   through,

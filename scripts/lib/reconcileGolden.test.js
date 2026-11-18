@@ -2,28 +2,18 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildReconciliation } from "./reconcileSupply.js";
-import { resolveProject } from "./projects.js";
-import { projectExclusions, reconcileOptions, reconcilePaths } from "../reconcile-supply.js";
+import { reconcileOptions } from "../reconcile-supply.js";
 
-const repo = path.resolve(import.meta.dirname, "../..");
-const read = (p, fallback) => (p && fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : fallback);
-
-// Golden: reconciling each committed project from its committed inputs must
-// reproduce its committed supply-reconciliation feed exactly. Guards the move
-// of TEL-shaped defaults into per-project config.
-describe.each(["tel", "zebec-network"])("supply reconciliation golden: %s", (slug) => {
-  it("reproduces the committed feed", () => {
-    const project = resolveProject(slug, repo);
-    const paths = reconcilePaths(project, repo);
-    const committed = read(paths.output);
-    const snapshot = read(paths.holders);
-    const exclusions = read(paths.exclusions, { addresses: [], labels: {} });
-    const cex = read(paths.cexWallets, { wallets: [] });
-    const out = buildReconciliation(snapshot, projectExclusions(project, exclusions, snapshot), cex, {
-      ...reconcileOptions(project),
-      coingeckoCirculating: committed.coingeckoCirculating ?? null,
-    });
-    expect(JSON.parse(JSON.stringify(out))).toEqual(committed);
+// The golden (each committed project reproduces its committed supply-reconciliation
+// feed) runs in `npm run check:data` (scripts/datachecks/reconcileGolden.datacheck.js).
+// Its code-side guard here: a characterization of buildReconciliation on a trimmed
+// sample of each project's real inputs (one row per category, every override and
+// bridge lock, a few retail rows) against the output recorded when the sample was cut.
+describe.each(["tel", "zebec-network"])("supply reconciliation characterization: %s", (slug) => {
+  it("reproduces the output recorded for a trimmed sample of the committed inputs", () => {
+    const fixture = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, "../fixtures/reconcile", `${slug}.json`), "utf8"));
+    const { snapshot, exclusions, cexWallets, options } = fixture.input;
+    expect(JSON.parse(JSON.stringify(buildReconciliation(snapshot, exclusions, cexWallets, options)))).toEqual(fixture.expected);
   });
 });
 

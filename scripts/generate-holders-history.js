@@ -9,6 +9,7 @@ import { selectPipelineProject, projectChainEntries, projectPaths, projectClassi
 import { normalizeAnyAddress } from "./lib/address.js";
 import { shouldEmitRow, inheritAsOf, mergeTopLevelAsOf } from "./lib/asOf.js";
 import { readSnapshot } from "./lib/snapshotIo.js";
+import { generatorFirstLiveDate } from "./lib/firstLiveDate.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: reads and writes
 // the project's data dir (TEL: public/data/, others: public/data/<slug>/) and
@@ -402,9 +403,22 @@ const main = async () => {
     });
 
   const asOf = mergeTopLevelAsOf(existingHistory?.asOf, emitRow ? inheritAsOf(snapshot) : null);
+  // First live snapshot day, kept across rebuilds: the floor of a first flow scan (lib/firstLiveDate.js).
+  const flowChainKeys = projectChainEntries(project.config)
+    .filter((c) => c.vm === "solana" || c.vm === "hedera")
+    .map((c) => c.key);
+  // Only the live row this run emits counts; a previousEntry gap-fill row may be dated earlier.
+  const liveRowDate = emitRow ? (snapshotEntry?.date ?? summaryEntry?.date ?? null) : null;
+  const firstLiveDateField = generatorFirstLiveDate(
+    existingHistory,
+    liveRowDate,
+    await readOptionalJson(data("exchange-flow-checkpoint.json")),
+    flowChainKeys,
+  );
   const payload = {
     generatedAt: new Date().toISOString(),
     ...(asOf ? { asOf } : {}),
+    ...firstLiveDateField,
     entries,
   };
 

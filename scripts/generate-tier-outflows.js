@@ -47,7 +47,6 @@
  * Reads retail balances/tiers from the committed history of tel-holders.json +
  * funding-wallets.json via git; reads Transfer logs via decrypted Alchemy RPCs.
  */
-import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -69,7 +68,8 @@ import { cutoffScanWindow, readCutoffMap, flowFeedAsOf, settledEndBlock } from "
 import { chainCaughtUp } from "./lib/tierOutflowsComplete.js";
 import { loadChainAdapter, projectHasVm } from "./lib/chainAdapters.js";
 import { hydrateChainHolders } from "./lib/snapshotFormat.js";
-import { readSnapshotAtRev } from "./lib/snapshotIo.js";
+import { readJsonAt, readSnapshotAtRev, versionsByDate } from "./lib/stateStore.js";
+import { resolveCounterpartyTiers } from "./lib/tierCounterpartyDays.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir (on disk + git history), work dir (day store / checkpoint), chain
@@ -186,39 +186,24 @@ const TIERS = projectHolderTiers(project).distributionTiers;
 const tierOf = (v) => rangeLabelOf(TIERS, v);
 
 const GIT_MAX_BUFFER = 512 * 1024 * 1024;
-const git = (a) => execFileSync("git", a, { encoding: "utf8", maxBuffer: GIT_MAX_BUFFER });
-const showJson = (commit, file) => JSON.parse(git(["show", `${commit}:${file}`]));
+const showJson = (commit, file) => readJsonAt(commit, file, { maxBuffer: GIT_MAX_BUFFER });
 const showSnapshot = (commit, file) => readSnapshotAtRev(commit, file, { maxBuffer: GIT_MAX_BUFFER });
 
-// A holder-to-tier Map per snapshot date holds one entry per holder (millions on HBAR), so only the most
-// recently used dates stay in memory; the day loops walk dates in order and rarely go back.
-const TIER_MAP_CACHE_DATES = 2;
-const recentDatesCache = (limit = TIER_MAP_CACHE_DATES) => {
-  const entries = new Map();
-  return {
-    get(date) {
-      if (!entries.has(date)) return undefined;
-      const value = entries.get(date);
-      entries.delete(date);
-      entries.set(date, value);
-      return value;
-    },
-    set(date, value) {
-      entries.delete(date);
-      entries.set(date, value);
-      while (entries.size > limit) entries.delete(entries.keys().next().value);
-    },
-  };
-};
-const commitsByDate = (file) => {
-  const out = git(["log", "--format=%H %ad", "--date=short", "--", file]);
-  const map = new Map();
-  for (const line of out.trim().split("\n")) {
-    const [h, d] = line.split(" ");
-    if (h && d && !map.has(d)) map.set(d, h);
+// Solana/Hedera counterparty balances per past snapshot (scripts/lib/tierCounterpartyDays.js), so each past
+// snapshot is read once, not once per stored day per night: one file per snapshot date in this work folder.
+const COUNTERPARTY_DAYS_DIR = "tier-counterparty-days";
+// The stored rows are exactly what snapshotRows yields. Any change to how it reads them (hydrateChainHolders, the
+// address trim, the Number(h.balance ?? 0) read, the chain or row order) must bump this, so every stored date is
+// read again instead of mixing rows read two ways.
+const COUNTERPARTY_ROWS_RULE = 1;
+/** { address (trimmed), balance (Number) } rows of `chainKeys`, in chain then row order, at snapshot `rev`. */
+const snapshotRows = function* (rev, chainKeys) {
+  const hydrated = hydrateChainHolders(showSnapshot(rev, SNAP_REL));
+  for (const k of chainKeys) {
+    for (const h of hydrated.chains?.[k]?.holders ?? []) yield { address: (h.address ?? "").trim(), balance: Number(h.balance ?? 0) };
   }
-  return map;
 };
+const commitsByDate = (file) => versionsByDate(file, { maxBuffer: GIT_MAX_BUFFER });
 
 const readOptionalJson = async (p) => {
   try { return JSON.parse(await fs.readFile(p, "utf8")); }
@@ -590,27 +575,14 @@ const applySolanaFlows = async (dayBuckets, snapCommits, snapDates) => {
     addAll(v.cexWallets.map((w) => w.address)); addAll(v.dexOwners); addAll(v.stakingAddresses);
     addAll((projectRoleAddresses(project.config)[c.key] ?? []).map((r) => r.address));
   }
-  const cache = recentDatesCache();
-  const mapFor = (snapDate) => {
-    const cached = cache.get(snapDate);
-    if (cached) return cached;
-    const snap = showSnapshot(snapCommits.get(snapDate), SNAP_REL);
-    const bal = new Map();
-    const hydrated = hydrateChainHolders(snap);
-    for (const c of chains) for (const h of hydrated.chains?.[c.key]?.holders ?? []) {
-      const a = (h.address ?? "").trim();
-      if (a && !excl.has(a)) bal.set(a, (bal.get(a) ?? 0) + Number(h.balance ?? 0));
-    }
-    const tiers = new Map();
-    for (const [a, v] of bal) { const t = tierOf(v); if (t) tiers.set(a, t); }
-    cache.set(snapDate, tiers);
-    return tiers;
-  };
-  const tierAt = (date) => {
-    let best = null;
-    for (const d of snapDates) { if (d <= date) best = d; else break; }
-    return best ? mapFor(best) : new Map();
-  };
+  // A counterparty's balance is the sum of its rows across the project's Solana chains (excluded: no tier).
+  const { tierAt } = await resolveCounterpartyTiers({
+    dir: work(COUNTERPARTY_DAYS_DIR),
+    basis: { kind: "solana", snapshot: SNAP_REL, chains: chains.map((c) => c.key), rowsRule: COUNTERPARTY_ROWS_RULE },
+    store, snapDates, versions: snapCommits,
+    readRows: (snapDate, rev) => snapshotRows(rev, chains.map((c) => c.key)),
+    tierOf: (owner, rows) => (rows.length === 0 || excl.has(owner) ? null : tierOf(rows.reduce((s, v) => s + v, 0))),
+  });
   const decimals = Object.fromEntries(chains.map((c) => [c.key, c.decimals]));
   const solDays = buildSolanaTierDays(store, { decimals, firstSnapshotDate: snapDates[0], tierAt });
   for (const [date, tiers] of solDays) dayBuckets.set(date, tiers);
@@ -645,25 +617,19 @@ const applyHederaFlows = async (hedera, dayBuckets, snapCommits, snapDates) => {
   addAll((EXCLUSIONS_PATH ? await readOptionalJson(EXCLUSIONS_PATH) : null)?.addresses);
   addAll(kit.hederaFlowAccounts(project).map((a) => a.id));
   addAll((projectRoleAddresses(project.config)[key] ?? []).map((r) => r.address));
-  const cache = recentDatesCache();
-  const mapFor = (snapDate) => {
-    const cached = cache.get(snapDate);
-    if (cached) return cached;
-    const snap = showSnapshot(snapCommits.get(snapDate), SNAP_REL);
-    const tiers = new Map();
-    for (const h of hydrateChainHolders(snap).chains?.[key]?.holders ?? []) {
-      const a = (h.address ?? "").trim();
-      const t = a && !excl.has(a) ? tierOf(Number(h.balance ?? 0)) : null;
-      if (t) tiers.set(a, t);
-    }
-    cache.set(snapDate, tiers);
-    return tiers;
-  };
-  const tierAt = (date) => {
-    let best = null;
-    for (const d of snapDates) { if (d <= date) best = d; else break; }
-    return best ? mapFor(best) : new Map();
-  };
+  // A repeated account row keeps the tier of its last row that has one, as the per-row Map.set did.
+  const { tierAt } = await resolveCounterpartyTiers({
+    dir: work(COUNTERPARTY_DAYS_DIR),
+    basis: { kind: "hedera", snapshot: SNAP_REL, chains: [key], rowsRule: COUNTERPARTY_ROWS_RULE },
+    store, snapDates, versions: snapCommits,
+    readRows: (snapDate, rev) => snapshotRows(rev, [key]),
+    tierOf: (owner, rows) => {
+      if (excl.has(owner)) return null;
+      let tier = null;
+      for (const v of rows) { const t = tierOf(v); if (t) tier = t; }
+      return tier;
+    },
+  });
   // The day store is the only source of Hedera day buckets (no EVM chain here), so previously published days
   // are replaced, never merged: a rebuilt scan must not leave stale days behind.
   const days = kit.buildHederaTierDays(store, { decimals: { [key]: decimals }, tierAt });

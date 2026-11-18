@@ -126,6 +126,7 @@ import { selectPipelineProject, projectPaths, projectChains, projectNonRetailPat
 import { resolveStakeChangedTarget } from "./lib/stakerTarget.js";
 import { endOfDayLabel } from "./relabel-midnight-history.js";
 import { readSnapshot } from "./lib/snapshotIo.js";
+import { keepFirstLiveDate } from "./lib/firstLiveDate.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // data dir, work dir (transfer caches), chain map, non-retail lists and
@@ -547,7 +548,7 @@ async function main() {
 
   await fs.writeFile(
     HISTORY_PATH,
-    `${JSON.stringify({ generatedAt: new Date().toISOString(), source: "rebuild-history-from-logs", entries }, null, 2)}\n`,
+    `${JSON.stringify({ generatedAt: new Date().toISOString(), source: "rebuild-history-from-logs", ...keepFirstLiveDate(await readJsonOr(HISTORY_PATH, null)), entries }, null, 2)}\n`,
     "utf8",
   );
   console.log(`Wrote ${HISTORY_PATH}`);
