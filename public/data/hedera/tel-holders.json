@@ -1,6 +1,6 @@
 {
   "layout": "sharded-v1",
-  "generatedAt": "2026-11-17T11:09:00.637Z",
+  "generatedAt": "2026-11-18T11:00:27.674Z",
   "thresholds": {
     "retail": 5,
     "megaHolder": 10000000000,
@@ -23,7 +23,7 @@
     "mirrorResidual": 0,
     "backingResidual": 0,
     "v3Residual": 0,
-    "crossCheckTotal": 49999999999.30346,
+    "crossCheckTotal": 49999999999.303246,
     "tokens": {
       "legacy": {
         "hedera": 50000000000
@@ -64,15 +64,15 @@
         }
       },
       "metrics": {
-        "holderCount": 4839360,
-        "totalBalance": 38427987441.04709,
+        "holderCount": 4839639,
+        "totalBalance": 38436415616.52269,
         "retail": {
-          "count": 426299,
-          "balance": 38427056394.37527
+          "count": 426481,
+          "balance": 38435484500.10685
         },
         "underThreshold": {
-          "count": 4413061,
-          "balance": 931047.3866423875
+          "count": 4413158,
+          "balance": 931117.1307171067
         },
         "mega": {
           "count": 0,
@@ -80,7 +80,7 @@
         },
         "excluded": {
           "count": 553,
-          "balance": 11572012558.256481
+          "balance": 11563584382.780819
         }
       },
       "holdersOmitted": [
@@ -115,27 +115,27 @@
         "0.0.409",
         "0.0.81",
         "0.0.432",
-        "0.0.858938",
         "0.0.418",
         "0.0.426",
+        "0.0.858938",
         "0.0.465",
         "0.0.459",
         "0.0.464",
         "0.0.410",
         "0.0.402",
         "0.0.86",
-        "0.0.29000",
         "0.0.460",
+        "0.0.29000",
         "0.0.436",
         "0.0.69",
         "0.0.403",
         "0.0.461",
         "0.0.415",
-        "0.0.615421",
         "0.0.2",
         "0.0.73",
         "0.0.462",
         "0.0.1134089",
+        "0.0.615421",
         "0.0.452",
         "0.0.455",
         "0.0.480",
@@ -145,12 +145,11 @@
         "0.0.76",
         "0.0.431",
         "0.0.98",
-        "0.0.611791",
         "0.0.1686714",
+        "0.0.611791",
         "0.0.83",
-        "0.0.84",
-        "0.0.1155594",
         "0.0.1686716",
+        "0.0.84",
         "0.0.420",
         "0.0.454",
         "0.0.451",
@@ -159,6 +158,7 @@
         "0.0.430",
         "0.0.458",
         "0.0.457",
+        "0.0.1155594",
         "0.0.700",
         "0.0.411",
         "0.0.801",
@@ -170,9 +170,9 @@
         "0.0.46",
         "0.0.16852",
         "0.0.407219",
-        "0.0.615422",
         "0.0.579",
         "0.0.79",
+        "0.0.615422",
         "0.0.58",
         "0.0.75",
         "0.0.99",
@@ -641,15 +641,15 @@
     }
   },
   "combined": {
-    "holderCount": 4839360,
-    "totalBalance": 38427987441.04709,
+    "holderCount": 4839639,
+    "totalBalance": 38436415616.52269,
     "retail": {
-      "count": 426299,
-      "balance": 38427056394.37527
+      "count": 426481,
+      "balance": 38435484500.10685
     },
     "underThreshold": {
-      "count": 4413061,
-      "balance": 931047.3866423875
+      "count": 4413158,
+      "balance": 931117.1307171067
     },
     "mega": {
       "count": 0,
@@ -657,7 +657,7 @@
     },
     "excluded": {
       "count": 553,
-      "balance": 11572012558.256481
+      "balance": 11563584382.780819
     }
   },
   "chainOrder": [
@@ -665,14 +665,14 @@
   ],
   "source": {
     "type": "rpc",
-    "snapshotDate": "2026-11-16",
-    "refreshedAt": "2026-11-17T11:09:00.637Z",
+    "snapshotDate": "2026-11-17",
+    "refreshedAt": "2026-11-18T11:00:27.674Z",
     "upstream": "rpc"
   },
   "asOf": {
-    "date": "2026-11-16",
+    "date": "2026-11-17",
     "blocks": {
-      "hedera": 102423846
+      "hedera": 102463316
     },
     "settled": true
   },
@@ -680,95 +680,95 @@
     "idWidth": 1000000,
     "order": "total-desc-id-asc",
     "column": "hedera_balance",
-    "rows": 4839913,
+    "rows": 4840192,
     "files": [
       {
         "file": "wallets-000.tsv",
         "lo": 0,
         "hi": 1000000,
         "rows": 514033,
-        "bytes": 9017169,
-        "sha256": "a0f8c297ad9817191a92e1358fd9a925ae137dd4731c8697d4fc6b7bdcd36b51"
+        "bytes": 9017180,
+        "sha256": "c4b1198179cd9727246a9be4e58e73ef7358eb3f5967045af42c3f0bb3477b50"
       },
       {
         "file": "wallets-001.tsv",
         "lo": 1000000,
         "hi": 2000000,
-        "rows": 452993,
-        "bytes": 7866614,
-        "sha256": "d41febb7d3a84f87291b02bf479f73d4d12f63b5d725abf1308059699b8cf063"
+        "rows": 452994,
+        "bytes": 7866631,
+        "sha256": "80442e5d27c8e5e8659f46aa50d7f0ee03b646f66bc70e79cb59d16d765ff22f"
       },
       {
         "file": "wallets-002.tsv",
         "lo": 2000000,
         "hi": 3000000,
         "rows": 594884,
-        "bytes": 10811447,
-        "sha256": "2d7ac1da0e853526bfbd8d1e3475adf1430be7bbc212f29f583aba956888dd62"
+        "bytes": 10811479,
+        "sha256": "68ce8f1dced4dba0a7097837538f84a796b295b034daeba1cd35bbde96394f2d"
       },
       {
         "file": "wallets-003.tsv",
         "lo": 3000000,
         "hi": 4000000,
-        "rows": 513714,
-        "bytes": 9637366,
-        "sha256": "67deefc51d73ce1c490242c63d6be0201db1ec6ba6c51769e649ef724edbd269"
+        "rows": 513713,
+        "bytes": 9637345,
+        "sha256": "fc0205ff5f94df4e99ddfe8d756bf475be2700a76a8510c2e1816ac51929a193"
       },
       {
         "file": "wallets-004.tsv",
         "lo": 4000000,
         "hi": 5000000,
         "rows": 310884,
-        "bytes": 5372964,
-        "sha256": "81c65b05fff5de2dbbc14e1596e3ec324bb7af35f863aa19606bc5da46b5f6cf"
+        "bytes": 5372976,
+        "sha256": "15a287d969a2d9035c21f4418d122c433f3c7fc55fc66ea531bdb585be5bfd51"
       },
       {
         "file": "wallets-005.tsv",
         "lo": 5000000,
         "hi": 6000000,
-        "rows": 527641,
-        "bytes": 9609366,
-        "sha256": "6757ce3ab923073800e133125c4bcdf473f3899e6785cfe56be5e5de22fd95c1"
+        "rows": 527642,
+        "bytes": 9609415,
+        "sha256": "f6ec177e5a0e09785a775c57293f6f9faa1a6c2080c13bf1e212a47ad919d83c"
       },
       {
         "file": "wallets-006.tsv",
         "lo": 6000000,
         "hi": 7000000,
         "rows": 472655,
-        "bytes": 8717870,
-        "sha256": "d4df6f085d20e46d38cf928601fc9a0954bdf5dadf886a4a698cc950bb6997dd"
+        "bytes": 8717874,
+        "sha256": "a0107d632e759d1c7feb282bb5b4c89b3655f111374bd270e234d41e1d034e18"
       },
       {
         "file": "wallets-007.tsv",
         "lo": 7000000,
         "hi": 8000000,
-        "rows": 583358,
-        "bytes": 10987537,
-        "sha256": "5303771747e9e5a543b7e8b180b0b636695ee839c589c83aa5802a7a910b0e2c"
+        "rows": 583360,
+        "bytes": 10987546,
+        "sha256": "d7c1e04e5cfa3c256016a7ea316a35b020b73613e58a3e23e9926808199ac03c"
       },
       {
         "file": "wallets-008.tsv",
         "lo": 8000000,
         "hi": 9000000,
         "rows": 306493,
-        "bytes": 5485038,
-        "sha256": "b964e92dd4430024bb354e305b43608ecb276e1484f54f2e3e45222578faa8ec"
+        "bytes": 5485043,
+        "sha256": "59212d873ec2bc5abc24bb45634b7837dd2a0544ed061dd3fe6dbd3cb51e81e4"
       },
       {
         "file": "wallets-009.tsv",
         "lo": 9000000,
         "hi": 10000000,
-        "rows": 201339,
-        "bytes": 3523532,
-        "sha256": "5b90235f4ccc08d5ca6870978cc82ccf9b8edc54940ad9b25321b30af3616719"
+        "rows": 201340,
+        "bytes": 3523554,
+        "sha256": "30a5d1f548fc14534fbb8596554f1988d60660063846895e2c9cc3894cc13446"
       },
       {
         "file": "wallets-010.tsv",
         "lo": 10000000,
         "hi": 11000000,
-        "rows": 361919,
-        "bytes": 6349935,
-        "sha256": "74a9f34272596dc30150cae17da79c024ef158aa8e5274bf69ad136a27bbd725"
+        "rows": 362194,
+        "bytes": 6355903,
+        "sha256": "5a0e5f66114ae87fa69b0588cd1e20cfb41abb771b4835173188c0c477f801ad"
       }
     ]
   }
