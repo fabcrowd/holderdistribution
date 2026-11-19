@@ -94,6 +94,12 @@ scripts/lib/snapshotShards.js, snapshotIo.js   sharded snapshot (head tel-holder
 scripts/lib/stateStore.js          the only way to read a PAST version of a data file (versionsByDate, revisionAsOf, readJsonAt,
                                    readSnapshotAtRev); backed by git today. gitReadGuard.test.js fails on any other git read in scripts/
                                    or in a workflow run step
+scripts/lib/coinNeutralGuard.test.js   every coin is treated the same: fails when shared code or a workflow names a registered coin
+                                   (slug, ticker, price id, address), holds a table of numbers keyed by chain name, or uses legacyRoot
+                                   outside the registry. Words come from config/ at test time. Today's violations are listed with a
+                                   reason each; the list may only shrink
+scripts/lib/chainBranchGuard.test.js   fails on a branch on the chain family (evm, solana, hedera) outside the adapter layer; same
+                                   shrinking list. scripts/lib/guardScan.js: the shared scanner (comment-aware, line-numbered)
 scripts/lib/tierCounterpartyDays.js   venue-flow tier outflows: each past snapshot is read once; the looked-up counterparty balances
                                    are kept per snapshot date in data/<slug>/tier-counterparty-days/<date>.json
 scripts/lib/firstLiveDate.js       `firstLiveDate` of holders-history.json (the first live snapshot day; the venue flow scans' floor)
