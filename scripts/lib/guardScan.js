@@ -43,6 +43,8 @@ export const readRepoFile = (relPath) => fs.readFileSync(path.join(repo, relPath
 const REGEX_PREV = /[(,=:[!&|?{};>]/;
 const REGEX_KEYWORD = /(?:^|[^\w$.])(?:return|typeof|case|in|of|delete|void|throw|new|else|do)$/;
 
+const scanCache = new Map();
+
 /**
  * One pass over JS/TS source. Returns `code` (the text with comments blanked to spaces, so every offset and
  * line number is unchanged; string contents are kept), `bare` (the same with every string, template-text and
@@ -52,8 +54,19 @@ const REGEX_KEYWORD = /(?:^|[^\w$.])(?:return|typeof|case|in|of|delete|void|thro
  * Why a tokenizer and not a regex: a "//" inside "https://x" and quotes inside a regex literal such as
  * /["']/ break a line-by-line comment strip. A quote in JSX text ends at the line break, so a stray
  * apostrophe cannot swallow the rest of the file.
+ * Results are cached by text, because the guards scan every source file once per rule; callers only read the
+ * returned object (checked when the cache was added), so they share one copy.
  */
 export const scanSource = (text) => {
+  let result = scanCache.get(text);
+  if (result === undefined) {
+    result = scanUncached(text);
+    scanCache.set(text, result);
+  }
+  return result;
+};
+
+function scanUncached(text) {
   const out = [];
   const bare = [];
   const strings = [];
@@ -261,7 +274,7 @@ export const scanSource = (text) => {
     i++;
   }
   return { code: out.join(""), bare: bare.join(""), strings, regexes };
-};
+}
 
 /** 1-based line numbers of every match of `regex` (global) in `code`. */
 export const matchLines = (code, regex) => {
