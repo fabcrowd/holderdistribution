@@ -22,3 +22,7 @@ export class BundleReadError extends RecordError {}
 export class BundleVerifyError extends RecordError {}
 
 export class CandidateError extends RecordError {}
+
+// The lane's listing of live releases (adoption, design 9.3): a bad tag, or an answer from
+// the listing call that is not { entries, requests }.
+export class AdoptionListingError extends RecordError {}

@@ -5,8 +5,14 @@
 //   accepted    { entries }            the entries to publish, oldest first
 //   stale       { reason, expected, got }  the first entry's parent is not main's entry (a notice)
 //   superseded  { reason }             main already holds the chain's last entry
-//   refused     { reason }             the chain is empty or links to itself wrongly
-// Each kind is judged against its own entry, so a ledger publish never makes a holders
+//   refused     { reason }             the chain is empty, links to itself wrongly, or its days go backwards
+// Days never go backwards: each entry's day is on or after its parent's day (equal is allowed,
+// a kind may publish more than once a day), and the first is on or after the main entry's day.
+// This is judged here, so the publish side refuses such a chain whoever built it. The day rule is
+// for chain entries only: a past-day write (design sections 5 and 9.5, the day a coin lost
+// published later) is not a chain entry, and its own path must never be judged by judgeChain, or
+// it would be refused as going backwards. Each kind is
+// judged against its own entry, so a ledger publish never makes a holders
 // candidate stale (design 10(i)).
 //
 // A bundle is identified by its full key "<release>/<pack name>#<item id>@<sha256>" (bundle.js
@@ -38,6 +44,11 @@ export function judgeChain({ main, chain }) {
     if (rest[i].parent !== want) {
       return { status: "refused", reason: `chain broken at entry ${droppedThrough + 1 + i}: its parent is ${rest[i].parent}, the entry before it is ${want}` };
     }
+  }
+  const backwards = rest.findIndex((e, i) => e.day < (i === 0 ? main?.day : rest[i - 1].day));
+  if (backwards >= 0) {
+    const before = backwards === 0 ? `the main entry's day ${main.day}` : `the day ${rest[backwards - 1].day} of the entry before it`;
+    return { status: "refused", reason: `day goes backwards at entry ${droppedThrough + 1 + backwards}: its day ${rest[backwards].day} is before ${before}` };
   }
   return { status: "accepted", entries: structuredClone(rest) };
 }
