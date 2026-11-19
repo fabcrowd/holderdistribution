@@ -5,6 +5,7 @@
 // name), deletes, downloads through a 302 to a signed URL that answers Range with 206
 // and must not see the token. Fault switches fail a chosen request; counts by kind.
 import { createHash } from "node:crypto";
+import { recordText } from "./releaseRecord.js";
 
 const API = "https://api.github.com";
 const UPLOADS = "https://uploads.github.com";
@@ -31,7 +32,11 @@ function header(init, name) {
 
 // `digests`: give assets GitHub's `digest` field ("sha256:<hex>"; the REST page of
 // 2026-03-10 lists it as string or null), or null to force the read-back path.
+const COMMIT_DATE = "2019-06-01T00:00:00.000Z";
+export const SEED_MADE_AT = Date.UTC(2000, 0, 1);
+
 export function createFakeReleaseServer({ owner = "o", repo = "r", token = "secret-token", perPage = 100, clock = { t: 0 }, hardLimit = 1000, hardLimitStatus = 422, digests = true } = {}) {
+  const tags = new Set(); // git tags: like GitHub, a tag survives the deletion of its release
   const releases = []; // { id, tag_name, name, prerelease, make_latest, body, assets: [] }
   const counts = {};
   const faults = []; // { at, type, kind }
@@ -40,6 +45,9 @@ export function createFakeReleaseServer({ owner = "o", repo = "r", token = "secr
   const base = `/repos/${owner}/${repo}`;
   const count = (k) => { counts[k] = (counts[k] ?? 0) + 1; };
 
+  // Like GitHub, `created_at` is the date of the commit the release points at: old, and independent of the
+  // clock, so no code can learn a release's age from it. `published_at` and `body` are plain fields a test may set.
+  const relJson = (r) => ({ id: r.id, tag_name: r.tag_name, prerelease: r.prerelease, created_at: r.created_at, published_at: r.published_at ?? null, body: r.body ?? null });
   const assetJson = (rel, a) => ({
     id: a.id, name: a.name, size: a.bytes.length, state: a.state, created_at: a.createdAt,
     digest: digests && a.state === "uploaded" ? `sha256:${createHash("sha256").update(a.bytes).digest("hex")}` : null,
@@ -77,19 +85,34 @@ export function createFakeReleaseServer({ owner = "o", repo = "r", token = "secr
       count("createRelease");
       const b = JSON.parse((await bodyBytes(init.body)).toString());
       if (releases.some((r) => r.tag_name === b.tag_name)) return json(422, { message: "Validation Failed", errors: [{ code: "already_exists", field: "tag_name" }] });
-      const rel = { id: nextId++, ...b, assets: [] };
+      const rel = { id: nextId++, ...b, created_at: COMMIT_DATE, published_at: new Date(clock.t).toISOString(), assets: [] };
       releases.push(rel);
-      return json(201, { id: rel.id, tag_name: rel.tag_name, prerelease: rel.prerelease });
+      tags.add(rel.tag_name);
+      return json(201, relJson(rel));
     }
-    let m = p.match(new RegExp(`^${base}/releases/tags/(.+)$`));
+    let m = p.match(new RegExp(`^${base}/git/ref/tags/(.+)$`));
+    if (method === "GET" && m) {
+      count("getTagRef");
+      return tags.has(decodeURIComponent(m[1])) ? json(200, { ref: `refs/tags/${m[1]}` }) : json(404, { message: "Not Found" });
+    }
+    m = p.match(new RegExp(`^${base}/releases/tags/(.+)$`));
     if (method === "GET" && m) {
       count("getRelease");
       const rel = releases.find((r) => r.tag_name === decodeURIComponent(m[1]));
-      return rel ? json(200, { id: rel.id, tag_name: rel.tag_name, prerelease: rel.prerelease }) : json(404, { message: "Not Found" });
+      return rel ? json(200, relJson(rel)) : json(404, { message: "Not Found" });
     }
     if (method === "GET" && p === `${base}/releases`) {
       count("listReleases");
-      return pageOf(releases, url, (r) => ({ id: r.id, tag_name: r.tag_name, prerelease: r.prerelease }));
+      return pageOf(releases, url, relJson);
+    }
+    m = p.match(new RegExp(`^${base}/releases/(\\d+)$`));
+    if (method === "DELETE" && m) {
+      // Like GitHub: the release goes with its assets, whatever they are.
+      count("deleteRelease");
+      const at = releases.findIndex((r) => r.id === Number(m[1]));
+      if (at < 0) return json(404, { message: "Not Found" });
+      releases.splice(at, 1);
+      return new Response(null, { status: 204 });
     }
     m = p.match(new RegExp(`^${base}/releases/(\\d+)/assets$`));
     if (method === "GET" && m) {
@@ -192,11 +215,14 @@ export function createFakeReleaseServer({ owner = "o", repo = "r", token = "secr
       return null;
     },
     assetCount: (name) => releases.reduce((s, r) => s + r.assets.filter((a) => a.name === name).length, 0),
+    tags,
     release: (tag) => releases.find((r) => r.tag_name === tag) ?? null,
     // Test setup without requests: a release holding `n` one-byte assets named by `nameOf(i)`.
-    seed(tag, n, nameOf) {
+    // `madeAt` (ms) is the instant the creating process recorded; null: a release with no record.
+    seed(tag, n, nameOf, { madeAt = SEED_MADE_AT } = {}) {
       let rel = releases.find((r) => r.tag_name === tag);
-      if (!rel) releases.push((rel = { id: nextId++, tag_name: tag, name: tag, prerelease: true, assets: [] }));
+      if (!rel) releases.push((rel = { id: nextId++, tag_name: tag, name: tag, prerelease: true, created_at: COMMIT_DATE, published_at: null, body: madeAt === null ? "written by hand" : recordText(madeAt), assets: [] }));
+      tags.add(tag);
       for (let i = 0; i < n; i++) rel.assets.push({ id: nextId++, name: nameOf(i), bytes: Buffer.from([i & 0xff]), state: "uploaded", createdAt: new Date(clock.t).toISOString() });
     },
   };

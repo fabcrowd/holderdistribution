@@ -5,7 +5,7 @@ import { describe, it, expect } from "vitest";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { memorySink, fileSink, StoreNameError, StoreKeepError, StoreNotFoundError, StoreNameTakenError } from "./blobStore.js";
+import { memorySink, fileSink, StoreNameError, StoreKeepError, StoreNotFoundError, StoreNameTakenError, StoreReleaseNotEmptyError } from "./blobStore.js";
 import { folderBackend } from "./blobStoreFolder.js";
 import { releaseBackend } from "./blobStoreRelease.js";
 import { createFakeReleaseServer } from "./fakeReleaseServer.js";
@@ -210,3 +210,42 @@ describe("folder backend: concurrent uploads of one name (F2)", () => {
     expect(same[0].loc).toBe(same[1].loc);
   });
 });
+
+// The sweep's two additional calls (A3): releasesOf(series) lists releases with their asset
+// counts, empty ones included, and deleteRelease(tag) removes an empty release only.
+for (const [label, make] of Object.entries(BACKENDS)) {
+  describe(`releasesOf and deleteRelease on the ${label} backend`, () => {
+    it("releasesOf counts assets per release of the series, empty releases included, in sequence order", async () => {
+      const { store, again } = await make({ assetLimit: 2 });
+      expect(await store.releasesOf("live")).toEqual([]);
+      for (let i = 0; i < 5; i++) await store.upload(live(i), genBytes(10, i));
+      const a = await again().upload(packName({ cls: "hist", kind: "holders", day: "2026-11-18", run: 9, attempt: 1, lane: 0, flush: 0 }), genBytes(10));
+      expect(a.loc).toMatch(/^data-hist-1\//);
+      const shown = await store.releasesOf("live");
+      expect(shown.map(({ tag, seq, assets }) => ({ tag, seq, assets }))).toEqual([
+        { tag: "data-live-1", seq: 1, assets: 2 }, { tag: "data-live-2", seq: 2, assets: 2 }, { tag: "data-live-3", seq: 3, assets: 1 },
+      ]);
+      for (const r of shown) expect(Number.isNaN(Date.parse(r.createdAt)), `creation time of ${r.tag}`).toBe(false);
+      await store.delete(`data-live-2/${live(2)}`);
+      await store.delete(`data-live-2/${live(3)}`);
+      expect((await store.releasesOf("live")).map((r) => r.assets)).toEqual([2, 0, 1]);
+      await expect(store.releasesOf("nope")).rejects.toBeInstanceOf(StoreNameError);
+    }, T);
+
+    it("deleteRelease removes an empty release, refuses one that holds assets, keep releases and unknown tags", async () => {
+      const { store } = await make({ assetLimit: 1 });
+      await store.upload(live(0), genBytes(10));
+      const second = await store.upload(live(1), genBytes(10));
+      const keep = await store.upload(keepPack, genBytes(10));
+      await expect(store.deleteRelease("data-live-1")).rejects.toBeInstanceOf(StoreReleaseNotEmptyError);
+      expect(await store.exists(`data-live-1/${live(0)}`)).toBe(true);
+      await expect(store.deleteRelease(keep.loc.split("/")[0])).rejects.toBeInstanceOf(StoreKeepError);
+      await expect(store.deleteRelease("notes")).rejects.toBeInstanceOf(StoreNameError);
+      await expect(store.deleteRelease("data-live-9")).rejects.toBeInstanceOf(StoreNotFoundError);
+      await store.delete(second.loc);
+      await store.deleteRelease("data-live-2");
+      expect((await store.releasesOf("live")).map((r) => r.tag)).toEqual(["data-live-1"]);
+      await expect(store.deleteRelease("data-live-2")).rejects.toBeInstanceOf(StoreNotFoundError);
+    }, T);
+  });
+}

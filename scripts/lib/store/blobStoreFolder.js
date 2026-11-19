@@ -8,9 +8,10 @@ import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { parseReleaseTag, releaseTag } from "./packNames.js";
+import { recordText, recordedInstant } from "./releaseRecord.js";
 import {
-  ASSET_LIMIT, owned, checkSeries, checkBounds, sizeOf, chunksOf, sha256Of, parallelDownload, parseLoc,
-  StoreNotFoundError, StoreNameTakenError, StoreRangeError,
+  ASSET_LIMIT, owned, ownedReleaseTag, checkSeries, checkBounds, sizeOf, chunksOf, sha256Of, parallelDownload, parseLoc,
+  StoreNotFoundError, StoreNameTakenError, StoreRangeError, StoreReleaseNotEmptyError,
 } from "./blobStore.js";
 
 async function hashFile(file) {
@@ -19,7 +20,20 @@ async function hashFile(file) {
   return h.digest("hex");
 }
 
-export function folderBackend(dir, { assetLimit = ASSET_LIMIT } = {}) {
+// The creation record of release <tag> is the file <dir>/.release-records/<tag>.json (releaseRecord.js),
+// written by the process that makes the folder, from its own clock. It sits beside the release folders,
+// not in them, so a folder holds only assets and rmdir still tells whether it is empty. A folder with no
+// record (made by hand, or by an older run) has an unknown creation time. The record outlives its folder, as
+// a git tag outlives its release: a record with no folder means the number was used and the release deleted,
+// so currentTag never goes back to it (a crash that leaves a record behind only skips one number).
+const RECORDS = ".release-records";
+
+export function folderBackend(dir, { assetLimit = ASSET_LIMIT, now = Date.now } = {}) {
+  const recordFile = (tag) => path.join(dir, RECORDS, `${tag}.json`);
+  async function writeRecord(tag) {
+    await fs.mkdir(path.join(dir, RECORDS), { recursive: true });
+    await fs.writeFile(recordFile(tag), recordText(now()), { flag: "wx" }).catch((e) => (e.code === "EEXIST" ? undefined : Promise.reject(e)));
+  }
   const isTmp = (n) => n.includes(".tmp-");
   async function releases(series) {
     const names = await fs.readdir(dir).catch((e) => (e.code === "ENOENT" ? [] : Promise.reject(e)));
@@ -35,10 +49,14 @@ export function folderBackend(dir, { assetLimit = ASSET_LIMIT } = {}) {
   // Decided by the folder's real count before every upload.
   async function currentTag(series) {
     const tags = await releases(series);
-    let seq = tags.length ? parseReleaseTag(tags.at(-1)).seq : 1;
+    const marked = (await fs.readdir(path.join(dir, RECORDS)).catch((e) => (e.code === "ENOENT" ? [] : Promise.reject(e))))
+      .map((n) => { try { return parseReleaseTag(n.replace(/\.json$/, "")); } catch { return null; } }).filter((t) => t && t.series === series).map((t) => t.seq);
+    const top = Math.max(0, ...marked, ...tags.map((t) => parseReleaseTag(t).seq));
+    let seq = top === 0 ? 1 : tags.includes(releaseTag(series, top)) ? top : top + 1;
     for (;;) {
       const tag = releaseTag(series, seq);
       await fs.mkdir(path.join(dir, tag), { recursive: true }); // a second lane's mkdir is "use it"
+      await writeRecord(tag); // kept if one is there: the first lane's instant stands
       if ((await files(tag)).length < assetLimit) return tag;
       seq++;
     }
@@ -129,6 +147,25 @@ export function folderBackend(dir, { assetLimit = ASSET_LIMIT } = {}) {
     async stat(loc) {
       const st = await statFile(loc);
       return st && { size: st.size, loc };
+    },
+    async releasesOf(series) {
+      checkSeries(series);
+      const out = [];
+      for (const tag of await releases(series)) {
+        const text = await fs.readFile(recordFile(tag), "utf8").catch((e) => (e.code === "ENOENT" ? "" : Promise.reject(e)));
+        const ms = recordedInstant(text);
+        out.push({ tag, seq: parseReleaseTag(tag).seq, assets: (await files(tag)).length, createdAt: ms === null ? null : new Date(ms).toISOString() });
+      }
+      return out;
+    },
+    async deleteRelease(tag) {
+      ownedReleaseTag(tag);
+      const folder = path.join(dir, tag);
+      const held = await fs.readdir(folder).catch((e) => (e.code === "ENOENT" ? null : Promise.reject(e)));
+      if (held === null) throw new StoreNotFoundError(`no release ${tag}`);
+      if (held.length) throw new StoreReleaseNotEmptyError(`refused: release ${tag} still holds ${held.length} asset(s)`);
+      // rmdir, never a recursive remove: a file that landed since the check keeps the folder.
+      await fs.rmdir(folder).catch((e) => (e.code === "ENOTEMPTY" ? Promise.reject(new StoreReleaseNotEmptyError(`refused: release ${tag} still holds an asset`)) : Promise.reject(e)));
     },
     refresh() {},
     stats: () => ({ core: 0, byKind: {} }),
