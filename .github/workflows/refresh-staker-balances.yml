@@ -57,7 +57,8 @@ jobs:
       - name: Commit staker balance snapshot
         id: commit
         run: |
-          git add $(node scripts/workflow-paths.js files public/data/funding-wallets.json)
+          FILES=$(node scripts/workflow-paths.js files public/data/funding-wallets.json)
+          [ -n "$FILES" ] && git add $FILES
           # Commit the resumability checkpoint too, same as holders-checkpoint.json
           # / exchange-flow-checkpoint.json / tier-outflows-checkpoint.json — it
           # may be an update (interrupted this run), a deletion (completed and

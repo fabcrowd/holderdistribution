@@ -93,8 +93,8 @@ jobs:
           # scripts/workflow-paths.js). Staged first so a first-ever (untracked)
           # file is seen by the diff check.
           FILES=$(node scripts/workflow-paths.js files data/cex-candidates.json)
-          git add $FILES
-          if git diff --cached --quiet -- $FILES; then
+          [ -n "$FILES" ] && git add $FILES
+          if [ -z "$FILES" ] || git diff --cached --quiet -- $FILES; then
             echo "No changes to commit"
           else
             # "[skip netlify]" — this commit lands the data but does NOT

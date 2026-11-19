@@ -23,8 +23,9 @@
  *
  *   FILES=$(node scripts/workflow-paths.js files public/data/a.json data/b.json)
  *
- *   - TEL (legacyRoot): prints the arguments unchanged, so every TEL commit
- *     step stages exactly the paths it always did.
+ *   - TEL (legacyRoot): prints the arguments unmapped, de-duplicated and only
+ *     those that exist, like every other project; its data directory is not
+ *     appended (public/data holds other projects' folders).
  *   - any other project: public/data/<f> -> public/data/<slug>/<f>,
  *     data/<f> -> data/<slug>/<f>, a config/ classification root file
  *     (config/cex-wallets.json, …) -> the project's own `classification.*`
@@ -178,7 +179,7 @@ export function workflowPlan(project, root = process.cwd()) {
  * to stage; throws on a path outside public/data/, data/ or a classification file.
  */
 export function mapWorkflowFiles(project, files, root = process.cwd()) {
-  if (project.config?.data?.legacyRoot === true) return [...files];
+  if (project.config?.data?.legacyRoot === true) return [...new Set(files)].filter((f) => fs.existsSync(path.resolve(root, f)));
   const work = projectWorkDir(project);
   const kindByRootFile = Object.fromEntries(Object.entries(CLASSIFICATION_KINDS).map(([kind, file]) => [file, kind]));
   const out = [];
