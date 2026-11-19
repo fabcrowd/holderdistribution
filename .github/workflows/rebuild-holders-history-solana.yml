@@ -99,9 +99,10 @@ jobs:
       - name: Commit replayed history and checkpoint
         if: ${{ inputs.dry_run != true }}
         run: |
-          git add $(node scripts/workflow-paths.js files public/data/holders-history.json \
+          FILES=$(node scripts/workflow-paths.js files public/data/holders-history.json \
                   public/data/holders-ever-checkpoint.json \
                   data/holders-replay-solana.checkpoint.json)
+          [ -n "$FILES" ] && git add $FILES
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else

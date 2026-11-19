@@ -60,7 +60,8 @@ jobs:
           # (the running "ever held" address set) must be staged alongside the other two or
           # its corrections are silently dropped every run and generate-holders-history.js's
           # daily incremental script keeps building on a stale checkpoint.
-          git add $(node scripts/workflow-paths.js files public/data/holders-history.json public/data/cex-balance-history.json public/data/holders-ever-checkpoint.json)
+          FILES=$(node scripts/workflow-paths.js files public/data/holders-history.json public/data/cex-balance-history.json public/data/holders-ever-checkpoint.json)
+          [ -n "$FILES" ] && git add $FILES
           if git diff --cached --quiet; then
             echo "No changes to commit"
             echo "changed=false" >> "$GITHUB_OUTPUT"

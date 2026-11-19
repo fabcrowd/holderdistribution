@@ -276,8 +276,9 @@ describe("ported scripts carry no TEL-root path literals", () => {
 describe("workflow commit paths (scripts/workflow-paths.js)", () => {
   const TEL_FILES = ["public/data/tier-outflows.json", "data/tier-outflows-days.json", "config/cex-wallets.json", "public/data/nope.json"];
 
-  it("TEL: the file list is returned unchanged (byte-identical git add)", () => {
-    expect(mapWorkflowFiles(tel, TEL_FILES, repo)).toEqual(TEL_FILES);
+  it("TEL: paths stay unmapped, and every file that exists on disk is returned", () => {
+    for (const f of TEL_FILES.slice(0, 3)) write(f, "{}");
+    expect(mapWorkflowFiles(tel, TEL_FILES, tmp)).toEqual(TEL_FILES.slice(0, 3));
     expect(workflowPaths(tel, repo)).toEqual({
       HD_PROJECT_SLUG: "tel", HD_LEGACY_ROOT: "true", HD_DATA_DIR: "public/data", HD_WORK_DIR: "data",
       HD_CEX_CONFIG: "config/cex-wallets.json", HD_SOLANA_FLOWS: "false", HD_HEDERA_FLOWS: "false",
@@ -301,10 +302,38 @@ describe("workflow commit paths (scripts/workflow-paths.js)", () => {
     expect(() => mapWorkflowFiles(demo, ["public/data/../x.json"], tmp)).toThrow();
   });
 
-  it("CLI files mode: TEL echoes, demo maps", () => {
+  describe("the legacy-root coin follows the same existence rule as every other coin", () => {
+    it("drops a path that is missing on disk", () => {
+      expect(mapWorkflowFiles(tel, ["data/hedera-flow-days.json"], tmp)).toEqual([]);
+    });
+
+    it("keeps a present path unmapped, and a missing one beside it is dropped", () => {
+      write("data/legacy-present.json", "{}");
+      expect(mapWorkflowFiles(tel, ["data/legacy-missing.json", "data/legacy-present.json"], tmp)).toEqual(["data/legacy-present.json"]);
+    });
+
+    it("lists a duplicate path once", () => {
+      write("data/legacy-dup.json", "{}");
+      expect(mapWorkflowFiles(tel, ["data/legacy-dup.json", "data/legacy-dup.json"], tmp)).toEqual(["data/legacy-dup.json"]);
+    });
+
+    it("returns an empty list when nothing is present", () => {
+      expect(mapWorkflowFiles(tel, ["data/none-a.json", "public/data/none-b.json"], tmp)).toEqual([]);
+    });
+
+    it("does not append its data directory, even when it exists", () => {
+      write("public/data/other-coin/x.json", "{}");
+      write("data/legacy-dir-case.json", "{}");
+      const out = mapWorkflowFiles(tel, ["data/legacy-dir-case.json"], tmp);
+      expect(out).toEqual(["data/legacy-dir-case.json"]);
+      expect(out).not.toContain(tel.dataDir);
+    });
+  });
+
+  it("CLI files mode: TEL drops missing paths, demo maps", () => {
     const t = run("workflow-paths.js", ["files", "public/data/a.json", "data/b.json"]);
     expect(t.status, t.stderr).toBe(0);
-    expect(t.stdout.trim()).toBe("public/data/a.json data/b.json");
+    expect(t.stdout.trim()).toBe("");
     const d = run("workflow-paths.js", ["--project", "demo", "files", "public/data/tier-outflows.json"]);
     expect(d.status, d.stderr).toBe(0);
     expect(d.stdout.trim()).toBe("public/data/demo/tier-outflows.json public/data/demo");

@@ -86,9 +86,9 @@ jobs:
           git config user.name "github-actions[bot]"
           # date-blocks.json: the scan resolves and saves any day cutoff it lacks; left unstaged it breaks the rebase.
           FILES=$(node scripts/workflow-paths.js files public/data/tier-outflows.json data/tier-outflows-days.json data/tier-outflows-checkpoint.json public/data/exchange-flow-checkpoint.json data/hedera-flow-days.json data/tier-counterparty-days public/data/date-blocks.json)
-          git add $FILES
+          [ -n "$FILES" ] && git add $FILES
           # git diff misses new untracked files — check the staged index instead.
-          if git diff --cached --quiet -- $FILES; then
+          if [ -z "$FILES" ] || git diff --cached --quiet -- $FILES; then
             echo "No changes to commit"
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else

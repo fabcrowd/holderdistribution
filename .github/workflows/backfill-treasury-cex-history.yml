@@ -96,8 +96,8 @@ jobs:
           git config user.email "action@github.com"
           git config user.name "github-actions[bot]"
           FILES=$(node scripts/workflow-paths.js files public/data/treasury-history.json public/data/cex-balance-history.json data/holders-asof-blocks.json)
-          git add $FILES
-          if git diff --cached --quiet -- $FILES; then
+          [ -n "$FILES" ] && git add $FILES
+          if [ -z "$FILES" ] || git diff --cached --quiet -- $FILES; then
             echo "Nothing to commit"
           else
             git commit -m "Backfill treasury + CEX history ${{ inputs.from }}..${{ inputs.to }} [skip netlify]"

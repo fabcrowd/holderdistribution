@@ -124,8 +124,8 @@ jobs:
           # TEL: data/forensics/wallet-flows.json (unchanged); others: data/<slug>/forensics/…
           FILES=$(node scripts/workflow-paths.js files data/forensics/wallet-flows.json)
           if [ -z "$FILES" ]; then echo "No report for $HD_PROJECT_SLUG"; exit 0; fi
-          # Solana scan state (cursors + 90-day events) is written only by the Solana generator; the
-          # TEL pass-through of workflow-paths.js does not check existence, so add it only when present.
+          # Solana scan state (cursors + 90-day events) is written only by the Solana generator, so add it
+          # only when present.
           STATE="$HD_WORK_DIR/forensics/wallet-flows-state.json"
           if [ -f "$STATE" ]; then FILES="$FILES $STATE"; fi
           # EVM scan state (cursor + 90-day outflows per chain), written by generate-wallet-flows.js.

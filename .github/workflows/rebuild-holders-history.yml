@@ -104,9 +104,10 @@ jobs:
       - name: Commit rebuilt history
         if: ${{ inputs.dry_run != true }}
         run: |
-          git add $(node scripts/workflow-paths.js files public/data/holders-history.json \
+          FILES=$(node scripts/workflow-paths.js files public/data/holders-history.json \
                   public/data/holders-ever-checkpoint.json \
                   public/data/date-blocks.json)
+          [ -n "$FILES" ] && git add $FILES
           # data/rebuild-transfers-<chain>.json is DELIBERATELY not added here.
           # It's the raw per-chain transfer cache --resume reads, and real
           # chain volume routinely exceeds GitHub's 100MB single-file push
