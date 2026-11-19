@@ -53,9 +53,16 @@ function applyObj(prev, changes) {
   return next;
 }
 
+// A test file may run the same sequences on another item store (packs): it sets this
+// before importing the test files that use the Harness.
+let itemStoreFactory = createMemoryStore;
+export function setItemStoreFactory(factory) {
+  itemStoreFactory = factory;
+}
+
 export class Harness {
   constructor(opts = {}) {
-    this.store = createMemoryStore();
+    this.store = itemStoreFactory();
     this.index = createIndex({ table: "acct", fields: 2, rowsPerBucket: 2, minHistoryDays: 1, copySpreadNights: 4, ...opts });
     this.model = new Map(); // day -> Map key -> "a/b", indexed days only
     this.versions = []; // { index, model } after each write
