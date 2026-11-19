@@ -163,7 +163,8 @@ export const hederaAdapter = {
     // scanBalanceSnapshot drops an in-progress state that is too far from the snapshot a fresh run would use, and says so
     // through onResumeDropped before it starts paging.
     const onResumeDropped = (reason, { savedStamp }) => logger.warn?.(`  ${chain.key}: saved in-progress scan state at ${savedStamp} is ${reason}; starting a fresh scan.`);
-    const scan = (from) => scanBalanceSnapshot(client, { floor, width, resume: from, onProgress, onResumeDropped, atOrBefore: settle?.to ?? null, ...waitOpts });
+    const log = (line) => logger.log?.(`  ${chain.key}: ${line}`);
+    const scan = (from) => scanBalanceSnapshot(client, { floor, width, resume: from, onProgress, onResumeDropped, log, atOrBefore: settle?.to ?? null, ...waitOpts });
     let snapshot = await scan(resume);
     if (snapshot.finishedState === "reused") logger.log?.(`  ${chain.key}: reusing the finished scan of snapshot ${snapshot.timestamp} (no balance paging).`);
     else if (snapshot.finishedState === "discarded") logger.log?.(`  ${chain.key}: the saved finished scan is for another snapshot than ${snapshot.timestamp}; scanned afresh.`);
@@ -221,6 +222,7 @@ export const hederaAdapter = {
         holders: balances.size,
         snapshotClusterId: snapshot.clusterId,
         snapshotMismatchRetries: snapshot.mismatchRetries,
+        snapshotRequestStats: snapshot.requestStats,
         snapshotWaitByCluster: snapshot.waitByCluster,
         heldRawTotal: heldRaw.toString(),
         // HBAR outside every row: always 0 now (the completeness check above); reconcile-supply.js still reads it.

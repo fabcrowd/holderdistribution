@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { hederaAdapter, HEDERA_HOLDER_FLOOR_TINYBAR, tinybarToHbar } from "./adapter.js";
 import { createMockMirror } from "./mockMirror.js";
+import { createMirrorClient } from "./mirror.js";
+import { HEDERA_RANGE_WIDTH, HEDERA_SCAN_CONCURRENCY, idRanges, scanBalanceSnapshot } from "./scan.js";
 
 const BASE = "https://mirror.test/api/v1";
 const HBAR = 100_000_000n;
@@ -577,4 +579,77 @@ describe("hedera range completeness", () => {
     expect(checks).toHaveLength(1);
   });
 
+});
+
+describe("hedera scan: lanes, range width and request counters", () => {
+  const BASE_URL = "https://mirror.test/api/v1";
+  const clientOver = (mock, extra = {}) => createMirrorClient({ baseUrl: BASE_URL, fetch: mock.fetch, sleep: async () => {}, now: () => 0, ...extra });
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 1));
+  const range = (n) => Array.from({ length: n }, (_, i) => acct(i + 1, 1 + (i % 9)));
+
+  it("defaults to 60 lanes over ranges 50,000 wide, so the highest id today still fills three times the lanes", () => {
+    expect(HEDERA_SCAN_CONCURRENCY).toBe(60);
+    expect(HEDERA_RANGE_WIDTH).toBe(50_000);
+    expect(idRanges(10_961_969, HEDERA_RANGE_WIDTH).length).toBeGreaterThanOrEqual(3 * HEDERA_SCAN_CONCURRENCY);
+  });
+
+  it("keeps every lane busy until the last range has started (more ranges than lanes)", async () => {
+    const lanes = 8;
+    const mock = createMockMirror({ accounts: range(4000), hold: tick });
+    await scanBalanceSnapshot(clientOver(mock), { floor: 1n, width: 100, concurrency: lanes });
+    const paging = mock.balanceCalls().filter((c) => c.params.getAll("account.id").length > 0);
+    const lastHi = 4001; // maxId + 1: only the last range pages up to it
+    const lastStart = paging.findIndex((c) => c.params.getAll("account.id").includes(`lt:0.0.${lastHi}`));
+    expect(lastStart).toBeGreaterThan(lanes);
+    const busy = paging.slice(lanes, lastStart).map((c) => c.inFlight);
+    expect(busy.length).toBeGreaterThan(50);
+    expect(Math.min(...busy)).toBe(lanes);
+    expect(mock.maxInFlight()).toBe(lanes);
+  });
+
+  it("returns the same accounts and balances for widths 250,000 and 50,000 on one ledger", async () => {
+    const ids = [1, 2, 49_999, 50_000, 50_001, 99_999, 120_000, 249_999, 250_000, 250_001, 499_999, 600_000, 1_000_003];
+    const accounts = ids.map((n, i) => ({ num: n, balance: BigInt(i + 1) * HBAR + (n % 5 === 0 ? 0n : 7n) }));
+    accounts.push({ num: 777_777, balance: 0n });
+    const wide = await scanBalanceSnapshot(clientOver(createMockMirror({ accounts })), { floor: 1n, width: 250_000 });
+    const narrow = await scanBalanceSnapshot(clientOver(createMockMirror({ accounts })), { floor: 1n, width: 50_000 });
+    expect(narrow.rows).toEqual(wide.rows);
+    expect(narrow.rows).toHaveLength(ids.length);
+    for (const key of ["allRaw", "nonzero", "maxId", "timestamp"]) expect(narrow[key]).toEqual(wide[key]);
+  });
+
+  it("puts the counters in the scan result and in the checkpoint data, next to the mismatch retries", async () => {
+    const mock = createMockMirror({ accounts: range(450), fail: (_p, _q, i) => (i === 7 ? 429 : i === 9 ? 500 : null) });
+    const result = await scanBalanceSnapshot(clientOver(mock, { random: () => 0 }), { floor: 1n, width: 100 });
+    expect(result.requestStats).toMatchObject({ requests: mock.calls.length, retries: 2, rateLimited: 1, errorReplies: 1, networkErrors: 0 });
+    expect(result.requestStats.totalLatencyMs).toBeGreaterThanOrEqual(0);
+    expect(result.requestStats.maxLatencyMs).toBeGreaterThanOrEqual(0);
+
+    const adapterMock = createMockMirror({ accounts: range(450) });
+    const scan = await hederaAdapter.scanChain(chain, opts(adapterMock));
+    expect(scan.checkpointData.snapshotMismatchRetries).toBe(0);
+    expect(scan.checkpointData.snapshotRequestStats).toMatchObject({ requests: adapterMock.balanceCalls().length, retries: 0, rateLimited: 0, errorReplies: 0, networkErrors: 0 });
+  });
+
+  it("prints a progress line at most once a minute and one summary line at the end", async () => {
+    let now = 0;
+    const lines = [];
+    const mock = createMockMirror({ accounts: range(4000) });
+    const client = clientOver(mock, { now: () => now });
+    await scanBalanceSnapshot(client, {
+      floor: 1n,
+      width: 100,
+      concurrency: 4,
+      nowMs: () => now,
+      onProgress: () => void (now += 10_000), // every report is ten seconds later
+      log: (line) => lines.push(line),
+    });
+    const progress = lines.filter((l) => /ranges done/.test(l));
+    const summary = lines.filter((l) => /requests/.test(l) && !/ranges done/.test(l));
+    expect(progress.length).toBeGreaterThan(1);
+    expect(progress.length).toBeLessThanOrEqual(Math.floor(now / 60_000));
+    expect(progress[0]).toMatch(/\d+\/41 ranges done, [\d,]+ pages, [\d.]+ requests\/s, [\d.]+ s\/request/);
+    expect(summary).toHaveLength(1);
+    expect(lines.at(-1)).toBe(summary[0]);
+  });
 });

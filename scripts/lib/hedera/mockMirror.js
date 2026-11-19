@@ -40,6 +40,7 @@ export function createMockMirror({
   tamper = null, // (path, params, body) => body | undefined; edits a parsed /balances response
   notFound = () => false, // (path, query, callIndex, cluster) => true answers HTTP 404 (a cluster that lacks the pinned stamp)
   fail = () => null, // (path, query, callIndex) => status code | "network" | null
+  hold = null, // async () => void; each request waits on it, so requests overlap and `inFlight` is observable
   transactions = [], // { consensus_timestamp, result, transfers: [{ account, amount }] } after the snapshot, any order
 } = {}) {
   const sorted = [...accounts].sort((a, b) => a.num - b.num);
@@ -99,13 +100,28 @@ export function createMockMirror({
 
   const block = (n) => ({ number: n, timestamp: { from: blockTime(n).toFixed(9), to: blockTime(n + 1).toFixed(9) } });
 
+  let inFlight = 0;
+  let maxInFlight = 0;
+  // `inFlight` on a call is the number of requests being served when it started, itself included.
   async function fetch(url) {
+    inFlight += 1;
+    maxInFlight = Math.max(maxInFlight, inFlight);
+    const atStart = inFlight;
+    try {
+      if (hold) await hold();
+      return await serve(url, atStart);
+    } finally {
+      inFlight -= 1;
+    }
+  }
+
+  async function serve(url, atStart) {
     const u = new URL(url);
     const path = u.pathname.replace(/^\/api\/v1/, "");
     const query = u.search;
     const index = calls.length;
     const cluster = clusters ? (route(index) ?? Object.keys(clusters)[0]) : null;
-    calls.push({ path, query, params: u.searchParams, cluster });
+    calls.push({ path, query, params: u.searchParams, cluster, inFlight: atStart });
     const injected = fail(path, query, index);
     if (injected === "network") throw new TypeError("fetch failed");
     if (injected) return respond(injected, `{"_status":{"messages":[{"message":"injected ${injected}"}]}}`);
@@ -139,5 +155,5 @@ export function createMockMirror({
     return respond(404, { _status: { messages: [{ message: `mock: no route ${path}` }] } });
   }
 
-  return { fetch, calls, balanceCalls: () => calls.filter((c) => c.path === "/balances") };
+  return { fetch, calls, balanceCalls: () => calls.filter((c) => c.path === "/balances"), maxInFlight: () => maxInFlight };
 }

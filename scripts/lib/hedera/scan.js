@@ -19,12 +19,24 @@
  */
 export const HEDERA_PAGE_LIMIT = 100;
 /**
- * Ranges paged at once, under the client's 30 rps limiter. Memory is not the limit (about 60 MB rss measured): each lane keeps
- * only its range's rows at or above the floor, as [id, tinybar text], plus a running total of every balance. 8 lanes measured
- * 11 rps, which would not fit a 6 h job.
+ * Ranges paged at once, under the client's 30 rps limiter (mirror.js `HEDERA_MAX_RPS`; the node documents 50 per address).
+ * The scan is latency-bound, not throttle-bound: its wall time is pages x seconds per request / lanes, as long as lanes /
+ * seconds per request stays under the 30 rps cap. The node answered a page in about 1.3 s on 2026-11-16 and about 2.5 s on
+ * 2026-11-18; 30 lanes then gave 12 rps and 115 min for about 83,000 pages, and 2026-11-19 timed out. 60 lanes reach the cap
+ * at 2 s per request and still give 24 rps at 2.5 s (about 58 min) and 17 rps at 3.5 s (about 81 min). Memory is not the
+ * limit (about 60 MB rss measured at 30 lanes): each lane keeps only its range's rows at or above the floor, as
+ * [id, tinybar text], plus a running total of every balance; narrower ranges hold fewer rows per lane.
  */
-export const HEDERA_SCAN_CONCURRENCY = 30;
-export const HEDERA_RANGE_WIDTH = 250_000;
+export const HEDERA_SCAN_CONCURRENCY = 60;
+/**
+ * Ids per range, one range per lane at a time. With ranges of 250,000 and an id space of about 11 million there were 44 ranges,
+ * so a 60-lane pool would never fill and the last ranges ran with idle lanes. 50,000 gives about 220 ranges (3.6 per lane
+ * at the top id of 2026-11), so every lane stays busy to the end; the extra cost is one confirming probe per range (about
+ * 180 requests). A saved scan state records its width and a state of another width is rejected (`resumeProblem`).
+ */
+export const HEDERA_RANGE_WIDTH = 50_000;
+/** At most one progress line per this many ms (wall clock of the injected `nowMs`). */
+export const HEDERA_PROGRESS_LOG_MS = 60_000;
 /** How long one request keeps retrying while the load balancer sends it to the wrong cluster. */
 export const HEDERA_SNAPSHOT_WAIT_MS = 20 * 60 * 1000;
 const SNAPSHOT_BACKOFF_CAP_MS = 30_000;
@@ -202,6 +214,12 @@ async function runRanges(ranges, concurrency, worker) {
   if (failure) throw failure;
 }
 
+const STAT_SUMS = ["requests", "retries", "rateLimited", "errorReplies", "networkErrors", "totalLatencyMs"];
+/** What the client counted since `before`; the maximum latency is the client's own (a maximum cannot be subtracted). */
+const statsSince = (now, before) => ({ ...now, ...Object.fromEntries(STAT_SUMS.map((k) => [k, now[k] - before[k]])) });
+const perSecond = (n, ms) => (ms > 0 ? (n / (ms / 1000)).toFixed(1) : "0.0");
+const secondsEach = (stats) => (stats.requests > 0 ? (stats.totalLatencyMs / stats.requests / 1000).toFixed(2) : "0.00");
+
 /** Version of the saved scan state; a state of another version is unusable (see `resumeProblem`). */
 export const HEDERA_SCAN_STATE_VERSION = 2;
 const RAW_RE = /^\d+$/;
@@ -281,7 +299,9 @@ export function resumeStaleReason(resume, { freshStamp, pinned }) {
  * A finished checkpoint (`complete: true`) is different: the stamp this run resolves (newest at or before `atOrBefore`,
  * else the newest) must equal its stamp and highest id, and then the rows are served with no paging. Otherwise it is
  * discarded and a fresh scan runs (`finishedState: "discarded"`); it is never served as an older snapshot.
- * Returns { timestamp, maxId, rows: [[num, tinybarString]], allRaw (BigInt), nonzero, mismatchRetries } in id order.
+ * Returns { timestamp, maxId, rows: [[num, tinybarString]], allRaw (BigInt), nonzero, mismatchRetries, requestStats } in id order;
+ * `requestStats` is what the client counted during this scan ({ requests, retries, rateLimited, errorReplies, networkErrors,
+ * totalLatencyMs, maxLatencyMs }; the maximum is the client's own), or null for a client that counts nothing.
  */
 export async function scanBalanceSnapshot(
   client,
@@ -299,6 +319,8 @@ export async function scanBalanceSnapshot(
     atOrBefore = null,
     // Called once, before any paging, when an in-progress state is dropped as stale.
     onResumeDropped = null,
+    // Called with a line of text: a progress line at most once a minute while paging, and one summary line at the end.
+    log = null,
   },
 ) {
   const floorText = String(floor);
@@ -308,6 +330,19 @@ export async function scanBalanceSnapshot(
   let state;
   let held;
   const progress = () => ({ ...state, ranges: { ...state.ranges }, totals: { ...state.totals }, open: { ...state.open } });
+  // Counted by the client (a test stub without `stats` reports none). Baseline taken here so only this scan's requests count.
+  const startedAt = nowMs();
+  const statsAtStart = client.stats?.() ?? null;
+  const requestStats = () => (statsAtStart ? statsSince(client.stats(), statsAtStart) : null);
+  let lastLogAt = startedAt;
+  const report = () => {
+    onProgress?.(progress());
+    if (!log || !statsAtStart || nowMs() - lastLogAt < HEDERA_PROGRESS_LOG_MS) return;
+    lastLogAt = nowMs();
+    const st = requestStats();
+    const pages = (st.requests - st.retries).toLocaleString("en-US");
+    log(`scan: ${Object.keys(state.ranges).length}/${idRanges(state.maxId, width).length} ranges done, ${pages} pages, ${perSecond(st.requests, lastLogAt - startedAt)} requests/s, ${secondsEach(st)} s/request`);
+  };
   // "reused": a finished state served with no paging; "discarded": one that no longer matches the stamp this run resolves.
   let finishedState = null;
   if (resume) {
@@ -393,7 +428,7 @@ export async function scanBalanceSnapshot(
       start,
       onPage: (cursor) => {
         state.open[lo] = { ...cursor, allRaw: String(allRaw), nonzero };
-        onProgress?.(progress());
+        report();
       },
       mapRow: (row, num) => {
         const raw = BigInt(row.balance);
@@ -410,8 +445,16 @@ export async function scanBalanceSnapshot(
     state.totals[lo] = { allRaw: String(allRaw), nonzero };
     // The last range landing marks the state finished; no other lane is paging then, so no later in-progress report can follow.
     if (allRanges.every((r) => r.lo in state.ranges)) state.complete = true;
-    onProgress?.(progress());
+    report();
   });
+  const stats = requestStats();
+  if (log && stats && stats.requests > 0) {
+    const elapsed = nowMs() - startedAt;
+    log(
+      `scan finished: ${allRanges.length} ranges, ${stats.requests.toLocaleString("en-US")} requests (${stats.retries} retries, ${stats.rateLimited} rate-limited, ${stats.errorReplies} other error replies, ${stats.networkErrors} network errors), ` +
+        `${secondsEach(stats)} s/request mean, ${(stats.maxLatencyMs / 1000).toFixed(2)} s max, ${perSecond(stats.requests, elapsed)} requests/s over ${(elapsed / 60000).toFixed(1)} min`,
+    );
+  }
   const ranges = idRanges(state.maxId, width);
   const rows = ranges.flatMap((r) => state.ranges[r.lo]);
   const allRaw = ranges.reduce((sum, r) => sum + BigInt(state.totals[r.lo].allRaw), 0n);
@@ -423,6 +466,7 @@ export async function scanBalanceSnapshot(
     allRaw,
     nonzero,
     mismatchRetries: retry.stats.mismatchRetries,
+    requestStats: stats,
     waitByCluster: retry.stats.byCluster,
     clusterId: held.cluster,
     finishedState,
