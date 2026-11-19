@@ -13,11 +13,11 @@ const FAULTS = { refuseEvery: 3, shortPageEvery: 4, repeatRowEvery: 5, shuffle: 
 const RETRIES = { maxRetries: 25 };
 
 const hashRows = (rows) =>
-  createHash("sha1")
+  createHash("sha256")
     .update(rows.map((r) => `${r.account}:${r.balance}`).sort().join("\n"))
     .digest("hex");
 const hashTransfers = (ts) =>
-  createHash("sha1")
+  createHash("sha256")
     .update(ts.map((t) => `${t.from}>${t.to}:${t.amount}@${t.height}`).sort().join("\n"))
     .digest("hex");
 const cursor = (a, d) => a.settledEnd(null, dayText(d));

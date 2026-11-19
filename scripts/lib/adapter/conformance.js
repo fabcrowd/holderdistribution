@@ -90,7 +90,7 @@ async function loadRange(ops, at, range, opts) {
   return { map, at: reflected };
 }
 
-const digestOf = (text) => BigInt(`0x${createHash("sha1").update(text).digest("hex").slice(0, 13)}`);
+const digestOf = (text) => BigInt(`0x${createHash("sha256").update(text).digest("hex").slice(0, 13)}`);
 
 async function rangeDigest(ops, at, range) {
   let digest = 0n;
