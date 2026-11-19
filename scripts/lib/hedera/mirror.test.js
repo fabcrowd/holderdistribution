@@ -67,6 +67,55 @@ describe("hedera mirror client", () => {
   });
 });
 
+describe("hedera mirror client: request counters and the throttle at many lanes", () => {
+  it("counts exactly on a scripted sequence: two successes, a 429 then success, a failure then success", async () => {
+    let t = 0;
+    // [reply, milliseconds the node takes to answer it]
+    const script = [[ok("{}"), 100], [ok("{}"), 300], [bad(429), 200], [ok("{}"), 50], [bad(500), 400], [ok("{}"), 70]];
+    const fetch = async () => {
+      const [reply, ms] = script.shift();
+      t += ms;
+      return reply;
+    };
+    const sleep = async (ms) => void (t += ms); // waits and back-off never count as latency
+    const client = createMirrorClient({ baseUrl: BASE, fetch, now: () => t, sleep, maxRps: 1000, random: () => 0 });
+    expect(client.stats()).toEqual({ requests: 0, retries: 0, rateLimited: 0, errorReplies: 0, networkErrors: 0, totalLatencyMs: 0, maxLatencyMs: 0 });
+    await client.getJson("/a");
+    await client.getJson("/b");
+    await client.getJson("/c"); // 429, then success
+    await client.getJson("/d"); // 500, then success
+    expect(script).toHaveLength(0);
+    expect(client.stats()).toEqual({ requests: 6, retries: 2, rateLimited: 1, errorReplies: 1, networkErrors: 0, totalLatencyMs: 1120, maxLatencyMs: 400 });
+  });
+
+  it("counts a network failure and an unreadable body apart from HTTP error replies, and returns a copy", async () => {
+    const seq = ["net", ok('{"a":'), ok('{"a":1}')];
+    const fetch = async () => {
+      const r = seq.shift();
+      if (r === "net") throw new TypeError("fetch failed");
+      return r;
+    };
+    const client = createMirrorClient({ ...base, fetch, sleep: async () => {} });
+    await client.getJson("/x");
+    const stats = client.stats();
+    expect(stats).toMatchObject({ requests: 3, retries: 2, rateLimited: 0, errorReplies: 0, networkErrors: 2 });
+    stats.requests = 99;
+    expect(client.stats().requests).toBe(3);
+  });
+
+  it("keeps every request start 1/30 s apart with 60 lanes asking at once", async () => {
+    const waits = [];
+    const fetch = vi.fn(async () => ok("{}"));
+    const client = createMirrorClient({ baseUrl: BASE, fetch, now: () => 0, sleep: async (ms) => void waits.push(ms), maxRps: HEDERA_MAX_RPS });
+    await Promise.all(Array.from({ length: 60 }, (_, i) => client.getJson(`/p${i}`)));
+    const starts = [0, ...waits]; // the first start is at once, each next one a slot later
+    expect(starts).toHaveLength(60);
+    for (let i = 1; i < starts.length; i += 1) expect(starts[i] - starts[i - 1]).toBeCloseTo(1000 / HEDERA_MAX_RPS, 6);
+    // never more than HEDERA_MAX_RPS starts inside any one-second window
+    for (const from of starts) expect(starts.filter((s) => s >= from && s < from + 1000 - 1e-6).length).toBeLessThanOrEqual(HEDERA_MAX_RPS);
+  });
+});
+
 describe("hedera mirror client: timeouts and shared back-off", () => {
   it("treats a stalled request as a retryable failure", async () => {
     const seq = [() => new Promise(() => {}), () => Promise.resolve(ok('{"a":1}'))];

@@ -3,9 +3,14 @@
  * Public mainnet mirror (no key) is documented at 50 requests/second per IP.
  */
 import { backoffMs, parseRetryAfter } from "../rpcLimiter.js";
+import { recordCall } from "../rpcMetrics.js";
 
 export const HEDERA_MAINNET_MIRROR = "https://mainnet-public.mirrornode.hedera.com/api/v1";
-/** Request starts per second. The documented public limit is 50 per IP; a shared CI IP needs headroom. */
+/**
+ * Request starts per second. The documented public limit is 50 per IP; a shared CI IP needs headroom.
+ * Many lanes share this one queue: a lane that waits for its slot waits at most lanes / HEDERA_MAX_RPS seconds (60 lanes: 2 s),
+ * and a 429 pushes the start of every request made after it, so more lanes never raise the request rate.
+ */
 export const HEDERA_MAX_RPS = 30;
 export const HEDERA_MAX_ATTEMPTS = 6;
 /** Per request, and again for reading the body. A stalled mirror is a retryable failure, never a hang. */
@@ -46,6 +51,9 @@ export function createMirrorClient({
   const root = baseUrl.replace(/\/+$/, "");
   const intervalMs = 1000 / maxRps;
   let nextStart = 0;
+  // What the node did to this client's requests; read with `stats()`. Latency is one attempt: the request sent to the body read,
+  // never the wait for a start slot or a back-off sleep.
+  const counters = { requests: 0, retries: 0, rateLimited: 0, errorReplies: 0, networkErrors: 0, totalLatencyMs: 0, maxLatencyMs: 0 };
 
   // Reserve the next start slot synchronously so concurrent callers are spaced, never bunched.
   async function acquire() {
@@ -56,14 +64,30 @@ export function createMirrorClient({
   }
 
   async function attemptOnce(url, passStatus) {
+    const startedAt = now();
+    counters.requests += 1;
+    recordCall(url, "GET");
+    try {
+      return await attemptReply(url, passStatus);
+    } finally {
+      const took = Math.max(0, now() - startedAt);
+      counters.totalLatencyMs += took;
+      counters.maxLatencyMs = Math.max(counters.maxLatencyMs, took);
+    }
+  }
+
+  async function attemptReply(url, passStatus) {
     let res;
     try {
       res = await within(Promise.resolve(fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs) })), timeoutMs, "request");
     } catch (e) {
+      counters.networkErrors += 1;
       return { retry: true, error: `network error: ${e?.message ?? e}` };
     }
     if (!res.ok) {
       const error = `HTTP ${res.status}`;
+      if (res.status === 429) counters.rateLimited += 1;
+      else counters.errorReplies += 1;
       if (passStatus.includes(res.status)) return { body: null, status: res.status, clusterId: res.headers?.get?.("x-cluster-id") ?? null };
       if (!RETRYABLE(res.status)) throw new Error(`mirror GET ${url}: ${error}`);
       const retryAfterMs = res.status === 429 ? parseRetryAfter(res.headers?.get?.("retry-after"), now()) : null;
@@ -73,6 +97,7 @@ export function createMirrorClient({
       const body = parseExactJson(await within(Promise.resolve(res.text()), timeoutMs, "body read"));
       return { body, clusterId: res.headers?.get?.("x-cluster-id") ?? null };
     } catch (e) {
+      counters.networkErrors += 1;
       return { retry: true, error: `unreadable body: ${e?.message ?? e}` };
     }
   }
@@ -92,6 +117,7 @@ export function createMirrorClient({
       if (!r.retry) return { body: r.body, clusterId: r.clusterId, ...(r.status ? { status: r.status } : {}) };
       last = r.error;
       if (attempt < maxAttempts - 1) {
+        counters.retries += 1;
         const wait = backoffMs(attempt, { retryAfterMs: r.retryAfterMs ?? null, random });
         // A 429 is the server pushing back on the whole IP: hold every lane, not just this one.
         if (r.throttled) nextStart = Math.max(nextStart, now() + wait);
@@ -104,5 +130,8 @@ export function createMirrorClient({
   /** Body only, for endpoints where the answering cluster does not matter. */
   const getJson = async (pathAndQuery) => (await getPage(pathAndQuery)).body;
 
-  return { baseUrl: root, getJson, getPage };
+  /** A copy of the counters: requests sent (every attempt), retries, 429 replies, other HTTP error replies, failures with no usable reply, total and maximum latency in ms. */
+  const stats = () => ({ ...counters });
+
+  return { baseUrl: root, getJson, getPage, stats };
 }

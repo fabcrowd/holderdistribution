@@ -24,7 +24,7 @@ function population(bump = 0) {
 }
 
 const pagingCalls = (mock) => mock.balanceCalls().filter((c) => c.params.getAll("account.id").length > 0);
-const pick = (scan) => ({ ...scan.checkpointData, scannedAt: undefined });
+const pick = (scan) => ({ ...scan.checkpointData, scannedAt: undefined, snapshotRequestStats: undefined }); // the counters describe this run, not the snapshot
 
 /** Scans once and returns { scan, finished } where finished is the last (complete) state reported. */
 async function scanAndKeep(extra = {}, pop = population(), snapshotTimestamp = TS) {
@@ -171,6 +171,30 @@ describe("hedera saved state on disk (loadResumable): a bad file means a fresh s
         const scan = await hederaAdapter.scanChain(other, opts(mock, { resume }));
         expect(pagingCalls(mock).length).toBeGreaterThan(0);
         expect(scan.checkpointData.snapshotTimestamp).toBe(TS);
+      });
+    }
+  });
+
+  it("a state saved at the old default width 250,000 is rejected by name under the default width 50,000, and the scan starts fresh", async () => {
+    const { finished } = await scanAndKeep();
+    const defaultChain = { key: "hedera", vm: "hedera", mirrorUrl: BASE }; // no rangeWidth: the scan's own default
+    const states = [];
+    await hederaAdapter.scanChain(chain, opts(createMockMirror(population()), { onProgress: (s) => states.push(JSON.parse(JSON.stringify(s))) }));
+    const inProgress = states.find((s) => !s.complete);
+    for (const old of [{ ...finished, width: 250_000 }, { ...inProgress, width: 250_000 }]) {
+      await withFile(old, async (file) => {
+        const log = warnings();
+        expect(hederaAdapter.resumeProblem(defaultChain, old)).toBe("range width 250000 differs from 50000");
+        const resume = await loadResumable(hederaAdapter, defaultChain, file, log);
+        expect(resume).toBeNull();
+        expect(log.seen[0]).toMatch(/range width 250000 differs from 50000/);
+        expect(await exists(file)).toBe(false);
+        const mock = createMockMirror(population());
+        const scan = await hederaAdapter.scanChain(defaultChain, opts(mock, { resume }));
+        expect(scan.checkpointData.snapshotTimestamp).toBe(TS);
+        expect(pagingCalls(mock).length).toBeGreaterThan(0);
+        // handed straight to the scan, the old state is refused, never half used
+        await expect(hederaAdapter.scanChain(defaultChain, opts(createMockMirror(population()), { resume: old }))).rejects.toThrow(/range width 250000 differs from 50000/);
       });
     }
   });
