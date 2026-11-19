@@ -10,6 +10,10 @@
 //   list(series) -> [{ name, size, createdAt, release, state, loc }]
 //   find(name) -> every entry with that name (cached series listing; refresh(series) clears it)
 //   stats() -> { core, byKind }
+//   releasesOf(series) -> [{ tag, seq, assets }]   every release of the series with its asset count,
+//                                     empty ones included (list() shows assets only); no request when list() just ran
+//   deleteRelease(tag)                the sweep's call for an empty release: refuses `keep`, unknown tags, and a
+//                                     release that still holds an asset (StoreReleaseNotEmptyError)
 // A location (`loc`) is "<release tag>/<name>" on both backends: the design's reference
 // names the release beside the pack (section 1), and the manifest's pack table records
 // it after the upload.
@@ -43,6 +47,15 @@ export class StoreRateLimitError extends StoreError {}
 export class StoreRangeError extends StoreError {}
 export class StoreListingError extends StoreError {}
 export class StoreUploadError extends StoreError {}
+export class StoreReleaseNotEmptyError extends StoreError {}
+
+// A release tag the sweep may delete: a store tag that is not the keep series.
+export function ownedReleaseTag(tag) {
+  let t;
+  try { t = parseReleaseTag(tag); } catch { throw new StoreNameError(`not a release tag the store owns: ${JSON.stringify(tag)}`); }
+  if (t.series === "keep") throw new StoreKeepError(`refused: release ${tag} is in the keep class`);
+  return t;
+}
 
 export function owned(name, { forDelete = false } = {}) {
   const p = parseStoreName(name);
@@ -155,4 +168,9 @@ export const BUDGET = {
   // releases of the series, assets / 900. Repeated lookups hit the cache: 0.
   listSeries: (releasesInRepo, releasesInSeries) => (Math.ceil(releasesInRepo / 100) + 2) * LIST_TRIES * MAX_ATTEMPTS + releasesInSeries * LIST_RELEASE,
   newRelease: 2 * MAX_ATTEMPTS, // without faults: 1 tag lookup, then 1 create on 404
+  // The first upload of a process into a series also reads the release list once, to find the newest release
+  // (3 requests while the repository holds up to 100 releases); later uploads cost what they did.
+  newestRelease: (releasesInRepo) => (Math.ceil(releasesInRepo / 100) + 2) * LIST_TRIES * MAX_ATTEMPTS,
+  releasesOf: 0, // after list() of the series (a first call lists it)
+  deleteRelease: 3 * MAX_ATTEMPTS, // without faults: 1 count, 1 delete (and 1 tag lookup when the release is not cached)
 };
