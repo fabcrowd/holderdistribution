@@ -8,9 +8,9 @@
 // base by reference (and the parent pack's row), as a lane carries an unchanged base, so a
 // damaged parent pack breaks the child too.
 //
-// `listRelease(tag)` is the call the blob store lacks (it lists a series, not one release):
-// here it is the series listing filtered to one release, with the requests a real one would
-// cost modelled as pages of 100 assets, one request each (design 9.3).
+// `listRelease(tag)` here is the series listing filtered to one release, with the states a test
+// sets (starter, dead) applied and the requests modelled as pages of 100 assets; the store's own
+// blobs.listRelease has no way to hold a state a test invents. A lane with none injected uses the store's.
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -65,16 +65,17 @@ export function createWorld({ backend = "folder" } = {}) {
     return `${release}/${name}`;
   }
 
-  // One pack. coins: [{ slug, parent?, as?, carry? }]; `parent` is a record this function
-  // returned; `as` writes the bundle of another coin under this coin's item label.
+  // One pack. coins: [{ slug, parent?, as?, carry?, itemSlug? }]; `parent` is a record this function
+  // returned; `as` writes the bundle of another coin under this coin's item label; `itemSlug` is
+  // the coin label of the coin's blob item (another coin's, or null for an unlabelled item).
   world.writePack = async ({ kind = "holders", day, bundleDay = day, run, attempt = 1, lane = 0, flush = 0, release = "data-live-1", coins, bulk = 0, salt = "", state = "uploaded", createdAt = `${day}T04:00:00Z` }) => {
     const name = packName({ cls: "live", kind, day, run, attempt, lane, flush });
-    const writer = createPackWriter({ meta: { class: "live", kind, day, run, attempt, lane, flush, slugs: coins.map((c) => c.slug) } });
+    const writer = createPackWriter({ meta: { class: "live", kind, day, run, attempt, lane, flush } });
     const staged = [];
     for (const c of coins) {
       const tag = `${c.slug} ${day} ${run}a${attempt} ${salt}`;
-      const a = await writer.add(filler(`a ${tag}`, bulk), { slug: c.slug, type: "blob", path: `data/${c.slug}/a.json`, enc: "raw" });
-      const base = await writer.add(filler(`base ${tag}`, bulk), { slug: c.slug, type: "table", table: "acct", bucket: 0, enc: "raw" });
+      const a = await writer.add(filler(`a ${tag}`, bulk), { slug: c.itemSlug === undefined ? c.slug : c.itemSlug, type: "blob", path: `data/${c.slug}/a.json`, enc: "raw" });
+      const base = await writer.add(filler(`base ${tag}`, bulk), { slug: c.slug, type: "base", table: "acct", bucket: 0, enc: "raw" });
       const refs = { a: `${name}#${a.id}`, base: `${name}#${base.id}` };
       const bundle = bundleOf({ c, kind, day: bundleDay, run, attempt, refs });
       const bytes = serializeBundle(bundle);
@@ -99,7 +100,7 @@ export function createWorld({ backend = "folder" } = {}) {
     return pack;
   };
 
-  world.one = async (spec) => (await world.writePack({ ...spec, coins: [{ slug: spec.slug, parent: spec.parent, as: spec.as, carry: spec.carry, tamperRow: spec.tamperRow }] })).coins[spec.slug];
+  world.one = async (spec) => (await world.writePack({ ...spec, coins: [{ slug: spec.slug, parent: spec.parent, as: spec.as, carry: spec.carry, tamperRow: spec.tamperRow, itemSlug: spec.itemSlug }] })).coins[spec.slug];
 
   const fileOf = (loc) => path.join(dir, loc);
   // Damage after the upload: "truncate" and "magic" break the pack; "bundle", "base" and
@@ -137,7 +138,7 @@ export function createWorld({ backend = "folder" } = {}) {
     return { entries, requests: Math.max(1, Math.ceil(entries.length / PAGE)) };
   };
 
-  // The call the blob store lacks: the tags of the releases that exist in a series (one request).
+  // The tags of the releases that exist in a series (one request); the store's listReleaseTags answers the same.
   world.existingReleases = async (series) => {
     world.calls.existingReleases++;
     const all = server ? server.releases.map((r) => r.tag_name) : fs.readdirSync(dir);

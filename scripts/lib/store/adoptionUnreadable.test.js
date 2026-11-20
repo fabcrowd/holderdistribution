@@ -211,29 +211,44 @@ describe("item 3: an unreadable pack is transient only while it is younger than 
   });
 });
 
-describe("item 3: a carried item whose pack stat answers for but cannot be read", () => {
-  // The main entry's pack is in data-live-1, outside the two releases listed; the first bundle
-  // carries its base. stat gives no creation time, so the age is that of the carrying bundle's pack.
-  const setup = async (carrierCreatedAt, over = {}) => {
+describe("item 3 and C1: a carried item whose pack stat answers for but cannot be read", () => {
+  // The first bundle carries the main entry's base, whose pack (old: 9 days) cannot be read. The age
+  // that counts is the carrier's (the bundle's own pack): a carried pack was readable when the carrier
+  // was written, so the carrier's age is the longest this failure can have lasted. Never the carried
+  // pack's own age, listed or not, or an old pack would take a coin's days on one bad night.
+  const setup = async (carrierCreatedAt, { listed = false, ...over } = {}) => {
     const m = await mainOf("coin-a");
-    await w.one({ slug: "coin-a", day: D1, run: 101, parent: m, release: "data-live-3", createdAt: carrierCreatedAt });
-    const out = await adoptLane({ blobs: failing(w.blobs, [m.packInfo.loc], notFound), ...w.listing, ...over, liveTag: "data-live-3", maxReleases: 2, kind: KIND, coins: [{ slug: "coin-a", main: publishedOf(m) }] });
-    return { m, out: out.coins["coin-a"] };
+    const a = await w.one({ slug: "coin-a", day: D1, run: 101, parent: m, release: listed ? "data-live-2" : "data-live-3", createdAt: carrierCreatedAt });
+    const out = await adoptLane({ blobs: failing(w.blobs, [m.packInfo.loc], notFound), ...w.listing, ...over, liveTag: listed ? "data-live-2" : "data-live-3", maxReleases: listed ? 8 : 2, kind: KIND, coins: [{ slug: "coin-a", main: publishedOf(m) }] });
+    return { m, a, out: out.coins["coin-a"], reads: out.reads };
   };
 
-  it("inside the bound: the coin fails tonight with an alert, every night it fails", async () => {
-    const { m, out } = await setup(ago(BOUND_MS - 1));
-    expect(out.failed).toBe(true);
-    expect(out.error).toBeInstanceOf(PackUnreadableError);
-    expect(out.error.message).toContain(m.packInfo.loc);
-    expect(alertOf(out, "unreadable")).toEqual({ code: "unreadable", count: 1 });
-  });
+  for (const listed of [false, true]) {
+    const where = listed ? "listed" : "not listed";
+    it(`C1, carried pack ${where}, carrier young: the coin fails tonight, its chain is not shortened, no second look`, async () => {
+      const { m, out } = await setup(ago(DAY_MS), { listed });
+      expect(out.failed).toBe(true);
+      expect(out.chain).toBeNull();
+      expect(out.error).toBeInstanceOf(PackUnreadableError);
+      expect(out.error.message).toContain(m.packInfo.loc);
+      expect(out.alerts).toEqual(expect.arrayContaining([{ code: "unreadable", count: 1 }]));
+      expect(alertOf(out, "unreadable-dropped")).toBeUndefined();
+      expect(w.sleeps).toEqual([]);
+    });
 
-  it("at the bound: the bundle that carries it is dropped with an alert, and the coin goes on", async () => {
-    const { out } = await setup(ago(BOUND_MS));
-    expect(out.failed).toBe(false);
-    expect(out.chain).toEqual([]);
-    expect(alertOf(out, "unreadable-dropped")).toEqual({ code: "unreadable-dropped", count: 1 });
+    it(`C1, carried pack ${where}, carrier past the bound and both looks failing: dropped with unreadable-dropped`, async () => {
+      const { out } = await setup(ago(BOUND_MS), { listed });
+      expect(out.failed).toBe(false);
+      expect(out.chain).toEqual([]);
+      expect(alertOf(out, "unreadable-dropped")).toEqual({ code: "unreadable-dropped", count: 1 });
+      expect(w.sleeps).toHaveLength(1);
+    });
+  }
+
+  it("inside the bound by a second: the coin fails tonight", async () => {
+    const { out } = await setup(ago(BOUND_MS - 1000));
+    expect(out.failed).toBe(true);
+    expect(alertOf(out, "unreadable")).toEqual({ code: "unreadable", count: 1 });
   });
 
   it("the carrying pack has no creation time: young, and alerted", async () => {

@@ -242,7 +242,9 @@ async function check({ seed, w, history, reserve }) {
     if (r.chain.length > 0) {
       const judged = await acceptChain({ blobs: w.blobs, slug, kind: KIND, main, chain: r.chain });
       expect(judged.status, `${why(slug)}: acceptChain ${JSON.stringify(judged)}`).toBe("accepted");
-      expect(judged.entries).toEqual(r.chain);
+      // acceptChain marks what it accepts with labelCheck (manifest.js); an adopted candidate must not carry it.
+      for (const e of judged.entries) expect(e.labelCheck, why(slug)).toBeDefined();
+      expect(judged.entries.map((e) => Object.fromEntries(Object.entries(e).filter(([k]) => k !== "labelCheck")))).toEqual(r.chain);
       expect(r.start, why(slug)).toMatchObject({ source: "adopted", entry: r.chain.at(-1) });
       if (reserve === 1) await ownEntryFits({ w, slug, main, r, nodes, why: why(slug) });
     } else if (main) {

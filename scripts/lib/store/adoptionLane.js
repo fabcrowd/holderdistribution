@@ -1,12 +1,14 @@
 // The lane side of adoption (design 2.1 section 9.3): one listing per lane job, shared by every
 // coin the lane starts.
 //
-// What the blob store lacks, injected (the store files stay closed):
+// The store's own calls, which a test can replace (injection): the lane uses blobs.listRelease and
+// blobs.listReleaseTags unless it is given its own.
 //   listRelease(tag) -> { entries, requests }: one release listing. `entries` are listing rows
 //     { name, size, release, state, loc, createdAt }; `requests` the core requests it cost. A
 //     release that does not exist answers { entries: [], requests } (the lane never names one it
 //     was not told exists, except the release before the newest, which may have been swept).
-//   existingReleases(series) -> { tags, requests }: the release tags that exist in a series.
+//   existingReleases(series) -> { tags, requests }: the release tags that exist in a series (by
+//     default blobs.listReleaseTags(series), whose { releases: [{ tag }], requests } is mapped).
 //   now() -> milliseconds: the lane's clock, read at the start of the lane, and again to tell whether
 //     a wait for a second look ended moments ago.
 //   sleep(ms) -> promise (optional, default a real timer): the wait before a second look at a pack
@@ -169,7 +171,13 @@ export function listingSince(coins, nowMs) {
 }
 
 // coins: [{ slug, main }]; `main` is the coin's published entry of this kind, or null.
-export async function adoptLane({ blobs, listRelease, existingReleases, now, liveTag, kind, coins, reserve, maxReleases, sleep }) {
+// The store's listReleaseTags answers { releases: [{ tag, seq, createdAt }], requests }.
+const storeTags = (blobs) => async (series) => {
+  const { releases, requests } = await blobs.listReleaseTags(series);
+  return { tags: releases.map((r) => r.tag), requests };
+};
+
+export async function adoptLane({ blobs, listRelease = (tag) => blobs.listRelease(tag), existingReleases = storeTags(blobs), now, liveTag, kind, coins, reserve, maxReleases, sleep }) {
   const s = shapeOf("adoption lane");
   kindField(s, kind, "kind");
   const nowMs = typeof now === "function" ? now() : Number.NaN;

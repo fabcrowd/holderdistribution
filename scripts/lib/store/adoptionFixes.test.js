@@ -92,9 +92,10 @@ describe("fix 1: a failure to obtain bytes is transient, never a reason to short
 
   describe("a not-found on a pack that is not in the listing is believed only when stat confirms it", () => {
     // data-live-3 is current and at most 2 releases are listed: main's pack in data-live-1 is not
-    // listed, but A carries its base. A is young, so a pack that cannot be read is transient.
+    // listed, but A carries its base. Both packs are young (stat gives the carried pack's own creation
+    // time), so a pack that cannot be read is transient.
     const setup = async () => {
-      const m = await mainRec();
+      const m = await mainRec({ createdAt: "2026-11-18T10:00:00Z" });
       const a = await w.one({ slug: SLUG, day: dayPlus(D0, 1), run: 101, parent: m, release: "data-live-3", createdAt: "2026-11-18T20:00:00Z" });
       return { m, a };
     };

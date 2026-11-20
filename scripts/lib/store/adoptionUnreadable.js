@@ -47,8 +47,12 @@
 // The complete table, for every failure to obtain a pack's bytes (young: younger than the bound;
 // old: at or past it, or undated with the day in its name older than the adoption window; "after
 // it" means after the second look above has failed too; age is the pack's listing creation time,
-// except for a carried pack, which stat gives none for: the age of the pack of the bundle that
-// carries it, which is never older than the carried pack, so it can only delay the drop):
+// except for a pack a bundle only carries (listed or not): the age of the bundle's own pack, its
+// carrier. Why: the bound exists so that a lane does not fail forever on a fresh pack that is broken;
+// a carried pack was readable when its carrier was written, so the carrier's age is the longest the
+// failure can have lasted, and the carried pack's own age would let an old pack take a coin's
+// unpublished days on one bad night. The carrier is never older than the carried pack, so this only
+// delays a drop):
 //   cause                                              inside the bound            after it
 //   header read: not found, stat finds the pack        coin fails unless it        pack dropped, alert
 //     (unreadable pack)                                rules the pack out          unreadable-dropped
@@ -135,8 +139,7 @@ export function settleUnreadable({ unreadable, readable, evidence = new Set(), s
 
 // A bundle or item read that failed in the pack's own bytes while the pack is there (a not-found
 // stat answers for, a range failure). `createdAt` is the pack's listing creation time, or for a
-// carried pack outside the listing (stat gives no creation time: the gap in the blob store) the
-// creation time of the pack of the bundle that carries it. Returns the error to throw: a bad
+// pack the bundle only carries that of the bundle's own pack (its carrier). Returns the error to throw: a bad
 // object once the age is at the bound, the coin's failure otherwise.
 export function ownBytesFailure({ loc, createdAt, cause, nowMs }) {
   const age = ageOf(createdAt, loc, nowMs);

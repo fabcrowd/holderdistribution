@@ -68,6 +68,7 @@
 // listed, adoptionLane.js); it does not grow with H, C or D: the items named are bundle-sized by design
 // (b blobs and B buckets per bundle), and no row of a table is read.
 import { bundleItems, bundleKey, ownPackRow, readBundle } from "./bundle.js";
+import { checkBundleItems } from "./bundleItemCheck.js";
 import { BundleVerifyError } from "./errors.js";
 import { parseItemRef, packNameOf, refsIn } from "./itemRef.js";
 import { buildEntry, entryKey, validateEntry } from "./manifest.js";
@@ -130,7 +131,7 @@ async function readJudged(ctx, { loc, createdAt, read }) {
 async function readCandidate({ ctx, blobs, entry, head, item, slug, kind }, note) {
   const bundleRef = { ref: `${entry.name}#${item.id}`, release: entry.release, packSize: entry.size, headerSha256: head.headerSha256, sha256: item.rawSha256 };
   try {
-    const bundle = await readJudged(ctx, { loc: entry.loc, createdAt: entry.createdAt, read: () => readBundle({ blobs, slug, kind, bundleRef }) });
+    const bundle = await readJudged(ctx, { loc: entry.loc, createdAt: entry.createdAt, read: () => readBundle({ blobs, slug, kind, bundleRef, crossCheck: false }) });
     return { key: bundleKey(bundleRef), bundleRef, bundle, entry: buildEntry({ slug, kind, bundleRef, bundle }), children: [], dead: false, depth: 0 };
   } catch (err) {
     if (err instanceof PackUnreadableError) throw err;
@@ -252,11 +253,13 @@ function pathTo(node) {
 }
 
 // One item. A failure of the pack's own bytes is judged by ownBytes: inside the bound the coin
-// fails tonight, past it the bundle is dropped. A carried pack outside the listing takes the age of
-// the pack of the bundle that carries it (stat gives no creation time, and a carried pack is older
-// than its carrier, so the carrier's age never overstates the carried pack's).
+// fails tonight, past it the bundle is dropped. The age is that of the bundle's own pack, also for
+// an item in a pack the bundle only carries, listed or not: a carried pack was readable when the
+// carrier was written, so the carrier's age is the longest this failure can have lasted, while the
+// carried pack's own age would let an old pack take a coin's days on one bad night. (A carried pack
+// is older than its carrier, so the carrier's age never overstates it either.)
 async function readRef(ctx, items, ref, loc, carrierCreatedAt) {
-  await readJudged(ctx, { loc, createdAt: ctx.listed.has(loc) ? ctx.createdAt.get(loc) : carrierCreatedAt, read: () => items.get(ref) });
+  await readJudged(ctx, { loc, createdAt: carrierCreatedAt, read: () => items.get(ref) });
 }
 
 // Reads every item the bundle names that an earlier bundle of this call has not verified under
@@ -267,13 +270,17 @@ async function verifyItems(ctx, node, seen) {
   const rowOf = (ref) => rows.get(packNameOf(ref));
   const idOf = (ref) => `${rowOf(ref).loc}|${rowOf(ref).headerSha256}|${rowOf(ref).size}#${parseItemRef(ref).id}`;
   const todo = [...refsIn([bundle.blobs, bundle.tables, bundle.stateIndex])].sort().filter((ref) => !seen.has(idOf(ref)));
-  if (todo.length === 0) return;
   const items = bundleItems({ blobs: countingBlobs(ctx.blobs, ctx.counts, "itemReads"), bundle, bundleRef });
   const carrierCreatedAt = ctx.createdAt.get(ownPackRow(bundleRef).loc);
   for (const ref of todo) {
     await readRef(ctx, items, ref, rowOf(ref).loc, carrierCreatedAt);
     seen.add(idOf(ref));
   }
+  // The label check the publish makes (acceptChain), made here so that a bundle it would refuse is
+  // dropped now and never adopted. By reference: only the items the parent bundle does not name (the
+  // first bundle of a chain has no checked parent here, so it is checked in full).
+  const parent = node.parent ? { bundle: node.parent.bundle, bundleRef: node.parent.bundleRef } : null;
+  await checkBundleItems({ items, bundle, bundleRef, parent, ownRowOf: ownPackRow });
 }
 
 function dropWithFollowers(node, note) {
