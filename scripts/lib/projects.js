@@ -21,7 +21,8 @@ import { SIZING_KEYS } from "./projectSizing.js";
 import { assertChainVm, VM_CHAIN_FIELDS, vmUsesNativeAsset } from "./chainVms.js";
 import { BRIDGE_MODES, CHAIN_VMS, SOLANA_CLUSTERS, defaultExplorerTemplates, resolveChainBridge, resolveChainVm } from "./chainAdapters.js";
 
-export const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
+// `store` and `site` are refused: data/manifests/store.json and site.json share the directory of the coins' manifests.
+export const SLUG_RE = /^(?!(?:store|site)$)[a-z0-9][a-z0-9-]{0,31}$/;
 
 export function loadRegistry(root = process.cwd()) {
   const raw = JSON.parse(fs.readFileSync(path.join(root, "config/projects.json"), "utf8"));
