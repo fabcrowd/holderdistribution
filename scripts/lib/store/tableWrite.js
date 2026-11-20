@@ -5,8 +5,9 @@
 // takes the position of the part just written.
 // Superseded bases are not returned for deletion: bases are cleaned up by reference,
 // by the sweep of a later slice (design 4.3). Only dropped parts are returned here.
-// Memory bound: the part's own change rows (C) plus one bucket's rows at a time.
-import { encodeBase, encodePart } from "./codec.js";
+// Memory bound: writePartBuckets holds one bucket's change rows and current rows at a time;
+// writePart(Map) is its wrapper and the caller then holds C.
+import { assemblePart, encodeBase, encodePart, encodeSlice } from "./codec.js";
 import { bucketCount, bucketOf, splitLayout } from "./buckets.js";
 import {
   lastDay, currentPosition, endOfDay, dayEntry, advanceHorizon, emptyBucket, assertBucket, resetCopyIfOn,
@@ -47,59 +48,68 @@ function isDue(idx, j, day) {
   return day - b.base.day >= idx.historyDays - idx.ageMarginDays - (j % idx.ageSpreadDays);
 }
 
-// Pass 1: the change rows of each touched bucket against its current state.
-async function computeChanges(store, idx, changes) {
-  const layout = idx.layout;
-  const groups = new Map();
-  for (const [k, v] of changes) {
-    const b = bucketOf(k, layout);
-    if (!groups.has(b)) groups.set(b, []);
-    groups.get(b).push([k, v]);
+// The change rows of one bucket against its current state, with the bucket's new check record
+// (null when nothing changed).
+async function bucketChanges(store, idx, P, reader, b, changes, replace) {
+  const cur = await rowsAt(store, idx, P, b, reader);
+  let { count, hash } = cur;
+  const rows = [];
+  const zero = Array.from({ length: idx.fields }, () => 0n);
+  const wanted = replace ? [...changes, ...[...cur.rows.keys()].filter((k) => !changes.has(k)).map((k) => [k, zero])] : changes;
+  for (const [key, value] of wanted) {
+    const old = cur.rows.get(key) ?? value.map(() => 0n);
+    if (sameValue(old, value)) continue;
+    rows.push({ key, old, new: value });
+    if (!isZero(old)) [count, hash] = [count - 1, subHash(hash, rowHash(key, old))];
+    if (!isZero(value)) [count, hash] = [count + 1, addHash(hash, rowHash(key, value))];
   }
-  const P = currentPosition(idx);
-  const reader = createReader(store, idx);
-  const slices = new Map();
-  const checks = {};
-  for (const b of [...groups.keys()].sort((x, y) => x - y)) {
-    const cur = await rowsAt(store, idx, P, b, reader);
-    let { count, hash } = cur;
-    const rows = [];
-    for (const [key, value] of groups.get(b)) {
-      const old = cur.rows.get(key) ?? value.map(() => 0n);
-      if (sameValue(old, value)) continue;
-      rows.push({ key, old, new: value });
-      if (!isZero(old)) [count, hash] = [count - 1, subHash(hash, rowHash(key, old))];
-      if (!isZero(value)) [count, hash] = [count + 1, addHash(hash, rowHash(key, value))];
-    }
-    if (!rows.length) continue;
-    slices.set(b, rows);
-    checks[b] = { count, hash: hashToHex(hash) };
-  }
-  return { slices, checks };
+  return rows.length ? { rows, check: { count, hash: hashToHex(hash) } } : null;
 }
 
-// Appends one part to `day` (the newest indexed day or a later one). changes: Map
-// key -> new value (all zeros removes the row); old values come from the current state.
-export async function writePart({ store, index, day, changes }) {
+// Appends one part to `day`, one bucket at a time. `buckets` is an (async) iterable of
+// { bucket, changes: Map key -> new value, replace? } (all zeros removes the row), each bucket once,
+// every key in its bucket under the current layout. With `replace: true`, `changes` is the bucket's
+// whole new content: a current key it lacks is removed (one read of the bucket does both). Memory: one bucket's change rows and its current rows
+// at a time; each slice is compressed and only the compressed bytes are kept until the part is put.
+// `trace({ bucket, held })` (optional) is called with the change rows held for each bucket, so a
+// test can count the peak. Returns what writePart returns.
+export async function writePartBuckets({ store, index, day, buckets, trace = null }) {
   checkDay(day);
-  checkChanges(index, changes);
   const last = lastDay(index);
   if (last !== null && day < last) throw new Error(`store: day ${day} is before the newest indexed day ${last}; use writePastDays`);
   const idx = structuredClone(index);
   const layout = idx.layout;
-  const { slices, checks } = await computeChanges(store, idx, changes);
-  let entryDay = dayEntry(idx, day);
-  const partNo = (entryDay?.parts.length ?? 0) + 1;
-  const ref = await store.put(encodePart({ header: { table: idx.table, fields: idx.fields, keyVersion: idx.keyVersion, day, part: partNo, layout }, slices }));
+  const P = currentPosition(idx);
+  const reader = createReader(store, idx);
+  const header = { table: idx.table, fields: idx.fields, keyVersion: idx.keyVersion, day, part: 0, layout };
+  const encoded = [];
+  const checks = {};
+  const sliceCounts = {};
+  const seen = new Set();
   let rows = 0;
   let hash = 0n;
-  const sliceCounts = {};
-  for (const [b, list] of slices) {
-    sliceCounts[b] = list.length;
-    rows += list.length;
-    for (const r of list) hash = addHash(hash, changeRowHash(r.key, r.old, r.new));
+  for await (const { bucket: b, changes, replace = false } of buckets) {
+    if (seen.has(b)) throw new Error(`store: bucket ${b} given twice`);
+    seen.add(b);
+    assertBucket(idx, b, layout);
+    checkChanges(idx, changes);
+    for (const k of changes.keys()) if (bucketOf(k, layout) !== b) throw new Error(`store: key ${k} is not in bucket ${b}`);
+    const got = await bucketChanges(store, idx, P, reader, b, changes, replace);
+    if (!got) continue;
+    trace?.({ bucket: b, held: got.rows.length });
+    const enc = encodeSlice(header, got.rows);
+    encoded.push({ bucket: b, ...enc });
+    checks[b] = got.check;
+    sliceCounts[b] = enc.rows;
+    rows += enc.rows;
+    for (const r of got.rows) hash = addHash(hash, changeRowHash(r.key, r.old, r.new));
+  }
+  let entryDay = dayEntry(idx, day);
+  const partNo = (entryDay?.parts.length ?? 0) + 1;
+  const ref = await store.put(assemblePart({ header: { ...header, part: partNo }, encoded }));
+  for (const b of Object.keys(sliceCounts)) {
     Object.assign(idx.buckets[b], checks[b]);
-    idx.buckets[b].changeRows += list.length;
+    idx.buckets[b].changeRows += sliceCounts[b];
   }
   const entry = { ref, rows, hash: hashToHex(hash), layout, layoutAfter: layout, splits: [], checks, slices: sliceCounts };
   if (!entryDay) {
@@ -114,6 +124,21 @@ export async function writePart({ store, index, day, changes }) {
   const { splits, basesWritten } = await rewriteAndSplit(store, idx, entry, pos);
   const droppedRefs = advanceHorizon(idx, day);
   return { index: idx, ref, rows, split: splits[0] ?? null, splits, basesWritten, droppedRefs };
+}
+
+// A part from a Map of every change (the caller holds all of C): the Map is cut by bucket and
+// written by writePartBuckets.
+export async function writePart({ store, index, day, changes }) {
+  checkDay(day);
+  checkChanges(index, changes);
+  const groups = new Map();
+  for (const [k, v] of changes) {
+    const b = bucketOf(k, index.layout);
+    if (!groups.has(b)) groups.set(b, new Map());
+    groups.get(b).set(k, v);
+  }
+  const buckets = [...groups].sort(([x], [y]) => x - y).map(([bucket, c]) => ({ bucket, changes: c }));
+  return writePartBuckets({ store, index, day, buckets });
 }
 
 async function rewriteAndSplit(store, idx, entry, pos) {
