@@ -4,9 +4,10 @@
 // and never an item or the body. The counter records the reads and the bytes, so a run
 // can state them.
 //
-// The header carries `slugs` only when the writer passed it in the pack's `meta`
-// (pack.js, packItemStore.js `meta`): nothing in the store code adds it by itself. A header
-// without a `slugs` list of strings answers null, which the plan keeps and reports.
+// The header carries `slugs` when every item of the pack names a coin: pack.js computes the list
+// from the items and refuses one passed in `meta`, so a list is complete or absent. A header
+// without a `slugs` list of strings (a pack with an unlabelled item, or written before items
+// carried a coin) answers null, which the plan keeps and reports.
 import { openPack, PackError } from "./pack.js";
 import { StoreError } from "./blobStore.js";
 

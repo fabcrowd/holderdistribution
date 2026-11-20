@@ -148,7 +148,8 @@ describe.each([["folder", folderEnv], ["release", releaseEnv]])("bundle through 
     let lists = 0;
     const blobs = { ...real, readRange: (...a) => { reads++; return real.readRange(...a); }, list: (...a) => { lists++; return real.list(...a); }, find: (...a) => { lists++; return real.find(...a); } };
     const before = real.stats ? real.stats().core : 0;
-    await readBundle({ blobs, slug: SLUG, kind: "holders", bundleRef: written.entry.bundle });
+    // The cross-check of the items' labels reads one more header per named pack (bundleCoinCheck.test.js); the bundle alone is two.
+    await readBundle({ blobs, slug: SLUG, kind: "holders", bundleRef: written.entry.bundle, crossCheck: false });
     expect(reads).toBeLessThanOrEqual(2);
     expect(lists).toBe(0);
     if (real.stats) expect(real.stats().core - before).toBe(0);

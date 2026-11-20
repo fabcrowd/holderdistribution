@@ -50,10 +50,12 @@ export function world(over = {}) {
   };
 }
 
-// A pack with a real header listing `slugs` (none when slugs is null), as bytes (incompressible, so `pad` is its size).
+// A pack whose items are labelled with `slugs`, so its header lists exactly those coins (the writer
+// computes the list; with slugs null its one item names no coin and there is none). The first item
+// is `pad` incompressible bytes, so `pad` is the pack's size; the others are empty.
 export async function packBytes({ cls = "live", day = "2026-11-01", slugs = ["example"], pad = 50 } = {}) {
-  const w = createPackWriter({ meta: { class: cls, kind: "holders", day, ...(slugs ? { slugs } : {}) } });
-  await w.add(randomBytes(pad), { slug: slugs?.[0] ?? null });
+  const w = createPackWriter({ meta: { class: cls, kind: "holders", day } });
+  for (const [i, slug] of (slugs ?? [null]).entries()) await w.add(i === 0 ? randomBytes(pad) : Buffer.alloc(0), { slug });
   return packToBuffer(await w.finish());
 }
 
