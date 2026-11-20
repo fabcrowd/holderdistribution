@@ -16,6 +16,10 @@ const WORKFLOW = path.resolve(process.cwd(), ".github/workflows/refresh-holders.
 
 // covered by the fatal retry step
 const EXEMPT = new Set(["holders_public"]);
+// Store dual-write steps (ids start with store_) are continue-on-error on purpose and are NOT in the verdict: a store
+// failure must never turn the run red. They report through the store summary and the store-publish job instead
+// (scripts/lib/storeDualWrite.test.js pins that).
+const isStoreStep = (id) => typeof id === "string" && id.startsWith("store_");
 
 const readSteps = () => {
   const doc = yaml.parse(fs.readFileSync(WORKFLOW, "utf8"));
@@ -39,7 +43,7 @@ describe("Stage verdict guard", () => {
     const steps = readSteps();
     const verdict = steps.find((s) => s.name === "Stage verdict");
     const coeIds = steps
-      .filter((s) => s["continue-on-error"] === true && !EXEMPT.has(s.id))
+      .filter((s) => s["continue-on-error"] === true && !EXEMPT.has(s.id) && !isStoreStep(s.id))
       .map((s) => s.id);
     for (const id of coeIds) {
       expect(

@@ -49,6 +49,12 @@ on:
         description: "Project slug from config/projects.json, or 'all' (non-default projects commit public/data/<slug>/** and data/<slug>/**)"
         required: false
         default: 'all'
+      store:
+        description: "Store dual-write (design 2.1 section 16, 2.3a part 1): 'off' skips every store step. The repository variable HD_STORE=off does the same for scheduled runs."
+        required: false
+        type: choice
+        options: ['on', 'off']
+        default: 'on'
 
 permissions:
   contents: write
@@ -67,6 +73,7 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       skipped: ${{ steps.matrix.outputs.skipped }}
+      store: ${{ steps.store.outputs.store }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -94,6 +101,23 @@ jobs:
             fail "no project can run; the reason is in this step's log"
           }
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+      - name: Store kill switch
+        # The store runs only when this output is exactly 'on'. A dispatch input or the repository variable
+        # HD_STORE set to anything but 'on' (or empty) turns it off, and so does this step failing (the output is
+        # then empty), so a broken switch can only switch the store off, never the git data path.
+        id: store
+        continue-on-error: true
+        env:
+          INPUT_STORE: ${{ inputs.store }}
+          VAR_STORE: ${{ vars.HD_STORE }}
+        run: |
+          store=on
+          for v in "$INPUT_STORE" "$VAR_STORE"; do
+            case "$v" in ""|on) ;; *) store=off ;; esac
+          done
+          echo "store=$store" >> "$GITHUB_OUTPUT"
+          echo "Store dual-write: $store" >> "$GITHUB_STEP_SUMMARY"
 
   skipped-projects:
     # Makes a project left out of the matrix loud: the run goes red and names the
@@ -501,6 +525,85 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # ---- Store dual-write, lane (design 2.1 section 9.1). Nothing store-related runs before this point: both
+      # git data commits are already pushed, so the store can only add to them. Every store command runs through
+      # scripts/store-guard.sh (always exits 0, records the result, runs under `timeout`); each step also has a
+      # small timeout-minutes. The store steps that use continue-on-error are deliberately NOT in the Stage
+      # verdict (a store failure must never turn the run red); the store-publish job reports every lane's result.
+      # Restore goes to a scratch directory, never into the checkout (it clears the kind's files in its out dir).
+      - name: Store start (dual-write, never blocks)
+        id: store_start
+        if: ${{ needs.plan.outputs.store == 'on' }}
+        timeout-minutes: 3
+        continue-on-error: true
+        env:
+          HD_STORE_DIR: ${{ runner.temp }}/hd-store
+          ATTEMPT_START: ${{ github.run_started_at }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HD_STORE_TIMEOUT: "50"   # seconds per store command; three chained commands fit in the 3-minute step
+        run: |
+          G="bash scripts/store-guard.sh run"
+          $G fetch git fetch --no-tags origin main
+          $G --after fetch facts node scripts/store-origin-facts.js --out "$HD_STORE_DIR/origin" --slugs "$HD_PROJECT" --since "90 days ago"
+          $G --after facts restore node scripts/store-restore.js --kind holders --project "$HD_PROJECT" --origin-dir "$HD_STORE_DIR/origin" --out-dir "$HD_STORE_DIR/restored" --start-dir "$HD_STORE_DIR/start" --attempt-start "$ATTEMPT_START"
+
+      - name: Store pack (dual-write, never blocks)
+        id: store_pack
+        if: ${{ needs.plan.outputs.store == 'on' }}
+        timeout-minutes: 6
+        continue-on-error: true
+        env:
+          HD_STORE_DIR: ${{ runner.temp }}/hd-store
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LANE: ${{ strategy.job-index }}
+          HD_STORE_TIMEOUT: "300"
+        run: |
+          G="bash scripts/store-guard.sh run"
+          # The day is the one the lane's own snapshot carries (asOf.date of holders-summary.json, the settled day
+          # pull-holders-rpc.js resolves), never a clock read here.
+          $G --after restore day bash -c 'node -p "JSON.parse(require(\"fs\").readFileSync(process.env.HD_DATA_DIR + \"/holders-summary.json\", \"utf8\")).asOf.date" > "$HD_STORE_DIR/day.txt"'
+          $G --after day pack node scripts/store-pack.js --kind holders --project "$HD_PROJECT" \
+            --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT" --lane "$LANE" --day "$(cat "$HD_STORE_DIR/day.txt" 2>/dev/null)" --root . \
+            --start-dir "$HD_STORE_DIR/start" --candidate-dir "$HD_STORE_DIR/candidate" --spool-dir "$HD_STORE_DIR/spool" --origin-dir "$HD_STORE_DIR/origin"
+
+      - name: Store candidate upload
+        id: store_upload
+        if: ${{ needs.plan.outputs.store == 'on' }}
+        timeout-minutes: 3
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-holders-l${{ strategy.job-index }}-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/hd-store/candidate/
+          retention-days: 2
+          if-no-files-found: ignore
+
+      - name: Store summary
+        # Job summary only. A lane files no issue: its statuses travel in the status artifact below and the
+        # store-publish job files the single issue for the whole run.
+        id: store_summary
+        if: ${{ always() && needs.plan.outputs.store == 'on' }}
+        timeout-minutes: 2
+        continue-on-error: true
+        env:
+          HD_STORE_DIR: ${{ runner.temp }}/hd-store
+          TICKER: ${{ matrix.ticker }}
+        run: |
+          bash scripts/store-guard.sh summary "Store dual-write: $TICKER (lane)"
+
+      - name: Store status upload
+        # Small status artifact (one line per store step plus each log), present even when pack was skipped.
+        id: store_status
+        if: ${{ always() && needs.plan.outputs.store == 'on' }}
+        timeout-minutes: 2
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: store-status-holders-l${{ strategy.job-index }}-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/hd-store/status/
+          retention-days: 2
+          if-no-files-found: ignore
+
       - name: Check the committed data
         # The data tests kept out of `npm test` (scripts/datachecks, src/datachecks), for this
         # project (HD_PROJECT). Runs after both pushes, so a failing check never costs the day's
@@ -601,3 +704,125 @@ jobs:
                 labels: ["pipeline-failure"],
               });
             }
+
+  store-publish:
+    # Store dual-write, publish job (design 2.1 section 9.2, steps 2 to 4, 6, 7 and the dry-run sweep). The lanes
+    # above already committed the git data, so this job can only add to it: `continue-on-error` keeps its failure from
+    # failing the run, every command runs through scripts/store-guard.sh (always exits 0, records the result), and the
+    # final step shows what happened in the job summary, an issues artifact and one GitHub issue. This job files the
+    # only issue ("Store dual-write failure", once per run) and aggregates every lane's status into it.
+    # It commits only data/manifests; the data files stay committed by the lanes until section 16's proofs pass.
+    name: Store publish (dual-write)
+    needs: [plan, refresh]
+    if: ${{ !cancelled() && needs.plan.outputs.store == 'on' && needs.refresh.result != 'skipped' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare store directory
+        run: |
+          echo "HD_STORE_DIR=$RUNNER_TEMP/hd-store" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/hd-store/candidates"
+
+      - name: Download candidates
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: candidate-holders-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/hd-store/candidates
+
+      - name: Download lane status
+        # One artifact per lane (store-status-holders-l<index>-a<attempt>), each into its own folder under lanes/.
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: store-status-holders-*
+          path: ${{ runner.temp }}/hd-store/lanes
+
+      - name: Publish (manifests, restore check)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HD_STORE_TIMEOUT: "900"
+        run: |
+          G="bash scripts/store-guard.sh run"
+          D="$HD_STORE_DIR"
+          $G facts node scripts/store-origin-facts.js --out "$D/origin" --slugs-from "$D/candidates" --since "90 days ago"
+          $G --after facts publish node scripts/store-publish.js --phase publish --kind holders --origin-dir "$D/origin" --candidates-dir "$D/candidates" --out-dir "$D/published" --issues-out "$D/issues/publish.json"
+
+          # Step 4: restore each accepted coin from its bundle and compare file hashes with what its lane generated.
+          # A difference is an issue, never a stop for the git data (it is already committed).
+          $G --after publish accepted bash -c 'ls "$HD_STORE_DIR/published/manifests" 2>/dev/null | sed -n "s/\.json\$//p" | grep -v -x -e store -e site > "$HD_STORE_DIR/accepted.txt"; true'
+          if [ -s "$D/accepted.txt" ]; then
+            $G --after accepted overlay bash -ec 'cp -r "$HD_STORE_DIR/origin" "$HD_STORE_DIR/origin-after"; cp -r "$HD_STORE_DIR/published/manifests/." "$HD_STORE_DIR/origin-after/manifests/"'
+            $G --after overlay restore-check node scripts/store-restore.js --kind holders --project "$(paste -sd, "$D/accepted.txt")" --origin-dir "$D/origin-after" --out-dir "$D/restored" --start-dir "$D/start" --attempt-start "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            $G --after restore-check compare node scripts/store-compare.js --kind holders --candidates-dir "$D/candidates" --restored-dir "$D/restored" --published-dir "$D/published" --issues-out "$D/issues/compare.json"
+          fi
+
+          # Steps 6 and 7: one commit of data/manifests; push-main.sh retries a lost race (one publisher per kind and
+          # one concurrency group today, so its rebase cannot meet another publish's edit of the same JSON file).
+          $G --after publish commit bash -ec '
+            [ -d "$HD_STORE_DIR/published/manifests" ] || { echo "nothing accepted: no manifest commit"; exit 0; }
+            mkdir -p data/manifests
+            cp -r "$HD_STORE_DIR/published/manifests/." data/manifests/
+            git add -A data/manifests
+            if git diff --cached --quiet; then echo "no manifest changes"; exit 0; fi
+            slugs=$(paste -sd, "$HD_STORE_DIR/accepted.txt")
+            git config user.email "action@github.com"
+            git config user.name "github-actions[bot]"
+            git commit -m "Publish holders: $(wc -l < "$HD_STORE_DIR/accepted.txt") coins ($slugs) [skip netlify]"
+            bash scripts/push-main.sh
+          '
+
+      - name: Sweep (dry run)
+        # Dry run, releases never deleted: it reports what the sweep would delete (design 4.3) and nothing else.
+        # --history-days is the lane's default (lanePack.js DEFAULT_HISTORY_DAYS).
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HD_STORE_TIMEOUT: "600"
+        run: |
+          G="bash scripts/store-guard.sh run"
+          D="$HD_STORE_DIR"
+          $G --after commit sweep-fetch git fetch --no-tags origin main
+          $G --after sweep-fetch sweep-facts node scripts/store-origin-facts.js --out "$D/origin-swept" --since "90 days ago"
+          $G --after sweep-facts sweep node scripts/store-publish.js --phase sweep --kind holders --origin-dir "$D/origin-swept" --issues-out "$D/issues/sweep.json" --history-days 400 --sweep-mode dry --delete-releases false
+
+      - name: Store summary
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash scripts/store-guard.sh summary "Store dual-write: publish"
+          if [ -f "$HD_STORE_DIR/problem" ]; then
+            bash scripts/store-guard.sh issue "Store dual-write failure"
+          fi
+
+      - name: Upload store report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: store-publish-report-a${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/hd-store/issues/
+            ${{ runner.temp }}/hd-store/status/
+            ${{ runner.temp }}/hd-store/report.md
+          retention-days: 14
+          if-no-files-found: ignore
