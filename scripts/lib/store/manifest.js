@@ -31,9 +31,24 @@ export const MANIFEST_SCHEMA = 1;
 const ENTRY_KEYS = ["bundle", "parent", "day", "run", "usage"];
 const PUBLISHED_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
+// `labelCheck` (optional) is { version, bundle }: the version of the item-label check
+// (bundleItemCheck.js) that the bundle named by `bundle` (its full key) passed when acceptChain
+// accepted it. It is the induction step that lets the next entry's check read only the items its
+// parent does not name. A missing marker, an older version, or a `bundle` that is not the entry's
+// own bundle key (a marker copied onto another entry by spreading) vouches for nothing, and the
+// next check is a full one (labelVouches). acceptChain refuses a candidate that carries one (a lane
+// cannot vouch for itself) and sets it on every entry it accepts; bump the version whenever the
+// check becomes stricter.
+export const LABEL_CHECK_VERSION = 1;
+
 export function validateEntry(entry, { slug, kind, published = true }) {
   const s = shapeOf(labelOf("manifest entry", { slug, kind }));
-  s.object(entry, "entry", published ? [...ENTRY_KEYS, "publishedAt"] : ENTRY_KEYS);
+  s.object(entry, "entry", published ? [...ENTRY_KEYS, "publishedAt"] : ENTRY_KEYS, ["labelCheck"]);
+  if (Object.hasOwn(entry, "labelCheck")) {
+    s.object(entry.labelCheck, "labelCheck", ["version", "bundle"]);
+    s.posint(entry.labelCheck.version, "labelCheck.version");
+    if (typeof entry.labelCheck.bundle !== "string" || entry.labelCheck.bundle === "") throw s.bad("labelCheck.bundle", "must be a bundle key");
+  }
   validateBundleRef(entry.bundle, { slug, kind });
   parentField(s, entry.parent, "parent");
   s.day(entry.day, "day");
@@ -58,6 +73,13 @@ export function published(entry, publishedAt) {
 
 // What a child entry's `parent` must equal.
 export const entryKey = (entry) => bundleKey(entry.bundle);
+
+// The marker acceptChain sets on an entry it accepts: it names the bundle it vouches for.
+export const labelMarker = (entry) => ({ version: LABEL_CHECK_VERSION, bundle: entryKey(entry) });
+
+// Does this entry's marker vouch for its own bundle at the current check version?
+export const labelVouches = (entry) => entry.labelCheck !== undefined
+  && entry.labelCheck.version >= LABEL_CHECK_VERSION && entry.labelCheck.bundle === entryKey(entry);
 
 const kindOrThrow = (m, kind) => {
   if (!KINDS.includes(kind)) throw new RecordShapeError(`${labelOf("manifest", m)}: unknown kind ${JSON.stringify(kind)} (one of ${KINDS.join(", ")})`);

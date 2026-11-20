@@ -10,7 +10,7 @@ import path from "node:path";
 import { parseReleaseTag, releaseTag } from "./packNames.js";
 import { recordText, recordedInstant } from "./releaseRecord.js";
 import {
-  ASSET_LIMIT, owned, ownedReleaseTag, checkSeries, checkBounds, sizeOf, chunksOf, sha256Of, parallelDownload, parseLoc,
+  ASSET_LIMIT, owned, ownedReleaseTag, checkSeries, checkTag, checkBounds, sizeOf, chunksOf, sha256Of, parallelDownload, parseLoc,
   StoreNotFoundError, StoreNameTakenError, StoreRangeError, StoreReleaseNotEmptyError,
 } from "./blobStore.js";
 
@@ -33,6 +33,11 @@ export function folderBackend(dir, { assetLimit = ASSET_LIMIT, now = Date.now } 
   async function writeRecord(tag) {
     await fs.mkdir(path.join(dir, RECORDS), { recursive: true });
     await fs.writeFile(recordFile(tag), recordText(now()), { flag: "wx" }).catch((e) => (e.code === "EEXIST" ? undefined : Promise.reject(e)));
+  }
+  async function recordedAt(tag) {
+    const text = await fs.readFile(recordFile(tag), "utf8").catch((e) => (e.code === "ENOENT" ? "" : Promise.reject(e)));
+    const ms = recordedInstant(text);
+    return ms === null ? null : new Date(ms).toISOString();
   }
   const isTmp = (n) => n.includes(".tmp-");
   async function releases(series) {
@@ -146,17 +151,32 @@ export function folderBackend(dir, { assetLimit = ASSET_LIMIT, now = Date.now } 
     },
     async stat(loc) {
       const st = await statFile(loc);
-      return st && { size: st.size, loc };
+      return st && { size: st.size, loc, createdAt: st.createdAt, state: "uploaded" };
     },
     async releasesOf(series) {
       checkSeries(series);
       const out = [];
       for (const tag of await releases(series)) {
-        const text = await fs.readFile(recordFile(tag), "utf8").catch((e) => (e.code === "ENOENT" ? "" : Promise.reject(e)));
-        const ms = recordedInstant(text);
-        out.push({ tag, seq: parseReleaseTag(tag).seq, assets: (await files(tag)).length, createdAt: ms === null ? null : new Date(ms).toISOString() });
+        out.push({ tag, seq: parseReleaseTag(tag).seq, assets: (await files(tag)).length, createdAt: await recordedAt(tag) });
       }
       return out;
+    },
+    // No API: every call is 0 requests.
+    async listReleaseTags(series) {
+      checkSeries(series);
+      const out = [];
+      for (const tag of await releases(series)) out.push({ tag, seq: parseReleaseTag(tag).seq, createdAt: await recordedAt(tag) });
+      return { releases: out, requests: 0 };
+    },
+    async listRelease(tag) {
+      checkTag(tag);
+      const names = await files(tag).catch((e) => (e.code === "ENOENT" ? null : Promise.reject(e)));
+      const entries = [];
+      for (const n of (names ?? []).sort()) {
+        const st = await fs.stat(path.join(dir, tag, n));
+        entries.push({ name: n, size: st.size, release: tag, state: "uploaded", loc: `${tag}/${n}`, createdAt: st.mtime.toISOString() });
+      }
+      return { entries, requests: 0 };
     },
     async deleteRelease(tag) {
       ownedReleaseTag(tag);

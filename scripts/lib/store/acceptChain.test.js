@@ -3,7 +3,7 @@ import { chainPackRows, checkChainPacks, judgeChain, MISSING_PACK } from "./chai
 import { acceptChain } from "./acceptChain.js";
 import { bundleKey } from "./bundle.js";
 import { RecordShapeError } from "./errors.js";
-import { entryKey, published } from "./manifest.js";
+import { entryKey, labelMarker, published } from "./manifest.js";
 import { packName } from "./packNames.js";
 import { ADOPTION_WINDOW_DAYS } from "./storeConstants.js";
 import { SLUG, runOf, folderEnv, releaseEnv, writeCoin, writeCoins } from "./recordKit.js";
@@ -41,7 +41,8 @@ describe.each([["folder", folderEnv], ["release", releaseEnv]])("acceptChain on 
   it("accepts a chain of two, reading each bundle, at 0 API requests", async () => {
     const blobs = e.fresh();
     const before = blobs.stats ? blobs.stats().core : 0;
-    expect(await accept(blobs, a0, a1.entry, a2.entry)).toEqual({ status: "accepted", entries: [a1.entry, a2.entry] });
+    // every accepted entry carries the label-check marker acceptChain sets
+    expect(await accept(blobs, a0, a1.entry, a2.entry)).toEqual({ status: "accepted", entries: [a1.entry, a2.entry].map((x) => ({ ...x, labelCheck: labelMarker(x) })) });
     if (blobs.stats) expect(blobs.stats().core - before).toBe(0);
   });
 

@@ -12,6 +12,14 @@
 // bundle reference. So at most one pack named by a reference may lack a row, and a reader
 // checks that it is the bundle's own.
 //
+// A bundle is an item of type "bundle" labelled with its coin (writeBundle), so a pack's
+// header lists the coin and adoption and the sweep find it. readBundle also cross-checks the
+// labels of the bundle's items (bundleItemCheck.js): an item labelled with another coin is
+// refused, and so is an unlabelled one unless `allowUnlabelled` (then it is counted in the report
+// `onItemsChecked` gets). That adds one header range read per other pack the bundle names (fewer
+// with a checked `parent`) and no API request; `crossCheck: false` is the read of the bundle
+// alone (two range reads).
+//
 // Cost by size: a bundle holds one reference per blob (b per coin, under 2 MiB of blobs a
 // night), one descriptor per table (about 120 bytes per bucket, so B per table, 1 at
 // H = 100 thousand and 382 at 100 million) and one pack row per pack named (at most
@@ -19,6 +27,7 @@
 // of carried bases). Nothing in a bundle grows with D or C; a reader's cost is the bundle
 // reference's two range reads.
 import { createPackItemStore } from "./packItemStore.js";
+import { checkBundleItems } from "./bundleItemCheck.js";
 import { parseReleaseTag, NameError } from "./packNames.js";
 import { BundleBuildError, BundleReadError, BundleVerifyError, RecordSchemaError } from "./errors.js";
 import { bundleKeyOf, packInfo, packNameOf, parseItemRef, refsIn } from "./itemRef.js";
@@ -138,18 +147,22 @@ export const ownPackRow = (bundleRef) => ({
 
 // Puts the bundle as an item. The caller closes the store afterwards and passes the rows
 // close() returns to bundleRefOf: only then is the pack's location known.
+// The checks run in the store's `guard` before the item is added, with the name of the pack the
+// bundle will land in, so a refused bundle leaves no item (and no open pack) behind: a reference
+// that resolves to no row (for instance an item of a pack whose upload failed) is refused here.
 export async function writeBundle(store, bundle) {
   const label = labelOf("bundle", bundle);
   const bytes = serializeBundle(bundle);
-  const ref = await store.put(bytes);
-  const own = packNameOf(ref);
-  const lacking = [...unrowedPacks(bundle)].filter((n) => n !== own);
-  if (lacking.length > 0) {
-    throw new BundleBuildError(`${label}: its references name pack ${lacking[0]}, which has no row in the bundle and is not the pack ${own} the bundle was put in (close the store that wrote it first and pass its rows)`);
-  }
-  if (bundle.packs.some((r) => r.name === own)) {
-    throw new BundleBuildError(`${label}: it was put in pack ${own}, which it already holds a row for (a bundle cannot hold the row of its own pack)`);
-  }
+  const guard = (own) => {
+    const lacking = [...unrowedPacks(bundle)].filter((n) => n !== own);
+    if (lacking.length > 0) {
+      throw new BundleBuildError(`${label}: its references name pack ${lacking[0]}, which has no row in the bundle and is not the pack ${own} the bundle will be put in (close the store that wrote it first and pass its rows)`);
+    }
+    if (bundle.packs.some((r) => r.name === own)) {
+      throw new BundleBuildError(`${label}: it would be put in pack ${own}, which it already holds a row for (a bundle cannot hold the row of its own pack)`);
+    }
+  };
+  const ref = await store.put(bytes, { type: "bundle", slug: bundle.slug, day: bundle.day }, { guard });
   return { ref, sha256: sha256Hex(bytes) };
 }
 
@@ -177,11 +190,17 @@ function sameJson(a, b) {
 
 // Reads the bundle a manifest entry or an index row names, by location, and verifies it:
 // the bytes hash to the reference's sha256, the bundle is this coin's and this kind's, and
-// (when `expect` is an entry) its day, run and parent are the entry's.
-export async function readBundle({ blobs, slug, kind, bundleRef, expect = null }) {
+// (when `expect` is an entry) its day, run and parent are the entry's; then (`crossCheck`, on by
+// default) its items' labels, with the result { itemsChecked, unlabelled, packs, rangeReads }
+// passed to `onItemsChecked`.
+//
+// `headers` is a header cache (packHeaderCache.js) a whole publish shares; `parent` is
+// { bundle, bundleRef } of an already checked bundle of this coin, so the check reads only the
+// items it does not name (bundleItemCheck.js); `allowUnlabelled` accepts items with no coin label.
+export async function readBundle({ blobs, slug, kind, bundleRef, expect = null, crossCheck = true, onItemsChecked = null, headers = null, parent = null, allowUnlabelled = false }) {
   const label = labelOf("bundle", { slug, kind });
   validateBundleRef(bundleRef, { slug, kind });
-  const items = createPackItemStore({ blobs, nameFor: readOnly, packs: [ownPackRow(bundleRef)] });
+  const items = createPackItemStore({ blobs, nameFor: readOnly, packs: [ownPackRow(bundleRef)], sharedHeaders: headers });
   let bytes;
   try {
     bytes = await items.get(bundleRef.ref);
@@ -203,6 +222,12 @@ export async function readBundle({ blobs, slug, kind, bundleRef, expect = null }
   if (bundle.packs.some((r) => r.name === own)) throw new BundleVerifyError(`${label}: it holds a row for its own pack ${own}`);
   for (const name of unrowedPacks(bundle)) {
     if (name !== own) throw new BundleVerifyError(`${label}: a reference names pack ${name}, which has no row and is not its own pack ${own}`);
+  }
+  if (crossCheck) {
+    items.addRows(bundle.packs);
+    const readsOf = headers ? () => headers.stats().reads : undefined;
+    const report = await checkBundleItems({ items, bundle, bundleRef, parent, ownRowOf: ownPackRow, allowUnlabelled, ...(readsOf ? { readsOf } : {}) });
+    if (onItemsChecked) onItemsChecked(report);
   }
   return bundle;
 }

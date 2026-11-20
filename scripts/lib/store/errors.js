@@ -26,3 +26,9 @@ export class CandidateError extends RecordError {}
 // The lane's listing of live releases (adoption, design 9.3): a bad tag, or an answer from
 // the listing call that is not { entries, requests }.
 export class AdoptionListingError extends RecordError {}
+
+// An item a bundle names is labelled in its pack header with another coin than the bundle's.
+export class BundleItemCoinError extends RecordError {}
+
+// An item a bundle names has no coin label in its pack header, and the reader did not allow that.
+export class BundleItemUnlabelledError extends RecordError {}
