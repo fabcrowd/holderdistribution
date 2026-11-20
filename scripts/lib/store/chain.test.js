@@ -121,3 +121,32 @@ describe("parent rule and chain acceptance (8.2, 9.2 step 3)", () => {
     });
   });
 });
+
+describe("days never go backwards along a chain", () => {
+  const dayed = (n, sha, parent, day) => ({ ...synth(n, 0, "data-live-1", sha.repeat(64), parent), day });
+  const main = { ...dayed(1, "a", null, "2026-11-10"), publishedAt: AT };
+  const first = (day) => dayed(2, "b", entryKey(main), day);
+
+  it("the first entry on the main entry's day or after is accepted; earlier is refused", () => {
+    expect(judgeChain({ main, chain: [first("2026-11-10")] }).status).toBe("accepted");
+    expect(judgeChain({ main, chain: [first("2026-11-11")] }).status).toBe("accepted");
+    expect(judgeChain({ main, chain: [first("2026-11-09")] })).toMatchObject({ status: "refused", reason: expect.stringMatching(/day goes backwards/) });
+  });
+
+  it("a later entry on its parent's day or after is accepted; earlier is refused, and the reason names the entry", () => {
+    const a = first("2026-11-12");
+    const same = dayed(3, "c", entryKey(a), "2026-11-12");
+    const earlier = dayed(3, "c", entryKey(a), "2026-11-11");
+    expect(judgeChain({ main, chain: [a, same] }).status).toBe("accepted");
+    const r = judgeChain({ main, chain: [a, earlier] });
+    expect(r).toMatchObject({ status: "refused", reason: expect.stringMatching(/day goes backwards at entry 1/) });
+  });
+
+  it("a first publish (no main entry) has no day to compare with its first entry", () => {
+    expect(judgeChain({ main: null, chain: [dayed(2, "b", null, "2020-01-01")] }).status).toBe("accepted");
+  });
+
+  it("the parent rule still comes first: a stale chain is stale whatever its days", () => {
+    expect(judgeChain({ main, chain: [dayed(2, "b", null, "2026-11-01")] }).status).toBe("stale");
+  });
+});
