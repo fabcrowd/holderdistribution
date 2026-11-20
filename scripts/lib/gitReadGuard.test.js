@@ -22,6 +22,7 @@ const ALLOWED = new Map([
   ["scripts/write-pipeline-status.js", "last commit time of each feed; moved by a later step"],
   ["scripts/onboard-run.js", "onboarding branch, commit and push; not a data read"],
   ["scripts/change-receipt.js", "diff and status for the change receipt; not a data read"],
+  ["scripts/store-origin-facts.js", "the workflow's origin/main seam for the store CLIs (data/manifests and the stale-code guard's commit list); not a data read"],
 ]);
 
 const walk = (dir) => {
