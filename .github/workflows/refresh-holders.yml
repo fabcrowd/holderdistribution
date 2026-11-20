@@ -75,9 +75,11 @@ jobs:
       skipped: ${{ steps.matrix.outputs.skipped }}
       store: ${{ steps.store.outputs.store }}
       attempt_start: ${{ steps.attempt.outputs.attempt_start }}
+      run_attempt: ${{ github.run_attempt }}
     steps:
       - name: Record the attempt start
-        # A re-run gets a new plan job, so this is the start of the attempt, in UTC with a zone.
+        # UTC with a zone. "Re-run failed jobs" reuses this job and its outputs, so this is the start of the FIRST
+        # attempt; the lane compares run_attempt and uses its own clock on a later attempt (Store start step).
         # (The github context has no run start field; an expression for one expands to empty.)
         id: attempt
         run: echo "attempt_start=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
@@ -546,9 +548,13 @@ jobs:
         env:
           HD_STORE_DIR: ${{ runner.temp }}/hd-store
           ATTEMPT_START: ${{ needs.plan.outputs.attempt_start }}
+          PLAN_ATTEMPT: ${{ needs.plan.outputs.run_attempt }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HD_STORE_TIMEOUT: "50"   # seconds per store command; three chained commands fit in the 3-minute step
         run: |
+          # A later attempt reuses the plan outputs, so its start is this lane's own (later) clock: errs toward refusing.
+          [ "$RUN_ATTEMPT" = "$PLAN_ATTEMPT" ] || ATTEMPT_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           G="bash scripts/store-guard.sh run"
           $G fetch git fetch --no-tags origin main
           $G --after fetch facts node scripts/store-origin-facts.js --out "$HD_STORE_DIR/origin" --slugs "$HD_PROJECT" --since "90 days ago"
