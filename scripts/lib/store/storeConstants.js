@@ -10,6 +10,12 @@ export const SWEEP_WAIT_DAYS = 18;
 // The cost is stated in adoption.js: after this many nights the bundles in such a pack are given
 // up, the same consequence as the 15-bundle cap.
 export const UNREADABLE_PACK_DAYS = 3;
+// Before a pack at or past that bound is given up, the read that failed is tried once more after
+// this wait, the same night (adoptionUnreadable.js): one failed read must not drop its bundles.
+export const SECOND_LOOK_WAIT_MS = 30_000;
+// A second look at a pack shares the wait of an earlier second look at the same pack only when that
+// wait ended less than this long ago; a later fault gets a wait of its own.
+export const SECOND_LOOK_SHARE_MS = 5_000;
 // Windows and limits of the nightly sweep (design 2.1 section 4.3), named here so the plan
 // and its tests share them.
 export const EVENTS_KEEP_DAYS = 4; // an `events` pack goes when its day is more than this old

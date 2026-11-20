@@ -8,8 +8,8 @@ import { DEFAULT_MAX_RELEASES, adoptLane, listLane } from "./adoptionLane.js";
 
 // Fix round 2, item 4: the listing reaches back by a rule, not by a count. It covers everything
 // uploaded since T when the lowest listed release is the lowest release that exists, or holds an
-// asset created before T. T is the start of the earliest main day among the lane's coins, never
-// earlier than now minus the adoption window (a new coin uses that floor).
+// asset created before T (less the uploader's learning lag). T is the start of the earliest main day
+// among the lane's coins, with no floor (fix round 3); a new coin has no bound at all (round 4).
 const SLUG = "example";
 const KIND = "holders";
 const D0 = "2026-11-10";
@@ -121,7 +121,7 @@ describe("the listing goes down existing releases until the rule holds", () => {
   });
 });
 
-describe("T: the earliest main day of the lane's coins, never earlier than the adoption window", () => {
+describe("T: the earliest main day of the lane's coins; a new coin has no bound", () => {
   it("is the start of the main day", async () => {
     const m = await mainRec();
     expect((await lane(rel(2), [coin(SLUG, m)])).listing.since).toBe("2026-11-10T00:00:00.000Z");
@@ -133,18 +133,18 @@ describe("T: the earliest main day of the lane's coins, never earlier than the a
     expect((await lane(rel(2), [coin("coin-b", later), coin(SLUG, m)])).listing.since).toBe("2026-11-10T00:00:00.000Z");
   });
 
-  it("a main day older than the window gives the window's floor", async () => {
+  it("a main day older than the window is still T: there is no floor for a coin with a main entry", async () => {
     const old = await w.one({ slug: SLUG, day: "2026-10-01", run: 3, release: rel(1) });
-    expect((await lane(rel(2), [coin(SLUG, old)])).listing.since).toBe(FLOOR);
+    expect((await lane(rel(2), [coin(SLUG, old)])).listing.since).toBe("2026-10-01T00:00:00.000Z");
   });
 
-  it("a new coin uses the floor, and so does a lane with a new coin next to a coin with a main entry", async () => {
+  it("a new coin has no bound, and neither has a lane with a new coin next to a coin with a main entry", async () => {
     const m = await mainRec();
-    expect((await lane(rel(2), [coin("coin-n", null)])).listing.since).toBe(FLOOR);
-    expect((await lane(rel(2), [coin(SLUG, m), coin("coin-n", null)])).listing.since).toBe(FLOOR);
+    expect((await lane(rel(2), [coin("coin-n", null)])).listing.since).toBe("1970-01-01T00:00:00.000Z");
+    expect((await lane(rel(2), [coin(SLUG, m), coin("coin-n", null)])).listing.since).toBe("1970-01-01T00:00:00.000Z");
   });
 
-  it("the floor changes what counts as old: an asset from 2026-11-05 is before T for a main day 11-10, not for a new coin", async () => {
+  it("T changes what counts as old: an asset from 2026-11-05 is before T for a main day 11-10, not for a new coin", async () => {
     const m = await mainRec();
     await w.one({ slug: "other", day: "2026-11-05", run: 5, release: rel(2) });
     await w.one({ slug: "other", day: "2026-11-04", run: 4, release: rel(1) });

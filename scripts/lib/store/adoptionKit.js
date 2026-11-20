@@ -145,7 +145,10 @@ export function createWorld({ backend = "folder" } = {}) {
   };
 
   world.now = () => Date.parse(NOW);
-  world.listing = { listRelease: world.listRelease, existingReleases: world.existingReleases, now: world.now };
+  // The lane's injected sleep: it takes no time and records the waits it was asked for.
+  world.sleeps = [];
+  world.sleep = async (ms) => { world.sleeps.push(ms); };
+  world.listing = { listRelease: world.listRelease, existingReleases: world.existingReleases, now: world.now, sleep: world.sleep };
 
   world.cleanup = () => fs.rmSync(dir, { recursive: true, force: true });
   return world;

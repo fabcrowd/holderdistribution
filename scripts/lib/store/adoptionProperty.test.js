@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { acceptChain } from "./acceptChain.js";
-import { ADOPTION_WINDOW_DAYS, UNREADABLE_PACK_DAYS } from "./storeConstants.js";
+import { ADOPTION_WINDOW_DAYS, NEWEST_RELEASE_MAX_AGE_MS, UNREADABLE_PACK_DAYS } from "./storeConstants.js";
 import { readBundle } from "./bundle.js";
 import { entryKey } from "./manifest.js";
 import { NOW, createWorld, dayPlus, publishedOf } from "./adoptionKit.js";
@@ -27,22 +27,32 @@ import { adoptLane } from "./adoptionLane.js";
 // either fails or gets a chain as long. Packs with a same-name copy in another release are in the
 // faults too, which is what the "parent in the unreadable pack" evidence rule is for.
 //
+// Main days. Each coin's main entry is dated inside the adoption window (9 days back) or outside it
+// (18 and 22 days back), and the oracle restates T from them with no floor: T is the earliest main
+// day of the lane's coins, and a coin with no main entry has no bound. The fault
+// phases act on the packs created since T, which the listing rule never looks at (it asks only for
+// an asset created before T).
+//
+// Second look. One failed read anywhere past the bound (every pack aged beyond it) never shortens a
+// chain or fails a coin: the same read is tried again after the injected sleep and succeeds. A
+// failure that persists still drops the pack, as above.
+//
 // SEEDS: 30 by default (about 30 s), overridden by ADOPTION_PROPERTY_SEEDS for long runs. The
 // default must reach every kind in FAULT_KINDS, which the test asserts.
 const SEEDS = Number(process.env.ADOPTION_PROPERTY_SEEDS ?? 30);
 const KIND = "holders";
-const MAIN_DAY = "2026-11-01";
+const MAIN_DAY = "2026-11-01"; // the first day of data; main entries are dated by MAIN_DAYS
+const MAIN_DAYS = ["2026-10-28", MAIN_DAY, "2026-11-10"];
 const DAY_MS = 86400000;
 const NOW_MS = Date.parse(NOW);
-// T of every lane here: all main days are MAIN_DAY, before the window's floor, so the floor it is.
-const FLOOR_MS = NOW_MS - ADOPTION_WINDOW_DAYS * DAY_MS;
+const WINDOW_START_MS = NOW_MS - ADOPTION_WINDOW_DAYS * DAY_MS;
 const BOUND_MS = UNREADABLE_PACK_DAYS * DAY_MS;
 const tagOf = (n) => `data-live-${n}`;
 
 // Every kind of fault or shape the generator can produce, counted over the seeds run, so that a
 // small default cannot silently stop covering one (asserted at the end of the test).
 const FAULT_KINDS = ["calm", "top:3", "top:5", "max:2", "max:3", "max:8", "backwards-day", "state:starter", "pack:truncate", "pack:magic", "item:bundle", "item:base", "item:blob", "swap", "ledger", "copy",
-  "unreadable:young:notfound", "unreadable:young:range", "unreadable:old:notfound", "unreadable:old:range", "unreadable:failed-coin", "unreadable:copied-pack", "read-failure:injected"];
+  "unreadable:young:notfound", "unreadable:young:range", "unreadable:old:notfound", "unreadable:old:range", "unreadable:failed-coin", "unreadable:copied-pack", "read-failure:injected", "read-failure:second-look", "main:inside-window", "main:outside-window", "main:none"];
 const FAULTS = new Map();
 const hit = (kind) => FAULTS.set(kind, (FAULTS.get(kind) ?? 0) + 1);
 
@@ -67,7 +77,11 @@ async function generate(seed, w) {
   hit(`top:${top}`);
   hit(`max:${maxReleases}`);
   const mains = {};
-  for (const [i, slug] of slugs.entries()) mains[slug] = chance(0.8) ? await w.one({ slug, day: MAIN_DAY, run: 1, lane: i, release: "data-live-1" }) : null;
+  for (const [i, slug] of slugs.entries()) {
+    const day = one(MAIN_DAYS);
+    mains[slug] = chance(0.8) ? await w.one({ slug, day, run: 1, lane: i, release: "data-live-1" }) : null;
+    hit(mains[slug] ? (Date.parse(`${day}T00:00:00Z`) >= WINDOW_START_MS ? "main:inside-window" : "main:outside-window") : "main:none");
+  }
   const nodes = new Map(); // key -> oracle facts
   const lastOf = Object.fromEntries(slugs.map((s) => [s, mains[s]]));
   const laneSize = one([1, 3, 16]);
@@ -140,16 +154,25 @@ async function generate(seed, w) {
   return { slugs, mains, nodes, top, maxReleases };
 }
 
+// T, restated: the start of the earliest main day among the coins, with no floor; a coin with no
+// main entry has no bound (the epoch), so the listing runs to the lowest release or the maximum.
+function sinceOf({ slugs, mains }) {
+  return Math.min(...slugs.map((s) => (mains[s] ? Date.parse(`${mains[s].entry.day}T00:00:00Z`) : 0)));
+}
+
 // The listing rule, restated from the history: the two newest releases, then the releases that
-// exist, one at a time, until the lowest listed is release 1 or holds an asset created before T,
-// or `maxReleases` are listed. Assets are the packs of every kind and state in the folder.
-function listedTags(packs, { top, maxReleases }) {
+// exist, one at a time, until the lowest listed is release 1 or holds an asset created before T
+// (less the uploader's learning lag), or `maxReleases` are listed. Assets are the packs of every
+// kind and state in the folder.
+function listedTags(packs, history) {
+  const { top, maxReleases } = history;
+  const stop = sinceOf(history) - NEWEST_RELEASE_MAX_AGE_MS;
   const here = (n) => packs.filter((p) => p.release === tagOf(n));
   const listed = [];
   for (let n = top; n >= 1 && listed.length < Math.min(2, maxReleases); n--) listed.push(n);
   for (;;) {
     const low = listed.at(-1);
-    if (low === 1 || here(low).some((p) => Date.parse(p.createdAt) < FLOOR_MS)) break;
+    if (low === 1 || here(low).some((p) => Date.parse(p.createdAt) < stop)) break;
     let below = low - 1;
     while (below >= 1 && here(below).length === 0) below--;
     if (below < 1 || listed.length >= maxReleases) break;
@@ -241,14 +264,14 @@ async function ownEntryFits({ w, slug, main, r, nodes, why }) {
 }
 
 // The faults of the unreadable phases: the picked packs fail every read (the file is still there,
-// so stat finds it), and every pack created since the floor is given `ageMs` of age in the
-// listing (the rule of the listing is not touched: only assets created before the floor count
-// there, and those keep their age).
-function faulty(w, { locs = new Set(), ageMs, fail }) {
+// so stat finds it), and every pack created since T (`since`) is given `ageMs` of age in the
+// listing (the rule of the listing is not touched: only assets created before T count there, and
+// those keep their age).
+function faulty(w, { locs = new Set(), ageMs, fail, since }) {
   const blobs = { ...w.blobs, readRange: async (loc, off, len) => { if (locs.has(loc)) throw fail(); return w.blobs.readRange(loc, off, len); } };
   const listRelease = async (tag) => {
     const got = await w.listRelease(tag);
-    const aged = (e) => (Date.parse(e.createdAt) >= FLOOR_MS ? { ...e, createdAt: new Date(NOW_MS - ageMs).toISOString() } : e);
+    const aged = (e) => (Date.parse(e.createdAt) >= since ? { ...e, createdAt: new Date(NOW_MS - ageMs).toISOString() } : e);
     return { ...got, entries: got.entries.map(aged) };
   };
   return { blobs, listing: { ...w.listing, listRelease } };
@@ -291,7 +314,7 @@ function blockersOf({ slug, history, packs, picked, listed }) {
 async function unreadablePacks({ seed, w, history, baseline }) {
   const tags = new Set(listedTags(w.packs, history));
   const packs = packsOf(history, w);
-  const pool = packs.filter((p) => p.uploaded && tags.has(p.release) && Date.parse(p.createdAt) >= FLOOR_MS);
+  const pool = packs.filter((p) => p.uploaded && tags.has(p.release) && Date.parse(p.createdAt) >= sinceOf(history));
   if (pool.length === 0) return 0;
   const pick = rng(seed * 104729);
   const chosen = pool.filter(() => pick() < 0.3);
@@ -304,7 +327,7 @@ async function unreadablePacks({ seed, w, history, baseline }) {
   hit(`unreadable:${young ? "young" : "old"}:${notFound ? "notfound" : "range"}`);
   if (packs.some((p) => picked.has(p.loc) && p.copied)) hit("unreadable:copied-pack");
   const fail = notFound ? () => new StoreNotFoundError("not found: 404") : () => new StoreRangeError("short body after 3 attempts");
-  const fault = faulty(w, { locs: picked, ageMs: young ? DAY_MS : BOUND_MS + DAY_MS, fail });
+  const fault = faulty(w, { locs: picked, ageMs: young ? DAY_MS : BOUND_MS + DAY_MS, fail, since: sinceOf(history) });
   const out = await adoptLane(laneArgs(w, history, { blobs: fault.blobs, ...fault.listing }));
   const readableWorld = oracle(history, { cap: ADOPTION_WINDOW_DAYS - 1, listed: tags, exclude: picked });
   let failedCoins = 0;
@@ -328,11 +351,11 @@ async function unreadablePacks({ seed, w, history, baseline }) {
 }
 
 // One failed read, anywhere in the run, inside the bound: the coin fails, or has a chain as long as
-// the run without the failure; never a shorter one. Reads of packs created before the floor are
-// skipped: those are past the bound.
+// the run without the failure; never a shorter one. Reads of packs created before T are skipped:
+// those are past the bound (oldFailure below).
 async function transientFailure({ seed, w, history, baseline }) {
   let reads = 0;
-  const aged = faulty(w, { ageMs: DAY_MS, fail: () => new Error("unused") });
+  const aged = faulty(w, { ageMs: DAY_MS, fail: () => new Error("unused"), since: sinceOf(history) });
   const counting = { ...w.blobs, readRange: async (loc, off, len) => { reads++; return w.blobs.readRange(loc, off, len); } };
   await adoptLane(laneArgs(w, history, { blobs: counting, ...aged.listing }));
   if (reads === 0) return;
@@ -345,11 +368,35 @@ async function transientFailure({ seed, w, history, baseline }) {
     const flaky = { ...w.blobs, readRange: async (loc, off, len) => { if (++calls === k) { failedLoc = loc; throw error; } return w.blobs.readRange(loc, off, len); } };
     const result = await adoptLane(laneArgs(w, history, { blobs: flaky, ...aged.listing }));
     const created = w.packs.find((p) => p.loc === failedLoc)?.createdAt;
-    if (!created || Date.parse(created) < FLOOR_MS) continue;
+    if (!created || Date.parse(created) < sinceOf(history)) continue;
     hit("read-failure:injected");
     for (const slug of history.slugs) {
       const r = result.coins[slug];
       if (!r.failed) expect(r.chain.length, `seed ${seed} read ${k} ${slug}: a failed read must not shorten a chain`).toBe(baseline.coins[slug].chain.length);
+    }
+  }
+}
+
+// One failed read anywhere, with every pack past the bound: the second look reads it again, so the
+// chains are exactly the run without the failure, and the read is counted as recovered.
+async function oldFailure({ seed, w, history, baseline }) {
+  const aged = faulty(w, { ageMs: BOUND_MS + DAY_MS, fail: () => new Error("unused"), since: sinceOf(history) });
+  let reads = 0;
+  const counting = { ...w.blobs, readRange: async (loc, off, len) => { reads++; return w.blobs.readRange(loc, off, len); } };
+  await adoptLane(laneArgs(w, history, { blobs: counting, ...aged.listing }));
+  if (reads === 0) return;
+  const pick = rng(seed * 6007);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const k = 1 + Math.floor(pick() * reads);
+    const error = k % 2 === 0 ? new StoreRangeError("short body after 3 attempts") : new StoreNotFoundError("not found: 404");
+    let calls = 0;
+    const flaky = { ...w.blobs, readRange: async (loc, off, len) => { if (++calls === k) throw error; return w.blobs.readRange(loc, off, len); } };
+    const result = await adoptLane(laneArgs(w, history, { blobs: flaky, ...aged.listing }));
+    expect(result.reads.secondLooks, `seed ${seed} read ${k}: the failed read is read again`).toBeGreaterThan(0);
+    if (result.reads.recovered > 0) hit("read-failure:second-look"); // a damaged pack read again is still damaged
+    for (const slug of history.slugs) {
+      expect(result.coins[slug].failed, `seed ${seed} read ${k} ${slug}`).toBe(false);
+      expect(result.coins[slug].chain, `seed ${seed} read ${k} ${slug}: a once-failed read of an old pack gives the whole chain`).toEqual(baseline.coins[slug].chain);
     }
   }
 }
@@ -370,10 +417,16 @@ describe(`adoption over generated histories (${SEEDS} seeds, ADOPTION_PROPERTY_S
         adoptedSomething += Object.values(out.coins).filter((c) => c.chain.length > 0).length;
         droppedSomething += Object.values(out.coins).filter((c) => c.why.some((l) => /bad hash|cannot be read|broken link|outside the listing|does not reach back|goes backwards/.test(l))).length;
         await transientFailure({ seed, w, history, baseline: out });
+        await oldFailure({ seed, w, history, baseline: out });
         failedForPacks += await unreadablePacks({ seed, w, history, baseline: out });
         const solo = history.slugs[seed % history.slugs.length];
         const alone = await adoptLane(laneArgs(w, history, { coins: [{ slug: solo, main: mainOf(history.mains, solo) }] }));
-        expect(alone.coins[solo], `seed ${seed}: a lane of one coin gives the same answer as a lane of many`).toEqual(out.coins[solo]);
+        // T belongs to the lane: with the same T the answers are the same; with another, the oracle judges the solo lane.
+        if (alone.listing.since === out.listing.since) expect(alone.coins[solo], `seed ${seed}: a lane of one coin gives the same answer as a lane of many`).toEqual(out.coins[solo]);
+        const soloHistory = { ...history, slugs: [solo] };
+        const soloTags = listedTags(w.packs, soloHistory);
+        expect(alone.listing.tags, `seed ${seed}: solo listing`).toEqual(soloTags);
+        expect(alone.coins[solo].chain, `seed ${seed}: solo chain`).toEqual(oracle(soloHistory, { cap: ADOPTION_WINDOW_DAYS - 1, listed: new Set(soloTags) })[solo].longest);
       } finally {
         w.cleanup();
       }

@@ -24,7 +24,10 @@
 // unpublished bundles is an outage that needs an operator), `listing-too-shallow` (the lane's
 // listing hit its maximum of releases before it reached everything uploaded since T, adoptionLane.js:
 // raised for every coin of the lane), `damaged` (bundles dropped for a bad hash, or a pack that is
-// bad or confirmed gone), `day-backwards`, `unreadable-dropped` (a pack that stayed unreadable
+// bad or confirmed gone), `broken-link` (readable bundles newer than the main entry that were not
+// adopted because their parent was not found, with the listing complete: the count of such bundles,
+// separate from the pack's own `damaged`; a shallow listing says `listing-too-shallow` instead),
+// `day-backwards`, `unreadable-dropped` (a pack that stayed unreadable
 // for UNREADABLE_PACK_DAYS and was dropped), `unreadable-undated` (an unreadable pack with no
 // creation time, treated as young), `run-wrote-coin-twice`, and, on a failed coin, `unreadable`
 // or `read-failed`.
@@ -74,7 +77,7 @@ import { ADOPTION_WINDOW_DAYS } from "./storeConstants.js";
 import { StoreNotFoundError } from "./blobStore.js";
 import { bundleItemsOf, doesNotList, listsCoin, selectPacks, skippedLines, tooLongLine } from "./adoptionPacks.js";
 import { PackAgedOutError, PackGoneError, PackUnreadableError, ageableCause, classify, countingBlobs, dropOrThrow } from "./adoptionReads.js";
-import { ownBytesFailure, settleUnreadable } from "./adoptionUnreadable.js";
+import { ageOf, ownBytesFailure, settleUnreadable } from "./adoptionUnreadable.js";
 
 export const DEFAULT_RESERVE = 1;
 
@@ -103,16 +106,36 @@ async function ownBytes(ctx, err, loc, createdAt) {
   return ownBytesFailure({ loc, createdAt, cause, nowMs: ctx.nowMs });
 }
 
+// One read of a pack's bytes, judged (ownBytes). A failure that ownBytes finds past the bound is
+// given a second look: the wait (shared only with a wait for the pack that just ended), then the same read. Returns the value, or
+// throws what ownBytes judged (or the read's own error when it is not about the pack's bytes).
+async function readJudged(ctx, { loc, createdAt, read }) {
+  try {
+    return await read();
+  } catch (err) {
+    const failure = await ownBytes(ctx, err, loc, createdAt);
+    if (!(failure instanceof PackAgedOutError)) throw failure ?? err;
+    await ctx.pause(loc);
+    ctx.counts.secondLooks++;
+    try {
+      const value = await read();
+      ctx.counts.recovered++;
+      return value;
+    } catch (again) {
+      throw (await ownBytes(ctx, again, loc, createdAt)) ?? again;
+    }
+  }
+}
+
 async function readCandidate({ ctx, blobs, entry, head, item, slug, kind }, note) {
   const bundleRef = { ref: `${entry.name}#${item.id}`, release: entry.release, packSize: entry.size, headerSha256: head.headerSha256, sha256: item.rawSha256 };
   try {
-    const bundle = await readBundle({ blobs, slug, kind, bundleRef });
+    const bundle = await readJudged(ctx, { loc: entry.loc, createdAt: entry.createdAt, read: () => readBundle({ blobs, slug, kind, bundleRef }) });
     return { key: bundleKey(bundleRef), bundleRef, bundle, entry: buildEntry({ slug, kind, bundleRef, bundle }), children: [], dead: false, depth: 0 };
   } catch (err) {
-    const failure = await ownBytes(ctx, err, entry.loc, entry.createdAt);
-    if (failure instanceof PackUnreadableError) throw failure;
-    if (failure) {
-      note(`bundle ${bundleRef.ref} in ${entry.release} is dropped: ${failure.message}`, failure instanceof PackAgedOutError ? "unreadable-dropped" : "damaged");
+    if (err instanceof PackUnreadableError) throw err;
+    if (err instanceof PackGoneError) {
+      note(`bundle ${bundleRef.ref} in ${entry.release} is dropped: ${err.message}`, err instanceof PackAgedOutError ? "unreadable-dropped" : "damaged");
       return null;
     }
     dropOrThrow(err);
@@ -124,11 +147,18 @@ async function readCandidate({ ctx, blobs, entry, head, item, slug, kind }, note
   }
 }
 
+// The pack's header; a failure of the pack's own bytes past the bound is read again (second look).
+async function headOf(ctx, entry) {
+  const head = await ctx.readHeader(entry);
+  if (head.ok || head.bad || !head.ageable || ageOf(entry.createdAt, entry.loc, ctx.nowMs) !== "old") return head;
+  return ctx.rereadHeader(entry);
+}
+
 async function loadCandidates(ctx, { slug, kind, main }, note) {
   const { packs, skipped } = selectPacks({ entries: ctx.entries, kind, main });
   skippedLines(skipped, main).forEach(note);
   const heads = [];
-  for (const entry of packs) heads.push({ entry, head: await ctx.readHeader(entry) });
+  for (const entry of packs) heads.push({ entry, head: await headOf(ctx, entry) });
   const readable = heads.filter(({ head }) => head.ok);
   for (const { entry, head } of heads.filter((h) => !h.head.ok && h.head.bad)) note(`pack ${entry.loc} cannot be read (${head.detail}); its bundles are dropped`, "damaged");
   const blobs = countingBlobs(ctx.blobs, ctx.counts, "bundleReads");
@@ -179,6 +209,7 @@ function reportLost(lost, shallow, note) {
       ? `has a parent ${n.bundle.parent} outside the listing`
       : `has a broken link: its parent ${n.bundle.parent} is neither the main entry nor an adoptable bundle (a damaged or unreadable parent has its own line)`));
   }
+  if (!shallow && lost.length > 0) note(`${lost.length} readable bundle${lost.length === 1 ? "" : "s"} newer than the main entry could not be adopted: the parent was not found`, "broken-link", lost.length);
 }
 
 // Parents and children by key; depth from the main entry (1 for a child of it).
@@ -225,11 +256,7 @@ function pathTo(node) {
 // the pack of the bundle that carries it (stat gives no creation time, and a carried pack is older
 // than its carrier, so the carrier's age never overstates the carried pack's).
 async function readRef(ctx, items, ref, loc, carrierCreatedAt) {
-  try {
-    await items.get(ref);
-  } catch (err) {
-    throw (await ownBytes(ctx, err, loc, ctx.listed.has(loc) ? ctx.createdAt.get(loc) : carrierCreatedAt)) ?? err;
-  }
+  await readJudged(ctx, { loc, createdAt: ctx.listed.has(loc) ? ctx.createdAt.get(loc) : carrierCreatedAt, read: () => items.get(ref) });
 }
 
 // Reads every item the bundle names that an earlier bundle of this call has not verified under

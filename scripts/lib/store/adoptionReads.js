@@ -35,8 +35,32 @@ import { RecordError } from "./errors.js";
 import { PackError, openPack } from "./pack.js";
 import { PackLostError, PackRowMismatchError, PackUnknownError } from "./packItemStore.js";
 import { sha256Hex } from "./stable.js";
+import { SECOND_LOOK_SHARE_MS, SECOND_LOOK_WAIT_MS } from "./storeConstants.js";
 
-export const newCounts = () => ({ headerReads: 0, bundleReads: 0, itemReads: 0, stats: 0, confirmations: 0, bytes: 0 });
+// secondLooks: reads tried a second time past the bound (adoptionUnreadable.js); recovered: those
+// that then succeeded. Neither is an alert: a recovered read changes nothing for the coin.
+export const newCounts = () => ({ headerReads: 0, bundleReads: 0, itemReads: 0, stats: 0, confirmations: 0, bytes: 0, secondLooks: 0, recovered: 0 });
+
+export const realSleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
+
+// The wait before a second look at a pack location. A reader that finds a wait for the location
+// running, or ended less than SECOND_LOOK_SHARE_MS ago (by `now`), shares it (another coin reading the
+// same pack); any later second look gets a wait of its own, so a fault that comes back after the
+// first recovery is given time too. A lane's worst case is one wait per second look.
+export function createPause(sleep, now) {
+  const waits = new Map();
+  return async (loc) => {
+    const last = waits.get(loc);
+    if (last) {
+      await last.done;
+      if (now() - last.endedAt < SECOND_LOOK_SHARE_MS) return;
+    }
+    const wait = { endedAt: 0 };
+    wait.done = sleep(SECOND_LOOK_WAIT_MS).then(() => { wait.endedAt = now(); });
+    waits.set(loc, wait);
+    await wait.done;
+  };
+}
 
 // A pack that the store itself confirms is gone (not found by the read and by stat).
 export class PackGoneError extends RecordError {}
@@ -116,7 +140,7 @@ export function dropOrThrow(err) {
 // object, or a pack that stat confirms is gone) or { ok: false, bad: false, ageable, error,
 // detail } (a failure to obtain the bytes; `ageable` says it is about the pack's own bytes).
 // headerSha256 is the hash of the prefix and the header bytes, the fact a bundle reference carries.
-export function createHeaderReader({ blobs, counts }) {
+export function createHeaderReader({ blobs, counts, pause }) {
   const counted = countingBlobs(blobs, counts, "headerReads");
   const seen = new Map();
   async function read(entry) {
@@ -152,8 +176,24 @@ export function createHeaderReader({ blobs, counts }) {
     }
     return { ok: false, bad: false, ageable: AGEABLE.some((C) => error instanceof C), error, detail: error.message };
   }
-  return (entry) => {
-    if (!seen.has(entry.loc)) seen.set(entry.loc, read(entry));
-    return seen.get(entry.loc);
+  // The second look at a header that failed past the bound: the wait, then the same read, once per
+  // location for the lane.
+  const second = new Map();
+  async function look(entry) {
+    await pause(entry.loc);
+    counts.secondLooks++;
+    const again = await read(entry);
+    if (again.ok) counts.recovered++;
+    return again;
+  }
+  return {
+    first: (entry) => {
+      if (!seen.has(entry.loc)) seen.set(entry.loc, read(entry));
+      return seen.get(entry.loc);
+    },
+    again: (entry) => {
+      if (!second.has(entry.loc)) second.set(entry.loc, look(entry));
+      return second.get(entry.loc);
+    },
   };
 }

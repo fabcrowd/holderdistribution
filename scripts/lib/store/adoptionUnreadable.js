@@ -19,12 +19,36 @@
 // days only those bundles carried (the same consequence as the 15-bundle cap). Only a failure of
 // the pack's own bytes (not found though stat answers, a range failure) ages out; a rate limit or
 // an HTTP error is about the store, not the pack, and keeps the coin failing. A pack with no
-// creation time is treated as young and alerted (`unreadable-undated`).
+// creation time (missing, unparsable or in the future) is treated as young as now and alerted
+// (`unreadable-undated`), but not forever: once the day in its name is older than the adoption
+// window (ADOPTION_WINDOW_DAYS) it is past the bound like any other pack.
+//
+// The second look. A failure to obtain bytes does not say how long it has lasted, so a pack at or
+// past the bound is not given up on one failed read. Before a failure of the pack's own bytes is
+// treated as a bad object past the bound, the same read is tried once more after a wait of
+// SECOND_LOOK_WAIT_MS (30 seconds), the same night, with the lane's injected `sleep` (default a real
+// timer). If the second try succeeds the read is used, nothing is alerted, and only the lane's
+// read statistics count it (`secondLooks`, `recovered`); only when it fails again is the pack
+// dropped (`unreadable-dropped`). Inside the bound nothing changes: the coin fails tonight and no
+// second try is made. Cost: the wait happens only on that path (the
+// wait is shared by reads of the pack that follow it within SECOND_LOOK_SHARE_MS, however many coins
+// list it; a fault that returns later gets a wait of its own), so a lane's worst case is one wait
+// per second look.
+// The residual: a fault on an old pack that outlasts the wait still gives its bundles up. A coin that
+// does not need a pack (it rules it out, or lists no bundle in it) still waits for the pack's second
+// look before it is judged, because the header is read once per lane for every coin.
+//
+// A cost to state plainly: a coin with no unpublished work whose lane wrote nothing readable in the
+// run attempt of an unreadable pack cannot rule that pack out, and fails tonight for up to the
+// bound (three nights) with the alert `unreadable`. That is every coin whose main entry is dated
+// before the pack's day and which had no readable pack of that run attempt, even if the pack never
+// held a bundle of it: the lane cannot tell without reading the pack.
 //
 // The complete table, for every failure to obtain a pack's bytes (young: younger than the bound;
-// old: at or past it; age is the pack's listing creation time, except for a carried pack, which
-// stat gives none for: the age of the pack of the bundle that carries it, which is never older
-// than the carried pack, so it can only delay the drop):
+// old: at or past it, or undated with the day in its name older than the adoption window; "after
+// it" means after the second look above has failed too; age is the pack's listing creation time,
+// except for a carried pack, which stat gives none for: the age of the pack of the bundle that
+// carries it, which is never older than the carried pack, so it can only delay the drop):
 //   cause                                              inside the bound            after it
 //   header read: not found, stat finds the pack        coin fails unless it        pack dropped, alert
 //     (unreadable pack)                                rules the pack out          unreadable-dropped
@@ -37,6 +61,10 @@
 //                                                                                   unreadable-dropped
 //   bundle or item read: not found, stat finds nothing bundle dropped, alert damaged (no bound)
 //   bundle or item read: rate limit, HTTP error        coin fails (read-failed)    never ages out
+//   any of the above on a pack with no creation time   young until the day in its   old (second look, then
+//     (missing, unparsable, in the future)               name is older than the      dropped); alert
+//                                                        adoption window; alert      unreadable-dropped
+//                                                        unreadable-undated
 //   any read: TypeError, ReferenceError, RangeError    the lane stops              the lane stops
 // A coin never rules out an unreadable pack that one of its readable candidate bundles names as
 // its parent (the key carries the release and pack name): that bundle is direct evidence of a
@@ -46,15 +74,19 @@
 import { bundleItemsOf } from "./adoptionPacks.js";
 import { PackAgedOutError, PackUnreadableError } from "./adoptionReads.js";
 import { parseStoreName } from "./packNames.js";
-import { UNREADABLE_PACK_DAYS } from "./storeConstants.js";
+import { ADOPTION_WINDOW_DAYS, UNREADABLE_PACK_DAYS } from "./storeConstants.js";
 
-const BOUND_MS = UNREADABLE_PACK_DAYS * 86400000;
+const DAY_MS = 86400000;
+const BOUND_MS = UNREADABLE_PACK_DAYS * DAY_MS;
 
-// "young" (inside the bound), "old" (at or past it) or "undated" (no usable creation time).
-export function ageOf(createdAt, nowMs) {
+// "young" (inside the bound), "old" (at or past it) or "undated" (no usable creation time: missing,
+// unparsable or in the future, which counts as young as now). An undated pack is bounded by the day
+// in its name: once that day is older than the adoption window it is "old" like any other.
+export function ageOf(createdAt, loc, nowMs) {
   const t = typeof createdAt === "string" ? Date.parse(createdAt) : Number.NaN;
-  if (Number.isNaN(t)) return "undated";
-  return nowMs - t >= BOUND_MS ? "old" : "young";
+  if (!Number.isNaN(t) && t <= nowMs) return nowMs - t >= BOUND_MS ? "old" : "young";
+  const day = parseStoreName(loc.slice(loc.indexOf("/") + 1))?.day;
+  return day !== undefined && nowMs - Date.parse(`${day}T00:00:00Z`) > ADOPTION_WINDOW_DAYS * DAY_MS ? "old" : "undated";
 }
 
 const runAttemptOf = (entry) => {
@@ -72,7 +104,7 @@ function runAttemptsHolding(readable, slug) {
 }
 
 function judgePack({ entry, head }, { seen, twice, evidence, nowMs }, note) {
-  const age = ageOf(entry.createdAt, nowMs);
+  const age = ageOf(entry.createdAt, entry.loc, nowMs);
   if (age === "undated") note(`pack ${entry.loc} has no creation time and is treated as younger than ${UNREADABLE_PACK_DAYS} days`, "unreadable-undated");
   if (twice.length === 0 && !evidence.has(entry.loc) && seen.has(runAttemptOf(entry))) {
     note(`pack ${entry.loc} cannot be read tonight (${head.detail}); a readable pack of ${runAttemptOf(entry)} holds this coin's bundle, so it holds nothing more for it`);
@@ -107,7 +139,7 @@ export function settleUnreadable({ unreadable, readable, evidence = new Set(), s
 // creation time of the pack of the bundle that carries it. Returns the error to throw: a bad
 // object once the age is at the bound, the coin's failure otherwise.
 export function ownBytesFailure({ loc, createdAt, cause, nowMs }) {
-  const age = ageOf(createdAt, nowMs);
+  const age = ageOf(createdAt, loc, nowMs);
   if (age === "old") return new PackAgedOutError(`pack ${loc} cannot be read (${cause.message}) and is ${UNREADABLE_PACK_DAYS} days old or older: it is a bad object, and the bundle that read it is dropped`);
   const alerts = [{ code: "unreadable", count: 1 }, ...(age === "undated" ? [{ code: "unreadable-undated", count: 1 }] : [])];
   return new PackUnreadableError(`pack ${loc} cannot be read tonight (${cause.message}) though stat finds it`, { packs: [loc], alerts, cause });
