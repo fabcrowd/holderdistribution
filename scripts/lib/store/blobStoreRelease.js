@@ -66,7 +66,7 @@ import { parseReleaseTag, releaseTag } from "./packNames.js";
 import { NEWEST_RELEASE_MAX_AGE_MS, MAX_USED_NUMBER_SKIPS } from "./storeConstants.js";
 import { recordText, creationInstant } from "./releaseRecord.js";
 import {
-  ASSET_LIMIT, MAX_ATTEMPTS, LIST_TRIES, UPLOAD_ROUNDS, owned, parseLoc, checkSeries, checkBounds, sizeOf, chunksOf,
+  ASSET_LIMIT, MAX_ATTEMPTS, LIST_TRIES, UPLOAD_ROUNDS, owned, parseLoc, checkSeries, checkTag, checkBounds, sizeOf, chunksOf,
   sha256Of, sha256ByRanges, parallelDownload, StoreNotFoundError, StoreNameTakenError, StoreHttpError,
   StoreRateLimitError, StoreRangeError, StoreListingError, StoreUploadError, StoreReleaseNotEmptyError, ownedReleaseTag,
 } from "./blobStore.js";
@@ -318,6 +318,33 @@ export function releaseBackend({ owner, repo, token, http, now = Date.now, sleep
     loaded.add(series);
     return out;
   }
+  // The assets of one release by tag, with the core requests this call made (BUDGET.listReleaseByTag):
+  // a release this process has not seen costs one lookup first, and one that does not exist answers
+  // empty after that lookup. Meant for one lane at a time: a request of another call running at
+  // once would be counted here too.
+  async function listReleaseByTag(tag) {
+    checkTag(tag);
+    const before = stats.core;
+    let rows;
+    try {
+      rows = await listRelease(await releaseByTag(tag));
+    } catch (err) {
+      if (!(err instanceof StoreNotFoundError)) throw err;
+      if (err instanceof ReleaseGoneError) dropRelease(tag);
+      return { entries: [], requests: stats.core - before };
+    }
+    const entries = rows.map(({ a, loc }) => ({ name: a.name, size: a.size, release: tag, state: a.state, loc, createdAt: a.created_at }));
+    return { entries: entries.sort((x, y) => (x.name < y.name ? -1 : 1)), requests: stats.core - before };
+  }
+  // The repository's release list read once (BUDGET.listReleaseTags); no asset is listed.
+  async function listReleaseTags(series) {
+    checkSeries(series);
+    const before = stats.core;
+    await readReleases();
+    const out = [...rels.values()].filter((r) => r.series === series).sort((x, y) => x.seq - y.seq)
+      .map((r) => ({ tag: r.tag, seq: r.seq, createdAt: r.createdAt ?? null }));
+    return { releases: out, requests: stats.core - before };
+  }
   async function find(name) {
     const { series } = owned(name);
     if (!loaded.has(series)) await listSeries(series);
@@ -507,6 +534,8 @@ export function releaseBackend({ owner, repo, token, http, now = Date.now, sleep
       return parallelDownload(readRange, loc, size, sink, opts);
     },
     list: listSeries,
+    listRelease: listReleaseByTag,
+    listReleaseTags,
     find,
     refresh(series) { checkSeries(series); loaded.delete(series); },
     // Every release of the series with its asset count and creation time (null when the
@@ -550,7 +579,9 @@ export function releaseBackend({ owner, repo, token, http, now = Date.now, sleep
     },
     async stat(loc) {
       const size = await statLoc(loc);
-      return size === null ? null : { size, loc };
+      if (size === null) return null;
+      const a = assets.get(loc); // known after an upload or a listing of its release in this process
+      return { size, loc, ...(a ? { createdAt: a.createdAt, state: a.state } : {}) };
     },
     stats: () => ({ core: stats.core, byKind: { ...stats.byKind } }),
   };

@@ -5,7 +5,14 @@
 //                                     source: Buffer, or { size, open() -> async iterable } (re-openable)
 //   readRange(loc, offset, length)    -> Buffer; never lists
 //   download(loc, sink, { parallel = 8, rangeBytes = 8 MiB })  sink: { write(off, buf), close?() }
-//   stat(loc) -> { size, loc } | null, exists(loc)   never list
+//   stat(loc) -> { size, loc, createdAt?, state? } | null, exists(loc)   never list; createdAt and state
+//                                     only where the backend knows them (the folder always; the release backend
+//                                     after an upload or a listing of that release in this process)
+//   listRelease(tag) -> { entries: [{ name, size, release, state, loc, createdAt }], requests }
+//                                     the assets of one release, by name; a release that does not exist answers
+//                                     no entries; `requests` is the core requests this call made
+//   listReleaseTags(series) -> { releases: [{ tag, seq, createdAt }], requests }
+//                                     the release tags that exist (empty ones too), no asset listing
 //   delete(loc)                       the sweep's call; refuses names the store does not own and `keep`
 //   list(series) -> [{ name, size, createdAt, release, state, loc }]
 //   find(name) -> every entry with that name (cached series listing; refresh(series) clears it)
@@ -55,6 +62,15 @@ export function ownedReleaseTag(tag) {
   try { t = parseReleaseTag(tag); } catch { throw new StoreNameError(`not a release tag the store owns: ${JSON.stringify(tag)}`); }
   if (t.series === "keep") throw new StoreKeepError(`refused: release ${tag} is in the keep class`);
   return t;
+}
+
+// Any release tag of the store, the keep series included (a listing may read it).
+export function checkTag(tag) {
+  try {
+    return parseReleaseTag(tag);
+  } catch {
+    throw new StoreNameError(`not a release tag the store owns: ${JSON.stringify(tag)}`);
+  }
 }
 
 export function owned(name, { forDelete = false } = {}) {
@@ -159,10 +175,16 @@ export const BUDGET = {
   delete: MAX_ATTEMPTS, // without faults: 1, once the series listing is cached
   readRange: 0,
   download: 0,
-  stat: 0, // by location
+  stat: 0, // by location; createdAt and state come from what this process already listed or uploaded
   exists: 0, // by location
   // find(name): the first call per series in a process costs listSeries, then 0.
-  listRelease: LIST_RELEASE, // without faults: pages + 2
+  listRelease: LIST_RELEASE, // the assets of a release this process knows; without faults: pages + 2 (3 up to 100 assets)
+  // The public listRelease(tag) also looks the release up when this process has not seen it
+  // (without faults 1, a missing release answers after that one request).
+  listReleaseByTag: MAX_ATTEMPTS + LIST_RELEASE,
+  // listReleaseTags(series): one read of the repository's release list, no asset listing; without
+  // faults pages + 2 (3 up to 100 releases in the repository). The folder backend: 0.
+  listReleaseTags: (releasesInRepo) => (Math.ceil(releasesInRepo / 100) + 2) * LIST_TRIES * MAX_ATTEMPTS,
   // A series listing (list, or the first name lookup of a series in a process): every
   // page of the release list plus each of the series' releases; it grows with the
   // releases of the series, assets / 900. Repeated lookups hit the cache: 0.

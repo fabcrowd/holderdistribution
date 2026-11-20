@@ -19,7 +19,8 @@ import { TODAY, ok, backendOn, sweepArgs } from "./sweepKit.js";
 
 const T = 60000;
 const OLD = new Date(`${dayBefore(TODAY, 30)}T12:00:00Z`);
-const META = { class: "live", kind: "holders", slugs: ["example"] };
+// Items are put through the view of the coin, so each pack's header lists it (the writer computes the list).
+const META = { class: "live", kind: "holders" };
 const dirs = [];
 afterAll(() => dirs.forEach((d) => fs.rmSync(d, { recursive: true, force: true })));
 
@@ -54,9 +55,10 @@ for (const [label, backend] of Object.entries(BACKENDS)) {
       const keys = ["a", "b", "c", "d", "e", "f", "g", "h"];
       let rows = [];
       for (let night = 1; night <= 25; night++) {
-        h.store = createPackItemStore({ blobs, nameFor: nameFor(night), packs: rows, meta: META, targetBytes: 1 << 20 });
+        const raw = createPackItemStore({ blobs, nameFor: nameFor(night), packs: rows, meta: META, targetBytes: 1 << 20 });
+        h.store = raw.forCoin("example");
         await h.night(night, Object.fromEntries(keys.map((k, i) => [k, night * 10 + i])));
-        rows = [...rows, ...(await h.store.close()).packs];
+        rows = [...rows, ...(await raw.close()).packs];
       }
       env.age();
       const named = refsIn(h.index);
@@ -86,12 +88,12 @@ for (const [label, backend] of Object.entries(BACKENDS)) {
     it("the copy of a pack name in another release that no reference names goes; the referenced copy stays and reads through its pack table", async () => {
       const env = backend();
       const first = createPackItemStore({ blobs: env.make(), nameFor: nameFor(7), meta: META });
-      const ref = await first.put(Buffer.from("balance=100"));
+      const ref = await first.forCoin("example").put(Buffer.from("balance=100"));
       const { packs } = await first.close();
       const [row] = packs;
       // A crash and rerun: a second process, finding the first release full, stores the same name in the next one.
       const copy = createPackItemStore({ blobs: env.make({ assetLimit: 1 }), nameFor: nameFor(7), meta: META });
-      await copy.put(Buffer.from("balance=999"));
+      await copy.forCoin("example").put(Buffer.from("balance=999"));
       const second = (await copy.close()).packs[0];
       expect(second.loc).not.toBe(row.loc);
       expect(second.name).toBe(row.name);

@@ -12,7 +12,7 @@ import {
 } from "./pack.js";
 import { rng } from "./storeTestKit.js";
 
-const META = { class: "live", kind: "holders", day: "2026-11-18", run: "1a1", lane: 0, flush: 0, slugs: ["c1"] };
+const META = { class: "live", kind: "holders", day: "2026-11-18", run: "1a1", lane: 0, flush: 0 };
 
 // Deterministic bytes: runs of a small alphabet, so brotli has work but data is not constant.
 export function genBytes(size, seed = 1) {

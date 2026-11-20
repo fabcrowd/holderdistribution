@@ -8,6 +8,12 @@
 // 14.2 counts packs as ceil(bytes / 1.5 GiB)); a caller that cannot hold that much
 // passes a spool file.
 //
+// Coin list: the header's `slugs` is the sorted set of the coins of its items, written by
+// finish() when every item has a coin. A pack with any item that names no coin gets no list
+// at all, never a partial one: the sweep reads a list as the complete set of coins the pack
+// serves. A caller cannot pass one: finish() refuses a `meta` that carries `slugs`, `items`,
+// `bodySize` or `schema` (PackHeaderMetaError), so the list is always computed from the items.
+//
 // Items are brotli quality 9 (`enc: "br"`) unless the caller marks them `enc: "raw"`:
 // raw is for items that are already compressed inside (the table codec's gzip slices)
 // and must be read by sub-range; see packItemStore.js.
@@ -18,6 +24,13 @@ import { brotliCompressSync, brotliDecompressSync, constants as Z } from "node:z
 export const MAGIC = "HDB1";
 export const PREFIX = 8;
 export const PACK_TARGET_BYTES = 1.5 * 1024 ** 3;
+// "up to 16 coins or 1.5 GiB" (design section 1, "Pack"; 9.1 end step 5).
+export const PACK_COIN_LIMIT = 16;
+// The largest single item. GitHub refuses a release asset of 2 GiB or more; a pack of one item
+// also holds the 8-byte prefix and a header of about 250 bytes an item (16 MiB for 65,000 items),
+// so 128 MiB is kept back for those and for the platform's own accounting.
+export const PACK_MAX_ITEM_BYTES = 2 * 1024 ** 3 - 128 * 1024 ** 2;
+const RESERVED_HEADER_KEYS = ["schema", "slugs", "items", "bodySize"];
 export const BROTLI_QUALITY = 9;
 // First header read: the prefix plus this many bytes, enough for about 250 items; a
 // longer header costs exactly one more read.
@@ -37,6 +50,12 @@ export class PackHeaderLengthError extends PackError {}
 export class PackItemRangeError extends PackError {}
 export class PackHashError extends PackError {}
 export class PackSizeError extends PackError {}
+export class PackHeaderMetaError extends Error {
+  constructor(key) {
+    super(`pack header: meta carries "${key}", which the writer computes from the items and a caller may not set (the coin list must be complete or absent)`);
+    this.name = "PackHeaderMetaError";
+  }
+}
 export class PackSpoolDisposedError extends Error {
   constructor() {
     super("pack spool: read after the pack was finished and disposed");
@@ -103,6 +122,11 @@ function itemEntry(id, info, off, len, raw) {
   };
 }
 
+function coinList(items) {
+  if (items.length === 0 || items.some((i) => !i.slug)) return {};
+  return { slugs: [...new Set(items.map((i) => i.slug))].sort() };
+}
+
 export function createPackWriter({ meta, spoolFile } = {}) {
   const items = [];
   let body = 0;
@@ -127,8 +151,10 @@ export function createPackWriter({ meta, spoolFile } = {}) {
       return (await ready()).read(it.off + off, len ?? it.len);
     },
     async finish() {
+      const reserved = RESERVED_HEADER_KEYS.find((k) => meta && Object.hasOwn(meta, k));
+      if (reserved) throw new PackHeaderMetaError(reserved);
       const s = await ready();
-      const header = { schema: 1, ...meta, bodySize: body, items };
+      const header = { schema: 1, ...meta, ...coinList(items), bodySize: body, items };
       const hb = Buffer.from(JSON.stringify(header), "utf8");
       const prefix = Buffer.alloc(PREFIX);
       prefix.write(MAGIC, 0, "latin1");

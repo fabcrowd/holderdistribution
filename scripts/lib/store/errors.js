@@ -22,3 +22,9 @@ export class BundleReadError extends RecordError {}
 export class BundleVerifyError extends RecordError {}
 
 export class CandidateError extends RecordError {}
+
+// An item a bundle names is labelled in its pack header with another coin than the bundle's.
+export class BundleItemCoinError extends RecordError {}
+
+// An item a bundle names has no coin label in its pack header, and the reader did not allow that.
+export class BundleItemUnlabelledError extends RecordError {}

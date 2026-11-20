@@ -1,6 +1,7 @@
 // Test helpers for the record tests (bundle, manifest, candidate, chain, references): the
 // two blob backends, and a writer that makes one coin's bundle through real packs the
-// way a lane would. Not a test file itself. Neutral slugs only.
+// way a lane would: every item carries its coin and type, so the packs have the coin lists and
+// the bundle items a lane's packs have. Not a test file itself. Neutral slugs only.
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -8,7 +9,7 @@ import path from "node:path";
 import { folderBackend } from "./blobStoreFolder.js";
 import { releaseBackend } from "./blobStoreRelease.js";
 import { createFakeReleaseServer } from "./fakeReleaseServer.js";
-import { createPackItemStore } from "./packItemStore.js";
+import { createLane } from "./packLane.js";
 import { packName } from "./packNames.js";
 import { buildBundle, writeBundle, bundleRefOf } from "./bundle.js";
 import { buildEntry } from "./manifest.js";
@@ -32,30 +33,38 @@ export function releaseEnv() {
   return { name: "release", server, blobs: make(), fresh: make, cleanup() {} };
 }
 
-const nameFor = ({ kind, day, run, attempt, lane }) => (flush) => packName({ cls: "live", kind, day, run, attempt, lane, flush });
+const nameFor = ({ kind, day, run, attempt, lane }) => ({ cls, flush }) => packName({ cls, kind, day, run, attempt, lane, flush });
 
 const item = (label, n = 200) => Buffer.from(JSON.stringify({ label, pad: "x".repeat(n) }));
 
-// Items go through two stores, as a lane's first flushes and its last pack would: store one
-// is closed first, so its packs have rows; the bundles then go into store two together with
-// one item each of their own pack, which a bundle names without a row. Several specs share
-// the lanes and so the packs (up to 16 coins share a pack): spec fields are those of
-// writeCoin; kind, day and run of the first spec name the packs.
+// Items go through two stores of one lane (both class live, one flush counter), as a lane's
+// first flushes and its last pack would: the item store is closed first, so its packs have rows;
+// the bundles then go into the bundle store together with one item each of their own pack, which
+// a bundle names without a row. Several specs share the lane and so the packs (up to 16 coins
+// share a pack): spec fields are those of writeCoin; kind, day and run of the first spec name
+// the packs. Each call takes one lane number of its own, so two calls never write the same name.
 export async function writeCoins({ env, specs }) {
   const { kind = "holders", day = "2026-11-18", run = runOf() } = specs[0];
-  // Each call takes two lanes of its own, so two calls never write the same pack name.
-  const first = env.nextLane ?? 0;
-  env.nextLane = first + 2;
-  const lane0 = createPackItemStore({ blobs: env.blobs, nameFor: nameFor({ kind, day, run: run.id, attempt: run.attempt, lane: first }), targetBytes: 300 });
-  const lane1 = createPackItemStore({ blobs: env.blobs, nameFor: nameFor({ kind, day, run: run.id, attempt: run.attempt, lane: first + 1 }), targetBytes: 1 << 20 });
+  const laneNo = env.nextLane ?? 0;
+  env.nextLane = laneNo + 1;
+  const lane = createLane({
+    blobs: env.blobs, nameFor: nameFor({ kind, day, run: run.id, attempt: run.attempt, lane: laneNo }),
+    stores: [{ name: "items", cls: "live", targetBytes: 300 }, { name: "bundles", cls: "live", targetBytes: 1 << 20 }],
+  });
+  const bundleStore = (slug) => lane.forCoin(slug).bundles;
   const items = [];
   for (const { slug = SLUG } of specs) {
     const tag = `${slug} ${day} ${run.id}`;
-    items.push({ a: await lane0.put(item(`a ${tag}`)), base: await lane0.put(item(`base ${tag}`)), index: await lane0.put(item(`index ${tag}`)) });
+    const mine = lane.forCoin(slug).items;
+    items.push({
+      a: await mine.put(item(`a ${tag}`), { type: "blob", path: `data/${slug}/a.json` }),
+      base: await mine.put(item(`base ${tag}`), { type: "base", table: "acct", bucket: 0 }),
+      index: await mine.put(item(`index ${tag}`), { type: "index" }),
+    });
   }
-  const { packs } = await lane0.close();
+  const { packs } = await lane.closeStores(["items"]);
   const owns = [];
-  for (const { slug = SLUG } of specs) owns.push(await lane1.put(item(`own ${slug} ${day} ${run.id}`)));
+  for (const { slug = SLUG } of specs) owns.push(await bundleStore(slug).put(item(`own ${slug} ${day} ${run.id}`), { type: "blob", path: `data/${slug}/own.json` }));
   const built = [];
   for (const [n, spec] of specs.entries()) {
     const { slug = SLUG, parent = null, parentUsage = null, used = { providerA: 10 } } = spec;
@@ -69,9 +78,9 @@ export async function writeCoins({ env, specs }) {
       stateIndex: index,
       packs: packs.filter((p) => mine.has(p.name)),
     });
-    built.push({ slug, bundle, put: await writeBundle(lane1, bundle), refs: { a, base, index, own: owns[n] } });
+    built.push({ slug, bundle, put: await writeBundle(bundleStore(slug), bundle), refs: { a, base, index, own: owns[n] } });
   }
-  const closed = await lane1.close();
+  const closed = await lane.closeStores(["bundles"]);
   return built.map(({ slug, bundle, put, refs }) => {
     const bundleRef = bundleRefOf(put, closed.packs);
     return { bundle, bundleRef, entry: buildEntry({ slug, kind, bundleRef, bundle }), refs, rows: bundle.packs, ownRows: closed.packs };

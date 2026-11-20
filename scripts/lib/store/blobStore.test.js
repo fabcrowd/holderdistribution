@@ -43,7 +43,7 @@ for (const [label, make] of Object.entries(BACKENDS)) {
       expect(up).toEqual({ name: live(0), size: 5000, loc: `data-live-1/${live(0)}` });
       expect(await store.exists(up.loc)).toBe(true);
       expect((await store.readRange(up.loc, 100, 20)).equals(bytes.subarray(100, 120))).toBe(true);
-      expect(await store.stat(up.loc)).toEqual({ size: 5000, loc: up.loc });
+      expect(await store.stat(up.loc)).toMatchObject({ size: 5000, loc: up.loc, state: "uploaded" }); // createdAt too (blobStoreList.test.js)
       store.refresh("live");
       expect((await store.find(live(0))).map((e) => e.loc)).toEqual([up.loc]);
       const listed = await store.list("live");
@@ -147,7 +147,7 @@ for (const [label, make] of Object.entries(BACKENDS)) {
       const { packs } = await s.close();
       expect(packs.length).toBeGreaterThan(2); // several releases at a limit of 2
       for (const p of packs) {
-        expect(await blobs.stat(p.loc)).toEqual({ size: p.size, loc: p.loc });
+        expect(await blobs.stat(p.loc)).toMatchObject({ size: p.size, loc: p.loc });
         expect(p.sha256).toMatch(/^[0-9a-f]{64}$/);
       }
       expect(new Set(packs.map((p) => p.loc.split("/")[0])).size).toBeGreaterThan(1);
