@@ -25,6 +25,7 @@ export async function main(argv = process.argv.slice(2), { logger = console, env
   const args = parseLaneArgs(argv, KNOWN);
   need(args, ["kind", "project", "origin-dir", "out-dir", "start-dir"]);
   if (!KINDS.includes(args.kind)) throw new LaneArgError(`--kind must be one of ${KINDS.join(", ")}`);
+  if (args["attempt-start"] !== undefined && args["attempt-start"].trim() === "") throw new LaneArgError("--attempt-start is empty: give an ISO time with a zone, or leave the argument out");
   const loadSpecs = await specsLoader(args);
   const result = await restoreLane({
     kind: args.kind, slugs: args.project, blobs: blobs ?? backendFor({ args, env, http }), git: fileGit(args["origin-dir"]), now,

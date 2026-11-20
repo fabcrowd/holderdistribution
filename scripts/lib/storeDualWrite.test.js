@@ -75,6 +75,17 @@ describe("lane store steps", () => {
     expect(start).not.toMatch(/--out-dir "?\.?"? /);
   });
 
+  it("the attempt start comes from a plan output written by a plan step, never github.run_started_at (not a context field)", () => {
+    expect(fs.readFileSync(WORKFLOW, "utf8")).not.toContain("run_started_at");
+    const start = storeSteps.find((s) => s.name === START);
+    expect(start.env.ATTEMPT_START).toMatch(/^\$\{\{\s*needs\.plan\.outputs\.attempt_start\s*\}\}$/);
+    expect(doc.jobs.plan.outputs.attempt_start).toContain("steps.attempt.outputs.attempt_start");
+    const step = doc.jobs.plan.steps.find((s) => s.id === "attempt");
+    expect(step.run).toContain("date -u +%Y-%m-%dT%H:%M:%SZ");
+    expect(step.run).toContain("attempt_start=");
+    expect(step.run).toContain("$GITHUB_OUTPUT");
+  });
+
   it("a lane files no issue and carries its status in an artifact", () => {
     for (const s of laneSteps) expect(`${s.run ?? ""}`, s.name).not.toMatch(/store-guard\.sh issue|gh issue/);
     const status = storeSteps.find((s) => s.name === "Store status upload");
