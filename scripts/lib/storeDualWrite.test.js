@@ -75,6 +75,35 @@ describe("lane store steps", () => {
     expect(start).not.toMatch(/--out-dir "?\.?"? /);
   });
 
+  it("the attempt start comes from a plan output written by a plan step, never github.run_started_at (not a context field)", () => {
+    expect(fs.readFileSync(WORKFLOW, "utf8")).not.toContain("run_started_at");
+    const start = storeSteps.find((s) => s.name === START);
+    expect(start.env.ATTEMPT_START).toMatch(/^\$\{\{\s*needs\.plan\.outputs\.attempt_start\s*\}\}$/);
+    expect(doc.jobs.plan.outputs.attempt_start).toContain("steps.attempt.outputs.attempt_start");
+    const step = doc.jobs.plan.steps.find((s) => s.id === "attempt");
+    expect(step.run).toContain("date -u +%Y-%m-%dT%H:%M:%SZ");
+    expect(step.run).toContain("attempt_start=");
+    expect(step.run).toContain("$GITHUB_OUTPUT");
+  });
+
+  it("a later attempt (re-run failed jobs reuses the plan outputs) uses the lane's own clock, the same attempt the plan's start", () => {
+    expect(doc.jobs.plan.outputs.run_attempt).toMatch(/^\$\{\{\s*github\.run_attempt\s*\}\}$/);
+    const start = storeSteps.find((s) => s.name === START);
+    expect(start.env.PLAN_ATTEMPT).toMatch(/^\$\{\{\s*needs\.plan\.outputs\.run_attempt\s*\}\}$/);
+    expect(start.env.RUN_ATTEMPT).toMatch(/^\$\{\{\s*github\.run_attempt\s*\}\}$/);
+    const choice = start.run.split("\n").find((l) => /RUN_ATTEMPT.*PLAN_ATTEMPT.*ATTEMPT_START=/.test(l));
+    expect(choice, "the attempt choice line").toBeTruthy();
+    expect(start.run.indexOf(choice)).toBeLessThan(start.run.indexOf("store-guard.sh"));
+    if (!hasBash) return;
+    const pick = (runAttempt, planAttempt) => spawnSync("bash", ["-c", `${choice}\necho "$ATTEMPT_START"`], {
+      env: { ...process.env, ATTEMPT_START: "2026-01-01T00:00:00Z", RUN_ATTEMPT: runAttempt, PLAN_ATTEMPT: planAttempt }, encoding: "utf8",
+    }).stdout.trim();
+    expect(pick("1", "1")).toBe("2026-01-01T00:00:00Z");
+    const later = pick("2", "1");
+    expect(later).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+    expect(later).not.toBe("2026-01-01T00:00:00Z");
+  });
+
   it("a lane files no issue and carries its status in an artifact", () => {
     for (const s of laneSteps) expect(`${s.run ?? ""}`, s.name).not.toMatch(/store-guard\.sh issue|gh issue/);
     const status = storeSteps.find((s) => s.name === "Store status upload");

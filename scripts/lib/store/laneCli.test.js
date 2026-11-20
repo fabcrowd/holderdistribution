@@ -156,6 +156,14 @@ describe("store-restore.js and store-pack.js", () => {
     await expect(packMain(["--kind", "holders"], { logger: quiet().logger })).rejects.toThrow(/--project is required/);
   });
 
+  it("an empty or valueless --attempt-start is a named LaneArgError, never silently now", async () => {
+    const base = ["--kind", "holders", "--project", "x", "--origin-dir", "o", "--out-dir", "o", "--start-dir", "s"];
+    for (const tail of [["--attempt-start", ""], ["--attempt-start"]]) {
+      await expect(restoreMain([...base, ...tail], { logger: quiet().logger })).rejects.toThrow(/--attempt-start/);
+      await expect(restoreMain([...base, ...tail], { logger: quiet().logger })).rejects.toThrow(LaneArgError);
+    }
+  });
+
   it("a coin that fails to pack is reported on stderr and the others still pack", async () => {
     const root = repoRoot();
     const storeDir = tmp("store");
