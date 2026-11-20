@@ -22,6 +22,15 @@ const read = (p) => JSON.parse(fs.readFileSync(path.join(root, p), "utf8"));
 describe("project registry (node side)", () => {
   const registry = loadRegistry(root);
 
+  it("refuses the slugs `store` and `site`: they would collide with data/manifests/store.json and site.json", () => {
+    for (const s of ["store", "site"]) {
+      expect(SLUG_RE.test(s), s).toBe(false);
+      expect(() => loadProjectConfig(s, root), s).toThrow(/invalid project slug/);
+      expect(() => parseProjectArg([`--project=${s}`], {}, root), s).toThrow(/invalid project slug/);
+    }
+    for (const s of ["stores", "site-2", "my-store", "sites"]) expect(SLUG_RE.test(s), s).toBe(true);
+  });
+
   it("every registered slug is valid and has config/projects/<slug>.json with matching identity", () => {
     expect(registry.length).toBeGreaterThan(0);
     for (const p of registry) {
