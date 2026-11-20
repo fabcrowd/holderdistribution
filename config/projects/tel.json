@@ -10,6 +10,7 @@
     "legacyRoot": true,
     "dir": "public/data"
   },
+  "excludedFiles": ["association-forensics/tel-disposition-ui.json"],
   "treasury": {
     "$comment": "labelEras: treasury-history rows dated before `before` were written when these TELx reward contracts were category council (relabelled to staking in #78). The backfill replays such rows with the old label so anchor, target and validation rows agree.",
     "anchorAdjustments": [

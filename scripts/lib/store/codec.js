@@ -155,30 +155,41 @@ export function decodeBase(buf) {
   return { header, rows };
 }
 
-// slices: Map bucket -> [{ key, old, new }] under header.layout (the layout at the start of the part).
-export function encodePart({ header, slices }) {
-  const bodies = [];
+// One bucket's slice of a part, compressed alone: { body, rows, hash }. Used by encodePart and by
+// the bucket-by-bucket writer (tableWrite.js writePartBuckets), which holds only this bucket's rows.
+export function encodeSlice(header, sliceRows) {
+  const rows = [...sliceRows].sort((a, b) => byKey(a.key, b.key));
+  const w = new ByteWriter();
+  let hash = 0n;
+  for (const row of rows) {
+    checkFields(header, row.old);
+    checkFields(header, row.new);
+    w.key(row.key);
+    for (const x of row.old) w.big(x);
+    for (const x of row.new) w.big(x);
+    hash = addHash(hash, changeRowHash(row.key, row.old, row.new));
+  }
+  return { body: gzipSync(w.done()), rows: rows.length, hash: hashToHex(hash) };
+}
+
+// encoded: [{ bucket, body, rows, hash }] from encodeSlice, each bucket once; empty slices are skipped.
+export function assemblePart({ header, encoded }) {
   const table = {};
+  const bodies = [];
   let off = 0;
-  for (const bucket of [...slices.keys()].sort((a, b) => a - b)) {
-    const rows = [...slices.get(bucket)].sort((a, b) => byKey(a.key, b.key));
-    if (rows.length === 0) continue;
-    const w = new ByteWriter();
-    let hash = 0n;
-    for (const row of rows) {
-      checkFields(header, row.old);
-      checkFields(header, row.new);
-      w.key(row.key);
-      for (const x of row.old) w.big(x);
-      for (const x of row.new) w.big(x);
-      hash = addHash(hash, changeRowHash(row.key, row.old, row.new));
-    }
-    const body = gzipSync(w.done());
-    table[bucket] = { off, len: body.length, rows: rows.length, hash: hashToHex(hash) };
-    bodies.push(body);
-    off += body.length;
+  for (const e of [...encoded].sort((a, b) => a.bucket - b.bucket)) {
+    if (e.rows === 0) continue;
+    table[e.bucket] = { off, len: e.body.length, rows: e.rows, hash: e.hash };
+    bodies.push(e.body);
+    off += e.body.length;
   }
   return frame(MAGIC_PART, { ...header, codec: CODEC_VERSION, slices: table }, Buffer.concat(bodies));
+}
+
+// slices: Map bucket -> [{ key, old, new }] under header.layout (the layout at the start of the part).
+export function encodePart({ header, slices }) {
+  const encoded = [...slices].map(([bucket, rows]) => ({ bucket, ...encodeSlice(header, rows) }));
+  return assemblePart({ header, encoded });
 }
 
 export async function readPartHeader(store, ref) {
