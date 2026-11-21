@@ -785,7 +785,7 @@ jobs:
           # A difference is an issue, never a stop for the git data (it is already committed).
           $G --after publish accepted bash -c 'ls "$HD_STORE_DIR/published/manifests" 2>/dev/null | sed -n "s/\.json\$//p" | grep -v -x -e store -e site > "$HD_STORE_DIR/accepted.txt"; true'
           if [ -s "$D/accepted.txt" ]; then
-            $G --after accepted overlay bash -ec 'cp -r "$HD_STORE_DIR/origin" "$HD_STORE_DIR/origin-after"; cp -r "$HD_STORE_DIR/published/manifests/." "$HD_STORE_DIR/origin-after/manifests/"'
+            $G --after accepted overlay node scripts/store-overlay.js --origin-dir "$D/origin" --published-dir "$D/published" --out-dir "$D/origin-after"
             $G --after overlay restore-check node scripts/store-restore.js --kind holders --project "$(paste -sd, "$D/accepted.txt")" --origin-dir "$D/origin-after" --out-dir "$D/restored" --start-dir "$D/start" --attempt-start "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             $G --after restore-check compare node scripts/store-compare.js --kind holders --candidates-dir "$D/candidates" --restored-dir "$D/restored" --published-dir "$D/published" --issues-out "$D/issues/compare.json"
           fi
