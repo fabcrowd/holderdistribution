@@ -61,6 +61,14 @@ describe("lane store steps", () => {
     }
   });
 
+  it("the publish job's overlay goes through store-overlay.js, which clears the absent markers, not a bare cp", () => {
+    const publishJob = Object.values(doc.jobs).find((j) => (j.steps ?? []).some((s) => /store-overlay\.js/.test(s.run ?? "")));
+    const run = publishJob.steps.find((s) => /store-overlay\.js/.test(s.run ?? "")).run;
+    const line = run.split("\n").find((l) => /store-overlay\.js/.test(l));
+    expect(line).toMatch(/\$G --after accepted overlay node scripts\/store-overlay\.js /);
+    expect(run).not.toMatch(/cp -r "\$HD_STORE_DIR\/origin"/);
+  });
+
   it("pack uses the settled day of the lane's own snapshot, not a clock", () => {
     const pack = storeSteps.find((s) => s.name === PACK).run;
     expect(pack).toContain("holders-summary.json");
