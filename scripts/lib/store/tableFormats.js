@@ -19,9 +19,10 @@
 // readRows checks every row and the end of the file.
 //
 // Not formats here, with the reason (slice report A5a): the account snapshot `tel-holders.json` lists its
-// wallets by balance with ties in the order of the raw-balance checkpoint (a scan's insertion order, not a
-// function of the keys), the raw-balance checkpoint `holders-checkpoint.json` keeps that insertion order
-// itself, and the sharded snapshot (`tel-holders.d/wallets-NNN.tsv`) is one table in many files.
+// wallets by balance with ties by address (holderOrder.js: account number for 0.0.<n>, else code-unit order;
+// older files keep the scan's insertion order until the next nightly rewrites them), the raw-balance checkpoint
+// `holders-checkpoint.json` writes its keys in code-unit order (same rewrite caveat), and the sharded
+// snapshot (`tel-holders.d/wallets-NNN.tsv`) is one table in many files.
 //
 // Memory and cost by size (H = rows): readRows holds one read chunk (chunkBytes, 1 MiB) and one row; the file
 // is read once. write holds one bucket's keys (at most about 2R, design 3.1) while it writes that bucket as a

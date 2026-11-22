@@ -1,6 +1,6 @@
 import { buildChainHolders, buildMetrics, applyStaking } from "./stakingAttribution.js";
 import { reconcileDistributionCounts } from "./holderHistoryReconcile.js";
-import { applyV3Staking, summarizeStaking } from "./v3Staking.js";
+import { applyV3Staking, sumAscending, summarizeStaking } from "./v3Staking.js";
 import { normalizeAnyAddress } from "./address.js";
 import { snapshotComparison } from "./cexFlows.js";
 import { hydrateChainHolders } from "./snapshotFormat.js";
@@ -190,7 +190,7 @@ export const buildStakingDistribution = (holders, v3 = null) => {
     count: stakedAmounts.filter((b) => b >= range.min && b < range.max).length,
   }));
 
-  const totalStaked = stakedAmounts.reduce((sum, value) => sum + value, 0);
+  const totalStaked = sumAscending(stakedAmounts);
   const averageStaked = totalStaked / stakedAmounts.length;
   const averageStakedRangeLabel =
     BALANCE_RANGES.find((range) => averageStaked >= range.min && averageStaked < range.max)?.label ??

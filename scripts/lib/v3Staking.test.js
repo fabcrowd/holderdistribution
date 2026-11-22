@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyV3Staking, dateForBlock, loadV3StakingPositions, summarizeStaking } from "./v3Staking.js";
+import { applyV3Staking, dateForBlock, loadV3StakingPositions, sumAscending, summarizeStaking } from "./v3Staking.js";
 import { buildStakingDistribution, buildStakingStats, buildSnapshotData, buildViewData } from "./holdersView.js";
 
 const MODULE = "0x573105be2148b8621f202a6d510016a2aa825731";
@@ -111,5 +111,43 @@ describe("v3Staking normalize keeps Solana base58 case", () => {
     const v3 = { chain: "polygon", modules: [], positions: new Map([["0xabcdef0000000000000000000000000000000001", 4]]) };
     expect(applyV3Staking(chains, v3).polygon.holders[0].stakedV3Balance).toBe(4);
     expect(summarizeStaking([], v3).v3.stakedTotal).toBe(4);
+  });
+});
+
+describe("staking totals do not depend on key or row order", () => {
+  const amounts = [0.1, 1e16, 0.2, 3.3, 1e-7, 123456789.123456789, 0.7, 5e15, 2.2, 1e9 + 0.3];
+  const shuffledBy = (items, seed) => {
+    const out = [...items];
+    let state = seed;
+    for (let i = out.length - 1; i > 0; i -= 1) {
+      state = (state * 1664525 + 1013904223) % 4294967296;
+      const j = state % (i + 1);
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  };
+  const e18Exact = (n) => BigInt(Math.round(n * 1e6)) * 10n ** 12n;
+
+  it("v3 stakedTotal and the combined stakedTotal are identical for any rawBalances key order", () => {
+    const entries = amounts.map((n, i) => [`0x${String(i).padStart(40, "0")}`, e18Exact(n).toString()]);
+    const results = new Set();
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      const cp = { chains: { polygon: { v3Staking: { [MODULE]: { fromBlock: 100, lastBlock: 500, rawBalances: Object.fromEntries(shuffledBy(entries, seed)) } } } } };
+      const v3 = loadV3StakingPositions(cp, config, asOf);
+      const stats = buildStakingStats([], 1e12, v3);
+      results.add(JSON.stringify([stats.v3.stakedTotal, stats.stakedTotal]));
+    }
+    expect(results.size).toBe(1);
+  });
+
+  it("sumAscending does not skip a NaN: it propagates, so a bad value stays visible", () => {
+    expect(sumAscending([1, NaN, 2])).toBeNaN();
+    expect(sumAscending([])).toBe(0);
+  });
+
+  it("legacy stakedTotal is identical for any holder row order", () => {
+    const rows = amounts.map((n, i) => ({ address: `0xa${i}`, balance: 1, stakedBalance: n }));
+    const totals = new Set([1, 2, 3, 4, 5, 6].map((seed) => buildStakingStats(shuffledBy(rows, seed), 1e12).legacy.stakedTotal));
+    expect(totals.size).toBe(1);
   });
 });

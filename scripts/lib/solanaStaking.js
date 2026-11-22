@@ -14,6 +14,7 @@
 import { normalizeAddressForVm } from "./address.js";
 import { attributeCustodyStaking } from "./stakingCustody.js";
 import { computeChainMetrics } from "./holderMetrics.js";
+import { sortHolders, sortWallets } from "./holderOrder.js";
 
 export const loadSolanaStakingPositions = (feed) => {
   if (!feed?.positions?.length) return null;
@@ -104,7 +105,7 @@ export const applySolanaStakingSnapshot = (
     wallet.total_telcoin_balance = (Number(wallet.total_telcoin_balance) || 0) + (balance - old);
   }
   const kept = wallets.filter((wallet) => (Number(wallet.total_telcoin_balance) || 0) > 0);
-  kept.sort((a, b) => (Number(b.total_telcoin_balance) || 0) - (Number(a.total_telcoin_balance) || 0));
+  sortWallets(kept, "total_telcoin_balance");
 
   const chains = { ...(snapshot.chains ?? {}) };
   const chain = chains[chainKey];
@@ -131,7 +132,7 @@ export const applySolanaStakingSnapshot = (
     // Recompute from the same visible set lite will sum, so Retail Held and
     // the supply retail bucket stay the same number.
     const nextHolders = [...holderIndex.values()].filter((holder) => Number(holder.balance) > 0 && holder.balance <= megaThreshold);
-    nextHolders.sort((a, b) => b.balance - a.balance);
+    sortHolders(nextHolders);
     const visible = nextHolders.filter((holder) => !isNonRetail(holder.address));
     const metrics = computeChainMetrics(visible, { retailThreshold });
     chains[chainKey] = {
