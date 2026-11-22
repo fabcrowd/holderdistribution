@@ -85,10 +85,12 @@ beforeAll(() => {
     { slug: "tel", name: "Telcoin", ticker: "TEL", default: true },
     { slug: "demo", name: "Demo", ticker: "DMO" },
     { slug: "bare", name: "Bare", ticker: "BRE" },
+    { slug: "legacyq", name: "Legacy Q", ticker: "LQ" },
   ] });
   write("config/projects/tel.json", { slug: "tel", ticker: "TEL", data: { legacyRoot: true }, chains: [] });
   write("config/projects/demo.json", DEMO);
   write("config/projects/bare.json", BARE);
+  write("config/projects/legacyq.json", { ...BARE, slug: "legacyq", ticker: "LQ", pipeline: { duneCexQueryId: "123" } });
   write("config/projects/demo/exclusions.json", { addresses: [X("d")], labels: {} });
   write("config/projects/demo/cex-wallets.json", { wallets: [{ address: X("e"), label: "DemoEx", walletName: "DemoEx 1" }] });
   write("config/projects/demo/classification-changelog.json", {
@@ -210,28 +212,16 @@ describe("ported scripts end to end for a non-legacy project (fixture repo, no n
     expect(rootLeaks("demo").filter((p) => p !== "public/data/bare")).toEqual([]);
   });
 
-  it("sync-cex-wallets-dune refuses a project without a CEX file or Dune query (exit 2, no network)", () => {
-    const r = run("sync-cex-wallets-dune.js", ["--project", "bare"]);
+  it("sync-cex-wallets-dune --source dune exits 2: the Dune API source was removed (no network)", () => {
+    const r = run("sync-cex-wallets-dune.js", ["--project", "demo", "--source", "dune"]);
     expect(r.status).toBe(2);
+    expect(r.stderr).toMatch(/the Dune API source was removed; use --source spellbook/);
   });
 
-  it("sync-cex-wallets-dune --skip-if-no-query exits 0 with a notice and no network when the project has no Dune query", () => {
-    const r = run("sync-cex-wallets-dune.js", ["--project", "bare", "--skip-if-no-query"]);
-    expect(r.status, r.stderr).toBe(0);
-    expect(r.stdout).toMatch(/::notice::.*bare.*duneCexQueryId/);
-  });
-
-  it("sync-cex-wallets-dune --skip-if-no-query does not skip legacy TEL (reaches the API-key check)", () => {
-    const r = run("sync-cex-wallets-dune.js", ["--project", "tel", "--skip-if-no-query"], { DUNE_API_KEY: "" });
-    expect(r.status).toBe(1);
-    expect(r.stderr).toMatch(/Missing DUNE_API_KEY/);
-    expect(r.stdout).not.toMatch(/::notice::/);
-  });
-
-  it("sync-cex-wallets-dune treats an empty DUNE_QUERY_ID as unset (TEL is not skipped)", () => {
-    const r = run("sync-cex-wallets-dune.js", ["--project", "tel", "--skip-if-no-query"], { DUNE_API_KEY: "", DUNE_QUERY_ID: "" });
-    expect(r.status).toBe(1);
-    expect(r.stdout).not.toMatch(/::notice::/);
+  it("sync-cex-wallets-dune accepts a config that still carries pipeline.duneCexQueryId and only warns", () => {
+    const r = run("sync-cex-wallets-dune.js", ["--project", "legacyq", "--source", "dune"]);
+    expect(r.stderr).toMatch(/pipeline.duneCexQueryId is ignored/);
+    expect(r.stderr).toMatch(/Dune API source was removed/);
   });
 
   it("sync-cex-wallets-dune rejects an unknown --source (exit 2, no network)", () => {

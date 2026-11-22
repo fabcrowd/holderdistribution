@@ -1,4 +1,4 @@
-name: Sync CEX wallets from Dune
+name: Sync CEX wallets from Dune spellbook
 
 on:
   schedule:
@@ -77,70 +77,49 @@ jobs:
         # public/data/<slug> + data/<slug> for any other project.
         run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
 
-      - name: Resolve projects to sync
-        # Scheduled runs (no input) sync every registry project; a dispatch with
-        # `project` syncs just that one. Slugs come from workflow-paths.js only.
-        id: projects
-        env:
-          SELECTION: ${{ inputs.project || 'all' }}
-        run: |
-          node scripts/workflow-paths.js matrix "$SELECTION" > "$RUNNER_TEMP/matrix.json"
-          SLUGS=$(node -e 'const m = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); console.log(m.include.map((p) => p.slug).join(" "))' "$RUNNER_TEMP/matrix.json")
-          echo "slugs=$SLUGS" >> "$GITHUB_OUTPUT"
-
-      - name: Import Dune spellbook CEX lists (every project)
-        # Public spellbook static lists: no Dune key or credits. EVM projects merge
-        # additions into their own CEX list. Projects with no EVM chain (HD_HAS_EVM
-        # from config) get --candidates, which never writes a production list.
+      - name: Import Dune spellbook CEX list (this project)
+        # Public spellbook static lists: no Dune key or credits. An EVM project
+        # merges additions into its own CEX list. A project with no EVM chain
+        # (HD_HAS_EVM from config) gets --candidates, which never writes a
+        # production list. A VM with no spellbook model exits 0 with a notice.
+        # Runs for this matrix job's project only (HD_PROJECT).
         # Non-fatal: a failure is reported by the Stage verdict step at the end.
         id: spellbook
         continue-on-error: true
-        env:
-          SLUGS: ${{ steps.projects.outputs.slugs }}
         run: |
-          failed=""
-          for slug in $SLUGS; do
-            flags=$(node scripts/workflow-paths.js --project "$slug")
-            args=""
-            echo "$flags" | grep -qx 'HD_HAS_EVM=true' || args="--candidates"
-            if ! node scripts/sync-cex-wallets-dune.js --source spellbook --project "$slug" $args; then
-              echo "::error::Dune spellbook CEX import failed for $slug"
-              failed="${failed:+$failed }$slug"
-            fi
-          done
-          [ -z "$failed" ]
-
-      - name: Sync CEX wallets from Dune
-        # Runs once per matrix project (HD_PROJECT above). Non-fatal, reported by
-        # the Stage verdict.
-        id: dune_sync
-        continue-on-error: true
-        env:
-          DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
-        # Projects without pipeline.duneCexQueryId (and not legacy TEL) exit 0 with a
-        # notice instead of failing or spending Dune credits.
-        run: node scripts/sync-cex-wallets-dune.js --skip-if-no-query
+          args=""
+          [ "$HD_HAS_EVM" = "true" ] || args="--candidates"
+          node scripts/sync-cex-wallets-dune.js --source spellbook --project "$HD_PROJECT" $args
 
       - name: Copy CEX wallets to public data
         run: node scripts/pull-cex-wallets.js
 
       - name: Re-apply the new classification to every derived feed
-        # A Dune sync changes config/cex-wallets.json, which IS the non-retail
+        # Skipped unless this project's CEX config changed: this workflow does no
+        # scan, so re-deriving unchanged feeds only risks failing on stale input.
+        # Same change detection as the commit step (git status on the config).
+        # A spellbook import changes config/cex-wallets.json, which IS the non-retail
         # set — so every retail-derived feed is wrong the moment it lands.
         # Previously this workflow committed the new CEX list and stopped,
         # leaving the site serving retail computed against the OLD set until
         # the next daily run up to 23 hours later. resync-chain-holders.js is
         # the documented tool for "exclusions changed, a rescan is not
         # practical"; the rest is the standard derived chain in dependency
-        # order (reconcile-supply BEFORE append-treasury-history, which reads
-        # its categories).
+        # order.
+        # append-treasury-history.js is deliberately NOT here: it appends one
+        # dated row per pipeline run (refresh-holders.yml runs it nightly), so a
+        # re-apply would add a second row for the day, and it refuses when a
+        # labelled wallet is absent from a snapshot this workflow did not scan.
         run: |
+          if [ -z "$HD_CEX_CONFIG" ] || [ -z "$(git status --porcelain --untracked-files=all -- "$HD_CEX_CONFIG")" ]; then
+            echo "::notice::CEX config $HD_CEX_CONFIG unchanged; skipping the derived-feed re-apply."
+            exit 0
+          fi
           node scripts/resync-chain-holders.js
           node scripts/generate-holders-lite.js
           node scripts/generate-holders-history.js
           node scripts/generate-holder-transitions.js
           node scripts/reconcile-supply.js
-          node scripts/append-treasury-history.js
           node scripts/sync-classification-changelog.js
 
       - name: Check cross-feed consistency
@@ -158,33 +137,35 @@ jobs:
       - name: Commit updated CEX wallet list
         id: commit
         run: |
-          # Each resolved project maps the TEL file list onto itself via
-          # workflow-paths.js (TEL: unchanged; others: their own classification
-          # CEX file, candidates file and public/data/<slug>/**). Paths that do
-          # not exist are dropped, so a Solana project without a CEX list is fine.
-          map_all() {
-            for slug in $SLUGS; do
-              for p in $(HD_PROJECT="$slug" node scripts/workflow-paths.js files "$@"); do
-                [ -e "$p" ] && printf '%s\n' "$p"
-              done
+          # Handles ONLY this matrix job's project (HD_PROJECT): the jobs run in
+          # parallel and each pushes to main, so touching another project's files
+          # would collide with that job's commit. workflow-paths.js maps the TEL
+          # file list onto the project (TEL: unchanged; others: their own
+          # classification CEX file, candidates file and public/data/<slug>/**).
+          # Paths that do not exist are dropped, so a Solana project without a CEX
+          # list is fine.
+          map_own() {
+            for p in $(node scripts/workflow-paths.js files "$@"); do
+              [ -e "$p" ] && printf '%s\n' "$p"
             done | sort -u
           }
-          CHECK=$(map_all config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json data/cex-dune-candidates.json)
+          CHECK=$(map_own config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json data/cex-dune-candidates.json)
           if [ -n "$CHECK" ] && [ -n "$(git status --porcelain --untracked-files=all -- $CHECK)" ]; then
             ADDED=0
-            for slug in $SLUGS; do
-              CEX_CFG=$(node scripts/workflow-paths.js --project "$slug" | grep '^HD_CEX_CONFIG=' | cut -d= -f2-)
-              if [ -n "$CEX_CFG" ]; then
-                ADDED=$((ADDED + $(git diff -- "$CEX_CFG" | grep '^+' | grep -c '"address"' || true)))
-              fi
-            done
-            git fetch origin main
-            git rebase --autostash origin/main
-            git add $(map_all config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json data/cex-dune-candidates.json \
+            if [ -n "$HD_CEX_CONFIG" ]; then
+              ADDED=$(git diff -- "$HD_CEX_CONFIG" | grep '^+' | grep -c '"address"' || true)
+            fi
+            git add $(map_own config/cex-wallets.json public/data/cex-wallets.json public/data/cex-flows.json data/cex-dune-candidates.json \
               public/data/tel-holders.json public/data/holders-summary.json public/data/holders-lite.json \
               public/data/holders-history.json public/data/holder-transitions.json \
               public/data/supply-reconciliation.json public/data/treasury-history.json \
               public/data/classification-changelog.json public/data/cex-balance-history.json)
+            # Conflict-marker guard: never commit a merge marker (a 2026-11-15 run
+            # committed them into a data file).
+            if git diff --cached -U0 | grep -E '^\+(<<<<<<<|=======|>>>>>>>)( |$)'; then
+              echo "::error::Conflict markers in the staged changes; not committing."
+              exit 1
+            fi
             # "[skip netlify]" — this commit lands the data but does NOT
             # publish. Netlify honours [skip ci] and [skip netlify] in the head
             # commit of a push; [skip ci] is avoided deliberately because
@@ -192,13 +173,15 @@ jobs:
             # workflow_run chains. The daily holders refresh publishes
             # everything committed since, so this data goes live within 24h.
             # See CLAUDE.md -> "Netlify note".
-            git commit -m "chore: sync CEX wallet list from Dune (+${ADDED} addresses) [skip netlify]"
-            git push origin HEAD:main
+            git commit -m "chore: sync CEX wallet list from Dune spellbook (+${ADDED} addresses) [skip netlify]"
+            # Fetch, rebase and push with up to 5 attempts and backoff (parallel
+            # jobs race); a rebase conflict aborts and fails instead of
+            # committing markers.
+            bash scripts/push-main.sh
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SLUGS: ${{ steps.projects.outputs.slugs }}
 
       - name: Stage verdict
         # Non-fatal stages (continue-on-error) cannot fail the run themselves, so
@@ -207,7 +190,6 @@ jobs:
         if: always()
         env:
           OUTCOME_SPELLBOOK: ${{ steps.spellbook.outcome }}
-          OUTCOME_DUNE_SYNC: ${{ steps.dune_sync.outcome }}
         run: |
           failed=""
           while IFS='|' read -r id var label; do
@@ -218,7 +200,6 @@ jobs:
             fi
           done <<'STAGES'
           spellbook|OUTCOME_SPELLBOOK|Dune spellbook CEX import (CEX lists may be stale)
-          dune_sync|OUTCOME_DUNE_SYNC|Dune CEX wallet sync (CEX list may be stale)
           STAGES
           if [ -n "$failed" ]; then
             {

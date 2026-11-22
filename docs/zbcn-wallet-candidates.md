@@ -7,7 +7,7 @@
 | `7Ci23i82UMa8RpfVbdMjTytiDi2VoZS8uLyHhZBV2Qy7` | Poloniex Hot Wallet | https://solscan.io/account/7Ci23i82UMa8RpfVbdMjTytiDi2VoZS8uLyHhZBV2Qy7 |
 | `9CKnC2kmqG9ZBtQXDfxR5H7Av7X878geV367DdYtybT4` | FalconX Hot Wallet | https://solscan.io/account/9CKnC2kmqG9ZBtQXDfxR5H7Av7X878geV367DdYtybT4 |
 
-`pipeline.duneCexQueryId` is still unset.
+(Updated 2026-11-22: no Dune query id is needed; the sync uses the free spellbook.)
 
 **Status (2026-10-28): leftover owner YES — APPLIED.** Five cex rows and one holdings row. Research is on each `$comment`, in `pipelineNotes.cexWallets` / `pipelineNotes.leftoverClassification`, and in the Supply section (`supply.holdings.description`, `supply.cex.description`, `methodology.supplyBreakdown`). `cex-wallets.json` is now **51** wallets. Staking math is unchanged. `duneCexQueryId` stays unset.
 

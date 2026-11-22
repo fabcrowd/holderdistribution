@@ -1,10 +1,10 @@
 # ZBCN CEX wallet candidates (owner-approved 2026-10-25 — classified)
 
-> **Update 2026-10-28:** `cex-wallets.json` now has **46** wallets — the 44 below, plus Poloniex Hot Wallet (`7Ci23i82UMa8RpfVbdMjTytiDi2VoZS8uLyHhZBV2Qy7`) and FalconX Hot Wallet (`9CKnC2kmqG9ZBtQXDfxR5H7Av7X878geV367DdYtybT4`), Solscan-confirmed and auto-applied (proof links in `docs/zbcn-wallet-candidates.md`). `pipeline.duneCexQueryId` is still unset.
+> **Update 2026-10-28:** `cex-wallets.json` now has **46** wallets — the 44 below, plus Poloniex Hot Wallet (`7Ci23i82UMa8RpfVbdMjTytiDi2VoZS8uLyHhZBV2Qy7`) and FalconX Hot Wallet (`9CKnC2kmqG9ZBtQXDfxR5H7Av7X878geV367DdYtybT4`), Solscan-confirmed and auto-applied (proof links in `docs/zbcn-wallet-candidates.md`). (Updated 2026-11-22: no query id is needed; the sync uses the free spellbook.)
 
 > **Update 2026-10-25:** `cex-wallets.json` then had **44** wallets — these 11 plus 33 Solscan name-tag-confirmed exchange / Fireblocks custody wallets from `docs/zbcn-wallet-candidates.md` §3 (incl. Uphold Hot Wallet 3, the ~20.55B top holder), applied under the owner's explorer-confirmed auto-apply rule. The coverage gap noted below is closed for the top-300 holders.
 
-> **Owner-approved 2026-10-25:** all 11 candidates below are approved and classified as CEX via `config/projects/zebec-network/cex-wallets.json` (`classification.cexWallets`). Scheduled sync still needs a Solana-only `pipeline.duneCexQueryId` (never TEL 3761086).
+> **Owner-approved 2026-10-25:** all 11 candidates below are approved and classified as CEX via `config/projects/zebec-network/cex-wallets.json` (`classification.cexWallets`). (Updated 2026-11-22: the scheduled sync needs no Dune query id; it uses the free spellbook.)
 
 > _Superseded:_ this list was candidates-only until owner approval on 2026-10-25; these 11 wallets now publish in `public/data/zebec-network/cex-wallets.json` and are excluded from retail.
 
@@ -51,18 +51,6 @@
   `classification.cexWallets` to `config/projects/zebec-network.json`, then `pull-cex-wallets --project zebec-network`.
   Not done here.
 
-## Dune query the owner still needs (for the scheduled sync)
+## Scheduled sync (updated 2026-11-22)
 
-No ZBCN Dune query id exists yet, so `pipeline.duneCexQueryId` is **not set** and the default
-`--source dune` run exits 2 with a TODO. To enable it, save this query in Dune and put its id in
-`pipeline.duneCexQueryId` (or `DUNE_QUERY_ID`):
-
-```sql
--- ZBCN CEX labels (Solana). Output columns map 1:1 to sync-cex-wallets-dune.js.
-SELECT blockchain, address, cex_name, distinct_name
-FROM cex.addresses
-WHERE blockchain = 'solana'
-```
-
-The holder intersect is done locally against the pipeline's own snapshot, so the query does not need to
-join ZBCN balances. Never reuse TEL's query 3761086 (EVM).
+No Dune query id is needed. The scheduled sync reads the free spellbook model (`cex_solana.addresses`) and, for Solana, produces review candidates only; the list stays the hand-applied file. The earlier plan to save a Solana query in Dune and set `pipeline.duneCexQueryId` was dropped when the paid Dune API source was removed (2026-11-22).

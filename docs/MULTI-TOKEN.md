@@ -242,7 +242,7 @@ run for any registered project. Ported:
 - `rebuild-history-from-logs`: the StakeChanged chain/contract come from `resolveStakeChangedTarget` instead of a hardcoded Polygon check.
 - `recompute-history-from-git`
 - `resync-chain-holders`
-- `sync-cex-wallets-dune`: needs `classification.cexWallets` and a query id (`DUNE_QUERY_ID` env, then `pipeline.duneCexQueryId`; TEL keeps its built-in query). Missing `classification.cexWallets` = exit 2. No query id = exit 2, unless `--skip-if-no-query` is passed: then it prints a notice and exits 0 (a clean skip, no Dune credits). `sync-cex-wallets.yml` always passes it, so a project with no `pipeline.duneCexQueryId` skips cleanly; never copy TEL's 3761086 into another project (`syncCexWallets.workflow.test.js` fails on it). Address handling follows the project's VM (`scripts/lib/duneCex.js`): EVM rows stay 0x-hex lowercased (TEL unchanged); a Solana-only project keeps base58 exactly as written and skips rows whose `blockchain` is not `solana`. `--candidates` (forced when the project has no `classification.cexWallets`) never writes a production list: it intersects the labels with the holder snapshot and writes `data/<slug>/cex-dune-candidates.json` for owner review. `--source spellbook` (no key; EVM adds net-new addresses when the project has `classification.cexWallets`, otherwise it writes review candidates) reads the public Dune spellbook model behind `cex_solana.addresses` instead of the API.
+- `sync-cex-wallets-dune` (name kept): reads only the free Dune spellbook (public GitHub SQL files behind `cex.addresses`); default `--source spellbook`, and `--source dune` exits 2 (the paid Dune API source was removed). No query id and no key are needed; `pipeline.duneCexQueryId` is ignored with a warning if still present. Missing `classification.cexWallets` = candidates only. A new chain/VM is wired by adding one record (`url` + `minRows`) to `SPELLBOOK_CEX_MODELS` in `scripts/lib/duneCex.js`; the row floor comes from `minRows`. EVM merges net-new addresses only (0x-hex lowercased); Solana is candidates-only (base58 kept as written, rows whose `blockchain` is not `solana` skipped) and writes `data/<slug>/cex-dune-candidates.json` for owner review. A VM with no spellbook model (hedera today) prints a `::notice::` ("CEX list is owner-maintained") and exits 0; its list lives with the owner (hedera: `docs/hedera-cex-candidates.md`).
 - `sync-classification-changelog`: no `classification.changelog` = an empty events feed.
 - `validate-outputs`
 - `generate-wallet-flows` (gated; see "Gated forensics" below): inputs and
@@ -592,10 +592,9 @@ The first non-TEL project, mapped 2026-10-25
 - **CEX wallets:** 44 Solana addresses in
   `config/projects/zebec-network/cex-wallets.json` (11 owner-approved Dune
   spellbook rows plus 33 Solscan name-tag wallets, PR #43). The daily job
-  refreshes them with `pull-cex-wallets`. `pipeline.duneCexQueryId` is **not
-  set** — do not invent one, and do not reuse TEL's 3761086. Until the owner
-  supplies a Solana `cex.addresses` query id, the scheduled Dune step skips
-  cleanly (`--skip-if-no-query`) and the list stays the hand-applied file.
+  refreshes them with `pull-cex-wallets`. Solana CEX lists are candidates-only:
+  the spellbook labels are reviewed by the owner and the list stays the
+  hand-applied file.
 - **Exchange and tier flows come from `scan-solana-flows.js`:** see
   [Solana venue flows](#solana-venue-flows) below. Until that script has run,
   `exchange-flow-history.json` and `tier-outflows.json` stay empty
@@ -689,7 +688,7 @@ non-retail paths and feed outputs are byte-identical (`bridgeNetting.test.js`,
 | `scripts/generate-tier-outflows.js` | `CHAIN_TUNING` (log-window sizes per chain) | Unknown chains fall back to the chain's `blocksPerDay`. |
 | `MIN_TEL_RAW = 1` | Dust floor of 1 raw unit | Chain-level floor. The history replay also drops balances that round to 0 at 6 dp, matching the snapshot. |
 | `scripts/lib/stakingDiscovery.js` | `STAKE_SCAN_SPAN` | This is a block span, not a supply amount. |
-| CEX balance / Dune query | Per-project query | A new project needs its own Dune query id. The current Dune key keeps being used. Solana: see "Solana CEX wallets" below. |
+| CEX list source | Free Dune spellbook model per VM | A new chain/VM needs one record (`url` + `minRows`) in `SPELLBOOK_CEX_MODELS` (`scripts/lib/duneCex.js`); without one its CEX list is owner-maintained. No Dune key or query id. Solana: see "Solana CEX wallets" below. |
 
 ## Gated forensics (wallet flows, ledger, write-ups)
 
@@ -960,7 +959,7 @@ Manual reference for the data steps (the runner does these; read them to fix a s
       Then run `node scripts/generate-wallet-flows.js --project <slug>` (keyless public RPCs, about 15 to 20
       minutes for three chains; `--dry-run --skip-sellers` for a quick check).
     - **Solana tracing knobs:** `WALLET_FLOWS_TRACE_DEPTH` (default 1, max 2; raising it seeds depth-2 tasks from hops stored by earlier runs, so no re-scan), `WALLET_FLOWS_TRACE_DESTINATIONS` (unlabelled destinations shown, default 25, max 200; totals always cover all). A transaction the RPC returns as null is retried once in the run. If it is still null it holds the cursor for `NULL_TX_RETRY_RUNS` = 3 runs (counting the first) and is recorded in `unavailable` with its `attempts`; after the third run it stays in `unavailable` (last 500) and `missing` for good and the cursor advances. `check-go-live` fails a Solana project while any `unavailable` entry has `attempts` below 3 ("held, retrying").
-    - **CEX lists:** `sync-cex-wallets.yml` imports the spellbook list for every registry project on its schedule (EVM: additions; other VMs: review candidates only). Dune is optional, single-project and non-fatal; a project with no `pipeline.duneCexQueryId` skips cleanly (`--skip-if-no-query`).
+    - **CEX lists:** `sync-cex-wallets.yml` imports the spellbook list for every registry project on its schedule (EVM: additions; Solana: review candidates only). A VM with no spellbook model (hedera) is skipped with a notice and keeps an owner-maintained list. The spellbook stage is non-fatal and the re-apply chain runs only when the project's CEX config changed.
     - **Sales tracing on EVM is not built yet** (todo 1w, EVM variant): `generate-wallet-flows.js` already
       classifies DEX outflows from swap events in transaction receipts, but does not record the proceeds
       leg or follow it onward. Until then EVM projects get outflow totals only.
@@ -1084,22 +1083,13 @@ Overview and operations: `docs/STORE.md`. What a new coin has to settle:
 ## Solana CEX wallets
 
 Dune's `cex.addresses` carries Solana rows (`blockchain = 'solana'`, base58
-`address`). A Solana project's Dune query must select only those:
-
-```sql
-SELECT blockchain, address, cex_name, distinct_name
-FROM cex.addresses
-WHERE blockchain = 'solana'
-```
-
-Save it in Dune and set its id as `pipeline.duneCexQueryId` (never TEL's
-3761086). Until a query exists, `sync-cex-wallets-dune --project <slug>
---candidates --source spellbook` produces the same labels from the public
-spellbook model with no API key. Either way the output is a candidates file
-(`data/<slug>/cex-dune-candidates.json`); promotion into a
-`classification.cexWallets` file is an owner decision. ZBCN status:
+`address`). The spellbook model for them is wired in `SPELLBOOK_CEX_MODELS`
+(`scripts/lib/duneCex.js`), so no Dune query, key or query id is needed:
+`sync-cex-wallets-dune --project <slug> --candidates --source spellbook`
+writes a candidates file (`data/<slug>/cex-dune-candidates.json`); promotion
+into a `classification.cexWallets` file is an owner decision. ZBCN status:
 `docs/zbcn-cex-candidates.md` and `docs/zbcn-wallet-candidates.md`. The 44
-wallets are applied. `pipeline.duneCexQueryId` is still unset.
+wallets are applied.
 
 ## Solana venue flows
 

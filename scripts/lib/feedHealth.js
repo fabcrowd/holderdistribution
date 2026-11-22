@@ -115,11 +115,11 @@ export const DEFAULT_FEEDS = [
   },
   {
     file: "cex-wallets.json",
-    label: "CEX wallet list (Dune sync)",
+    label: "CEX wallet list (Dune spellbook sync)",
     thresholdMs: 20 * DAY,
-    workflow: "Sync CEX wallets from Dune",
+    workflow: "Sync CEX wallets from Dune spellbook",
     fallback: [
-      "Needs the DUNE_API_KEY secret, which this environment does not have.",
+      "Runs from the public Dune spellbook, no key needed, but only in GitHub Actions.",
       "No local fallback — flag to the user; this one is genuinely low urgency",
       `(${20} day threshold, biweekly cron).`,
     ],
