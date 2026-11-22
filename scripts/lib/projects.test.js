@@ -9,6 +9,7 @@ import {
   loadRegistry,
   parseProjectArg,
   pipelineProject,
+  projectClassificationPath,
   projectDataDir,
   projectStakingContracts,
   resolveProject,
@@ -139,6 +140,28 @@ describe("pipeline --project selection", () => {
     expect(() => pipelineProject("pull", { argv: ["--project=abc"], env: {}, root: tmp })).toThrow(/pull: project "abc" is not wired/);
     expect(pipelineProject("pull", { argv: [], env: {}, root: tmp }).dataDir).toBe("public/data");
     fs.rmSync(tmp, { recursive: true, force: true });
+  });
+});
+
+describe("classification paths", () => {
+  it("TEL resolves every classification kind to the file it declares in tel.json", () => {
+    const tel = { slug: "tel", config: loadProjectConfig("tel", root) };
+    expect(projectClassificationPath(tel, "exclusions", root)).toBe(path.resolve(root, "config/exclusions.json"));
+    expect(projectClassificationPath(tel, "cexWallets", root)).toBe(path.resolve(root, "config/cex-wallets.json"));
+    for (const kind of ["dexContracts", "changelog"]) {
+      expect(projectClassificationPath(tel, kind, root), kind).toBe(path.resolve(root, tel.config.classification[kind]));
+    }
+  });
+
+  it("a legacyRoot project that declares no classification gets null, not TEL's config/ files", () => {
+    const legacyNoClassification = { slug: "legacy-demo", config: { data: { legacyRoot: true } } };
+    for (const kind of ["exclusions", "cexWallets", "dexContracts", "changelog"]) {
+      expect(projectClassificationPath(legacyNoClassification, kind, root), kind).toBeNull();
+    }
+  });
+
+  it("rejects an unknown classification kind", () => {
+    expect(() => projectClassificationPath({ slug: "tel", config: {} }, "nope", root)).toThrow(/unknown classification kind/);
   });
 });
 

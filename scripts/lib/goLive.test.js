@@ -202,7 +202,7 @@ describe("goLiveProblems", () => {
         "contracts role": { wallet: WALLET, over: { chains: [{ key: "ethereum", vm: "evm", contracts: { t: { address: WALLET.toUpperCase().replace("0X", "0x"), role: "treasury" } } }] } },
         "CEX file": { wallet: CEX_WALLET, over: {} },
         "DEX routers": { wallet: WALLET, files: { "config/projects/demo/dex-contracts.json": { routers: [{ address: WALLET }] } }, over: { classification: { ...cexOnly, dexContracts: "config/projects/demo/dex-contracts.json" } } },
-        "legacy-root layout": { wallet: WALLET, files: { "config/exclusions.json": { addresses: [WALLET] } }, over: { data: { legacyRoot: true }, classification: cexOnly } },
+        "legacy-root layout": { wallet: WALLET, files: { "config/exclusions.json": { addresses: [WALLET] } }, over: { data: { legacyRoot: true }, classification: { ...cexOnly, exclusions: "config/exclusions.json" } } },
         "solana base58 case": { wallet: SOL, files: { "config/projects/demo/exclusions.json": { addresses: [SOL] } }, over: { chains: [{ key: "solana", vm: "solana" }], classification: { ...cexOnly, exclusions: "config/projects/demo/exclusions.json" } } },
       };
       for (const [name, c] of Object.entries(cases)) {

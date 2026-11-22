@@ -78,18 +78,15 @@ jobs:
         run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
 
       - name: Import Dune spellbook CEX list (this project)
-        # Public spellbook static lists: no Dune key or credits. An EVM project
-        # merges additions into its own CEX list. A project with no EVM chain
-        # (HD_HAS_EVM from config) gets --candidates, which never writes a
+        # Public spellbook static lists: no Dune key or credits. The script
+        # decides the mode: an EVM project with a CEX file gets additions merged
+        # into it; any other project gets candidates, which never writes a
         # production list. A VM with no spellbook model exits 0 with a notice.
         # Runs for this matrix job's project only (HD_PROJECT).
         # Non-fatal: a failure is reported by the Stage verdict step at the end.
         id: spellbook
         continue-on-error: true
-        run: |
-          args=""
-          [ "$HD_HAS_EVM" = "true" ] || args="--candidates"
-          node scripts/sync-cex-wallets-dune.js --source spellbook --project "$HD_PROJECT" $args
+        run: node scripts/sync-cex-wallets-dune.js --source spellbook --project "$HD_PROJECT"
 
       - name: Copy CEX wallets to public data
         run: node scripts/pull-cex-wallets.js
@@ -139,9 +136,9 @@ jobs:
         run: |
           # Handles ONLY this matrix job's project (HD_PROJECT): the jobs run in
           # parallel and each pushes to main, so touching another project's files
-          # would collide with that job's commit. workflow-paths.js maps the TEL
-          # file list onto the project (TEL: unchanged; others: their own
-          # classification CEX file, candidates file and public/data/<slug>/**).
+          # would collide with that job's commit. workflow-paths.js maps the
+          # file list onto the project: a legacy-root project keeps the root paths,
+          # any other gets its own classification CEX file, candidates file and public/data/<slug>/**.
           # Paths that do not exist are dropped, so a Solana project without a CEX
           # list is fine.
           map_own() {

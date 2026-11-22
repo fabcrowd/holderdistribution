@@ -91,7 +91,7 @@ const ALLOWED_BRANCHES = new Map([
   ["scripts/onboard.js", ENTRY(8, "audit 1.1 (onboard.js:259-266): discovery facts per vm; real, belongs in an adapter discover port")],
   ["scripts/pull-holders-rpc.js", ENTRY(4, "audit 1.1 (pull-holders-rpc.js:656-690, :764-765, :897-915): EVM scanned inline, other vms through the adapter; accident (EVM was never moved into its adapter)")],
   ["scripts/scan-exchange-flows.js", ENTRY(3, "audit 1.1 (scan-exchange-flows.js:200-230, :276): Solana and Hedera history builders inside the EVM flow script, mixed-ledger refusal; accident")],
-  ["scripts/sync-cex-wallets-dune.js", ENTRY(2, "not in the audit (2, was 4: the per-vm row-floor branch moved into duneCex.js): Dune CEX sync branches on vm (EVM only, Solana separate); real (external source), move behind an adapter capability")],
+  ["scripts/sync-cex-wallets-dune.js", ENTRY(1, "not in the audit (1, was 2: the mode rule reads the EVM chain list once): the spellbook sync branches on vm; real (external source), move behind an adapter capability")],
   ["scripts/trace-bot-proceeds.js", ENTRY(2, "audit 1.1 (trace-bot-proceeds.js:91): Solana special case and the evm default; accident")],
   ["scripts/workflow-paths.js", ENTRY(3, "audit 1.1 (workflow-paths.js:72-73, :171): HD_SOLANA_FLOWS, HD_HEDERA_FLOWS, HD_HAS_EVM switch workflow steps; accident")],
   ["src/components/WalletFlowsPanel.tsx", ENTRY(2, "not in the audit: the panel branches on the vm of a wallet-flow row; accident")],
@@ -103,7 +103,6 @@ const ALLOWED_BRANCHES = new Map([
   [".github/workflows/refresh-holders.yml", ENTRY(3, "audit 1.1 (refresh-holders.yml:398-427, :452-463): separate Solana, Hedera and EVM flow-scan steps; accident")],
   [".github/workflows/refresh-wallet-flows.yml", ENTRY(4, "audit 1.1 (refresh-wallet-flows.yml:95-111): three wallet-flow steps and conditions on their outcomes; accident")],
   [".github/workflows/scan-exchange-flows.yml", ENTRY(1, "not in the audit: a Hedera flow-scan step switched on HD_HEDERA_FLOWS; accident")],
-  [".github/workflows/sync-cex-wallets.yml", ENTRY(1, "not in the audit: the CEX sync step reads HD_HAS_EVM; real (Dune lists EVM only), move behind an adapter capability")],
 ]);
 
 // ---------------------------------------------------------------------------------------------------------

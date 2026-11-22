@@ -224,7 +224,7 @@ export function validateProjectConfig(config) {
     } else {
       const origin = origins[0];
       const hasLock = Object.values(origin.contracts ?? {}).some((v) => v?.role === "bridge" || v?.role === "escrow");
-      const exclusionsDeclared = Boolean(config?.classification?.exclusions) || config?.data?.legacyRoot === true;
+      const exclusionsDeclared = Boolean(config?.classification?.exclusions);
       if (!hasLock) {
         warnings.push(
           `chains: ${lockMint.map((c) => c.key).join(", ")} use bridge "lock-mint" but origin chain ${origin.key} lists no ` +
@@ -393,16 +393,14 @@ export const CLASSIFICATION_KINDS = {
 };
 
 /**
- * Absolute path of a project's classification file (`classification.<kind>`).
- * A legacyRoot project (TEL) falls back to the original config/ root file.
- * Any other project gets null when it declares none: TEL's exclusions are
- * TEL-specific and must never be applied to another token by accident.
+ * Absolute path of a project's classification file (`classification.<kind>`),
+ * or null when the project declares none. No token gets a shared fallback
+ * file: each token's exclusions and labels come from its own config.
  */
 export function projectClassificationPath(project, kind, root = process.cwd()) {
   if (!(kind in CLASSIFICATION_KINDS)) throw new Error(`unknown classification kind: ${kind}`);
   const declared = project.config?.classification?.[kind];
-  if (declared) return path.resolve(root, declared);
-  return project.config?.data?.legacyRoot === true ? path.resolve(root, CLASSIFICATION_KINDS[kind]) : null;
+  return declared ? path.resolve(root, declared) : null;
 }
 
 const lc = (v) => (typeof v === "string" ? v.trim().toLowerCase() : v);
