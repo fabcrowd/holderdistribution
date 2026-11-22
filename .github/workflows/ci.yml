@@ -46,6 +46,8 @@ jobs:
       # Same validators the nightly pipeline ends with, over the committed public/data of every
       # registered project: a config/ or scripts/ change that would fail the nightly fails here.
       - run: npm run check:feeds
+      # Every file a coin writes is stored or excluded by the store (the nightly pack fails the coin otherwise). Offline, committed data.
+      - run: npm run check:store-files
       # The tests that assert the committed data itself (scripts/datachecks, src/datachecks), every project.
       - run: npm run check:data
       - run: npm run build

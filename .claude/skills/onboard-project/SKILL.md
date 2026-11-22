@@ -18,10 +18,15 @@ Order of work, with the commands that are not in the steps below:
 5. **PR.** Branch `feat/onboard-<slug>` from `main`. Update `README.md` in the same commit (project list, layout map, first bullet under "Recent work" with the PR number; the next number is the highest issue/PR number plus one: `gh api "repos/fabcrowd/holderdistribution/issues?state=all&per_page=1&sort=created&direction=desc" --jq '.[0].number'`; check it after `gh pr create`). Commit identity through env vars on the command (`GIT_AUTHOR_NAME=fabcrowd GIT_AUTHOR_EMAIL="226306925+fabcrowd@users.noreply.github.com"` and the same two `GIT_COMMITTER_*`), never `git config`, no Claude trailer, no Claude line in the PR body. The PR body says that `verify` is expected red at `npm run check:feeds`.
 6. **Merge.** Wait for checks. `verify` is red; confirm with `gh run view <id> --log-failed` that the only failing step is `npm run check:feeds` and the only `FAIL` lines are the new slug's missing feeds (ONDO #130 and HBAR #184 merged this way). Then `gh pr merge <n> --squash --delete-branch`. If `main` moved (data commits land all day), merge `main` into the branch; a `README.md` conflict under "Recent work" is resolved by keeping both bullets, newest first.
 7. **Step 4** (dispatch with `--ref main`) and watch it. Each stop prints `Fix:`; each fix is its own small PR through 4 to 6 above, then dispatch again.
-8. **Step 5** (gates, visual check, verifier, report). Confirm `npm run check:feeds` is green on `main` again. Tell the owner the Netlify deploy is theirs: config and UI reach the browser only then.
-9. **Write it down:** this file (anything that was different from what it says), `README.md`, `.claude/HANDOFF.md`, `tasks/lessons.md`.
+8. **Store classification** (before go-live; the runner's first snapshot must exist, so do it while the runner is stopped or after "onboarded" and before the report): every file the coin writes must be stored or excluded by `scripts/lib/storeFiles.js`. Run `npm run check:store-files -- --project <slug>` (exit 1 and one `UNCLASSIFIED` line per offending file; hand-kept files go in the coin's `excludedFiles`, stray files are removed). It must pass before go-live.
+9. **Step 5** (gates, visual check, verifier, report). Confirm `npm run check:feeds` is green on `main` again. Tell the owner the Netlify deploy is theirs: config and UI reach the browser only then.
+10. **Write it down:** this file (anything that was different from what it says), `README.md`, `.claude/HANDOFF.md`, `tasks/lessons.md`.
+11. **Day after:** the store check below.
 
 Do not dispatch `refresh-holders.yml` by hand for a token whose nightly has already run that day: on 2026-11-14 a second run on the same day published `cex-flows.json` with no comparison (it has no previous snapshot). Check `gh run list --workflow refresh-holders.yml` first.
+
+## Store inputs (state them in the report; no questions)
+The nightly also writes the coin to the store (dual-write since 2026-11-21; `docs/STORE.md`). Git stays the data path. The store needs two inputs from onboarding: H (holders estimate from the first snapshot) and the list of files the coin writes. The store handles size itself: the ever-held list is split into buckets by H once the workflow passes `--table-specs` (not yet; today every file is stored whole), every other file is stored whole, and there are no per-coin cases (`docs/MULTI-TOKEN.md` "Store dual-write for a new coin"). Reserved slugs `store` and `site` are refused (`SLUG_RE`); never use them. During the first nights the store may report pack failures until table formats cover the coin's files; that never blocks the git data path and is not a reason to hold the onboarding.
 
 ## Step 0. From a name or ticker
 1. Search CoinGecko: `https://api.coingecko.com/api/v3/search?query=<name or ticker>`. Take the coin whose name or symbol matches exactly; if several match, the one with the best `market_cap_rank`. Say which you picked and why. Ask the owner only if two different coins are equally plausible.
@@ -45,6 +50,7 @@ The answers file is the ONLY place judgement goes. Never hand-edit `config/proje
 - The holder balance must match what blockchain explorers show, for every token (owner, repo-wide, 2026-11-14). Never fix a size, speed or display problem by changing a wallet's balance. Every address with a positive balance is listed: no minimum-balance floor, and a contract is a holder unless a classification list says otherwise. A snapshot that is too large is fixed by its storage layout, never by fewer rows.
 - Only verified addresses. Never guess a wallet, label or confidence. Every decision gets evidence (a URL or one sentence).
 - Never use `--force` (needs `ONBOARD_FORCE=<slug>`; it rewrites every scaffold file).
+- Never use the slugs `store` or `site` (reserved).
 - Never print RPC URLs, keys or secrets. Name env vars only.
 - No `npm run dev` or `npm run build` (they rewrite `public/sitemap.xml`). Use `npx vite --port <n>` and `VITE_LIVE_DATA=off npx vite build --outDir <scratch>`.
 - Never hand-edit `public/data/`. Regenerate by script or workflow.
@@ -167,6 +173,13 @@ Start `npx vite --port <n>`; drive `/<slug>` with headless Playwright (system Ch
 
 ### 5c. Sign-off and report
 Spawn the `verifier` agent with the 5a and 5b results; it is read-only. Fix what it proves, rerun 5a. Then one report: what was automatic, what was manual, assumptions, open items, files changed. Update in the same change: `README.md`, `docs/MULTI-TOKEN.md` if a step changed, `tasks/lessons.md` for any mistake caught, this file. Deploys are manual (Netlify dashboard); config reaches the browser at the next deploy, data through `live-data.mjs`.
+
+## Day-after store check
+After the first scheduled nightly that includes the coin (not a dispatch; one run per day):
+1. In that run, the store steps are green: each holders lane and the `store-publish` job (`gh run view <id>`).
+2. `data/manifests/<slug>.json` and `data/manifests/index/<slug>.json` exist on `main` (`git pull`, then look).
+3. No open issue titled "Store dual-write failure" (`gh issue list --search "Store dual-write failure" --state open`).
+If one fails, report it with the log lines; do not edit the pipeline to hide it. To switch the store off without touching data, the owner sets the repository variable `HD_STORE=off` (a repository setting, gated); it takes effect from the next scheduled night. The `store=off` input applies only to a dispatch that is allowed anyway, such as a recovery run for a failed night. Never dispatch only to turn the store off: that is a second run for every coin that already has the day's data.
 
 ## Known traps
 - Replay vs snapshot holder definition (18-decimal dust): the rebuild passes `dropRoundedDust`; confirm decimals before a rebuild.
