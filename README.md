@@ -375,6 +375,7 @@ that already cost a run or a PR.
   through `live-data.mjs` without a deploy.
 
 ## Recent work
+- **2026-11-22: README Dune note re-checked against the CEX sync runs (#217).** The 402 still occurs; the hedera spellbook import also fails the stage. Docs only.
 - **2026-11-22: owner dropped the "prove the 2026-11-07 fixes (#165–#171)" goal from `CLAUDE.md` (#216).** Docs only.
 
 The store's design and status are in [docs/STORE.md](docs/STORE.md); the entries below name what each
@@ -399,7 +400,7 @@ merged PR changed.
 - #154 one day-cutoff and `asOf` convention with `check:alignment`. #145 to #151 onboarding skill as a step-by-step runbook. #128 to #140 developer-wallets ledger, ONDO project and its first-feed fixes, nightly framework (#132), go-live gate (#135), Solana replay fixes (#127). #126 forensics registry for every project.
 - 2026-11-05: stale feeds no longer look current (`flowWindow.ts`, `stale-tail` health status). 2026-10-31: header, landing page and brand text "Holder Distribution". 2026-11-01: nightly cost and reliability work (shared Transfer logs, Multicall3 staker reads, run metrics in `rpc-usage.json`, Stage verdict step).
 - Opt-in SQD Portal backfill for EVM wallet flows: `generate-wallet-flows.js --source portal`; see [docs/FORENSICS.md](docs/FORENSICS.md).
-- Known issue, as last recorded on 2026-11-01 and not re-checked since: the Dune API CEX sync failed with HTTP 402 (the account's datapoint cap); `--source spellbook` is a free supplement and `sync-cex-wallets.yml` runs it for every registry project.
+- Known issues in `sync-cex-wallets.yml` (checked 2026-11-22 against the run of 2026-11-15, the latest; it runs on the 1st and 15th at 01:00 UTC, so the next is 2026-12-01). All five runs listed from 2026-10-01 on ended red. (1) The Dune API step still gets HTTP 402 (the account's datapoint cap), so the `dune_sync` stage fails and the TEL CEX list may be stale; `--source spellbook` is a free supplement that works for EVM and Solana. (2) The spellbook import has no model for the `hedera` VM ("no spellbook CEX model wired for vm hedera (wired: evm, solana)") and counts that as a failure, which fails the stage for every run while hedera is in the registry. Neither is in `refresh-holders.yml`. The 2026-11-15 run also failed its tel "Re-apply the new classification to every derived feed" step; that cause has not been diagnosed.
 
 ## Deploying
 
