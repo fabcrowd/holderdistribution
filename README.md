@@ -375,6 +375,7 @@ that already cost a run or a PR.
   through `live-data.mjs` without a deploy.
 
 ## Recent work
+- **2026-11-22: owner dropped the "prove the 2026-11-07 fixes (#165–#171)" goal from `CLAUDE.md` (#216).** Docs only.
 
 The store's design and status are in [docs/STORE.md](docs/STORE.md); the entries below name what each
 merged PR changed.
