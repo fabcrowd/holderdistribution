@@ -121,7 +121,6 @@ const ALLOWED_LEGACY_ROOT = new Map([
   ["scripts/lib/walletFlowsProject.js", ENTRY(1, "path helpers read the default coin's layout flag themselves instead of asking projects.js (audit 1.2, legacyRoot list); removed by PLAN F")],
   ["scripts/onboard-run.js", ENTRY(10, "path helpers read the default coin's layout flag themselves instead of asking projects.js (audit 1.2, legacyRoot list); removed by PLAN F")],
   ["scripts/prune-dist-data.js", ENTRY(2, "path helpers read the default coin's layout flag themselves instead of asking projects.js (audit 1.2, legacyRoot list); removed by PLAN F")],
-  ["scripts/sync-cex-wallets-dune.js", ENTRY(1, "path helpers read the default coin's layout flag themselves instead of asking projects.js (audit 1.2, legacyRoot list); removed by PLAN F")],
   ["scripts/workflow-paths.js", ENTRY(2, "path helpers read the default coin's layout flag themselves instead of asking projects.js (audit 1.2, legacyRoot list); removed by PLAN F")],
   ["src/lib/projects.ts", ENTRY(1, "the site's typed copy of the registry reader (audit 1.2: two layouts in every path helper); removed by PLAN F")],
 ]);

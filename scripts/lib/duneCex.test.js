@@ -8,6 +8,9 @@ import {
   mergeCexAdditions,
   intersectCexWithHolders,
   SPELLBOOK_CEX_SQL_URLS,
+  SPELLBOOK_CEX_MODELS,
+  spellbookMinRowsForVm,
+  hasSpellbookModel,
   spellbookUrlForVm,
 } from "./duneCex.js";
 import { normalizeAddressForVm } from "./address.js";
@@ -204,5 +207,22 @@ describe("intersectCexWithHolders", () => {
       [{ address: SOL_A.toLowerCase(), total_telcoin_balance: 1 }],
     );
     expect(out).toEqual([]);
+  });
+});
+
+describe("hasSpellbookModel / spellbookMinRowsForVm", () => {
+  it("true for evm and solana, false for hedera and unknown vms", () => {
+    expect(hasSpellbookModel("evm")).toBe(true);
+    expect(hasSpellbookModel("solana")).toBe(true);
+    expect(hasSpellbookModel("hedera")).toBe(false);
+    expect(hasSpellbookModel("nope")).toBe(false);
+    expect(hasSpellbookModel(undefined)).toBe(false);
+  });
+
+  it("every wired vm has a url and a positive row floor in one record", () => {
+    expect(Object.keys(SPELLBOOK_CEX_SQL_URLS)).toEqual(Object.keys(SPELLBOOK_CEX_MODELS));
+    expect(spellbookMinRowsForVm("evm")).toBe(1000);
+    for (const vm of Object.keys(SPELLBOOK_CEX_MODELS)) expect(spellbookMinRowsForVm(vm)).toBeGreaterThan(0);
+    expect(() => spellbookMinRowsForVm("hedera")).toThrow(/hedera/);
   });
 });

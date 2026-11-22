@@ -2,7 +2,8 @@
 /**
  * sync-cex-wallets-dune.js
  *
- * Fetches exchange wallet addresses from a Dune Analytics query and merges
+ * Fetches exchange wallet addresses from the public Dune spellbook static lists
+ * (the files behind cex.addresses; no Dune key, credits or API) and merges
  * any net-new addresses into the project's classification.cexWallets file
  * (TEL: config/cex-wallets.json).
  *
@@ -17,19 +18,14 @@
  * it intersects the labelled addresses with the project's current holder
  * snapshot and writes <workDir>/cex-dune-candidates.json for owner review.
  *
- * Sources (`--source`):
- *   dune      (default) — Dune API, query id from DUNE_QUERY_ID or
- *                         pipeline.duneCexQueryId (TEL keeps its built-in
- *                         3761086; other projects must bring their own).
- *   spellbook           — the public Dune spellbook static lists behind
- *                         cex_<chain>.addresses; no Dune key or credits needed.
- *                         EVM    — cex_evms_addresses.sql; works in the normal
- *                                  additions-only merge (and in --candidates).
- *                                  Fails (non-zero) if the list parses below
- *                                  MIN_SPELLBOOK_EVM_ROWS rows (format changed?).
- *                         Solana — candidates mode only (`--candidates`).
- *
- * Env (dune source): DUNE_API_KEY (required), DUNE_QUERY_ID, DUNE_RESULT_LIMIT (default 5000).
+ * Source (`--source`, default `spellbook`; the only one):
+ *   spellbook — EVM    — cex_evms_addresses.sql; works in the normal
+ *                        additions-only merge (and in --candidates).
+ *                        Fails (non-zero) if the list parses below
+ *                        the VM's spellbook row floor (format changed?).
+ *               Solana — candidates mode only (`--candidates`).
+ *   `--source dune` (the former paid Dune API query) was removed and exits 2.
+ *   `pipeline.duneCexQueryId` in a project config is ignored with a warning.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -46,21 +42,18 @@ import { normalizeAddressForVm } from "./lib/address.js";
 import { readSnapshot } from "./lib/snapshotIo.js";
 import {
   cexVmForProject,
+  hasSpellbookModel,
   intersectCexWithHolders,
   mergeCexAdditions,
   parseDuneCexRows,
   parseSpellbookCexSql,
   parseSpellbookEvmCexSql,
+  spellbookMinRowsForVm,
   spellbookUrlForVm,
 } from "./lib/duneCex.js";
 
-// The EVM spellbook list holds ~5,000 rows; far fewer means the format changed, not that the list shrank.
-const MIN_SPELLBOOK_EVM_ROWS = 1000;
-
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: merges into the
 // project's own `classification.cexWallets` file (TEL: config/cex-wallets.json).
-// A non-legacy project must declare its own Dune query (`pipeline.duneCexQueryId`
-// or DUNE_QUERY_ID) — TEL's query is never reused.
 const project = selectPipelineProject("sync-cex-wallets-dune", { ported: true });
 
 const argv = process.argv.slice(2);
@@ -74,15 +67,11 @@ const argValue = (name) => {
 await loadEnv();
 
 const VM = cexVmForProject(project);
-const SOURCE = (argValue("--source") ?? "dune").toLowerCase();
+const SOURCE = (argValue("--source") ?? "spellbook").toLowerCase();
 const CEX_CONFIG_PATH = projectClassificationPath(project, "cexWallets", process.cwd());
 const CEX_CONFIG_REL = projectClassificationRelPath(project, "cexWallets", process.cwd());
 // No production list declared = candidates only; never invent one.
 const CANDIDATES = argv.includes("--candidates") || !CEX_CONFIG_PATH;
-const IS_LEGACY = project.config?.data?.legacyRoot === true;
-const QUERY_ID = (process.env.DUNE_QUERY_ID || null) ?? project.config?.pipeline?.duneCexQueryId ?? (IS_LEGACY ? "3761086" : null);
-const LIMIT = Number(process.env.DUNE_RESULT_LIMIT ?? 5000);
-const API_KEY = process.env.DUNE_API_KEY;
 const CANDIDATES_PATH = projectWork(project)("cex-dune-candidates.json");
 const CANDIDATES_REL = projectWork(project).rel("cex-dune-candidates.json");
 
@@ -91,58 +80,30 @@ const fail = (code, msg) => {
   process.exit(code);
 };
 
-if (!["dune", "spellbook"].includes(SOURCE)) fail(2, `unknown --source "${SOURCE}" (dune | spellbook).`);
-if (SOURCE === "spellbook") {
-  if (!CANDIDATES && VM !== "evm") fail(2, "--source spellbook for Solana is candidates-only; add --candidates (it never writes a production list).");
-  try {
-    spellbookUrlForVm(VM);
-  } catch (e) {
-    fail(2, e.message);
-  }
+if (project.config?.pipeline?.duneCexQueryId !== undefined) {
+  console.error("[sync-cex-wallets-dune] warning: pipeline.duneCexQueryId is ignored (the Dune API source was removed); remove it from the project config.");
 }
-if (SOURCE === "dune") {
-  if (!QUERY_ID && argv.includes("--skip-if-no-query")) {
-    console.log(`::notice::Skipping Dune CEX sync for "${project.slug}": no pipeline.duneCexQueryId configured.`);
-    process.exit(0);
-  }
-  if (!QUERY_ID) {
-    fail(
-      2,
-      `project "${project.slug}" needs its own Dune query: set pipeline.duneCexQueryId (or DUNE_QUERY_ID). ` +
-        (VM === "solana"
-          ? `TODO(owner): create a Dune query over cex.addresses WHERE blockchain = 'solana' (see docs/MULTI-TOKEN.md "Solana CEX wallets"). ` +
-            `Until then: --candidates --source spellbook.`
-          : `TEL's query is never reused for another project.`),
-    );
-  }
-  if (!CANDIDATES && !CEX_CONFIG_PATH) fail(2, `project "${project.slug}" needs classification.cexWallets before it can sync.`);
-  if (!API_KEY) fail(1, "Missing DUNE_API_KEY environment variable.");
+if (SOURCE === "dune") fail(2, "the Dune API source was removed; use --source spellbook");
+if (SOURCE !== "spellbook") fail(2, `unknown --source "${SOURCE}" (spellbook).`);
+if (!hasSpellbookModel(VM)) {
+  console.log(`::notice::no spellbook CEX model for vm "${VM}" (${project.slug}); CEX list is owner-maintained`);
+  process.exit(0);
+}
+if (!CANDIDATES && VM !== "evm") fail(2, "--source spellbook for Solana is candidates-only; add --candidates (it never writes a production list).");
+try {
+  spellbookUrlForVm(VM);
+} catch (e) {
+  fail(2, e.message);
 }
 
 const fetchRows = async () => {
-  if (SOURCE === "spellbook") {
-    const url = spellbookUrlForVm(VM);
-    console.log(`Fetching Dune spellbook CEX model (${VM}): ${url}`);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`spellbook fetch ${res.status}`);
-    const text = await res.text();
-    const rows = VM === "evm" ? parseSpellbookEvmCexSql(text) : parseSpellbookCexSql(text);
-    return { rows, source: { type: "dune-spellbook", url, vm: VM } };
-  }
-  const url = `https://api.dune.com/api/v1/query/${QUERY_ID}/results?limit=${LIMIT}`;
-  console.log(`Fetching Dune query ${QUERY_ID} (limit ${LIMIT})...`);
-  const res = await fetch(url, { headers: { "x-dune-api-key": API_KEY } });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Dune API error ${res.status}: ${body}`);
-  }
-  const payload = await res.json();
-  const rows = payload?.result?.rows ?? [];
-  if (rows.length === 0) {
-    const cols = payload?.result?.metadata?.column_names ?? [];
-    if (cols.length) console.log("Columns:", cols.join(", "));
-  }
-  return { rows, source: { type: "dune-query", queryId: String(QUERY_ID), vm: VM } };
+  const url = spellbookUrlForVm(VM);
+  console.log(`Fetching Dune spellbook CEX model (${VM}): ${url}`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`spellbook fetch ${res.status}`);
+  const text = await res.text();
+  const rows = VM === "evm" ? parseSpellbookEvmCexSql(text) : parseSpellbookCexSql(text);
+  return { rows, source: { type: "dune-spellbook", url, vm: VM } };
 };
 
 const writeCandidates = async (duneEntries, source) => {
@@ -180,10 +141,10 @@ const main = async () => {
   const duneEntries = parseDuneCexRows(rows, VM);
   console.log(`Parsed ${duneEntries.length} valid ${VM} address entries.`);
 
-  if (SOURCE === "spellbook" && VM === "evm" && (rows.length < MIN_SPELLBOOK_EVM_ROWS || duneEntries.length === 0)) {
+  if ((rows.length < spellbookMinRowsForVm(VM) || duneEntries.length === 0)) {
     fail(
       1,
-      `spellbook EVM list parsed ${rows.length} rows / ${duneEntries.length} entries (expected >= ${MIN_SPELLBOOK_EVM_ROWS}); ` +
+      `spellbook ${VM} list parsed ${rows.length} rows / ${duneEntries.length} entries (expected >= ${spellbookMinRowsForVm(VM)}); ` +
         `the file format may have changed. Nothing written.`,
     );
   }

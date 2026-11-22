@@ -11,21 +11,41 @@ import { normalizeAddressForVm } from "./address.js";
 import { assertChainVm, CHAIN_VMS, resolveChainVm } from "./chainVms.js";
 
 /**
- * Raw spellbook models for CEX labels (what Dune serves as cex_<chain>.addresses / cex.addresses).
+ * Spellbook models for CEX labels (what Dune serves as cex_<chain>.addresses / cex.addresses), one record per wired VM:
+ * the raw model URL and the floor on parsed rows (fewer means the file format changed, not that the list shrank).
  * The EVM list is chain-agnostic: no blockchain column, addresses are valid across EVM chains.
+ * evm floor: the list holds ~5,000 rows. solana floor: 56 = half of the 112 entries parsed in the last committed
+ * data/zebec-network/cex-dune-candidates.json (labelledAddresses).
  */
-export const SPELLBOOK_CEX_SQL_URLS = {
-  evm:
-    "https://raw.githubusercontent.com/duneanalytics/spellbook/main/dbt_subprojects/hourly_spellbook/models/_sector/cex/addresses/chains/cex_evms_addresses.sql",
-  solana:
-    "https://raw.githubusercontent.com/duneanalytics/spellbook/main/dbt_subprojects/hourly_spellbook/models/_sector/cex/addresses/chains/solana/cex_solana_addresses.sql",
+export const SPELLBOOK_CEX_MODELS = {
+  evm: {
+    url: "https://raw.githubusercontent.com/duneanalytics/spellbook/main/dbt_subprojects/hourly_spellbook/models/_sector/cex/addresses/chains/cex_evms_addresses.sql",
+    minRows: 1000,
+  },
+  solana: {
+    url: "https://raw.githubusercontent.com/duneanalytics/spellbook/main/dbt_subprojects/hourly_spellbook/models/_sector/cex/addresses/chains/solana/cex_solana_addresses.sql",
+    minRows: 56,
+  },
 };
+
+/** Model URL per wired VM (derived from SPELLBOOK_CEX_MODELS). */
+export const SPELLBOOK_CEX_SQL_URLS = Object.fromEntries(Object.entries(SPELLBOOK_CEX_MODELS).map(([vm, m]) => [vm, m.url]));
+
+/** True when the VM has a spellbook CEX model wired; a VM without one has an owner-maintained CEX list. */
+export function hasSpellbookModel(vm) {
+  return Object.hasOwn(SPELLBOOK_CEX_MODELS, vm);
+}
 
 /** Spellbook model URL for a VM; throws a clear error naming the VM when none is wired. */
 export function spellbookUrlForVm(vm) {
-  const url = SPELLBOOK_CEX_SQL_URLS[vm];
-  if (!url) throw new Error(`no spellbook CEX model wired for vm "${vm}" (wired: ${Object.keys(SPELLBOOK_CEX_SQL_URLS).join(", ")}).`);
-  return url;
+  if (!hasSpellbookModel(vm)) throw new Error(`no spellbook CEX model wired for vm "${vm}" (wired: ${Object.keys(SPELLBOOK_CEX_MODELS).join(", ")}).`);
+  return SPELLBOOK_CEX_MODELS[vm].url;
+}
+
+/** Row floor for a VM's spellbook list; throws like spellbookUrlForVm when none is wired. */
+export function spellbookMinRowsForVm(vm) {
+  spellbookUrlForVm(vm);
+  return SPELLBOOK_CEX_MODELS[vm].minRows;
 }
 
 /**
