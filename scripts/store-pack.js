@@ -12,7 +12,7 @@
  * bundles through the blob store and writes `candidate-<kind>-l<lane>f<group>-a<attempt>.json` into
  * --candidate-dir (the workflow uploads it as an artifact in a later step). A coin that fails is reported
  * on stderr and skipped; exit code 0 unless no coin was packed (1) or the arguments are wrong (2).
- * Not wired into any workflow in this slice.
+ * Run by the lane jobs of refresh-holders.yml through store-guard.sh.
  */
 import fs from "node:fs";
 import process from "node:process";

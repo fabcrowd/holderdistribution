@@ -77,6 +77,7 @@ Secrets are encrypted via `scripts/encrypt-env.js` / `decrypt-env.js`.
 
 - **Multi-token onboarding** — every check and feed is registry-driven (`config/projects.json` + `config/projects/<slug>.json`). No TEL-shaped logic in shared code. New tokens follow `.claude/skills/onboard-project/SKILL.md` and `docs/MULTI-TOKEN.md`.
 - **Prove the 2026-11-07 fixes (#165–#171) on the scheduled nightly runs (01:07 UTC since 2026-11-14)** — `check:feeds` and `check-go-live --all` green, `holders-summary.json` asOf restored, `cex-flows` rebuilt with the KuCoin relays, zebec retail agrees across feeds. Unproven until a scheduled run passes.
+- **Store (scale-100)** — the nightly dual-writes each coin to the store since 2026-11-21; git stays the data path. Overview and operations: `docs/STORE.md`. The per-coin check that every file is stored or excluded is `npm run check:store-files`. Open: `--table-specs` in the workflow. A new coin's store steps are checked the day after onboarding (skill "Day-after store check"). Kill switch: `store` input or `HD_STORE=off`.
 - **Design system rollout** — tokens are in `tailwind.config.ts` and `design-system/tokens.css`. Components should progressively adopt the semantic tokens (`brand`, `positive`, `negative`, `ha-accent`, etc.) instead of raw Tailwind color classes.
 - **Forensics Gate** — premium content gate in `netlify/functions/forensics-gate.cjs`. Gated via `ForensicsGate.tsx` + `SubscriptionGate.tsx` components.
 
@@ -94,9 +95,10 @@ Secrets are encrypted via `scripts/encrypt-env.js` / `decrypt-env.js`.
 
 - `config/projects.json` + `config/projects/<slug>.json`: token registry and per-token config (source of truth). `config/exclusions.json`, `cex-wallets.json`, `chains.json`: shared classification.
 - `scripts/*.js`: feed generators and pipeline CLIs. `scripts/lib/`: shared logic with sibling `*.test.js` (rpc, replay, supply, circulating, holders).
-- `scripts/check-feed-consistency.js` (`npm run check:feeds`), `pipeline-health.js`: feed gates.
+- `scripts/check-feed-consistency.js` (`npm run check:feeds`), `pipeline-health.js`, `check-store-files.js` (`npm run check:store-files`): feed and store-file gates.
 - `scripts/datachecks/`, `src/datachecks/` (`npm run check:data`): checks of the committed data. `npm test` must pass without `public/data/` and `data/`; a test that needs real data belongs in a datacheck file. `scripts/fixtures/`: small inputs for code tests.
 - `scripts/lib/stateStore.js`: the only way to read a past version of a data file (git today). No other script or workflow step reads data out of git history (`gitReadGuard.test.js`).
+- Store: `docs/STORE.md`; `scripts/lib/store/` and `scripts/lib/storeFiles.js` (logic); CLIs `scripts/store-restore.js`, `store-pack.js`, `store-publish.js`, `store-probe.js`, `store-guard.sh` (never-fail wrapper); `data/manifests/` (per-coin manifests and `index/`, committed by the nightly's `store-publish` job). Reserved slugs: `store`, `site`.
 - `public/data/` (TEL legacy root) and `public/data/<slug>/`: generated feeds. Never hand-edit; regenerate by script. `data/`: caches and checkpoints.
 - `.github/workflows/`: nightly refresh (`refresh-holders.yml`), backfills, replays.
 - `src/lib/`: pure helpers (charts: `chartAxes`, `chartZoom`; supply: `supplyBreakdown`, `chainViews`; staking: `staking*`; `projects.ts` registry reader).

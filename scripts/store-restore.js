@@ -10,7 +10,7 @@
  * files a workflow step writes there), applies the stale-code guard, adopts unpublished bundles, and
  * restores the start bundle into --out-dir; writes <start-dir>/<slug>/start.json. A coin that fails is
  * reported on stderr and skipped; the exit code is 0 unless no coin could be restored (1) or the
- * arguments are wrong (2). Not wired into any workflow in this slice.
+ * arguments are wrong (2). Run by the lane jobs of refresh-holders.yml through store-guard.sh.
  */
 import process from "node:process";
 import { pathToFileURL } from "node:url";

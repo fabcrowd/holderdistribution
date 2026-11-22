@@ -870,6 +870,8 @@ This section is the summary and the reference for what each command does.
    lint, `check-feed-consistency --all --strict`, `pipeline-health` and
    `check-go-live --alignment strict` one after another, logs to `tasks/onboard-check-<slug>-<gate>.log`,
    prints PASS/FAIL per gate.
+6. **Store:** before go-live, confirm every file the coin writes is stored or excluded, and after the
+   first scheduled night run the day-after store check. Both are in "Store dual-write for a new coin".
 
 Sizing is derived per project, never copied: see "Holder tiers and thresholds (`holders`)". The sections
 below are the manual reference for fixing a step that stops.
@@ -1024,6 +1026,60 @@ hardcodes `'tel'`.
    `node scripts/write-pipeline-status.js --project <slug> --no-write`.
 6. After the first scheduled night, `<dataDir>/pipeline-status.json` must show every job
    `ok` or `waived`.
+
+### Store dual-write for a new coin
+
+Since 2026-11-21 the nightly (`refresh-holders.yml`) also writes each coin's `holders` files to the
+store, after both git data commits are pushed. Git stays the data path; the store only adds to it.
+Overview and operations: `docs/STORE.md`. What a new coin has to settle:
+
+- **Slug.** `store` and `site` are refused by `SLUG_RE` (`scripts/lib/projects.js`; they name the
+  store's own manifest and the site). Pick another slug.
+- **Size inputs.** H, the holders estimate (the first snapshot, or the explorer's holder count before
+  it), and the files the coin writes (its `HD_REQUIRED_FILES` from `workflowPlan`, plus anything else
+  that lands under `public/data/<slug>/` and `data/<slug>/`). The lane decides by size, never by coin
+  or chain. A file with a table format (today the ever-held list, `holders-ever-checkpoint.json`) is
+  split into buckets of about 262,144 rows (1 bucket up to 262,144 holders, 4 at 1 million, 19 at
+  4.84 million, 39 at 10 million, 382 at 100 million; memory is one bucket at a time) and a night adds
+  only the new holders. Every other file is stored whole as a blob. Source:
+  `scripts/lib/store/tableSpecs.js`. No workflow passes `--table-specs` yet (checked 2026-11-22), so
+  today every file of every coin is stored whole as a blob.
+- **Every file classified.** `scripts/lib/storeFiles.js` lists the coin's files per kind (`holders`,
+  `ledger`, `walletFlows`). Each file is stored or excluded. Excluded: `*-previous.json` and
+  `*-previous.d/`, `.gitkeep`, `unallocated-classification.json`,
+  `forensics/wallet-flows.registry.json`, `cex-candidates.json`, `cex-dune-candidates.json`, and the
+  coin's own `excludedFiles` in `config/projects/<slug>.json` (paths relative to the work directory;
+  TEL lists `association-forensics/tel-disposition-ui.json`). A file that is neither, a name a
+  restore cannot write back, a non-regular file, or a directory named like another registered coin
+  makes the pack FAIL that coin (`UnclassifiedFileError`). Fix: add the hand-kept file to
+  `excludedFiles`, or remove the stray file.
+  Check it for one coin before the first nightly, once the first snapshot exists, from the repo
+  root. It is offline, uses the same listing as the pack, prints stored and excluded counts per
+  kind and one `UNCLASSIFIED` line per offending file, and exits 1 if any:
+
+  ```
+  npm run check:store-files -- --project <slug>
+  ```
+
+  Without `--project` it checks every registered coin.
+
+- **First nights.** A store pack failure for a new coin is reported (step summary, status artifact,
+  the issue below) and never blocks the git data path: every store command runs through
+  `scripts/store-guard.sh`, which always exits 0. Failures can recur until the table formats cover the
+  coin's files (a file with no format stays a blob and still works). Do not change the pipeline to
+  silence one.
+- **Day-after check.** After the first scheduled night that includes the coin:
+  1. The run's store steps are green (each holders lane, and the `store-publish` job).
+  2. `data/manifests/<slug>.json` and `data/manifests/index/<slug>.json` exist on `main` (commit
+     "Publish holders: N coins (...)"). A coin without a manifest gets a `manifests/<slug>.absent`
+     marker in the run's scratch directory; that is normal on night one.
+  3. No open issue titled "Store dual-write failure".
+- **Switch the store off without touching data.** The owner sets the repository variable
+  `HD_STORE=off` (a repository setting, so it is gated); it takes effect from the next scheduled night.
+  The `store=off` dispatch input only applies to a dispatch that is allowed anyway, such as a recovery
+  run for a failed night. Never dispatch only to turn the store off: that is a second run for every coin
+  that already has the day's data. Any value but `on` (or empty), and a failure of the switch step
+  itself, skips every store step. Git data, feeds and manifests already on `main` are untouched.
 
 ## Solana CEX wallets
 
