@@ -12,6 +12,7 @@
 
 import { isDeepStrictEqual } from "node:util";
 import { computeChainMetrics } from "./holderMetrics.js";
+import { sortHolders } from "./holderOrder.js";
 import { normalizeAddress } from "./nonRetailSet.js";
 
 const MIB = 1024 * 1024;
@@ -202,7 +203,7 @@ export const resyncSnapshot = (snapshot, excluded, retailThreshold) => {
     }
 
     if (walletOrder) kept.sort((a, b) => positionOf(a) - positionOf(b));
-    else kept.sort((a, b) => (b.balance ?? 0) - (a.balance ?? 0));
+    else sortHolders(kept);
 
     const fromHolders = computeChainMetrics(kept, { retailThreshold });
     const next = { ...chain };

@@ -31,6 +31,7 @@ import { ensureCutoffs, findFirstBlockAtOrAfter, nextDate } from "./lib/dayBlock
 import { resolveSettledDate, planPins, finalizeAsOf, utcDay, aheadAction } from "./lib/asOf.js";
 import { canRotatePrevious } from "./lib/cexFlows.js";
 import { publishSnapshot, readSnapshotHead } from "./lib/snapshotIo.js";
+import { canonicalCheckpointChains, sortHolders, sortWallets } from "./lib/holderOrder.js";
 import { partialName, serializePartial, writePartial, readPartial, removePartial, partialResumeDecision, partialRaw, buildChunks, streamChunks, loadResumable, keepsFinishedScan, settlePartial } from "./lib/partialCheckpoint.js";
 
 // Mid-scan checkpoint cadence (seconds); 0 disables. See lib/partialCheckpoint.js.
@@ -207,7 +208,7 @@ async function saveCheckpoint(chainCheckpoints) {
   const payload = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
-    chains: chainCheckpoints,
+    chains: canonicalCheckpointChains(chainCheckpoints),
   };
   await fs.mkdir(path.dirname(CHECKPOINT_PATH), { recursive: true });
   await fs.writeFile(CHECKPOINT_PATH, `${JSON.stringify(payload)}\n`, "utf8");
@@ -1189,7 +1190,7 @@ async function main() {
   }
 
   for (const entry of Object.values(output.chains)) {
-    entry.holders.sort((a, b) => b.balance - a.balance);
+    sortHolders(entry.holders);
     const fromHolders = computeChainMetrics(entry.holders, { retailThreshold: RETAIL_THRESHOLD });
     entry.metrics.holderCount = fromHolders.holderCount;
     entry.metrics.totalBalance = fromHolders.totalBalance;
@@ -1212,7 +1213,7 @@ async function main() {
     output.combined.underThreshold.balance += entry.metrics.underThreshold.balance;
   }
 
-  output.wallets.sort((a, b) => b.total_telcoin_balance - a.total_telcoin_balance);
+  sortWallets(output.wallets, "total_telcoin_balance");
 
   output.totals =
     supplyMethod === "tel-generations"

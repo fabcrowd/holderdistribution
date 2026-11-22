@@ -103,6 +103,9 @@ export const applyV3Staking = (chains, v3) => {
   return chains;
 };
 
+/** Float sum of the values added in ascending order: the same multiset gives the same total whatever order rows or keys came in. */
+export const sumAscending = (values) => [...values].sort((a, b) => a - b).reduce((s, v) => s + v, 0);
+
 /**
  * Legacy + v3 staking summary for one view, deduped by staker address.
  *
@@ -120,7 +123,7 @@ export const summarizeStaking = (holders, v3) => {
   const all = new Set([...legacy.keys(), ...v3Positions.keys()]);
   let both = 0;
   for (const a of legacy.keys()) if (v3Positions.has(a)) both += 1;
-  const sum = (m) => [...m.values()].reduce((s, v) => s + v, 0);
+  const sum = (m) => sumAscending(m.values());
   return {
     stakers: all,
     perStaker: (a) => (legacy.get(a) ?? 0) + (v3Positions.get(a) ?? 0),
