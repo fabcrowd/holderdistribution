@@ -31,7 +31,7 @@ banner is not showing (it means `public/data` is >48 h stale — see Data pipeli
 |---|---|---|
 | Browser (build time) | `VITE_SITE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_HOLDER_HISTORY_URL` | All optional; **public** values only. Anything `VITE_*` is shipped to every visitor. |
 | Netlify function | `LIVE_DATA_GITHUB_TOKEN` (live data + latest wallet-flows report), optional `FORENSICS_PASSWORD_HASH`, `FORENSICS_DISABLE_LEGACY_HASH`, `FORENSICS_PASSWORD`, `FORENSICS_ALLOWED_ORIGINS`, `FORENSICS_TOKEN_SECRET` (optional — see *Forensics session tokens* below) | Netlify → Environment variables (scope: Functions). Never commit. See docs/FORENSICS.md. |
-| GitHub Actions | `ENV_PASSPHRASE` | Decrypts `.env.enc` (RPC/Etherscan/Dune keys) for the pipeline. |
+| GitHub Actions | `ENV_PASSPHRASE` | Decrypts `.env.enc` (RPC/Etherscan keys) for the pipeline. |
 
 `.env`, `.env.local` are git-ignored; `.env.enc` is the only committed (encrypted) env file.
 

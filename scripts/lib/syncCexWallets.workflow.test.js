@@ -41,10 +41,12 @@ describe("sync-cex-wallets.yml", () => {
     expect(JSON.stringify(spellbook.env ?? {})).not.toMatch(/SLUGS/);
   });
 
-  it("gates the spellbook pass on config (HD_HAS_EVM), not on a slug check", () => {
+  it("leaves the mode to the script: the spellbook step picks no additions or candidates flag itself", () => {
     const spellbook = readSteps().find((s) => s.id === "spellbook");
-    expect(runOf(spellbook)).toMatch(/HD_HAS_EVM/);
-    expect(runOf(spellbook)).toMatch(/--candidates/);
+    expect(runOf(spellbook)).not.toMatch(/HD_HAS_EVM/);
+    expect(runOf(spellbook)).not.toMatch(/--candidates/);
+    expect(runOf(spellbook)).not.toMatch(/\bargs\b/);
+    expect(runOf(spellbook).trim()).toBe('node scripts/sync-cex-wallets-dune.js --source spellbook --project "$HD_PROJECT"');
   });
 
   it("does not use the paid Dune API: no dune_sync step, no DUNE_API_KEY, no --skip-if-no-query call", () => {

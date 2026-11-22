@@ -3,7 +3,7 @@
  * public Dune spellbook model that backs it.
  *
  * Address handling is VM-aware: EVM rows keep the historical behaviour
- * (0x-hex only, lowercased) so TEL's config/cex-wallets.json is untouched;
+ * (0x-hex only, lowercased), the behaviour existing EVM projects already rely on;
  * Solana rows are base58 public keys kept EXACTLY as written (case-sensitive,
  * never lowercased) — lowercasing a base58 key turns it into a different key.
  */
@@ -50,7 +50,7 @@ export function spellbookMinRowsForVm(vm) {
 
 /**
  * The single vm every chain the project maps shares (its CEX list model);
- * "evm" for a project with no chains or a mix of vms (TEL and any EVM project).
+ * "evm" for a project with no chains or a mix of vms (any EVM project).
  * An unknown vm throws.
  */
 export function cexVmForProject(project) {

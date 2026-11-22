@@ -4,13 +4,13 @@
  *
  * Dune (sync-cex-wallets-dune.js) only knows about exchange wallets someone
  * else has already labelled — a newly-rotated hot wallet can sit misclassified
- * as retail for weeks until a label catches up. This scans TEL's own transfer
+ * as retail for weeks until a label catches up. This scans the project's own transfer
  * graph directly for the same custodial fan-in/fan-out signature that already
  * distinguished the seven KuCoin vaults from a real OTC holder (see
  * lessons.md "Address-Level Evidence Beats Funder-Only Reasoning" and
  * data/vault-unattributed-evidence.md).
  *
- * This is advisory only — it never writes config/cex-wallets.json. It writes
+ * This is advisory only — it never writes the project's CEX wallet list (classification.cexWallets in its config). It writes
  * data/cex-candidates.json, a review queue for a human (or a follow-up
  * session, explorer-tag-checked) to promote confirmed entries from.
  *
@@ -39,7 +39,7 @@ import { readSnapshot } from "./lib/snapshotIo.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: the project's
 // snapshot, chain map and non-retail lists; the review queue goes to its work
-// dir (TEL: data/cex-candidates.json, others: data/<slug>/cex-candidates.json).
+// dir: data/<slug>/cex-candidates.json (TEL's work dir is data/, so its file is data/cex-candidates.json).
 const project = selectPipelineProject("detect-cex-candidates", { ported: true });
 
 await loadEnv();
@@ -48,7 +48,7 @@ const HOLDERS_PATH = projectPaths(project)("tel-holders.json");
 const OUTPUT_PATH = projectWork(project)("cex-candidates.json");
 
 // Standard ERC-20 Transfer(address,address,uint256) topic0 — same constant
-// for every ERC-20 token, TEL included. Not worth a keccak256 dependency for
+// for every ERC-20 token, whichever project it belongs to. Not worth a keccak256 dependency for
 // a value that never changes.
 const TRANSFER_TOPIC0 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
@@ -88,7 +88,7 @@ const parseTransferLog = (log, divisor = 100) => {
 };
 
 /**
- * Fetches TEL Transfer logs where `address` is either side, over the last
+ * Fetches the project's Transfer logs where `address` is either side, over the last
  * `lookbackBlocks` blocks, chunked to respect provider block-range limits.
  * Deposit (in) and withdrawal (out) logs are fetched separately per chunk so
  * each eth_getLogs call stays address-filtered (topics[1] or topics[2]),

@@ -4,26 +4,25 @@
  *
  * Fetches exchange wallet addresses from the public Dune spellbook static lists
  * (the files behind cex.addresses; no Dune key, credits or API) and merges
- * any net-new addresses into the project's classification.cexWallets file
- * (TEL: config/cex-wallets.json).
+ * any net-new addresses into the project's classification.cexWallets file.
  *
  * Existing entries are never modified or removed — only additions are made.
  * Address handling follows the project's VM (scripts/lib/duneCex.js):
- *   EVM    — 0x-hex only, lowercased (TEL, unchanged).
+ *   EVM    — 0x-hex only, lowercased.
  *   Solana — base58 public keys kept exactly as written (never lowercased);
  *            rows tagged with another `blockchain` are skipped.
  *
- * Candidates mode (`--candidates`, and forced for any project that has no
- * classification.cexWallets file, e.g. ZBCN) NEVER touches a production list:
- * it intersects the labelled addresses with the project's current holder
- * snapshot and writes <workDir>/cex-dune-candidates.json for owner review.
+ * This script alone decides the mode; no caller picks it:
+ *   additions  — the project has an EVM chain AND a classification.cexWallets file.
+ *   candidates — any other project (no EVM chain, or no CEX file), and any run
+ *                with `--candidates`. Candidates mode NEVER touches a production
+ *                list: it intersects the labelled addresses with the project's
+ *                current holder snapshot and writes <workDir>/cex-dune-candidates.json
+ *                for owner review.
  *
  * Source (`--source`, default `spellbook`; the only one):
- *   spellbook — EVM    — cex_evms_addresses.sql; works in the normal
- *                        additions-only merge (and in --candidates).
- *                        Fails (non-zero) if the list parses below
- *                        the VM's spellbook row floor (format changed?).
- *               Solana — candidates mode only (`--candidates`).
+ *   spellbook — EVM and Solana models. Fails (non-zero) if the list parses below
+ *               the VM's spellbook row floor (format changed?).
  *   `--source dune` (the former paid Dune API query) was removed and exits 2.
  *   `pipeline.duneCexQueryId` in a project config is ignored with a warning.
  */
@@ -35,6 +34,7 @@ import {
   selectPipelineProject,
   projectClassificationPath,
   projectClassificationRelPath,
+  projectChainKeysByVm,
   projectPaths,
   projectWork,
 } from "./lib/projects.js";
@@ -53,7 +53,7 @@ import {
 } from "./lib/duneCex.js";
 
 // `--project <slug>` (or HD_PROJECT); defaults to TEL. Ported: merges into the
-// project's own `classification.cexWallets` file (TEL: config/cex-wallets.json).
+// project's own `classification.cexWallets` file.
 const project = selectPipelineProject("sync-cex-wallets-dune", { ported: true });
 
 const argv = process.argv.slice(2);
@@ -70,8 +70,10 @@ const VM = cexVmForProject(project);
 const SOURCE = (argValue("--source") ?? "spellbook").toLowerCase();
 const CEX_CONFIG_PATH = projectClassificationPath(project, "cexWallets", process.cwd());
 const CEX_CONFIG_REL = projectClassificationRelPath(project, "cexWallets", process.cwd());
-// No production list declared = candidates only; never invent one.
-const CANDIDATES = argv.includes("--candidates") || !CEX_CONFIG_PATH;
+// Additions need an EVM chain (the spellbook EVM list) and a declared CEX file to merge into. Any other
+// project gets candidates, so no production list is written where the owner has not declared one.
+const HAS_EVM_CHAIN = projectChainKeysByVm(project.config, "evm").length > 0;
+const CANDIDATES = argv.includes("--candidates") || !HAS_EVM_CHAIN || !CEX_CONFIG_PATH;
 const CANDIDATES_PATH = projectWork(project)("cex-dune-candidates.json");
 const CANDIDATES_REL = projectWork(project).rel("cex-dune-candidates.json");
 
@@ -89,7 +91,6 @@ if (!hasSpellbookModel(VM)) {
   console.log(`::notice::no spellbook CEX model for vm "${VM}" (${project.slug}); CEX list is owner-maintained`);
   process.exit(0);
 }
-if (!CANDIDATES && VM !== "evm") fail(2, "--source spellbook for Solana is candidates-only; add --candidates (it never writes a production list).");
 try {
   spellbookUrlForVm(VM);
 } catch (e) {
