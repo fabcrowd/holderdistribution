@@ -3,7 +3,7 @@
  "slug": "tel",
  "name": "Telcoin",
  "ticker": "TEL",
- "generated": "2026-11-21T10:43:04.000Z",
+ "generated": "2026-11-22T10:13:04.000Z",
  "windows": [
   "24h",
   "72h",
@@ -119,35 +119,35 @@
   "ethereum": {
    "status": "ok",
    "provider": "public-rpc",
-   "fromBlock": 26455695,
-   "head": 26462955,
+   "fromBlock": 26462956,
+   "head": 26469980,
    "wallets": 12,
    "transfers": 0,
    "botTransfers": 0,
    "receipts": 0,
-   "headTime": "2026-11-21T10:43:04.000Z"
+   "headTime": "2026-11-22T10:13:04.000Z"
   },
   "polygon": {
    "status": "ok",
    "provider": "public-rpc",
-   "fromBlock": 97643227,
-   "head": 97701550,
+   "fromBlock": 97701551,
+   "head": 97757947,
    "wallets": 20,
    "transfers": 0,
    "botTransfers": 0,
    "receipts": 0,
-   "headTime": "2026-11-21T10:43:04.000Z"
+   "headTime": "2026-11-22T10:13:04.000Z"
   },
   "base": {
    "status": "ok",
    "provider": "public-rpc",
-   "fromBlock": 59899982,
-   "head": 60337386,
+   "fromBlock": 60337387,
+   "head": 60760365,
    "wallets": 5,
    "transfers": 0,
    "botTransfers": 0,
    "receipts": 0,
-   "headTime": "2026-11-21T10:43:04.000Z"
+   "headTime": "2026-11-22T10:13:04.000Z"
   }
  },
  "crossCheck": null,
@@ -205,14 +205,14 @@
     "devShare": 0
    },
    "30d": {
-    "sold": 390292512,
-    "sales": 4082,
-    "devShare": 134838032
+    "sold": 355849197,
+    "sales": 3864,
+    "devShare": 122938576
    },
    "90d": {
-    "sold": 2088838344,
-    "sales": 20420,
-    "devShare": 721650669
+    "sold": 2073212414,
+    "sales": 20041,
+    "devShare": 716252231
    }
   },
   "recentSales": [
@@ -870,8 +870,8 @@
  },
  "byWindow": {
   "24h": {
-   "from": "2026-11-20T10:43:04.000Z",
-   "to": "2026-11-21T10:43:04.000Z",
+   "from": "2026-11-21T10:13:04.000Z",
+   "to": "2026-11-22T10:13:04.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -899,18 +899,18 @@
    "byType": {}
   },
   "72h": {
-   "from": "2026-11-18T10:43:04.000Z",
-   "to": "2026-11-21T10:43:04.000Z",
+   "from": "2026-11-19T10:13:04.000Z",
+   "to": "2026-11-22T10:13:04.000Z",
    "devSold": {
-    "dex": 25733796,
+    "dex": 6546296,
     "cex": 0,
     "botDevShare": 0,
-    "total": 25733796
+    "total": 6546296
    },
-   "sellCount": 96,
+   "sellCount": 14,
    "botSaleCount": 0,
    "botSold": 0,
-   "sellDays": 2,
+   "sellDays": 1,
    "internal": {
     "count": 0,
     "amount": 0
@@ -919,8 +919,8 @@
    "payments": {
     "stableOut": 0,
     "stableOutCount": 0,
-    "stableIn": 38960,
-    "stableInCount": 96,
+    "stableIn": 9723,
+    "stableInCount": 14,
     "bySymbol": {},
     "topStableRecipients": [],
     "topTokenDestinations": [
@@ -930,8 +930,8 @@
       "asset": "token",
       "symbol": "TEL (legacy)",
       "type": "dex_sell",
-      "count": 93,
-      "amount": 19733796,
+      "count": 12,
+      "amount": 2546296,
       "lastHash": "0x876fe8e823082283b9f64460cef506f3486bce33899f47075ff28b5c9ad26439",
       "lastTime": 1795100596
      },
@@ -956,44 +956,33 @@
       "amount": 2000000,
       "lastHash": "0xe66a4573dea25fc2510f4c9cb7a99a823d9e25c92e558d56819e3d2e8e701767",
       "lastTime": 1795102147
-     },
-     {
-      "address": "0x111116056ad60f0f4fb52d60852f9acd2fafca11",
-      "label": "DEX (swap in receipt)",
-      "asset": "token",
-      "symbol": "TEL (legacy)",
-      "type": "dex_sell",
-      "count": 1,
-      "amount": 2000000,
-      "lastHash": "0x109cc7bb04ed38324639a4f579d75d2a6bb5effd32b70dcc7716fe6ca627b2e8",
-      "lastTime": 1795003225
      }
     ]
    },
    "byType": {
     "dex_sell": {
-     "count": 96,
-     "amount": 25733796
+     "count": 14,
+     "amount": 6546296
     },
     "stable_in": {
-     "count": 96,
-     "amount": 38960
+     "count": 14,
+     "amount": 9723
     }
    }
   },
   "30d": {
-   "from": "2026-10-22T10:43:04.000Z",
-   "to": "2026-11-21T10:43:04.000Z",
+   "from": "2026-10-23T10:13:04.000Z",
+   "to": "2026-11-22T10:13:04.000Z",
    "devSold": {
     "dex": 129919104,
     "cex": 0,
-    "botDevShare": 134838032,
-    "total": 264757136
+    "botDevShare": 122938576,
+    "total": 252857679
    },
    "sellCount": 430,
-   "botSaleCount": 4082,
-   "botSold": 390292512,
-   "sellDays": 21,
+   "botSaleCount": 3864,
+   "botSold": 355849197,
+   "sellDays": 20,
    "internal": {
     "count": 6,
     "amount": 967759600
@@ -1202,18 +1191,18 @@
    }
   },
   "90d": {
-   "from": "2026-08-23T10:43:04.000Z",
-   "to": "2026-11-21T10:43:04.000Z",
+   "from": "2026-08-24T10:13:04.000Z",
+   "to": "2026-11-22T10:13:04.000Z",
    "devSold": {
     "dex": 249050434,
     "cex": 1155701308,
-    "botDevShare": 721650669,
-    "total": 2126402410
+    "botDevShare": 716252231,
+    "total": 2121003973
    },
    "sellCount": 675,
-   "botSaleCount": 20420,
-   "botSold": 2088838344,
-   "sellDays": 67,
+   "botSaleCount": 20041,
+   "botSold": 2073212414,
+   "sellDays": 65,
    "internal": {
     "count": 23,
     "amount": 1934314309
@@ -1502,22 +1491,22 @@
    "No developer selling found in the last 24h."
   ],
   "72h": [
-   "Developer wallets sold 25.7M TEL in the last 72h: 25.7M on DEXs.",
-   "Selling happened on 2 of 3 days (96 direct sale/deposit transactions).",
-   "They received $39.0k in stablecoins (96 transfers).",
-   "Largest TEL destination: CoW Protocol settlement (19.7M TEL, 93 transfers)."
+   "Developer wallets sold 6.5M TEL in the last 72h: 6.5M on DEXs.",
+   "Selling happened on 1 of 3 days (14 direct sale/deposit transactions).",
+   "They received $9.7k in stablecoins (14 transfers).",
+   "Largest TEL destination: CoW Protocol settlement (2.5M TEL, 12 transfers)."
   ],
   "30d": [
-   "Developer wallets sold 264.8M TEL in the last 30d: 129.9M on DEXs, 134.8M via the bot cluster (developer-funded 35% of its 390.3M sold).",
-   "Selling happened on 21 of 30 days (430 direct sale/deposit transactions, 4082 bot sales).",
+   "Developer wallets sold 252.9M TEL in the last 30d: 129.9M on DEXs, 122.9M via the bot cluster (developer-funded 35% of its 355.8M sold).",
+   "Selling happened on 20 of 30 days (430 direct sale/deposit transactions, 3864 bot sales).",
    "They paid out $67.0k in stablecoins (9 payments); the largest recipient was 0x10f7835f827d6cf035115e10c50a853d7fb2d2ec ($27.0k).",
    "They received $193.3k in stablecoins (451 transfers).",
    "Largest TEL destination: CoW Protocol settlement (107.9M TEL, 416 transfers).",
    "6 internal shuffles between developer wallets (967.8M TEL) are noted but not counted as selling."
   ],
   "90d": [
-   "Developer wallets sold 2.13B TEL in the last 90d: 249.1M on DEXs, 1.16B sent to exchanges, 721.7M via the bot cluster (developer-funded 35% of its 2.09B sold).",
-   "Selling happened on 67 of 90 days (675 direct sale/deposit transactions, 20420 bot sales).",
+   "Developer wallets sold 2.12B TEL in the last 90d: 249.1M on DEXs, 1.16B sent to exchanges, 716.3M via the bot cluster (developer-funded 35% of its 2.07B sold).",
+   "Selling happened on 65 of 90 days (675 direct sale/deposit transactions, 20041 bot sales).",
    "They paid out $291.3k in stablecoins (25 payments); the largest recipient was 0x10f7835f827d6cf035115e10c50a853d7fb2d2ec ($173.3k).",
    "They received $416.2k in stablecoins (720 transfers).",
    "Largest TEL destination: KuCoin (via relay) (1.06B TEL, 5 transfers).",
@@ -1579,10 +1568,10 @@
      "txs": 0
     },
     "72h": {
-     "sold": 19733796,
+     "sold": 2546296,
      "stableOut": 0,
      "internal": 0,
-     "txs": 186
+     "txs": 24
     },
     "30d": {
      "sold": 107919104,
@@ -1729,10 +1718,10 @@
      "txs": 0
     },
     "72h": {
-     "sold": 6000000,
+     "sold": 4000000,
      "stableOut": 0,
      "internal": 0,
-     "txs": 6
+     "txs": 4
     },
     "30d": {
      "sold": 22000000,
@@ -2500,25 +2489,6 @@
   }
  ],
  "daily": [
-  {
-   "date": "2026-08-24",
-   "devSold": 1399946,
-   "botSold": 4052183,
-   "botDevShare": 1399946,
-   "dexSell": 0,
-   "cexDeposit": 0,
-   "internal": 0,
-   "botFunding": 0,
-   "bridge": 0,
-   "custody": 0,
-   "staking": 0,
-   "burn": 0,
-   "transferOut": 0,
-   "receive": 0,
-   "stableIn": 0,
-   "stableOut": 0,
-   "stableInternal": 0
-  },
   {
    "date": "2026-08-25",
    "devSold": 0,
@@ -4209,6 +4179,25 @@
    "stableIn": 0,
    "stableOut": 0,
    "stableInternal": 0
+  },
+  {
+   "date": "2026-11-22",
+   "devSold": 0,
+   "botSold": 0,
+   "botDevShare": 0,
+   "dexSell": 0,
+   "cexDeposit": 0,
+   "internal": 0,
+   "botFunding": 0,
+   "bridge": 0,
+   "custody": 0,
+   "staking": 0,
+   "burn": 0,
+   "transferOut": 0,
+   "receive": 0,
+   "stableIn": 0,
+   "stableOut": 0,
+   "stableInternal": 0
   }
  ],
  "patterns": [
@@ -4216,19 +4205,19 @@
    "kind": "fixed_size",
    "wallet": "bot-cluster",
    "walletLabel": "Bot cluster",
-   "count": 20420,
-   "typicalAmount": 102529,
+   "count": 20041,
+   "typicalAmount": 103057,
    "range": [
-    44019,
-    168139
+    45228,
+    168716
    ],
-   "description": "The bot cluster made 20420 sales, 80% of them between 44.0k and 168.1k TEL: the narrow, repeated size of an automated seller.",
+   "description": "The bot cluster made 20041 sales, 80% of them between 45.2k and 168.7k TEL: the narrow, repeated size of an automated seller.",
    "sampleHashes": [
-    "0xd55a75a3e5c172856b4971a3479fb80d15b073e6e7200af607801ac3c84fc060",
-    "0x09d065cb8e706b68b154e72e52f93bd80a417f93fba718efdd368659de0b0e0d",
-    "0xc29cf9cd41ef64abc35b2a469ae349b3f21c754fc89e7ac0a6fa75729e828477",
-    "0x72d56643e4b31fd0e63f951d9fa2f8252c1b79f1d14b105a90be265a3dee4360",
-    "0xbb60089064dfe1461d269c974967fd9bc70567af419399d13daac577550cb511"
+    "0x11dac7886e76a21b94084a40bc0e3da9b84587c9f8a0d2ab9e074ba0849a0fd2",
+    "0xd53f835f28b0e267ab2da32a0841a3e8160154d1e8de487edaaf52a1f95e4470",
+    "0x551b9d2319940195b0e03912b6f01e4446bf567dca05ccf51cb4c5d969193831",
+    "0x16525d077055b11b33f590983520280ef919777ad22b9654316f398560aca8c2",
+    "0x1f94694c5ce120a32f7117ade4b716cffae54d04fda031c3680683cd55615d5e"
    ]
   },
   {
