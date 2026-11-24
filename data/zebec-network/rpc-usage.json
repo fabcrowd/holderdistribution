@@ -856,18 +856,36 @@
       }
     },
     "2026-11-24": {
-      "runs": 1,
+      "runs": 2,
       "alchemyCu": 0,
-      "heliusCredits": 54,
+      "heliusCredits": 19771,
       "alchemyCalls": 0,
-      "heliusCalls": 54,
-      "publicCalls": 1,
+      "heliusCalls": 19771,
+      "publicCalls": 21,
       "byScript": {
         "generate-wallet-flows-solana.js": {
           "processes": 1,
           "alchemyCu": 0,
           "heliusCredits": 54,
           "publicCalls": 1
+        },
+        "pull-solana-staking.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 1,
+          "publicCalls": 14
+        },
+        "pull-holders-rpc.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 1,
+          "publicCalls": 4
+        },
+        "scan-solana-flows.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 19715,
+          "publicCalls": 2
         }
       }
     }
