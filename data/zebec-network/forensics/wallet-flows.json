@@ -1,9 +1,9 @@
 {
  "version": 1,
- "generated": "2026-11-24T01:28:30.287Z",
+ "generated": "2026-11-24T23:31:20.414Z",
  "generator": "scripts/generate-wallet-flows-solana.js",
  "project": "zebec-network",
- "priceUsd": 0.00179584,
+ "priceUsd": 0.00169792,
  "priceSource": "CoinGecko simple/price (zebec-network)",
  "chains": [
   "solana"
@@ -17,14 +17,14 @@
  ],
  "distribution": {
   "totalSupply": 100000000000,
-  "counted": 99998768188,
+  "counted": 99998768154,
   "classes": [
    {
     "key": "treasury",
     "label": "Treasury",
     "group": "telcoin",
-    "tel": 12868774852,
-    "share": 0.12868933373255734
+    "tel": 12851774852,
+    "share": 0.12851933168237506
    },
    {
     "key": "association",
@@ -37,8 +37,8 @@
     "key": "holdings",
     "label": "Team & holdings",
     "group": "telcoin",
-    "tel": 401042071,
-    "share": 0.004010470112560997
+    "tel": 401044502,
+    "share": 0.004010494426986292
    },
    {
     "key": "escrow",
@@ -52,21 +52,21 @@
     "label": "Staking",
     "group": "locked",
     "tel": 23221991,
-    "share": 0.0002322227679740705
+    "share": 0.0002322227680534371
    },
    {
     "key": "cex",
     "label": "Centralised exchanges",
     "group": "market",
-    "tel": 43932516364,
-    "share": 0.4393305753669312
+    "tel": 43913096982,
+    "share": 0.43913637930136556
    },
    {
     "key": "dex",
     "label": "DEX pools",
     "group": "market",
-    "tel": 141684250,
-    "share": 0.001416859951986763
+    "tel": 128545868,
+    "share": 0.0012854745189028209
    },
    {
     "key": "bots",
@@ -86,8 +86,8 @@
     "key": "retail",
     "label": "Retail & unlabelled holders",
     "group": "retail",
-    "tel": 42631528660,
-    "share": 0.42632053806798964
+    "tel": 42681083958,
+    "share": 0.4268160973023168
    }
   ],
   "movedFromRetail": [],
@@ -111,7 +111,7 @@
   },
   "90d": {
    "total": 1438999,
-   "usd": 2584,
+   "usd": 2443,
    "byVenue": {
     "DEX": 1438999
    }
@@ -146,7 +146,7 @@
     "30d": 0,
     "90d": 1438999
    },
-   "sellVenueUsd90d": 2584,
+   "sellVenueUsd90d": 2443,
    "sampleTxs": [
     "https://solscan.io/tx/f2Fhii1xNZjzpaMWQZWRF9WVLgzGb8CNwk1ePyxbMVXYiiPZLcxv8ZLoiogr2ESvm9oR1Px2nMux9UCc1gitDkm",
     "https://solscan.io/tx/f2Fhii1xNZjzpaMWQZWRF9WVLgzGb8CNwk1ePyxbMVXYiiPZLcxv8ZLoiogr2ESvm9oR1Px2nMux9UCc1gitDkm",
@@ -169,7 +169,7 @@
    "balanceDetail": {
     "solana": 7000217587
    },
-   "balanceUsd": 12571271,
+   "balanceUsd": 11885809,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -202,7 +202,7 @@
    "balanceDetail": {
     "solana": 5500000100
    },
-   "balanceUsd": 9877120,
+   "balanceUsd": 9338560,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -233,7 +233,7 @@
    "balanceDetail": {
     "solana": 399920762
    },
-   "balanceUsd": 718194,
+   "balanceUsd": 679033,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -260,23 +260,23 @@
    "chains": [
     "solana"
    ],
-   "balance": 260300464,
+   "balance": 243300464,
    "balanceDetail": {
-    "solana": 260300464
+    "solana": 243300464
    },
-   "balanceUsd": 467458,
+   "balanceUsd": 413105,
    "outflows": {
     "24h": {
-     "internal": 68000000
+     "internal": 17000000
     },
     "72h": {
-     "internal": 68000000
+     "internal": 85000000
     },
     "30d": {
-     "internal": 258500000
+     "internal": 275500000
     },
     "90d": {
-     "internal": 953300000
+     "internal": 970300000
     }
    },
    "sellVenue": {
@@ -303,7 +303,7 @@
    "balanceDetail": {
     "solana": 108256701
    },
-   "balanceUsd": 194412,
+   "balanceUsd": 183811,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -334,7 +334,7 @@
    "balanceDetail": {
     "solana": 1121310
    },
-   "balanceUsd": 2014,
+   "balanceUsd": 1904,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -342,7 +342,7 @@
      "unlabelled": 71153022
     },
     "90d": {
-     "unlabelled": 490323552,
+     "unlabelled": 484767996,
      "internal": 1438999
     }
    },
@@ -366,21 +366,23 @@
    "chains": [
     "solana"
    ],
-   "balance": 0,
-   "balanceDetail": {},
-   "balanceUsd": 0,
+   "balance": 2431,
+   "balanceDetail": {
+    "solana": 2431
+   },
+   "balanceUsd": 4,
    "outflows": {
     "24h": {
-     "unlabelled": 68000000
+     "unlabelled": 17000000
     },
     "72h": {
-     "unlabelled": 68000000
+     "unlabelled": 85000000
     },
     "30d": {
-     "unlabelled": 196500000
+     "unlabelled": 213500000
     },
     "90d": {
-     "unlabelled": 796300000
+     "unlabelled": 813300000
     }
    },
    "sellVenue": {
@@ -594,14 +596,14 @@
  "unlabelledTrace": {
   "window": "90d",
   "totals": {
-   "received": 1286623551.941198,
-   "receivedUsd": 2310570.039518081,
+   "received": 1298067996.391198,
+   "receivedUsd": 2204015.6124325427,
    "byKind": {
     "internal": 355883941.474,
-    "unlabelled": 858153678.640724,
-    "DEX": 25034056.425288,
+    "unlabelled": 875152678.640724,
+    "DEX": 19478500.875288,
     "CEX": 7519931.751211,
-    "unaccounted": 40031943.649975
+    "unaccounted": 40032943.649975
    }
   },
   "destinations": [
@@ -610,7 +612,7 @@
     "label": "Team ops and admin wallet",
     "dest": "GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J",
     "received": 353000000,
-    "receivedUsd": 633931.52,
+    "receivedUsd": 599365.76,
     "t": "2026-10-04T02:57:18.000Z",
     "status": "done",
     "onward": [
@@ -647,7 +649,7 @@
     "label": "Team signer EsDV",
     "dest": "DoBTtiH3q4WC1R4h1bywhELzxWEYXqep6FzmJgvH65tR",
     "received": 166650100,
-    "receivedUsd": 299276.915584,
+    "receivedUsd": 282958.537792,
     "t": "2026-09-30T05:15:14.000Z",
     "status": "done",
     "onward": [
@@ -860,7 +862,7 @@
     "label": "Team signer EsDV",
     "dest": "23c1Ryrg4yxJytMGEebDTqNTeyrd5yZ1kNXkMbxpGTWT",
     "received": 166649900.065168,
-    "receivedUsd": 299276.5565330313,
+    "receivedUsd": 282958.19831865,
     "t": "2026-09-30T05:15:36.000Z",
     "status": "done",
     "onward": [
@@ -1194,7 +1196,7 @@
     "label": "Team signer EsDV",
     "dest": "DU7NxvumXU8RYmzWadPHeMbNVcC8sx9mhsEfGu5Ye73E",
     "received": 102001000,
-    "receivedUsd": 183177.47584,
+    "receivedUsd": 173189.53792,
     "t": "2026-09-12T04:26:43.000Z",
     "status": "done",
     "onward": [
@@ -1297,7 +1299,7 @@
     "label": "Team signer EsDV",
     "dest": "DP5U1C6TdwbdcQVwXPFCopFL3y3zba2PWB68jsCqrU3S",
     "received": 101999000,
-    "receivedUsd": 183173.88416,
+    "receivedUsd": 173186.14208,
     "t": "2026-09-12T04:27:00.000Z",
     "status": "done",
     "onward": [
@@ -1334,7 +1336,7 @@
     "label": "Team signer EsDV",
     "dest": "AHrdAPnnPbUW2MeYiddAwmd8J4zmzNbcKiYzYfK3kqaY",
     "received": 85100000,
-    "receivedUsd": 152825.984,
+    "receivedUsd": 144492.992,
     "t": "2026-11-02T07:45:04.000Z",
     "status": "done",
     "onward": [
@@ -1415,7 +1417,7 @@
     "label": "Team signer EsDV",
     "dest": "96V8SYZaMbxXZjn1EEFvHt7yCY47RX75BgnHrwwA4Fs9",
     "received": 43400000.103105,
-    "receivedUsd": 77939.45618516009,
+    "receivedUsd": 73689.72817506404,
     "t": "2026-11-05T11:57:23.000Z",
     "status": "done",
     "onward": [
@@ -1463,7 +1465,7 @@
     "label": "Team ops and admin wallet",
     "dest": "AC9Ja4o8pW5K8r6TieYWGDTrYqCULju71Ae6XBZA2Xx8",
     "received": 36113941.923,
-    "receivedUsd": 64854.86146300032,
+    "receivedUsd": 61318.58426990016,
     "t": "2026-10-31T16:35:57.000Z",
     "status": "done",
     "onward": [
@@ -1566,7 +1568,7 @@
     "label": "Team signer EsDV",
     "dest": "A52sCEWY161FJAXg9LVu8LhfRomgiXa7SxMcJWyf4vyh",
     "received": 34000100,
-    "receivedUsd": 61058.739583999995,
+    "receivedUsd": 57729.449792,
     "t": "2026-11-23T01:35:09.000Z",
     "status": "done",
     "onward": [
@@ -1603,7 +1605,7 @@
     "label": "Team signer EsDV",
     "dest": "DJ6EfAJp4ZrwRV54PF3cxE8zSmM15KQUEyQ2hzFTeeN2",
     "received": 33999900,
-    "receivedUsd": 61058.380416,
+    "receivedUsd": 57729.110208,
     "t": "2026-11-23T01:35:21.000Z",
     "status": "done",
     "onward": [
@@ -1640,7 +1642,7 @@
     "label": "Team signer EsDV",
     "dest": "5xbbnZfxcTgBHifKoNW7jvBRFvpvQ4HMDcnjuYssTHKp",
     "received": 31250100,
-    "receivedUsd": 56120.179584,
+    "receivedUsd": 53060.16979199999,
     "t": "2026-10-04T02:06:47.000Z",
     "status": "done",
     "onward": [
@@ -1821,7 +1823,7 @@
     "label": "Team signer EsDV",
     "dest": "7usY1E3SZwscrGpjqinDjJLiHor6nVCi3TLfnZZXUMB8",
     "received": 31249900,
-    "receivedUsd": 56119.820415999995,
+    "receivedUsd": 53059.830208,
     "t": "2026-10-04T02:07:03.000Z",
     "status": "done",
     "onward": [
@@ -1924,7 +1926,7 @@
     "label": "Team ops and admin wallet",
     "dest": "8HdkaVkh7QbpXrXmHUiWDQ7FfdHQ5LFehjZUS21mE9uh",
     "received": 29760696.77,
-    "receivedUsd": 53445.4496874368,
+    "receivedUsd": 50531.2822597184,
     "t": "2026-09-23T02:16:08.000Z",
     "status": "done",
     "onward": [],
@@ -1932,11 +1934,37 @@
     "unaccounted": 29760696.77
    },
    {
+    "wallet": "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+    "label": "Team signer EsDV",
+    "dest": "DeTnsKVZcCn3anZC4wJZCmpWeJefVS1nLixsqL75AC6Y",
+    "received": 17000000,
+    "receivedUsd": 28864.64,
+    "t": "2026-11-24T03:12:31.000Z",
+    "status": "done",
+    "onward": [
+     {
+      "hop": 1,
+      "from": "DeTnsKVZcCn3anZC4wJZCmpWeJefVS1nLixsqL75AC6Y",
+      "to": "8vYMQshtDR6nqBEsZYtTeaAnZaeNTkTNeyQ3dEF7ja4y",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 16999000,
+      "sig": "2KiiJLsCgFXfcE4XK1QMde7o96Qgih9VVw3SbBUBXCjg9hEGWdZZ7MEVfGPRwjHPHMNxXXYiCoBbvP11dkqHHDYE",
+      "t": "2026-11-24T03:19:48.000Z"
+     }
+    ],
+    "byKind": {
+     "unlabelled": 16999000
+    },
+    "unaccounted": 1000
+   },
+   {
     "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
     "label": "Team ops and admin wallet",
     "dest": "D9sdqZtSGfYV1gs6jCpQ7Ax3SnP6rxDChjm7qQYkpHVz",
     "received": 10553119.34,
-    "receivedUsd": 18951.713835545597,
+    "receivedUsd": 17918.352389772797,
     "t": "2026-11-20T01:54:07.000Z",
     "status": "done",
     "onward": [
@@ -1971,111 +1999,507 @@
    {
     "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
     "label": "Team ops and admin wallet",
-    "dest": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-    "received": 9322199.438464,
-    "receivedUsd": 16741.17863957119,
-    "t": "2026-11-15T19:21:39.000Z",
+    "dest": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
+    "received": 7519931.751211,
+    "receivedUsd": 12768.24251901618,
+    "t": "2026-11-15T19:20:39.000Z",
     "status": "done",
     "onward": [
      {
       "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
+      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
+      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
+      "kind": "CEX",
+      "venue": "Gate.io",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 1381077.056942,
+      "sig": "28f6FrZ2B2aJaUWphhgrfH7RoCXS2TNwnma19w9ynUC4GNPbep7rBZ9sE8RUk2VxeoaghpEVdAwpTk1NbkS9B2ws",
+      "t": "2026-09-03T08:32:15.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
+      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
+      "kind": "CEX",
+      "venue": "Gate.io",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 1445000,
+      "sig": "22pdbK7UmgkABr9CTPx473kcYM8gA3a6q3tWBgFV5gHZvAyWFusPVdyzgx7A5FBWM3hTqqj22amzut7HySxffiiF",
+      "t": "2026-09-17T08:25:57.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
+      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
+      "kind": "CEX",
+      "venue": "Gate.io",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 964346.332987,
+      "sig": "5HEHUEiYhU5T9ZhJpubvstwkTXKSA9d4kAbHG2bHxjBQDx71n27HM14jz7jXLvkiG89Jmq5M81yaEgNnMmLhXEmo",
+      "t": "2026-10-01T20:17:34.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
+      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
+      "kind": "CEX",
+      "venue": "Gate.io",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 1110444.817021,
+      "sig": "61C5fBobdqtRY7TKL2zBDHrAJ3NX26WN9xphkno5NKmcsJAHUfyFMtEDkm5HLtF1mFMUTydVZSGEiFyx9hoEYVaz",
+      "t": "2026-10-16T15:18:03.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
+      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
+      "kind": "CEX",
+      "venue": "Gate.io",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 1200828.528503,
+      "sig": "yJykfhHcAypyLUJaeeFkQesoSXrWTDAi2twnFfMshxooecft9e5siErWKL5vf2oqQRuruCey5DHuxngeWAaQTry",
+      "t": "2026-11-01T16:17:33.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
+      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
+      "kind": "CEX",
+      "venue": "Gate.io",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 1418235.015758,
+      "sig": "5578htAarnpdBBnQctf7wc7hYzyUF7yZyHwepNbmjoYdL4CckXf47JemZVQtGnvyNxcBgMWneFZCPPUdtSDkNRGB",
+      "t": "2026-11-15T20:17:16.000Z"
+     }
+    ],
+    "byKind": {
+     "CEX": 7519931.751211
+    },
+    "unaccounted": 0
+   },
+   {
+    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+    "label": "Team ops and admin wallet",
+    "dest": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
+    "received": 6326039.151001,
+    "receivedUsd": 10741.108395267616,
+    "t": "2026-10-03T01:29:46.000Z",
+    "status": "done",
+    "onward": [
+     {
+      "hop": 1,
+      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
+      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 55000,
+      "sig": "4B2cjDmvgAD7wbcKPpEyRtao5o9ZoKF6RmoUM6AiqNUSDfxFcXuiixfRmwVCmSncRmvWP9eAWd1Bifrp5sZ3fh4r",
+      "t": "2026-09-01T13:54:00.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
+      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 55000,
+      "sig": "4B2cjDmvgAD7wbcKPpEyRtao5o9ZoKF6RmoUM6AiqNUSDfxFcXuiixfRmwVCmSncRmvWP9eAWd1Bifrp5sZ3fh4r",
+      "t": "2026-09-01T13:54:00.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
+      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 2666028.958811,
+      "sig": "3QSu5nWWtULaxqepwvncwwCVPTXwVSfZDL3B2JDxxXg3VTjbvdAgMDHk7atwaLxb2RPfEj7gwDVrC4j4PjSj7XAN",
+      "t": "2026-09-01T13:55:49.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
+      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 778333.3,
+      "sig": "3QSu5nWWtULaxqepwvncwwCVPTXwVSfZDL3B2JDxxXg3VTjbvdAgMDHk7atwaLxb2RPfEj7gwDVrC4j4PjSj7XAN",
+      "t": "2026-09-01T13:55:49.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
+      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 50000,
+      "sig": "2M65k28ZSQyFTvkAehTGxaaQStPsSPVdPvCKKUXBY8eyGJdW1uZ6scvihToTgtKKGcigp4ceG2K58oHQJbPbTk5V",
+      "t": "2026-10-04T14:24:07.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
+      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 50000,
+      "sig": "2M65k28ZSQyFTvkAehTGxaaQStPsSPVdPvCKKUXBY8eyGJdW1uZ6scvihToTgtKKGcigp4ceG2K58oHQJbPbTk5V",
+      "t": "2026-10-04T14:24:07.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
+      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 1888343.59219,
+      "sig": "3jcTE1SqSvgFiW7NLFBiYUtXL1XydJuWYAeSYgu54BGik9uhPBik9JurJtrmhLf6Qyi4yMwDPdQU9rFVZQbzRQ3E",
+      "t": "2026-10-04T14:25:54.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
+      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 783333.3,
+      "sig": "3jcTE1SqSvgFiW7NLFBiYUtXL1XydJuWYAeSYgu54BGik9uhPBik9JurJtrmhLf6Qyi4yMwDPdQU9rFVZQbzRQ3E",
+      "t": "2026-10-04T14:25:54.000Z"
+     },
+     {
+      "hop": 2,
+      "from": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "to": "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6",
+      "kind": "CEX",
+      "venue": "KuCoin",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 55000,
+      "sig": "2r4eo4zyEn6mn9eP8ZyGASzPVKwTk7gyEWc6F8yKyhwMotkeMTqy3QqLZws2e52xsA8N71mAH5C7mxcMMq2AvBYV",
+      "t": "2026-09-01T13:55:17.000Z"
+     },
+     {
+      "hop": 2,
+      "from": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "to": "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6",
+      "kind": "CEX",
+      "venue": "KuCoin",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 55000,
+      "sig": "2r4eo4zyEn6mn9eP8ZyGASzPVKwTk7gyEWc6F8yKyhwMotkeMTqy3QqLZws2e52xsA8N71mAH5C7mxcMMq2AvBYV",
+      "t": "2026-09-01T13:55:17.000Z"
+     },
+     {
+      "hop": 2,
+      "from": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "to": "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6",
+      "kind": "CEX",
+      "venue": "KuCoin",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 50000,
+      "sig": "3KWNkvXkrUAoH4E7Nndhat4T2wnvKKq5qyUB7SsA1VrZmzwdMhFwF2gGwUH9H1oxkEP5mEPv3qCnpdMigVJHBQhK",
+      "t": "2026-10-04T14:25:17.000Z"
+     },
+     {
+      "hop": 2,
+      "from": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
+      "to": "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6",
+      "kind": "CEX",
+      "venue": "KuCoin",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 50000,
+      "sig": "3KWNkvXkrUAoH4E7Nndhat4T2wnvKKq5qyUB7SsA1VrZmzwdMhFwF2gGwUH9H1oxkEP5mEPv3qCnpdMigVJHBQhK",
+      "t": "2026-10-04T14:25:17.000Z"
+     }
+    ],
+    "byKind": {
+     "unlabelled": 6326039.151001
+    },
+    "unaccounted": 0
+   },
+   {
+    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+    "label": "Team ops and admin wallet",
+    "dest": "43ovzPyqFgXyLCT9EgN3Lyw8xEHo3daLN95FniR2k7va",
+    "received": 5823653.184,
+    "receivedUsd": 9888.09721417728,
+    "t": "2026-11-02T05:28:05.000Z",
+    "status": "done",
+    "onward": [
+     {
+      "hop": 1,
+      "from": "43ovzPyqFgXyLCT9EgN3Lyw8xEHo3daLN95FniR2k7va",
+      "to": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+      "kind": "internal",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 2883941.474,
+      "sig": "uSjWZfPWqHXJ2e3bvNDMoXaa6xbCig2WTzHWjycADpgxqYK9irJJ3hTNxah12hfzJHbmEojqECymXmpG8u7K48L",
+      "t": "2026-11-02T05:16:31.000Z"
+     }
+    ],
+    "byKind": {
+     "internal": 2883941.474
+    },
+    "unaccounted": 2939711.71
+   },
+   {
+    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+    "label": "Team ops and admin wallet",
+    "dest": "9acGHNrdibvN4tsqWhS5uQDeU2dzvXCr23TYKWYoAj2j",
+    "received": 5586647.504468,
+    "receivedUsd": 9485.680530786305,
+    "t": "2026-11-08T19:54:44.000Z",
+    "status": "open",
+    "onward": [],
+    "byKind": {},
+    "unaccounted": 5586647.504468
+   },
+   {
+    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+    "label": "Team ops and admin wallet",
+    "dest": "7CSAwmJhTMqncxMxoFdxoYHLSYhN3fqw9Je2iMPbt2vB",
+    "received": 5000000,
+    "receivedUsd": 8489.6,
+    "t": "2026-10-07T16:05:57.000Z",
+    "status": "done",
+    "onward": [
+     {
+      "hop": 1,
+      "from": "7CSAwmJhTMqncxMxoFdxoYHLSYhN3fqw9Je2iMPbt2vB",
+      "to": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 2500000,
+      "sig": "25tYCjFPWWMyabhm3ib2VPUaMdVHw5ynschN2UvDaiScSeSWWgTZdUD6QDv2ThnWZpuwzwkPmMthdYvwVMYmBVe5",
+      "t": "2026-09-04T16:12:20.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "7CSAwmJhTMqncxMxoFdxoYHLSYhN3fqw9Je2iMPbt2vB",
+      "to": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 2500000,
+      "sig": "3NvCFPcsEu4VWhKe6i9PN92poquK9aSMaKEhvxmZzLwvFJWXoF2ymjpRoGP5QWUA3fezUdUn5kP41p1hzHLvLrsk",
+      "t": "2026-10-07T16:19:13.000Z"
+     },
+     {
+      "hop": 2,
+      "from": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
+      "to": "EhDyxGpEz9hryw6MwiBB7898WEzcoGTCAjVQMHbo6Q1M",
+      "kind": "CEX",
+      "venue": "OKX",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 2500000,
+      "sig": "23i1Wr7rjBedxUgsfW8dQqaCXTpf2dYYMo4V5mQvRDiVBbd3VhFEAUUHwaV3ThJNivwgBDcQFvjPV7cTfxpBDwkP",
+      "t": "2026-09-04T16:12:37.000Z"
+     },
+     {
+      "hop": 2,
+      "from": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
+      "to": "EhDyxGpEz9hryw6MwiBB7898WEzcoGTCAjVQMHbo6Q1M",
+      "kind": "CEX",
+      "venue": "OKX",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 2500000,
+      "sig": "2bR4JSZeZrQ35cR2iWBwyLGAbMYScXMg8de9oHeB76Yd2SjLzYUEneaP7AxDBRUCJmGBXV92xuLuxV7bvp5rowGE",
+      "t": "2026-10-07T16:19:38.000Z"
+     }
+    ],
+    "byKind": {
+     "unlabelled": 5000000
+    },
+    "unaccounted": 0
+   },
+   {
+    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+    "label": "Team ops and admin wallet",
+    "dest": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
+    "received": 3833356.167705,
+    "receivedUsd": 6508.732104269673,
+    "t": "2026-11-15T19:22:08.000Z",
+    "status": "done",
+    "onward": [
+     {
+      "hop": 1,
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
+      "to": "D9sdqZtSGfYV1gs6jCpQ7Ax3SnP6rxDChjm7qQYkpHVz",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 696926.786548,
+      "sig": "21GSic5fx3zEHfNH2a8r9KiGmuzU3Z6sJs7TGyAqBRddCDpPZ1Y1wTDEM4z1Ds9amV5HWJPTqKfZCCyKscnnqjue",
+      "t": "2026-09-09T16:14:45.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
+      "to": "D9sdqZtSGfYV1gs6jCpQ7Ax3SnP6rxDChjm7qQYkpHVz",
+      "kind": "unlabelled",
+      "venue": null,
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 735000,
+      "sig": "65adL23Wjhowd1sckHUBtgLrVsqTDfCEQkQDz8DF1PHyTzjYNRffW9tDAx3m4jMQM31i9B1iH5mPW8jsj3pFGeb9",
+      "t": "2026-09-17T03:14:20.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
+      "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
+      "kind": "DEX",
+      "venue": "dex",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 287811.071603,
+      "sig": "5pFzwRJbktCVZSoA245WqPXQg2kbvtaWy1weheX6ZCiAKfHJq18wXX8Z9itKVKtrTcPkw7CzRUGjBUJf5DWVG6Ty",
+      "t": "2026-10-06T15:36:35.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
       "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
       "kind": "DEX",
       "venue": "dex",
       "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 288248.337777,
-      "sig": "H4eQBbjExS2AUXNa99aqCHkZBnrQhEPee8yjMh3b5NdvTkEmvGt9oLeAKdk44pFePA9JTqqGtXshK978qWadAwv",
-      "t": "2026-08-27T17:55:45.000Z"
+      "amount": 198602.772008,
+      "sig": "5pFzwRJbktCVZSoA245WqPXQg2kbvtaWy1weheX6ZCiAKfHJq18wXX8Z9itKVKtrTcPkw7CzRUGjBUJf5DWVG6Ty",
+      "t": "2026-10-06T15:36:35.000Z"
      },
      {
       "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
       "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
       "kind": "DEX",
       "venue": "dex",
       "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 173096.633189,
-      "sig": "H4eQBbjExS2AUXNa99aqCHkZBnrQhEPee8yjMh3b5NdvTkEmvGt9oLeAKdk44pFePA9JTqqGtXshK978qWadAwv",
-      "t": "2026-08-27T17:55:45.000Z"
+      "amount": 486969.7037,
+      "sig": "zTexHt1wQj9eKktwdspZsti4a6nY6kF2bAPNdLyRmrvUCL75jYTQnEzau1ZGB5nx9CU9YhM38ZMQ1tCj2DSZxEH",
+      "t": "2026-10-16T14:19:03.000Z"
      },
      {
       "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
       "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
       "kind": "DEX",
       "venue": "dex",
       "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 547927.41773,
-      "sig": "3fPLRuK48wViQTgwj6t2ZpLb11T2PkajDw4mN5VD6JcSso4Wyzs6pXBVyVB71JJpW7qxpKL9inroFR3jTiLstHjK",
-      "t": "2026-08-27T22:55:48.000Z"
+      "amount": 71609.906149,
+      "sig": "zTexHt1wQj9eKktwdspZsti4a6nY6kF2bAPNdLyRmrvUCL75jYTQnEzau1ZGB5nx9CU9YhM38ZMQ1tCj2DSZxEH",
+      "t": "2026-10-16T14:19:03.000Z"
      },
      {
       "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
+      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
       "kind": "DEX",
       "venue": "dex",
       "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 154543.630641,
-      "sig": "3fPLRuK48wViQTgwj6t2ZpLb11T2PkajDw4mN5VD6JcSso4Wyzs6pXBVyVB71JJpW7qxpKL9inroFR3jTiLstHjK",
-      "t": "2026-08-27T22:55:48.000Z"
+      "amount": 435955.924891,
+      "sig": "9BU1zm8oAqEejrvj27ghA9BoBjbnumiQ6a1mzFgjjxUKkxwrBZe6MkLgXJtJo8rHKpRvsVoRURcmuS4jAMzkzgX",
+      "t": "2026-11-03T17:38:08.000Z"
      },
      {
       "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 1035776.592751,
-      "sig": "SsCV7fqzP1DqVMeTC55eRM3XVDVsMjHGKPwtAK6zZXGudyEzars7UmrHdrcyvDx4jzBuupXHojpqcejBcdT24jA",
-      "t": "2026-09-02T01:59:42.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 71887.39316,
-      "sig": "SsCV7fqzP1DqVMeTC55eRM3XVDVsMjHGKPwtAK6zZXGudyEzars7UmrHdrcyvDx4jzBuupXHojpqcejBcdT24jA",
-      "t": "2026-09-02T01:59:42.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
       "to": "6Mo8W6b67brHWokLNeXPdfwH7B1ir3xYCGd4EcBen6eM",
       "kind": "DEX",
       "venue": "dex",
       "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 498892.584601,
-      "sig": "5Ga2ppbabufu47hNYFjB3zKvAfzjaqhNeiocLyBwGjuFDaS8VH8rDEZENHJuPMDQgP4vfjwNKrPscpqgSvVWyaj9",
-      "t": "2026-09-03T07:11:39.000Z"
+      "amount": 169286.231003,
+      "sig": "9BU1zm8oAqEejrvj27ghA9BoBjbnumiQ6a1mzFgjjxUKkxwrBZe6MkLgXJtJo8rHKpRvsVoRURcmuS4jAMzkzgX",
+      "t": "2026-11-03T17:38:08.000Z"
      },
      {
       "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 321508.554522,
-      "sig": "5Ga2ppbabufu47hNYFjB3zKvAfzjaqhNeiocLyBwGjuFDaS8VH8rDEZENHJuPMDQgP4vfjwNKrPscpqgSvVWyaj9",
-      "t": "2026-09-03T07:11:39.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
       "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
       "kind": "DEX",
       "venue": "dex",
       "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 288249.048881,
-      "sig": "5Ga2ppbabufu47hNYFjB3zKvAfzjaqhNeiocLyBwGjuFDaS8VH8rDEZENHJuPMDQgP4vfjwNKrPscpqgSvVWyaj9",
-      "t": "2026-09-03T07:11:39.000Z"
+      "amount": 302130.135019,
+      "sig": "44zXGBEYThYp2LpAbpR2AL6vRPDRUXvUDHLZVuQ43yvahSgxXb8rzthNYeUxGWpUrgtggfoHo539qcJPhzAhsmfD",
+      "t": "2026-11-16T14:42:39.000Z"
      },
+     {
+      "hop": 1,
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
+      "to": "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w",
+      "kind": "DEX",
+      "venue": "dex",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 241208.320125,
+      "sig": "44zXGBEYThYp2LpAbpR2AL6vRPDRUXvUDHLZVuQ43yvahSgxXb8rzthNYeUxGWpUrgtggfoHo539qcJPhzAhsmfD",
+      "t": "2026-11-16T14:42:39.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
+      "to": "6Mo8W6b67brHWokLNeXPdfwH7B1ir3xYCGd4EcBen6eM",
+      "kind": "DEX",
+      "venue": "dex",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 147759.814915,
+      "sig": "44zXGBEYThYp2LpAbpR2AL6vRPDRUXvUDHLZVuQ43yvahSgxXb8rzthNYeUxGWpUrgtggfoHo539qcJPhzAhsmfD",
+      "t": "2026-11-16T14:42:39.000Z"
+     },
+     {
+      "hop": 1,
+      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
+      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
+      "kind": "DEX",
+      "venue": "dex",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 60095.501744,
+      "sig": "44zXGBEYThYp2LpAbpR2AL6vRPDRUXvUDHLZVuQ43yvahSgxXb8rzthNYeUxGWpUrgtggfoHo539qcJPhzAhsmfD",
+      "t": "2026-11-16T14:42:39.000Z"
+     },
+     {
+      "hop": 2,
+      "from": "D9sdqZtSGfYV1gs6jCpQ7Ax3SnP6rxDChjm7qQYkpHVz",
+      "to": "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w",
+      "kind": "DEX",
+      "venue": "dex",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 735000,
+      "sig": "5ARvhbsugBw9eM4Ko5oH7PcVJ1Za62siEeZe7tuxSab9jgJKs6zaum4ouoHrLJNoinaejwNEhaXPzWepAHECWuJ1",
+      "t": "2026-09-22T17:16:26.000Z"
+     },
+     {
+      "hop": 2,
+      "from": "D9sdqZtSGfYV1gs6jCpQ7Ax3SnP6rxDChjm7qQYkpHVz",
+      "to": "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w",
+      "kind": "DEX",
+      "venue": "dex",
+      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
+      "amount": 696926.786548,
+      "sig": "5ARvhbsugBw9eM4Ko5oH7PcVJ1Za62siEeZe7tuxSab9jgJKs6zaum4ouoHrLJNoinaejwNEhaXPzWepAHECWuJ1",
+      "t": "2026-09-22T17:16:26.000Z"
+     }
+    ],
+    "byKind": {
+     "unlabelled": 1431926.786548,
+     "DEX": 2401429.381157
+    },
+    "unaccounted": 0
+   },
+   {
+    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
+    "label": "Team ops and admin wallet",
+    "dest": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
+    "received": 3766643.888464,
+    "receivedUsd": 6395.4599911007945,
+    "t": "2026-11-15T19:21:39.000Z",
+    "status": "done",
+    "onward": [
      {
       "hop": 1,
       "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
@@ -2097,116 +2521,6 @@
       "amount": 192129.491535,
       "sig": "5Ga2ppbabufu47hNYFjB3zKvAfzjaqhNeiocLyBwGjuFDaS8VH8rDEZENHJuPMDQgP4vfjwNKrPscpqgSvVWyaj9",
       "t": "2026-09-03T07:11:39.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 239162.0563,
-      "sig": "3hkh1NtxmAEAUmQvcf8xqB2sFsVzyuBeqUVPBF9AMgDvMGYYHCgfGou6iccfztw58h4oXfwwW6GqxhSiNmcz3bEJ",
-      "t": "2026-09-10T10:23:10.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 206683.258532,
-      "sig": "3hkh1NtxmAEAUmQvcf8xqB2sFsVzyuBeqUVPBF9AMgDvMGYYHCgfGou6iccfztw58h4oXfwwW6GqxhSiNmcz3bEJ",
-      "t": "2026-09-10T10:23:10.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "6Mo8W6b67brHWokLNeXPdfwH7B1ir3xYCGd4EcBen6eM",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 88578.53937,
-      "sig": "3hkh1NtxmAEAUmQvcf8xqB2sFsVzyuBeqUVPBF9AMgDvMGYYHCgfGou6iccfztw58h4oXfwwW6GqxhSiNmcz3bEJ",
-      "t": "2026-09-10T10:23:10.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "FkggXKXmxaQ8tT46NnpcTW3tWjtSerJ7YdGuqGF9FbjX",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 2415.778346,
-      "sig": "3hkh1NtxmAEAUmQvcf8xqB2sFsVzyuBeqUVPBF9AMgDvMGYYHCgfGou6iccfztw58h4oXfwwW6GqxhSiNmcz3bEJ",
-      "t": "2026-09-10T10:23:10.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 471114.00014,
-      "sig": "5ynK3R6igbVmkcSoXXNCKsDjNSdiCn91JS2MVVGZZfVdzMRFCvcPv8V7tCqAr8Ps4z3yNdbD9qQmzTzcV75eUXFa",
-      "t": "2026-09-11T11:52:47.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "6Mo8W6b67brHWokLNeXPdfwH7B1ir3xYCGd4EcBen6eM",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 383464.883836,
-      "sig": "5ynK3R6igbVmkcSoXXNCKsDjNSdiCn91JS2MVVGZZfVdzMRFCvcPv8V7tCqAr8Ps4z3yNdbD9qQmzTzcV75eUXFa",
-      "t": "2026-09-11T11:52:47.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 241035.069839,
-      "sig": "5ynK3R6igbVmkcSoXXNCKsDjNSdiCn91JS2MVVGZZfVdzMRFCvcPv8V7tCqAr8Ps4z3yNdbD9qQmzTzcV75eUXFa",
-      "t": "2026-09-11T11:52:47.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 243131.62622,
-      "sig": "58LepDrQkfwCV4bASVUybUzNHYovRmK6Z9iQUBjaRzcD7TngteFQSmz5fZLKj4W1uEXmBnt9Vm3Bb8mJvorgiUjy",
-      "t": "2026-09-13T17:59:59.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 178773.254575,
-      "sig": "58LepDrQkfwCV4bASVUybUzNHYovRmK6Z9iQUBjaRzcD7TngteFQSmz5fZLKj4W1uEXmBnt9Vm3Bb8mJvorgiUjy",
-      "t": "2026-09-13T17:59:59.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "2RBTh513YHgaDg1WbqQNUbF3R8CQrMtuD72BREM1oitY",
-      "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 121066.88959,
-      "sig": "58LepDrQkfwCV4bASVUybUzNHYovRmK6Z9iQUBjaRzcD7TngteFQSmz5fZLKj4W1uEXmBnt9Vm3Bb8mJvorgiUjy",
-      "t": "2026-09-13T17:59:59.000Z"
      },
      {
       "hop": 1,
@@ -2375,502 +2689,7 @@
      }
     ],
     "byKind": {
-     "DEX": 9322199.438464
-    },
-    "unaccounted": 0
-   },
-   {
-    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-    "label": "Team ops and admin wallet",
-    "dest": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
-    "received": 7519931.751211,
-    "receivedUsd": 13504.594236094761,
-    "t": "2026-11-15T19:20:39.000Z",
-    "status": "done",
-    "onward": [
-     {
-      "hop": 1,
-      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
-      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
-      "kind": "CEX",
-      "venue": "Gate.io",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 1381077.056942,
-      "sig": "28f6FrZ2B2aJaUWphhgrfH7RoCXS2TNwnma19w9ynUC4GNPbep7rBZ9sE8RUk2VxeoaghpEVdAwpTk1NbkS9B2ws",
-      "t": "2026-09-03T08:32:15.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
-      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
-      "kind": "CEX",
-      "venue": "Gate.io",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 1445000,
-      "sig": "22pdbK7UmgkABr9CTPx473kcYM8gA3a6q3tWBgFV5gHZvAyWFusPVdyzgx7A5FBWM3hTqqj22amzut7HySxffiiF",
-      "t": "2026-09-17T08:25:57.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
-      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
-      "kind": "CEX",
-      "venue": "Gate.io",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 964346.332987,
-      "sig": "5HEHUEiYhU5T9ZhJpubvstwkTXKSA9d4kAbHG2bHxjBQDx71n27HM14jz7jXLvkiG89Jmq5M81yaEgNnMmLhXEmo",
-      "t": "2026-10-01T20:17:34.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
-      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
-      "kind": "CEX",
-      "venue": "Gate.io",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 1110444.817021,
-      "sig": "61C5fBobdqtRY7TKL2zBDHrAJ3NX26WN9xphkno5NKmcsJAHUfyFMtEDkm5HLtF1mFMUTydVZSGEiFyx9hoEYVaz",
-      "t": "2026-10-16T15:18:03.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
-      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
-      "kind": "CEX",
-      "venue": "Gate.io",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 1200828.528503,
-      "sig": "yJykfhHcAypyLUJaeeFkQesoSXrWTDAi2twnFfMshxooecft9e5siErWKL5vf2oqQRuruCey5DHuxngeWAaQTry",
-      "t": "2026-11-01T16:17:33.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
-      "to": "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
-      "kind": "CEX",
-      "venue": "Gate.io",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 1418235.015758,
-      "sig": "5578htAarnpdBBnQctf7wc7hYzyUF7yZyHwepNbmjoYdL4CckXf47JemZVQtGnvyNxcBgMWneFZCPPUdtSDkNRGB",
-      "t": "2026-11-15T20:17:16.000Z"
-     }
-    ],
-    "byKind": {
-     "CEX": 7519931.751211
-    },
-    "unaccounted": 0
-   },
-   {
-    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-    "label": "Team ops and admin wallet",
-    "dest": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
-    "received": 6326039.151001,
-    "receivedUsd": 11360.554148933636,
-    "t": "2026-10-03T01:29:46.000Z",
-    "status": "done",
-    "onward": [
-     {
-      "hop": 1,
-      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
-      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 55000,
-      "sig": "4B2cjDmvgAD7wbcKPpEyRtao5o9ZoKF6RmoUM6AiqNUSDfxFcXuiixfRmwVCmSncRmvWP9eAWd1Bifrp5sZ3fh4r",
-      "t": "2026-09-01T13:54:00.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
-      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 55000,
-      "sig": "4B2cjDmvgAD7wbcKPpEyRtao5o9ZoKF6RmoUM6AiqNUSDfxFcXuiixfRmwVCmSncRmvWP9eAWd1Bifrp5sZ3fh4r",
-      "t": "2026-09-01T13:54:00.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
-      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 2666028.958811,
-      "sig": "3QSu5nWWtULaxqepwvncwwCVPTXwVSfZDL3B2JDxxXg3VTjbvdAgMDHk7atwaLxb2RPfEj7gwDVrC4j4PjSj7XAN",
-      "t": "2026-09-01T13:55:49.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
-      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 778333.3,
-      "sig": "3QSu5nWWtULaxqepwvncwwCVPTXwVSfZDL3B2JDxxXg3VTjbvdAgMDHk7atwaLxb2RPfEj7gwDVrC4j4PjSj7XAN",
-      "t": "2026-09-01T13:55:49.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
-      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 50000,
-      "sig": "2M65k28ZSQyFTvkAehTGxaaQStPsSPVdPvCKKUXBY8eyGJdW1uZ6scvihToTgtKKGcigp4ceG2K58oHQJbPbTk5V",
-      "t": "2026-10-04T14:24:07.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
-      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 50000,
-      "sig": "2M65k28ZSQyFTvkAehTGxaaQStPsSPVdPvCKKUXBY8eyGJdW1uZ6scvihToTgtKKGcigp4ceG2K58oHQJbPbTk5V",
-      "t": "2026-10-04T14:24:07.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
-      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 1888343.59219,
-      "sig": "3jcTE1SqSvgFiW7NLFBiYUtXL1XydJuWYAeSYgu54BGik9uhPBik9JurJtrmhLf6Qyi4yMwDPdQU9rFVZQbzRQ3E",
-      "t": "2026-10-04T14:25:54.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "4h9huCdnPHHeUyFxBcEYRoYCr8cR9wnaPfHiv46T2VX7",
-      "to": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 783333.3,
-      "sig": "3jcTE1SqSvgFiW7NLFBiYUtXL1XydJuWYAeSYgu54BGik9uhPBik9JurJtrmhLf6Qyi4yMwDPdQU9rFVZQbzRQ3E",
-      "t": "2026-10-04T14:25:54.000Z"
-     },
-     {
-      "hop": 2,
-      "from": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "to": "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6",
-      "kind": "CEX",
-      "venue": "KuCoin",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 55000,
-      "sig": "2r4eo4zyEn6mn9eP8ZyGASzPVKwTk7gyEWc6F8yKyhwMotkeMTqy3QqLZws2e52xsA8N71mAH5C7mxcMMq2AvBYV",
-      "t": "2026-09-01T13:55:17.000Z"
-     },
-     {
-      "hop": 2,
-      "from": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "to": "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6",
-      "kind": "CEX",
-      "venue": "KuCoin",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 55000,
-      "sig": "2r4eo4zyEn6mn9eP8ZyGASzPVKwTk7gyEWc6F8yKyhwMotkeMTqy3QqLZws2e52xsA8N71mAH5C7mxcMMq2AvBYV",
-      "t": "2026-09-01T13:55:17.000Z"
-     },
-     {
-      "hop": 2,
-      "from": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "to": "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6",
-      "kind": "CEX",
-      "venue": "KuCoin",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 50000,
-      "sig": "3KWNkvXkrUAoH4E7Nndhat4T2wnvKKq5qyUB7SsA1VrZmzwdMhFwF2gGwUH9H1oxkEP5mEPv3qCnpdMigVJHBQhK",
-      "t": "2026-10-04T14:25:17.000Z"
-     },
-     {
-      "hop": 2,
-      "from": "8N6eosfr2nzv5AwWpmwBfHBafyuvCNWr5T3ocjQbhDzc",
-      "to": "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6",
-      "kind": "CEX",
-      "venue": "KuCoin",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 50000,
-      "sig": "3KWNkvXkrUAoH4E7Nndhat4T2wnvKKq5qyUB7SsA1VrZmzwdMhFwF2gGwUH9H1oxkEP5mEPv3qCnpdMigVJHBQhK",
-      "t": "2026-10-04T14:25:17.000Z"
-     }
-    ],
-    "byKind": {
-     "unlabelled": 6326039.151001
-    },
-    "unaccounted": 0
-   },
-   {
-    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-    "label": "Team ops and admin wallet",
-    "dest": "43ovzPyqFgXyLCT9EgN3Lyw8xEHo3daLN95FniR2k7va",
-    "received": 5823653.184,
-    "receivedUsd": 10458.34933395456,
-    "t": "2026-11-02T05:28:05.000Z",
-    "status": "done",
-    "onward": [
-     {
-      "hop": 1,
-      "from": "43ovzPyqFgXyLCT9EgN3Lyw8xEHo3daLN95FniR2k7va",
-      "to": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-      "kind": "internal",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 2883941.474,
-      "sig": "uSjWZfPWqHXJ2e3bvNDMoXaa6xbCig2WTzHWjycADpgxqYK9irJJ3hTNxah12hfzJHbmEojqECymXmpG8u7K48L",
-      "t": "2026-11-02T05:16:31.000Z"
-     }
-    ],
-    "byKind": {
-     "internal": 2883941.474
-    },
-    "unaccounted": 2939711.71
-   },
-   {
-    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-    "label": "Team ops and admin wallet",
-    "dest": "9acGHNrdibvN4tsqWhS5uQDeU2dzvXCr23TYKWYoAj2j",
-    "received": 5586647.504468,
-    "receivedUsd": 10032.725054423812,
-    "t": "2026-11-08T19:54:44.000Z",
-    "status": "open",
-    "onward": [],
-    "byKind": {},
-    "unaccounted": 5586647.504468
-   },
-   {
-    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-    "label": "Team ops and admin wallet",
-    "dest": "7CSAwmJhTMqncxMxoFdxoYHLSYhN3fqw9Je2iMPbt2vB",
-    "received": 5000000,
-    "receivedUsd": 8979.199999999999,
-    "t": "2026-10-07T16:05:57.000Z",
-    "status": "done",
-    "onward": [
-     {
-      "hop": 1,
-      "from": "7CSAwmJhTMqncxMxoFdxoYHLSYhN3fqw9Je2iMPbt2vB",
-      "to": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 2500000,
-      "sig": "25tYCjFPWWMyabhm3ib2VPUaMdVHw5ynschN2UvDaiScSeSWWgTZdUD6QDv2ThnWZpuwzwkPmMthdYvwVMYmBVe5",
-      "t": "2026-09-04T16:12:20.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "7CSAwmJhTMqncxMxoFdxoYHLSYhN3fqw9Je2iMPbt2vB",
-      "to": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 2500000,
-      "sig": "3NvCFPcsEu4VWhKe6i9PN92poquK9aSMaKEhvxmZzLwvFJWXoF2ymjpRoGP5QWUA3fezUdUn5kP41p1hzHLvLrsk",
-      "t": "2026-10-07T16:19:13.000Z"
-     },
-     {
-      "hop": 2,
-      "from": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "to": "EhDyxGpEz9hryw6MwiBB7898WEzcoGTCAjVQMHbo6Q1M",
-      "kind": "CEX",
-      "venue": "OKX",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 2500000,
-      "sig": "23i1Wr7rjBedxUgsfW8dQqaCXTpf2dYYMo4V5mQvRDiVBbd3VhFEAUUHwaV3ThJNivwgBDcQFvjPV7cTfxpBDwkP",
-      "t": "2026-09-04T16:12:37.000Z"
-     },
-     {
-      "hop": 2,
-      "from": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "to": "EhDyxGpEz9hryw6MwiBB7898WEzcoGTCAjVQMHbo6Q1M",
-      "kind": "CEX",
-      "venue": "OKX",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 2500000,
-      "sig": "2bR4JSZeZrQ35cR2iWBwyLGAbMYScXMg8de9oHeB76Yd2SjLzYUEneaP7AxDBRUCJmGBXV92xuLuxV7bvp5rowGE",
-      "t": "2026-10-07T16:19:38.000Z"
-     }
-    ],
-    "byKind": {
-     "unlabelled": 5000000
-    },
-    "unaccounted": 0
-   },
-   {
-    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-    "label": "Team ops and admin wallet",
-    "dest": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-    "received": 3833356.167705,
-    "receivedUsd": 6884.094340211347,
-    "t": "2026-11-15T19:22:08.000Z",
-    "status": "done",
-    "onward": [
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "D9sdqZtSGfYV1gs6jCpQ7Ax3SnP6rxDChjm7qQYkpHVz",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 696926.786548,
-      "sig": "21GSic5fx3zEHfNH2a8r9KiGmuzU3Z6sJs7TGyAqBRddCDpPZ1Y1wTDEM4z1Ds9amV5HWJPTqKfZCCyKscnnqjue",
-      "t": "2026-09-09T16:14:45.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "D9sdqZtSGfYV1gs6jCpQ7Ax3SnP6rxDChjm7qQYkpHVz",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 735000,
-      "sig": "65adL23Wjhowd1sckHUBtgLrVsqTDfCEQkQDz8DF1PHyTzjYNRffW9tDAx3m4jMQM31i9B1iH5mPW8jsj3pFGeb9",
-      "t": "2026-09-17T03:14:20.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 287811.071603,
-      "sig": "5pFzwRJbktCVZSoA245WqPXQg2kbvtaWy1weheX6ZCiAKfHJq18wXX8Z9itKVKtrTcPkw7CzRUGjBUJf5DWVG6Ty",
-      "t": "2026-10-06T15:36:35.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 198602.772008,
-      "sig": "5pFzwRJbktCVZSoA245WqPXQg2kbvtaWy1weheX6ZCiAKfHJq18wXX8Z9itKVKtrTcPkw7CzRUGjBUJf5DWVG6Ty",
-      "t": "2026-10-06T15:36:35.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 486969.7037,
-      "sig": "zTexHt1wQj9eKktwdspZsti4a6nY6kF2bAPNdLyRmrvUCL75jYTQnEzau1ZGB5nx9CU9YhM38ZMQ1tCj2DSZxEH",
-      "t": "2026-10-16T14:19:03.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 71609.906149,
-      "sig": "zTexHt1wQj9eKktwdspZsti4a6nY6kF2bAPNdLyRmrvUCL75jYTQnEzau1ZGB5nx9CU9YhM38ZMQ1tCj2DSZxEH",
-      "t": "2026-10-16T14:19:03.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 435955.924891,
-      "sig": "9BU1zm8oAqEejrvj27ghA9BoBjbnumiQ6a1mzFgjjxUKkxwrBZe6MkLgXJtJo8rHKpRvsVoRURcmuS4jAMzkzgX",
-      "t": "2026-11-03T17:38:08.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "6Mo8W6b67brHWokLNeXPdfwH7B1ir3xYCGd4EcBen6eM",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 169286.231003,
-      "sig": "9BU1zm8oAqEejrvj27ghA9BoBjbnumiQ6a1mzFgjjxUKkxwrBZe6MkLgXJtJo8rHKpRvsVoRURcmuS4jAMzkzgX",
-      "t": "2026-11-03T17:38:08.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "7U8DUKAds4SKeKU9zWNdM6iVXrsLc7fx8VUY5sw2zjWz",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 302130.135019,
-      "sig": "44zXGBEYThYp2LpAbpR2AL6vRPDRUXvUDHLZVuQ43yvahSgxXb8rzthNYeUxGWpUrgtggfoHo539qcJPhzAhsmfD",
-      "t": "2026-11-16T14:42:39.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 241208.320125,
-      "sig": "44zXGBEYThYp2LpAbpR2AL6vRPDRUXvUDHLZVuQ43yvahSgxXb8rzthNYeUxGWpUrgtggfoHo539qcJPhzAhsmfD",
-      "t": "2026-11-16T14:42:39.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "6Mo8W6b67brHWokLNeXPdfwH7B1ir3xYCGd4EcBen6eM",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 147759.814915,
-      "sig": "44zXGBEYThYp2LpAbpR2AL6vRPDRUXvUDHLZVuQ43yvahSgxXb8rzthNYeUxGWpUrgtggfoHo539qcJPhzAhsmfD",
-      "t": "2026-11-16T14:42:39.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "8mUKxVLfHWBppvetbCDdQzmuSZRaaPyceN5AsNe8guTc",
-      "to": "5VXPSSnSxa2bP9HPdHXt9pCXVyfwXwRN8HRE2pyoN88M",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 60095.501744,
-      "sig": "44zXGBEYThYp2LpAbpR2AL6vRPDRUXvUDHLZVuQ43yvahSgxXb8rzthNYeUxGWpUrgtggfoHo539qcJPhzAhsmfD",
-      "t": "2026-11-16T14:42:39.000Z"
-     },
-     {
-      "hop": 2,
-      "from": "D9sdqZtSGfYV1gs6jCpQ7Ax3SnP6rxDChjm7qQYkpHVz",
-      "to": "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 735000,
-      "sig": "5ARvhbsugBw9eM4Ko5oH7PcVJ1Za62siEeZe7tuxSab9jgJKs6zaum4ouoHrLJNoinaejwNEhaXPzWepAHECWuJ1",
-      "t": "2026-09-22T17:16:26.000Z"
-     },
-     {
-      "hop": 2,
-      "from": "D9sdqZtSGfYV1gs6jCpQ7Ax3SnP6rxDChjm7qQYkpHVz",
-      "to": "FaoZEZFsRS2jJAzg5PXwNjDdA1hDAjDGAkDf4xRfY79w",
-      "kind": "DEX",
-      "venue": "dex",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 696926.786548,
-      "sig": "5ARvhbsugBw9eM4Ko5oH7PcVJ1Za62siEeZe7tuxSab9jgJKs6zaum4ouoHrLJNoinaejwNEhaXPzWepAHECWuJ1",
-      "t": "2026-09-22T17:16:26.000Z"
-     }
-    ],
-    "byKind": {
-     "unlabelled": 1431926.786548,
-     "DEX": 2401429.381157
+     "DEX": 3766643.888464
     },
     "unaccounted": 0
    },
@@ -2879,7 +2698,7 @@
     "label": "Team ops and admin wallet",
     "dest": "3uWEqNcNgUY8FpjPsH43Xq4prcyKAXhamo1amgy1trUw",
     "received": 3521350.067732,
-    "receivedUsd": 6323.7813056358345,
+    "receivedUsd": 5978.9707070035165,
     "t": "2026-11-07T06:12:14.000Z",
     "status": "done",
     "onward": [
@@ -2938,7 +2757,7 @@
     "label": "Team ops and admin wallet",
     "dest": "F9wCYEaem2CXEBjtmp8hAp7FEQD1KT6pDF6oaFLBLZDt",
     "received": 3211358.278166,
-    "receivedUsd": 5767.085650261629,
+    "receivedUsd": 5452.629447663614,
     "t": "2026-11-15T19:21:07.000Z",
     "status": "done",
     "onward": [
@@ -3097,7 +2916,7 @@
     "label": "Team ops and admin wallet",
     "dest": "6PN6NCxYbrHj1Aiw49S3FVXnRj3B5FXEdAteE5wPbkKQ",
     "received": 3167368.670866,
-    "receivedUsd": 5688.087353887997,
+    "receivedUsd": 5377.938613636798,
     "t": "2026-11-01T15:15:51.000Z",
     "status": "done",
     "onward": [
@@ -3215,109 +3034,6 @@
     "byKind": {
      "DEX": 3158404.960219,
      "unlabelled": 8963.710647
-    },
-    "unaccounted": 0
-   },
-   {
-    "wallet": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
-    "label": "Team ops and admin wallet",
-    "dest": "AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk",
-    "received": 2511956.105701,
-    "receivedUsd": 4511.071252862083,
-    "t": "2026-11-15T19:22:54.000Z",
-    "status": "done",
-    "onward": [
-     {
-      "hop": 1,
-      "from": "AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk",
-      "to": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 461209.640999,
-      "sig": "fnJDkvpfDkvHfngrx59Dp2xLENQnb591RQgxsNEk8LynfYb8hk9kb2ByjY9AsjCYd5qQHCwgxeQqNBsX6fx2CDm",
-      "t": "2026-09-02T15:21:30.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk",
-      "to": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 482000,
-      "sig": "4mezzohgURVgxdxJL167dvFGaB6ZiBSMmYHLYnvDte8uaTxcFDXxKWPdu6aPcpDxx3f56AgWYTRdjMgBmc5JUHYy",
-      "t": "2026-09-17T08:04:17.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk",
-      "to": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 321702.481478,
-      "sig": "X2pmEJSeEAZ6f5cWUT3WEyGkSmr8ubqWP5Gkcxd7o1okHTuaJ71ovo5W4otDdg7wKPCG4BLhq7uNiWocYv3zMkM",
-      "t": "2026-10-01T22:58:06.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk",
-      "to": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 369451.709617,
-      "sig": "2SghXLMCGD2su3wf6dh8VTyDUtu3wBnn59Qr4GeThMY758oRffHF4AeqjXgmWeEdGo2ZT98FRnQSceDu7y4PQkr4",
-      "t": "2026-10-17T10:43:10.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk",
-      "to": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 400067.209216,
-      "sig": "64y3ohQGdSCKbXgDYPvwGs28zviDhdwjuekyhYqNNeuBZZH1kKL4L2s6RCyf8RNYSaKHkceDE3GndcrtkuneGnZf",
-      "t": "2026-11-02T20:50:39.000Z"
-     },
-     {
-      "hop": 1,
-      "from": "AqUuUe114vG8Q7UCQumkJLXPthZT44HQaU5MScinD1wk",
-      "to": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "kind": "unlabelled",
-      "venue": null,
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 477525.064391,
-      "sig": "3PRzvCsJXXv9TBee4ogfBy6BP1PhLkz4t7s4V1CgUNuwJGYoGLhPQ7QUnYE2FJ9p5U2J5c7kezMqZ4tGNqn8MzDT",
-      "t": "2026-11-15T19:29:26.000Z"
-     },
-     {
-      "hop": 2,
-      "from": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "to": "EhDyxGpEz9hryw6MwiBB7898WEzcoGTCAjVQMHbo6Q1M",
-      "kind": "CEX",
-      "venue": "OKX",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 461209.640999,
-      "sig": "3rsDz925wGJefEBDZBusDoDCxThqZLQepvgvv3rh69QiEypEeAFcaZNH67cMaC7ZbQxwShMeaM9Qrwb49FrgXZhr",
-      "t": "2026-09-02T15:21:38.000Z"
-     },
-     {
-      "hop": 2,
-      "from": "DHnarQNhuwktFnEsG3ik4wHdEarLNY4oK7NzXhzjcGHK",
-      "to": "EhDyxGpEz9hryw6MwiBB7898WEzcoGTCAjVQMHbo6Q1M",
-      "kind": "CEX",
-      "venue": "OKX",
-      "mint": "ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU",
-      "amount": 482000,
-      "sig": "3g7t712cRwMhgEpd8YBYk4madGgXJ5Ck9EqFKqH14pxCEEZBWcGh8EDYxnaJiyYvSksyPZeWhjZiUEThJYCHgChn",
-      "t": "2026-09-17T08:04:38.000Z"
-     }
-    ],
-    "byKind": {
-     "unlabelled": 2511956.105701
     },
     "unaccounted": 0
    }
