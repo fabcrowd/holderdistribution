@@ -3,7 +3,7 @@
  "slug": "zebec-network",
  "name": "Zebec Network",
  "ticker": "ZBCN",
- "generated": "2026-11-23T11:26:11.000Z",
+ "generated": "2026-11-24T14:03:29.000Z",
  "windows": [
   "24h",
   "72h",
@@ -119,19 +119,19 @@
   "solana": {
    "status": "ok",
    "provider": "solana-rpc",
-   "signatures": 17,
-   "processed": 17,
+   "signatures": 10,
+   "processed": 10,
    "backlog": 0,
-   "transfers": 14,
-   "headTime": "2026-11-23T11:26:11.000Z"
+   "transfers": 9,
+   "headTime": "2026-11-24T14:03:29.000Z"
   }
  },
  "crossCheck": null,
  "botCluster": null,
  "byWindow": {
   "24h": {
-   "from": "2026-11-22T11:26:11.000Z",
-   "to": "2026-11-23T11:26:11.000Z",
+   "from": "2026-11-23T14:03:29.000Z",
+   "to": "2026-11-24T14:03:29.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -144,17 +144,16 @@
    "sellDays": 0,
    "internal": {
     "count": 1,
-    "amount": 68000000
+    "amount": 17000000
    },
-   "received": 0,
+   "received": 2431,
    "payments": {
-    "stableOut": 1095,
-    "stableOutCount": 3,
-    "stableIn": 85,
-    "stableInCount": 6,
+    "stableOut": 2000,
+    "stableOutCount": 1,
+    "stableIn": 6,
+    "stableInCount": 4,
     "bySymbol": {
-     "USDC": 1089,
-     "USDT": 5
+     "USDC": 2000
     },
     "topStableRecipients": [
      {
@@ -164,80 +163,51 @@
       "symbol": "USDC",
       "type": "stable_out",
       "count": 1,
-      "amount": 1000,
-      "lastHash": "9ZWY4BWEzYMSVeezJE7ND9vJqRtGuzmJgcgihacjn7wf5G2btQM95s44hJcJbJNbPZ44My9qDR6SYgzb8AToRoF",
-      "lastTime": 1795400673
-     },
-     {
-      "address": "5exko9JUD9JVDiGNLhJZjK9F4qFTxQbWYF3VMu7zzZ1H",
-      "label": null,
-      "asset": "stable",
-      "symbol": "USDC",
-      "type": "stable_out",
-      "count": 1,
-      "amount": 89,
-      "lastHash": "ugPdriUner3uB94317dov53CYcTJzFFWBn1MnWHM4bDcoVf7RDpk8Qe34PsEdeH1o4TNDUMUtnqRxoGecQPZcK3",
-      "lastTime": 1795397927
-     },
-     {
-      "address": "UUUXQdoC85FmgUgDMfYj3UsBWMLSjU7gVj4QmYGdMRx",
-      "label": null,
-      "asset": "stable",
-      "symbol": "USDT",
-      "type": "stable_out",
-      "count": 1,
-      "amount": 5,
-      "lastHash": "ttgPz6MjqRALegBBp81u9iYZDCPSkF4aDjEPHg7ParVbeRm2TA5E6HjFUjfLYbuLgRYsEzAQ5tuLkjSDkViu9Xh",
-      "lastTime": 1795397903
+      "amount": 2000,
+      "lastHash": "3qLPTc8cVxbZBGiDhkMnXxdWyCAFXgrntXsYRy13TT6ioyhvqM6DB2PvC9oZa46sCRRDAwijtMZYJti5xcLJ2ALP",
+      "lastTime": 1795445763
      }
     ],
     "topTokenDestinations": [
      {
-      "address": "A52sCEWY161FJAXg9LVu8LhfRomgiXa7SxMcJWyf4vyh",
+      "address": "DeTnsKVZcCn3anZC4wJZCmpWeJefVS1nLixsqL75AC6Y",
       "label": null,
       "asset": "token",
       "symbol": "ZBCN",
       "type": "transfer_out",
       "count": 2,
-      "amount": 34000100,
-      "lastHash": "2aSgusCrqfKbUiG16qi6GvRKBwkxtepAU8vA1J7b89kCQ9rCVya9zu1K1uYNEt1f2uMyq6txhoNbYibm8LpgKSMV",
-      "lastTime": 1795397709
-     },
-     {
-      "address": "DJ6EfAJp4ZrwRV54PF3cxE8zSmM15KQUEyQ2hzFTeeN2",
-      "label": null,
-      "asset": "token",
-      "symbol": "ZBCN",
-      "type": "transfer_out",
-      "count": 2,
-      "amount": 33999900,
-      "lastHash": "4pBjmGKCFDxpsvLZgntE7zHFiQ9rEkUaTiiEhXS54sT8UnZocFCTtB4q27oFfbaNoXPiSWvz6JEcwVVSK6ahLDTN",
-      "lastTime": 1795397721
+      "amount": 17000000,
+      "lastHash": "4yjPmutdN1LxnKAdrXRMZs7ZJZ3WB2ctFhgd6TGC7EYP81vVt1q9QtaKucCrPc8pix71PcZQ61XMnXE6bPDbVc3h",
+      "lastTime": 1795489951
      }
     ]
    },
    "byType": {
     "stable_in": {
-     "count": 6,
-     "amount": 85
+     "count": 4,
+     "amount": 6
     },
-    "stable_out": {
-     "count": 3,
-     "amount": 1095
+    "receive": {
+     "count": 1,
+     "amount": 2431
     },
     "transfer_out": {
-     "count": 4,
-     "amount": 68000000
+     "count": 2,
+     "amount": 17000000
     },
     "internal_shuffle": {
      "count": 1,
-     "amount": 68000000
+     "amount": 17000000
+    },
+    "stable_out": {
+     "count": 1,
+     "amount": 2000
     }
    }
   },
   "72h": {
-   "from": "2026-11-20T11:26:11.000Z",
-   "to": "2026-11-23T11:26:11.000Z",
+   "from": "2026-11-21T14:03:29.000Z",
+   "to": "2026-11-24T14:03:29.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -249,17 +219,17 @@
    "botSold": 0,
    "sellDays": 0,
    "internal": {
-    "count": 1,
-    "amount": 68000000
+    "count": 2,
+    "amount": 85000000
    },
-   "received": 0,
+   "received": 2431,
    "payments": {
-    "stableOut": 1095,
-    "stableOutCount": 3,
-    "stableIn": 95,
-    "stableInCount": 90,
+    "stableOut": 3095,
+    "stableOutCount": 4,
+    "stableIn": 101,
+    "stableInCount": 93,
     "bySymbol": {
-     "USDC": 1089,
+     "USDC": 3089,
      "USDT": 5
     },
     "topStableRecipients": [
@@ -269,10 +239,10 @@
       "asset": "stable",
       "symbol": "USDC",
       "type": "stable_out",
-      "count": 1,
-      "amount": 1000,
-      "lastHash": "9ZWY4BWEzYMSVeezJE7ND9vJqRtGuzmJgcgihacjn7wf5G2btQM95s44hJcJbJNbPZ44My9qDR6SYgzb8AToRoF",
-      "lastTime": 1795400673
+      "count": 2,
+      "amount": 3000,
+      "lastHash": "3qLPTc8cVxbZBGiDhkMnXxdWyCAFXgrntXsYRy13TT6ioyhvqM6DB2PvC9oZa46sCRRDAwijtMZYJti5xcLJ2ALP",
+      "lastTime": 1795445763
      },
      {
       "address": "5exko9JUD9JVDiGNLhJZjK9F4qFTxQbWYF3VMu7zzZ1H",
@@ -321,40 +291,44 @@
       "lastTime": 1795397721
      },
      {
-      "address": "G9ZnxaE6t4d8pV6A5Fh5NMMDMfr3Rk5ne17XPCkzZFLR",
+      "address": "DeTnsKVZcCn3anZC4wJZCmpWeJefVS1nLixsqL75AC6Y",
       "label": null,
       "asset": "token",
       "symbol": "ZBCN",
       "type": "transfer_out",
       "count": 2,
-      "amount": 1266156,
-      "lastHash": "4GsNdz4X9g8mEth3RUagdyYUEWtbCrDwHtPfev6sASTXBjqzsZNKrUjYAYhyAydsHKKAQmcwYNvigb95XoiQawWg",
-      "lastTime": 1795190191
+      "amount": 17000000,
+      "lastHash": "4yjPmutdN1LxnKAdrXRMZs7ZJZ3WB2ctFhgd6TGC7EYP81vVt1q9QtaKucCrPc8pix71PcZQ61XMnXE6bPDbVc3h",
+      "lastTime": 1795489951
      }
     ]
    },
    "byType": {
     "stable_in": {
-     "count": 90,
-     "amount": 95
+     "count": 93,
+     "amount": 101
     },
-    "stable_out": {
-     "count": 3,
-     "amount": 1095
+    "receive": {
+     "count": 1,
+     "amount": 2431
     },
     "transfer_out": {
      "count": 6,
-     "amount": 69266156
+     "amount": 85000000
     },
     "internal_shuffle": {
-     "count": 1,
-     "amount": 68000000
+     "count": 2,
+     "amount": 85000000
+    },
+    "stable_out": {
+     "count": 4,
+     "amount": 3095
     }
    }
   },
   "30d": {
-   "from": "2026-10-24T11:26:11.000Z",
-   "to": "2026-11-23T11:26:11.000Z",
+   "from": "2026-10-25T14:03:29.000Z",
+   "to": "2026-11-24T14:03:29.000Z",
    "devSold": {
     "dex": 0,
     "cex": 0,
@@ -366,17 +340,17 @@
    "botSold": 0,
    "sellDays": 0,
    "internal": {
-    "count": 6,
-    "amount": 258500000
+    "count": 7,
+    "amount": 275500000
    },
-   "received": 2883942,
+   "received": 2886373,
    "payments": {
-    "stableOut": 425925,
-    "stableOutCount": 30,
-    "stableIn": 426484,
-    "stableInCount": 574,
+    "stableOut": 296433,
+    "stableOutCount": 27,
+    "stableIn": 235147,
+    "stableInCount": 569,
     "bySymbol": {
-     "USDC": 425920,
+     "USDC": 296428,
      "USDT": 5
     },
     "topStableRecipients": [
@@ -386,8 +360,8 @@
       "asset": "stable",
       "symbol": "USDC",
       "type": "stable_out",
-      "count": 5,
-      "amount": 257319,
+      "count": 3,
+      "amount": 125838,
       "lastHash": "bmMjdWg5PkmoGTghRrSjshStWCpePMHtuW6D81o4RzjWch8rB7HrHVLtDdmkSvpRxdzSDDpDptVWkZByYtyKXyi",
       "lastTime": 1795101966
      },
@@ -408,10 +382,10 @@
       "asset": "stable",
       "symbol": "USDC",
       "type": "stable_out",
-      "count": 5,
-      "amount": 22750,
-      "lastHash": "9ZWY4BWEzYMSVeezJE7ND9vJqRtGuzmJgcgihacjn7wf5G2btQM95s44hJcJbJNbPZ44My9qDR6SYgzb8AToRoF",
-      "lastTime": 1795400673
+      "count": 6,
+      "amount": 24750,
+      "lastHash": "3qLPTc8cVxbZBGiDhkMnXxdWyCAFXgrntXsYRy13TT6ioyhvqM6DB2PvC9oZa46sCRRDAwijtMZYJti5xcLJ2ALP",
+      "lastTime": 1795445763
      },
      {
       "address": null,
@@ -419,8 +393,8 @@
       "asset": "stable",
       "symbol": "USDC",
       "type": "stable_out",
-      "count": 2,
-      "amount": 20009,
+      "count": 1,
+      "amount": 19998,
       "lastHash": "2e7u5dKZJ1uCV8SDRpmKYtoXZ4X4o8YUL6F7GFQTAjk7CZCkhUuHfGUW3yvUBuQX2ewsWYPf2ECXZ1bMGSf3jXMU",
       "lastTime": 1794411760
      },
@@ -548,6 +522,17 @@
       "lastTime": 1795397721
      },
      {
+      "address": "DeTnsKVZcCn3anZC4wJZCmpWeJefVS1nLixsqL75AC6Y",
+      "label": null,
+      "asset": "token",
+      "symbol": "ZBCN",
+      "type": "transfer_out",
+      "count": 2,
+      "amount": 17000000,
+      "lastHash": "4yjPmutdN1LxnKAdrXRMZs7ZJZ3WB2ctFhgd6TGC7EYP81vVt1q9QtaKucCrPc8pix71PcZQ61XMnXE6bPDbVc3h",
+      "lastTime": 1795489951
+     },
+     {
       "address": "D9sdqZtSGfYV1gs6jCpQ7Ax3SnP6rxDChjm7qQYkpHVz",
       "label": null,
       "asset": "token",
@@ -590,46 +575,35 @@
       "amount": 3521350,
       "lastHash": "hGru2Zq57RcAvyfpqt3MxHgpQwTe5Vu7fy9pR39x6UjxpxqnxKjpkeNb2j8GbSCPEGesiVMaW1bDB7mCrZfKaGH",
       "lastTime": 1794031934
-     },
-     {
-      "address": "ACjqBWqMhcbDTbnWitdFohrJebHmSA7tmX23Awt7n54e",
-      "label": null,
-      "asset": "token",
-      "symbol": "ZBCN",
-      "type": "transfer_out",
-      "count": 2,
-      "amount": 2619064,
-      "lastHash": "4EoD28trKkwrnYi5BsR8WfRxEfyvBQiC3gD3vxTcpSzhbU8jFdMoz3LqeochbcJoNycPVTp6TVXauNJUuRiygsfp",
-      "lastTime": 1794770439
      }
     ]
    },
    "byType": {
     "stable_in": {
-     "count": 574,
-     "amount": 426484
-    },
-    "stable_out": {
-     "count": 30,
-     "amount": 425925
-    },
-    "transfer_out": {
-     "count": 31,
-     "amount": 267653022
-    },
-    "internal_shuffle": {
-     "count": 6,
-     "amount": 258500000
+     "count": 569,
+     "amount": 235147
     },
     "receive": {
-     "count": 5,
-     "amount": 2883942
+     "count": 6,
+     "amount": 2886373
+    },
+    "transfer_out": {
+     "count": 33,
+     "amount": 284653022
+    },
+    "internal_shuffle": {
+     "count": 7,
+     "amount": 275500000
+    },
+    "stable_out": {
+     "count": 27,
+     "amount": 296433
     }
    }
   },
   "90d": {
-   "from": "2026-08-25T11:26:11.000Z",
-   "to": "2026-11-23T11:26:11.000Z",
+   "from": "2026-08-26T14:03:29.000Z",
+   "to": "2026-11-24T14:03:29.000Z",
    "devSold": {
     "dex": 1438999,
     "cex": 0,
@@ -641,17 +615,17 @@
    "botSold": 0,
    "sellDays": 1,
    "internal": {
-    "count": 16,
-    "amount": 1590738999
+    "count": 17,
+    "amount": 1607738999
    },
-   "received": 397918581,
+   "received": 397921012,
    "payments": {
-    "stableOut": 1209934,
-    "stableOutCount": 96,
-    "stableIn": 1186498,
-    "stableInCount": 859,
+    "stableOut": 1211934,
+    "stableOutCount": 97,
+    "stableIn": 1186504,
+    "stableInCount": 863,
     "bySymbol": {
-     "USDC": 1199929,
+     "USDC": 1201929,
      "USDT": 10005
     },
     "topStableRecipients": [
@@ -694,10 +668,10 @@
       "asset": "stable",
       "symbol": "USDC",
       "type": "stable_out",
-      "count": 5,
-      "amount": 22750,
-      "lastHash": "9ZWY4BWEzYMSVeezJE7ND9vJqRtGuzmJgcgihacjn7wf5G2btQM95s44hJcJbJNbPZ44My9qDR6SYgzb8AToRoF",
-      "lastTime": 1795400673
+      "count": 6,
+      "amount": 24750,
+      "lastHash": "3qLPTc8cVxbZBGiDhkMnXxdWyCAFXgrntXsYRy13TT6ioyhvqM6DB2PvC9oZa46sCRRDAwijtMZYJti5xcLJ2ALP",
+      "lastTime": 1795445763
      },
      {
       "address": "FyusG68vADkTKeZkeZPpWCGzULGt4Rbne7L2rJX1Eo44",
@@ -881,24 +855,24 @@
    },
    "byType": {
     "stable_in": {
-     "count": 859,
-     "amount": 1186498
-    },
-    "stable_out": {
-     "count": 96,
-     "amount": 1209934
-    },
-    "transfer_out": {
-     "count": 80,
-     "amount": 1286623552
-    },
-    "internal_shuffle": {
-     "count": 16,
-     "amount": 1590738999
+     "count": 863,
+     "amount": 1186504
     },
     "receive": {
-     "count": 15,
-     "amount": 397918581
+     "count": 16,
+     "amount": 397921012
+    },
+    "transfer_out": {
+     "count": 82,
+     "amount": 1303623552
+    },
+    "internal_shuffle": {
+     "count": 17,
+     "amount": 1607738999
+    },
+    "stable_out": {
+     "count": 97,
+     "amount": 1211934
     },
     "dex_sell": {
      "count": 4,
@@ -910,32 +884,32 @@
  "headlines": {
   "24h": [
    "No developer selling found in the last 24h.",
-   "They paid out $1.1k in stablecoins (3 payments); the largest recipient was HWERzRzAUKpt1yCDBRUz1sxUGiGUkGpc9Y1CP7M1Dvpo ($1.0k).",
-   "They received $85 in stablecoins (6 transfers).",
-   "Largest ZBCN destination: A52sCEWY161FJAXg9LVu8LhfRomgiXa7SxMcJWyf4vyh (34.0M ZBCN, 2 transfers).",
-   "1 internal shuffle between developer wallets (68.0M ZBCN) are noted but not counted as selling."
+   "They paid out $2.0k in stablecoins (1 payment); the largest recipient was HWERzRzAUKpt1yCDBRUz1sxUGiGUkGpc9Y1CP7M1Dvpo ($2.0k).",
+   "They received $6 in stablecoins (4 transfers).",
+   "Largest ZBCN destination: DeTnsKVZcCn3anZC4wJZCmpWeJefVS1nLixsqL75AC6Y (17.0M ZBCN, 2 transfers).",
+   "1 internal shuffle between developer wallets (17.0M ZBCN) are noted but not counted as selling."
   ],
   "72h": [
    "No developer selling found in the last 72h.",
-   "They paid out $1.1k in stablecoins (3 payments); the largest recipient was HWERzRzAUKpt1yCDBRUz1sxUGiGUkGpc9Y1CP7M1Dvpo ($1.0k).",
-   "They received $95 in stablecoins (90 transfers).",
+   "They paid out $3.1k in stablecoins (4 payments); the largest recipient was HWERzRzAUKpt1yCDBRUz1sxUGiGUkGpc9Y1CP7M1Dvpo ($3.0k).",
+   "They received $101 in stablecoins (93 transfers).",
    "Largest ZBCN destination: A52sCEWY161FJAXg9LVu8LhfRomgiXa7SxMcJWyf4vyh (34.0M ZBCN, 2 transfers).",
-   "1 internal shuffle between developer wallets (68.0M ZBCN) are noted but not counted as selling."
+   "2 internal shuffles between developer wallets (85.0M ZBCN) are noted but not counted as selling."
   ],
   "30d": [
    "No developer selling found in the last 30d.",
-   "They paid out $425.9k in stablecoins (30 payments); the largest recipient was 41zCUJsKk6cMB94DDtm99qWmyMZfp4GkAhhuz4xTwePu ($257.3k).",
-   "They received $426.5k in stablecoins (574 transfers).",
+   "They paid out $296.4k in stablecoins (27 payments); the largest recipient was 41zCUJsKk6cMB94DDtm99qWmyMZfp4GkAhhuz4xTwePu ($125.8k).",
+   "They received $235.1k in stablecoins (569 transfers).",
    "Largest ZBCN destination: AHrdAPnnPbUW2MeYiddAwmd8J4zmzNbcKiYzYfK3kqaY (85.1M ZBCN, 2 transfers).",
-   "6 internal shuffles between developer wallets (258.5M ZBCN) are noted but not counted as selling."
+   "7 internal shuffles between developer wallets (275.5M ZBCN) are noted but not counted as selling."
   ],
   "90d": [
    "Developer wallets sold 1.4M ZBCN in the last 90d: 1.4M on DEXs.",
    "Selling happened on 1 of 90 days (4 direct sale/deposit transactions).",
-   "They paid out $1.2M in stablecoins (96 payments); the largest recipient was 41zCUJsKk6cMB94DDtm99qWmyMZfp4GkAhhuz4xTwePu ($754.0k).",
-   "They received $1.2M in stablecoins (859 transfers).",
+   "They paid out $1.2M in stablecoins (97 payments); the largest recipient was 41zCUJsKk6cMB94DDtm99qWmyMZfp4GkAhhuz4xTwePu ($754.0k).",
+   "They received $1.2M in stablecoins (863 transfers).",
    "Largest ZBCN destination: GXD2FnXi718y9tPUd6CW1CW6khZ14DGtQc5cBpYkjm5J (353.0M ZBCN, 2 transfers).",
-   "16 internal shuffles between developer wallets (1.59B ZBCN) are noted but not counted as selling."
+   "17 internal shuffles between developer wallets (1.61B ZBCN) are noted but not counted as selling."
   ]
  },
  "developerWallets": [
@@ -1069,23 +1043,23 @@
     "72h": {
      "sold": 0,
      "stableOut": 0,
-     "internal": 1,
-     "txs": 1
+     "internal": 2,
+     "txs": 2
     },
     "30d": {
      "sold": 0,
      "stableOut": 0,
-     "internal": 6,
-     "txs": 6
+     "internal": 7,
+     "txs": 7
     },
     "90d": {
      "sold": 0,
      "stableOut": 0,
-     "internal": 13,
-     "txs": 15
+     "internal": 14,
+     "txs": 16
     }
    },
-   "lastActivity": "2026-11-23T01:30:43.000Z"
+   "lastActivity": "2026-11-24T03:09:21.000Z"
   },
   {
    "address": "9Sq2nZ481aiEkoDB9gavcfD6v7pr4LEcPnUdky4TEine",
@@ -1107,7 +1081,7 @@
      "sold": 0,
      "stableOut": 0,
      "internal": 0,
-     "txs": 3
+     "txs": 0
     },
     "30d": {
      "sold": 0,
@@ -1136,30 +1110,30 @@
    "windows": {
     "24h": {
      "sold": 0,
-     "stableOut": 95,
+     "stableOut": 0,
      "internal": 0,
-     "txs": 9
+     "txs": 5
     },
     "72h": {
      "sold": 0,
      "stableOut": 95,
      "internal": 0,
-     "txs": 92
+     "txs": 97
     },
     "30d": {
      "sold": 0,
      "stableOut": 109265,
      "internal": 0,
-     "txs": 110
+     "txs": 115
     },
     "90d": {
      "sold": 0,
      "stableOut": 309857,
      "internal": 0,
-     "txs": 186
+     "txs": 191
     }
    },
-   "lastActivity": "2026-11-23T01:38:47.000Z"
+   "lastActivity": "2026-11-24T03:15:05.000Z"
   },
   {
    "address": "FNuqKqgJLzJExhZQo1r8ZjQDQRp7hJX2j4bvE2hjcgtM",
@@ -1210,30 +1184,30 @@
    "windows": {
     "24h": {
      "sold": 0,
-     "stableOut": 1000,
+     "stableOut": 2000,
      "internal": 0,
-     "txs": 4
+     "txs": 3
     },
     "72h": {
      "sold": 0,
-     "stableOut": 1000,
+     "stableOut": 3000,
      "internal": 0,
-     "txs": 4
+     "txs": 7
     },
     "30d": {
      "sold": 0,
-     "stableOut": 316659,
+     "stableOut": 187168,
      "internal": 0,
-     "txs": 495
+     "txs": 485
     },
     "90d": {
      "sold": 0,
-     "stableOut": 893929,
+     "stableOut": 895929,
      "internal": 0,
-     "txs": 702
+     "txs": 705
     }
    },
-   "lastActivity": "2026-11-23T08:26:17.000Z"
+   "lastActivity": "2026-11-23T14:58:05.000Z"
   },
   {
    "address": "6enQZWHkQ5ayxyFbJXgrNdUwDZpcUon98SNCuVNSRbd2",
@@ -1385,25 +1359,6 @@
   }
  ],
  "daily": [
-  {
-   "date": "2026-08-26",
-   "devSold": 0,
-   "botSold": 0,
-   "botDevShare": 0,
-   "dexSell": 0,
-   "cexDeposit": 0,
-   "internal": 0,
-   "botFunding": 0,
-   "bridge": 0,
-   "custody": 0,
-   "staking": 0,
-   "burn": 0,
-   "transferOut": 5555556,
-   "receive": 0,
-   "stableIn": 0,
-   "stableOut": 0,
-   "stableInternal": 0
-  },
   {
    "date": "2026-08-27",
    "devSold": 0,
@@ -3092,7 +3047,26 @@
    "transferOut": 68000000,
    "receive": 0,
    "stableIn": 85,
-   "stableOut": 1095,
+   "stableOut": 3095,
+   "stableInternal": 0
+  },
+  {
+   "date": "2026-11-24",
+   "devSold": 0,
+   "botSold": 0,
+   "botDevShare": 0,
+   "dexSell": 0,
+   "cexDeposit": 0,
+   "internal": 17000000,
+   "botFunding": 0,
+   "bridge": 0,
+   "custody": 0,
+   "staking": 0,
+   "burn": 0,
+   "transferOut": 17000000,
+   "receive": 2431,
+   "stableIn": 6,
+   "stableOut": 0,
    "stableInternal": 0
   }
  ],
@@ -3259,6 +3233,177 @@
   }
  ],
  "events": [
+  {
+   "chain": "solana",
+   "hash": "5Zim673k8AN5svTByQWipYxBPnhbCjY8fjS7yfk8yNuQXLp2Jd4j4xsYqqza54DpgAXZo3RQ7eeUpKg1RtghHNgV",
+   "time": 1795490105,
+   "date": "2026-11-24",
+   "type": "stable_in",
+   "direction": "in",
+   "wallet": "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+   "walletLabel": "Team signer EsDV",
+   "counterparty": "DeTnmFBMG2Ni92xXQKgPrywFzB8R4HKrEVvtwEf3hC6Y",
+   "counterpartyLabel": null,
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 0.001,
+   "reason": "USDC arrived at Team signer EsDV from unlabelled wallet DeTnmF…hC6Y.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "5Zim673k8AN5svTByQWipYxBPnhbCjY8fjS7yfk8yNuQXLp2Jd4j4xsYqqza54DpgAXZo3RQ7eeUpKg1RtghHNgV:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:DeTnmFBMG2Ni92xXQKgPrywFzB8R4HKrEVvtwEf3hC6Y:EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k:1000"
+  },
+  {
+   "chain": "solana",
+   "hash": "2RKawobAn9E8GecwB9pLJ2yTm42irNutEybBq7bj7pXSwWrYdvGQkuDkCGYUfbB2cbFKoKUVcTkxg5PvAKkmiV5h",
+   "time": 1795489982,
+   "date": "2026-11-24",
+   "type": "receive",
+   "direction": "in",
+   "wallet": "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+   "walletLabel": "Team signer EsDV",
+   "counterparty": "7Xd5a9fsCzM83TW4y1kMh6VmcoLB1y88i96uR6oRJh7h",
+   "counterpartyLabel": "meteoraDlmm7Xd5",
+   "asset": "token",
+   "symbol": "ZBCN",
+   "amount": 2431.275514,
+   "reason": "Received from meteoraDlmm7Xd5, which is not a developer wallet.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "2RKawobAn9E8GecwB9pLJ2yTm42irNutEybBq7bj7pXSwWrYdvGQkuDkCGYUfbB2cbFKoKUVcTkxg5PvAKkmiV5h:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:7Xd5a9fsCzM83TW4y1kMh6VmcoLB1y88i96uR6oRJh7h:EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k:2431275514"
+  },
+  {
+   "chain": "solana",
+   "hash": "2RKawobAn9E8GecwB9pLJ2yTm42irNutEybBq7bj7pXSwWrYdvGQkuDkCGYUfbB2cbFKoKUVcTkxg5PvAKkmiV5h",
+   "time": 1795489982,
+   "date": "2026-11-24",
+   "type": "stable_in",
+   "direction": "in",
+   "wallet": "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+   "walletLabel": "Team signer EsDV",
+   "counterparty": "7Xd5a9fsCzM83TW4y1kMh6VmcoLB1y88i96uR6oRJh7h",
+   "counterpartyLabel": "meteoraDlmm7Xd5",
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 6.199868,
+   "reason": "USDC arrived at Team signer EsDV from meteoraDlmm7Xd5.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "2RKawobAn9E8GecwB9pLJ2yTm42irNutEybBq7bj7pXSwWrYdvGQkuDkCGYUfbB2cbFKoKUVcTkxg5PvAKkmiV5h:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:7Xd5a9fsCzM83TW4y1kMh6VmcoLB1y88i96uR6oRJh7h:EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k:6199868"
+  },
+  {
+   "chain": "solana",
+   "hash": "4yjPmutdN1LxnKAdrXRMZs7ZJZ3WB2ctFhgd6TGC7EYP81vVt1q9QtaKucCrPc8pix71PcZQ61XMnXE6bPDbVc3h",
+   "time": 1795489951,
+   "date": "2026-11-24",
+   "type": "transfer_out",
+   "direction": "out",
+   "wallet": "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+   "walletLabel": "Team signer EsDV",
+   "counterparty": "DeTnsKVZcCn3anZC4wJZCmpWeJefVS1nLixsqL75AC6Y",
+   "counterpartyLabel": null,
+   "asset": "token",
+   "symbol": "ZBCN",
+   "amount": 16999000,
+   "reason": "Recipient DeTnsK…AC6Y has no label, is not a developer wallet and the receipt has no Swap event.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "4yjPmutdN1LxnKAdrXRMZs7ZJZ3WB2ctFhgd6TGC7EYP81vVt1q9QtaKucCrPc8pix71PcZQ61XMnXE6bPDbVc3h:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k:DeTnsKVZcCn3anZC4wJZCmpWeJefVS1nLixsqL75AC6Y:16999000000000"
+  },
+  {
+   "chain": "solana",
+   "hash": "XhkbfcWEJJmR4TFt3VqhQenK5tCsTEqBGAbuYmmzwkk2DUTgw1dc3AxhaK7GwJsjeonPNNRaL5ok2KsMvBrAEnG",
+   "time": 1795489896,
+   "date": "2026-11-24",
+   "type": "transfer_out",
+   "direction": "out",
+   "wallet": "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+   "walletLabel": "Team signer EsDV",
+   "counterparty": "DeTnsKVZcCn3anZC4wJZCmpWeJefVS1nLixsqL75AC6Y",
+   "counterpartyLabel": null,
+   "asset": "token",
+   "symbol": "ZBCN",
+   "amount": 1000,
+   "reason": "Recipient DeTnsK…AC6Y has no label, is not a developer wallet and the receipt has no Swap event.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "XhkbfcWEJJmR4TFt3VqhQenK5tCsTEqBGAbuYmmzwkk2DUTgw1dc3AxhaK7GwJsjeonPNNRaL5ok2KsMvBrAEnG:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k:DeTnsKVZcCn3anZC4wJZCmpWeJefVS1nLixsqL75AC6Y:1000000000"
+  },
+  {
+   "chain": "solana",
+   "hash": "JNwu2q5KYgfoYUWAobWSZX39oFRWaKjFMxcpgX9utA5rMD6RjH8oYgUguNKaHAY7wGfYRDmxqvGaD3jGSqzAt65",
+   "time": 1795489761,
+   "date": "2026-11-24",
+   "type": "internal_shuffle",
+   "direction": "internal",
+   "wallet": "71LxiE4PvxdZxLmtGcoKAJEWKofPqYw5Wdn6PSpXHodV",
+   "walletLabel": "Treasury multisig vault 71Lx",
+   "counterparty": "EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k",
+   "counterpartyLabel": "Team signer EsDV",
+   "asset": "token",
+   "symbol": "ZBCN",
+   "amount": 17000000,
+   "reason": "Sender Treasury multisig vault 71Lx and recipient Team signer EsDV are both developer wallets (ledger developerWallets).",
+   "internal": true,
+   "headline": false,
+   "uniqueId": "JNwu2q5KYgfoYUWAobWSZX39oFRWaKjFMxcpgX9utA5rMD6RjH8oYgUguNKaHAY7wGfYRDmxqvGaD3jGSqzAt65:ZBCNpuD7YMXzTHB2fhGkGi78MNsHGLRXUhRewNRm9RU:71LxiE4PvxdZxLmtGcoKAJEWKofPqYw5Wdn6PSpXHodV:EsDV3m3xUZ7g8QKa1kFdbZT18nNz8ddGJRcTK84WDQ7k:17000000000000"
+  },
+  {
+   "chain": "solana",
+   "hash": "4k8xiGwCnxmWmoSqW7kGe9AKfnoUbTHHZthhZ9SYffnPW5mzcmpNws4wGQZsoHXYjbcFYUdWczKGHGcTr7LM5HJm",
+   "time": 1795445885,
+   "date": "2026-11-23",
+   "type": "stable_in",
+   "direction": "in",
+   "wallet": "G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7",
+   "walletLabel": "Team signer G82t",
+   "counterparty": "HWERGmiganmwuuFNz6oMsRWTJRwb9UKkgZnD2DPVDvpo",
+   "counterpartyLabel": null,
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 0.001,
+   "reason": "USDC arrived at Team signer G82t from unlabelled wallet HWERGm…Dvpo.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "4k8xiGwCnxmWmoSqW7kGe9AKfnoUbTHHZthhZ9SYffnPW5mzcmpNws4wGQZsoHXYjbcFYUdWczKGHGcTr7LM5HJm:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:HWERGmiganmwuuFNz6oMsRWTJRwb9UKkgZnD2DPVDvpo:G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7:1000"
+  },
+  {
+   "chain": "solana",
+   "hash": "2nZPPHESHTPWyKoDZ7ndAgFLt2pLja6fuamxjZDUfKpWjXMwwVHwX4i6ZUHxjPa3BCVwYHxakWDderhYt5KoKkem",
+   "time": 1795445792,
+   "date": "2026-11-23",
+   "type": "stable_in",
+   "direction": "in",
+   "wallet": "G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7",
+   "walletLabel": "Team signer G82t",
+   "counterparty": "4XazYPzeWN424un5UowzyHjZysNCB2sma3hhgB3kNPmS",
+   "counterpartyLabel": null,
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 0.00002,
+   "reason": "USDC arrived at Team signer G82t from unlabelled wallet 4XazYP…NPmS.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "2nZPPHESHTPWyKoDZ7ndAgFLt2pLja6fuamxjZDUfKpWjXMwwVHwX4i6ZUHxjPa3BCVwYHxakWDderhYt5KoKkem:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:4XazYPzeWN424un5UowzyHjZysNCB2sma3hhgB3kNPmS:G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7:20"
+  },
+  {
+   "chain": "solana",
+   "hash": "3qLPTc8cVxbZBGiDhkMnXxdWyCAFXgrntXsYRy13TT6ioyhvqM6DB2PvC9oZa46sCRRDAwijtMZYJti5xcLJ2ALP",
+   "time": 1795445763,
+   "date": "2026-11-23",
+   "type": "stable_out",
+   "direction": "out",
+   "wallet": "G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7",
+   "walletLabel": "Team signer G82t",
+   "counterparty": "HWERzRzAUKpt1yCDBRUz1sxUGiGUkGpc9Y1CP7M1Dvpo",
+   "counterpartyLabel": null,
+   "asset": "stable",
+   "symbol": "USDC",
+   "amount": 2000,
+   "reason": "USDC left Team signer G82t for unlabelled wallet HWERzR…Dvpo.",
+   "internal": false,
+   "headline": false,
+   "uniqueId": "3qLPTc8cVxbZBGiDhkMnXxdWyCAFXgrntXsYRy13TT6ioyhvqM6DB2PvC9oZa46sCRRDAwijtMZYJti5xcLJ2ALP:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v:G82tVZ6eu2YRPfGFFnPYs3qLz8HtAQXnsnmNKpqfMnx7:HWERzRzAUKpt1yCDBRUz1sxUGiGUkGpc9Y1CP7M1Dvpo:2000000000"
+  },
   {
    "chain": "solana",
    "hash": "T7AaKWgve6JCLHdcDzLYRKV6Lz6jUQtc3asX3hZvJJyT2wzGmo12M2SBvPgznqEbPKE1r3rF1srb9W9duwTzE9S",
