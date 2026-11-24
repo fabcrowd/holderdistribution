@@ -187,18 +187,30 @@
       }
     },
     "2026-11-24": {
-      "runs": 1,
+      "runs": 2,
       "alchemyCu": 0,
       "heliusCredits": 0,
       "alchemyCalls": 0,
       "heliusCalls": 0,
-      "publicCalls": 51,
+      "publicCalls": 101675,
       "byScript": {
         "generate-wallet-flows-hedera.js": {
           "processes": 1,
           "alchemyCu": 0,
           "heliusCredits": 0,
           "publicCalls": 51
+        },
+        "pull-holders-rpc.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 101576
+        },
+        "scan-hedera-flows.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 48
         }
       }
     }
