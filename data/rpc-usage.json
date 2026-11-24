@@ -988,18 +988,42 @@
       }
     },
     "2026-11-24": {
-      "runs": 1,
-      "alchemyCu": 0,
+      "runs": 2,
+      "alchemyCu": 618,
       "heliusCredits": 0,
-      "alchemyCalls": 0,
+      "alchemyCalls": 33,
       "heliusCalls": 0,
-      "publicCalls": 4141,
+      "publicCalls": 8207,
       "byScript": {
         "generate-wallet-flows.js": {
           "processes": 1,
           "alchemyCu": 0,
           "heliusCredits": 0,
           "publicCalls": 4141
+        },
+        "pull-staker-balances.js": {
+          "processes": 1,
+          "alchemyCu": 618,
+          "heliusCredits": 0,
+          "publicCalls": 0
+        },
+        "pull-holders-rpc.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 1433
+        },
+        "scan-exchange-flows.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 446
+        },
+        "generate-tier-outflows.js": {
+          "processes": 1,
+          "alchemyCu": 0,
+          "heliusCredits": 0,
+          "publicCalls": 2187
         }
       }
     }
