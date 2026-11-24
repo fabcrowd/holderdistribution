@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-11-23T09:02:05.260Z",
+  "generatedAt": "2026-11-24T10:57:53.588Z",
   "asOf": {
-    "date": "2026-11-22",
+    "date": "2026-11-23",
     "blocks": {
-      "ethereum": 26474105,
-      "polygon": 97791020,
-      "base": 61008121
+      "ethereum": 26481281,
+      "polygon": 97848620,
+      "base": 61440121
     },
     "settled": true
   },
@@ -18,28 +18,28 @@
     "totalSupply": 100000000000,
     "originChain": "ethereum",
     "byChain": {
-      "ethereum": 59305906389.271286,
-      "polygon": 39802329228.552284,
-      "base": 891764382.1764312
+      "ethereum": 59299389206.9625,
+      "polygon": 39816194144.35637,
+      "base": 884416648.6811297
     },
-    "bridgeLocked": 40221117716.1,
-    "mirrorResidual": -530291.1100006104,
-    "v3Residual": 0.000003814697265625,
-    "crossCheckTotal": 99999469708.85428,
+    "bridgeLocked": 40220466536.939995,
+    "mirrorResidual": -530291.109992981,
+    "v3Residual": 0,
+    "crossCheckTotal": 99999469708.85379,
     "tokens": {
       "legacy": {
         "ethereum": 100000000000,
-        "polygon": 39352601500.21,
+        "polygon": 39351950321.05,
         "base": 867985924.78
       },
       "v3": {
-        "ethereum": 4844372557.923238,
-        "polygon": 21276972920.78126,
-        "base": 192241678.615501
+        "ethereum": 4859376160.553945,
+        "polygon": 21358887857.36585,
+        "base": 184893945.120207
       },
       "retiredLegacy": {
-        "ethereum": 5317878743.69,
-        "polygon": 20827245192.44,
+        "ethereum": 5340050707.79,
+        "polygon": 20894644034.06,
         "base": 168463221.19
       },
       "strandedInUpgrade": {
@@ -51,8 +51,8 @@
   },
   "source": {
     "type": "rpc",
-    "snapshotDate": "2026-11-22",
-    "refreshedAt": "2026-11-23T09:02:05.260Z",
+    "snapshotDate": "2026-11-23",
+    "refreshedAt": "2026-11-24T10:57:53.588Z",
     "upstream": "rpc"
   },
   "chainOrder": [
@@ -65,6 +65,26 @@
       "key": "combined",
       "label": "Combined",
       "metrics": {
+        "holderCount": 102147,
+        "totalBalance": 66532298191.34936,
+        "retail": {
+          "count": 102147,
+          "balance": 66532298191.34936
+        },
+        "underThreshold": {
+          "count": 0,
+          "balance": 0
+        },
+        "mega": {
+          "count": 0,
+          "balance": 0
+        },
+        "excluded": {
+          "count": 0,
+          "balance": 0
+        }
+      },
+      "previousMetrics": {
         "holderCount": 102145,
         "totalBalance": 66550428108.42986,
         "retail": {
@@ -84,28 +104,17 @@
           "balance": 0
         }
       },
-      "previousMetrics": {
-        "holderCount": 102166,
-        "totalBalance": 66530475379.97993,
-        "retail": {
-          "count": 102166,
-          "balance": 66530475379.97993
-        },
-        "underThreshold": {
-          "count": 0,
-          "balance": 0
-        },
-        "mega": {
-          "count": 0,
-          "balance": 0
-        },
-        "excluded": {
-          "count": 0,
-          "balance": 0
-        }
-      },
       "concentration": {
         "top": {
+          "10": 5008839174.599999,
+          "25": 8780173625.075762,
+          "50": 12453568323.492361,
+          "100": 16909118875.240097,
+          "250": 24155475079.46031,
+          "500": 30766959729.922626,
+          "1000": 38366055738.462975
+        },
+        "previousTop": {
           "10": 5041084360.529999,
           "25": 8812418811.005762,
           "50": 12493317926.569227,
@@ -113,73 +122,64 @@
           "250": 24196542614.865746,
           "500": 30792688794.538494,
           "1000": 38382176133.75948
-        },
-        "previousTop": {
-          "10": 5020353831.419999,
-          "25": 8791688281.895761,
-          "50": 12483706428.436628,
-          "100": 16943732863.54413,
-          "250": 24179334532.587666,
-          "500": 30775480712.260414,
-          "1000": 38370703429.24244
         }
       },
       "balanceStats": {
-        "count": 102145,
-        "total": 66550428108.42986,
-        "average": 651528.9843695713,
-        "median": 9893.01,
-        "p50": 9893.01,
-        "p75": 98454.78,
-        "p90": 654174.5840000003,
-        "p99": 11015957.8652,
-        "gini": 0.9439613226904262,
+        "count": 102147,
+        "total": 66532298191.34936,
+        "average": 651338.7391832296,
+        "median": 9890.84,
+        "p50": 9890.84,
+        "p75": 98475.135,
+        "p90": 653785.0960000003,
+        "p99": 11011409.26659994,
+        "gini": 0.9439488441742275,
         "distributionBuckets": [
           {
             "rangeLabel": "1–100",
-            "count": 9004
+            "count": 9003
           },
           {
             "rangeLabel": "100–1K",
-            "count": 8775
+            "count": 8777
           },
           {
             "rangeLabel": "1K–10K",
-            "count": 22439
+            "count": 22441
           },
           {
             "rangeLabel": "10K–100K",
-            "count": 25702
+            "count": 25692
           },
           {
             "rangeLabel": "100K–1M",
-            "count": 17061
+            "count": 17071
           },
           {
             "rangeLabel": "1M–10M",
-            "count": 6960
+            "count": 6955
           },
           {
             "rangeLabel": "10M+",
-            "count": 1208
+            "count": 1206
           }
         ],
         "averageRangeLabel": "100K–1M"
       },
       "stakingStats": {
         "stakerCount": 2035,
-        "holderCount": 102145,
-        "stakedTotal": 3596469305.123557,
-        "stakedShareOfRetail": 0.0540412647573637,
-        "stakerShareOfHolders": 0.019922658965196533,
-        "averageStakedPerStaker": 1767306.7838444998,
+        "holderCount": 102147,
+        "stakedTotal": 3596652875.692776,
+        "stakedShareOfRetail": 0.05405875001264302,
+        "stakerShareOfHolders": 0.01992226888699619,
+        "averageStakedPerStaker": 1767396.9905124207,
         "legacy": {
-          "stakerCount": 1149,
-          "stakedTotal": 654402229.6
+          "stakerCount": 1147,
+          "stakedTotal": 643648828.11
         },
         "v3": {
-          "stakerCount": 886,
-          "stakedTotal": 2942067075.523557,
+          "stakerCount": 888,
+          "stakedTotal": 2953004047.582776,
           "deployDate": "2026-09-01",
           "deployBlock": 93048895,
           "module": "0x573105be2148b8621f202a6d510016a2aa825731"
@@ -223,110 +223,130 @@
         {
           "label": "500M+",
           "count": 4,
-          "totalBalance": 2587363702.3599997,
-          "percent": 3.8878242798745593,
+          "totalBalance": 2550166521.39,
+          "percent": 3.8329752476844052,
           "previousCount": 4,
-          "previousTotalBalance": 2577611206.0699997,
-          "previousPercent": 3.8743315621124266
+          "previousTotalBalance": 2587363702.3599997,
+          "previousPercent": 3.8878242798745593
         },
         {
           "label": "250M-500M",
           "count": 14,
-          "totalBalance": 4691539567.47,
-          "percent": 7.049600882846504,
+          "totalBalance": 4696491562.51,
+          "percent": 7.058964878986618,
           "previousCount": 14,
-          "previousTotalBalance": 4680561534.650001,
-          "previousPercent": 7.03521432534128
+          "previousTotalBalance": 4691539567.47,
+          "previousPercent": 7.049600882846504
         },
         {
           "label": "100M-250M",
           "count": 49,
-          "totalBalance": 7038341208.830686,
-          "percent": 10.575951814108837,
+          "totalBalance": 7031087361.982757,
+          "percent": 10.567930994599177,
           "previousCount": 49,
-          "previousTotalBalance": 7049460239.808089,
-          "previousPercent": 10.595836268335734
+          "previousTotalBalance": 7038341208.830686,
+          "previousPercent": 10.575951814108837
         },
         {
           "label": "50M-100M",
-          "count": 100,
-          "totalBalance": 6345093607.462277,
-          "percent": 9.534264147969548,
+          "count": 98,
+          "totalBalance": 6237127555.434773,
+          "percent": 9.37458606569784,
           "previousCount": 100,
-          "previousTotalBalance": 6337987892.156795,
-          "previousPercent": 9.526443116418788
+          "previousTotalBalance": 6345093607.462277,
+          "previousPercent": 9.534264147969548
         },
         {
           "label": "25M-50M",
-          "count": 213,
-          "totalBalance": 7428164886.150504,
-          "percent": 11.161708643027628,
+          "count": 216,
+          "totalBalance": 7570219536.230067,
+          "percent": 11.378262501105606,
           "previousCount": 213,
-          "previousTotalBalance": 7427674017.310504,
-          "previousPercent": 11.16431826901632
+          "previousTotalBalance": 7428164886.150504,
+          "previousPercent": 11.161708643027628
         },
         {
           "label": "10M-25M",
-          "count": 828,
-          "totalBalance": 12458575017.25134,
-          "percent": 18.720503190381773,
-          "previousCount": 829,
-          "previousTotalBalance": 12475627394.933867,
-          "previousPercent": 18.751748463664185
+          "count": 825,
+          "totalBalance": 12425663938.237082,
+          "percent": 18.67613817051744,
+          "previousCount": 828,
+          "previousTotalBalance": 12458575017.25134,
+          "previousPercent": 18.720503190381773
         },
         {
           "label": "5M-10M",
-          "count": 1055,
-          "totalBalance": 7127090081.756866,
-          "percent": 10.709307639831826,
-          "previousCount": 1053,
-          "previousTotalBalance": 7115714882.012856,
-          "previousPercent": 10.695421671605983
+          "count": 1056,
+          "totalBalance": 7148107111.2671585,
+          "percent": 10.74381511774768,
+          "previousCount": 1055,
+          "previousTotalBalance": 7127090081.756866,
+          "previousPercent": 10.709307639831826
         },
         {
           "label": "1M-5M",
-          "count": 5905,
-          "totalBalance": 12261994400.497147,
-          "percent": 18.425117236689772,
-          "previousCount": 5903,
-          "previousTotalBalance": 12250829771.628948,
-          "previousPercent": 18.413861770354067
+          "count": 5899,
+          "totalBalance": 12254856178.874447,
+          "percent": 18.41940908704074,
+          "previousCount": 5905,
+          "previousTotalBalance": 12261994400.497147,
+          "previousPercent": 18.425117236689772
         },
         {
           "label": "250K-1M",
-          "count": 8258,
-          "totalBalance": 4210871003.295746,
-          "percent": 6.327338715890784,
-          "previousCount": 8262,
-          "previousTotalBalance": 4213428498.132282,
-          "previousPercent": 6.333080402729498
+          "count": 8266,
+          "totalBalance": 4217306173.600171,
+          "percent": 6.33873515306963,
+          "previousCount": 8258,
+          "previousTotalBalance": 4210871003.295746,
+          "previousPercent": 6.327338715890784
         },
         {
           "label": "1-250K",
-          "count": 85719,
-          "totalBalance": 2401392110.679762,
-          "percent": 3.608379658756215,
-          "previousCount": 85739,
-          "previousTotalBalance": 2401577423.239705,
-          "previousPercent": 3.609740362628429
+          "count": 85720,
+          "totalBalance": 2401269726.8606334,
+          "percent": 3.6091789884583463,
+          "previousCount": 85719,
+          "previousTotalBalance": 2401392110.679762,
+          "previousPercent": 3.608379658756215
         }
       ],
       "velocity": {
-        "currentCount": 99524,
-        "previousCount": 99545,
-        "added": 39,
-        "removed": 60,
-        "net": -21,
-        "days": 1.0410138773148148,
-        "addedPerDay": 37.46347752884561,
-        "removedPerDay": 57.63611927514709,
-        "netPerDay": -20.17264174630148
+        "currentCount": 99527,
+        "previousCount": 99524,
+        "added": 46,
+        "removed": 43,
+        "net": 3,
+        "days": 1.080420462962963,
+        "addedPerDay": 42.576017001611426,
+        "removedPerDay": 39.79932024063677,
+        "netPerDay": 2.7766967609746582
       }
     },
     "ethereum": {
       "key": "ethereum",
       "label": "ethereum",
       "metrics": {
+        "holderCount": 58922,
+        "totalBalance": 31875257928.992153,
+        "retail": {
+          "count": 58922,
+          "balance": 31875257928.992153
+        },
+        "underThreshold": {
+          "count": 0,
+          "balance": 0
+        },
+        "mega": {
+          "count": 0,
+          "balance": 0
+        },
+        "excluded": {
+          "count": 0,
+          "balance": 0
+        }
+      },
+      "previousMetrics": {
         "holderCount": 58927,
         "totalBalance": 31866790232.521423,
         "retail": {
@@ -346,28 +366,17 @@
           "balance": 0
         }
       },
-      "previousMetrics": {
-        "holderCount": 58956,
-        "totalBalance": 31859996136.674046,
-        "retail": {
-          "count": 58956,
-          "balance": 31859996136.674046
-        },
-        "underThreshold": {
-          "count": 0,
-          "balance": 0
-        },
-        "mega": {
-          "count": 0,
-          "balance": 0
-        },
-        "excluded": {
-          "count": 0,
-          "balance": 0
-        }
-      },
       "concentration": {
         "top": {
+          "10": 3885659087.0599995,
+          "25": 6674980935.799999,
+          "50": 8878384726.256607,
+          "100": 11315297169.359362,
+          "250": 15105708511.443033,
+          "500": 18324339814.282032,
+          "1000": 21656957984.072044
+        },
+        "previousTop": {
           "10": 3880707092.0199995,
           "25": 6670028940.759999,
           "50": 8878600016.350658,
@@ -375,27 +384,18 @@
           "250": 15100707719.247084,
           "500": 18319053720.849274,
           "1000": 21648027495.122543
-        },
-        "previousTop": {
-          "10": 3869729059.1999993,
-          "25": 6659050907.939999,
-          "50": 8876320922.225258,
-          "100": 11305665267.998013,
-          "250": 15095705095.961683,
-          "500": 18314004764.13996,
-          "1000": 21644963455.287567
         }
       },
       "balanceStats": {
-        "count": 58927,
-        "total": 31866790232.521423,
-        "average": 540784.1945546425,
-        "median": 14672.4,
-        "p50": 14672.4,
+        "count": 58922,
+        "total": 31875257928.992153,
+        "average": 540973.7946606048,
+        "median": 14672.01,
+        "p50": 14672.01,
         "p75": 100000,
-        "p90": 522543.48000000004,
-        "p99": 8196157.770127919,
-        "gini": 0.937352482999314,
+        "p90": 522561.636,
+        "p99": 8200981.993800002,
+        "gini": 0.9373608854309033,
         "distributionBuckets": [
           {
             "rangeLabel": "1–100",
@@ -403,7 +403,7 @@
           },
           {
             "rangeLabel": "100–1K",
-            "count": 4908
+            "count": 4906
           },
           {
             "rangeLabel": "1K–10K",
@@ -411,15 +411,15 @@
           },
           {
             "rangeLabel": "10K–100K",
-            "count": 18472
+            "count": 18467
           },
           {
             "rangeLabel": "100K–1M",
-            "count": 10822
+            "count": 10821
           },
           {
             "rangeLabel": "1M–10M",
-            "count": 3550
+            "count": 3552
           },
           {
             "rangeLabel": "10M+",
@@ -430,7 +430,7 @@
       },
       "stakingStats": {
         "stakerCount": 0,
-        "holderCount": 58927,
+        "holderCount": 58922,
         "stakedTotal": 0,
         "stakedShareOfRetail": 0,
         "stakerShareOfHolders": 0,
@@ -446,109 +446,129 @@
           "label": "500M+",
           "count": 2,
           "totalBalance": 1253275534.9299998,
-          "percent": 3.9328577675544443,
+          "percent": 3.931812999668569,
           "previousCount": 2,
           "previousTotalBalance": 1253275534.9299998,
-          "previousPercent": 3.9336964435075816
+          "previousPercent": 3.9328577675544443
         },
         {
           "label": "250M-500M",
           "count": 9,
-          "totalBalance": 2877431557.09,
-          "percent": 9.02956192353963,
+          "totalBalance": 2882383552.13,
+          "percent": 9.042698755727798,
           "previousCount": 9,
-          "previousTotalBalance": 2866453524.2700005,
-          "previousPercent": 8.997030357359101
+          "previousTotalBalance": 2877431557.09,
+          "previousPercent": 9.02956192353963
         },
         {
           "label": "100M-250M",
           "count": 23,
           "totalBalance": 3506801214.96,
-          "percent": 11.004563651914836,
+          "percent": 11.001640277772898,
           "previousCount": 23,
           "previousTotalBalance": 3506801214.96,
-          "previousPercent": 11.006910358420667
+          "previousPercent": 11.004563651914836
         },
         {
           "label": "50M-100M",
           "count": 41,
-          "totalBalance": 2589698222.941738,
-          "percent": 8.126636551863452,
+          "totalBalance": 2589866374.817687,
+          "percent": 8.125005233172006,
           "previousCount": 41,
-          "previousTotalBalance": 2596164501.3163376,
-          "previousPercent": 8.14866546178859
+          "previousTotalBalance": 2589698222.941738,
+          "previousPercent": 8.126636551863452
         },
         {
           "label": "25M-50M",
           "count": 85,
-          "totalBalance": 2999650931.201672,
-          "percent": 9.413094037128346,
+          "totalBalance": 2999531576.481672,
+          "percent": 9.410218995446769,
           "previousCount": 85,
-          "previousTotalBalance": 2999160062.361672,
-          "previousPercent": 9.413560659253623
+          "previousTotalBalance": 2999650931.201672,
+          "previousPercent": 9.413094037128346
         },
         {
           "label": "10M-25M",
           "count": 333,
-          "totalBalance": 5022298944.365864,
-          "percent": 15.760291223935043,
-          "previousCount": 334,
-          "previousTotalBalance": 5032218167.391954,
-          "previousPercent": 15.794785868160755
+          "totalBalance": 5022584245.602672,
+          "percent": 15.756999541121761,
+          "previousCount": 333,
+          "previousTotalBalance": 5022298944.365864,
+          "previousPercent": 15.760291223935043
         },
         {
           "label": "5M-10M",
           "count": 489,
-          "totalBalance": 3309666224.325212,
-          "percent": 10.385941603078543,
-          "previousCount": 488,
-          "previousTotalBalance": 3301685584.7495475,
-          "previousPercent": 10.363107297897557
+          "totalBalance": 3313310619.841959,
+          "percent": 10.394615871730204,
+          "previousCount": 489,
+          "previousTotalBalance": 3309666224.325212,
+          "previousPercent": 10.385941603078543
         },
         {
           "label": "1M-5M",
-          "count": 3061,
-          "totalBalance": 6202522964.517152,
-          "percent": 19.46390872522584,
-          "previousCount": 3058,
-          "previousTotalBalance": 6194233810.420729,
-          "previousPercent": 19.44204193826171
+          "count": 3063,
+          "totalBalance": 6203819971.1635,
+          "percent": 19.462807124521532,
+          "previousCount": 3061,
+          "previousTotalBalance": 6202522964.517152,
+          "previousPercent": 19.46390872522584
         },
         {
           "label": "250K-1M",
-          "count": 4906,
-          "totalBalance": 2458590960.2840543,
-          "percent": 7.715213682785525,
-          "previousCount": 4912,
-          "previousTotalBalance": 2462352446.3365645,
-          "previousPercent": 7.728665238292827
+          "count": 4904,
+          "totalBalance": 2456761607.5696945,
+          "percent": 7.707425028661952,
+          "previousCount": 4906,
+          "previousTotalBalance": 2458590960.2840543,
+          "previousPercent": 7.715213682785525
         },
         {
           "label": "1-250K",
-          "count": 49978,
-          "totalBalance": 1646852828.1144578,
-          "percent": 5.167928166275667,
-          "previousCount": 50004,
-          "previousTotalBalance": 1647650440.1459558,
-          "previousPercent": 5.171533709790207
+          "count": 49973,
+          "totalBalance": 1646922382.023664,
+          "percent": 5.166773507190055,
+          "previousCount": 49978,
+          "previousTotalBalance": 1646852828.1144578,
+          "previousPercent": 5.167928166275667
         }
       ],
       "velocity": {
-        "currentCount": 58927,
-        "previousCount": 58956,
-        "added": 20,
-        "removed": 49,
-        "net": -29,
-        "days": 1.0410138773148148,
-        "addedPerDay": 19.212039758382364,
-        "removedPerDay": 47.06949740803679,
-        "netPerDay": -27.857457649654425
+        "currentCount": 58922,
+        "previousCount": 58927,
+        "added": 22,
+        "removed": 27,
+        "net": -5,
+        "days": 1.080420462962963,
+        "addedPerDay": 20.36244291381416,
+        "removedPerDay": 24.990270848771925,
+        "netPerDay": -4.627827934957764
       }
     },
     "polygon": {
       "key": "polygon",
       "label": "polygon",
       "metrics": {
+        "holderCount": 38383,
+        "totalBalance": 34213667867.47895,
+        "retail": {
+          "count": 38383,
+          "balance": 34213667867.47895
+        },
+        "underThreshold": {
+          "count": 0,
+          "balance": 0
+        },
+        "mega": {
+          "count": 0,
+          "balance": 0
+        },
+        "excluded": {
+          "count": 0,
+          "balance": 0
+        }
+      },
+      "previousMetrics": {
         "holderCount": 38382,
         "totalBalance": 34232917747.53489,
         "retail": {
@@ -568,28 +588,17 @@
           "balance": 0
         }
       },
-      "previousMetrics": {
-        "holderCount": 38374,
-        "totalBalance": 34215252232.14582,
-        "retail": {
-          "count": 38374,
-          "balance": 34215252232.14582
-        },
-        "underThreshold": {
-          "count": 0,
-          "balance": 0
-        },
-        "mega": {
-          "count": 0,
-          "balance": 0
-        },
-        "excluded": {
-          "count": 0,
-          "balance": 0
-        }
-      },
       "concentration": {
         "top": {
+          "10": 3671939707.2789593,
+          "25": 5778587387.692363,
+          "50": 8028040988.12485,
+          "100": 10750671770.851112,
+          "250": 15511229821.168169,
+          "500": 19820831948.83271,
+          "1000": 24416668239.639786
+        },
+        "previousTop": {
           "10": 3709636888.2489595,
           "25": 5823288985.809225,
           "50": 8072492015.94278,
@@ -597,73 +606,64 @@
           "250": 15538704183.526535,
           "500": 19836282836.079308,
           "1000": 24433354890.69322
-        },
-        "previousTop": {
-          "10": 3700634391.9589596,
-          "25": 5824655520.496628,
-          "50": 8055933343.768817,
-          "100": 10779610274.646444,
-          "250": 15520068199.213938,
-          "500": 19824730414.4365,
-          "1000": 24424022668.50905
         }
       },
       "balanceStats": {
-        "count": 38382,
-        "total": 34232917747.53489,
-        "average": 891900.3112796334,
+        "count": 38383,
+        "total": 34213667867.47895,
+        "average": 891375.5534345661,
         "median": 5000,
         "p50": 5000,
-        "p75": 104349.4225,
-        "p90": 1015438.8700000001,
-        "p99": 16227369.58000018,
-        "gini": 0.9436037430754556,
+        "p75": 104342.595,
+        "p90": 1014925.2000000011,
+        "p99": 16308785.705800029,
+        "gini": 0.9435763827035679,
         "distributionBuckets": [
           {
             "rangeLabel": "1–100",
-            "count": 6497
+            "count": 6494
           },
           {
             "rangeLabel": "100–1K",
-            "count": 3413
+            "count": 3417
           },
           {
             "rangeLabel": "1K–10K",
-            "count": 6598
+            "count": 6601
           },
           {
             "rangeLabel": "10K–100K",
-            "count": 6498
+            "count": 6489
           },
           {
             "rangeLabel": "100K–1M",
-            "count": 5856
+            "count": 5866
           },
           {
             "rangeLabel": "1M–10M",
-            "count": 3345
+            "count": 3339
           },
           {
             "rangeLabel": "10M+",
-            "count": 708
+            "count": 706
           }
         ],
         "averageRangeLabel": "100K–1M"
       },
       "stakingStats": {
         "stakerCount": 2035,
-        "holderCount": 38382,
-        "stakedTotal": 3596469305.123557,
-        "stakedShareOfRetail": 0.10505880134574677,
-        "stakerShareOfHolders": 0.053019644625084676,
-        "averageStakedPerStaker": 1767306.7838444998,
+        "holderCount": 38383,
+        "stakedTotal": 3596652875.692776,
+        "stakedShareOfRetail": 0.1051232767449495,
+        "stakerShareOfHolders": 0.053018263293645625,
+        "averageStakedPerStaker": 1767396.9905124207,
         "legacy": {
-          "stakerCount": 1149,
-          "stakedTotal": 654402229.6
+          "stakerCount": 1147,
+          "stakedTotal": 643648828.11
         },
         "v3": {
-          "stakerCount": 886,
-          "stakedTotal": 2942067075.523557,
+          "stakerCount": 888,
+          "stakedTotal": 2953004047.582776,
           "deployDate": "2026-09-01",
           "deployBlock": 93048895,
           "module": "0x573105be2148b8621f202a6d510016a2aa825731"
@@ -707,110 +707,130 @@
         {
           "label": "500M+",
           "count": 2,
-          "totalBalance": 1334088167.4299998,
-          "percent": 3.897091615937608,
+          "totalBalance": 1296890986.46,
+          "percent": 3.7905640268774903,
           "previousCount": 2,
-          "previousTotalBalance": 1324335671.1399999,
-          "previousPercent": 3.87060034558437
+          "previousTotalBalance": 1334088167.4299998,
+          "previousPercent": 3.897091615937608
         },
         {
           "label": "250M-500M",
           "count": 5,
           "totalBalance": 1814108010.3799999,
-          "percent": 5.299308764034973,
+          "percent": 5.302290351933768,
           "previousCount": 5,
           "previousTotalBalance": 1814108010.3799999,
-          "previousPercent": 5.302044825130981
+          "previousPercent": 5.299308764034973
         },
         {
           "label": "100M-250M",
           "count": 26,
-          "totalBalance": 3531539993.8706875,
-          "percent": 10.31621090529157,
+          "totalBalance": 3524286147.022757,
+          "percent": 10.300813583254223,
           "previousCount": 26,
-          "previousTotalBalance": 3542659024.84809,
-          "previousPercent": 10.354034513063448
+          "previousTotalBalance": 3531539993.8706875,
+          "previousPercent": 10.31621090529157
         },
         {
           "label": "50M-100M",
-          "count": 58,
-          "totalBalance": 3685720700.6704082,
-          "percent": 10.766598184391738,
+          "count": 56,
+          "totalBalance": 3583589264.4204082,
+          "percent": 10.474145240144539,
           "previousCount": 58,
-          "previousTotalBalance": 3665718181.6704082,
-          "previousPercent": 10.713696210096627
+          "previousTotalBalance": 3685720700.6704082,
+          "previousPercent": 10.766598184391738
         },
         {
           "label": "25M-50M",
-          "count": 127,
-          "totalBalance": 4403392637.758837,
-          "percent": 12.863036303926867,
+          "count": 130,
+          "totalBalance": 4545566642.558401,
+          "percent": 13.285820918601626,
           "previousCount": 127,
           "previousTotalBalance": 4403392637.758837,
-          "previousPercent": 12.869677557489329
+          "previousPercent": 12.863036303926867
         },
         {
           "label": "10M-25M",
-          "count": 490,
-          "totalBalance": 7362459810.868066,
-          "percent": 21.50695966135763,
+          "count": 487,
+          "totalBalance": 7329263430.616998,
+          "percent": 21.422033612431445,
           "previousCount": 490,
-          "previousTotalBalance": 7369741036.1145,
-          "previousPercent": 21.53934445992627
+          "previousTotalBalance": 7362459810.868066,
+          "previousPercent": 21.50695966135763
         },
         {
           "label": "5M-10M",
-          "count": 562,
-          "totalBalance": 3795998042.314042,
-          "percent": 11.088736491318773,
-          "previousCount": 561,
-          "previousTotalBalance": 3792651207.875955,
-          "previousPercent": 11.084679961273803
+          "count": 563,
+          "totalBalance": 3813373860.9080677,
+          "percent": 11.145761616902778,
+          "previousCount": 562,
+          "previousTotalBalance": 3795998042.314042,
+          "previousPercent": 11.088736491318773
         },
         {
           "label": "1M-5M",
-          "count": 2783,
-          "totalBalance": 5950736265.853491,
-          "percent": 17.383082300316055,
-          "previousCount": 2785,
-          "previousTotalBalance": 5949434330.100771,
-          "previousPercent": 17.38825214478815
+          "count": 2776,
+          "totalBalance": 5943991700.303498,
+          "percent": 17.373149594269105,
+          "previousCount": 2783,
+          "previousTotalBalance": 5950736265.853491,
+          "previousPercent": 17.383082300316055
         },
         {
           "label": "250K-1M",
-          "count": 3168,
-          "totalBalance": 1660411388.29558,
-          "percent": 4.8503355762456035,
-          "previousCount": 3167,
-          "previousTotalBalance": 1659474739.729605,
-          "previousPercent": 4.850102312472505
+          "count": 3178,
+          "totalBalance": 1668693925.8738847,
+          "percent": 4.877272826571234,
+          "previousCount": 3168,
+          "previousTotalBalance": 1660411388.29558,
+          "previousPercent": 4.8503355762456035
         },
         {
           "label": "1-250K",
-          "count": 31161,
-          "totalBalance": 694461517.3547164,
-          "percent": 2.02863665456832,
-          "previousCount": 31153,
-          "previousTotalBalance": 693736181.5686129,
-          "previousPercent": 2.0275641309370087
+          "count": 31160,
+          "totalBalance": 693902683.6658727,
+          "percent": 2.02814467701502,
+          "previousCount": 31161,
+          "previousTotalBalance": 694461517.3547164,
+          "previousPercent": 2.02863665456832
         }
       ],
       "velocity": {
-        "currentCount": 38382,
-        "previousCount": 38374,
-        "added": 20,
-        "removed": 12,
-        "net": 8,
-        "days": 1.0410138773148148,
-        "addedPerDay": 19.212039758382364,
-        "removedPerDay": 11.527223855029417,
-        "netPerDay": 7.684815903352945
+        "currentCount": 38383,
+        "previousCount": 38382,
+        "added": 22,
+        "removed": 21,
+        "net": 1,
+        "days": 1.080420462962963,
+        "addedPerDay": 20.36244291381416,
+        "removedPerDay": 19.436877326822607,
+        "netPerDay": 0.9255655869915527
       }
     },
     "base": {
       "key": "base",
       "label": "base",
       "metrics": {
+        "holderCount": 4842,
+        "totalBalance": 443372394.8731234,
+        "retail": {
+          "count": 4842,
+          "balance": 443372394.8731234
+        },
+        "underThreshold": {
+          "count": 0,
+          "balance": 0
+        },
+        "mega": {
+          "count": 0,
+          "balance": 0
+        },
+        "excluded": {
+          "count": 0,
+          "balance": 0
+        }
+      },
+      "previousMetrics": {
         "holderCount": 4836,
         "totalBalance": 450720128.36842537,
         "retail": {
@@ -830,28 +850,17 @@
           "balance": 0
         }
       },
-      "previousMetrics": {
-        "holderCount": 4836,
-        "totalBalance": 455227011.15487134,
-        "retail": {
-          "count": 4836,
-          "balance": 455227011.15487134
-        },
-        "underThreshold": {
-          "count": 0,
-          "balance": 0
-        },
-        "mega": {
-          "count": 0,
-          "balance": 0
-        },
-        "excluded": {
-          "count": 0,
-          "balance": 0
-        }
-      },
       "concentration": {
         "top": {
+          "10": 179032125.921223,
+          "25": 224118110.62785405,
+          "50": 267671222.23099807,
+          "100": 315694738.95295715,
+          "250": 381664421.001385,
+          "500": 418480853.23715264,
+          "1000": 437726190.1734921
+        },
+        "previousTop": {
           "10": 185038078.175157,
           "25": 230156190.31178802,
           "50": 273989605.837164,
@@ -859,31 +868,22 @@
           "250": 389121761.6229329,
           "500": 425965591.0582256,
           "1000": 445131168.841986
-        },
-        "previousTop": {
-          "10": 191272807.17481697,
-          "25": 236395380.581448,
-          "50": 280029027.1845919,
-          "100": 328052543.906551,
-          "250": 394027407.8883418,
-          "500": 430618851.5188225,
-          "1000": 449661808.79487294
         }
       },
       "balanceStats": {
-        "count": 4836,
-        "total": 450720128.36842537,
-        "average": 93201.01910017067,
-        "median": 66.7440995,
-        "p50": 66.7440995,
-        "p75": 9347.4025,
-        "p90": 88912.515,
-        "p99": 1394206.1689999942,
-        "gini": 0.9536987197666953,
+        "count": 4842,
+        "total": 443372394.8731234,
+        "average": 91568.02868094246,
+        "median": 67.53909949999999,
+        "p50": 67.53909949999999,
+        "p75": 9384.2875,
+        "p90": 89276.6950000005,
+        "p99": 1381563.6592007107,
+        "gini": 0.9529905534515323,
         "distributionBuckets": [
           {
             "rangeLabel": "1–100",
-            "count": 377
+            "count": 379
           },
           {
             "rangeLabel": "100–1K",
@@ -891,19 +891,19 @@
           },
           {
             "rangeLabel": "1K–10K",
-            "count": 733
-          },
-          {
-            "rangeLabel": "10K–100K",
             "count": 732
           },
           {
+            "rangeLabel": "10K–100K",
+            "count": 736
+          },
+          {
             "rangeLabel": "100K–1M",
-            "count": 383
+            "count": 384
           },
           {
             "rangeLabel": "1M–10M",
-            "count": 65
+            "count": 64
           },
           {
             "rangeLabel": "10M+",
@@ -914,7 +914,7 @@
       },
       "stakingStats": {
         "stakerCount": 0,
-        "holderCount": 4836,
+        "holderCount": 4842,
         "stakedTotal": 0,
         "stakedShareOfRetail": 0,
         "stakerShareOfHolders": 0,
@@ -929,77 +929,77 @@
         {
           "label": "50M-100M",
           "count": 1,
-          "totalBalance": 69674683.850131,
-          "percent": 15.458525028014252,
+          "totalBalance": 63671916.196678,
+          "percent": 14.360821046357323,
           "previousCount": 1,
-          "previousTotalBalance": 76105209.170049,
-          "previousPercent": 16.718078520203953
+          "previousTotalBalance": 69674683.850131,
+          "previousPercent": 15.458525028014252
         },
         {
           "label": "25M-50M",
           "count": 1,
           "totalBalance": 25121317.19,
-          "percent": 5.573595588228414,
+          "percent": 5.6659633031931955,
           "previousCount": 1,
           "previousTotalBalance": 25121317.19,
-          "previousPercent": 5.518415334421699
+          "previousPercent": 5.573595588228414
         },
         {
           "label": "10M-25M",
           "count": 5,
           "totalBalance": 73816262.017412,
-          "percent": 16.377405261358437,
+          "percent": 16.648817759286853,
           "previousCount": 5,
-          "previousTotalBalance": 73668191.427412,
-          "previousPercent": 16.182737320556225
+          "previousTotalBalance": 73816262.017412,
+          "previousPercent": 16.377405261358437
         },
         {
           "label": "5M-10M",
           "count": 4,
-          "totalBalance": 21425815.117614,
-          "percent": 4.753684996313326,
+          "totalBalance": 21422630.517133,
+          "percent": 4.831746578012227,
           "previousCount": 4,
-          "previousTotalBalance": 21378089.387356,
-          "previousPercent": 4.696138160413998
+          "previousTotalBalance": 21425815.117614,
+          "previousPercent": 4.753684996313326
         },
         {
           "label": "1M-5M",
-          "count": 61,
-          "totalBalance": 108735170.12646292,
-          "percent": 24.12476463389298,
-          "previousCount": 60,
-          "previousTotalBalance": 107161631.10739993,
-          "previousPercent": 23.540261997094632
+          "count": 60,
+          "totalBalance": 107044507.40739991,
+          "percent": 24.143250379408947,
+          "previousCount": 61,
+          "previousTotalBalance": 108735170.12646292,
+          "previousPercent": 24.12476463389298
         },
         {
           "label": "250K-1M",
           "count": 184,
-          "totalBalance": 91868654.71612501,
-          "percent": 20.38263856745936,
-          "previousCount": 183,
-          "previousTotalBalance": 91601312.066125,
-          "previousPercent": 20.12211705841893
+          "totalBalance": 91850640.156604,
+          "percent": 20.71636421633517,
+          "previousCount": 184,
+          "previousTotalBalance": 91868654.71612501,
+          "previousPercent": 20.38263856745936
         },
         {
           "label": "1-250K",
-          "count": 4580,
-          "totalBalance": 60077765.210513905,
-          "percent": 13.329283834736009,
-          "previousCount": 4582,
-          "previousTotalBalance": 60190801.52506591,
-          "previousPercent": 13.222150718246503
+          "count": 4587,
+          "totalBalance": 60444661.17102593,
+          "percent": 13.63293291823523,
+          "previousCount": 4580,
+          "previousTotalBalance": 60077765.210513905,
+          "previousPercent": 13.329283834736009
         }
       ],
       "velocity": {
-        "currentCount": 4836,
+        "currentCount": 4842,
         "previousCount": 4836,
-        "added": 3,
-        "removed": 3,
-        "net": 0,
-        "days": 1.0410138773148148,
-        "addedPerDay": 2.8818059637573543,
-        "removedPerDay": 2.8818059637573543,
-        "netPerDay": 0
+        "added": 8,
+        "removed": 2,
+        "net": 6,
+        "days": 1.080420462962963,
+        "addedPerDay": 7.404524695932421,
+        "removedPerDay": 1.8511311739831053,
+        "netPerDay": 5.5533935219493165
       }
     }
   },
@@ -1010,34 +1010,34 @@
       "base"
     ],
     "chainCounts": {
-      "ethereum": 58927,
-      "polygon": 38382,
-      "base": 4836
+      "ethereum": 58922,
+      "polygon": 38383,
+      "base": 4842
     },
-    "uniqueCount": 99524,
+    "uniqueCount": 99527,
     "multiChainCount": 2493,
-    "multiChainShare": 0.025049234355532333
+    "multiChainShare": 0.02504847930712269
   },
   "cex": {
-    "generatedAt": "2026-11-23T09:02:07.073Z",
-    "listUpdatedAt": "2026-11-23T09:02:06.324Z",
+    "generatedAt": "2026-11-24T10:57:55.929Z",
+    "listUpdatedAt": "2026-11-24T10:57:54.974Z",
     "overall": {
       "walletCount": 86,
       "walletCountWithBalance": 86,
       "previousWalletCountWithBalance": 86,
-      "currentBalance": 25836687770.04,
-      "previousBalance": 25848159591.3,
-      "inflow": 12159679.750000045,
-      "outflow": 23631501.01,
-      "net": -11471821.259999959,
+      "currentBalance": 25865264212.04,
+      "previousBalance": 25836687770.04,
+      "inflow": 57191543.549999885,
+      "outflow": 28615101.550000016,
+      "net": 28576441.999999866,
       "byChain": {
         "ethereum": {
-          "previousBalance": 21926137377.710003,
-          "currentBalance": 21921060828.660007
+          "previousBalance": 21921060828.660007,
+          "currentBalance": 21907118540.380005
         },
         "polygon": {
-          "previousBalance": 3922022213.590001,
-          "currentBalance": 3915626941.3800006
+          "previousBalance": 3915626941.3800006,
+          "currentBalance": 3958145671.6600003
         },
         "base": {
           "previousBalance": 0,
@@ -1051,11 +1051,11 @@
         "walletCount": 18,
         "walletCountWithBalance": 18,
         "previousWalletCountWithBalance": 18,
-        "currentBalance": 13916292422.34,
-        "previousBalance": 13937786392.89,
-        "inflow": 614236.24,
-        "outflow": 22108206.789999995,
-        "net": -21493970.549999997,
+        "currentBalance": 13910058140.029999,
+        "previousBalance": 13916292422.34,
+        "inflow": 9240349.73,
+        "outflow": 15474632.04,
+        "net": -6234282.309999999,
         "wallets": [
           {
             "address": "0xaa10db8804d076601999c7cd769e02e44a99d5b2",
@@ -1138,26 +1138,26 @@
           {
             "address": "0x58edf78281334335effa23101bbe3371b6a36a51",
             "walletName": "KuCoin 32",
-            "currentBalance": 107613593.92,
-            "previousBalance": 114913029.44
+            "currentBalance": 104922200.56,
+            "previousBalance": 107613593.92
           },
           {
             "address": "0xe58c8d45477d894bb9a1501bb0d0a32af8419eda",
             "walletName": "KuCoin 55",
-            "currentBalance": 38671248.08,
-            "previousBalance": 49970730.83
-          },
-          {
-            "address": "0xd91efec7e42f80156d1d9f660a69847188950747",
-            "walletName": "KuCoin 26",
-            "currentBalance": 1459574.52,
-            "previousBalance": 4968863.04
+            "currentBalance": 26188182.04,
+            "previousBalance": 38671248.08
           },
           {
             "address": "0x9ac5637d295fea4f51e086c329d791cc157b1c84",
             "walletName": "KuCoin 23",
-            "currentBalance": 780890.46,
-            "previousBalance": 166654.22
+            "currentBalance": 10021240.19,
+            "previousBalance": 780890.46
+          },
+          {
+            "address": "0xd91efec7e42f80156d1d9f660a69847188950747",
+            "walletName": "KuCoin 26",
+            "currentBalance": 1159401.88,
+            "previousBalance": 1459574.52
           },
           {
             "address": "0xf16e9b0d03470827a95cdfd0cb8a8a3b46969b91",
@@ -1191,28 +1191,28 @@
         "walletCount": 5,
         "walletCountWithBalance": 5,
         "previousWalletCountWithBalance": 5,
-        "currentBalance": 2676529679.5199995,
+        "currentBalance": 2723761560.45,
         "previousBalance": 2676529679.5199995,
-        "inflow": 0,
+        "inflow": 47231880.929999895,
         "outflow": 0,
-        "net": 0,
+        "net": 47231880.929999895,
         "wallets": [
           {
             "address": "0xd2dd7b597fd2435b6db61ddf48544fd931e6869f",
             "walletName": "Kraken 246 (Blockscout name tag, eth+poly)",
-            "currentBalance": 1505115520.5,
+            "currentBalance": 1538249324.57,
             "previousBalance": 1505115520.5
           },
           {
             "address": "0x7dafba1d69f6c01ae7567ffd7b046ca03b706f83",
             "walletName": "Kraken 245 (Blockscout name tag, eth+poly)",
-            "currentBalance": 1155642914.01,
+            "currentBalance": 1169291146.3,
             "previousBalance": 1155642914.01
           },
           {
             "address": "0xcc282e2004428939ee5149a9e7872f0b4d5d5ec7",
             "walletName": "Kraken: Hot Wallet 3 (Etherscan/Blockscout name tag)",
-            "currentBalance": 15713951.6,
+            "currentBalance": 16163796.17,
             "previousBalance": 15713951.6
           },
           {
@@ -1235,10 +1235,10 @@
         "walletCountWithBalance": 3,
         "previousWalletCountWithBalance": 3,
         "currentBalance": 1529263857.2299998,
-        "previousBalance": 1529756530.77,
+        "previousBalance": 1529263857.2299998,
         "inflow": 0,
-        "outflow": 492673.54000000656,
-        "net": -492673.54000000656,
+        "outflow": 0,
+        "net": 0,
         "wallets": [
           {
             "address": "0xf35a6bd6e0459a4b53a27862c51a2a7292b383d1",
@@ -1250,7 +1250,7 @@
             "address": "0xeed86b90448c371eab47b7f16e294297c27e4f51",
             "walletName": "CoinSpot 11",
             "currentBalance": 86527432.6,
-            "previousBalance": 87020106.14
+            "previousBalance": 86527432.6
           },
           {
             "address": "0x916ed5586bb328e0ec1a428af060dc3d10919d84",
@@ -1265,17 +1265,17 @@
         "walletCount": 5,
         "walletCountWithBalance": 5,
         "previousWalletCountWithBalance": 5,
-        "currentBalance": 828407880.52,
-        "previousBalance": 824676048.5699999,
-        "inflow": 3731831.9500000477,
+        "currentBalance": 829127193.41,
+        "previousBalance": 828407880.52,
+        "inflow": 719312.8899999857,
         "outflow": 0,
-        "net": 3731831.9500000477,
+        "net": 719312.8899999857,
         "wallets": [
           {
             "address": "0x6522b7f9d481eceb96557f44753a4b893f837e90",
             "walletName": "Bybit cold",
-            "currentBalance": 828366799.1,
-            "previousBalance": 824634967.15
+            "currentBalance": 829086111.99,
+            "previousBalance": 828366799.1
           },
           {
             "address": "0xb5873e333161e5b45adac57379ec2b15d861178d",
@@ -1358,16 +1358,16 @@
         "walletCountWithBalance": 1,
         "previousWalletCountWithBalance": 1,
         "currentBalance": 688381775.39,
-        "previousBalance": 688918325.39,
+        "previousBalance": 688381775.39,
         "inflow": 0,
-        "outflow": 536550,
-        "net": -536550,
+        "outflow": 0,
+        "net": 0,
         "wallets": [
           {
             "address": "0x6cc8dcbca746a6e4fdefb98e1d0df903b107fd21",
             "walletName": "Bitrue (OLI + Blockscout tag)",
             "currentBalance": 688381775.39,
-            "previousBalance": 688918325.39
+            "previousBalance": 688381775.39
           }
         ]
       },
@@ -1376,17 +1376,17 @@
         "walletCount": 1,
         "walletCountWithBalance": 1,
         "previousWalletCountWithBalance": 1,
-        "currentBalance": 676508675.83,
-        "previousBalance": 676222875.83,
-        "inflow": 285800,
-        "outflow": 0,
-        "net": 285800,
+        "currentBalance": 670339075.83,
+        "previousBalance": 676508675.83,
+        "inflow": 0,
+        "outflow": 6169600,
+        "net": -6169600,
         "wallets": [
           {
             "address": "0x377b8ce04761754e8ac153b47805a9cf6b190873",
             "walletName": "Upbit 23",
-            "currentBalance": 676508675.83,
-            "previousBalance": 676222875.83
+            "currentBalance": 670339075.83,
+            "previousBalance": 676508675.83
           }
         ]
       },
@@ -1395,11 +1395,11 @@
         "walletCount": 4,
         "walletCountWithBalance": 4,
         "previousWalletCountWithBalance": 4,
-        "currentBalance": 605795288.41,
-        "previousBalance": 600977949.36,
-        "inflow": 4817339.049999997,
-        "outflow": 0,
-        "net": 4817339.049999997,
+        "currentBalance": 603640032.27,
+        "previousBalance": 605795288.41,
+        "inflow": 0,
+        "outflow": 2155256.1400000155,
+        "net": -2155256.1400000155,
         "wallets": [
           {
             "address": "0x576b81f0c21edbc920ad63feeeb2b0736b018a58",
@@ -1410,14 +1410,14 @@
           {
             "address": "0x9642b23ed1e01df1092b92641051881a322f5d4e",
             "walletName": "MEXC 21",
-            "currentBalance": 137971966.71,
-            "previousBalance": 137444601.96
+            "currentBalance": 137287144.91,
+            "previousBalance": 137971966.71
           },
           {
             "address": "0x51e3d44172868acc60d68ca99591ce4230bc75e0",
             "walletName": "MEXC 8",
-            "currentBalance": 104551594.55,
-            "previousBalance": 100261620.25
+            "currentBalance": 103081160.21,
+            "previousBalance": 104551594.55
           },
           {
             "address": "0x92e0862c60f98db9c7656212baa4d1173826ad6d",
@@ -1449,31 +1449,6 @@
             "walletName": "Bitpanda 16",
             "currentBalance": 34211077.14,
             "previousBalance": 34211077.14
-          }
-        ]
-      },
-      {
-        "name": "Indodax",
-        "walletCount": 2,
-        "walletCountWithBalance": 2,
-        "previousWalletCountWithBalance": 2,
-        "currentBalance": 57585780.589999996,
-        "previousBalance": 57585780.589999996,
-        "inflow": 0,
-        "outflow": 0,
-        "net": 0,
-        "wallets": [
-          {
-            "address": "0x91dca37856240e5e1906222ec79278b16420dc92",
-            "walletName": "Indodax 8",
-            "currentBalance": 57585780.44,
-            "previousBalance": 57585780.44
-          },
-          {
-            "address": "0xf077b0289016cdc8a9ae8196705a37f1aefa5091",
-            "walletName": "Indodax 10",
-            "currentBalance": 0.15,
-            "previousBalance": 0.15
           }
         ]
       },
@@ -1521,46 +1496,46 @@
         ]
       },
       {
-        "name": "Uphold",
-        "walletCount": 1,
-        "walletCountWithBalance": 1,
-        "previousWalletCountWithBalance": 1,
-        "currentBalance": 30559173.05,
-        "previousBalance": 31053243.73,
+        "name": "Indodax",
+        "walletCount": 2,
+        "walletCountWithBalance": 2,
+        "previousWalletCountWithBalance": 2,
+        "currentBalance": 54801876.059999995,
+        "previousBalance": 57585780.589999996,
         "inflow": 0,
-        "outflow": 494070.6799999997,
-        "net": -494070.6799999997,
+        "outflow": 2783904.530000001,
+        "net": -2783904.530000001,
         "wallets": [
           {
-            "address": "0x1c727a55ea3c11b0ab7d3a361fe0f3c47ce6de5d",
-            "walletName": "Uphold (OLI + Blockscout tag)",
-            "currentBalance": 30559173.05,
-            "previousBalance": 31053243.73
+            "address": "0x91dca37856240e5e1906222ec79278b16420dc92",
+            "walletName": "Indodax 8",
+            "currentBalance": 54801875.91,
+            "previousBalance": 57585780.44
+          },
+          {
+            "address": "0xf077b0289016cdc8a9ae8196705a37f1aefa5091",
+            "walletName": "Indodax 10",
+            "currentBalance": 0.15,
+            "previousBalance": 0.15
           }
         ]
       },
       {
-        "name": "HitBTC",
-        "walletCount": 2,
-        "walletCountWithBalance": 2,
-        "previousWalletCountWithBalance": 2,
-        "currentBalance": 14344610.39,
-        "previousBalance": 11634137.88,
-        "inflow": 2710472.51,
-        "outflow": 0,
-        "net": 2710472.51,
+        "name": "Uphold",
+        "walletCount": 1,
+        "walletCountWithBalance": 1,
+        "previousWalletCountWithBalance": 1,
+        "currentBalance": 30527464.21,
+        "previousBalance": 30559173.05,
+        "inflow": 0,
+        "outflow": 31708.83999999985,
+        "net": -31708.83999999985,
         "wallets": [
           {
-            "address": "0x80787af194c33b74a811f5e5c549316269d7ee1a",
-            "walletName": "HitBTC 12",
-            "currentBalance": 14343240.73,
-            "previousBalance": 11632768.22
-          },
-          {
-            "address": "0x59a5208b32e627891c389ebafc644145224006e8",
-            "walletName": "HitBTC 2",
-            "currentBalance": 1369.66,
-            "previousBalance": 1369.66
+            "address": "0x1c727a55ea3c11b0ab7d3a361fe0f3c47ce6de5d",
+            "walletName": "Uphold (OLI + Blockscout tag)",
+            "currentBalance": 30527464.21,
+            "previousBalance": 30559173.05
           }
         ]
       },
@@ -1592,6 +1567,31 @@
             "walletName": "BingX 17",
             "currentBalance": 5557.55,
             "previousBalance": 5557.55
+          }
+        ]
+      },
+      {
+        "name": "HitBTC",
+        "walletCount": 2,
+        "walletCountWithBalance": 2,
+        "previousWalletCountWithBalance": 2,
+        "currentBalance": 12344610.39,
+        "previousBalance": 14344610.39,
+        "inflow": 0,
+        "outflow": 2000000,
+        "net": -2000000,
+        "wallets": [
+          {
+            "address": "0x80787af194c33b74a811f5e5c549316269d7ee1a",
+            "walletName": "HitBTC 12",
+            "currentBalance": 12343240.73,
+            "previousBalance": 14343240.73
+          },
+          {
+            "address": "0x59a5208b32e627891c389ebafc644145224006e8",
+            "walletName": "HitBTC 2",
+            "currentBalance": 1369.66,
+            "previousBalance": 1369.66
           }
         ]
       },
@@ -2009,15 +2009,6 @@
       "available": true,
       "windowDays": 1,
       "previous": {
-        "date": "2026-11-21",
-        "blocks": {
-          "ethereum": 26466924,
-          "polygon": 97733420,
-          "base": 60576121
-        },
-        "settled": true
-      },
-      "current": {
         "date": "2026-11-22",
         "blocks": {
           "ethereum": 26474105,
@@ -2025,14 +2016,23 @@
           "base": 61008121
         },
         "settled": true
+      },
+      "current": {
+        "date": "2026-11-23",
+        "blocks": {
+          "ethereum": 26481281,
+          "polygon": 97848620,
+          "base": 61440121
+        },
+        "settled": true
       }
     },
     "asOf": {
-      "date": "2026-11-22",
+      "date": "2026-11-23",
       "blocks": {
-        "ethereum": 26474105,
-        "polygon": 97791020,
-        "base": 61008121
+        "ethereum": 26481281,
+        "polygon": 97848620,
+        "base": 61440121
       },
       "settled": true
     }
