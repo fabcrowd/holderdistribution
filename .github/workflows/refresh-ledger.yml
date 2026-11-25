@@ -9,8 +9,10 @@ name: Refresh developer-wallet ledger (gated)
 #
 # Runs at 02:37 UTC, 90 minutes after the 01:07 UTC refresh-holders slot.
 # Shares the holders-refresh group with the holders refresh, so it queues behind a
-# running holders refresh; GitHub keeps only one pending run per group. Pushes go through
-# scripts/push-main.sh, which retries a lost race. Commits carry [skip netlify].
+# running holders refresh; GitHub keeps only one pending run per group. Each ledger job checks
+# out the branch tip when it starts (not the commit that queued the run). Pushes go through
+# scripts/push-main.sh, which retries a lost race and merges rpc-usage.json counters on a
+# rebase. Commits carry [skip netlify].
 #
 # Runtime: incremental after the first run (checkpointed per chain), ~3-8 minutes
 # per project per night; the first run backfills 90 days and takes longer. The
@@ -75,8 +77,12 @@ jobs:
       # 0 Alchemy CU budget (enforced), so the nightly ledger spends no CU.
       HD_JOB_ID: ledger
     steps:
+      # ref: the branch tip when this job starts, not the commit that queued the run. A run waits in the
+      # holders-refresh group behind the holders refresh, which commits data/<slug>/rpc-usage.json meanwhile;
+      # starting from the queued commit made the hedera ledger's rebase conflict there (2026-11-21, 2026-11-24).
       - uses: actions/checkout@v5
         with:
+          ref: ${{ github.ref }}
           fetch-depth: 0
       - uses: actions/setup-node@v5
         with:

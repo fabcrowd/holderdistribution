@@ -75,7 +75,11 @@ jobs:
     # <= 30) + Hedera (budget 40 + report tail 5; a Hedera-only project has no EVM or Solana step to add) + commit 2. The EVM scan stops itself at WALLET_FLOWS_MAX_MS and saves its progress.
     timeout-minutes: 90
     steps:
+      # ref: the branch tip when this job starts, not the commit that queued the run (the run can wait in the
+      # holders-refresh group while other jobs commit data/<slug>/rpc-usage.json), so its usage file is current.
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
@@ -141,9 +145,8 @@ jobs:
           if [ "$PARTIAL" = "true" ]; then MSG="Advance wallet-flows scan state (partial) [skip netlify]"; else MSG="Refresh gated wallet-flows report [skip netlify]"; fi
           git commit -m "$MSG"
           git checkout -- .
-          git fetch origin main
-          git rebase origin/main
-          git push origin HEAD:main
+          # Retries a lost push race and merges rpc-usage.json counters on the rebase (both runs' counts kept).
+          bash scripts/push-main.sh
       # A partial run exits 0 with the state committed, so it needs its own staleness signal: it always
       # warns, and fails the job once the published report is older than go-live's limit (re-dispatch
       # continues the scan). A project with no report yet (first scan) stays green with the warning.
