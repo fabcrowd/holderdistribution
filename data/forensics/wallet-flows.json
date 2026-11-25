@@ -1,8 +1,8 @@
 {
  "version": 1,
- "generated": "2026-11-24T01:27:15.829Z",
+ "generated": "2026-11-25T13:22:00.887Z",
  "generator": "scripts/generate-wallet-flows.js",
- "priceUsd": 0.00158316,
+ "priceUsd": 0.00162489,
  "priceSource": "CoinGecko simple/price (telcoin)",
  "chains": [
   "ethereum",
@@ -11,33 +11,33 @@
  ],
  "windows": {
   "ethereum": {
-   "head": 26481655,
-   "headTime": "2026-11-24T01:14:59.000Z",
+   "head": 26492405,
+   "headTime": "2026-11-25T13:10:11.000Z",
    "startBlocks": {
-    "24h": 26474480,
-    "72h": 26460123,
-    "30d": 26266334,
-    "90d": 25836033
+    "24h": 26485227,
+    "72h": 26470865,
+    "30d": 26277070,
+    "90d": 25846769
    }
   },
   "polygon": {
-   "head": 97851636,
-   "headTime": "2026-11-24T01:15:23.000Z",
+   "head": 97937840,
+   "headTime": "2026-11-25T13:10:29.000Z",
    "startBlocks": {
-    "24h": 97794029,
-    "72h": 97678829,
-    "30d": 96123694,
-    "90d": 92667923
+    "24h": 97880235,
+    "72h": 97765035,
+    "30d": 96209900,
+    "90d": 92754129
    }
   },
   "base": {
-   "head": 61462835,
-   "headTime": "2026-11-24T01:15:42.000Z",
+   "head": 62109364,
+   "headTime": "2026-11-25T13:10:48.000Z",
    "startBlocks": {
-    "24h": 61030682,
-    "72h": 60166682,
-    "30d": 53050783,
-    "90d": 50458783
+    "24h": 61677227,
+    "72h": 60813227,
+    "30d": 53115437,
+    "90d": 50523437
    }
   }
  },
@@ -56,79 +56,74 @@
     "key": "treasury",
     "label": "Telcoin-linked: TEL Treasury",
     "group": "telcoin",
-    "tel": 794943470,
-    "share": 0.007949476852471164
+    "tel": 780585189,
+    "share": 0.007805893281060254
    },
    {
     "key": "association",
     "label": "Telcoin-linked: Association Safes & operational wallets",
     "group": "telcoin",
     "tel": 461703574,
-    "share": 0.0046170602266611595
+    "share": 0.004617060226661185
    },
    {
     "key": "holdings",
     "label": "Telcoin-linked: Telcoin Holdings (company)",
     "group": "telcoin",
-    "tel": 1260107143,
-    "share": 0.012601138255239766
+    "tel": 1255107143,
+    "share": 0.01255113799009286
    },
    {
     "key": "escrow",
     "label": "Escrow & custody (BitGo, Anchorage, vaults)",
     "group": "locked",
     "tel": 8084466545,
-    "share": 0.08084509416816885
+    "share": 0.08084509416816929
    },
    {
     "key": "staking",
     "label": "Staking contract",
     "group": "locked",
-    "tel": 643923089,
-    "share": 0.00643926504065178
+    "tel": 274261,
+    "share": 0.000002742627243909203
    },
    {
     "key": "cex",
     "label": "Centralised exchanges (incl. deposit relays)",
     "group": "market",
-    "tel": 22002446969,
-    "share": 0.22002563646684867
+    "tel": 21916757949,
+    "share": 0.21916874172731313
    },
    {
     "key": "dex",
     "label": "DEX pools & market makers",
     "group": "market",
-    "tel": 569975283,
-    "share": 0.0056997830559443585
+    "tel": 562503070,
+    "share": 0.005625060524197427
    },
    {
     "key": "bots",
     "label": "Tracked sell bots & large sellers",
     "group": "market",
-    "tel": 19401,
-    "share": 1.940073288036692e-7
+    "tel": 746248,
+    "share": 0.000007462519973082035
    },
    {
     "key": "other",
     "label": "Other labelled (dormant whales, burn, unlabelled exclusions)",
     "group": "other",
-    "tel": 275398616,
-    "share": 0.002754000761389833
+    "tel": 282601096,
+    "share": 0.0028260259434094454
    },
    {
     "key": "retail",
     "label": "Retail & unlabelled holders",
     "group": "retail",
-    "tel": 65906485618,
-    "share": 0.6590683511652955
+    "tel": 66654724633,
+    "share": 0.6665507809918794
    }
   ],
   "movedFromRetail": [
-   {
-    "address": "0x92e43aec69207755cb1e6a8dc589aae630476330",
-    "to": "staking",
-    "tel": 643648828
-   },
    {
     "address": "0xe3a465e1460e9987c772c36b91020946bc60af52",
     "to": "staking",
@@ -140,6 +135,11 @@
     "tel": 19400
    },
    {
+    "address": "0x77ad55c59d5edee8beb31d3942bfc64aee2e5203",
+    "to": "bots",
+    "tel": 726847
+   },
+   {
     "address": "0x8d00717b41b1212155577b6586c747c47621a736",
     "to": "bots",
     "tel": 0
@@ -149,34 +149,34 @@
  },
  "telcoinTotals": {
   "24h": {
-   "total": 8640753,
-   "usd": 13680,
+   "total": 11230324,
+   "usd": 18248,
    "byVenue": {
-    "DEX": 8640753
+    "DEX": 11230324
    }
   },
   "72h": {
-   "total": 9640753,
-   "usd": 15263,
+   "total": 25486239,
+   "usd": 41412,
    "byVenue": {
-    "DEX": 9640753
+    "DEX": 25486239
    }
   },
   "30d": {
-   "total": 450906976,
-   "usd": 713858,
+   "total": 466752461,
+   "usd": 758421,
    "byVenue": {
     "bot-cluster": 311347119,
-    "DEX": 139559857
+    "DEX": 155405342
    }
   },
   "90d": {
-   "total": 2538776438,
-   "usd": 4019289,
+   "total": 2456531680,
+   "usd": 3991594,
    "byVenue": {
-    "CEX": 1357125706,
+    "CEX": 1259035463,
     "bot-cluster": 922781757,
-    "DEX": 258868975
+    "DEX": 274714460
    }
   }
  },
@@ -202,7 +202,7 @@
      "unlabelled": 152759283
     },
     "90d": {
-     "CEX": 1257125706,
+     "CEX": 1159035463,
      "bot-cluster": 922781757,
      "bridge": 600000000,
      "unlabelled": 275628960
@@ -212,9 +212,9 @@
     "24h": 0,
     "72h": 0,
     "30d": 311347119,
-    "90d": 2179907463
+    "90d": 2081817220
    },
-   "sellVenueUsd90d": 3451142,
+   "sellVenueUsd90d": 3382724,
    "sampleTxs": [
     "https://polygonscan.com/tx/0x39b1143f9a1a1ada8bad44a054ca47b2f4055d38162f14d1da99c8114964e9ff",
     "https://polygonscan.com/tx/0x5b2355242025ef9a3d213bf4e23096b2a64e0a06889fd0ecf7b3c5eaf22e901b",
@@ -241,21 +241,21 @@
     "72h": {},
     "30d": {},
     "90d": {
-     "CEX": 1055701308
+     "CEX": 957611064
     }
    },
    "sellVenue": {
     "24h": 0,
     "72h": 0,
     "30d": 0,
-    "90d": 1055701308
+    "90d": 957611064
    },
-   "sellVenueUsd90d": 1671344,
+   "sellVenueUsd90d": 1556013,
    "sampleTxs": [
     "https://polygonscan.com/tx/0x30abc0017636b467823898c354868ded8b422c6db86eb209b56d108f6a1b38e1",
     "https://polygonscan.com/tx/0x4fa6c601086ee4ac1aea97340d518038101e6ff21090111b38eb434ec676684f",
     "https://polygonscan.com/tx/0xf1abceec0d91bf9f97c9106ac824aec7acf94b73e363af095e091de2914dc8cf",
-    "https://polygonscan.com/tx/0x258e0c9b7ae8e4ccd80a7c2fd65f33efdd2ea6268c5c1b68efa861069a95ca2a"
+    "https://polygonscan.com/tx/0xbbca53eb0a3248b6669e52017ceffa975cdf9b77e93464c740e9fc34262e15bd"
    ],
    "verdict": "selling / sending to sell venues"
   },
@@ -269,34 +269,34 @@
    "chains": [
     "polygon"
    ],
-   "balance": 31177984,
+   "balance": 17435058,
    "balanceDetail": {
-    "polygon_legacy": 31177984
+    "polygon_legacy": 17435058
    },
-   "balanceUsd": 49360,
+   "balanceUsd": 28330,
    "outflows": {
     "24h": {
-     "DEX": 5640753
+     "DEX": 9230324
     },
     "72h": {
-     "DEX": 5640753
+     "DEX": 19486239
     },
     "30d": {
-     "DEX": 113559857,
+     "DEX": 127405342,
      "internal": 359600
     },
     "90d": {
-     "DEX": 217782163,
+     "DEX": 231627648,
      "internal": 10432040
     }
    },
    "sellVenue": {
-    "24h": 5640753,
-    "72h": 5640753,
-    "30d": 113559857,
-    "90d": 217782163
+    "24h": 9230324,
+    "72h": 19486239,
+    "30d": 127405342,
+    "90d": 231627648
    },
-   "sellVenueUsd90d": 344784,
+   "sellVenueUsd90d": 376369,
    "sampleTxs": [
     "https://polygonscan.com/tx/0xde6c308be1707e54430c182aaa65ed57fa8e56f6387b5cfca86708c7e52bbee5",
     "https://polygonscan.com/tx/0xd07ce4bd5081e3c97aacdc979fcacc71cb1bb0cd996cf00015e9c429e70cbb09",
@@ -335,7 +335,7 @@
     "30d": 0,
     "90d": 148665116
    },
-   "sellVenueUsd90d": 235361,
+   "sellVenueUsd90d": 241564,
    "sampleTxs": [
     "https://etherscan.io/tx/0xd648bbbf8a1c4f3e87c94a999edf93bc2f4d436fd61860c9d5b975974d891943",
     "https://etherscan.io/tx/0xf40bf06dc390d228c99875fbec4f8a80277fd1223526c836368911cf4611df32"
@@ -357,7 +357,7 @@
    "balanceDetail": {
     "base_legacy": 199888223
    },
-   "balanceUsd": 316455,
+   "balanceUsd": 324796,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -372,7 +372,7 @@
     "30d": 0,
     "90d": 100000000
    },
-   "sellVenueUsd90d": 158316,
+   "sellVenueUsd90d": 162489,
    "sampleTxs": [
     "https://etherscan.io/tx/0x088a8e6134b8bcf0d7d72d2285ea6c39332890d3dc78399e8578b40afd555a6e"
    ],
@@ -388,32 +388,32 @@
    "chains": [
     "polygon"
    ],
-   "balance": 214727397,
+   "balance": 212727397,
    "balanceDetail": {
-    "polygon_legacy": 214727397
+    "polygon_legacy": 212727397
    },
-   "balanceUsd": 339948,
+   "balanceUsd": 345659,
    "outflows": {
     "24h": {
-     "DEX": 3000000
+     "DEX": 2000000
     },
     "72h": {
-     "DEX": 4000000
+     "DEX": 6000000
     },
     "30d": {
-     "DEX": 26000000
+     "DEX": 28000000
     },
     "90d": {
-     "DEX": 26000000
+     "DEX": 28000000
     }
    },
    "sellVenue": {
-    "24h": 3000000,
-    "72h": 4000000,
-    "30d": 26000000,
-    "90d": 26000000
+    "24h": 2000000,
+    "72h": 6000000,
+    "30d": 28000000,
+    "90d": 28000000
    },
-   "sellVenueUsd90d": 41162,
+   "sellVenueUsd90d": 45497,
    "sampleTxs": [
     "https://polygonscan.com/tx/0xa84a6a124a204eeb3982bf070660017097b07dd2bd2b38323df133bae25fe906",
     "https://polygonscan.com/tx/0x2c03135aeaa34ed66c0c76f5980e2bf64b2cd520f24b2c2dbdbf4de913e71d69",
@@ -438,7 +438,7 @@
     "polygon_v3": 136037,
     "base_legacy": 378
    },
-   "balanceUsd": 216,
+   "balanceUsd": 222,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -449,8 +449,8 @@
      "unlabelled": 358636
     },
     "90d": {
-     "internal": 682529133,
-     "bridge": 667868313,
+     "internal": 585862466,
+     "bridge": 571201647,
      "DEX": 14611864,
      "unlabelled": 2225563,
      "upgrade": 359600
@@ -462,7 +462,7 @@
     "30d": 0,
     "90d": 14611864
    },
-   "sellVenueUsd90d": 23133,
+   "sellVenueUsd90d": 23743,
    "sampleTxs": [
     "https://polygonscan.com/tx/0xaf701d49aaf3c9426e48d36497a89a49b6920f50e3a502d320f7177197a84dad",
     "https://polygonscan.com/tx/0x438e560ff9b04af907b788692a3e38466d4df7e70d4bd8b6ebf68ae5367fcd5b",
@@ -502,7 +502,7 @@
     "30d": 0,
     "90d": 297161
    },
-   "sellVenueUsd90d": 470,
+   "sellVenueUsd90d": 483,
    "sampleTxs": [
     "https://polygonscan.com/tx/0x77745b04cfda101e9a75075e71acf54197ab7a4fafe0a5631b6baecca391bc82",
     "https://polygonscan.com/tx/0x77745b04cfda101e9a75075e71acf54197ab7a4fafe0a5631b6baecca391bc82"
@@ -523,7 +523,7 @@
    "balanceDetail": {
     "polygon_legacy": 4150928
    },
-   "balanceUsd": 6572,
+   "balanceUsd": 6745,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -539,7 +539,7 @@
     "30d": 0,
     "90d": 177787
    },
-   "sellVenueUsd90d": 281,
+   "sellVenueUsd90d": 289,
    "sampleTxs": [
     "https://polygonscan.com/tx/0x977bccb9a88c561b8add553dce5ab2aae1ddd02ebf8e3797578c3239d6d13321",
     "https://polygonscan.com/tx/0xa572be5e627a653113d2b0a75e521eb1cbe2ed7a8dc0f682a1cec3375bd15975"
@@ -560,7 +560,7 @@
    "balanceDetail": {
     "ethereum_legacy": 3834240801
    },
-   "balanceUsd": 6070217,
+   "balanceUsd": 6230220,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -591,7 +591,7 @@
    "balanceDetail": {
     "ethereum_legacy": 2500001000
    },
-   "balanceUsd": 3957902,
+   "balanceUsd": 4062227,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -622,7 +622,7 @@
    "balanceDetail": {
     "ethereum_legacy": 757885758
    },
-   "balanceUsd": 1199854,
+   "balanceUsd": 1231481,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -630,7 +630,7 @@
      "internal": 433700000
     },
     "90d": {
-     "internal": 667866667
+     "internal": 571200000
     }
    },
    "sellVenue": {
@@ -653,23 +653,23 @@
    "chains": [
     "polygon"
    ],
-   "balance": 643648828,
+   "balance": 626988075,
    "balanceDetail": {
-    "polygon_legacy": 643648828
+    "polygon_legacy": 626988075
    },
-   "balanceUsd": 1018999,
+   "balanceUsd": 1018787,
    "outflows": {
     "24h": {
-     "reward/unstake payout": 10753401
+     "reward/unstake payout": 16660753
     },
     "72h": {
-     "reward/unstake payout": 11109213
+     "reward/unstake payout": 27769966
     },
     "30d": {
-     "reward/unstake payout": 83586356
+     "reward/unstake payout": 100244598
     },
     "90d": {
-     "reward/unstake payout": 3748971179
+     "reward/unstake payout": 3764754409
     }
    },
    "sellVenue": {
@@ -696,7 +696,7 @@
    "balanceDetail": {
     "ethereum_legacy": 480356042
    },
-   "balanceUsd": 760480,
+   "balanceUsd": 780526,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -727,7 +727,7 @@
    "balanceDetail": {
     "ethereum_legacy": 369034642
    },
-   "balanceUsd": 584241,
+   "balanceUsd": 599641,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -758,7 +758,7 @@
    "balanceDetail": {
     "ethereum_legacy": 364564981
    },
-   "balanceUsd": 577165,
+   "balanceUsd": 592378,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -789,7 +789,7 @@
    "balanceDetail": {
     "ethereum_legacy": 299000000
    },
-   "balanceUsd": 473365,
+   "balanceUsd": 485842,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -822,7 +822,7 @@
    "balanceDetail": {
     "ethereum_legacy": 284051631
    },
-   "balanceUsd": 449699,
+   "balanceUsd": 461553,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -853,7 +853,7 @@
    "balanceDetail": {
     "polygon_v3": 275000000
    },
-   "balanceUsd": 435369,
+   "balanceUsd": 446845,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -886,7 +886,7 @@
    "balanceDetail": {
     "ethereum_legacy": 251992704
    },
-   "balanceUsd": 398945,
+   "balanceUsd": 409460,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -904,42 +904,6 @@
    "verdict": "inactive (no outflows in window)"
   },
   {
-   "label": "TAO Safe",
-   "group": "Association Safe",
-   "entityClass": "association",
-   "source": "telcoinassociation.com Safe Wallets page",
-   "confidence": "confirmed",
-   "address": "0xf4bc288d616c4f57071a57f5a4050b5e516fe7e5",
-   "chains": [
-    "polygon"
-   ],
-   "balance": 165718343,
-   "balanceDetail": {
-    "polygon_legacy": 165718343
-   },
-   "balanceUsd": 262359,
-   "outflows": {
-    "24h": {},
-    "72h": {},
-    "30d": {
-     "internal": 100000000
-    },
-    "90d": {
-     "internal": 201501667,
-     "unlabelled": 463993
-    }
-   },
-   "sellVenue": {
-    "24h": 0,
-    "72h": 0,
-    "30d": 0,
-    "90d": 0
-   },
-   "sellVenueUsd90d": 0,
-   "sampleTxs": [],
-   "verdict": "internal / treasury moves"
-  },
-  {
    "label": "TAN Council",
    "group": "Association Safe",
    "entityClass": "association",
@@ -953,13 +917,54 @@
    "balanceDetail": {
     "polygon_legacy": 161031090
    },
-   "balanceUsd": 254938,
+   "balanceUsd": 261658,
    "outflows": {
     "24h": {},
     "72h": {},
     "30d": {},
     "90d": {
      "internal": 871920
+    }
+   },
+   "sellVenue": {
+    "24h": 0,
+    "72h": 0,
+    "30d": 0,
+    "90d": 0
+   },
+   "sellVenueUsd90d": 0,
+   "sampleTxs": [],
+   "verdict": "internal / treasury moves"
+  },
+  {
+   "label": "TAO Safe",
+   "group": "Association Safe",
+   "entityClass": "association",
+   "source": "telcoinassociation.com Safe Wallets page",
+   "confidence": "confirmed",
+   "address": "0xf4bc288d616c4f57071a57f5a4050b5e516fe7e5",
+   "chains": [
+    "polygon"
+   ],
+   "balance": 135698343,
+   "balanceDetail": {
+    "polygon_legacy": 135698343
+   },
+   "balanceUsd": 220495,
+   "outflows": {
+    "24h": {
+     "unlabelled": 30020000
+    },
+    "72h": {
+     "unlabelled": 30020000
+    },
+    "30d": {
+     "internal": 100000000,
+     "unlabelled": 30020000
+    },
+    "90d": {
+     "internal": 103411424,
+     "unlabelled": 30303993
     }
    },
    "sellVenue": {
@@ -986,7 +991,7 @@
    "balanceDetail": {
     "polygon_legacy": 102662861
    },
-   "balanceUsd": 162532,
+   "balanceUsd": 166816,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1017,7 +1022,7 @@
    "balanceDetail": {
     "base_legacy": 98142782
    },
-   "balanceUsd": 155376,
+   "balanceUsd": 159471,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1048,7 +1053,7 @@
    "balanceDetail": {
     "base_legacy": 95874030
    },
-   "balanceUsd": 151784,
+   "balanceUsd": 155785,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1079,7 +1084,7 @@
    "balanceDetail": {
     "polygon_v3": 25246187
    },
-   "balanceUsd": 39969,
+   "balanceUsd": 41022,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1116,7 +1121,7 @@
    "balanceDetail": {
     "ethereum_legacy": 21857644
    },
-   "balanceUsd": 34604,
+   "balanceUsd": 35516,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1147,7 +1152,7 @@
    "balanceDetail": {
     "polygon_legacy": 6976393
    },
-   "balanceUsd": 11045,
+   "balanceUsd": 11336,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1180,7 +1185,7 @@
    "balanceDetail": {
     "polygon_legacy": 4428987
    },
-   "balanceUsd": 7012,
+   "balanceUsd": 7197,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1188,7 +1193,7 @@
      "reward/unstake payout": 2
     },
     "90d": {
-     "reward/unstake payout": 11021464
+     "reward/unstake payout": 11020278
     }
    },
    "sellVenue": {
@@ -1215,7 +1220,7 @@
    "balanceDetail": {
     "polygon_legacy": 2520766
    },
-   "balanceUsd": 3991,
+   "balanceUsd": 4096,
    "outflows": {
     "24h": {},
     "72h": {
@@ -1225,7 +1230,7 @@
      "reward/unstake payout": 363204
     },
     "90d": {
-     "reward/unstake payout": 9698373
+     "reward/unstake payout": 9689739
     }
    },
    "sellVenue": {
@@ -1252,7 +1257,7 @@
    "balanceDetail": {
     "base_v3": 274261
    },
-   "balanceUsd": 434,
+   "balanceUsd": 446,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1286,7 +1291,7 @@
    "balanceDetail": {
     "polygon_legacy": 68547
    },
-   "balanceUsd": 109,
+   "balanceUsd": 111,
    "outflows": {
     "24h": {},
     "72h": {},
@@ -1752,7 +1757,7 @@
    "24h": 0,
    "72h": 0,
    "30d": 311980449,
-   "90d": 2073212414
+   "90d": 2063724073
   },
   "cexDeposits": {
    "24h": 0,
@@ -1766,49 +1771,19 @@
    "rank": 1,
    "entity": "Unlabelled wallet",
    "addresses": [
-    "0x7e77e9821b2633a74040f9ed19a11ae19169cd31"
+    "0x41a513c7a413d60f7cdad1e94541f5f93bcc3696"
    ],
    "chains": [
     "polygon"
    ],
-   "destination": "Kraken, MEXC via 0x1e28…7cfc, KuCoin via 0x45f7…b869",
-   "tel": 48278563,
-   "netTel": 48278563,
-   "usd": 76433,
-   "sampleTx": "https://polygonscan.com/tx/0xe1c3a234533f813206f90fc95ae5ec1d578749088194ad80ba608a63db670958"
+   "destination": "Kraken via 0x7e77…cd31",
+   "tel": 45811907,
+   "netTel": 45811907,
+   "usd": 74439,
+   "sampleTx": "https://polygonscan.com/tx/0x72aea0e844dd80b34eac08586ded0be05d1c2365da37ad2cd31b8a9624dbcd5f"
   },
   {
    "rank": 2,
-   "entity": "Unlabelled wallet",
-   "addresses": [
-    "0x8e9b8e5a6ea2f13e38b0621ad6f537070751da54"
-   ],
-   "chains": [
-    "ethereum"
-   ],
-   "destination": "KuCoin via 0xd3f9…0b3f",
-   "tel": 7732637,
-   "netTel": 7732637,
-   "usd": 12242,
-   "sampleTx": "https://etherscan.io/tx/0x31d838402df43703226d5a031cf37ce6e72d086afd4a6cbb45a85606efdcaf99"
-  },
-  {
-   "rank": 3,
-   "entity": "Unlabelled wallet",
-   "addresses": [
-    "0x7b82007d91312bb84e57a79c6df7fa3928bed152"
-   ],
-   "chains": [
-    "polygon"
-   ],
-   "destination": "DEX via 0x73da…cf04",
-   "tel": 6987312,
-   "netTel": 6987312,
-   "usd": 11062,
-   "sampleTx": "https://polygonscan.com/tx/0xd719b2fd5d560cb065d3b43b3bfe8c8f6f6caa20b15dd8c677e232a9ade2fdfa"
-  },
-  {
-   "rank": 4,
    "entity": "Recipient Safe (CoW seller)",
    "addresses": [
     "0xe71e5bb31d76be3a4a840e1781a4b49645079105"
@@ -1817,10 +1792,85 @@
     "polygon"
    ],
    "destination": "DEX",
-   "tel": 5640753,
-   "netTel": 5640753,
-   "usd": 8930,
+   "tel": 19486239,
+   "netTel": 19486239,
+   "usd": 31663,
    "sampleTx": "https://polygonscan.com/tx/0xa0055b912cb52dd22511bfb89494d6760eab2b48fa344fc02985b52932048e8f"
+  },
+  {
+   "rank": 3,
+   "entity": "Unlabelled wallet",
+   "addresses": [
+    "0x22d1c3c541dd649ea4a8709fc787f348dc069e95"
+   ],
+   "chains": [
+    "polygon"
+   ],
+   "destination": "DEX, DEX via 0x73da…cf04, KuCoin via 0xf4c5…6a8e",
+   "tel": 11311035,
+   "netTel": 7784981,
+   "usd": 18379,
+   "sampleTx": "https://polygonscan.com/tx/0x425b2e777b0eb543ee32bae4f3192fcf65a2bbc041d453834cf6e3f76aa689ce"
+  },
+  {
+   "rank": 4,
+   "entity": "Unlabelled wallet",
+   "addresses": [
+    "0x291c69fdaebd3cbe953843da243f8605a766a268"
+   ],
+   "chains": [
+    "ethereum"
+   ],
+   "destination": "DEX, DEX via 0x5aae…5588, KuCoin via 0x9f48…f3cf",
+   "tel": 8476776,
+   "netTel": 7752902,
+   "usd": 13774,
+   "sampleTx": "https://etherscan.io/tx/0x0df7fd856bd41d1f1a14f3ac5518f6c596d835e9b72a276f284cea5538683d97"
+  },
+  {
+   "rank": 5,
+   "entity": "Telcoin Holdings controller (Polygon)",
+   "addresses": [
+    "0xc44784b1ace0830a82ceac529cc98d1b38640413"
+   ],
+   "chains": [
+    "polygon"
+   ],
+   "destination": "DEX, DEX via 0x73da…cf04",
+   "tel": 5641917,
+   "netTel": 5641917,
+   "usd": 9167,
+   "sampleTx": "https://polygonscan.com/tx/0x05f0b6ab1d2dd6692bb069e340fd1523e5b9a2d54e970ff3214328f1600ee652"
+  },
+  {
+   "rank": 6,
+   "entity": "Unlabelled wallet",
+   "addresses": [
+    "0x60ad42843f578b132fa1ee087150de4513fb2e9e"
+   ],
+   "chains": [
+    "polygon"
+   ],
+   "destination": "DEX via 0x73da…cf04",
+   "tel": 5439018,
+   "netTel": 5439018,
+   "usd": 8838,
+   "sampleTx": "https://polygonscan.com/tx/0x769286e668ce1392200480dddb65356185eaabe5203dcfd95e063f51309fa04e"
+  },
+  {
+   "rank": 7,
+   "entity": "Unlabelled wallet",
+   "addresses": [
+    "0x70b5b370ac723756cdebd107eec57548c7af862a"
+   ],
+   "chains": [
+    "ethereum"
+   ],
+   "destination": "KuCoin via 0x6fc2…b006",
+   "tel": 5000000,
+   "netTel": 5000000,
+   "usd": 8124,
+   "sampleTx": "https://etherscan.io/tx/0xf7cb87f69328c45d29e1d88f13334d8b90cfd99e31d3a1e1b01b6e130a8131f7"
   }
  ]
 }
