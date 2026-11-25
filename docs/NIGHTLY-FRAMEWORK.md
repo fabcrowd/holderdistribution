@@ -128,6 +128,8 @@ Scheduled data workflows no longer default `HD_PROJECT` to `tel`. A `plan` job r
 
 A new workflow that writes `main` (`push-main.sh` or `git push`) must join the concurrency group `holders-refresh`, so it cannot race another writer on the same `public/data` files. `scripts/workflowConcurrency.test.js` fails for any such workflow that is not in the group, unless it is on the test's allowlist with a stated reason.
 
+A job that waits in that group starts later than the commit that queued its run, so a job that commits `data/<slug>/rpc-usage.json` checks out `${{ github.ref }}` (the branch tip when it starts) and pushes through `push-main.sh`, whose rebase merges `rpc-usage.json` by adding both sides' counters (`scripts/merge-rpc-usage.js`). `scripts/workflowRpcUsagePush.test.js` pins this for `refresh-ledger.yml` and `refresh-wallet-flows.yml`.
+
 Manual `workflow_dispatch` with a project slug still runs that slug even when the plan would skip it.
 
 ### Chain inventory and `add-project.js`
