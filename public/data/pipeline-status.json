@@ -1,9 +1,11 @@
 {
   "schemaVersion": 1,
   "project": "tel",
-  "generatedAt": "2026-11-24T11:03:08.616Z",
-  "healthy": true,
-  "problems": [],
+  "generatedAt": "2026-11-25T09:57:47.657Z",
+  "healthy": false,
+  "problems": [
+    "wallet-flows: stale"
+  ],
   "jobs": [
     {
       "id": "holders",
@@ -23,7 +25,7 @@
           "path": "public/data/holders-summary.json",
           "maxAgeHours": 30,
           "ageHours": 0.1,
-          "generatedAt": "2026-11-24T10:57:53.588Z",
+          "generatedAt": "2026-11-25T09:52:49.565Z",
           "timestampSource": "field",
           "status": "fresh"
         },
@@ -31,7 +33,7 @@
           "path": "public/data/holders-history.json",
           "maxAgeHours": 30,
           "ageHours": 0.1,
-          "generatedAt": "2026-11-24T10:57:58.040Z",
+          "generatedAt": "2026-11-25T09:52:52.776Z",
           "timestampSource": "field",
           "status": "fresh"
         },
@@ -39,7 +41,7 @@
           "path": "public/data/supply-reconciliation.json",
           "maxAgeHours": 30,
           "ageHours": 0.1,
-          "generatedAt": "2026-11-24T10:58:01.452Z",
+          "generatedAt": "2026-11-25T09:52:55.314Z",
           "timestampSource": "field",
           "status": "fresh"
         },
@@ -47,13 +49,13 @@
           "path": "public/data/cex-wallets.json",
           "maxAgeHours": 30,
           "ageHours": 0.1,
-          "generatedAt": "2026-11-24T10:57:54.974Z",
+          "generatedAt": "2026-11-25T09:52:50.541Z",
           "timestampSource": "field",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-24",
+        "day": "2026-11-25",
         "cu": 0
       }
     },
@@ -75,13 +77,13 @@
           "path": "public/data/exchange-flow-history.json",
           "maxAgeHours": 30,
           "ageHours": 0.1,
-          "generatedAt": "2026-11-24T10:59:05.702Z",
+          "generatedAt": "2026-11-25T09:54:01.723Z",
           "timestampSource": "field",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-24",
+        "day": "2026-11-25",
         "cu": 0
       }
     },
@@ -103,13 +105,13 @@
           "path": "public/data/tier-outflows.json",
           "maxAgeHours": 30,
           "ageHours": 0,
-          "generatedAt": "2026-11-24T11:03:07.624Z",
+          "generatedAt": "2026-11-25T09:57:47.037Z",
           "timestampSource": "field",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-24",
+        "day": "2026-11-25",
         "cu": 0
       }
     },
@@ -159,13 +161,13 @@
           "path": "public/data/funding-wallets.json",
           "maxAgeHours": 30,
           "ageHours": 0.1,
-          "generatedAt": "2026-11-24T10:54:53.190Z",
+          "generatedAt": "2026-11-25T09:49:41.084Z",
           "timestampSource": "field",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-24",
+        "day": "2026-11-25",
         "cu": 618
       }
     },
@@ -197,7 +199,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-24",
+        "day": "2026-11-25",
         "cu": 0
       }
     },
@@ -214,19 +216,19 @@
       "alchemyOnly": false,
       "alchemyCuBudget": 0,
       "budgetMode": "enforce",
-      "health": "ok",
+      "health": "stale",
       "outputs": [
         {
           "path": "data/forensics/wallet-flows.json",
           "maxAgeHours": 30,
-          "ageHours": 9.6,
+          "ageHours": 32.5,
           "generatedAt": "2026-11-24T01:27:15.829Z",
           "timestampSource": "field",
-          "status": "fresh"
+          "status": "stale"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-24",
+        "day": "2026-11-25",
         "cu": 0
       }
     },
@@ -248,14 +250,14 @@
         {
           "path": "data/tel/ledger/ledger.json",
           "maxAgeHours": 30,
-          "ageHours": 23.9,
-          "generatedAt": "2026-11-23T11:10:36.000Z",
+          "ageHours": 20.2,
+          "generatedAt": "2026-11-24T13:46:04.000Z",
           "timestampSource": "field",
           "status": "fresh"
         }
       ],
       "alchemyCuLatest": {
-        "day": "2026-11-24",
+        "day": "2026-11-25",
         "cu": 0
       }
     },
@@ -273,7 +275,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-24",
+        "day": "2026-11-25",
         "cu": 0
       }
     },
@@ -291,7 +293,7 @@
       "health": "ok",
       "outputs": [],
       "alchemyCuLatest": {
-        "day": "2026-11-24",
+        "day": "2026-11-25",
         "cu": 0
       }
     }
