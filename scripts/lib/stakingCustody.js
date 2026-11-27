@@ -91,6 +91,58 @@ export const attributeStakingReceipts = (balances, custody, receipts, v3Balances
 };
 
 /**
+ * Same rule for the legacy (StakeChanged) staking contract: credit each staker's
+ * stakedBy() amount from funding-wallets.json and take it off the contract.
+ *
+ * The staker feed comes from a separate step (pull-staker-balances.js) and can be
+ * a day old when that step fails, while the contract's balance is read fresh. A
+ * stale feed that still lists stake that has since been withdrawn asks for more
+ * than the contract holds; crediting it in full would invent tokens (holder
+ * balances and the counted supply above the real total supply, the supply
+ * reconciliation's residual negative). 2026-11-27 (run 45975348118): 626,934,075
+ * TEL asked for against 612,281,814 held, residual -14,121,970 TEL, and the
+ * "Supply gap" bucket vanished from the TEL supply breakdown. So, as for the v3
+ * module and the ZBCN vaults, positions above custody are scaled down to what the
+ * contract holds and the caller reports the overrun. With no custody balance at
+ * all (contract not in the map), positions are credited as given, as before.
+ *
+ * @param {Map<string, number>} balances address -> tokens (mutated)
+ * @param {string} custody staking contract address (normalized like the keys)
+ * @param {Iterable<[string, number]>} positions staker -> staked tokens
+ * @returns {{ held: number, requested: number, attributed: number, residual: number, stakers: number, overAttributed: number, scale: number }}
+ */
+export const attributeStakedBalances = (balances, custody, positions) => {
+  const held = Number(balances.get(custody) ?? 0);
+  const clean = [];
+  let requested = 0;
+  for (const [account, amount] of positions ?? []) {
+    if (typeof account !== "string" || account.length === 0 || account === custody) continue;
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    clean.push([account, amount]);
+    requested += amount;
+  }
+  const custodyKnown = Number.isFinite(held) && held > 0;
+  const scale = custodyKnown && requested > held ? held / requested : 1;
+  let placed = 0;
+  for (const [account, amount] of clean) {
+    const credit = amount * scale;
+    balances.set(account, (Number(balances.get(account)) || 0) + credit);
+    placed += credit;
+  }
+  const residual = custodyKnown ? residualCustodyBalance(held, placed) : 0;
+  if (custodyKnown) balances.set(custody, residual);
+  return {
+    held: custodyKnown ? held : 0,
+    requested,
+    attributed: placed,
+    residual,
+    stakers: clean.length,
+    overAttributed: custodyKnown ? Math.max(0, requested - held) : 0,
+    scale,
+  };
+};
+
+/**
  * Same rule as attributeStakingReceipts, for several custody accounts that
  * together hold one program's staked tokens (ZBCN stake-vault PDAs).
  *

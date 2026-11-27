@@ -15,7 +15,7 @@ import { parseHederaAddress } from "./address.js";
 import { createHederaClock } from "./clock.js";
 import { createMirrorClient, HEDERA_MAINNET_MIRROR } from "./mirror.js";
 import { HEDERA_RANGE_WIDTH, resumeProblem, scanBalanceSnapshot } from "./scan.js";
-import { settleRows } from "./settle.js";
+import { settleRows, transientNegativeRule } from "./settle.js";
 
 /** True when mirror stamp `a` is later than `b` ("seconds.nanos" strings). */
 const stampAfter = (a, b) => {
@@ -182,7 +182,7 @@ export const hederaAdapter = {
       throw new Error(`hedera snapshot ${snapshot.timestamp}: balances sum to ${snapshot.allRaw} tinybar, total supply is ${supplyAtRaw}`);
     }
     const settled = settle
-      ? await settleRows(client, { rows: snapshot.rows, stamp: snapshot.timestamp, cluster: snapshot.clusterId, through: settle.to, floor, ...waitOpts })
+      ? await settleRows(client, { rows: snapshot.rows, stamp: snapshot.timestamp, cluster: snapshot.clusterId, through: settle.to, floor, transientNegative: transientNegativeRule(chain), ...waitOpts })
       : null;
     const rowsAtEnd = settled ? settled.rows : snapshot.rows;
     const block = settle ? { number: settle.number } : await createHederaClock(client).blockAtOrBefore(snapshot.timestamp);
@@ -191,7 +191,12 @@ export const hederaAdapter = {
         `  ${chain.key}: settled snapshot ${snapshot.timestamp} to the end of block ${settle.number} (${settle.to}): ` +
           `${settled.transactions} transactions (${settled.failedTransactions} failed, fees applied), ${settled.touched} accounts, ${settled.lookups} single-account reads`,
       );
+      for (const [id, raw] of Object.entries(settled.transientNegative ?? {})) {
+        logger.warn?.(`  ${chain.key}: ${id} ends the settle at ${raw} tinybar (a network fee-account dip, see settle.js HEDERA_TRANSIENT_NEGATIVE); listed as 0, the rows exceed total supply by ${-BigInt(raw)} tinybar.`);
+      }
     }
+    // A transient dip (settle.js) was listed as 0, so the rows carry that much more than total supply.
+    const dipRaw = settled?.transientNegativeRaw ?? 0n;
 
     const balances = new Map();
     let heldRaw = 0n;
@@ -201,8 +206,9 @@ export const hederaAdapter = {
       balances.set(`0.0.${num}`, tinybarToHbar(raw));
       heldRaw += raw;
     }
-    // Settled or not, no row is dropped and HBAR is never burned, so the listed rows must be the whole supply.
-    if (heldRaw !== supplyAtRaw) {
+    // Settled or not, no row is dropped and HBAR is never burned, so the listed rows must be the whole supply
+    // (plus exactly the reported transient dip, which no row can carry).
+    if (heldRaw + dipRaw !== supplyAtRaw) {
       throw new Error(`hedera snapshot ${snapshot.timestamp}: listed rows sum to ${heldRaw} tinybar, total supply is ${supplyAtRaw} (difference ${supplyAtRaw - heldRaw})`);
     }
     logger.log?.(`  ${chain.key}: ${balances.size} holders with a positive balance (contracts included) at snapshot ${snapshot.timestamp}`);
@@ -215,7 +221,14 @@ export const hederaAdapter = {
         ...(block ? { lastBlock: block.number } : {}),
         snapshotTimestamp: snapshot.timestamp,
         ...(settled
-          ? { settledThrough: settle.to, settledBlock: settle.number, settleTransactions: settled.transactions, settleFailedTransactions: settled.failedTransactions, settleLookups: settled.lookups }
+          ? {
+              settledThrough: settle.to,
+              settledBlock: settle.number,
+              settleTransactions: settled.transactions,
+              settleFailedTransactions: settled.failedTransactions,
+              settleLookups: settled.lookups,
+              ...(dipRaw !== 0n ? { settleTransientNegative: settled.transientNegative } : {}),
+            }
           : {}),
         floorTinybar: floor.toString(),
         decimals: HEDERA_DECIMALS,
@@ -225,7 +238,8 @@ export const hederaAdapter = {
         snapshotRequestStats: snapshot.requestStats,
         snapshotWaitByCluster: snapshot.waitByCluster,
         heldRawTotal: heldRaw.toString(),
-        // HBAR outside every row: always 0 now (the completeness check above); reconcile-supply.js still reads it.
+        // HBAR outside every row: 0, or minus a transient settle dip the rows carry (the completeness check
+        // above); reconcile-supply.js reads it into residualParts.unlisted, so counted + residual stays exact.
         unlistedRawTotal: (supplyAtRaw - heldRaw).toString(),
         snapshotRawTotal: snapshot.allRaw.toString(),
         nonzeroAccounts: snapshot.nonzero,

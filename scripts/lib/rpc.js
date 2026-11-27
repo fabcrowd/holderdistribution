@@ -324,6 +324,36 @@ export async function getUsableRpcUrls(chainKey, { logger = console, logRange = 
   return usable;
 }
 
+/**
+ * The URLs a scan should fall back to when its pool (from getUsableRpcUrls) cannot
+ * serve it: whatever that pool left out, cheapest first. Keyless public endpoints
+ * come first, then the configured keys; Alchemy keys are left out while this job's
+ * enforced Alchemy budget is spent (rpcMetrics alchemyBlocked), which also keeps
+ * Alchemy away from a project with no EVM chain (its budget is a hard 0). Both
+ * lists are probed (one eth_blockNumber each), so callers should resolve this
+ * lazily: logsFailover's `reserve` option takes the function and calls it only
+ * when the pool has failed.
+ *
+ * Why: before 2026-11-27 a keyed pool had no way back to the public endpoints
+ * once the per-run Alchemy budget ran out mid-scan (getUsableRpcUrls only drops
+ * keys when the budget is ALREADY spent at pool time), so the TEL staker step
+ * failed with every fallback being another refused Alchemy key.
+ *
+ * @param {string} chainKey
+ * @param {string[]} [pool] URLs already in the pool (not repeated)
+ * @returns {Promise<string[]>}
+ */
+export async function getReserveRpcUrls(chainKey, pool = []) {
+  const have = new Set(pool);
+  const publicUrls = getPublicFallbackUrls(chainKey).filter((u) => !have.has(u));
+  let keys = getAllRpcUrls(chainKey).filter((u) => !have.has(u));
+  if (alchemyBlocked()) keys = keys.filter((u) => classifyProvider(u) !== "alchemy");
+  const probe = async (urls) => (urls.length > 0 ? (await probeUrls(urls)).filter((r) => r.ok).map((r) => r.url) : []);
+  const publicUsable = await probe(publicUrls);
+  const keysUsable = await probe(keys);
+  return [...publicUsable, ...keysUsable];
+}
+
 const shortReason = (reason) =>
   /monthly capacity/i.test(reason ?? "")
     ? "monthly quota"

@@ -59,7 +59,7 @@ import path from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { loadEnv } from "./loadEnv.js";
-import { getUsableRpcUrls, getPublicFallbackUrls, rpcCall, getLogs } from "./lib/rpc.js";
+import { getUsableRpcUrls, getPublicFallbackUrls, getReserveRpcUrls, rpcCall, getLogs } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
 import { aggregateCalls, DEFAULT_MULTICALL_BATCH } from "./lib/multicall.js";
 import { scanStakeChangedCandidates } from "./lib/stakingDiscovery.js";
@@ -111,6 +111,17 @@ const rpcPool = polygonRpcUrls.length > 0 ? polygonRpcUrls : (apiKey ? [] : publ
 const usingAlchemy = rpcPool.length > 0;
 const publicSet = new Set(getPublicFallbackUrls(STAKING_CHAIN));
 const rpcSource = rpcPool.length > 0 && rpcPool.every((u) => !publicSet.has(u)) ? "rpc-pool" : "public-rpc";
+// What the pool left out, cheapest first (public endpoints, then keys; no Alchemy
+// once this job's budget is spent). Resolved once, and only when the pool fails:
+// the log-scan failover and the multicall failover both fall through to it.
+let reservePromise = null;
+const reserveUrls = () => {
+  reservePromise ??= getReserveRpcUrls(STAKING_CHAIN, rpcPool).catch((error) => {
+    console.warn(`No reserve Polygon RPC (${error.message}).`);
+    return [];
+  });
+  return reservePromise;
+};
 
 const OUTPUT_PATH = data("funding-wallets.json");
 const CHECKPOINT_PATH = data("staker-balances-checkpoint.json");
@@ -154,8 +165,25 @@ const normalizeAddress = (value) => {
   return /^0x[a-f0-9]{40}$/.test(trimmed) ? trimmed : null;
 };
 
+// A dropped connection ("fetch failed", a reset, a timeout) is as transient as a
+// 429 and is retried the same way. 2026-11-27 (run 45975348118): one "fetch failed"
+// four pages into the Etherscan StakeChanged scan threw the whole discovery onto
+// the JSON-RPC fallback, which then ran out of Alchemy budget.
+const ETHERSCAN_TIMEOUT_MS = Number(process.env.STAKER_ETHERSCAN_TIMEOUT_MS) || 30_000;
+// 2+4+8+16 s: a blip passes, a real outage moves on to JSON-RPC within ~30 s.
+const NETWORK_RETRIES = Number(process.env.STAKER_ETHERSCAN_NETWORK_RETRIES) || 4;
 const fetchWithRetry = async (url, attempt = 0) => {
-  const response = await fetch(url);
+  let response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(ETHERSCAN_TIMEOUT_MS) });
+  } catch (error) {
+    if (attempt >= NETWORK_RETRIES) throw error;
+    const waitMs = RETRY_BASE_DELAY_MS * 2 ** attempt;
+    // No URL in the message: it carries the API key.
+    console.warn(`Etherscan request failed (${error?.cause?.code ?? error?.name ?? "network"}: ${String(error?.message ?? error).slice(0, 60)}). Retrying in ${waitMs}ms (attempt ${attempt + 1}/${NETWORK_RETRIES}).`);
+    await delay(waitMs);
+    return fetchWithRetry(url, attempt + 1);
+  }
 
   if (response.status === 429 && attempt < MAX_RETRIES) {
     const retryAfter = Number(response.headers.get("retry-after"));
@@ -188,9 +216,9 @@ const fetchWithRetry = async (url, attempt = 0) => {
  * Duplicate log rows at page boundaries are harmless here — we only keep the
  * unique account set, not the raw log records.
  */
-const fetchStakeChangedCandidates = async () => {
-  const candidates = new Set();
-  let startBlock = 0;
+const fetchStakeChangedCandidates = async (progress = { candidates: new Set(), startBlock: 0 }) => {
+  const { candidates } = progress;
+  let startBlock = progress.startBlock;
   let totalLogs = 0;
 
   while (true) {
@@ -240,28 +268,41 @@ const fetchStakeChangedCandidates = async () => {
     // Advance startblock to the last block seen so the next request stays
     // within the page×offset ≤ 10000 free-tier limit (always page=1).
     startBlock = Number(data.result[data.result.length - 1].blockNumber);
+    // Every log below startBlock is in `candidates`: a fallback resumes here.
+    progress.startBlock = startBlock;
     await delay(REQUEST_DELAY_MS);
   }
 
   return candidates;
 };
 
-/** Keyless candidate discovery: StakeChanged logs straight from JSON-RPC eth_getLogs. */
-const fetchStakeChangedCandidatesViaRpc = async (urls) => {
-  const head = Number.parseInt(await rpcCall(urls[0], "eth_blockNumber", []), 16);
-  const getLogsWithFailover = createLogsFailover(getLogs);
+/**
+ * Keyless candidate discovery: StakeChanged logs straight from JSON-RPC eth_getLogs.
+ * `resume` ({ candidates, startBlock }) continues an Etherscan pass that stopped
+ * part-way instead of rescanning from the deploy block. The pool (public first
+ * under the job's provider order) falls through to reserveUrls() when it fails or
+ * when the Alchemy budget runs out mid-scan.
+ */
+const fetchStakeChangedCandidatesViaRpc = async (urls, resume = null) => {
+  const pool = urls.length > 0 ? urls : await reserveUrls();
+  if (pool.length === 0) throw new Error("No Polygon RPC URL (pool or reserve) for the StakeChanged log scan");
+  const head = Number.parseInt(await rpcCall(pool[0], "eth_blockNumber", []), 16);
+  const getLogsWithFailover = createLogsFailover(getLogs, console, { reserve: reserveUrls });
+  const fromBlock = Math.max(target.deployBlock ?? 0, resume?.startBlock ?? 0);
+  if (resume) console.log(`  Resuming discovery over JSON-RPC from block ${fromBlock} with ${resume.candidates.size} account(s) already found.`);
   // Discovery wants a URL that takes wide ranges first; rpc.getLogs bisects
   // for the ones that do not, so order only affects speed.
   const { candidates, logCount } = await scanStakeChangedCandidates({
     getLogsWithFailover,
-    urls,
+    urls: pool,
     contract: STAKING_CONTRACT,
-    fromBlock: target.deployBlock,
+    fromBlock,
     toBlock: head,
     normalize: normalizeAddress,
     log: (m) => console.log(m),
+    initial: resume?.candidates ?? null,
   });
-  console.log(`  StakeChanged via RPC: ${logCount} logs up to block ${head}.`);
+  console.log(`  StakeChanged via RPC: ${logCount} logs from block ${fromBlock} up to block ${head}.`);
   return candidates;
 };
 
@@ -367,14 +408,26 @@ const deleteCheckpoint = async () => {
 const aggregateWithFailover = async (primaryUrl, calls, batchSize) => {
   const urls = [primaryUrl, ...rpcPool.filter((url) => url !== primaryUrl)];
   let lastError;
-  for (const url of urls) {
-    try {
-      return await aggregateCalls(url, calls, { maxBatch: batchSize });
-    } catch (error) {
-      lastError = error;
-      // Deliberately no URL or error text: RPC URLs carry API keys.
-      console.log(`  Multicall batch of ${calls.length} failed on one RPC URL; trying the next.`);
+  const tryUrls = async (list) => {
+    for (const url of list) {
+      try {
+        return { ok: true, value: await aggregateCalls(url, calls, { maxBatch: batchSize }) };
+      } catch (error) {
+        lastError = error;
+        // Deliberately no URL or error text: RPC URLs carry API keys.
+        console.log(`  Multicall batch of ${calls.length} failed on one RPC URL; trying the next.`);
+      }
     }
+    return { ok: false };
+  };
+  const first = await tryUrls(urls);
+  if (first.ok) return first.value;
+  // Pool exhausted (or its Alchemy budget spent): the reserve, cheapest first.
+  const reserve = (await reserveUrls()).filter((url) => !urls.includes(url));
+  if (reserve.length > 0) {
+    console.log(`  Multicall: the pool failed — trying ${reserve.length} reserve RPC URL(s).`);
+    const second = await tryUrls(reserve);
+    if (second.ok) return second.value;
   }
   throw lastError;
 };
@@ -439,6 +492,9 @@ const fetchStakedByAll = async (candidates, seedRaw = new Map()) => {
   return raw;
 };
 
+// "etherscan", "json-rpc", or "etherscan+json-rpc" when an Etherscan pass stopped and JSON-RPC finished it.
+let discoverySource = apiKey ? "etherscan" : "json-rpc";
+
 const writeSnapshot = async (wallets) => {
   const totalStaked = wallets.reduce((sum, w) => sum + w.stakedAmount, 0);
   const payload = {
@@ -454,7 +510,7 @@ const writeSnapshot = async (wallets) => {
       // "alchemy" = configured key pool, "public-rpc" = keyless fallback.
       stakedByApi: usingAlchemy ? (rpcSource === "rpc-pool" ? "alchemy" : "public-rpc") : "etherscan",
       stakedByRpcKeyCount: rpcSource === "rpc-pool" ? rpcPool.length : 0,
-      candidateDiscovery: apiKey ? "etherscan" : "json-rpc",
+      candidateDiscovery: discoverySource,
     },
     wallets,
     totals: {
@@ -515,12 +571,16 @@ const main = async () => {
     console.log(`Resuming from checkpoint (${checkpoint.generatedAt}): ${candidates.size} candidates, ${seedRaw.size} already queried.`);
   } else {
     if (apiKey) {
+      const progress = { candidates: new Set(), startBlock: 0 };
       try {
-        candidates = await fetchStakeChangedCandidates();
+        candidates = await fetchStakeChangedCandidates(progress);
       } catch (error) {
-        if (rpcPool.length === 0) throw error;
-        console.warn(`Etherscan discovery failed (${error.message}) — falling back to JSON-RPC eth_getLogs.`);
-        candidates = await fetchStakeChangedCandidatesViaRpc(rpcPool);
+        console.warn(
+          `Etherscan discovery failed (${error.message}) after ${progress.candidates.size} account(s) up to block ` +
+            `${progress.startBlock} — continuing over JSON-RPC eth_getLogs from there.`,
+        );
+        candidates = await fetchStakeChangedCandidatesViaRpc(rpcPool, progress);
+        discoverySource = progress.candidates.size > 0 ? "etherscan+json-rpc" : "json-rpc";
       }
     } else {
       candidates = await fetchStakeChangedCandidatesViaRpc(rpcPool);

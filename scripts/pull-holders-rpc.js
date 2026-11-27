@@ -8,7 +8,7 @@ import { loadEnv } from "./loadEnv.js";
 import { buildChainStatus } from "./lib/chainStatus.js";
 import { getUsableRpcUrls, rpcCall, getLogs } from "./lib/rpc.js";
 import { createLogsFailover } from "./lib/logsFailover.js";
-import { residualCustodyBalance, attributeStakingReceipts } from "./lib/stakingCustody.js";
+import { attributeStakedBalances, attributeStakingReceipts } from "./lib/stakingCustody.js";
 import { attributeSolanaStakingBalances } from "./lib/solanaStaking.js";
 import { ensureWindowCache, readCommittedJson, replayChainRawBalances, resolveAnchorDate, usesV3Scan } from "./lib/holdersAsOfReplay.js";
 import { computeSupplyTotals, computeBridgeNettedSupply, selectSupplyMethod } from "./lib/supply.js";
@@ -984,57 +984,39 @@ async function main() {
   // as holders.  If a staker also holds liquid TEL their total = liquid + staked.
   if (fundingWallets?.wallets && STAKING_CHAIN && chainBalancesRaw[STAKING_CHAIN]) {
     const stakingBalances = chainBalancesRaw[STAKING_CHAIN];
-    let stakersMerged = 0;
-    let stakedAttributed = 0;
+    const positions = [];
     for (const { fundingWallet: addr, stakedAmount } of fundingWallets.wallets) {
       const normalized = normalizeAddress(addr);
       if (!normalized || !Number.isFinite(stakedAmount) || stakedAmount <= 0) continue;
-      const existing = stakingBalances.get(normalized) ?? 0;
-      stakingBalances.set(normalized, existing + stakedAmount);
-      stakedAttributed += stakedAmount;
-      stakersMerged++;
+      positions.push([normalized, stakedAmount]);
     }
-    console.log(`Merged ${stakersMerged} staker addresses into ${STAKING_CHAIN} balance map.`);
-
     // The staking contract's own balance is excluded, then re-attributed to the
-    // individual stakers above. Attributed staking must therefore never exceed
-    // what the contract actually custodies — if it does, we are crediting holders
-    // with TEL that does not exist on chain, inflating totalBalance and totalHeld.
-    //
-    // This currently trips: ~4.597B attributed vs ~4.085B held by the contract,
-    // a ~512M (12.5%) overstatement. Consistent with pull-staker-balances.js
-    // deduping Etherscan `tokentx` rows by `tx.hash` alone — one transaction can
-    // carry several TEL transfers, so every transfer after the first in a batched
-    // tx is dropped, skewing the net deposit/withdrawal maths.
-    const contractBalance = stakingBalances.get(STAKING_CONTRACT_ADDRESS) ?? 0;
-    if (contractBalance > 0 && stakedAttributed > contractBalance * (1 + STAKING_TOLERANCE)) {
+    // individual stakers. Its custodied TEL was once counted a second time in the
+    // chain total and in supply (Polygon 41.18B against a real totalSupply() of
+    // 37.25B, a ~4B phantom `mirrorResidual`), so the attributed amount is
+    // subtracted from the contract: whatever the attribution could NOT place stays
+    // on it, counted once. Attribution can never exceed what the contract really
+    // custodies: when the staker feed asks for more (it is a day old whenever the
+    // staker step fails, and stake withdrawn since is still listed), positions are
+    // scaled down to the held balance instead of inventing TEL
+    // (lib/stakingCustody.js attributeStakedBalances, 2026-11-27).
+    const r = attributeStakedBalances(stakingBalances, STAKING_CONTRACT_ADDRESS, positions);
+    console.log(`Merged ${r.stakers} staker addresses into ${STAKING_CHAIN} balance map.`);
+    if (r.held > 0 && r.requested > r.held * (1 + STAKING_TOLERANCE)) {
       console.warn(
-        `WARNING: attributed staking ${Math.round(stakedAttributed).toLocaleString()} TEL exceeds the ` +
-          `staking contract's balance ${Math.round(contractBalance).toLocaleString()} TEL by ` +
-          `${Math.round(stakedAttributed - contractBalance).toLocaleString()} TEL. ` +
-          `Holder balances are overstated by that amount — see pull-staker-balances.js transfer dedup.`
+        `WARNING: funding-wallets.json asks for ${Math.round(r.requested).toLocaleString()} TEL of staking, more than the ` +
+          `staking contract's balance ${Math.round(r.held).toLocaleString()} TEL (by ${Math.round(r.overAttributed).toLocaleString()} TEL). ` +
+          `Positions scaled down to the held balance (x${r.scale.toFixed(6)}) so no TEL is invented; the staker feed is ` +
+          `probably stale (generatedAt ${fundingWallets.generatedAt ?? "unknown"}) — check the staker-balances step.`
       );
+    } else if (r.overAttributed > 0) {
+      console.log(`Staking positions exceeded the contract by ${Math.round(r.overAttributed).toLocaleString()} TEL (within tolerance); scaled to the held balance.`);
     }
-
-    // Retire the staked TEL from the contract's OWN balance, now that the same
-    // tokens are represented on each staker's entry above. The contract was only
-    // ever excluded from the RETAIL set — it stayed in the chain balance map, so
-    // its custodied TEL was counted a second time in the chain total and in
-    // supply. That inflated Polygon to 41.18B against a real on-chain
-    // totalSupply() of 37.25B, and produced a ~4B phantom `mirrorResidual`
-    // implying the bridge was under-collateralised when it is fully backed
-    // (predicate locks 37,249,704,874 vs Polygon's 37,248,867,603).
-    //
-    // Subtracting rather than zeroing is deliberate and self-correcting: whatever
-    // the attribution could NOT place with an owner stays on the contract, so it
-    // is still counted exactly once instead of vanishing from supply.
-    if (contractBalance > 0) {
-      const residual = residualCustodyBalance(contractBalance, stakedAttributed);
-      stakingBalances.set(STAKING_CONTRACT_ADDRESS, residual);
+    if (r.held > 0) {
       console.log(
-        `Staking contract balance ${Math.round(contractBalance).toLocaleString()} -> ` +
-          `${Math.round(residual).toLocaleString()} TEL after attributing ` +
-          `${Math.round(stakedAttributed).toLocaleString()} to stakers (prevents double-counting).`
+        `Staking contract balance ${Math.round(r.held).toLocaleString()} -> ` +
+          `${Math.round(r.residual).toLocaleString()} TEL after attributing ` +
+          `${Math.round(r.attributed).toLocaleString()} to stakers (prevents double-counting).`
       );
     }
   }

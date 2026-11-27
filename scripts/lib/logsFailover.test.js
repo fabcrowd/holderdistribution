@@ -71,3 +71,50 @@ describe("createLogsFailover", () => {
     await expect(f(["recent-only", "full"], 0, filter(2))).resolves.toEqual([{ ok: "recent-only" }]);
   });
 });
+
+describe("createLogsFailover: Alchemy budget and the reserve (run 45975348118, 2026-11-27)", () => {
+  const budgetError = () => Object.assign(new Error("[budget] job staker-balances Alchemy budget 1000 CU/run reached (985 spent) — refusing eth_getLogs"), { code: "ALCHEMY_BUDGET" });
+  const keys = Array.from({ length: 15 }, (_, i) => `https://polygon-mainnet.g.alchemy.com/v2/key${i}`);
+  const PUBLIC = ["https://gateway.tenderly.co/public/polygon", "https://poly.api.pocket.network"];
+
+  it("a refused Alchemy key ends every Alchemy attempt, and the scan moves on to the public reserve", async () => {
+    const calls = [];
+    const impl = async (url) => {
+      calls.push(url);
+      if (url.includes("alchemy")) throw budgetError();
+      return [{ from: url }];
+    };
+    const reserve = vi.fn(async () => PUBLIC);
+    const f = createLogsFailover(impl, { warn: vi.fn() }, { reserve, sleep: async () => {} });
+    await expect(f(keys, 0, filter(1))).resolves.toEqual([{ from: PUBLIC[0] }]);
+    // One refused key, not fifteen; then the reserve.
+    expect(calls).toEqual([keys[0], PUBLIC[0]]);
+    expect(reserve).toHaveBeenCalledTimes(1);
+    // Later chunks: no Alchemy key is asked again, the reserve is not re-resolved.
+    calls.length = 0;
+    await f(keys, 3, filter(100));
+    expect(calls).toEqual([PUBLIC[0]]);
+    expect(reserve).toHaveBeenCalledTimes(1);
+    expect(f.lastServedUrl).toBe(PUBLIC[0]);
+  });
+
+  it("does not resolve the reserve while the pool serves", async () => {
+    const reserve = vi.fn(async () => PUBLIC);
+    const f = createLogsFailover(async () => [], quiet, { reserve });
+    await f(["a", "b"], 0, filter(1));
+    expect(reserve).not.toHaveBeenCalled();
+    expect(f.lastServedUrl).toBe("a");
+  });
+
+  it("uses the reserve when every pool URL fails for another reason, and fails only when the reserve does too", async () => {
+    const f = createLogsFailover(async (url) => { if (url !== "r2") throw new Error(`down ${url}`); return [url]; }, quiet, { reserve: ["r1", "r2"] });
+    await expect(f(["a", "b"], 0, filter(1))).resolves.toEqual(["r2"]);
+    const g = createLogsFailover(async (url) => { throw new Error(`down ${url}`); }, quiet, { reserve: ["r1"] });
+    await expect(g(["a"], 0, filter(1))).rejects.toThrow("down r1");
+  });
+
+  it("without a reserve, a pool of spent Alchemy keys still fails with the budget error (no silent success)", async () => {
+    const f = createLogsFailover(async () => { throw budgetError(); }, quiet);
+    await expect(f(keys, 0, filter(1))).rejects.toThrow(/Alchemy budget/);
+  });
+});
