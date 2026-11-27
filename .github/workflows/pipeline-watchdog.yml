@@ -125,7 +125,7 @@ jobs:
           # non-fatal: it is the heaviest RPC consumer here and the first
           # casualty of an Alchemy monthly-capacity limit, and losing it should
           # cost one day of staking freshness, not the entire self-heal.
-          HD_JOB_ID=staker-balances RPC_PREFER_PUBLIC=0 node scripts/pull-staker-balances.js || echo "staker balances failed — continuing with the last committed funding-wallets.json"
+          HD_JOB_ID=staker-balances node scripts/pull-staker-balances.js || echo "staker balances failed — continuing with the last committed funding-wallets.json"
           HD_JOB_ID=holders node scripts/pull-holders-rpc.js
           HD_JOB_ID=holders node scripts/pull-cex-wallets.js
           node scripts/generate-holders-lite.js

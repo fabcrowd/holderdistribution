@@ -21,7 +21,7 @@ describe("scanStakeChangedCandidates", () => {
     const { candidates, logCount } = await scanStakeChangedCandidates({
       getLogsWithFailover, urls: ["u1", "u2"], contract: "0xc", fromBlock: 100, toBlock: 349, span: 100, normalize,
     });
-    expect(ranges).toEqual([[100, 199, 0], [200, 299, 1], [300, 349, 0]]);
+    expect(ranges).toEqual([[100, 199, 0], [200, 299, 0], [300, 349, 0]]);
     expect([...candidates].sort()).toEqual([A, B]);
     expect(logCount).toBe(6);
   });
@@ -40,5 +40,28 @@ describe("scanStakeChangedCandidates", () => {
 
   it("starts no earlier than the staking proxy deployment", () => {
     expect(STAKING_DEPLOY_BLOCK).toBe(36751757);
+  });
+
+  it("keeps asking the URL that served the last chunk instead of rotating onto a narrow-range endpoint", async () => {
+    // Sequential chunks gain nothing from round-robin; measured 2026-11-27, every third
+    // 1M-block chunk on Pocket (500-block cap) cost 2,000 sub-requests.
+    const asked = [];
+    const getLogsWithFailover = async (urls, idx) => {
+      asked.push(idx);
+      getLogsWithFailover.lastServedUrl = "wide"; // the failover moved off "archive-less" to "wide"
+      return [];
+    };
+    await scanStakeChangedCandidates({
+      getLogsWithFailover, urls: ["archive-less", "wide", "narrow"], contract: "0xc", fromBlock: 0, toBlock: 399, span: 100, normalize,
+    });
+    expect(asked).toEqual([0, 1, 1, 1]);
+  });
+
+  it("resumes from `initial`: accounts an earlier (Etherscan) pass found are kept", async () => {
+    const getLogsWithFailover = async () => [{ topics: [STAKE_CHANGED_TOPIC0, topicFor(B)] }];
+    const { candidates } = await scanStakeChangedCandidates({
+      getLogsWithFailover, urls: ["u"], contract: "0xc", fromBlock: 500, toBlock: 599, span: 100, normalize, initial: new Set([A]),
+    });
+    expect([...candidates].sort()).toEqual([A, B]);
   });
 });

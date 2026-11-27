@@ -112,7 +112,7 @@ import { computeChainMetrics } from "./lib/holderMetrics.js";
 import { projectHolderTiers } from "./lib/holderTiers.js";
 import { DISTRIBUTION_RANGES, CONCENTRATION_BUCKETS, setHolderTiers } from "./lib/holdersView.js";
 import { STAKE_CHANGED_TOPIC0 } from "./lib/staking.js";
-import { residualCustodyBalance } from "./lib/stakingCustody.js";
+import { attributeStakedBalances } from "./lib/stakingCustody.js";
 import { reconcileHistoryEntry } from "./lib/holderHistoryReconcile.js";
 import {
   createReplayLedger,
@@ -438,17 +438,10 @@ async function main() {
 
       // Merge staking exactly as pull-holders-rpc.js does: credit each staker,
       // then retire the contract's own balance down to whatever the
-      // attribution could not place, so nothing is counted twice.
+      // attribution could not place, so nothing is counted twice; positions
+      // above the contract's balance are scaled down, never invented.
       if (chainKey === STAKE_CHAIN) {
-        const stakes = stakesByDate.get(boundary.date) ?? new Map();
-        let attributed = 0;
-        for (const [account, staked] of stakes) {
-          if (staked <= 0) continue;
-          balances.set(account, (balances.get(account) ?? 0) + staked);
-          attributed += staked;
-        }
-        const custody = balances.get(STAKING_CONTRACT) ?? 0;
-        if (custody > 0) balances.set(STAKING_CONTRACT, residualCustodyBalance(custody, attributed));
+        attributeStakedBalances(balances, STAKING_CONTRACT, stakesByDate.get(boundary.date) ?? new Map());
       }
 
       const holders = [];

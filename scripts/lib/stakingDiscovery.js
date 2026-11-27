@@ -33,6 +33,8 @@ export const STAKE_SCAN_SPAN = 1_000_000;
  * @param {(value: string) => string|null} opts.normalize
  * @param {number} [opts.span]
  * @param {(msg: string) => void} [opts.log]
+ * @param {Iterable<string>} [opts.initial] accounts already found below `fromBlock`
+ *   (e.g. by an Etherscan pass that stopped part-way), so the scan resumes there
  * @returns {Promise<{ candidates: Set<string>, logCount: number }>}
  */
 export async function scanStakeChangedCandidates({
@@ -44,21 +46,27 @@ export async function scanStakeChangedCandidates({
   normalize,
   span = STAKE_SCAN_SPAN,
   log = () => {},
+  initial = null,
 }) {
   if (!Array.isArray(urls) || urls.length === 0) throw new Error("scanStakeChangedCandidates: no RPC URLs");
   if (!(span >= 1)) throw new Error("scanStakeChangedCandidates: span must be >= 1");
-  const candidates = new Set();
+  const candidates = new Set(initial ?? []);
   let logCount = 0;
-  let chunk = 0;
+  // The chunks run one after another, so spreading them round-robin over the pool
+  // buys no parallelism; it only sends every third chunk to the endpoint with the
+  // smallest range cap (Pocket: 500 blocks, i.e. 2,000 sub-requests per chunk,
+  // measured 2026-11-27). Keep asking the URL that answered the last chunk.
+  let preferred = 0;
   for (let start = fromBlock; start <= toBlock; start += span) {
     const end = Math.min(start + span - 1, toBlock);
-    const logs = await getLogsWithFailover(urls, chunk % urls.length, {
+    const logs = await getLogsWithFailover(urls, preferred, {
       address: contract,
       topics: [STAKE_CHANGED_TOPIC0],
       fromBlock: "0x" + start.toString(16),
       toBlock: "0x" + end.toString(16),
     });
-    chunk++;
+    const served = urls.indexOf(getLogsWithFailover.lastServedUrl ?? "");
+    if (served >= 0) preferred = served;
     for (const entry of logs) {
       const account = parseStakeChangedAccount(entry, normalize);
       if (account) candidates.add(account);

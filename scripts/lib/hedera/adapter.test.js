@@ -154,6 +154,53 @@ describe("hedera scanChain", () => {
     expect(scan.checkpointData).toMatchObject({ unlistedRawTotal: "0", holders: 4, settleTransactions: 3 }); // accounts 1, 4, 98, 600
   });
 
+  describe("the daily node-fee sweep of 0.0.802 (run 45975348118, 2026-11-27)", () => {
+    // Mainnet: 0.0.802 (fee collection) is swept at 00:00 UTC by a synthetic CRYPTOTRANSFER that already
+    // includes fees whose credit legs come a few seconds later, so the replay dips below zero at the block's
+    // end (-3,218,499 tinybar on 2026-11-27) and is exact again at the next snapshot.
+    const tx = (ts, legs) => ({ consensus_timestamp: ts, result: "SUCCESS", transfers: legs.map(([a, v]) => ({ account: `0.0.${a}`, amount: String(v) })) });
+    const base = () => [acct(1, 100), acct(3, 10), acct(98, 1), { num: 802, balance: 967_086_010_610n }];
+    const sweep = (amount) => [
+      tx("1794165100.000000001", [[1, -184_941n], [802, 184_941n]]), // a fee lands on 0.0.802
+      tx("1794165200.244329119", [[802, -amount], [98, amount - 1000n], [3, 1000n]]), // the sweep, in block 100
+      tx("1794165201.496080104", [[1, -314_400n], [802, 314_400n]]), // a fee after the sweep, same block
+    ];
+
+    it("lists the swept fee account as 0, reports the dip, and keeps the supply check exact", async () => {
+      const accounts = base();
+      const supply = accounts.reduce((s, a) => s + a.balance, 0n);
+      const amount = 967_086_010_610n + 184_941n + 314_400n + 3_218_499n; // ends at -3,218,499
+      const mock = createMockMirror({ accounts, contracts: [], transactions: sweep(amount), blockCount: 1000, blockTime: (n) => 1794165000 + n * 2 });
+      const warn = [];
+      const scan = await hederaAdapter.scanChain(chain, opts(mock, { pinBlock: 100, logger: { log() {}, warn: (m) => warn.push(m) } }));
+      expect(scan.balances.has("0.0.802")).toBe(false);
+      expect(scan.checkpointData.settleTransientNegative).toEqual({ "0.0.802": "-3218499" });
+      expect(BigInt(scan.checkpointData.heldRawTotal)).toBe(supply + 3_218_499n);
+      expect(scan.checkpointData.unlistedRawTotal).toBe("-3218499"); // reconcile-supply: counted + residual stays exact
+      expect(warn.join("\n")).toMatch(/0\.0\.802 ends the settle at -3218499 tinybar/);
+    });
+
+    it("still refuses a dip larger than the allowance on the fee account", async () => {
+      const amount = 967_086_010_610n + 184_941n + 314_400n + 100_000_001n;
+      const mock = createMockMirror({ accounts: base(), contracts: [], transactions: sweep(amount), blockCount: 1000, blockTime: (n) => 1794165000 + n * 2 });
+      await expect(hederaAdapter.scanChain(chain, opts(mock, { pinBlock: 100 }))).rejects.toThrow(/0\.0\.802 would hold -100000001 tinybar .*allowed transient dip/);
+    });
+
+    it("still refuses any other account going below zero", async () => {
+      const accounts = base();
+      const transactions = [tx("1794165150.000000001", [[3, -11n * HBAR], [1, 11n * HBAR]])];
+      const mock = createMockMirror({ accounts, contracts: [], transactions, blockCount: 1000, blockTime: (n) => 1794165000 + n * 2 });
+      await expect(hederaAdapter.scanChain(chain, opts(mock, { pinBlock: 100 }))).rejects.toThrow(/hedera settle: 0\.0\.3 would hold -100000000 tinybar/);
+    });
+
+    it("a chain config can replace the list (an empty list restores the strict guard)", async () => {
+      const amount = 967_086_010_610n + 184_941n + 314_400n + 3_218_499n;
+      const mock = createMockMirror({ accounts: base(), contracts: [], transactions: sweep(amount), blockCount: 1000, blockTime: (n) => 1794165000 + n * 2 });
+      const strict = { ...chain, settle: { transientNegative: { accounts: [], maxTinybar: "0" } } };
+      await expect(hederaAdapter.scanChain(strict, opts(mock, { pinBlock: 100 }))).rejects.toThrow(/0\.0\.802 would hold -3218499/);
+    });
+  });
+
   it("drops a saved scan state that is later than the pinned block instead of replaying backwards", async () => {
     const accounts = [acct(1, 100)];
     const mock = createMockMirror({ accounts, contracts: [], blockCount: 1000, blockTime: (n) => 1794165000 + n * 2 });

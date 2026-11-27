@@ -244,7 +244,7 @@ Figures are estimates in `data/rpc-usage.json` (TEL), not the Alchemy invoice.
 
 | Job | Budget | Mode | Expected Alchemy |
 |---|---|---|---|
-| staker-balances (TEL) | 1000 | enforce | Still about 618 CU/day. Public Polygon was too slow (see Known issues). The cap refuses the call that would cross 1000 and the pool falls through to public. |
+| staker-balances (TEL) | 1000 | enforce | Public first since 2026-11-27 (about 35 s with no key, see "Staker step" below); keys only through the reserve. The cap refuses the call that would cross 1000, and the failover then skips every Alchemy URL and moves to public. |
 | ledger | 0 | enforce | Public `eth_getLogs` first. Alchemy is refused. Target 0 CU. |
 | wallet-flows, solana-flows, solana-staking, cex-candidates, cex-sync | 0 | enforce | No Alchemy by budget (and Solana jobs never had an Alchemy provider). |
 | holders, exchange-flows, tier-outflows | 5000 / 2000 / 2000 | warn | Logged, not blocked, if they exceed the budget. Today they record 0. |
@@ -302,9 +302,15 @@ Limits live in `config/public-rpc-limits.json`, keyed by **host** (never by proj
 
 Solana calls go through `rpc.js` `rpcCall` (`scripts/lib/solana/rpc.js`), so the public `api.mainnet-beta.solana.com` endpoint gets the same host limiter (3.5 rps, 4 concurrent, as published). Solana never uses Alchemy.
 
-### Staker step stays on keys
+### Staker step: public first, keys in reserve (2026-11-27)
 
-`pull-staker-balances.js` is about **618 CU/day** (33 Alchemy calls, 1–4 Nov, `data/rpc-usage.json`). A full public scan of Polygon took more than 20 minutes, which is the step's `timeout-minutes`. The workflow therefore does not set `RPC_PREFER_PUBLIC` on that step. The guard caps it at 1,000 CU (`enforce`) and would fall through to public if the cap were hit. Moving this step to public RPC needs a faster scan or a longer timeout, not just the flag.
+Until 2026-11-27 the staker step was pinned to the keys (`RPC_PREFER_PUBLIC: '0'`, about 618 CU/day) because a full public scan of Polygon was measured at more than 20 minutes. That pin is gone: the step follows the job's provider order (`public`, then `alchemy`). Why it changed:
+
+- **What failed (run 45975348118).** One `fetch failed` four pages into the Etherscan StakeChanged scan (not retried) threw discovery onto JSON-RPC from the deploy block, on a pool of 15 Alchemy keys with the free tier's 10-block `eth_getLogs` cap. The 1,000 CU guard refused the next call after 985 CU, and every "next RPC URL" was another Alchemy key, refused the same way. The step failed with no free endpoint ever asked, so `funding-wallets.json` stayed a day old.
+- **Measured without any key (2026-11-27).** The full StakeChanged scan on the keyless public pool, deploy block to head (6,719 accounts, 34,476 logs), took 18 to 32 s once the scan keeps the endpoint that served the last chunk (`stakingDiscovery.js`; round-robin had sent every third 1M-block chunk to Pocket's 500-block cap). The 17 `stakedBy()` multicalls took 5 s, and the sum matched `totalStaked()` exactly (612,004,128.06 TEL). The whole step, run end to end with Etherscan unreachable, finished in about 35 s with 0 Alchemy CU.
+- **The fallback now exists.** `logsFailover.js` skips every Alchemy URL after the first budget refusal and then tries a `reserve`; `rpc.js` `getReserveRpcUrls` gives the URLs the pool left out, public first, keys after, and no Alchemy key once the job's budget is spent (so never for a project with no EVM chain). The staker multicall failover uses the same reserve. Etherscan requests retry a dropped connection, and a failed Etherscan pass hands its accounts and last block to the JSON-RPC scan instead of starting over.
+
+`refresh-staker-balances.yml` and the watchdog self-heal run the script as job `staker-balances` too (`scripts/lib/stakerProviderOrder.test.js`).
 
 ### `RPC_PREFER_PUBLIC=1` and `rpc` tests
 
