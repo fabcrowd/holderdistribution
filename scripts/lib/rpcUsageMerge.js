@@ -14,7 +14,9 @@
  * which git keeps once and so silently drops a run.
  *
  * Used by scripts/merge-rpc-usage.js, the git merge driver that
- * scripts/push-main.sh enables for its rebase. It throws instead of guessing on anything
+ * scripts/push-main.sh enables for its rebase, and again after the rebase
+ * from the pre-rebase trees (--from-git) because git skips the driver when
+ * both sides made the identical edit. It throws instead of guessing on anything
  * that is not this shape, so the rebase stays a conflict for a human.
  */
 import { KEEP_DAYS, USAGE_SCHEMA_VERSION } from "./runMetricsSummary.js";

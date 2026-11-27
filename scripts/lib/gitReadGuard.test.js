@@ -23,6 +23,7 @@ const ALLOWED = new Map([
   ["scripts/onboard-run.js", "onboarding branch, commit and push; not a data read"],
   ["scripts/change-receipt.js", "diff and status for the change receipt; not a data read"],
   ["scripts/store-origin-facts.js", "the workflow's origin/main seam for the store CLIs (data/manifests and the stale-code guard's commit list); not a data read"],
+  ["scripts/merge-rpc-usage.js", "three-way rpc-usage.json counter recompute during push-main.sh rebase (base/ours/theirs); not a store data read"],
 ]);
 
 const walk = (dir) => {
