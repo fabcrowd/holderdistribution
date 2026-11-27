@@ -350,8 +350,21 @@ export async function getReserveRpcUrls(chainKey, pool = []) {
   if (alchemyBlocked()) keys = keys.filter((u) => classifyProvider(u) !== "alchemy");
   const probe = async (urls) => (urls.length > 0 ? (await probeUrls(urls)).filter((r) => r.ok).map((r) => r.url) : []);
   const publicUsable = await probe(publicUrls);
-  const keysUsable = await probe(keys);
-  return [...publicUsable, ...keysUsable];
+  // Each Alchemy probe goes through the budget guard, one key at a time, so a
+  // nearly spent per-run budget cannot be pushed over the cap just by probing
+  // every spare key. The first refusal drops the remaining Alchemy keys.
+  const alchemyKeys = keys.filter((u) => classifyProvider(u) === "alchemy");
+  const usable = new Set(await probe(keys.filter((u) => classifyProvider(u) !== "alchemy")));
+  for (const url of alchemyKeys) {
+    try {
+      guardAlchemyCall("eth_blockNumber");
+    } catch (err) {
+      if (err instanceof AlchemyBudgetError) break;
+      throw err;
+    }
+    if ((await probe([url])).length > 0) usable.add(url);
+  }
+  return [...publicUsable, ...keys.filter((u) => usable.has(u))];
 }
 
 const shortReason = (reason) =>

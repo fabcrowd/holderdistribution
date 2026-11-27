@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { getReserveRpcUrls, getPublicFallbackUrls, __resetRpcCachesForTests } from "./rpc.js";
-import { __resetBudgetGuardForTests } from "./rpcMetrics.js";
+import { __resetBudgetGuardForTests, __resetRpcMetricsForTests } from "./rpcMetrics.js";
 
 const ok = () => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0x1" }), { status: 200, headers: { "content-type": "application/json" } });
 const ALCHEMY = "https://polygon-mainnet.g.alchemy.com/v2/k0";
@@ -55,5 +55,17 @@ describe("getReserveRpcUrls (the fallback a failing pool falls through to)", () 
     Object.assign(process.env, { HD_JOB_ID: "holders", HD_HAS_EVM: "false" });
     const reserve = await getReserveRpcUrls("polygon", []);
     expect(reserve.some((u) => u.includes("alchemy"))).toBe(false);
+  });
+  it("guards every Alchemy probe: a budget with room for one probe probes one key, not all of them", async () => {
+    const A2 = "https://polygon-mainnet.g.alchemy.com/v2/k2";
+    process.env.MATIC_RPC_0 = ALCHEMY;
+    process.env.MATIC_RPC_1 = A2;
+    __resetRpcMetricsForTests();
+    Object.assign(process.env, { HD_JOB_ID: "staker-balances", HD_JOB_ALCHEMY_CU_BUDGET: "10", HD_JOB_BUDGET_MODE: "enforce" });
+    const pub = getPublicFallbackUrls("polygon");
+    const reserve = await getReserveRpcUrls("polygon", pub);
+    expect(reserve).toEqual([ALCHEMY]);
+    const alchemyCalls = globalThis.fetch.mock.calls.filter(([u]) => String(u).includes("alchemy"));
+    expect(alchemyCalls.length).toBe(1);
   });
 });
