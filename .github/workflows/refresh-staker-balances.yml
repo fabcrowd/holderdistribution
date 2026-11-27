@@ -45,9 +45,11 @@ jobs:
         run: node scripts/workflow-paths.js >> "$GITHUB_ENV"
       - name: Refresh TEL staker balances snapshot
         env:
+          # Same job as the nightly step: provider order (public first, keys in
+          # reserve) and the 1,000 CU Alchemy guard from config/nightly-jobs.json.
+          HD_JOB_ID: staker-balances
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
-          # Lets stakedBy() calls go through Alchemy Polygon RPC instead of
-          # Etherscan's 3/sec-capped proxy module — see pull-staker-balances.js.
+          # Decrypts the keys the reserve falls back to — see pull-staker-balances.js.
           ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
         run: node scripts/pull-staker-balances.js
       - name: Configure git user

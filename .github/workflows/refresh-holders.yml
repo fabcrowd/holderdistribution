@@ -222,11 +222,14 @@ jobs:
         timeout-minutes: 20
         env:
           HD_JOB_ID: staker-balances   # config/nightly-jobs.json: provider order + Alchemy budget guard
-          # Stays on the keys (~618 CU/day, 33 calls, per data/rpc-usage.json): the
-          # StakeChanged log scan over all of Polygon takes >20 min on keyless public
-          # nodes (measured), which would blow timeout-minutes. The guard caps it at
-          # 1,000 CU (enforce) and falls back to public if the cap is hit.
-          RPC_PREFER_PUBLIC: '0'
+          # No RPC_PREFER_PUBLIC pin: the job's provider order (public, then alchemy)
+          # decides, so the stakedBy() multicalls and any JSON-RPC log discovery go to
+          # the keyless public endpoints and the keys stay in reserve. Measured
+          # 2026-11-27 with no key: the full StakeChanged scan (deploy block to head,
+          # 6,719 accounts) took 18-32 s and the multicalls 5 s, matching totalStaked()
+          # exactly. The reserve (rpc.js getReserveRpcUrls) brings in the keys only
+          # when the public pool fails, and the 1,000 CU guard (enforce) drops them
+          # again, back to public, once the cap is hit.
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           # Lets pull-staker-balances.js's stakedBy() calls go through Alchemy
           # Polygon RPC instead of Etherscan's 3/sec-capped proxy module —
