@@ -162,7 +162,8 @@ staking pulls exit 0 when the project has no such staking contract. A project
 whose config is broken is skipped with a warning, so a half-onboarded token
 cannot stop the others. Pushes go through `scripts/push-main.sh` (rebase +
 push, up to 5 attempts; `rpc-usage.json` counters from both sides are added
-together on the rebase, any other conflict aborts).
+together on the rebase and recomputed afterwards so identical edits still
+sum, any other conflict aborts).
 
 ### Data-path rules
 
