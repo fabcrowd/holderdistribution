@@ -114,6 +114,57 @@ describe("scripts/push-main.sh", () => {
     expect(spawnSync("git", ["config", "--get-regexp", "^merge\\."], { cwd: ledger, env: ENV }).status).not.toBe(0);
   });
 
+  it("sums counters when both sides made the identical edit (git would keep it once)", () => {
+    seed();
+    const a = clone("a");
+    const b = clone("b");
+    addRun(a, "x.js", 100);
+    commitAll(a, "a");
+    expect(pushMain(a).status).toBe(0);
+
+    addRun(b, "x.js", 100);
+    expect(readJson(b, USAGE)).toEqual(readJson(clone("a-pushed"), USAGE));
+    write(b, "data/demo/ledger/ledger.json", "{}\n");
+    commitAll(b, "b");
+
+    // git treats the identical usage hunk as already applied and never calls the
+    // merge driver, so a plain rebase keeps one increment (runs 2, not 3).
+    const beforeRebase = git(b, "rev-parse", "HEAD");
+    git(b, "fetch", "-q", "origin", "main");
+    const plain = spawnSync("git", ["rebase", "origin/main"], { cwd: b, env: ENV, encoding: "utf8" });
+    expect(plain.status, plain.stdout + plain.stderr).toBe(0);
+    expect(readJson(b, USAGE).days[DAY].runs).toBe(2);
+    git(b, "reset", "--hard", "-q", beforeRebase);
+
+    const res = pushMain(b);
+    expect(res.status, res.stdout + res.stderr).toBe(0);
+    const day = readJson(clone("check-identical"), USAGE).days[DAY];
+    expect(day.runs).toBe(3);
+    expect(day.publicCalls).toBe(51 + 100 + 100);
+    expect(day.byScript["x.js"]).toMatchObject({ processes: 2, publicCalls: 200 });
+    expect(fs.existsSync(path.join(clone("check-identical-files"), "data/demo/ledger/ledger.json"))).toBe(true);
+  });
+
+  it("sums identical usage-only edits when git drops the empty replayed commit", () => {
+    seed();
+    const a = clone("a");
+    const b = clone("b");
+    addRun(a, "x.js", 100);
+    commitAll(a, "a");
+    expect(pushMain(a).status).toBe(0);
+
+    addRun(b, "x.js", 100);
+    commitAll(b, "b");
+    const res = pushMain(b);
+    expect(res.status, res.stdout + res.stderr).toBe(0);
+    const check = clone("check-identical-only");
+    const day = readJson(check, USAGE).days[DAY];
+    expect(day.runs).toBe(3);
+    expect(day.publicCalls).toBe(51 + 100 + 100);
+    expect(day.byScript["x.js"]).toMatchObject({ processes: 2, publicCalls: 200 });
+    expect(git(check, "log", "--format=%s")).toBe("b\na\nseed");
+  });
+
   it("merges even when origin/main predates the merge driver (the night the fix lands)", () => {
     seed({ withTools: false });
     const holders = clone("holders");
@@ -163,9 +214,12 @@ describe("scripts/push-main.sh", () => {
     expect(pushMain(a).status).toBe(0);
     write(b, USAGE, "{ not json\n");
     commitAll(b, "b");
+    const head = git(b, "rev-parse", "HEAD");
     const res = pushMain(b);
     expect(res.status).toBe(1);
-    expect(res.stdout).toContain(USAGE);
     expect(res.stderr).toContain("[merge-rpc-usage] cannot merge");
+    expect(res.stderr).toContain(USAGE);
+    expect(res.stdout).toContain("::error::could not merge rpc-usage.json counters; not retrying");
+    expect(git(b, "rev-parse", "HEAD")).toBe(head);
   });
 });

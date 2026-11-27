@@ -36,6 +36,7 @@ describe("rpc-usage.json writers check out the branch tip and push through push-
     expect(helper).toContain("rpc-usage.json merge=rpc-usage");
     expect(helper).toContain("merge.rpc-usage.driver=node");
     expect(helper).toContain("core.attributesFile=");
+    expect(helper).toContain("--from-git");
     const code = helper.split("\n").filter((l) => !l.trimStart().startsWith("#")).join("\n");
     expect(code).not.toMatch(/git config\s/);
     expect(helper).toMatch(/git rebase --abort/);
